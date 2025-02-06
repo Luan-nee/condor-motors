@@ -1,0 +1,10 @@
+{
+  "name": "server",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "ts-node-dev ./src/app.ts",
+    "build": "rimraf ./build && tsc",
+    "start": "npm run build && node ./build/app.js"
+  }
+}
