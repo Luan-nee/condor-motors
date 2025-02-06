@@ -6,5 +6,15 @@
     "dev": "ts-node-dev ./src/app.ts",
     "build": "rimraf ./build && tsc",
     "start": "npm run build && node ./build/app.js"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.0",
+    "eslint-config-love": "118.0.0",
+    "rimraf": "6.0.1",
+    "ts-node-dev": "2.0.0",
+    "typescript": "5.7.3"
+  },
+  "dependencies": {
+    "express": "4.21.2"
   }
 }
