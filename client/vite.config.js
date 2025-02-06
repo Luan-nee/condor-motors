@@ -3,7 +3,10 @@ import { defineConfig, loadEnv } from 'vite';
 
 // https://vite.dev/config/
 export default ({ mode }) => {
-  process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
+  // eslint-disable-next-line no-undef
+  const env = loadEnv(mode, process.cwd());
+
+  const PORT = `${env.VITE_PORT ?? '3000'}`;
 
   return defineConfig({
     plugins: [react()],
@@ -12,7 +15,7 @@ export default ({ mode }) => {
       emptyOutDir: true,
     },
     server: {
-      port: parseInt(process.env.VITE_PORT),
+      port: parseInt(PORT),
     },
   });
 };
