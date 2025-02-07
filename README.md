@@ -33,7 +33,7 @@ El proyecto está estructurado como un monorepo que contiene:
 
 ```bash
 git clone git@github.com:Luan-nee/CondorMotors.git
-cd condor-motors
+cd CondorMotors
 ```
 
 2. Instala las dependencias
@@ -104,7 +104,7 @@ PORT=3000  # Puerto para la API
 ## 🏗️ Estructura del Proyecto
 
 ```sh
-condor-motors/
+CondorMotors/
 ├── client/          # Frontend React
 ├── server/          # Backend Node.js
 ├── package.json     # Configuración del monorepo
