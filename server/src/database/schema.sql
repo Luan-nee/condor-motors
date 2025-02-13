@@ -4,17 +4,24 @@
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  * [Tablas]:
  * sucursales
+ * unidades
  * categorias
  * productos
- * personas
+ * inventarios
  * empleados
+ * personas_naturales
+ * personas_juridicas
  * clientes
- * roles
- * usuarios
+ * roles_cuentas_empleado
+ * cuentas_empleados
  * refresh_tokens
- * ordenes de compra vs proformas de venta
- * facturas
- * boletas
+ * proformas_venta vs ordenes_compra
+ * detalles
+ * metodos_pago
+ * ventas
+ * entradas_inventarios
+ * transferencias_inventarios
+ * facturas? boletas?
  * reservas (pedidos especiales)
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
  * [Comentarios]:
@@ -77,28 +84,10 @@ create table if not exists
   );
 
 create table if not exists
-  personas (
+  empleados (
     id bigint auto_increment,
     nombre varchar(255) not null,
     apellidos varchar(255) not null,
-    fecha_registro timestamp not null default current_timestamp,
-    primary key (id)
-  );
-
-/* 
- * Se está usando esta tabla???
- * quién sabe...
- */
-create table if not exists
-  tipos_documento (
-    id bigint auto_increment,
-    nombre varchar(100) not null unique,
-    primary key (id)
-  );
-
-create table if not exists
-  empleados (
-    id bigint auto_increment,
     /* 
      * ¿Qué otros datos del empleado se necesitan?
      * dni?? (desde el tipo de documento o quizás no)
@@ -111,9 +100,8 @@ create table if not exists
      * foto?
      * rol_empleado (de otra tabla)
      */
-    persona_id bigint not null,
+    fecha_registro timestamp not null default current_timestamp,
     sucursal_id bigint not null,
-    foreign key (persona_id) references personas (id),
     foreign key (sucursal_id) references sucursales (id),
     primary key (id)
   );
@@ -124,6 +112,8 @@ create table if not exists
 create table if not exists
   personas_naturales (
     id bigint auto_increment,
+    nombre varchar(255) not null,
+    apellidos varchar(255) not null,
     fecha_registro timestamp not null default current_timestamp,
     primary key (id)
   );
@@ -131,6 +121,8 @@ create table if not exists
 create table if not exists
   personas_juridicas (
     id bigint auto_increment,
+    ruc varchar(20) not null,
+    razon_social varchar(255) not null,
     fecha_registro timestamp not null default current_timestamp,
     primary key (id)
   );
@@ -149,7 +141,7 @@ create table if not exists
   );
 
 create table if not exists
-  roles_usuario (
+  roles_cuentas_empleado (
     id bigint auto_increment,
     nombre_rol varchar(255) not null unique,
     primary key (id)
@@ -159,16 +151,16 @@ create table if not exists
  * Renombrar esta tabla como cuentas_empleados 
  */
 create table if not exists
-  usuarios (
+  cuentas_empleados (
     id bigint auto_increment,
     usuario varchar(100) not null unique,
     -- correo varchar(255) not null unique,
     clave varchar(255) not null,
     rol_usuario bigint not null,
-    persona_id bigint not null,
+    empleado_id bigint not null,
     fecha_creacion timestamp not null default current_timestamp,
-    foreign key (rol_usuario_id) references roles_usuario (id),
-    foreign key (persona_id) references personas (id),
+    foreign key (rol_usuario_id) references roles_cuentas_empleado (id),
+    foreign key (empleado_id) references empleados (id),
     primary key (id)
   );
 
@@ -224,8 +216,8 @@ create table if not exists
     total decimal(8, 2) not null,
     metodo_pago_id bigint not null,
     fecha_creacion timestamp not null default current_timestamp,
-    -- Debería estar aquí?
-    observaciones varchar(255) not null,
+    -- Las observaciones deberían estar aquí?
+    observaciones varchar(511) not null,
     /* 
      * Clave foránea no obligatoria del comprobante de venta?
      */
@@ -239,12 +231,39 @@ create table if not exists
 /* 
  * tabla de devoluciones???
  */
+-- create table if not exists
+--   movimientos_inventarios (
+--     id bigint auto_increment,
+--     cantidad bigint not null default 1,
+--     fecha_movimiento timestamp not null default current_timestamp,
+--     producto_id bigint not null,
+--     inventario_id bigint not null,
+--     foreign key (producto_id) references productos (id),
+--     foreign key (inventario_id) references inventarios (id),
+--     primary key (id)
+--   );
 create table if not exists
-  movimientos_inventario (
+  entradas_inventarios (
     id bigint auto_increment,
     cantidad bigint not null default 1,
-    producto_id bigint not null,
     fecha_movimiento timestamp not null default current_timestamp,
+    producto_id bigint not null,
+    sucursal_id bigint not null,
     foreign key (producto_id) references productos (id),
+    foreign key (sucursal_id) references sucursales (id),
+    primary key (id)
+  );
+
+create table
+  transferencias_inventarios (
+    id bigint auto_increment,
+    cantidad int not null,
+    fecha_transferencia timestamp not null default current_timestamp,
+    producto_id bigint not null,
+    sucursal_origen_id bigint not null,
+    sucursal_destino_id bigint not null,
+    foreign key (producto_id) references productos (id),
+    foreign key (sucursal_origen_id) references sucursales (id),
+    foreign key (sucursal_destino_id) references sucursales (id),
     primary key (id)
   );
