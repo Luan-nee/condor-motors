@@ -156,10 +156,10 @@ create table if not exists
     usuario varchar(100) not null unique,
     -- correo varchar(255) not null unique,
     clave varchar(255) not null,
-    rol_usuario bigint not null,
+    rol_cuenta_empleado_id bigint not null,
     empleado_id bigint not null,
     fecha_creacion timestamp not null default current_timestamp,
-    foreign key (rol_usuario_id) references roles_cuentas_empleado (id),
+    foreign key (rol_cuenta_empleado_id) references roles_cuentas_empleado (id),
     foreign key (empleado_id) references empleados (id),
     primary key (id)
   );
