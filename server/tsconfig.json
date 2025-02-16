@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES6",
     "module": "Node16",
-    "rootDir": "./src",
+    // "rootDir": "./",
     "moduleResolution": "Node16",
     "resolveJsonModule": true,
     "outDir": "./build",
@@ -11,7 +11,32 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "moduleDetection": "force",
+    // "allowJs": true,
+    "isolatedModules": true,
+    "baseUrl": "./",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+    },
+    "plugins": [
+      {
+        "transform": "typescript-transform-paths"
+      },
+      {
+        "transform": "typescript-transform-paths",
+        "afterDeclarations": true
+      }
+    ],
   },
-  "include": ["src/**/*"]
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true
+  },
+  "include": [
+    "src/**/*",
+    "drizzle.config.ts"
+  ],
 }
