@@ -1,8 +1,8 @@
+import { envs } from '@/config/envs'
 import express from 'express'
 import path from 'node:path'
-import { envs } from './config/envs'
 
-const port = envs.SERVER_PORT
+const { SERVER_PORT: serverPort } = envs
 
 const app = express()
 
@@ -12,6 +12,7 @@ app.get('*', (_, res) => {
   res.sendFile(path.join(process.cwd(), 'client-build', 'index.html'))
 })
 
-app.listen(port, () => {
-  console.log(`Server running on port http://localhost:${port}`)
+app.listen(serverPort, () => {
+  // eslint-disable-next-line no-console
+  console.log(`Server running on port http://localhost:${serverPort}`)
 })
