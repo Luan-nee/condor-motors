@@ -34,6 +34,8 @@
  * facturas? boletas?
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
  * [Comentarios]:
+ * Donde se guarda la configuración de la empresa emisora de la factura o boleta???
+ * Se viene nueva tabla o eso está en el servicio de facturación?
  * El campo `max_dias_sin_reabastecer` de la tabla `productos`
  *    debería ser general o por cada sucursal?
  * `proformas_venta` debería ser una tabla con registros dinámicos
@@ -57,7 +59,7 @@ create table if not exists
   categorias (
     id bigint auto_increment,
     nombre varchar(255) not null unique,
-    descripción varchar(511),
+    descripcion varchar(511),
     primary key (id)
   );
 
@@ -65,7 +67,7 @@ create table if not exists
   marcas (
     id bigint auto_increment,
     nombre varchar(255) not null unique,
-    descripción varchar(511),
+    descripcion varchar(511),
     primary key (id)
   );
 
