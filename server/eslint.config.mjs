@@ -14,7 +14,9 @@ export default [
       ...love.rules,
       'no-magic-numbers': 'off',
       '@typescript-eslint/no-magic-numbers': 'off',
-      'eslint-comments/require-description': 'off'
+      'eslint-comments/require-description': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/no-extraneous-class': 'off'
     }
   }
 ]
