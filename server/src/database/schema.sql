@@ -14,8 +14,7 @@
  * precios_productos
  * inventarios
  * empleados
- * personas_naturales (temporal)
- * personas_juridicas (temporal)
+ * tipos_personas
  * clientes
  * roles_cuentas_empleados
  * cuentas_empleados
@@ -23,9 +22,9 @@
  * roles_permisos
  * refresh_tokens_empleados
  * proformas_venta
- * detalles
  * metodos_pago
  * ventas
+ * detalles
  * descuentos
  * devoluciones
  * entradas_inventarios
@@ -94,9 +93,9 @@ create table if not exists
 create table if not exists
   productos (
     id bigint auto_increment,
+    sku varchar(255) not null unique,
     nombre varchar(255) not null unique,
     descripcion varchar(255) not null,
-    sku varchar(255) not null unique,
     -- Este campo debería ser general o por cada sucursal?
     max_dias_sin_reabastecer int default 30,
     unidad_id bigint not null,
@@ -108,11 +107,12 @@ create table if not exists
     primary key (id)
   );
 
+-- Se requiere esta tabla?
 create table if not exists
   grupos_productos (
     id bigint auto_increment,
     nombre varchar(255) not null,
-    cantidad int not null default 1,
+    cantidad_grupo int not null default 1,
     producto_id bigint not null,
     foreign key (producto_id) references productos (id),
     primary key (id)
@@ -121,7 +121,7 @@ create table if not exists
 create table if not exists
   fotos_productos (
     id bigint auto_increment,
-    ubicacion varchar(1023),
+    ubicacion varchar(1023) not null,
     producto_id bigint,
     grupo_producto_id bigint,
     foreign key (producto_id) references productos (id),
@@ -132,9 +132,9 @@ create table if not exists
 create table if not exists
   precios_productos (
     id bigint auto_increment,
-    base decimal(7, 2) not null,
-    por_mayor decimal(7, 2) not null,
-    liquidacion decimal(7, 2) not null,
+    precio_normal decimal(7, 2) not null,
+    precio_mayorista decimal(7, 2) not null,
+    precio_oferta decimal(7, 2) not null,
     producto_id bigint not null,
     sucursal_id bigint not null,
     foreign key (producto_id) references productos (id),
@@ -159,7 +159,7 @@ create table if not exists
     id bigint auto_increment,
     nombre varchar(255) not null,
     apellidos varchar(255) not null,
-    foto varchar(1023),
+    ubicacion_foto varchar(1023),
     edad tinyint,
     dni varchar(10),
     hora_inicio_jornada time,
@@ -172,37 +172,26 @@ create table if not exists
     primary key (id)
   );
 
-/* 
- * Aún no estoy 100% seguro sobre estas tablas
- */
+-- Personas naturales y jurídicas
 create table if not exists
-  personas_naturales (
-    id bigint auto_increment,
-    dni varchar(8) not null,
-    nombres_apellidos varchar(511) not null,
-    fecha_registro timestamp not null default current_timestamp,
+  tipos_personas (
+    id int auto_increment,
+    nombre varchar(255) not null,
     primary key (id)
   );
 
-create table if not exists
-  personas_juridicas (
-    id bigint auto_increment,
-    ruc varchar(20) not null,
-    razon_social varchar(255) not null,
-    fecha_registro timestamp not null default current_timestamp,
-    primary key (id)
-  );
-
--- son personas naturales o jurídicas?
 create table if not exists
   clientes (
     id bigint auto_increment,
+    nombres_apellidos varchar(511),
+    dni varchar(8),
+    razon_social varchar(255),
+    ruc varchar(20),
     telefono varchar(20),
     correo varchar(255),
-    persona_natural_id bigint,
-    persona_juridica_id bigint,
-    foreign key (persona_natural_id) references personas_naturales (id),
-    foreign key (persona_juridica_id) references personas_juridicas (id),
+    fecha_registro timestamp not null default current_timestamp,
+    tipo_persona_id int not null,
+    foreign key (tipo_persona_id) references tipos_personas (id),
     primary key (id)
   );
 
@@ -246,7 +235,7 @@ create table if not exists
   refresh_tokens_empleados (
     id bigint auto_increment,
     token varchar(255) not null,
-    secreto varchar(511) not null,
+    secret varchar(511) not null,
     fecha_creacion timestamp not null default current_timestamp,
     cuenta_empleado_id bigint not null,
     foreign key (cuenta_empleado_id) references cuentas_empleados (id),
@@ -257,8 +246,9 @@ create table if not exists
 create table if not exists
   proformas_venta (
     id bigint auto_increment,
-    -- total decimal(8, 2) not null,
+    nombre varchar(255),
     fecha_creacion timestamp not null default current_timestamp,
+    detalles jsonb not null,
     empleado_id bigint not null,
     sucursal_id bigint not null,
     foreign key (empleado_id) references empleados (id),
@@ -266,25 +256,6 @@ create table if not exists
     primary key (id)
   );
 
-create table if not exists
-  detalles (
-    id bigint auto_increment,
-    cantidad int not null default 1,
-    subtotal decimal(7, 2) not null,
-    producto_id bigint,
-    grupo_producto_id bigint,
-    proforma_venta_id bigint not null,
-    foreign key (producto_id) references productos (id),
-    foreign key (grupo_producto_id) references grupos_productos (id),
-    foreign key (proforma_venta_id) references proformas_venta (id),
-    primary key (id)
-  );
-
-/*
- * Quizás una única tabla documentos que contenga los datos de una boleta o factura
- * agregar campo observaciones en dicha tabla
- */
--- Es esta tabla realmente necesaria?
 create table if not exists
   metodos_pago (
     id bigint auto_increment,
@@ -300,17 +271,28 @@ create table if not exists
     total decimal(8, 2) not null,
     fecha_creacion timestamp not null default current_timestamp,
     observaciones varchar(511) not null,
-    -- documento_id bigint,
-    proforma_venta_id bigint not null unique,
     metodo_pago_id bigint not null,
     empleado_id bigint not null,
     cliente_id bigint not null,
     sucursal_id bigint not null,
-    foreign key (proforma_venta_id) references proformas_venta (id),
     foreign key (metodo_pago_id) references metodos_pago (id),
     foreign key (empleado_id) references empleados (id),
     foreign key (cliente_id) references clientes (id),
     foreign key (sucursal_id) references sucursales (id),
+    primary key (id)
+  );
+
+create table if not exists
+  detalles (
+    id bigint auto_increment,
+    cantidad int not null default 1,
+    subtotal decimal(7, 2) not null,
+    producto_id bigint,
+    grupo_producto_id bigint,
+    venta_id bigint not null,
+    foreign key (producto_id) references productos (id),
+    foreign key (grupo_producto_id) references grupos_productos (id),
+    foreign key (venta_id) references ventas (id),
     primary key (id)
   );
 
