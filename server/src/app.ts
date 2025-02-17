@@ -1,18 +1,17 @@
-import { envs } from '@/config/envs'
-import express from 'express'
-import path from 'node:path'
+import { AppRoutes } from '@/presentation/routes'
+import { envs } from './config/envs'
+import { Server } from './presentation/server'
 
-const { SERVER_PORT: serverPort } = envs
+const main = () => {
+  const { SERVER_PORT: port } = envs
+  const { routes } = AppRoutes
 
-const app = express()
+  const server = new Server({
+    port,
+    routes
+  })
 
-app.use(express.static(path.join(process.cwd(), 'client-build')))
+  server.start()
+}
 
-app.get('*', (_, res) => {
-  res.sendFile(path.join(process.cwd(), 'client-build', 'index.html'))
-})
-
-app.listen(serverPort, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Server running on port http://localhost:${serverPort}`)
-})
+main()
