@@ -17,6 +17,9 @@
     "db:generate": "npm run db:generate --workspace server",
     "db:migrate": "npm run db:migrate --workspace server",
     "db:push": "npm run db:push --workspace server",
+    "db:seed": "npm run db:seed --workspace server",
+    "db:reset": "npm run db:reset --workspace server",
+    "db:populate": "npm run db:populate --workspace server",
     "build": "npm run build --workspace client && npm run build --workspace server",
     "start": "npm run start --workspace server"
   },

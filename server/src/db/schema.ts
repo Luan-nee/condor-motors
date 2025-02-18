@@ -28,13 +28,12 @@ export const marcasTable = pgTable('marcas', {
   descripcion: text('descripcion')
 })
 
-export const sucursalesTable = pgTable('sucusales', {
+export const sucursalesTable = pgTable('sucursales', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
   ubicacion: text('ubicacion'),
   sucursalCentral: boolean('sucursal_central').notNull(),
   fechaRegistro: timestamp('fecha_registro', {
-    withTimezone: true,
     mode: 'date'
   })
     .notNull()
@@ -104,7 +103,6 @@ export const inventariosTable = pgTable('inventarios', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   stock: integer('stock').notNull().default(0),
   fechaStockReabastecido: timestamp('fecha_stock_reabastecido', {
-    withTimezone: true,
     mode: 'date'
   })
     .notNull()
@@ -119,17 +117,13 @@ export const inventariosTable = pgTable('inventarios', {
 
 export const empleadosTable = pgTable('empleados', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull().unique(),
-  apellidos: text('apellidos').notNull().unique(),
+  nombre: text('nombre').notNull(),
+  apellidos: text('apellidos').notNull(),
   ubicacionFoto: text('ubicacion_foto'),
   edad: integer('edad'),
   dni: text('dni'),
-  horaInicioJornada: time('hora_inicio_jornada', {
-    withTimezone: true
-  }),
-  horaFinJornada: time('hora_fin_jornada', {
-    withTimezone: true
-  }),
+  horaInicioJornada: time('hora_inicio_jornada'),
+  horaFinJornada: time('hora_fin_jornada'),
   fechaContratacion: date('', {
     mode: 'date'
   }),
@@ -138,7 +132,6 @@ export const empleadosTable = pgTable('empleados', {
     scale: 2
   }),
   fechaRegistro: timestamp('fecha_registro', {
-    withTimezone: true,
     mode: 'date'
   })
     .notNull()
@@ -162,7 +155,6 @@ export const clientesTable = pgTable('clientes', {
   telefono: text(''),
   correo: text(''),
   fechaRegistro: timestamp('fecha_registro', {
-    withTimezone: true,
     mode: 'date'
   })
     .notNull()
@@ -182,7 +174,6 @@ export const cuentasEmpleadosTable = pgTable('cuentas_empleados', {
   usuario: text('usuario').notNull().unique(),
   clave: text('clave').notNull(),
   fechaRegistro: timestamp('fecha_registro', {
-    withTimezone: true,
     mode: 'date'
   })
     .notNull()
@@ -218,7 +209,6 @@ export const refreshTokensEmpleadosTable = pgTable('refresh_tokens_empleados', {
   token: text('token').notNull().unique(),
   secret: text('secret').notNull(),
   fechaCreacion: timestamp('fecha_creacion', {
-    withTimezone: true,
     mode: 'date'
   })
     .notNull()
@@ -232,7 +222,6 @@ export const proformasVentaTable = pgTable('proformas_venta', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre'),
   fechaCreacion: timestamp('fecha_creacion', {
-    withTimezone: true,
     mode: 'date'
   })
     .notNull()
@@ -264,7 +253,6 @@ export const ventasTable = pgTable('ventas', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   total: numeric('total', { precision: 8, scale: 2 }).notNull(),
   fechaCreacion: timestamp('fecha_creacion', {
-    withTimezone: true,
     mode: 'date'
   })
     .notNull()
@@ -310,7 +298,6 @@ export const devolucionesTable = pgTable('devoluciones', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   motivo: text('motivo').notNull(),
   fechaDevolucion: timestamp('fecha_devolucion', {
-    withTimezone: true,
     mode: 'date'
   })
     .notNull()
@@ -327,7 +314,6 @@ export const entradasInventariosTable = pgTable('entradas_inventarios', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   cantidad: integer('cantidad').notNull().default(1),
   fechaMovimiento: timestamp('fecha_movimiento', {
-    withTimezone: true,
     mode: 'date'
   })
     .notNull()
@@ -355,7 +341,6 @@ export const transferenciasInventariosTable = pgTable(
     id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     cantidad: integer('cantidad').notNull().default(1),
     fechaTransferencia: timestamp('fecha_transferencia', {
-      withTimezone: true,
       mode: 'date'
     })
       .notNull()
@@ -384,7 +369,6 @@ export const reservasProductosTable = pgTable('reservas_productos', {
     scale: 2
   }).notNull(),
   fechaReserva: timestamp('fecha_reserva', {
-    withTimezone: true,
     mode: 'date'
   })
     .notNull()

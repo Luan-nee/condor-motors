@@ -1,3 +1,4 @@
+import { ErrorMiddleware } from '@presentation/middlewares/error.middleware'
 import express, { type Router } from 'express'
 
 interface ServerOptions {
@@ -23,6 +24,8 @@ export class Server {
     this.app.disable('x-powered-by')
 
     this.app.use(this.routes)
+
+    this.app.use(ErrorMiddleware.requests)
 
     this.app.listen(this.port, () => {
       // eslint-disable-next-line no-console

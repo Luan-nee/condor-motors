@@ -1,5 +1,5 @@
 {
-  "id": "33fb6398-67bd-4697-a651-fe2be4c7f7b3",
+  "id": "07c6959f-3c2e-4888-8675-21faebed24ba",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -113,7 +113,7 @@
         },
         "fecha_registro": {
           "name": "fecha_registro",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -182,7 +182,7 @@
         },
         "fecha_registro": {
           "name": "fecha_registro",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -435,7 +435,7 @@
         },
         "fecha_devolucion": {
           "name": "fecha_devolucion",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -468,10 +468,10 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "devoluciones_sucursal_id_sucusales_id_fk": {
-          "name": "devoluciones_sucursal_id_sucusales_id_fk",
+        "devoluciones_sucursal_id_sucursales_id_fk": {
+          "name": "devoluciones_sucursal_id_sucursales_id_fk",
           "tableFrom": "devoluciones",
-          "tableTo": "sucusales",
+          "tableTo": "sucursales",
           "columnsFrom": [
             "sucursal_id"
           ],
@@ -541,13 +541,13 @@
         },
         "hora_inicio_jornada": {
           "name": "hora_inicio_jornada",
-          "type": "time with time zone",
+          "type": "time",
           "primaryKey": false,
           "notNull": false
         },
         "hora_fin_jornada": {
           "name": "hora_fin_jornada",
-          "type": "time with time zone",
+          "type": "time",
           "primaryKey": false,
           "notNull": false
         },
@@ -565,7 +565,7 @@
         },
         "fecha_registro": {
           "name": "fecha_registro",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -579,10 +579,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "empleados_sucursal_id_sucusales_id_fk": {
-          "name": "empleados_sucursal_id_sucusales_id_fk",
+        "empleados_sucursal_id_sucursales_id_fk": {
+          "name": "empleados_sucursal_id_sucursales_id_fk",
           "tableFrom": "empleados",
-          "tableTo": "sucusales",
+          "tableTo": "sucursales",
           "columnsFrom": [
             "sucursal_id"
           ],
@@ -594,22 +594,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "empleados_nombre_unique": {
-          "name": "empleados_nombre_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "nombre"
-          ]
-        },
-        "empleados_apellidos_unique": {
-          "name": "empleados_apellidos_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "apellidos"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -644,7 +629,7 @@
         },
         "fecha_movimiento": {
           "name": "fecha_movimiento",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -677,10 +662,10 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "entradas_inventarios_sucursal_id_sucusales_id_fk": {
-          "name": "entradas_inventarios_sucursal_id_sucusales_id_fk",
+        "entradas_inventarios_sucursal_id_sucursales_id_fk": {
+          "name": "entradas_inventarios_sucursal_id_sucursales_id_fk",
           "tableFrom": "entradas_inventarios",
-          "tableTo": "sucusales",
+          "tableTo": "sucursales",
           "columnsFrom": [
             "sucursal_id"
           ],
@@ -693,6 +678,63 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.estados_transferencias_inventarios": {
+      "name": "estados_transferencias_inventarios",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "estados_transferencias_inventarios_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "codigo": {
+          "name": "codigo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "estados_transferencias_inventarios_nombre_unique": {
+          "name": "estados_transferencias_inventarios_nombre_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "nombre"
+          ]
+        },
+        "estados_transferencias_inventarios_codigo_unique": {
+          "name": "estados_transferencias_inventarios_codigo_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "codigo"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -873,7 +915,7 @@
         },
         "fecha_stock_reabastecido": {
           "name": "fecha_stock_reabastecido",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -906,10 +948,10 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "inventarios_sucursal_id_sucusales_id_fk": {
-          "name": "inventarios_sucursal_id_sucusales_id_fk",
+        "inventarios_sucursal_id_sucursales_id_fk": {
+          "name": "inventarios_sucursal_id_sucursales_id_fk",
           "tableFrom": "inventarios",
-          "tableTo": "sucusales",
+          "tableTo": "sucursales",
           "columnsFrom": [
             "sucursal_id"
           ],
@@ -1081,10 +1123,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "notificaciones_sucursal_id_sucusales_id_fk": {
-          "name": "notificaciones_sucursal_id_sucusales_id_fk",
+        "notificaciones_sucursal_id_sucursales_id_fk": {
+          "name": "notificaciones_sucursal_id_sucursales_id_fk",
           "tableFrom": "notificaciones",
-          "tableTo": "sucusales",
+          "tableTo": "sucursales",
           "columnsFrom": [
             "sucursal_id"
           ],
@@ -1231,10 +1273,10 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "precios_productos_sucursal_id_sucusales_id_fk": {
-          "name": "precios_productos_sucursal_id_sucusales_id_fk",
+        "precios_productos_sucursal_id_sucursales_id_fk": {
+          "name": "precios_productos_sucursal_id_sucursales_id_fk",
           "tableFrom": "precios_productos",
-          "tableTo": "sucusales",
+          "tableTo": "sucursales",
           "columnsFrom": [
             "sucursal_id"
           ],
@@ -1408,7 +1450,7 @@
         },
         "fecha_creacion": {
           "name": "fecha_creacion",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -1447,10 +1489,10 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "proformas_venta_sucursal_id_sucusales_id_fk": {
-          "name": "proformas_venta_sucursal_id_sucusales_id_fk",
+        "proformas_venta_sucursal_id_sucursales_id_fk": {
+          "name": "proformas_venta_sucursal_id_sucursales_id_fk",
           "tableFrom": "proformas_venta",
-          "tableTo": "sucusales",
+          "tableTo": "sucursales",
           "columnsFrom": [
             "sucursal_id"
           ],
@@ -1502,7 +1544,7 @@
         },
         "fecha_creacion": {
           "name": "fecha_creacion",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -1586,7 +1628,7 @@
         },
         "fecha_reserva": {
           "name": "fecha_reserva",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -1619,10 +1661,10 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "reservas_productos_sucursal_id_sucusales_id_fk": {
-          "name": "reservas_productos_sucursal_id_sucusales_id_fk",
+        "reservas_productos_sucursal_id_sucursales_id_fk": {
+          "name": "reservas_productos_sucursal_id_sucursales_id_fk",
           "tableFrom": "reservas_productos",
-          "tableTo": "sucusales",
+          "tableTo": "sucursales",
           "columnsFrom": [
             "sucursal_id"
           ],
@@ -1743,8 +1785,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.sucusales": {
-      "name": "sucusales",
+    "public.sucursales": {
+      "name": "sucursales",
       "schema": "",
       "columns": {
         "id": {
@@ -1754,7 +1796,7 @@
           "notNull": true,
           "identity": {
             "type": "always",
-            "name": "sucusales_id_seq",
+            "name": "sucursales_id_seq",
             "schema": "public",
             "increment": "1",
             "startWith": "1",
@@ -1784,7 +1826,7 @@
         },
         "fecha_registro": {
           "name": "fecha_registro",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -1794,8 +1836,8 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "sucusales_nombre_unique": {
-          "name": "sucusales_nombre_unique",
+        "sucursales_nombre_unique": {
+          "name": "sucursales_nombre_unique",
           "nullsNotDistinct": false,
           "columns": [
             "nombre"
@@ -1880,10 +1922,16 @@
         },
         "fecha_transferencia": {
           "name": "fecha_transferencia",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "estado_transferencia_id": {
+          "name": "estado_transferencia_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
         },
         "producto_id": {
           "name": "producto_id",
@@ -1906,6 +1954,19 @@
       },
       "indexes": {},
       "foreignKeys": {
+        "transferencias_inventarios_estado_transferencia_id_estados_transferencias_inventarios_id_fk": {
+          "name": "transferencias_inventarios_estado_transferencia_id_estados_transferencias_inventarios_id_fk",
+          "tableFrom": "transferencias_inventarios",
+          "tableTo": "estados_transferencias_inventarios",
+          "columnsFrom": [
+            "estado_transferencia_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "transferencias_inventarios_producto_id_productos_id_fk": {
           "name": "transferencias_inventarios_producto_id_productos_id_fk",
           "tableFrom": "transferencias_inventarios",
@@ -1919,10 +1980,10 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "transferencias_inventarios_sucursal_origen_id_sucusales_id_fk": {
-          "name": "transferencias_inventarios_sucursal_origen_id_sucusales_id_fk",
+        "transferencias_inventarios_sucursal_origen_id_sucursales_id_fk": {
+          "name": "transferencias_inventarios_sucursal_origen_id_sucursales_id_fk",
           "tableFrom": "transferencias_inventarios",
-          "tableTo": "sucusales",
+          "tableTo": "sucursales",
           "columnsFrom": [
             "sucursal_origen_id"
           ],
@@ -1932,10 +1993,10 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "transferencias_inventarios_sucursal_destino_id_sucusales_id_fk": {
-          "name": "transferencias_inventarios_sucursal_destino_id_sucusales_id_fk",
+        "transferencias_inventarios_sucursal_destino_id_sucursales_id_fk": {
+          "name": "transferencias_inventarios_sucursal_destino_id_sucursales_id_fk",
           "tableFrom": "transferencias_inventarios",
-          "tableTo": "sucusales",
+          "tableTo": "sucursales",
           "columnsFrom": [
             "sucursal_destino_id"
           ],
@@ -2025,7 +2086,7 @@
         },
         "fecha_creacion": {
           "name": "fecha_creacion",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -2102,10 +2163,10 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "ventas_sucursal_id_sucusales_id_fk": {
-          "name": "ventas_sucursal_id_sucusales_id_fk",
+        "ventas_sucursal_id_sucursales_id_fk": {
+          "name": "ventas_sucursal_id_sucursales_id_fk",
           "tableFrom": "ventas",
-          "tableTo": "sucusales",
+          "tableTo": "sucursales",
           "columnsFrom": [
             "sucursal_id"
           ],

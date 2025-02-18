@@ -1,5 +1,6 @@
-import { ClientAppRouter } from '@/presentation/client-app/router'
-import { LoggerMiddleware } from '@/presentation/middlewares/logger.middleware'
+import { ApiRoutes } from '@presentation/api.routes'
+// import { ClientAppRouter } from '@presentation/client-app/router'
+import { LoggerMiddleware } from '@presentation/middlewares/logger.middleware'
 import { type Response, Router } from 'express'
 
 export class AppRoutes {
@@ -8,7 +9,9 @@ export class AppRoutes {
 
     router.use(LoggerMiddleware.requests)
 
-    router.use(ClientAppRouter.routes)
+    router.use('/api', ApiRoutes.routes)
+
+    // router.use(ClientAppRouter.routes)
 
     router.use((_req, res: Response) => {
       res.status(404).contentType('text/plain; charset=utf-8').send('Not Found')

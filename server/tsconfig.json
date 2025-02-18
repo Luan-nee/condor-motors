@@ -20,6 +20,15 @@
       "@/*": [
         "./src/*"
       ],
+      "@db/*": [
+        "./src/db/*"
+      ],
+      "@domain/*": [
+        "./src/domain/*"
+      ],
+      "@presentation/*": [
+        "./src/presentation/*"
+      ]
     },
     "plugins": [
       {
