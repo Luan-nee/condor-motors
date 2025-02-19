@@ -45,7 +45,7 @@ export class LoginUser {
 
     const payload = AuthPayloadMapper.authPayloadFromObject(user)
 
-    const token = this.tokenAuthenticator.generateToken(payload, '2h')
+    const token = this.tokenAuthenticator.generateAccessToken(payload)
 
     if (typeof token !== 'string') {
       throw CustomError.internalServer('Error generating token')
