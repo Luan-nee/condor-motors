@@ -1,5 +1,5 @@
-import { CustomError } from '@/domain/errors/custom.error'
-import { handleError } from '@/domain/errors/handle.error'
+import { CustomError } from '@domain/errors/custom.error'
+import { handleError } from '@domain/errors/handle.error'
 import type { NextFunction, Request, Response } from 'express'
 
 export class ErrorMiddleware {

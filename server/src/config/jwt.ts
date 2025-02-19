@@ -1,5 +1,5 @@
+import { envs } from '@/config/envs'
 import { sign, type SignOptions } from 'jsonwebtoken'
-import { envs } from './envs'
 
 const { JWT_SEED } = envs
 

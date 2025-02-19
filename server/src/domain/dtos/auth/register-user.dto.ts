@@ -1,4 +1,4 @@
-import { registerUserValidator } from '@/domain/validators/auth/register-user.validator'
+import { registerUserValidator } from '@domain/validators/auth/register-user.validator'
 
 export class RegisterUserDto {
   public usuario: string

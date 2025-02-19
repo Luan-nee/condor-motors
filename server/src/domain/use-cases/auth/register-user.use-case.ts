@@ -1,9 +1,9 @@
-import { db } from '@/db/connection'
-import { cuentasEmpleadosTable, empleadosTable } from '@/db/schema'
-import type { RegisterUserDto } from '@/domain/dtos/auth/register-user.dto'
-import { CustomError } from '@/domain/errors/custom.error'
-import type { Encryptor, TokenAuthenticator } from '@/domain/interfaces'
-import { AuthPayloadMapper } from '@/domain/mappers/auth-payload.mapper'
+import { db } from '@db/connection'
+import { cuentasEmpleadosTable, empleadosTable } from '@db/schema'
+import type { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
+import { CustomError } from '@domain/errors/custom.error'
+import type { Encryptor, TokenAuthenticator } from '@domain/interfaces'
+import { AuthPayloadMapper } from '@domain/mappers/auth-payload.mapper'
 import { and, eq, notExists, sql } from 'drizzle-orm'
 
 export class RegisterUser {

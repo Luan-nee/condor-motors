@@ -1,9 +1,9 @@
-import { LoginUserDto } from '@/domain/dtos/auth/login-user.dto'
-import { handleError } from '@/domain/errors/handle.error'
-import { LoginUser } from '@/domain/use-cases/auth/login-user.use-case'
-import { RegisterUser } from '@/domain/use-cases/auth/register-user.use-case'
+import { LoginUserDto } from '@domain/dtos/auth/login-user.dto'
 import { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
+import { handleError } from '@domain/errors/handle.error'
 import type { Encryptor, TokenAuthenticator } from '@domain/interfaces'
+import { LoginUser } from '@domain/use-cases/auth/login-user.use-case'
+import { RegisterUser } from '@domain/use-cases/auth/register-user.use-case'
 import type { Request, Response } from 'express'
 
 export class AuthController {

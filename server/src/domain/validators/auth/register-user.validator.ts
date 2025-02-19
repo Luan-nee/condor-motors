@@ -1,5 +1,5 @@
+import { userSchema } from '@domain/validators/auth/user.validator'
 import { z } from 'zod'
-import { userSchema } from './user.validator'
 
 const RegisterUserSchema = z.object({
   usuario: userSchema.usuario,
