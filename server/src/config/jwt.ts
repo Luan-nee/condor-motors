@@ -9,21 +9,26 @@ import type {
 import { randomBytes } from 'crypto'
 import { decode, sign, verify } from 'jsonwebtoken'
 
-const { JWT_SEED } = envs
+const { JWT_SEED, REFRESH_TOKEN_DURATION, ACCESS_TOKEN_DURATION } = envs
 
 export class JwtAdapter {
   static generateAccessToken: generateAccessTokenType = ({
     payload,
-    duration = '30m'
-  }) => sign(payload, JWT_SEED, { expiresIn: duration })
+    duration
+  }) => {
+    const tokenDuration = duration ?? ACCESS_TOKEN_DURATION
+    return sign(payload, JWT_SEED, { expiresIn: tokenDuration })
+  }
 
   static generateRefreshToken: generateRefreshTokenType = ({
     payload,
-    duration = '7d',
+    duration,
     secret
   }) => {
     const privateSecret = secret ?? this.randomSecret()
-    const token = sign(payload, privateSecret, { expiresIn: duration })
+    const tokenDuration = duration ?? REFRESH_TOKEN_DURATION
+
+    const token = sign(payload, privateSecret, { expiresIn: tokenDuration })
 
     return {
       secret: privateSecret,

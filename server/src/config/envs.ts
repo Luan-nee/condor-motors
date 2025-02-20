@@ -5,5 +5,11 @@ export const envs = {
   SERVER_PORT: get('SERVER_PORT').default(3000).asPortNumber(),
   DATABASE_URL: get('DATABASE_URL').required().asString(),
   JWT_SEED: get('JWT_SEED').required().asString(),
-  NODE_ENV: get('NODE_ENV').default('development').asString()
+  NODE_ENV: get('NODE_ENV').default('development').asString(),
+  REFRESH_TOKEN_DURATION: get('REFRESH_TOKEN_DURATION')
+    .default(60 * 60 * 24 * 7)
+    .asIntPositive(),
+  ACCESS_TOKEN_DURATION: get('ACCESS_TOKEN_DURATION')
+    .default(60 * 30)
+    .asIntPositive()
 }
