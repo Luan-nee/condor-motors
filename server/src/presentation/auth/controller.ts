@@ -36,7 +36,9 @@ export class AuthController {
     const [error, loginUserDto] = LoginUserDto.create(req.body)
 
     if (error !== undefined || loginUserDto === undefined) {
-      res.status(400).json({ error: JSON.parse(error ?? '') })
+      res
+        .status(400)
+        .json({ error: 'Nombre de usuario o contraseña incorrectos' })
       return
     }
 

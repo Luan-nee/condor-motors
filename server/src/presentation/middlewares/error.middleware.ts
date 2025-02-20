@@ -4,23 +4,21 @@ import type { NextFunction, Request, Response } from 'express'
 
 export class ErrorMiddleware {
   static requests = (
-    err: Error,
+    error: Error,
     _req: Request,
     res: Response,
     _next: NextFunction
   ) => {
     if (
-      err instanceof SyntaxError &&
-      'body' in err &&
-      err.message.includes('JSON')
+      error instanceof SyntaxError &&
+      'body' in error &&
+      error.message.includes('JSON')
     ) {
-      const errorMessage = 'Invalid JSON format'
-      const jsonError = new CustomError(400, errorMessage)
-
+      const jsonError = new CustomError(400, 'Invalid JSON format')
       handleError(jsonError, res)
       return
     }
 
-    handleError(err, res)
+    handleError(error, res)
   }
 }

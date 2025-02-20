@@ -47,7 +47,9 @@ export class LoginUser {
       typeof refreshToken.token !== 'string' ||
       typeof accessToken !== 'string'
     ) {
-      throw CustomError.internalServer('Error generating token')
+      throw CustomError.internalServer(
+        `Error generating token for user with id: ${payload.id} `
+      )
     }
     return {
       accessToken,
