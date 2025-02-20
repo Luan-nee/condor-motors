@@ -1,11 +1,9 @@
-import { envs } from '@/config/envs'
+import { envs, isProduction } from '@/config/envs'
 import * as schema from '@db/schema'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool, type PoolConfig } from 'pg'
 
-const { DATABASE_URL: databaseUrl, NODE_ENV: nodeEnv } = envs
-
-const isProduction = nodeEnv === 'production'
+const { DATABASE_URL: databaseUrl } = envs
 
 const dbConfig: PoolConfig = {
   connectionString: databaseUrl,

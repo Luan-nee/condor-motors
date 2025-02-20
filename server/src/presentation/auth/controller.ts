@@ -1,3 +1,6 @@
+import { isProduction } from '@/config/envs'
+import { RefreshTokenCookieDto } from '@/domain/dtos/auth/refresh-token-cookie.dto'
+import { RefreshToken } from '@/domain/use-cases/auth/refresh-token.use-case'
 import type { Encryptor, TokenAuthenticator } from '@/interfaces'
 import { LoginUserDto } from '@domain/dtos/auth/login-user.dto'
 import { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
@@ -18,6 +21,7 @@ export class AuthController {
       res.status(400).json({ error: JSON.parse(error ?? '') })
       return
     }
+
     const registerUser = new RegisterUser(
       this.tokenAuthenticator,
       this.encryptor
@@ -26,7 +30,14 @@ export class AuthController {
     try {
       const user = await registerUser.execute(registerUserDto)
 
-      res.status(200).json(user)
+      res
+        .status(200)
+        .cookie('refresh_token', user.refreshToken, {
+          httpOnly: true,
+          sameSite: 'strict'
+        })
+        .header('Authorization', user.accessToken)
+        .json(user.data)
     } catch (error) {
       handleError(error, res)
     }
@@ -34,7 +45,6 @@ export class AuthController {
 
   loginUser = async (req: Request, res: Response) => {
     const [error, loginUserDto] = LoginUserDto.create(req.body)
-
     if (error !== undefined || loginUserDto === undefined) {
       res
         .status(400)
@@ -47,7 +57,39 @@ export class AuthController {
     try {
       const user = await loginUser.execute(loginUserDto)
 
-      res.status(200).json(user)
+      res
+        .status(200)
+        .cookie('refresh_token', user.refreshToken, {
+          httpOnly: true,
+          sameSite: 'strict',
+          secure: isProduction
+        })
+        .header('Authorization', 'Bearer ' + user.accessToken)
+        .json(user.data)
+    } catch (error) {
+      handleError(error, res)
+    }
+  }
+
+  refreshToken = async (req: Request, res: Response) => {
+    const [error, refreshTokenCookieDto] = RefreshTokenCookieDto.create(
+      req.cookies
+    )
+
+    if (error !== undefined || refreshTokenCookieDto === undefined) {
+      res.status(401).json({ error })
+      return
+    }
+
+    const refreshToken = new RefreshToken(this.tokenAuthenticator)
+
+    try {
+      const user = await refreshToken.execute(refreshTokenCookieDto)
+
+      res
+        .status(200)
+        .header('Authorization', 'Bearer ' + user.accessToken)
+        .json(user.data)
     } catch (error) {
       handleError(error, res)
     }

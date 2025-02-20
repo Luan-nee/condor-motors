@@ -110,7 +110,7 @@ export class RegisterUser {
     return {
       accessToken,
       refreshToken,
-      user: mappedUser
+      data: mappedUser
     }
   }
 }

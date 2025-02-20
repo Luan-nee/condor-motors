@@ -1,5 +1,7 @@
 import { ErrorMiddleware } from '@presentation/middlewares/error.middleware'
 import express, { type Router } from 'express'
+import { CookieMiddleware } from './middlewares/cookie-parser.middleware'
+import { LoggerMiddleware } from './middlewares/logger.middleware'
 
 interface ServerOptions {
   port?: number
@@ -20,8 +22,9 @@ export class Server {
 
   start() {
     this.app.use(express.json())
-
     this.app.disable('x-powered-by')
+    this.app.use(CookieMiddleware.requests)
+    this.app.use(LoggerMiddleware.requests)
 
     this.app.use(this.routes)
 

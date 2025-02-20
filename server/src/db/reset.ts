@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { envs } from '@/config/envs'
+import { envs, isProduction } from '@/config/envs'
 import { db } from '@db/connection'
 import * as schema from '@db/schema'
 import { reset } from 'drizzle-seed'
@@ -17,7 +17,7 @@ const resetDatabase = async () => {
 
 const { NODE_ENV: nodeEnv } = envs
 
-if (nodeEnv !== 'production') {
+if (!isProduction) {
   resetDatabase()
     .then(() => {
       exit()

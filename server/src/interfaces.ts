@@ -2,13 +2,15 @@ import type {
   decodeType,
   generateAccessTokenType,
   generateRefreshTokenType,
-  randomSecretType
+  randomSecretType,
+  verifyType
 } from '@/config/types'
 
 export interface TokenAuthenticator {
   generateAccessToken: generateAccessTokenType
   generateRefreshToken: generateRefreshTokenType
   decode: decodeType
+  verify: verifyType
   randomSecret: randomSecretType
 }
 

@@ -1,15 +1,21 @@
 import { ApiRoutes } from '@presentation/api.routes'
 // import { ClientAppRouter } from '@presentation/client-app/router'
-import { LoggerMiddleware } from '@presentation/middlewares/logger.middleware'
-import { type Response, Router } from 'express'
+import { type Request, type Response, Router } from 'express'
+import { AuthMiddleware } from './middlewares/auth.middleware'
 
 export class AppRoutes {
   static get routes() {
     const router = Router()
 
-    router.use(LoggerMiddleware.requests)
-
     router.use('/api', ApiRoutes.routes)
+
+    router.get(
+      '/protected',
+      AuthMiddleware.requests,
+      (_req: Request, res: Response) => {
+        res.status(200).json('You have access to this protected route :D')
+      }
+    )
 
     // router.use(ClientAppRouter.routes)
 

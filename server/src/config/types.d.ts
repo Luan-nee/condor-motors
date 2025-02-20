@@ -1,27 +1,36 @@
-import type { DecodeOptions, JwtPayload, SignOptions } from 'jsonwebtoken'
+import type {
+  DecodeOptions,
+  Jwt,
+  JwtPayload,
+  SignOptions,
+  VerifyOptions
+} from 'jsonwebtoken'
 
 type duration = SignOptions['expiresIn']
 
-interface generateAccessTokenArgs {
+export type generateAccessTokenType = (args: {
   payload: object
   duration?: duration
-}
+}) => string
 
-interface generateRefreshTokenArgs {
+export type generateRefreshTokenType = (args: {
   payload: object
   duration?: duration
   secret?: string
-}
-
-interface decodeArgs {
-  token: string
-  options?: DecodeOptions
-}
-
-export type generateAccessTokenType = (args: generateAccessTokenArgs) => string
-export type generateRefreshTokenType = (args: generateRefreshTokenArgs) => {
+}) => {
   secret: string
   token: string
 }
-export type decodeType = (args: decodeArgs) => string | JwtPayload | null
+
+export type decodeType = (args: {
+  token: string
+  options?: DecodeOptions
+}) => string | JwtPayload | null
+
+export type verifyType = (args: {
+  token: string
+  options?: VerifyOptions
+  secret?: string
+}) => string | JwtPayload | Jwt
+
 export type randomSecretType = () => string

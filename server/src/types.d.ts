@@ -1,7 +1,5 @@
 interface AuthPayload {
   id: number
-  rolCuentaEmpleadoId: number
-  empleadoId: number
 }
 
 interface UserEntity {
@@ -15,7 +13,7 @@ interface UserEntity {
 interface UserEntityWithTokens {
   accessToken: string
   refreshToken: string
-  user: UserEntity
+  data: UserEntity
 }
 
 type ObjectAny = Record<string, any>

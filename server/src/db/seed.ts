@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { envs } from '@/config/envs'
+import { envs, isProduction } from '@/config/envs'
 import { db } from '@db/connection'
 import * as schema from '@db/schema'
 import { seed } from 'drizzle-seed'
@@ -49,7 +49,7 @@ const seedDatabase = async () => {
 
 const { NODE_ENV: nodeEnv } = envs
 
-if (nodeEnv !== 'production') {
+if (!isProduction) {
   seedDatabase()
     .then(() => {
       exit()

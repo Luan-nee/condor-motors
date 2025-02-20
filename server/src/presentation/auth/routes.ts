@@ -13,6 +13,8 @@ export class AuthRoutes {
 
     router.post('/login', authController.loginUser)
 
+    router.post('/refresh', authController.refreshToken)
+
     return router
   }
 }

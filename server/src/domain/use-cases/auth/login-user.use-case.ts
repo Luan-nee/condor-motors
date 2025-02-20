@@ -19,9 +19,8 @@ export class LoginUser {
       .from(cuentasEmpleadosTable)
       .where(eq(cuentasEmpleadosTable.usuario, loginUserDto.usuario))
 
-    if (users.length <= 0 || typeof loginUserDto.clave !== 'string') {
-      // throw CustomError.badRequest('Nombre de usuario o contraseña incorrectos')
-      throw CustomError.badRequest('Usuario no encontrado')
+    if (users.length <= 0) {
+      throw CustomError.badRequest('Nombre de usuario o contraseña incorrectos')
     }
 
     const [user] = users
@@ -71,7 +70,7 @@ export class LoginUser {
     return {
       accessToken,
       refreshToken,
-      user: mappedUser
+      data: mappedUser
     }
   }
 }

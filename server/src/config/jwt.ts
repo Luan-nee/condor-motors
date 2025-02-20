@@ -3,10 +3,11 @@ import type {
   decodeType,
   generateAccessTokenType,
   generateRefreshTokenType,
-  randomSecretType
+  randomSecretType,
+  verifyType
 } from '@/config/types'
 import { randomBytes } from 'crypto'
-import { decode, sign } from 'jsonwebtoken'
+import { decode, sign, verify } from 'jsonwebtoken'
 
 const { JWT_SEED } = envs
 
@@ -31,6 +32,12 @@ export class JwtAdapter {
   }
 
   static decode: decodeType = ({ token, options }) => decode(token, options)
+
+  static verify: verifyType = ({ token, options, secret }) => {
+    const privateSecret = secret ?? JWT_SEED
+
+    return verify(token, privateSecret, options)
+  }
 
   static randomSecret: randomSecretType = () => randomBytes(64).toString('hex')
 }
