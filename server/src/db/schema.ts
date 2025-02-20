@@ -173,6 +173,7 @@ export const cuentasEmpleadosTable = pgTable('cuentas_empleados', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   usuario: text('usuario').notNull().unique(),
   clave: text('clave').notNull(),
+  secret: text('secret').notNull(),
   fechaRegistro: timestamp('fecha_registro', {
     mode: 'date'
   })
@@ -203,20 +204,6 @@ export const rolesPermisosTable = pgTable(
   },
   (table) => [primaryKey({ columns: [table.rolId, table.permisoId] })]
 )
-
-export const refreshTokensEmpleadosTable = pgTable('refresh_tokens_empleados', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  token: text('token').notNull().unique(),
-  secret: text('secret').notNull(),
-  fechaCreacion: timestamp('fecha_creacion', {
-    mode: 'date'
-  })
-    .notNull()
-    .defaultNow(),
-  cuentaEmpleadoId: integer('cuenta_empleado_id')
-    .notNull()
-    .references(() => cuentasEmpleadosTable.id)
-})
 
 export const proformasVentaTable = pgTable('proformas_venta', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),

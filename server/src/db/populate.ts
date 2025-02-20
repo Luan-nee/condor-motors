@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { BcryptAdapter } from '@/config/bcrypt'
+import { JwtAdapter } from '@/config/jwt'
 import { db } from '@db/connection'
 import { exit } from 'process'
 import {
@@ -12,6 +13,7 @@ import {
 // A pesar de que esto es funcional, aún faltaría agregar datos en la tabla de permisos
 const populateDatabase = async (config: ConfigPopulateDb) => {
   const hashedPassword = await BcryptAdapter.hash(config.user.clave)
+  const secret = JwtAdapter.randomSecret()
 
   await db.transaction(async (tx) => {
     const [sucursal] = await tx
@@ -35,6 +37,8 @@ const populateDatabase = async (config: ConfigPopulateDb) => {
     await tx.insert(cuentasEmpleadosTable).values({
       usuario: config.user.usuario,
       clave: hashedPassword,
+      secret,
+      fechaRegistro: new Date(),
       rolCuentaEmpleadoId: rolEmpleado.id,
       empleadoId: empleado.id
     })
