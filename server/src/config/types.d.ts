@@ -34,3 +34,15 @@ export type verifyType = (args: {
 }) => string | JwtPayload | Jwt
 
 export type randomSecretType = () => string
+
+export type refreshTokenCookieType = (args: { refreshToken: string }) => string
+
+export type bearerAccessTokenType = (args: { accessToken: string }) => string
+
+export type refreshAccessTokenType = (args: {
+  accessToken: string
+  refreshToken: string
+}) => {
+  refresTokenCookie: string
+  bearerAccessToken: string
+}

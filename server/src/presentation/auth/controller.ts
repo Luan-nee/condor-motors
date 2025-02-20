@@ -1,22 +1,23 @@
 import { refreshTokenCookieName } from '@/consts'
 import { RefreshTokenCookieDto } from '@/domain/dtos/auth/refresh-token-cookie.dto'
 import { RefreshToken } from '@/domain/use-cases/auth/refresh-token.use-case'
-import type { Encryptor, TokenAuthenticator } from '@/interfaces'
+import type {
+  AuthSerializer,
+  Encryptor,
+  TokenAuthenticator
+} from '@/interfaces'
 import { LoginUserDto } from '@domain/dtos/auth/login-user.dto'
 import { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
 import { handleError } from '@domain/errors/handle.error'
 import { LoginUser } from '@domain/use-cases/auth/login-user.use-case'
 import { RegisterUser } from '@domain/use-cases/auth/register-user.use-case'
-import {
-  serializeAccessToken,
-  serializeRefreshTokenCookie
-} from '@presentation/utils'
 import type { Request, Response } from 'express'
 
 export class AuthController {
   constructor(
     private readonly tokenAuthenticator: TokenAuthenticator,
-    private readonly encryptor: Encryptor
+    private readonly encryptor: Encryptor,
+    private readonly authSerializer: AuthSerializer
   ) {}
 
   registerUser = async (req: Request, res: Response) => {
@@ -34,17 +35,15 @@ export class AuthController {
     try {
       const user = await registerUser.execute(registerUserDto)
 
-      const refresTokenCookie = serializeRefreshTokenCookie({
-        token: user.refreshToken
-      })
-      const bearerAccessToken = serializeAccessToken({
-        token: user.accessToken
+      const serializedTokens = this.authSerializer.refreshAccessToken({
+        accessToken: user.accessToken,
+        refreshToken: user.refreshToken
       })
 
       res
         .status(200)
-        .setHeader('Set-Cookie', refresTokenCookie)
-        .header('Authorization', bearerAccessToken)
+        .setHeader('Set-Cookie', serializedTokens.refresTokenCookie)
+        .header('Authorization', serializedTokens.bearerAccessToken)
         .json(user.data)
     } catch (error) {
       handleError(error, res)
@@ -65,17 +64,15 @@ export class AuthController {
     try {
       const user = await loginUser.execute(loginUserDto)
 
-      const refresTokenCookie = serializeRefreshTokenCookie({
-        token: user.refreshToken
-      })
-      const bearerAccessToken = serializeAccessToken({
-        token: user.accessToken
+      const serializedTokens = this.authSerializer.refreshAccessToken({
+        accessToken: user.accessToken,
+        refreshToken: user.refreshToken
       })
 
       res
         .status(200)
-        .setHeader('Set-Cookie', refresTokenCookie)
-        .header('Authorization', bearerAccessToken)
+        .setHeader('Set-Cookie', serializedTokens.refresTokenCookie)
+        .header('Authorization', serializedTokens.bearerAccessToken)
         .json(user.data)
     } catch (error) {
       handleError(error, res)
@@ -97,8 +94,8 @@ export class AuthController {
     try {
       const user = await refreshToken.execute(refreshTokenCookieDto)
 
-      const bearerAccessToken = serializeAccessToken({
-        token: user.accessToken
+      const bearerAccessToken = this.authSerializer.bearerAccessToken({
+        accessToken: user.accessToken
       })
 
       res.status(200).header('Authorization', bearerAccessToken).json(user.data)

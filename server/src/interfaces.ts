@@ -1,8 +1,11 @@
 import type {
+  bearerAccessTokenType,
   decodeType,
   generateAccessTokenType,
   generateRefreshTokenType,
   randomSecretType,
+  refreshAccessTokenType,
+  refreshTokenCookieType,
   verifyType
 } from '@/config/types'
 
@@ -17,4 +20,10 @@ export interface TokenAuthenticator {
 export interface Encryptor {
   hash: (password: string) => Promise<string>
   compare: (password: string, hash: string) => Promise<boolean>
+}
+
+export interface AuthSerializer {
+  refreshTokenCookie: refreshTokenCookieType
+  bearerAccessToken: bearerAccessTokenType
+  refreshAccessToken: refreshAccessTokenType
 }
