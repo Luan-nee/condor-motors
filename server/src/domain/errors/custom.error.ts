@@ -22,7 +22,7 @@ export class CustomError extends Error {
     return new CustomError(404, message)
   }
 
-  static internalServer(message = 'Error inesperado') {
+  static internalServer(message = 'Unexpected error') {
     return new CustomError(500, message)
   }
 }

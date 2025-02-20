@@ -1,4 +1,5 @@
 import { isProduction } from '@/config/envs'
+import { refreshTokenCookieName } from '@/consts'
 import { RefreshTokenCookieDto } from '@/domain/dtos/auth/refresh-token-cookie.dto'
 import { RefreshToken } from '@/domain/use-cases/auth/refresh-token.use-case'
 import type { Encryptor, TokenAuthenticator } from '@/interfaces'
@@ -32,7 +33,7 @@ export class AuthController {
 
       res
         .status(200)
-        .cookie('refresh_token', user.refreshToken, {
+        .cookie(refreshTokenCookieName, user.refreshToken, {
           httpOnly: true,
           sameSite: 'strict'
         })
@@ -59,7 +60,7 @@ export class AuthController {
 
       res
         .status(200)
-        .cookie('refresh_token', user.refreshToken, {
+        .cookie(refreshTokenCookieName, user.refreshToken, {
           httpOnly: true,
           sameSite: 'strict',
           secure: isProduction
@@ -91,6 +92,7 @@ export class AuthController {
         .header('Authorization', 'Bearer ' + user.accessToken)
         .json(user.data)
     } catch (error) {
+      res.clearCookie(refreshTokenCookieName)
       handleError(error, res)
     }
   }

@@ -2,7 +2,6 @@ import { JwtAdapter } from '@/config/jwt'
 import { CustomError } from '@/domain/errors/custom.error'
 import { handleError } from '@/domain/errors/handle.error'
 import type { NextFunction, Request, Response } from 'express'
-import { TokenExpiredError } from 'jsonwebtoken'
 
 export class AuthMiddleware {
   static requests = (req: Request, res: Response, next: NextFunction) => {
@@ -25,17 +24,14 @@ export class AuthMiddleware {
 
       const [, token] = parts
 
-      const decoded = JwtAdapter.verify({ token })
-
-      // eslint-disable-next-line no-console
-      console.log(decoded)
-      next()
-    } catch (error) {
-      if (error instanceof TokenExpiredError) {
-        handleError(invalidTokenError, res)
-        return
+      try {
+        JwtAdapter.verify({ token })
+      } catch (error) {
+        throw invalidTokenError
       }
 
+      next()
+    } catch (error) {
       handleError(error, res)
     }
   }

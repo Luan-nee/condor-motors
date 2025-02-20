@@ -1,3 +1,5 @@
+import { refreshTokenCookieName } from '@/consts'
+
 export class RefreshTokenCookieDto {
   public refreshToken: string
 
@@ -6,7 +8,7 @@ export class RefreshTokenCookieDto {
   }
 
   static create(input: any): [string?, RefreshTokenCookieDto?] {
-    const { refreshToken } = input
+    const { [refreshTokenCookieName]: refreshToken } = input
 
     if (refreshToken === undefined || typeof refreshToken !== 'string') {
       return ['Invalid refresh token', undefined]
