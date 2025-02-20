@@ -18,7 +18,7 @@ export const userSchema = {
     .min(6)
     .max(20)
     .refine(
-      (val) => !val.includes(' ') || /[a-zA-Z]/.test(val) || /\d/.test(val),
+      (val) => !/\s/g.test(val) && /[a-zA-Z]/.test(val) && /\d/.test(val),
       {
         message:
           'Contraseña no válida, esta debe contener al menos 6 caracteres, entre letras y números'
