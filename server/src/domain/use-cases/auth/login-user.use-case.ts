@@ -1,8 +1,9 @@
+import { UserEntityMapper } from '@/domain/mappers/user-entity.mapper'
+import type { Encryptor, TokenAuthenticator } from '@/interfaces'
 import { db } from '@db/connection'
 import { cuentasEmpleadosTable } from '@db/schema'
 import type { LoginUserDto } from '@domain/dtos/auth/login-user.dto'
 import { CustomError } from '@domain/errors/custom.error'
-import type { Encryptor, TokenAuthenticator } from '@domain/interfaces'
 import { AuthPayloadMapper } from '@domain/mappers/auth-payload.mapper'
 import { eq } from 'drizzle-orm'
 
@@ -31,35 +32,44 @@ export class LoginUser {
       throw CustomError.badRequest('Nombre de usuario o contraseña incorrectos')
     }
 
+    return user
+  }
+
+  private readonly generateTokens = (payload: AuthPayload, secret: string) => {
+    const refreshToken = this.tokenAuthenticator.generateRefreshToken({
+      payload,
+      secret
+    })
+
+    const accessToken = this.tokenAuthenticator.generateAccessToken({ payload })
+
+    if (
+      typeof refreshToken.token !== 'string' ||
+      typeof accessToken !== 'string'
+    ) {
+      throw CustomError.internalServer('Error generating token')
+    }
     return {
-      id: user.id,
-      usuario: user.usuario,
-      fechaRegistro: user.fechaRegistro,
-      rolCuentaEmpleadoId: user.rolCuentaEmpleadoId,
-      empleadoId: user.empleadoId
+      accessToken,
+      refreshToken: refreshToken.token
     }
   }
 
-  async execute(loginUserDto: LoginUserDto) {
+  async execute(loginUserDto: LoginUserDto): Promise<UserEntityWithTokens> {
     const user = await this.login(loginUserDto)
-
     const payload = AuthPayloadMapper.authPayloadFromObject(user)
 
-    const token = this.tokenAuthenticator.generateAccessToken(payload)
+    const { accessToken, refreshToken } = this.generateTokens(
+      payload,
+      user.secret
+    )
 
-    if (typeof token !== 'string') {
-      throw CustomError.internalServer('Error generating token')
-    }
+    const mappedUser = UserEntityMapper.userEntityFromObject(user)
 
     return {
-      token,
-      user: {
-        id: user.id,
-        usuario: user.usuario,
-        fechaRegistro: user.fechaRegistro,
-        rolCuentaEmpleadoId: user.rolCuentaEmpleadoId,
-        empleadoId: user.empleadoId
-      }
+      accessToken,
+      refreshToken,
+      user: mappedUser
     }
   }
 }

@@ -1,8 +1,9 @@
+import { UserEntityMapper } from '@/domain/mappers/user-entity.mapper'
+import type { Encryptor, TokenAuthenticator } from '@/interfaces'
 import { db } from '@db/connection'
 import { cuentasEmpleadosTable, empleadosTable } from '@db/schema'
 import type { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
 import { CustomError } from '@domain/errors/custom.error'
-import type { Encryptor, TokenAuthenticator } from '@domain/interfaces'
 import { AuthPayloadMapper } from '@domain/mappers/auth-payload.mapper'
 import { and, eq, notExists, sql } from 'drizzle-orm'
 
@@ -48,41 +49,68 @@ export class RegisterUser {
     }
 
     const hashedPassword = await this.encryptor.hash(registerUserDto.clave)
+    const secret = this.tokenAuthenticator.randomSecret()
 
-    const [insertedUser] = await db
+    const insertUserResult = await db
       .insert(cuentasEmpleadosTable)
       .values({
         usuario: registerUserDto.usuario,
         clave: hashedPassword,
+        secret,
         fechaRegistro: new Date(),
         rolCuentaEmpleadoId: registerUserDto.rolCuentaEmpleadoId,
         empleadoId: registerUserDto.empleadoId
       })
       .returning()
 
-    return insertedUser
-  }
-
-  async execute(registerUserDto: RegisterUserDto) {
-    const user = await this.register(registerUserDto)
-
-    const payload = AuthPayloadMapper.authPayloadFromObject(user)
-
-    const token = this.tokenAuthenticator.generateAccessToken(payload)
-
-    if (typeof token !== 'string') {
-      throw CustomError.internalServer('Error generating token')
+    if (insertUserResult.length <= 0) {
+      throw CustomError.internalServer(
+        'Ha ocurrido un error al intentar crear el usuario'
+      )
     }
 
+    const [user] = insertUserResult
+
+    return user
+  }
+
+  private readonly generateTokens = (payload: AuthPayload, secret: string) => {
+    const refreshToken = this.tokenAuthenticator.generateRefreshToken({
+      payload,
+      secret
+    })
+
+    const accessToken = this.tokenAuthenticator.generateAccessToken({ payload })
+
+    if (
+      typeof refreshToken.token !== 'string' ||
+      typeof accessToken !== 'string'
+    ) {
+      throw CustomError.internalServer('Error generating token')
+    }
     return {
-      token,
-      user: {
-        id: user.id,
-        usuario: user.usuario,
-        fechaRegistro: user.fechaRegistro,
-        rolCuentaEmpleadoId: user.rolCuentaEmpleadoId,
-        empleadoId: user.empleadoId
-      }
+      accessToken,
+      refreshToken: refreshToken.token
+    }
+  }
+
+  async execute(
+    registerUserDto: RegisterUserDto
+  ): Promise<UserEntityWithTokens> {
+    const user = await this.register(registerUserDto)
+    const payload = AuthPayloadMapper.authPayloadFromObject(user)
+
+    const { accessToken, refreshToken } = this.generateTokens(
+      payload,
+      user.secret
+    )
+
+    const mappedUser = UserEntityMapper.userEntityFromObject(user)
+
+    return {
+      accessToken,
+      refreshToken,
+      user: mappedUser
     }
   }
 }

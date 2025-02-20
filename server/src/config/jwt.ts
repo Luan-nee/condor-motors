@@ -1,37 +1,36 @@
 import { envs } from '@/config/envs'
+import type {
+  decodeType,
+  generateAccessTokenType,
+  generateRefreshTokenType,
+  randomSecretType
+} from '@/config/types'
 import { randomBytes } from 'crypto'
-import {
-  decode,
-  sign,
-  type DecodeOptions,
-  type SignOptions
-} from 'jsonwebtoken'
+import { decode, sign } from 'jsonwebtoken'
 
 const { JWT_SEED } = envs
 
-type duration = SignOptions['expiresIn']
-
 export class JwtAdapter {
-  static generateToken(payload: object, duration: duration) {
-    return sign(payload, JWT_SEED, { expiresIn: duration })
-  }
+  static generateAccessToken: generateAccessTokenType = ({
+    payload,
+    duration = '30m'
+  }) => sign(payload, JWT_SEED, { expiresIn: duration })
 
-  static generateAccessToken(payload: object, duration: duration = '30m') {
-    return sign(payload, JWT_SEED, { expiresIn: duration })
-  }
-
-  static decode(token: string, options?: DecodeOptions) {
-    return decode(token, options)
-  }
-
-  static generateRefreshToken(payload: object, duration: duration = '7d') {
-    const secret = randomBytes(64).toString('hex')
-
-    const token = sign(payload, secret, { expiresIn: duration })
+  static generateRefreshToken: generateRefreshTokenType = ({
+    payload,
+    duration = '7d',
+    secret
+  }) => {
+    const privateSecret = secret ?? this.randomSecret()
+    const token = sign(payload, privateSecret, { expiresIn: duration })
 
     return {
-      secret,
+      secret: privateSecret,
       token
     }
   }
+
+  static decode: decodeType = ({ token, options }) => decode(token, options)
+
+  static randomSecret: randomSecretType = () => randomBytes(64).toString('hex')
 }
