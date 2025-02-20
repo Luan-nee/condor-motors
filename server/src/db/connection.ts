@@ -1,4 +1,5 @@
-import { envs, isProduction } from '@/config/envs'
+import { envs } from '@/config/envs'
+import { isProduction } from '@/consts'
 import * as schema from '@db/schema'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool, type PoolConfig } from 'pg'
@@ -14,4 +15,8 @@ const dbConfig: PoolConfig = {
 
 const pool = new Pool(dbConfig)
 
-export const db = drizzle({ client: pool, logger: !isProduction, schema })
+export const db = drizzle({
+  client: pool,
+  logger: !isProduction,
+  schema
+})

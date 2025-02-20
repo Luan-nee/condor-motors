@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
-import { envs, isProduction } from '@/config/envs'
+import { envs } from '@/config/envs'
+import { isProduction } from '@/consts'
 import { db } from '@db/connection'
 import * as schema from '@db/schema'
 import { reset } from 'drizzle-seed'

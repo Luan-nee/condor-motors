@@ -7,5 +7,3 @@ export const envs = {
   JWT_SEED: get('JWT_SEED').required().asString(),
   NODE_ENV: get('NODE_ENV').default('development').asString()
 }
-
-export const isProduction = envs.NODE_ENV === 'production'
