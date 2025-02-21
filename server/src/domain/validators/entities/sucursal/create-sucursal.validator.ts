@@ -1,4 +1,4 @@
-import { sucursalSchema } from '@domain/validators/entities/sucursal/sucursal.validator'
+import { sucursalSchema } from '@/domain/validators/entities/sucursal/sucursal.schema'
 import { z } from 'zod'
 
 const createSucursalSchema = z.object({
