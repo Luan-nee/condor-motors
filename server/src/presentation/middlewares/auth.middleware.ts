@@ -1,6 +1,7 @@
 import { JwtAdapter } from '@/config/jwt'
-import { CustomError } from '@/domain/errors/custom.error'
-import { handleError } from '@/domain/errors/handle.error'
+import { authPayloadValidator } from '@/domain/validators/auth/auth-payload.validator'
+import { CustomError } from '@domain/errors/custom.error'
+import { handleError } from '@domain/errors/handle.error'
 import type { NextFunction, Request, Response } from 'express'
 
 export class AuthMiddleware {
@@ -25,7 +26,17 @@ export class AuthMiddleware {
       const [, token] = parts
 
       try {
-        JwtAdapter.verify({ token })
+        const decodedAuthPayload = JwtAdapter.verify({ token })
+
+        const result = authPayloadValidator(decodedAuthPayload)
+
+        if (!result.success) {
+          throw invalidTokenError
+        }
+
+        const { data: authPayload } = result
+
+        req.authPayload = authPayload
       } catch (error) {
         throw invalidTokenError
       }
