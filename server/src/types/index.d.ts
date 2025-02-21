@@ -3,9 +3,9 @@ interface AuthPayload {
 }
 
 interface UserEntity {
-  id: string
+  id: number
   usuario: string
-  fechaRegistro: string
+  fechaRegistro: Date
   rolCuentaEmpleadoId: string
   empleadoId: string
 }
@@ -17,3 +17,11 @@ interface UserEntityWithTokens {
 }
 
 type ObjectAny = Record<string, any>
+
+interface SucursalEntity {
+  id: number
+  nombre: string
+  ubicacion?: string
+  sucursalCentral: boolean
+  fechaRegistro: Date
+}
