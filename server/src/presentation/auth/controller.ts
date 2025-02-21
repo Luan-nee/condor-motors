@@ -20,7 +20,7 @@ export class AuthController {
     private readonly authSerializer: AuthSerializer
   ) {}
 
-  registerUser = async (req: Request, res: Response) => {
+  registerUser = (req: Request, res: Response) => {
     const [error, registerUserDto] = RegisterUserDto.create(req.body)
     if (error !== undefined || registerUserDto === undefined) {
       res.status(400).json({ error: JSON.parse(error ?? '') })
@@ -32,25 +32,26 @@ export class AuthController {
       this.encryptor
     )
 
-    try {
-      const user = await registerUser.execute(registerUserDto)
+    registerUser
+      .execute(registerUserDto)
+      .then((user) => {
+        const serializedTokens = this.authSerializer.refreshAccessToken({
+          accessToken: user.accessToken,
+          refreshToken: user.refreshToken
+        })
 
-      const serializedTokens = this.authSerializer.refreshAccessToken({
-        accessToken: user.accessToken,
-        refreshToken: user.refreshToken
+        res
+          .status(200)
+          .setHeader('Set-Cookie', serializedTokens.refresTokenCookie)
+          .header('Authorization', serializedTokens.bearerAccessToken)
+          .json(user.data)
       })
-
-      res
-        .status(200)
-        .setHeader('Set-Cookie', serializedTokens.refresTokenCookie)
-        .header('Authorization', serializedTokens.bearerAccessToken)
-        .json(user.data)
-    } catch (error) {
-      handleError(error, res)
-    }
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
-  loginUser = async (req: Request, res: Response) => {
+  loginUser = (req: Request, res: Response) => {
     const [error, loginUserDto] = LoginUserDto.create(req.body)
     if (error !== undefined || loginUserDto === undefined) {
       res
@@ -61,25 +62,26 @@ export class AuthController {
 
     const loginUser = new LoginUser(this.tokenAuthenticator, this.encryptor)
 
-    try {
-      const user = await loginUser.execute(loginUserDto)
+    loginUser
+      .execute(loginUserDto)
+      .then((user) => {
+        const serializedTokens = this.authSerializer.refreshAccessToken({
+          accessToken: user.accessToken,
+          refreshToken: user.refreshToken
+        })
 
-      const serializedTokens = this.authSerializer.refreshAccessToken({
-        accessToken: user.accessToken,
-        refreshToken: user.refreshToken
+        res
+          .status(200)
+          .setHeader('Set-Cookie', serializedTokens.refresTokenCookie)
+          .header('Authorization', serializedTokens.bearerAccessToken)
+          .json(user.data)
       })
-
-      res
-        .status(200)
-        .setHeader('Set-Cookie', serializedTokens.refresTokenCookie)
-        .header('Authorization', serializedTokens.bearerAccessToken)
-        .json(user.data)
-    } catch (error) {
-      handleError(error, res)
-    }
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
-  refreshToken = async (req: Request, res: Response) => {
+  refreshToken = (req: Request, res: Response) => {
     const [error, refreshTokenCookieDto] = RefreshTokenCookieDto.create(
       req.cookies
     )
@@ -91,18 +93,22 @@ export class AuthController {
 
     const refreshToken = new RefreshToken(this.tokenAuthenticator)
 
-    try {
-      const user = await refreshToken.execute(refreshTokenCookieDto)
+    refreshToken
+      .execute(refreshTokenCookieDto)
+      .then((user) => {
+        const bearerAccessToken = this.authSerializer.bearerAccessToken({
+          accessToken: user.accessToken
+        })
 
-      const bearerAccessToken = this.authSerializer.bearerAccessToken({
-        accessToken: user.accessToken
+        res
+          .status(200)
+          .header('Authorization', bearerAccessToken)
+          .json(user.data)
       })
-
-      res.status(200).header('Authorization', bearerAccessToken).json(user.data)
-    } catch (error) {
-      res.clearCookie(refreshTokenCookieName)
-      handleError(error, res)
-    }
+      .catch((error: unknown) => {
+        res.clearCookie(refreshTokenCookieName)
+        handleError(error, res)
+      })
   }
 
   // authorize = (req: Request, res: Response) => {}
