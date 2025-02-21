@@ -1,4 +1,4 @@
-import { userSchema } from '@domain/validators/auth/user.validator'
+import { userSchema } from '@/domain/validators/auth/auth.schema'
 import { z } from 'zod'
 
 const RegisterUserSchema = z.object({

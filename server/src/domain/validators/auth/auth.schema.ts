@@ -31,3 +31,7 @@ export const userSchema = {
     message: 'El id del rol de la cuenta del empleado debe ser de tipo number'
   })
 }
+
+export const authPayloadSchema = {
+  id: z.number().positive()
+}
