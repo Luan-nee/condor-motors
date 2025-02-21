@@ -7,7 +7,7 @@ import type {
   refreshAccessTokenType,
   refreshTokenCookieType,
   verifyType
-} from '@/config/types'
+} from '@/types/config'
 
 export interface TokenAuthenticator {
   generateAccessToken: generateAccessTokenType

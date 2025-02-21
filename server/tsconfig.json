@@ -39,6 +39,9 @@
         "afterDeclarations": true
       }
     ],
+    "typeRoots": [
+      "./src/types"
+    ]
   },
   "ts-node": {
     "transpileOnly": true,
