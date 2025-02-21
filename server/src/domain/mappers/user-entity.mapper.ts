@@ -1,7 +1,7 @@
 import { CustomError } from '@domain/errors/custom.error'
 
 export class UserEntityMapper {
-  static userEntityFromObject(input: ObjectAny): UserEntity {
+  static userEntityFromObject(input: any): UserEntity {
     const { id, usuario, fechaRegistro, rolCuentaEmpleadoId, empleadoId } =
       input
 
