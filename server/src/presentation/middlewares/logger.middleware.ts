@@ -5,11 +5,12 @@ export class LoggerMiddleware {
   static requests = (req: Request, _res: Response, next: NextFunction) => {
     const resource = 'http://' + req.headers.host + req.baseUrl + req.url
 
-    console.log('__________________________________________________')
-    console.log('Request logs -------- | ', new Date().toISOString())
+    console.log('==================================================')
+    console.log('Request logs ---------- |', new Date().toISOString())
     console.log('START - - - - - - - - - - - - - - - - - - - - - --')
     console.log('resource:', resource)
-    console.log('headers:', JSON.stringify(req.headers))
+    console.log('method:', req.method)
+    console.log('headers:', req.headers)
     console.log('- - - - - - - - - - - - - - - - - Specific headers')
     console.log(
       'access-control-request-method:',
@@ -22,10 +23,10 @@ export class LoggerMiddleware {
     console.log('- - - - - - - - - - - - - - - - - - - - - - Others')
     console.log('body:', req.body)
     console.log('cookies:', req.cookies)
-    console.log('params:', JSON.stringify(req.params))
-    console.log('query:', JSON.stringify(req.query))
+    console.log('params:', req.params)
+    console.log('query:', req.query)
     console.log('-- - - - - - - - - - - - - - - - - - - - - - - END')
-    console.log('__________________________________________________')
+    console.log('==================================================')
     next()
   }
 }
