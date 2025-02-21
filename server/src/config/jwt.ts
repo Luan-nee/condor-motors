@@ -5,7 +5,7 @@ import type {
   generateRefreshTokenType,
   randomSecretType,
   verifyType
-} from '@/config/types'
+} from '@/types/config'
 import { randomBytes } from 'crypto'
 import { decode, sign, verify } from 'jsonwebtoken'
 

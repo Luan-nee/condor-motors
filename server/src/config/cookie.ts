@@ -1,10 +1,10 @@
 import { isProduction, refreshTokenCookieName } from '@/consts'
-import { serialize } from 'cookie'
 import type {
   bearerAccessTokenType,
   refreshAccessTokenType,
   refreshTokenCookieType
-} from './types'
+} from '@/types/config'
+import { serialize } from 'cookie'
 
 export class CookieTokenAdapter {
   static refreshTokenCookie: refreshTokenCookieType = ({ refreshToken }) => {

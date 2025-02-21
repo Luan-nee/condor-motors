@@ -5,7 +5,7 @@ import type {
   AuthSerializer,
   Encryptor,
   TokenAuthenticator
-} from '@/interfaces'
+} from '@/types/interfaces'
 import { LoginUserDto } from '@domain/dtos/auth/login-user.dto'
 import { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
 import { handleError } from '@domain/errors/handle.error'
