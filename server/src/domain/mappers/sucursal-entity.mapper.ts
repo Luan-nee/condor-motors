@@ -1,3 +1,4 @@
+import type { SucursalEntity } from '@/types/schemas'
 import { CustomError } from '@domain/errors/custom.error'
 
 export class SucursalEntityMapper {

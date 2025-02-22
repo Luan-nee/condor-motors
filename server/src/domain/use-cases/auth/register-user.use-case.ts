@@ -1,5 +1,6 @@
 import { UserEntityMapper } from '@/domain/mappers/user-entity.mapper'
 import type { Encryptor, TokenAuthenticator } from '@/types/interfaces'
+import type { UserEntityWithTokens } from '@/types/schemas'
 import { db } from '@db/connection'
 import { cuentasEmpleadosTable, empleadosTable } from '@db/schema'
 import type { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
