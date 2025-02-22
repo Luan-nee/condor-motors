@@ -1,5 +1,5 @@
-import { NumericIdDto } from '@/domain/dtos/entities/numeric-id.dto'
 import { CreateSucursalDto } from '@/domain/dtos/entities/sucursales/create-sucursal.dto'
+import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { handleError } from '@/domain/errors/handle.error'
 import { CreateSucursal } from '@/domain/use-cases/entities/sucursales/create-sucursal.use-case'
 import { GetSucursal } from '@/domain/use-cases/entities/sucursales/get-sucursal.use-case'

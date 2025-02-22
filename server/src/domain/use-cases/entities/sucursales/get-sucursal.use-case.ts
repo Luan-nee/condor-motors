@@ -1,6 +1,6 @@
 import { db } from '@/db/connection'
 import { sucursalesTable } from '@/db/schema'
-import type { NumericIdDto } from '@/domain/dtos/entities/numeric-id.dto'
+import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { CustomError } from '@/domain/errors/custom.error'
 import { SucursalEntityMapper } from '@/domain/mappers/sucursal-entity.mapper'
 import { eq } from 'drizzle-orm'
