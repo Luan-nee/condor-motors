@@ -7,17 +7,30 @@ import { SucursalEntityMapper } from '@/domain/mappers/sucursal-entity.mapper'
 import { asc, desc, ilike, or } from 'drizzle-orm'
 
 export class GetSucursales {
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  private readonly validSortBy = {
+    fechaCreacion: sucursalesTable.fechaCreacion,
+    nombre: sucursalesTable.nombre,
+    direccion: sucursalesTable.direccion,
+    sucursalCentral: sucursalesTable.sucursalCentral
+  } as const
+
+  private readonly validSortByKeys = Object.keys(this.validSortBy)
+
+  private isValidSortBy(
+    sortBy: string
+  ): sortBy is keyof typeof this.validSortBy {
+    return Object.keys(this.validSortBy).includes(sortBy)
+  }
+
   private getSortByColumn(sortBy: string) {
-    if (sortBy === sucursalesTable.nombre.name) return sucursalesTable.nombre
-    if (sortBy === sucursalesTable.direccion.name) {
-      return sucursalesTable.direccion
-    }
-    if (sortBy === sucursalesTable.sucursalCentral.name) {
-      return sucursalesTable.sucursalCentral
+    if (
+      Object.keys(this.validSortBy).includes(sortBy) &&
+      this.isValidSortBy(sortBy)
+    ) {
+      return this.validSortBy[sortBy]
     }
 
-    return sucursalesTable.fechaCreacion
+    return this.validSortBy.fechaCreacion
   }
 
   async getSucursales(queriesDto: QueriesDto) {
@@ -54,12 +67,8 @@ export class GetSucursales {
   async execute(queriesDto: QueriesDto) {
     const mappedQueries = QueriesMapper.QueriesFromObject(
       queriesDto,
-      [
-        sucursalesTable.nombre.name,
-        sucursalesTable.direccion.name,
-        sucursalesTable.sucursalCentral.name
-      ],
-      sucursalesTable.fechaCreacion.name
+      this.validSortByKeys,
+      this.validSortByKeys[0]
     )
 
     const sucursales = await this.getSucursales(mappedQueries)

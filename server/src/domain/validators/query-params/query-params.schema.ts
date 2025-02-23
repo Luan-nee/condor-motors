@@ -11,7 +11,7 @@ export const queriesBaseSchema = {
     .string()
     .default(defaultQueries.order)
     .transform((value) =>
-      value === orderValues.desc ? orderValues.desc : orderValues.asc
+      value === orderValues.asc ? orderValues.asc : orderValues.desc
     ),
   page: z.coerce
     .number()
