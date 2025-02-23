@@ -1,5 +1,4 @@
 import { SucursalesController } from '@presentation/entities/sucursales/controller'
-import { AuthMiddleware } from '@presentation/middlewares/auth.middleware'
 import { Router } from 'express'
 
 export class sucursalesRoutes {
@@ -8,11 +7,11 @@ export class sucursalesRoutes {
 
     const sucursalesController = new SucursalesController()
 
-    router.post('/', AuthMiddleware.requests, sucursalesController.create)
+    router.post('/', sucursalesController.create)
 
-    router.get('/:id', AuthMiddleware.requests, sucursalesController.getById)
+    router.get('/:id', sucursalesController.getById)
 
-    router.get('/', AuthMiddleware.requests, sucursalesController.getAll)
+    router.get('/', sucursalesController.getAll)
 
     return router
   }
