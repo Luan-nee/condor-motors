@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 const createSucursalSchema = z.object({
   nombre: sucursalSchema.nombre,
-  ubicacion: sucursalSchema.ubicacion,
+  direccion: sucursalSchema.direccion,
   sucursalCentral: sucursalSchema.sucursalCentral
 })
 

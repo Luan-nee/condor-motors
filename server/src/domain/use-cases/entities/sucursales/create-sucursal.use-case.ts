@@ -1,19 +1,17 @@
-/* eslint-disable @typescript-eslint/class-methods-use-this */
 import { sucursalesTable } from '@/db/schema'
 import type { CreateSucursalDto } from '@/domain/dtos/entities/sucursales/create-sucursal.dto'
 import { CustomError } from '@/domain/errors/custom.error'
 import { SucursalEntityMapper } from '@/domain/mappers/sucursal-entity.mapper'
 import { db } from '@db/connection'
-import { sql } from 'drizzle-orm'
+import { ilike } from 'drizzle-orm'
 
 export class CreateSucursal {
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   async execute(createSucursalDto: CreateSucursalDto) {
     const sucursalesWithSameName = await db
       .select()
       .from(sucursalesTable)
-      .where(
-        sql`lower(${sucursalesTable.nombre}) = lower(${createSucursalDto.nombre})`
-      )
+      .where(ilike(sucursalesTable.nombre, createSucursalDto.nombre))
 
     if (sucursalesWithSameName.length > 0) {
       throw CustomError.badRequest(
@@ -25,7 +23,7 @@ export class CreateSucursal {
       .insert(sucursalesTable)
       .values({
         nombre: createSucursalDto.nombre,
-        ubicacion: createSucursalDto.ubicacion,
+        direccion: createSucursalDto.direccion,
         sucursalCentral: createSucursalDto.sucursalCentral,
         fechaRegistro: new Date()
       })

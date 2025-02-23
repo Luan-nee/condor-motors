@@ -5,7 +5,7 @@ import { CustomError } from '@/domain/errors/custom.error'
 import { SucursalEntityMapper } from '@/domain/mappers/sucursal-entity.mapper'
 import { eq } from 'drizzle-orm'
 
-export class GetSucursal {
+export class GetSucursalById {
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   async execute(numericIdDto: NumericIdDto) {
     const sucursales = await db

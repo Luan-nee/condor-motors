@@ -3,7 +3,7 @@ import { CustomError } from '@domain/errors/custom.error'
 
 export class SucursalEntityMapper {
   static sucursalEntityFromObject(input: any): SucursalEntity {
-    const { id, nombre, ubicacion, sucursalCentral, fechaRegistro } = input
+    const { id, nombre, direccion, sucursalCentral, fechaRegistro } = input
 
     if (id === undefined) {
       throw CustomError.badRequest('Missing id')
@@ -18,12 +18,10 @@ export class SucursalEntityMapper {
       throw CustomError.badRequest('Missing fechaRegistro')
     }
 
-    const mappedUbicacion = ubicacion === null ? undefined : ubicacion
-
     return {
       id,
       nombre,
-      ubicacion: mappedUbicacion,
+      direccion,
       sucursalCentral,
       fechaRegistro
     }

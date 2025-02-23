@@ -6,7 +6,7 @@ import { cuentasEmpleadosTable, empleadosTable } from '@db/schema'
 import type { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
 import { CustomError } from '@domain/errors/custom.error'
 import { AuthPayloadMapper } from '@domain/mappers/auth-payload.mapper'
-import { and, eq, notExists, sql } from 'drizzle-orm'
+import { and, eq, ilike, notExists } from 'drizzle-orm'
 
 export class RegisterUser {
   constructor(
@@ -18,9 +18,7 @@ export class RegisterUser {
     const usersWithSameName = await db
       .select()
       .from(cuentasEmpleadosTable)
-      .where(
-        sql`lower(${cuentasEmpleadosTable.usuario}) = lower(${registerUserDto.usuario})`
-      )
+      .where(ilike(cuentasEmpleadosTable.usuario, registerUserDto.usuario))
 
     if (usersWithSameName.length > 0) {
       throw CustomError.badRequest(

@@ -12,6 +12,8 @@ export class sucursalesRoutes {
 
     router.get('/:id', AuthMiddleware.requests, sucursalesController.getById)
 
+    router.get('/', AuthMiddleware.requests, sucursalesController.getAll)
+
     return router
   }
 }

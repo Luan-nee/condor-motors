@@ -6,7 +6,7 @@ import { cuentasEmpleadosTable } from '@db/schema'
 import type { LoginUserDto } from '@domain/dtos/auth/login-user.dto'
 import { CustomError } from '@domain/errors/custom.error'
 import { AuthPayloadMapper } from '@domain/mappers/auth-payload.mapper'
-import { eq } from 'drizzle-orm'
+import { like } from 'drizzle-orm'
 
 export class LoginUser {
   constructor(
@@ -18,7 +18,7 @@ export class LoginUser {
     const users = await db
       .select()
       .from(cuentasEmpleadosTable)
-      .where(eq(cuentasEmpleadosTable.usuario, loginUserDto.usuario))
+      .where(like(cuentasEmpleadosTable.usuario, loginUserDto.usuario))
 
     if (users.length <= 0) {
       throw CustomError.badRequest('Nombre de usuario o contraseña incorrectos')

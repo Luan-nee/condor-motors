@@ -31,7 +31,7 @@ export const marcasTable = pgTable('marcas', {
 export const sucursalesTable = pgTable('sucursales', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
-  ubicacion: text('ubicacion'),
+  direccion: text('direccion'),
   sucursalCentral: boolean('sucursal_central').notNull(),
   fechaRegistro: timestamp('fecha_registro', {
     mode: 'date'

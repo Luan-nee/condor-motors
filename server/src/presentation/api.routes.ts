@@ -1,6 +1,6 @@
 import { AuthRoutes } from '@presentation/auth/routes'
+import { EntitiesRoutes } from '@presentation/entities/routes'
 import { Router } from 'express'
-import { EntitiesRoutes } from './entities/router'
 
 export class ApiRoutes {
   static get routes() {

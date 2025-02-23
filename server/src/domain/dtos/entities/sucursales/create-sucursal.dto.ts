@@ -2,16 +2,16 @@ import { createSucursalValidator } from '@domain/validators/entities/sucursal/cr
 
 export class CreateSucursalDto {
   public nombre: string
-  public ubicacion?: string
+  public direccion?: string
   public sucursalCentral: boolean
 
   private constructor({
     nombre,
-    ubicacion,
+    direccion,
     sucursalCentral
   }: CreateSucursalDto) {
     this.nombre = nombre
-    this.ubicacion = ubicacion
+    this.direccion = direccion
     this.sucursalCentral = sucursalCentral
   }
 
