@@ -17,7 +17,7 @@ export class GetSucursales {
       return sucursalesTable.sucursalCentral
     }
 
-    return sucursalesTable.fechaRegistro
+    return sucursalesTable.fechaCreacion
   }
 
   async getSucursales(queriesDto: QueriesDto) {
@@ -59,7 +59,7 @@ export class GetSucursales {
         sucursalesTable.direccion.name,
         sucursalesTable.sucursalCentral.name
       ],
-      sucursalesTable.fechaRegistro.name
+      sucursalesTable.fechaCreacion.name
     )
 
     const sucursales = await this.getSucursales(mappedQueries)

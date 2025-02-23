@@ -3,8 +3,14 @@ import { CustomError } from '@domain/errors/custom.error'
 
 export class UserEntityMapper {
   static userEntityFromObject(input: any): UserEntity {
-    const { id, usuario, fechaRegistro, rolCuentaEmpleadoId, empleadoId } =
-      input
+    const {
+      id,
+      usuario,
+      rolCuentaEmpleadoId,
+      empleadoId,
+      fechaCreacion,
+      fechaActualizacion
+    } = input
 
     if (id === undefined) {
       throw CustomError.badRequest('Missing id')
@@ -12,22 +18,26 @@ export class UserEntityMapper {
     if (usuario === undefined) {
       throw CustomError.badRequest('Missing usuario')
     }
-    if (fechaRegistro === undefined) {
-      throw CustomError.badRequest('Missing fechaRegistro')
-    }
     if (rolCuentaEmpleadoId === undefined) {
       throw CustomError.badRequest('Missing rolCuentaEmpleadoId')
     }
     if (empleadoId === undefined) {
       throw CustomError.badRequest('Missing empleadoId')
     }
+    if (fechaCreacion === undefined) {
+      throw CustomError.badRequest('Missing fechaCreacion')
+    }
+    if (fechaActualizacion === undefined) {
+      throw CustomError.badRequest('Missing fechaActualizacion')
+    }
 
     return {
       id,
       usuario,
-      fechaRegistro,
       rolCuentaEmpleadoId,
-      empleadoId
+      empleadoId,
+      fechaCreacion,
+      fechaActualizacion
     }
   }
 }

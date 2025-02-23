@@ -24,8 +24,7 @@ export class CreateSucursal {
       .values({
         nombre: createSucursalDto.nombre,
         direccion: createSucursalDto.direccion,
-        sucursalCentral: createSucursalDto.sucursalCentral,
-        fechaRegistro: new Date()
+        sucursalCentral: createSucursalDto.sucursalCentral
       })
       .returning()
 

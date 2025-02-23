@@ -6,8 +6,7 @@ interface ConfigPopulateDb {
   sucursal: {
     nombre: string
     sucursalCentral: boolean
-    fechaRegistro: Date
-    ubicacion: string
+    direccion: string
   }
   empleado: {
     nombre: string

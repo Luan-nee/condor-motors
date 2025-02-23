@@ -56,7 +56,6 @@ export class RegisterUser {
         usuario: registerUserDto.usuario,
         clave: hashedPassword,
         secret,
-        fechaRegistro: new Date(),
         rolCuentaEmpleadoId: registerUserDto.rolCuentaEmpleadoId,
         empleadoId: registerUserDto.empleadoId
       })

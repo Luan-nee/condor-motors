@@ -36,6 +36,10 @@ const seedDatabase = async () => {
           minValue: 1000,
           maxValue: 3000,
           precision: 2
+        }),
+        dni: f.int({
+          minValue: 40000000,
+          maxValue: 99999999
         })
       }
     },

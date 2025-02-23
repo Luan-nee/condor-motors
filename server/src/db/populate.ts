@@ -1,14 +1,15 @@
 /* eslint-disable no-console */
 import { BcryptAdapter } from '@/config/bcrypt'
+import { envs } from '@/config/envs'
 import { JwtAdapter } from '@/config/jwt'
 import { db } from '@db/connection'
-import { exit } from 'process'
 import {
   cuentasEmpleadosTable,
   empleadosTable,
   rolesCuentasEmpleadosTable,
   sucursalesTable
-} from './schema'
+} from '@db/schema'
+import { exit } from 'process'
 
 // A pesar de que esto es funcional, aún faltaría agregar datos en la tabla de permisos
 const populateDatabase = async (config: ConfigPopulateDb) => {
@@ -38,7 +39,6 @@ const populateDatabase = async (config: ConfigPopulateDb) => {
       usuario: config.user.usuario,
       clave: hashedPassword,
       secret,
-      fechaRegistro: new Date(),
       rolCuentaEmpleadoId: rolEmpleado.id,
       empleadoId: empleado.id
     })
@@ -52,14 +52,13 @@ const populateDatabase = async (config: ConfigPopulateDb) => {
 
 const config: ConfigPopulateDb = {
   user: {
-    usuario: 'Administrador',
-    clave: 'Admin123'
+    usuario: envs.ADMIN_USER,
+    clave: envs.ADMIN_PASSWORD
   },
   sucursal: {
     nombre: 'Sucursal Principal',
     sucursalCentral: true,
-    fechaRegistro: new Date(),
-    ubicacion: 'Desconocida'
+    direccion: 'Desconocida'
   },
   empleado: {
     nombre: 'Administrador',

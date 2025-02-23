@@ -11,5 +11,7 @@ export const envs = {
     .asIntPositive(),
   ACCESS_TOKEN_DURATION: get('ACCESS_TOKEN_DURATION')
     .default(60 * 30)
-    .asIntPositive()
+    .asIntPositive(),
+  ADMIN_USER: get('ADMIN_USER').required().asString(),
+  ADMIN_PASSWORD: get('ADMIN_PASSWORD').required().asString()
 }

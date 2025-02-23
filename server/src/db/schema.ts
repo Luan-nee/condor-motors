@@ -11,9 +11,25 @@ import {
   timestamp
 } from 'drizzle-orm/pg-core'
 
+const timestampsColumns = {
+  fechaCreacion: timestamp('fecha_creacion', {
+    mode: 'date',
+    withTimezone: false
+  })
+    .notNull()
+    .defaultNow(),
+  fechaActualizacion: timestamp('fecha_actualizacion', {
+    mode: 'date',
+    withTimezone: false
+  })
+    .notNull()
+    .defaultNow()
+}
+
 export const unidadesTable = pgTable('unidades', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull().unique()
+  nombre: text('nombre').notNull().unique(),
+  descripcion: text('descripcion')
 })
 
 export const categoriasTable = pgTable('categorias', {
@@ -33,11 +49,7 @@ export const sucursalesTable = pgTable('sucursales', {
   nombre: text('nombre').notNull().unique(),
   direccion: text('direccion'),
   sucursalCentral: boolean('sucursal_central').notNull(),
-  fechaRegistro: timestamp('fecha_registro', {
-    mode: 'date'
-  })
-    .notNull()
-    .defaultNow()
+  ...timestampsColumns
 })
 
 export const notificacionesTable = pgTable('notificaciones', {
@@ -46,7 +58,8 @@ export const notificacionesTable = pgTable('notificaciones', {
   descripcion: text('descripcion'),
   sucursalId: integer('sucursal_id')
     .notNull()
-    .references(() => sucursalesTable.id)
+    .references(() => sucursalesTable.id),
+  ...timestampsColumns
 })
 
 export const productosTable = pgTable('productos', {
@@ -63,7 +76,8 @@ export const productosTable = pgTable('productos', {
     .references(() => unidadesTable.id),
   marcaId: integer('marca_id')
     .notNull()
-    .references(() => unidadesTable.id)
+    .references(() => unidadesTable.id),
+  ...timestampsColumns
 })
 
 // Se requiere esta tabla?
@@ -73,7 +87,8 @@ export const gruposProductosTable = pgTable('grupos_productos', {
   cantidadGrupo: integer('cantidad_grupo').notNull().default(2),
   productoId: integer('producto_id')
     .notNull()
-    .references(() => productosTable.id)
+    .references(() => productosTable.id),
+  ...timestampsColumns
 })
 
 export const fotosProductosTable = pgTable('fotos_productos', {
@@ -82,7 +97,8 @@ export const fotosProductosTable = pgTable('fotos_productos', {
   productoId: integer('producto_id').references(() => productosTable.id),
   grupoProductoId: integer('grupo_producto_id').references(
     () => gruposProductosTable.id
-  )
+  ),
+  ...timestampsColumns
 })
 
 export const preciosProductosTable = pgTable('precios_productos', {
@@ -102,17 +118,13 @@ export const preciosProductosTable = pgTable('precios_productos', {
 export const inventariosTable = pgTable('inventarios', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   stock: integer('stock').notNull().default(0),
-  fechaStockReabastecido: timestamp('fecha_stock_reabastecido', {
-    mode: 'date'
-  })
-    .notNull()
-    .defaultNow(),
   productoId: integer('producto_id')
     .notNull()
     .references(() => productosTable.id),
   sucursalId: integer('sucursal_id')
     .notNull()
-    .references(() => sucursalesTable.id)
+    .references(() => sucursalesTable.id),
+  ...timestampsColumns
 })
 
 export const empleadosTable = pgTable('empleados', {
@@ -131,14 +143,10 @@ export const empleadosTable = pgTable('empleados', {
     precision: 7,
     scale: 2
   }),
-  fechaRegistro: timestamp('fecha_registro', {
-    mode: 'date'
-  })
-    .notNull()
-    .defaultNow(),
   sucursalId: integer('sucursal_id')
     .notNull()
-    .references(() => sucursalesTable.id)
+    .references(() => sucursalesTable.id),
+  ...timestampsColumns
 })
 
 export const tiposPersonasTable = pgTable('tipos_personas', {
@@ -154,14 +162,10 @@ export const clientesTable = pgTable('clientes', {
   ruc: text('ruc'),
   telefono: text(''),
   correo: text(''),
-  fechaRegistro: timestamp('fecha_registro', {
-    mode: 'date'
-  })
-    .notNull()
-    .defaultNow(),
   tipoPersonaId: integer('tipo_persona_id')
     .notNull()
-    .references(() => tiposPersonasTable.id)
+    .references(() => tiposPersonasTable.id),
+  ...timestampsColumns
 })
 
 export const rolesCuentasEmpleadosTable = pgTable('roles_cuentas_empleados', {
@@ -174,17 +178,14 @@ export const cuentasEmpleadosTable = pgTable('cuentas_empleados', {
   usuario: text('usuario').notNull().unique(),
   clave: text('clave').notNull(),
   secret: text('secret').notNull(),
-  fechaRegistro: timestamp('fecha_registro', {
-    mode: 'date'
-  })
-    .notNull()
-    .defaultNow(),
   rolCuentaEmpleadoId: integer('rol_cuenta_empleado_id')
     .notNull()
     .references(() => rolesCuentasEmpleadosTable.id),
   empleadoId: integer('empleado_id')
     .notNull()
-    .references(() => empleadosTable.id)
+    .references(() => empleadosTable.id),
+
+  ...timestampsColumns
 })
 
 export const permisosTables = pgTable('permisos', {
@@ -208,11 +209,7 @@ export const rolesPermisosTable = pgTable(
 export const proformasVentaTable = pgTable('proformas_venta', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre'),
-  fechaCreacion: timestamp('fecha_creacion', {
-    mode: 'date'
-  })
-    .notNull()
-    .defaultNow(),
+  total: numeric('total', { precision: 8, scale: 2 }).notNull(),
   detalles: jsonb('detalles').notNull().$type<
     Array<{
       productoId: number
@@ -226,7 +223,8 @@ export const proformasVentaTable = pgTable('proformas_venta', {
     .references(() => empleadosTable.id),
   sucursalId: integer('sucursal_id')
     .notNull()
-    .references(() => sucursalesTable.id)
+    .references(() => sucursalesTable.id),
+  ...timestampsColumns
 })
 
 export const metodosPagoTable = pgTable('metodos_pago', {
@@ -239,11 +237,6 @@ export const metodosPagoTable = pgTable('metodos_pago', {
 export const ventasTable = pgTable('ventas', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   total: numeric('total', { precision: 8, scale: 2 }).notNull(),
-  fechaCreacion: timestamp('fecha_creacion', {
-    mode: 'date'
-  })
-    .notNull()
-    .defaultNow(),
   observaciones: text('observaciones'),
   metodoPagoId: integer('metodo_pago_id')
     .notNull()
@@ -256,7 +249,8 @@ export const ventasTable = pgTable('ventas', {
     .references(() => empleadosTable.id),
   sucursalId: integer('sucursal_id')
     .notNull()
-    .references(() => sucursalesTable.id)
+    .references(() => sucursalesTable.id),
+  ...timestampsColumns
 })
 
 export const detallesTable = pgTable('detalles', {
@@ -284,33 +278,25 @@ export const descuentosTable = pgTable('descuentos', {
 export const devolucionesTable = pgTable('devoluciones', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   motivo: text('motivo').notNull(),
-  fechaDevolucion: timestamp('fecha_devolucion', {
-    mode: 'date'
-  })
-    .notNull()
-    .defaultNow(),
   ventaId: integer('venta_id')
     .notNull()
     .references(() => ventasTable.id),
   sucursalId: integer('sucursal_id')
     .notNull()
-    .references(() => sucursalesTable.id)
+    .references(() => sucursalesTable.id),
+  ...timestampsColumns
 })
 
 export const entradasInventariosTable = pgTable('entradas_inventarios', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   cantidad: integer('cantidad').notNull().default(1),
-  fechaMovimiento: timestamp('fecha_movimiento', {
-    mode: 'date'
-  })
-    .notNull()
-    .defaultNow(),
   productoId: integer('producto_id')
     .notNull()
     .references(() => productosTable.id),
   sucursalId: integer('sucursal_id')
     .notNull()
-    .references(() => sucursalesTable.id)
+    .references(() => sucursalesTable.id),
+  ...timestampsColumns
 })
 
 export const estadosTransferenciasInventarios = pgTable(
@@ -327,11 +313,6 @@ export const transferenciasInventariosTable = pgTable(
   {
     id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     cantidad: integer('cantidad').notNull().default(1),
-    fechaTransferencia: timestamp('fecha_transferencia', {
-      mode: 'date'
-    })
-      .notNull()
-      .defaultNow(),
     estadoTransferenciaId: integer('estado_transferencia_id')
       .notNull()
       .references(() => estadosTransferenciasInventarios.id),
@@ -343,7 +324,8 @@ export const transferenciasInventariosTable = pgTable(
       .references(() => sucursalesTable.id),
     sucursalDestinoId: integer('sucursal_destino_id')
       .notNull()
-      .references(() => sucursalesTable.id)
+      .references(() => sucursalesTable.id),
+    ...timestampsColumns
   }
 )
 
@@ -355,15 +337,11 @@ export const reservasProductosTable = pgTable('reservas_productos', {
     precision: 7,
     scale: 2
   }).notNull(),
-  fechaReserva: timestamp('fecha_reserva', {
-    mode: 'date'
-  })
-    .notNull()
-    .defaultNow(),
   clienteId: integer('cliente_id')
     .notNull()
     .references(() => clientesTable.id),
   sucursalId: integer('sucursal_id')
     .notNull()
-    .references(() => sucursalesTable.id)
+    .references(() => sucursalesTable.id),
+  ...timestampsColumns
 })
