@@ -20,3 +20,9 @@ export const db = drizzle({
   logger: !isProduction,
   schema
 })
+
+export const testDatabaseConnection = async () => {
+  await pool.query('SELECT 1')
+  // eslint-disable-next-line no-console
+  console.log('Connected to the database')
+}
