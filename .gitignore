@@ -1,6 +1,7 @@
 # build output
 **/build/
 **/client-build/
+**/drizzle/
 
 # dependencies
 node_modules
