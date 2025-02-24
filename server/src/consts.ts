@@ -18,3 +18,9 @@ export const defaultQueries = {
   // filter_value: '',
   // filter_type: ''
 }
+
+export const responseStatus = {
+  success: 'success',
+  fail: 'fail',
+  error: 'error'
+} as const
