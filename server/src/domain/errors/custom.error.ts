@@ -22,7 +22,23 @@ export class CustomError extends Error {
     return new CustomError(404, message)
   }
 
+  static conflict(message: string) {
+    return new CustomError(409, message)
+  }
+
+  static unprocessableEntity(message: string) {
+    return new CustomError(422, message)
+  }
+
+  static tooManyRequests(message: string) {
+    return new CustomError(429, message)
+  }
+
   static internalServer(message = 'Unexpected error') {
     return new CustomError(500, message)
+  }
+
+  static serviceUnavailable(message: string) {
+    return new CustomError(503, message)
   }
 }
