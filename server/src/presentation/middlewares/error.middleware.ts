@@ -14,7 +14,7 @@ export class ErrorMiddleware {
       'body' in error &&
       error.message.includes('JSON')
     ) {
-      const jsonError = new CustomError(400, 'Invalid JSON format')
+      const jsonError = CustomError.badRequest('Invalid JSON format')
       handleError(jsonError, res)
       return
     }

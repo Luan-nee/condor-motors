@@ -1,4 +1,5 @@
 import { handleError } from '@/core/errors/handle.error'
+import { CustomResponse } from '@/core/responses/custom.response'
 import { CreateSucursalDto } from '@/domain/dtos/entities/sucursales/create-sucursal.dto'
 import { UpdateSucursalDto } from '@/domain/dtos/entities/sucursales/update-sucursal.dto'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
@@ -29,7 +30,7 @@ export class SucursalesController {
     createSucursal
       .execute(createSucursalDto)
       .then((sucursal) => {
-        res.status(200).json(sucursal)
+        CustomResponse.success({ res, data: sucursal })
       })
       .catch((error: unknown) => {
         handleError(error, res)
@@ -55,7 +56,7 @@ export class SucursalesController {
     getSucursalById
       .execute(numericIdDto)
       .then((sucursal) => {
-        res.status(200).json(sucursal)
+        CustomResponse.success({ res, data: sucursal })
       })
       .catch((error: unknown) => {
         handleError(error, res)
@@ -81,7 +82,7 @@ export class SucursalesController {
     getSucursales
       .execute(queriesDto)
       .then((sucursales) => {
-        res.status(200).json(sucursales)
+        CustomResponse.success({ res, data: sucursales })
       })
       .catch((error: unknown) => {
         handleError(error, res)
@@ -114,7 +115,7 @@ export class SucursalesController {
       return
     }
 
-    res.status(200).json(createSucursalDto)
+    CustomResponse.success({ res, data: createSucursalDto })
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
@@ -138,7 +139,7 @@ export class SucursalesController {
       .then((sucursal) => {
         const message = `Sucursal con id '${sucursal.id}' eliminada`
 
-        res.status(200).json({ message, id: sucursal.id })
+        CustomResponse.success({ res, message, data: sucursal })
       })
       .catch((error: unknown) => {
         handleError(error, res)
