@@ -4,6 +4,7 @@ import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { handleError } from '@/domain/errors/handle.error'
 import { CreateSucursal } from '@/domain/use-cases/entities/sucursales/create-sucursal.use-case'
+import { DeleteSucursal } from '@/domain/use-cases/entities/sucursales/delete-sucursal.use-case'
 import { GetSucursalById } from '@/domain/use-cases/entities/sucursales/get-sucursal-by-id.use-case'
 import { GetSucursales } from '@/domain/use-cases/entities/sucursales/get-sucursales.use-case'
 import type { Request, Response } from 'express'
@@ -130,6 +131,17 @@ export class SucursalesController {
       return
     }
 
-    res.status(200).json(numericIdDto)
+    const deleteSucursal = new DeleteSucursal()
+
+    deleteSucursal
+      .execute(numericIdDto)
+      .then((sucursal) => {
+        const message = `Sucursal con id '${sucursal.id}' eliminada`
+
+        res.status(200).json({ message, id: sucursal.id })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 }
