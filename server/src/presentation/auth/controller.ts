@@ -1,5 +1,6 @@
 import { refreshTokenCookieName } from '@/consts'
 import { handleError } from '@/core/errors/handle.error'
+import { CustomResponse } from '@/core/responses/custom.response'
 import { RefreshTokenCookieDto } from '@/domain/dtos/auth/refresh-token-cookie.dto'
 import { RefreshToken } from '@/domain/use-cases/auth/refresh-token.use-case'
 import type {
@@ -40,11 +41,12 @@ export class AuthController {
           refreshToken: user.refreshToken
         })
 
-        res
-          .status(200)
-          .setHeader('Set-Cookie', serializedTokens.refresTokenCookie)
-          .header('Authorization', serializedTokens.bearerAccessToken)
-          .json(user.data)
+        CustomResponse.success({
+          res,
+          data: user.data,
+          cookie: serializedTokens.refresTokenCookie,
+          authorization: serializedTokens.bearerAccessToken
+        })
       })
       .catch((error: unknown) => {
         handleError(error, res)
@@ -70,11 +72,12 @@ export class AuthController {
           refreshToken: user.refreshToken
         })
 
-        res
-          .status(200)
-          .setHeader('Set-Cookie', serializedTokens.refresTokenCookie)
-          .header('Authorization', serializedTokens.bearerAccessToken)
-          .json(user.data)
+        CustomResponse.success({
+          res,
+          data: user.data,
+          cookie: serializedTokens.refresTokenCookie,
+          authorization: serializedTokens.bearerAccessToken
+        })
       })
       .catch((error: unknown) => {
         handleError(error, res)
@@ -100,10 +103,11 @@ export class AuthController {
           accessToken: user.accessToken
         })
 
-        res
-          .status(200)
-          .header('Authorization', bearerAccessToken)
-          .json(user.data)
+        CustomResponse.success({
+          res,
+          data: user.data,
+          authorization: bearerAccessToken
+        })
       })
       .catch((error: unknown) => {
         res.clearCookie(refreshTokenCookieName)

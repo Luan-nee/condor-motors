@@ -15,7 +15,9 @@ export class CustomResponse {
     pagination,
     status = responseStatus.success,
     statusCode = 200,
-    error
+    error,
+    cookie,
+    authorization
   }: SendResponseArgs) {
     const response = {
       status,
@@ -25,17 +27,34 @@ export class CustomResponse {
       error
     }
 
+    if (cookie !== undefined) {
+      res.setHeader('Set-Cookie', cookie)
+    }
+
+    if (authorization !== undefined) {
+      res.header('Authorization', authorization)
+    }
+
     res.status(statusCode).json(response)
   }
 
-  static success({ res, message, data, pagination }: SuccessArgs) {
+  static success({
+    res,
+    message,
+    data,
+    pagination,
+    cookie,
+    authorization
+  }: SuccessArgs) {
     this.send({
       res,
       data,
       message,
       status: responseStatus.success,
       statusCode: 200,
-      pagination
+      pagination,
+      cookie,
+      authorization
     })
   }
 

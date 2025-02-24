@@ -1,3 +1,5 @@
+import { CustomError } from '@/core/errors/custom.error'
+import { handleError } from '@/core/errors/handle.error'
 import { ApiRoutes } from '@presentation/api.routes'
 import { type Response, Router } from 'express'
 
@@ -8,7 +10,8 @@ export class AppRoutes {
     router.use('/api', ApiRoutes.routes)
 
     router.use((_req, res: Response) => {
-      res.status(404).json({ message: 'Not Found' })
+      const notFound = CustomError.notFound('Not found')
+      handleError(notFound, res)
     })
 
     return router

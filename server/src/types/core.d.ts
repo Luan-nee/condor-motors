@@ -12,11 +12,13 @@ export interface SendResponseArgs {
   status?: ResponseStatusType
   statusCode?: number
   error?: any
+  cookie?: string
+  authorization?: string
 }
 
 export type SuccessArgs = Pick<
   SendResponseArgs,
-  'res' | 'message' | 'data' | 'pagination'
+  'res' | 'message' | 'data' | 'pagination' | 'cookie' | 'authorization'
 >
 export type CreatedArgs = Pick<SendResponseArgs, 'res' | 'message' | 'data'>
 export type AcceptedArgs = Pick<SendResponseArgs, 'res' | 'message' | 'data'>
