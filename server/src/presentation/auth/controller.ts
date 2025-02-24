@@ -1,4 +1,5 @@
 import { refreshTokenCookieName } from '@/consts'
+import { handleError } from '@/core/errors/handle.error'
 import { RefreshTokenCookieDto } from '@/domain/dtos/auth/refresh-token-cookie.dto'
 import { RefreshToken } from '@/domain/use-cases/auth/refresh-token.use-case'
 import type {
@@ -8,7 +9,6 @@ import type {
 } from '@/types/interfaces'
 import { LoginUserDto } from '@domain/dtos/auth/login-user.dto'
 import { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
-import { handleError } from '@domain/errors/handle.error'
 import { LoginUser } from '@domain/use-cases/auth/login-user.use-case'
 import { RegisterUser } from '@domain/use-cases/auth/register-user.use-case'
 import type { Request, Response } from 'express'

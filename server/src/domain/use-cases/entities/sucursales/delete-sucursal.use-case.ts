@@ -1,7 +1,7 @@
+import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import { sucursalesTable } from '@/db/schema'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
-import { CustomError } from '@/domain/errors/custom.error'
 import { eq } from 'drizzle-orm'
 
 export class DeleteSucursal {

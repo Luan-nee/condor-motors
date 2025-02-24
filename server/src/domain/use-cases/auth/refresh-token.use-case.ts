@@ -1,8 +1,8 @@
+import { CustomError } from '@/core/errors/custom.error'
 import { cuentasEmpleadosTable } from '@/db/schema'
 import type { RefreshTokenCookieDto } from '@/domain/dtos/auth/refresh-token-cookie.dto'
 import type { TokenAuthenticator } from '@/types/interfaces'
 import { db } from '@db/connection'
-import { CustomError } from '@domain/errors/custom.error'
 import { AuthPayloadMapper } from '@domain/mappers/auth-payload.mapper'
 import { eq } from 'drizzle-orm'
 

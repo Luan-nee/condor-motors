@@ -1,6 +1,6 @@
+import { CustomError } from '@/core/errors/custom.error'
 import { sucursalesTable } from '@/db/schema'
 import type { CreateSucursalDto } from '@/domain/dtos/entities/sucursales/create-sucursal.dto'
-import { CustomError } from '@/domain/errors/custom.error'
 import { SucursalEntityMapper } from '@/domain/mappers/sucursal-entity.mapper'
 import { db } from '@db/connection'
 import { ilike } from 'drizzle-orm'

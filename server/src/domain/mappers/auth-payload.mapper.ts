@@ -1,4 +1,4 @@
-import { CustomError } from '@domain/errors/custom.error'
+import { CustomError } from '@/core/errors/custom.error'
 
 export class AuthPayloadMapper {
   static authPayloadFromObject(input: any): AuthPayload {

@@ -1,4 +1,4 @@
-import { CustomError } from '@domain/errors/custom.error'
+import { CustomError } from '@/core/errors/custom.error'
 import type { Response } from 'express'
 
 export const handleError = (error: unknown, res: Response) => {

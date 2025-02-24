@@ -1,7 +1,7 @@
 import { JwtAdapter } from '@/config/jwt'
+import { CustomError } from '@/core/errors/custom.error'
+import { handleError } from '@/core/errors/handle.error'
 import { authPayloadValidator } from '@/domain/validators/auth/auth-payload.validator'
-import { CustomError } from '@domain/errors/custom.error'
-import { handleError } from '@domain/errors/handle.error'
 import type { NextFunction, Request, Response } from 'express'
 
 export class AuthMiddleware {

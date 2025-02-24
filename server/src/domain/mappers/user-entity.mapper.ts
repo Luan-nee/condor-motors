@@ -1,5 +1,5 @@
+import { CustomError } from '@/core/errors/custom.error'
 import type { UserEntity } from '@/types/schemas'
-import { CustomError } from '@domain/errors/custom.error'
 
 export class UserEntityMapper {
   static userEntityFromObject(input: any): UserEntity {
