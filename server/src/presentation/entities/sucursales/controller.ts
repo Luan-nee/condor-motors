@@ -1,4 +1,5 @@
 import { CreateSucursalDto } from '@/domain/dtos/entities/sucursales/create-sucursal.dto'
+import { UpdateSucursalDto } from '@/domain/dtos/entities/sucursales/update-sucursal.dto'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { handleError } from '@/domain/errors/handle.error'
@@ -11,6 +12,7 @@ export class SucursalesController {
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   create = (req: Request, res: Response) => {
     const [error, createSucursalDto] = CreateSucursalDto.create(req.body)
+
     if (error !== undefined || createSucursalDto === undefined) {
       res.status(400).json({ error: JSON.parse(error ?? '') })
       return
@@ -18,6 +20,7 @@ export class SucursalesController {
 
     if (req.authPayload === undefined) {
       res.status(401).json({ error: 'Missing id' })
+      return
     }
 
     const createSucursal = new CreateSucursal()
@@ -43,6 +46,7 @@ export class SucursalesController {
 
     if (req.authPayload === undefined) {
       res.status(401).json({ error: 'Missing id' })
+      return
     }
 
     const getSucursalById = new GetSucursalById()
@@ -68,6 +72,7 @@ export class SucursalesController {
 
     if (req.authPayload === undefined) {
       res.status(401).json({ error: 'Missing id' })
+      return
     }
 
     const getSucursales = new GetSucursales()
@@ -80,5 +85,51 @@ export class SucursalesController {
       .catch((error: unknown) => {
         handleError(error, res)
       })
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  update = (req: Request, res: Response) => {
+    const [UpdateSucursalValidationError, createSucursalDto] =
+      UpdateSucursalDto.create(req.body)
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+
+    if (
+      UpdateSucursalValidationError !== undefined ||
+      createSucursalDto === undefined
+    ) {
+      res
+        .status(400)
+        .json({ error: JSON.parse(UpdateSucursalValidationError ?? '') })
+      return
+    }
+
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      res.status(400).json({ error: 'Id inválido' })
+      return
+    }
+
+    if (req.authPayload === undefined) {
+      res.status(401).json({ error: 'Missing id' })
+      return
+    }
+
+    res.status(200).json(createSucursalDto)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  delete = (req: Request, res: Response) => {
+    const [error, numericIdDto] = NumericIdDto.create(req.params)
+
+    if (error !== undefined || numericIdDto === undefined) {
+      res.status(400).json({ error: 'Id inválido' })
+      return
+    }
+
+    if (req.authPayload === undefined) {
+      res.status(401).json({ error: 'Missing id' })
+      return
+    }
+
+    res.status(200).json(numericIdDto)
   }
 }

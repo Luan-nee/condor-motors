@@ -13,6 +13,10 @@ export class sucursalesRoutes {
 
     router.get('/', sucursalesController.getAll)
 
+    router.patch('/:id', sucursalesController.update)
+
+    router.delete('/:id', sucursalesController.delete)
+
     return router
   }
 }

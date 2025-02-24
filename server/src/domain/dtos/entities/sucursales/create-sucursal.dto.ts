@@ -1,4 +1,4 @@
-import { createSucursalValidator } from '@domain/validators/entities/sucursal/create-sucursal.validator'
+import { createSucursalValidator } from '@/domain/validators/entities/sucursal/sucursal.validator'
 
 export class CreateSucursalDto {
   public nombre: string
