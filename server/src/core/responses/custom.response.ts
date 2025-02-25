@@ -2,6 +2,7 @@ import { responseStatus } from '@/consts'
 import type {
   AcceptedArgs,
   CreatedArgs,
+  ErrorResponseArgs,
   NoContentArgs,
   SendResponseArgs,
   SuccessArgs
@@ -35,6 +36,9 @@ export class CustomResponse {
       res.header('Authorization', authorization)
     }
 
+    try {
+      response.error = JSON.parse(error)
+    } catch (error) {}
     res.status(statusCode).json(response)
   }
 
@@ -84,6 +88,33 @@ export class CustomResponse {
       message,
       status: responseStatus.success,
       statusCode: 204
+    })
+  }
+
+  static badRequest({ res, error }: ErrorResponseArgs) {
+    this.send({
+      res,
+      error,
+      status: responseStatus.fail,
+      statusCode: 400
+    })
+  }
+
+  static unauthorized({ res, error }: ErrorResponseArgs) {
+    this.send({
+      res,
+      error,
+      status: responseStatus.fail,
+      statusCode: 401
+    })
+  }
+
+  static notImplemented({ res }: ErrorResponseArgs) {
+    this.send({
+      res,
+      error: 'Not implemented',
+      status: responseStatus.error,
+      statusCode: 501
     })
   }
 }

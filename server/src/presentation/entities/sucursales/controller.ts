@@ -13,15 +13,14 @@ import type { Request, Response } from 'express'
 export class SucursalesController {
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   create = (req: Request, res: Response) => {
-    const [error, createSucursalDto] = CreateSucursalDto.create(req.body)
-
-    if (error !== undefined || createSucursalDto === undefined) {
-      res.status(400).json({ error: JSON.parse(error ?? '') })
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
       return
     }
 
-    if (req.authPayload === undefined) {
-      res.status(401).json({ error: 'Missing id' })
+    const [error, createSucursalDto] = CreateSucursalDto.create(req.body)
+    if (error !== undefined || createSucursalDto === undefined) {
+      CustomResponse.badRequest({ res, error })
       return
     }
 
@@ -39,15 +38,14 @@ export class SucursalesController {
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   getById = (req: Request, res: Response) => {
-    const [error, numericIdDto] = NumericIdDto.create(req.params)
-
-    if (error !== undefined || numericIdDto === undefined) {
-      res.status(400).json({ error: 'Id inválido' })
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
       return
     }
 
-    if (req.authPayload === undefined) {
-      res.status(401).json({ error: 'Missing id' })
+    const [error, numericIdDto] = NumericIdDto.create(req.params)
+    if (error !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: 'Id inválido' })
       return
     }
 
@@ -65,15 +63,14 @@ export class SucursalesController {
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   getAll = (req: Request, res: Response) => {
-    const [error, queriesDto] = QueriesDto.create(req.query)
-
-    if (error !== undefined || queriesDto === undefined) {
-      res.status(400).json({ error: JSON.parse(error ?? '') })
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
       return
     }
 
-    if (req.authPayload === undefined) {
-      res.status(401).json({ error: 'Missing id' })
+    const [error, queriesDto] = QueriesDto.create(req.query)
+    if (error !== undefined || queriesDto === undefined) {
+      CustomResponse.badRequest({ res, error })
       return
     }
 
@@ -91,44 +88,43 @@ export class SucursalesController {
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   update = (req: Request, res: Response) => {
-    const [UpdateSucursalValidationError, createSucursalDto] =
-      UpdateSucursalDto.create(req.body)
-    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
+      return
+    }
 
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: 'Id inválido' })
+      return
+    }
+
+    const [updateSucursalValidationError, createSucursalDto] =
+      UpdateSucursalDto.create(req.body)
     if (
-      UpdateSucursalValidationError !== undefined ||
+      updateSucursalValidationError !== undefined ||
       createSucursalDto === undefined
     ) {
-      res
-        .status(400)
-        .json({ error: JSON.parse(UpdateSucursalValidationError ?? '') })
+      CustomResponse.badRequest({ res, error: updateSucursalValidationError })
       return
     }
 
-    if (paramErrors !== undefined || numericIdDto === undefined) {
-      res.status(400).json({ error: 'Id inválido' })
-      return
-    }
+    // eslint-disable-next-line no-console
+    console.log(createSucursalDto)
 
-    if (req.authPayload === undefined) {
-      res.status(401).json({ error: 'Missing id' })
-      return
-    }
-
-    CustomResponse.success({ res, data: createSucursalDto })
+    CustomResponse.notImplemented({ res })
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   delete = (req: Request, res: Response) => {
-    const [error, numericIdDto] = NumericIdDto.create(req.params)
-
-    if (error !== undefined || numericIdDto === undefined) {
-      res.status(400).json({ error: 'Id inválido' })
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
       return
     }
 
-    if (req.authPayload === undefined) {
-      res.status(401).json({ error: 'Missing id' })
+    const [error, numericIdDto] = NumericIdDto.create(req.params)
+    if (error !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: 'Id inválido' })
       return
     }
 

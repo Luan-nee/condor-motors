@@ -23,3 +23,4 @@ export type SuccessArgs = Pick<
 export type CreatedArgs = Pick<SendResponseArgs, 'res' | 'message' | 'data'>
 export type AcceptedArgs = Pick<SendResponseArgs, 'res' | 'message' | 'data'>
 export type NoContentArgs = Pick<SendResponseArgs, 'res' | 'message'>
+export type ErrorResponseArgs = Pick<SendResponseArgs, 'res' | 'error'>

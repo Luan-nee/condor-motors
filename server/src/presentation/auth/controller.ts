@@ -24,7 +24,7 @@ export class AuthController {
   registerUser = (req: Request, res: Response) => {
     const [error, registerUserDto] = RegisterUserDto.create(req.body)
     if (error !== undefined || registerUserDto === undefined) {
-      res.status(400).json({ error: JSON.parse(error ?? '') })
+      CustomResponse.badRequest({ res, error })
       return
     }
 
@@ -56,9 +56,10 @@ export class AuthController {
   loginUser = (req: Request, res: Response) => {
     const [error, loginUserDto] = LoginUserDto.create(req.body)
     if (error !== undefined || loginUserDto === undefined) {
-      res
-        .status(400)
-        .json({ error: 'Nombre de usuario o contraseña incorrectos' })
+      CustomResponse.badRequest({
+        res,
+        error: 'Nombre o contraseña incorrectos'
+      })
       return
     }
 
@@ -90,7 +91,7 @@ export class AuthController {
     )
 
     if (error !== undefined || refreshTokenCookieDto === undefined) {
-      res.status(401).json({ error })
+      CustomResponse.unauthorized({ res, error })
       return
     }
 
