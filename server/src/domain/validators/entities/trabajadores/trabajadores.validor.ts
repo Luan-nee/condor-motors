@@ -3,13 +3,13 @@ import { z } from 'zod'
 
 const createtrabajadorSchema = z.object({
     nombre: trabajadorSchema.nombre,
-    apellido: trabajadorSchema.apellido,
-    DNI:trabajadorSchema.DNI,
+    apellidos: trabajadorSchema.apellidos,
     edad:trabajadorSchema.edad,
-    H_incio: trabajadorSchema.H_inicio,
-    H_final: trabajadorSchema.H_final,
-    Sueldo: trabajadorSchema.Sueldo,
-    SucursalPuesto: trabajadorSchema.SucursalPuesto
+    dni:trabajadorSchema.dni,
+    horaInicioJornada: trabajadorSchema.horaInicioJornada ,
+    horaFinJornada: trabajadorSchema.horaFinJornada,
+    sueldo: trabajadorSchema.sueldo,
+    sucursalId: trabajadorSchema.sucursalId
 })
 
 

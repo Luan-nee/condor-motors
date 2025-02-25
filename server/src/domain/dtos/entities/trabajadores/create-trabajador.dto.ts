@@ -1,33 +1,33 @@
 import { CreateTrabajadorValidador } from "@/domain/validators/entities/trabajadores/trabajadores.validor"
 
 export class CreateTrabajadorDto{
-    public nombre:string
-    public apellido:string
-    public edad:Number
-    public DNI:string
-    public H_inicio:number
-    public H_Final:number
-    public Sueldo?:Number
-    public SucursalPuesto:Number
+    public nombre :string
+    public apellidos :string
+    public edad?:number
+    public dni:string //
+    public horaInicioJornada : string
+    public horaFinJornada : string
+    public sueldo?: number
+    public sucursalId : number 
 
     private constructor({
         nombre,
-        apellido,
+        apellidos,
         edad,
-        DNI,
-        H_inicio,
-        H_Final,
-        Sueldo,
-        SucursalPuesto
+        dni,
+        horaInicioJornada,
+        horaFinJornada,
+        sueldo,
+        sucursalId,
     }: CreateTrabajadorDto ){
         this.nombre = nombre;
-        this.apellido = apellido;
-        this.DNI = DNI;
+        this.apellidos = apellidos;
         this.edad = edad;
-        this.H_inicio = H_inicio;
-        this.H_Final = H_Final;
-        this.Sueldo = Sueldo;
-        this.SucursalPuesto = SucursalPuesto;
+        this.dni = dni;
+        this.horaInicioJornada = horaInicioJornada;
+        this.horaFinJornada = horaFinJornada;
+        this.sueldo = sueldo;
+        this.sucursalId = sucursalId; 
     }
     static create(input: any ):[string?,CreateTrabajadorDto?]{
         const resultado = CreateTrabajadorValidador(input)
