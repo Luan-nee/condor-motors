@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "tsx watch ./src/app.ts",
-    "build": "rimraf ./build && tsc --skipLibCheck && tsc-alias",
-    "start": "node ./build/src/app.js",
+    "build": "rimraf ./dist && tsc --skipLibCheck && tsc-alias",
+    "start": "node ./dist/src/app.js",
     "type-check": "tsc --noEmit --skipLibCheck",
     "init": "ts-patch install -s",
     "lint": "eslint --fix",

@@ -4,12 +4,7 @@ export default [
   {
     ...love,
     files: ['**/*.js', '**/*.ts'],
-    ignores: [
-      '**/build/**/*',
-      '**/client-build/**/*',
-      '**/.vscode/**/*',
-      '**/node_modules/**/*'
-    ],
+    ignores: ['**/dist/**/*', '**/.vscode/**/*', '**/node_modules/**/*'],
     rules: {
       ...love.rules,
       'no-magic-numbers': 'off',
