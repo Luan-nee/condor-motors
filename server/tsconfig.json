@@ -15,6 +15,7 @@
     "moduleDetection": "force",
     // "allowJs": true,
     "isolatedModules": true,
+    "removeComments": true,
     "baseUrl": "./",
     "paths": {
       "@/*": [
