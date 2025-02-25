@@ -8,6 +8,7 @@ import { CreateSucursal } from '@/domain/use-cases/entities/sucursales/create-su
 import { DeleteSucursal } from '@/domain/use-cases/entities/sucursales/delete-sucursal.use-case'
 import { GetSucursalById } from '@/domain/use-cases/entities/sucursales/get-sucursal-by-id.use-case'
 import { GetSucursales } from '@/domain/use-cases/entities/sucursales/get-sucursales.use-case'
+import { UpdateSucursal } from '@/domain/use-cases/entities/sucursales/update-sucursal.use-case'
 import type { Request, Response } from 'express'
 
 export class SucursalesController {
@@ -99,20 +100,28 @@ export class SucursalesController {
       return
     }
 
-    const [updateSucursalValidationError, createSucursalDto] =
+    const [updateSucursalValidationError, updateSucursalDto] =
       UpdateSucursalDto.create(req.body)
     if (
       updateSucursalValidationError !== undefined ||
-      createSucursalDto === undefined
+      updateSucursalDto === undefined
     ) {
       CustomResponse.badRequest({ res, error: updateSucursalValidationError })
       return
     }
 
-    // eslint-disable-next-line no-console
-    console.log(createSucursalDto)
+    const updateSucursal = new UpdateSucursal()
 
-    CustomResponse.notImplemented({ res })
+    updateSucursal
+      .execute(updateSucursalDto, numericIdDto)
+      .then((sucursal) => {
+        const message = `Sucursal con id ${sucursal.id} ha sido actualizada`
+
+        CustomResponse.success({ res, message, data: sucursal })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
   // eslint-disable-next-line @typescript-eslint/class-methods-use-this

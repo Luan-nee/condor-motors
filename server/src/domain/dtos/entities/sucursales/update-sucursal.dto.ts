@@ -27,10 +27,7 @@ export class UpdateSucursalDto {
       result.data.direccion === undefined &&
       result.data.sucursalCentral === undefined
     ) {
-      return [
-        '{"message": "No se recibió información para actualizar"}',
-        undefined
-      ]
+      return ['No se recibió información para actualizar', undefined]
     }
 
     return [undefined, new UpdateSucursalDto(result.data)]
