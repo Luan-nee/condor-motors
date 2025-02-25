@@ -1,4 +1,4 @@
-import { trabajadorSchema } from '@/domain/validators/entities/trabajadores/trabajadores.schema'
+import { trabajadorSchema } from '@/domain/validators/entities/empleados/empleados.schema'
 import { z } from 'zod'
 
 const createtrabajadorSchema = z.object({

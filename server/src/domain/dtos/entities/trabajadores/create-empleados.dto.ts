@@ -1,4 +1,4 @@
-import { CreateTrabajadorValidador } from "@/domain/validators/entities/trabajadores/trabajadores.validor"
+import { CreateTrabajadorValidador } from "@/domain/validators/entities/empleados/empleados.validor"
 
 export class CreateTrabajadorDto{
     public nombre :string
