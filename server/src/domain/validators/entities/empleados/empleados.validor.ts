@@ -8,6 +8,7 @@ const createtrabajadorSchema = z.object({
     dni:trabajadorSchema.dni,
     horaInicioJornada: trabajadorSchema.horaInicioJornada ,
     horaFinJornada: trabajadorSchema.horaFinJornada,
+    fechaContratacion: trabajadorSchema.fechaContratacion,
     sueldo: trabajadorSchema.sueldo,
     sucursalId: trabajadorSchema.sucursalId
 })

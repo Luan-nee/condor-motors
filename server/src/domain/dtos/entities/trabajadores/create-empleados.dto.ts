@@ -9,7 +9,7 @@ export class CreateTrabajadorDto{
     public horaFinJornada : string
     public sueldo?: number
     public sucursalId : number 
-
+    public fechaContratacion : Date
     private constructor({
         nombre,
         apellidos,
@@ -17,6 +17,7 @@ export class CreateTrabajadorDto{
         dni,
         horaInicioJornada,
         horaFinJornada,
+        fechaContratacion,
         sueldo,
         sucursalId,
     }: CreateTrabajadorDto ){
@@ -26,6 +27,7 @@ export class CreateTrabajadorDto{
         this.dni = dni;
         this.horaInicioJornada = horaInicioJornada;
         this.horaFinJornada = horaFinJornada;
+        this.fechaContratacion = fechaContratacion,
         this.sueldo = sueldo;
         this.sucursalId = sucursalId; 
     }

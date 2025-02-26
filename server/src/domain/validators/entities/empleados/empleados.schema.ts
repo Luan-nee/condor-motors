@@ -35,20 +35,16 @@ export const trabajadorSchema = {
         }),
     horaInicioJornada:z.string({
         message:"la hora es un tipo numero no otro tipo de variable"
-    }).min(0).max(99).refine((valor)=>expresionNumbers.test(valor),{
-        message:"La hora no puede ser mayor a 100 , y tampoco puede contener otros caracteres aparte de los numeros"
-    }),
+    }).time(),
     horaFinJornada:z.string({
         message:"La hora de salida tienes que ser tipo numero"
-    }).min(0).max(99).refine((valor)=> expresionNumbers.test(valor),{
-        message:"La hora de salida no puede contener caracteres especiales"
-    }),
+    }).time(),
     fechaContratacion:z.date({
         message:"._."
     }),
     sueldo:z.number({
         message:"El sueldo debe de ser interpretado en numeros"
-    }).max(5000).optional(),
+    }).min(0).max(5000).optional(),
     sucursalId:z.number({
         message:"La Id del sucursal es un numero"
     })
