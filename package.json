@@ -11,6 +11,7 @@
     "init:server": "npm run init --workspace server",
     "lint:server": "npm run lint --workspace server",
     "format:server": "npm run format --workspace server",
+    "check:server": "npm run check --workspace server",
     "db:generate": "npm run db:generate --workspace server",
     "db:migrate": "npm run db:migrate --workspace server",
     "db:push": "npm run db:push --workspace server",

@@ -10,6 +10,7 @@
     "init": "ts-patch install -s",
     "lint": "eslint --fix",
     "format": "npx prettier --write .",
+    "check": "eslint --fix && npx prettier --write . && tsc --noEmit --skipLibCheck",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
