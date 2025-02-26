@@ -2,17 +2,22 @@
 import { BcryptAdapter } from '@/config/bcrypt'
 import { envs } from '@/config/envs'
 import { JwtAdapter } from '@/config/jwt'
+import { permissionCodes } from '@/consts'
 import { db } from '@db/connection'
 import {
   cuentasEmpleadosTable,
   empleadosTable,
+  permisosTables,
   rolesCuentasEmpleadosTable,
+  rolesPermisosTable,
   sucursalesTable
 } from '@db/schema'
 import { exit } from 'process'
 
-// A pesar de que esto es funcional, aún faltaría agregar datos en la tabla de permisos
-const populateDatabase = async (config: ConfigPopulateDb) => {
+const populateDatabase = async (
+  config: ConfigPopulateDb,
+  permissions: Array<{ nombrePermiso: string; codigoPermiso: string }>
+) => {
   const hashedPassword = await BcryptAdapter.hash(config.user.clave)
   const secret = JwtAdapter.randomSecret()
 
@@ -42,6 +47,18 @@ const populateDatabase = async (config: ConfigPopulateDb) => {
       rolCuentaEmpleadoId: rolEmpleado.id,
       empleadoId: empleado.id
     })
+
+    const permisosId = await tx
+      .insert(permisosTables)
+      .values(permissions)
+      .returning({ id: permisosTables.id })
+
+    await tx.insert(rolesPermisosTable).values(
+      permisosId.map((permiso) => ({
+        permisoId: permiso.id,
+        rolId: rolEmpleado.id
+      }))
+    )
   })
 
   return {
@@ -69,7 +86,20 @@ const config: ConfigPopulateDb = {
   }
 }
 
-populateDatabase(config)
+const transformPermissionCodes = (codes: typeof permissionCodes) => {
+  const permissionsArray = Object.values(codes).flatMap((category) =>
+    Object.values(category).map((code) => ({
+      nombrePermiso: code,
+      codigoPermiso: code
+    }))
+  )
+
+  return permissionsArray
+}
+
+const permissions = transformPermissionCodes(permissionCodes)
+
+populateDatabase(config, permissions)
   .then((administrador) => {
     console.log('Database has been initialized correctly!')
     console.log('user credentials:', administrador)
