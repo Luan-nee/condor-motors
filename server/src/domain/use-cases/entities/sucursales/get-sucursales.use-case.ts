@@ -2,7 +2,6 @@ import { orderValues } from '@/consts'
 import { db } from '@/db/connection'
 import { sucursalesTable } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
-import { QueriesMapper } from '@/domain/mappers/queries.mapper'
 import { SucursalEntityMapper } from '@/domain/mappers/sucursal-entity.mapper'
 import { asc, desc, ilike, or } from 'drizzle-orm'
 
@@ -13,8 +12,6 @@ export class GetSucursales {
     direccion: sucursalesTable.direccion,
     sucursalCentral: sucursalesTable.sucursalCentral
   } as const
-
-  private readonly validSortByKeys = Object.keys(this.validSortBy)
 
   private isValidSortBy(
     sortBy: string
@@ -65,13 +62,7 @@ export class GetSucursales {
   }
 
   async execute(queriesDto: QueriesDto) {
-    const mappedQueries = QueriesMapper.QueriesFromObject(
-      queriesDto,
-      this.validSortByKeys,
-      this.validSortByKeys[0]
-    )
-
-    const sucursales = await this.getSucursales(mappedQueries)
+    const sucursales = await this.getSucursales(queriesDto)
 
     return sucursales.map((sucursal) =>
       SucursalEntityMapper.sucursalEntityFromObject(sucursal)
