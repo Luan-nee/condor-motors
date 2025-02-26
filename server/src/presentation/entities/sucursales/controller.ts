@@ -12,7 +12,6 @@ import { UpdateSucursal } from '@/domain/use-cases/entities/sucursales/update-su
 import type { Request, Response } from 'express'
 
 export class SucursalesController {
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   create = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
       CustomResponse.unauthorized({ res, error: 'Invalid access token' })
@@ -37,7 +36,6 @@ export class SucursalesController {
       })
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   getById = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
       CustomResponse.unauthorized({ res, error: 'Invalid access token' })
@@ -62,7 +60,6 @@ export class SucursalesController {
       })
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   getAll = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
       CustomResponse.unauthorized({ res, error: 'Invalid access token' })
@@ -87,7 +84,6 @@ export class SucursalesController {
       })
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   update = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
       CustomResponse.unauthorized({ res, error: 'Invalid access token' })
@@ -124,7 +120,6 @@ export class SucursalesController {
       })
   }
 
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   delete = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
       CustomResponse.unauthorized({ res, error: 'Invalid access token' })

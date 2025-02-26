@@ -6,7 +6,6 @@ import { db } from '@db/connection'
 import { ilike } from 'drizzle-orm'
 
 export class CreateSucursal {
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   async execute(createSucursalDto: CreateSucursalDto) {
     const sucursalesWithSameName = await db
       .select()

@@ -7,7 +7,6 @@ import { db } from '@db/connection'
 import { eq, ilike } from 'drizzle-orm'
 
 export class UpdateSucursal {
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   async execute(
     updateSucursalDto: UpdateSucursalDto,
     numericIdDto: NumericIdDto

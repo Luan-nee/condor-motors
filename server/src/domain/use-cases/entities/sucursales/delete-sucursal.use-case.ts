@@ -5,7 +5,6 @@ import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { eq } from 'drizzle-orm'
 
 export class DeleteSucursal {
-  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
   async execute(numericIdDto: NumericIdDto) {
     const sucursales = await db
       .delete(sucursalesTable)
