@@ -11,7 +11,10 @@ export class QueriesMapper {
       order,
       page,
       search,
-      page_size: pageSize
+      page_size: pageSize,
+      filter,
+      filter_value: filterValue,
+      filter_type: filterType
     } = queriesDto
 
     let mappedSortBy = sortBy
@@ -25,7 +28,10 @@ export class QueriesMapper {
       order,
       page,
       search,
-      page_size: pageSize
+      page_size: pageSize,
+      filter,
+      filter_value: filterValue,
+      filter_type: filterType
     }
   }
 }

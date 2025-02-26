@@ -13,7 +13,10 @@ export const QueriesSchema = z.object({
   order: queriesBaseSchema.order,
   page: queriesBaseSchema.page,
   search: queriesBaseSchema.search,
-  page_size: queriesBaseSchema.page_size
+  page_size: queriesBaseSchema.page_size,
+  filter: queriesBaseSchema.filter,
+  filter_value: queriesBaseSchema.filter_value,
+  filter_type: queriesBaseSchema.filter_type
 })
 
 export const queriesValidator = (object: unknown) =>

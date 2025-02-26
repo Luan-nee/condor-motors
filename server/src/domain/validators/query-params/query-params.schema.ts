@@ -1,4 +1,5 @@
-import { defaultQueries, orderValues } from '@/consts'
+/* eslint-disable @typescript-eslint/no-unsafe-type-assertion */
+import { defaultQueries, filterTypeValues, orderValues } from '@/consts'
 import z from 'zod'
 
 // export const paramsSchema = {
@@ -6,18 +7,24 @@ import z from 'zod'
 // }
 
 export const queriesBaseSchema = {
+  search: z.coerce.string().default(defaultQueries.search),
   sort_by: z.coerce.string().default(defaultQueries.sort_by),
   order: z.coerce
     .string()
     .default(defaultQueries.order)
-    .transform((value) =>
-      value === orderValues.asc ? orderValues.asc : orderValues.desc
-    ),
+    .transform((value) => {
+      if (
+        Object.values(orderValues).includes(value as keyof typeof orderValues)
+      ) {
+        return value
+      }
+
+      return defaultQueries.order
+    }),
   page: z.coerce
     .number()
     .default(defaultQueries.page)
     .transform((value) => (value < 1 ? 1 : value)),
-  search: z.coerce.string().default(defaultQueries.search),
   page_size: z.coerce
     .number()
     .default(defaultQueries.page_size)
@@ -30,8 +37,21 @@ export const queriesBaseSchema = {
         default:
           return value
       }
+    }),
+  filter: z.coerce.string().default(defaultQueries.filter),
+  filter_value: z.any().default(defaultQueries.filter_value),
+  filter_type: z.coerce
+    .string()
+    .default(defaultQueries.filter_type)
+    .transform((value) => {
+      if (
+        Object.values(filterTypeValues).includes(
+          value as keyof typeof filterTypeValues
+        )
+      ) {
+        return value
+      }
+
+      return defaultQueries.filter_type
     })
-  // filter: z.coerce.string().default(defaultQueries.filter),
-  // filter_value: z.coerce.string().default(defaultQueries.filter_value),
-  // filter_type: z.coerce.string().default(defaultQueries.filter_type)
 }
