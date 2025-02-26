@@ -35,7 +35,7 @@ export const responseStatus = {
 
 export const permissionCodes = {
   sucursales: {
-    createAny: 'sucursales:create',
+    createAny: 'sucursales:create_any',
     getAny: 'sucursales:get_any',
     upateAny: 'sucursales:update_any',
     deleteAny: 'sucursales:delete_any',

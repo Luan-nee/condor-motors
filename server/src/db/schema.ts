@@ -190,6 +190,7 @@ export const cuentasEmpleadosTable = pgTable('cuentas_empleados', {
 
 export const permisosTables = pgTable('permisos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  codigoPermiso: text('codigo_permiso').unique(),
   nombrePermiso: text('nombre_permiso').notNull().unique()
 })
 
