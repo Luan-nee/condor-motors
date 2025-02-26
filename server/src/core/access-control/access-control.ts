@@ -5,12 +5,20 @@ import {
   rolesPermisosTable
 } from '@/db/schema'
 import type { NumericIdDto } from '@domain/dtos/query-params/numeric-id.dto'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, or } from 'drizzle-orm'
 
 export class AccessControl {
-  private static async verify(
+  private static getConditionals(permissionCodes: string[]) {
+    const conditionals = permissionCodes.map((permissionCode) =>
+      eq(permisosTables.codigoPermiso, permissionCode)
+    )
+
+    return or(...conditionals)
+  }
+
+  static async hasPermission(
     numericIdDto: NumericIdDto,
-    permissionCode: string
+    permissionCodes: string[]
   ) {
     const empleados = await db
       .select({
@@ -25,8 +33,14 @@ export class AccessControl {
 
     const [empleado] = empleados
 
-    const permisos = await db
-      .select()
+    const permissionConditionals = this.getConditionals(permissionCodes)
+
+    const permissions = await db
+      .select({
+        permisoId: permisosTables.id,
+        codigoPermiso: permisosTables.codigoPermiso,
+        nombrePermiso: permisosTables.nombrePermiso
+      })
       .from(rolesPermisosTable)
       .innerJoin(
         permisosTables,
@@ -35,19 +49,10 @@ export class AccessControl {
       .where(
         and(
           eq(rolesPermisosTable.rolId, empleado.rolCuentaEmpleadoId),
-          eq(permisosTables.codigoPermiso, permissionCode)
+          permissionConditionals
         )
       )
 
-    return permisos.length > 1
-  }
-
-  static async hasPermission(
-    numericIdDto: NumericIdDto,
-    permissionCode: string
-  ) {
-    const hasPermission = await this.verify(numericIdDto, permissionCode)
-
-    return hasPermission
+    return permissions
   }
 }
