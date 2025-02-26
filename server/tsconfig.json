@@ -18,18 +18,10 @@
     "removeComments": true,
     "baseUrl": "./",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@db/*": [
-        "./src/db/*"
-      ],
-      "@domain/*": [
-        "./src/domain/*"
-      ],
-      "@presentation/*": [
-        "./src/presentation/*"
-      ]
+      "@/*": ["./src/*"],
+      "@db/*": ["./src/db/*"],
+      "@domain/*": ["./src/domain/*"],
+      "@presentation/*": ["./src/presentation/*"]
     },
     "plugins": [
       {
@@ -40,16 +32,11 @@
         "afterDeclarations": true
       }
     ],
-    "typeRoots": [
-      "./src/types"
-    ]
+    "typeRoots": ["./src/types"]
   },
   "ts-node": {
     "transpileOnly": true,
     "files": true
   },
-  "include": [
-    "src/**/*",
-    "drizzle.config.ts"
-  ],
+  "include": ["src/**/*", "drizzle.config.ts"]
 }
