@@ -9,12 +9,11 @@ import { ilike } from 'drizzle-orm'
 
 export class CreateSucursal {
   private readonly authPayload: AuthPayload
+  private readonly permissionCreateAny = permissionCodes.sucursales.createAny
 
   constructor(authPayload: AuthPayload) {
     this.authPayload = authPayload
   }
-
-  private readonly permissionCreateAny = permissionCodes.sucursales.createAny
 
   private async createSucursal(createSucursalDto: CreateSucursalDto) {
     const sucursalesWithSameName = await db
