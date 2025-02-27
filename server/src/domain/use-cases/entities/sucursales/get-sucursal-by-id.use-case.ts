@@ -9,7 +9,7 @@ import {
 } from '@/db/schema'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { SucursalEntityMapper } from '@/domain/mappers/sucursal-entity.mapper'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 export class GetSucursalById {
   private readonly authPayload: AuthPayload
@@ -38,9 +38,14 @@ export class GetSucursalById {
       )
       .innerJoin(
         cuentasEmpleadosTable,
-        eq(cuentasEmpleadosTable.id, this.authPayload.id)
+        eq(cuentasEmpleadosTable.empleadoId, empleadosTable.id)
       )
-      .where(eq(sucursalesTable.id, numericIdDto.id))
+      .where(
+        and(
+          eq(sucursalesTable.id, numericIdDto.id),
+          eq(cuentasEmpleadosTable.id, this.authPayload.id)
+        )
+      )
   }
 
   private async getAnySucursal(numericIdDto: NumericIdDto) {
