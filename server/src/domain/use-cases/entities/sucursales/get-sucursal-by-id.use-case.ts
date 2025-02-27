@@ -9,17 +9,12 @@ import {
 } from '@/db/schema'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { SucursalEntityMapper } from '@/domain/mappers/sucursal-entity.mapper'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 export class GetSucursalById {
   private readonly authPayload: AuthPayload
   private readonly permissionGetAny = permissionCodes.sucursales.getAny
   private readonly permissionGetRelated = permissionCodes.sucursales.getRelated
-
-  constructor(authPayload: AuthPayload) {
-    this.authPayload = authPayload
-  }
-
   private readonly selectFields = {
     id: sucursalesTable.id,
     nombre: sucursalesTable.nombre,
@@ -29,16 +24,12 @@ export class GetSucursalById {
     fechaActualizacion: sucursalesTable.fechaActualizacion
   }
 
-  private getQuery(hasPermissionGetAny: boolean) {
-    if (hasPermissionGetAny) {
-      return db
-        .select(this.selectFields)
-        .from(sucursalesTable)
-        .where(eq(sucursalesTable.id, sql.placeholder('sucursal_id')))
-        .prepare('get_sucursal_by_id')
-    }
+  constructor(authPayload: AuthPayload) {
+    this.authPayload = authPayload
+  }
 
-    return db
+  private async getRelatedSucursal(numericIdDto: NumericIdDto) {
+    return await db
       .select(this.selectFields)
       .from(sucursalesTable)
       .innerJoin(
@@ -49,17 +40,23 @@ export class GetSucursalById {
         cuentasEmpleadosTable,
         eq(cuentasEmpleadosTable.id, this.authPayload.id)
       )
-      .where(eq(sucursalesTable.id, sql.placeholder('sucursal_id')))
-      .prepare('get_sucursal_by_id')
+      .where(eq(sucursalesTable.id, numericIdDto.id))
+  }
+
+  private async getAnySucursal(numericIdDto: NumericIdDto) {
+    return await db
+      .select(this.selectFields)
+      .from(sucursalesTable)
+      .where(eq(sucursalesTable.id, numericIdDto.id))
   }
 
   private async getSucursalById(
     numericIdDto: NumericIdDto,
     hasPermissionGetAny: boolean
   ) {
-    const query = this.getQuery(hasPermissionGetAny)
-
-    const sucursales = await query.execute({ sucursal_id: numericIdDto.id })
+    const sucursales = hasPermissionGetAny
+      ? await this.getAnySucursal(numericIdDto)
+      : await this.getRelatedSucursal(numericIdDto)
 
     if (sucursales.length <= 0) {
       if (!hasPermissionGetAny) {
