@@ -77,10 +77,7 @@ export class GetSucursalById {
 
     const [sucursal] = sucursales
 
-    const mappedSucursal =
-      SucursalEntityMapper.sucursalEntityFromObject(sucursal)
-
-    return mappedSucursal
+    return sucursal
   }
 
   async execute(numericIdDto: NumericIdDto) {
@@ -111,6 +108,9 @@ export class GetSucursalById {
       hasPermissionGetAny
     )
 
-    return sucursal
+    const mappedSucursal =
+      SucursalEntityMapper.sucursalEntityFromObject(sucursal)
+
+    return mappedSucursal
   }
 }

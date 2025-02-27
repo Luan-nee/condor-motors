@@ -76,7 +76,9 @@ export class SucursalesController {
       return
     }
 
-    const getSucursales = new GetSucursales()
+    const { authPayload } = req
+
+    const getSucursales = new GetSucursales(authPayload)
 
     getSucursales
       .execute(queriesDto)
