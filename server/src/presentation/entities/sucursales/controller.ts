@@ -50,7 +50,9 @@ export class SucursalesController {
       return
     }
 
-    const getSucursalById = new GetSucursalById()
+    const { authPayload } = req
+
+    const getSucursalById = new GetSucursalById(authPayload)
 
     getSucursalById
       .execute(numericIdDto)
