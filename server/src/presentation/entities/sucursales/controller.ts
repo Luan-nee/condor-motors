@@ -24,7 +24,9 @@ export class SucursalesController {
       return
     }
 
-    const createSucursal = new CreateSucursal()
+    const { authPayload } = req
+
+    const createSucursal = new CreateSucursal(authPayload)
 
     createSucursal
       .execute(createSucursalDto)

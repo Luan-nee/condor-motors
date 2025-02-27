@@ -1,3 +1,5 @@
+import { permissionCodes } from '@/consts'
+import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { sucursalesTable } from '@/db/schema'
 import type { CreateSucursalDto } from '@/domain/dtos/entities/sucursales/create-sucursal.dto'
@@ -6,7 +8,15 @@ import { db } from '@db/connection'
 import { ilike } from 'drizzle-orm'
 
 export class CreateSucursal {
-  async execute(createSucursalDto: CreateSucursalDto) {
+  private readonly authPayload: AuthPayload
+
+  constructor(authPayload: AuthPayload) {
+    this.authPayload = authPayload
+  }
+
+  private readonly permissionCreateAny = permissionCodes.sucursales.createAny
+
+  private async createSucursal(createSucursalDto: CreateSucursalDto) {
     const sucursalesWithSameName = await db
       .select()
       .from(sucursalesTable)
@@ -39,5 +49,26 @@ export class CreateSucursal {
       SucursalEntityMapper.sucursalEntityFromObject(sucursal)
 
     return mappedSucursal
+  }
+
+  async execute(createSucursalDto: CreateSucursalDto) {
+    const validPermissions = await AccessControl.verifyPermissions(
+      this.authPayload,
+      [this.permissionCreateAny]
+    )
+
+    if (
+      !validPermissions.some(
+        (permission) => permission.codigoPermiso === this.permissionCreateAny
+      )
+    ) {
+      throw CustomError.forbidden(
+        'No tienes los suficientes permisos para realizar esta acción'
+      )
+    }
+
+    const sucursal = await this.createSucursal(createSucursalDto)
+
+    return sucursal
   }
 }
