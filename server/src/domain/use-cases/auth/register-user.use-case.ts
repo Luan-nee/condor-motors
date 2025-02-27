@@ -3,7 +3,11 @@ import { UserEntityMapper } from '@/domain/mappers/user-entity.mapper'
 import type { Encryptor, TokenAuthenticator } from '@/types/interfaces'
 import type { UserEntityWithTokens } from '@/types/schemas'
 import { db } from '@db/connection'
-import { cuentasEmpleadosTable, empleadosTable } from '@db/schema'
+import {
+  cuentasEmpleadosTable,
+  empleadosTable,
+  rolesCuentasEmpleadosTable
+} from '@db/schema'
 import type { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
 import { AuthPayloadMapper } from '@domain/mappers/auth-payload.mapper'
 import { and, eq, ilike, notExists } from 'drizzle-orm'
@@ -45,6 +49,17 @@ export class RegisterUser {
       throw CustomError.badRequest(
         'El empleado no existe o ya tiene una cuenta asociada'
       )
+    }
+
+    const roles = await db
+      .select({ id: rolesCuentasEmpleadosTable.id })
+      .from(rolesCuentasEmpleadosTable)
+      .where(
+        eq(rolesCuentasEmpleadosTable.id, registerUserDto.rolCuentaEmpleadoId)
+      )
+
+    if (roles.length <= 0) {
+      throw CustomError.badRequest('El rol que intentó asignar no existe')
     }
 
     const hashedPassword = await this.encryptor.hash(registerUserDto.clave)
