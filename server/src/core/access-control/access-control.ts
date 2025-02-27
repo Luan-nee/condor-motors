@@ -4,7 +4,6 @@ import {
   permisosTables,
   rolesPermisosTable
 } from '@/db/schema'
-import type { NumericIdDto } from '@domain/dtos/query-params/numeric-id.dto'
 import { and, eq, or } from 'drizzle-orm'
 
 export class AccessControl {
@@ -17,7 +16,7 @@ export class AccessControl {
   }
 
   static async verifyPermissions(
-    numericIdDto: NumericIdDto,
+    authPayload: AuthPayload,
     permissionCodes: string[]
   ) {
     const empleados = await db
@@ -25,7 +24,7 @@ export class AccessControl {
         rolCuentaEmpleadoId: cuentasEmpleadosTable.rolCuentaEmpleadoId
       })
       .from(cuentasEmpleadosTable)
-      .where(eq(cuentasEmpleadosTable.id, numericIdDto.id))
+      .where(eq(cuentasEmpleadosTable.id, authPayload.id))
 
     if (empleados.length < 1) {
       return []
