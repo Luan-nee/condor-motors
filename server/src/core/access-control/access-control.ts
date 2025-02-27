@@ -16,7 +16,7 @@ export class AccessControl {
     return or(...conditionals)
   }
 
-  static async hasPermission(
+  static async verifyPermissions(
     numericIdDto: NumericIdDto,
     permissionCodes: string[]
   ) {
@@ -28,7 +28,7 @@ export class AccessControl {
       .where(eq(cuentasEmpleadosTable.id, numericIdDto.id))
 
     if (empleados.length < 1) {
-      return false
+      return []
     }
 
     const [empleado] = empleados
