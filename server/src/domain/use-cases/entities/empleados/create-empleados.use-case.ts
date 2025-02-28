@@ -1,11 +1,18 @@
+import { permissionCodes } from "@/consts";
 import { CustomError } from "@/core/errors/custom.error";
 import { empleadosTable } from "@/db/schema";
-import {CreateTrabajadorDto} from '@/domain/dtos/entities/trabajadores/create-empleados.dto'
+import type {CreateTrabajadorDto} from '@/domain/dtos/entities/trabajadores/create-empleados.dto'
 import { EmpleadoEntityMapper } from "@/domain/mappers/empleado-entity.mapper";
 import { db } from '@db/connection'
 import { ilike } from 'drizzle-orm'
 
-export class CreateEmpleado{
+export class CreateEmpleado {
+    private readonly authPayload: AuthPayload
+    private readonly permissionCreateAny = permissionCodes.empleados
+
+    constructor(authPayload: AuthPayload){
+        this.authPayload = authPayload;
+    }
 
     async execute( createEmpleadoDto : CreateTrabajadorDto){
         const empleadoConDNI = await db
