@@ -18,9 +18,10 @@ export class EmpleadosController {
       return
     }
 
-    const { authPayload } = req
+    // const { authPayload } = req
 
-    const createEmpleado = new CreateEmpleado(authPayload)
+    // const createEmpleado = new CreateEmpleado(authPayload)
+    const createEmpleado = new CreateEmpleado()
 
     createEmpleado
       .execute(createEmpleadoDto)

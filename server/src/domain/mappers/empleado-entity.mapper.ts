@@ -22,12 +22,14 @@ export class EmpleadoEntityMapper {
     if (id === undefined) {
       throw CustomError.badRequest('Missing id')
     }
-
     if (nombre === undefined) {
       throw CustomError.badRequest('Missing nombre')
     }
     if (apellidos === undefined) {
       throw CustomError.badRequest('Missing apellidos')
+    }
+    if (sucursalId === undefined) {
+      throw CustomError.badRequest('Missing sucursalId')
     }
     if (fechaCreacion === undefined) {
       throw CustomError.badRequest('Missing fechaCreacion')
@@ -35,6 +37,14 @@ export class EmpleadoEntityMapper {
     if (fechaActualizacion === undefined) {
       throw CustomError.badRequest('Missing fechaActualizacion')
     }
+
+    const parsedFechaContratacion =
+      fechaContratacion instanceof Date
+        ? fechaContratacion.getDate()
+        : fechaContratacion
+
+    const parsedSueldo =
+      typeof sueldo === 'string' ? parseFloat(sueldo) : sueldo
 
     return {
       id,
@@ -45,8 +55,8 @@ export class EmpleadoEntityMapper {
       dni,
       horaInicioJornada,
       horaFinJornada,
-      fechaContratacion,
-      sueldo: Number(sueldo),
+      fechaContratacion: parsedFechaContratacion,
+      sueldo: parsedSueldo,
       sucursalId,
       fechaCreacion,
       fechaActualizacion
