@@ -38,11 +38,6 @@ export class EmpleadoEntityMapper {
       throw CustomError.badRequest('Missing fechaActualizacion')
     }
 
-    const parsedFechaContratacion =
-      fechaContratacion instanceof Date
-        ? fechaContratacion.toISOString().split('T')[0]
-        : fechaContratacion
-
     const parsedSueldo =
       typeof sueldo === 'string' ? parseFloat(sueldo) : sueldo
 
@@ -55,7 +50,7 @@ export class EmpleadoEntityMapper {
       dni,
       horaInicioJornada,
       horaFinJornada,
-      fechaContratacion: parsedFechaContratacion,
+      fechaContratacion,
       sueldo: parsedSueldo,
       sucursalId,
       fechaCreacion,

@@ -137,7 +137,7 @@ export const empleadosTable = pgTable('empleados', {
   horaInicioJornada: time('hora_inicio_jornada'),
   horaFinJornada: time('hora_fin_jornada'),
   fechaContratacion: date('fecha_contratacion', {
-    mode: 'date'
+    mode: 'string'
   }),
   sueldo: numeric('sueldo', {
     precision: 7,

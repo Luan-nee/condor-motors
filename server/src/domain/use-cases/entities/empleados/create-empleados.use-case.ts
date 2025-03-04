@@ -42,11 +42,6 @@ export class CreateEmpleado {
         ? undefined
         : createEmpleadoDto.sueldo.toFixed(2)
 
-    const fechaContratacionDate =
-      createEmpleadoDto.fechaContratacion === undefined
-        ? undefined
-        : new Date(createEmpleadoDto.fechaContratacion)
-
     const insertedEmpleadoResult = await db
       .insert(empleadosTable)
       .values({
@@ -56,7 +51,7 @@ export class CreateEmpleado {
         dni: createEmpleadoDto.dni,
         horaInicioJornada: createEmpleadoDto.horaInicioJornada,
         horaFinJornada: createEmpleadoDto.horaFinJornada,
-        fechaContratacion: fechaContratacionDate,
+        fechaContratacion: createEmpleadoDto.fechaContratacion,
         sueldo: sueldoString,
         sucursalId: createEmpleadoDto.sucursalId
       })
