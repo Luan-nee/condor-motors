@@ -171,6 +171,7 @@ export const clientesTable = pgTable('clientes', {
 
 export const rolesCuentasEmpleadosTable = pgTable('roles_cuentas_empleados', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  codigo: text('codigo').notNull().unique(),
   nombreRol: text('nombre_rol').notNull().unique()
 })
 
@@ -191,7 +192,7 @@ export const cuentasEmpleadosTable = pgTable('cuentas_empleados', {
 
 export const permisosTable = pgTable('permisos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  codigoPermiso: text('codigo_permiso').unique(),
+  codigoPermiso: text('codigo_permiso').notNull().unique(),
   nombrePermiso: text('nombre_permiso').notNull().unique()
 })
 

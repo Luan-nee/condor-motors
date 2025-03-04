@@ -3,12 +3,24 @@ import { UserEntityMapper } from '@/domain/mappers/user-entity.mapper'
 import type { Encryptor, TokenAuthenticator } from '@/types/interfaces'
 import type { UserEntityWithTokens } from '@/types/schemas'
 import { db } from '@db/connection'
-import { cuentasEmpleadosTable } from '@db/schema'
+import { cuentasEmpleadosTable, rolesCuentasEmpleadosTable } from '@db/schema'
 import type { LoginUserDto } from '@domain/dtos/auth/login-user.dto'
 import { AuthPayloadMapper } from '@domain/mappers/auth-payload.mapper'
-import { like } from 'drizzle-orm'
+import { eq, like } from 'drizzle-orm'
 
 export class LoginUser {
+  private readonly selectFields = {
+    id: cuentasEmpleadosTable.id,
+    usuario: cuentasEmpleadosTable.usuario,
+    clave: cuentasEmpleadosTable.clave,
+    secret: cuentasEmpleadosTable.secret,
+    rolCuentaEmpleadoId: cuentasEmpleadosTable.rolCuentaEmpleadoId,
+    rolCuentaEmpleadoCodigo: rolesCuentasEmpleadosTable.codigo,
+    empleadoId: cuentasEmpleadosTable.empleadoId,
+    fechaCreacion: cuentasEmpleadosTable.fechaCreacion,
+    fechaActualizacion: cuentasEmpleadosTable.fechaActualizacion
+  }
+
   constructor(
     private readonly tokenAuthenticator: TokenAuthenticator,
     private readonly encryptor: Encryptor
@@ -16,8 +28,15 @@ export class LoginUser {
 
   private readonly login = async (loginUserDto: LoginUserDto) => {
     const users = await db
-      .select()
+      .select(this.selectFields)
       .from(cuentasEmpleadosTable)
+      .innerJoin(
+        rolesCuentasEmpleadosTable,
+        eq(
+          rolesCuentasEmpleadosTable.id,
+          cuentasEmpleadosTable.rolCuentaEmpleadoId
+        )
+      )
       .where(like(cuentasEmpleadosTable.usuario, loginUserDto.usuario))
 
     if (users.length <= 0) {

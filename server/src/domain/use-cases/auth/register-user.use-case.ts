@@ -20,7 +20,7 @@ export class RegisterUser {
 
   private readonly register = async (registerUserDto: RegisterUserDto) => {
     const usersWithSameName = await db
-      .select()
+      .select({ id: cuentasEmpleadosTable.id })
       .from(cuentasEmpleadosTable)
       .where(ilike(cuentasEmpleadosTable.usuario, registerUserDto.usuario))
 
@@ -31,7 +31,7 @@ export class RegisterUser {
     }
 
     const empleados = await db
-      .select()
+      .select({ id: empleadosTable.id })
       .from(empleadosTable)
       .where(
         and(
@@ -52,7 +52,10 @@ export class RegisterUser {
     }
 
     const roles = await db
-      .select({ id: rolesCuentasEmpleadosTable.id })
+      .select({
+        id: rolesCuentasEmpleadosTable.id,
+        codigo: rolesCuentasEmpleadosTable.codigo
+      })
       .from(rolesCuentasEmpleadosTable)
       .where(
         eq(rolesCuentasEmpleadosTable.id, registerUserDto.rolCuentaEmpleadoId)
@@ -82,9 +85,14 @@ export class RegisterUser {
       )
     }
 
+    const [selectedRol] = roles
+
     const [user] = insertUserResult
 
-    return user
+    return {
+      ...user,
+      rolCuentaEmpleadoCodigo: selectedRol.codigo
+    }
   }
 
   private readonly generateTokens = (payload: AuthPayload, secret: string) => {

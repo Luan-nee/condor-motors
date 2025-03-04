@@ -7,6 +7,7 @@ export class UserEntityMapper {
       id,
       usuario,
       rolCuentaEmpleadoId,
+      rolCuentaEmpleadoCodigo,
       empleadoId,
       fechaCreacion,
       fechaActualizacion
@@ -20,6 +21,9 @@ export class UserEntityMapper {
     }
     if (rolCuentaEmpleadoId === undefined) {
       throw CustomError.badRequest('Missing rolCuentaEmpleadoId')
+    }
+    if (rolCuentaEmpleadoCodigo === undefined) {
+      throw CustomError.badRequest('Missing rolCuentaEmpleadoCodigo')
     }
     if (empleadoId === undefined) {
       throw CustomError.badRequest('Missing empleadoId')
@@ -35,6 +39,7 @@ export class UserEntityMapper {
       id,
       usuario,
       rolCuentaEmpleadoId,
+      rolCuentaEmpleadoCodigo,
       empleadoId,
       fechaCreacion,
       fechaActualizacion

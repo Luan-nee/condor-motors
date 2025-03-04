@@ -13,6 +13,7 @@ interface ConfigPopulateDb {
     apellidos: string
   }
   rolEmpleado: {
+    codigo: string
     nombreRol: string
   }
 }

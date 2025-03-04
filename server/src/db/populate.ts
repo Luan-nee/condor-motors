@@ -82,6 +82,7 @@ const config: ConfigPopulateDb = {
     apellidos: 'Principal'
   },
   rolEmpleado: {
+    codigo: 'administrador',
     nombreRol: 'Adminstrador'
   }
 }
