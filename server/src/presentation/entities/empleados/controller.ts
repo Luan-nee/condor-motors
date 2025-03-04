@@ -14,7 +14,7 @@ export class ChambeadoresController{
         }
 
         const [error,crearChambeador] = CreateTrabajadorDto.create(req.body);
-        if( !error || crearChambeador === undefined){
+        if( error !== undefined || crearChambeador === undefined){
             CustomResponse.badRequest({res,error});
             return;
         }
@@ -30,5 +30,5 @@ export class ChambeadoresController{
         })
         //aun tengo errores en aqui , que no entiendo el por que 
     }
-    
+
 }

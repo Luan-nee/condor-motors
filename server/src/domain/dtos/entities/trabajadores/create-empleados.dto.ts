@@ -9,7 +9,7 @@ export class CreateTrabajadorDto{
     public horaFinJornada : string
     public sueldo?: number
     public sucursalId : number 
-    public fechaContratacion : Date
+    public fechaContratacion? : string
     private constructor({
         nombre,
         apellidos,

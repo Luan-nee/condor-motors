@@ -8,7 +8,7 @@ export class EntitiesRoutes {
     const router = Router()
 
     router.use('/sucursales', AuthMiddleware.requests, sucursalesRoutes.routes)
-    router.use('/empleado', AuthMiddleware.requests, ChambeadorRoutes.routes)
+    router.use('/empleados', AuthMiddleware.requests, ChambeadorRoutes.routes)
     return router
   }
 }

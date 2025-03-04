@@ -28,20 +28,29 @@ export const trabajadorSchema = {
     dni:z.string({
             message:"El dni de preferencia tiene que ser tipo string"
         })
-        .min(7)
-        .max(7)
-        .refine((valor)=> expresionNumbers.test(valor),{
+        // .min(6)
+        // .max(7)
+        .refine((valor)=> {
+            if(!expresionNumbers.test(valor)){
+                return false;
+            }
+            if(valor.length !== 8){
+                return false;
+            } 
+
+            return true;
+        },{
             message:"El DNI no puede contener letras , solo numeros"
         }),
     horaInicioJornada:z.string({
         message:"la hora es un tipo numero no otro tipo de variable"
-    }).time(),
+    }),
     horaFinJornada:z.string({
         message:"La hora de salida tienes que ser tipo numero"
-    }).time(),
-    fechaContratacion:z.date({
-        message:"._."
     }),
+    fechaContratacion:z.string({
+        message:"._. error"
+    }).date().optional(),
     sueldo:z.number({
         message:"El sueldo debe de ser interpretado en numeros"
     }).min(0).max(5000).optional(),

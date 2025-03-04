@@ -7,7 +7,7 @@ export class ChambeadorRoutes{
 
         const chambeadoresController = new ChambeadoresController();
 
-        router.post('/createEmpleado',chambeadoresController.create); 
+        router.post('/',chambeadoresController.create); 
         return router;
     }
 }
