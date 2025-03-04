@@ -1,10 +1,10 @@
-import { CreateTrabajadorValidador } from '@/domain/validators/entities/empleados/empleados.validor'
+import { createEmpleadoValidator } from '@/domain/validators/entities/empleados/empleado.validator'
 
-export class CreateTrabajadorDto {
+export class CreateEmpleadoDto {
   public nombre: string
   public apellidos: string
   public edad?: number
-  public dni: string //
+  public dni: string
   public horaInicioJornada: string
   public horaFinJornada: string
   public sueldo?: number
@@ -20,7 +20,7 @@ export class CreateTrabajadorDto {
     fechaContratacion,
     sueldo,
     sucursalId
-  }: CreateTrabajadorDto) {
+  }: CreateEmpleadoDto) {
     this.nombre = nombre
     this.apellidos = apellidos
     this.edad = edad
@@ -31,13 +31,13 @@ export class CreateTrabajadorDto {
     this.sueldo = sueldo
     this.sucursalId = sucursalId
   }
-  static create(input: any): [string?, CreateTrabajadorDto?] {
-    const resultado = CreateTrabajadorValidador(input)
+  static create(input: any): [string?, CreateEmpleadoDto?] {
+    const resultado = createEmpleadoValidator(input)
 
     if (!resultado.success) {
       return [resultado.error.message, undefined]
     }
 
-    return [undefined, new CreateTrabajadorDto(resultado.data)]
+    return [undefined, new CreateEmpleadoDto(resultado.data)]
   }
 }

@@ -1,13 +1,13 @@
-import { ChambeadoresController } from '@presentation/entities/empleados/controller'
+import { EmpleadosController } from '@presentation/entities/empleados/controller'
 import { Router } from 'express'
 
-export class ChambeadorRoutes {
+export class EmpleadosRoutes {
   static get routes() {
     const router = Router()
 
-    const chambeadoresController = new ChambeadoresController()
+    const empleadosController = new EmpleadosController()
 
-    router.post('/', chambeadoresController.create)
+    router.post('/', empleadosController.create)
     return router
   }
 }

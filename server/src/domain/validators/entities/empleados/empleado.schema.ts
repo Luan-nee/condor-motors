@@ -2,7 +2,8 @@ import { z } from 'zod'
 
 const expresion = /^[a-zA-ZñÑáéíóúÁÉÍÓÚ\s]/
 const expresionNumbers = /^[0-9]/
-export const trabajadorSchema = {
+
+export const empleadoSchema = {
   nombre: z
     .string({
       message: 'El nombre de la persona es proviniente del DNI'
