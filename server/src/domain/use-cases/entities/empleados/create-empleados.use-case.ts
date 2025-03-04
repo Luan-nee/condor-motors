@@ -1,10 +1,10 @@
 import { permissionCodes } from "@/consts";
 import { CustomError } from "@/core/errors/custom.error";
-import { empleadosTable } from "@/db/schema";
+import { empleadosTable, sucursalesTable } from "@/db/schema";
 import type {CreateTrabajadorDto} from '@/domain/dtos/entities/trabajadores/create-empleados.dto'
 import { EmpleadoEntityMapper } from "@/domain/mappers/empleado-entity.mapper";
 import { db } from '@db/connection'
-import { ilike } from 'drizzle-orm'
+import { eq, ilike } from 'drizzle-orm'
 
 export class CreateEmpleado {
     private readonly authPayload: AuthPayload
@@ -20,10 +20,21 @@ export class CreateEmpleado {
             .from(empleadosTable)
             .where(ilike(empleadosTable.dni,createEmpleadoDto.dni));
         
+
         if(empleadoConDNI.length > 0){
             throw CustomError.badRequest(`El empleado con este DNI ya esta registrado`)
         }
+
+        const empleadoSucursal = await db.select()
+            .from(sucursalesTable)
+            .where(eq(sucursalesTable.id, createEmpleadoDto.sucursalId))
+
+        if(empleadoSucursal.length < 1){
+            throw CustomError.badRequest("La sucursal ingresada no existe");
+        }
+
         const suelsostring = (createEmpleadoDto.sueldo === undefined)? undefined : createEmpleadoDto.sueldo.toFixed(2);
+        const fechaContra  = ( typeof createEmpleadoDto.fechaContratacion !== "string")? undefined : new Date(createEmpleadoDto.fechaContratacion); 
         const InsertarEmpleado = await db 
             .insert(empleadosTable)
             .values({
@@ -33,7 +44,7 @@ export class CreateEmpleado {
                 dni:createEmpleadoDto.dni,
                 horaInicioJornada:createEmpleadoDto.horaInicioJornada,
                 horaFinJornada:createEmpleadoDto.horaFinJornada,
-                fechaContratacion:createEmpleadoDto.fechaContratacion,
+                fechaContratacion: fechaContra,
                 sueldo: suelsostring , //aqui hay un error de validacion
                 sucursalId:createEmpleadoDto.sucursalId
             })
