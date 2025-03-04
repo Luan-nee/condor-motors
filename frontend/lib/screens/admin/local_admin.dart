@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/branch.dart';
-import '../../api/api.service.dart';
+import '../../api/main.api.dart';
+import '../../api/locales.api.dart';
 
 class LocalAdminScreen extends StatefulWidget {
   const LocalAdminScreen({super.key});
@@ -10,287 +10,252 @@ class LocalAdminScreen extends StatefulWidget {
 }
 
 class _LocalAdminScreenState extends State<LocalAdminScreen> {
-  final ApiService _apiService = ApiService();
+  final _apiService = ApiService();
+  late final LocalesApi _localesApi;
   bool _isLoading = false;
-  List<Branch> _branches = [];
-  String _selectedType = 'central';
+  List<Local> _locales = [];
+  String _selectedView = 'todos'; // todos, tiendas, almacenes, oficinas
 
   @override
   void initState() {
     super.initState();
-    _loadBranches();
+    _localesApi = LocalesApi(_apiService);
+    _cargarLocales();
   }
 
-  Future<void> _loadBranches() async {
+  Future<void> _cargarLocales() async {
     setState(() => _isLoading = true);
     try {
-      // TODO: Implementar carga desde API
-      setState(() {
-        _branches = [
-          Branch(
-            id: 1,
-            name: 'Central Lima',
-            address: 'Av. La Marina 123',
-            type: 'central',
-            phone: '(01) 123-4567',
-            manager: 'Juan Pérez',
-          ),
-          Branch(
-            id: 2,
-            name: 'Sucursal Miraflores',
-            address: 'Av. Larco 456',
-            type: 'sucursal',
-            phone: '(01) 987-6543',
-            manager: 'Ana García',
-          ),
-        ];
-      });
+      final locales = await _localesApi.getLocales();
+      if (!mounted) return;
+      setState(() => _locales = locales);
     } catch (e) {
-      // Manejar error
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al cargar locales')),
+      );
     } finally {
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
 
-  void _showAddEditBranchDialog([Branch? branch]) {
+  Future<void> _guardarLocal(Map<String, dynamic> data) async {
+    try {
+      if (data['id'] != null) {
+        await _localesApi.updateLocal(data['id'], data);
+      } else {
+        await _localesApi.createLocal(data);
+      }
+      if (!mounted) return;
+      _cargarLocales();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Local guardado exitosamente')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al guardar local: $e')),
+      );
+    }
+  }
+
+  void _showLocalDialog([Local? local]) {
     showDialog(
       context: context,
-      builder: (context) => _BranchFormDialog(
-        branch: branch,
-        onSave: (editedBranch) async {
-          // TODO: Implementar guardado
-          await _loadBranches();
-        },
+      builder: (context) => LocalFormDialog(
+        local: local,
+        onSave: _guardarLocal,
       ),
     );
   }
 
+  List<Local> get _localesFiltrados {
+    if (_selectedView == 'todos') return _locales;
+    return _locales.where((l) => l.tipo == _selectedView.toUpperCase()).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Barra superior
-        Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              const Text(
-                'Gestión de Locales',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Spacer(),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Nuevo Local'),
-                onPressed: () => _showAddEditBranchDialog(),
-              ),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Gestión de Locales'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _showLocalDialog(),
           ),
-        ),
-
-        // Tabs de Centrales/Sucursales
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(
-                      value: 'central',
-                      label: Text('Centrales'),
-                      icon: Icon(Icons.store),
-                    ),
-                    ButtonSegment(
-                      value: 'sucursal',
-                      label: Text('Sucursales'),
-                      icon: Icon(Icons.store_mall_directory),
-                    ),
-                  ],
-                  selected: {_selectedType},
-                  onSelectionChanged: (Set<String> newSelection) {
-                    setState(() {
-                      _selectedType = newSelection.first;
-                    });
-                  },
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: 'todos',
+                  label: Text('Todos'),
                 ),
-              ),
-            ],
+                ButtonSegment(
+                  value: 'tienda',
+                  label: Text('Tiendas'),
+                ),
+                ButtonSegment(
+                  value: 'almacen',
+                  label: Text('Almacenes'),
+                ),
+                ButtonSegment(
+                  value: 'oficina',
+                  label: Text('Oficinas'),
+                ),
+              ],
+              selected: {_selectedView},
+              onSelectionChanged: (values) {
+                setState(() => _selectedView = values.first);
+              },
+            ),
           ),
-        ),
-
-        // Lista de locales
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _branches
-                      .where((b) => b.type == _selectedType)
-                      .length,
-                  itemBuilder: (context, index) {
-                    final branch = _branches
-                        .where((b) => b.type == _selectedType)
-                        .toList()[index];
-                    return Card(
-                      child: ListTile(
-                        leading: Icon(
-                          branch.type == 'central'
-                              ? Icons.store
-                              : Icons.store_mall_directory,
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    itemCount: _localesFiltrados.length,
+                    itemBuilder: (context, index) {
+                      final local = _localesFiltrados[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
-                        title: Text(branch.name),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(branch.address),
-                            if (branch.phone != null)
-                              Text('Tel: ${branch.phone}'),
-                            if (branch.manager != null)
-                              Text('Encargado: ${branch.manager}'),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () => _showAddEditBranchDialog(branch),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                branch.isActive
-                                    ? Icons.visibility
-                                    : Icons.visibility_off,
+                        child: ListTile(
+                          title: Text(local.nombre),
+                          subtitle: Text(local.direccion),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () => _showLocalDialog(local),
                               ),
-                              onPressed: () {
-                                // TODO: Implementar toggle de estado
-                              },
-                            ),
-                          ],
+                              Switch(
+                                value: local.activo,
+                                onChanged: (value) async {
+                                  await _localesApi.updateLocal(
+                                    local.id,
+                                    {'activo': value},
+                                  );
+                                  _cargarLocales();
+                                },
+                              ),
+                            ],
+                          ),
                         ),
-                        isThreeLine: true,
-                      ),
-                    );
-                  },
-                ),
-        ),
-      ],
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _BranchFormDialog extends StatefulWidget {
-  final Branch? branch;
-  final Function(Branch) onSave;
+class LocalFormDialog extends StatefulWidget {
+  final Local? local;
+  final Function(Map<String, dynamic>) onSave;
 
-  const _BranchFormDialog({
-    this.branch,
+  const LocalFormDialog({
+    super.key,
+    this.local,
     required this.onSave,
   });
 
   @override
-  State<_BranchFormDialog> createState() => _BranchFormDialogState();
+  State<LocalFormDialog> createState() => _LocalFormDialogState();
 }
 
-class _BranchFormDialogState extends State<_BranchFormDialog> {
+class _LocalFormDialogState extends State<LocalFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _addressController;
-  late TextEditingController _phoneController;
-  late TextEditingController _managerController;
-  late String _type;
-  late bool _isActive;
+  final _nombreController = TextEditingController();
+  final _direccionController = TextEditingController();
+  final _telefonoController = TextEditingController();
+  final _encargadoController = TextEditingController();
+  String _tipo = LocalesApi.tipos['TIENDA']!;
 
   @override
   void initState() {
     super.initState();
-    final branch = widget.branch;
-    _nameController = TextEditingController(text: branch?.name);
-    _addressController = TextEditingController(text: branch?.address);
-    _phoneController = TextEditingController(text: branch?.phone);
-    _managerController = TextEditingController(text: branch?.manager);
-    _type = branch?.type ?? 'central';
-    _isActive = branch?.isActive ?? true;
+    if (widget.local != null) {
+      _nombreController.text = widget.local!.nombre;
+      _direccionController.text = widget.local!.direccion;
+      _telefonoController.text = widget.local!.telefono;
+      _encargadoController.text = widget.local!.encargado;
+      _tipo = widget.local!.tipo;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.branch == null ? 'Nuevo Local' : 'Editar Local'),
+      title: Text(widget.local == null ? 'Nuevo Local' : 'Editar Local'),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(
-                    value: 'central',
-                    label: Text('Central'),
-                    icon: Icon(Icons.store),
-                  ),
-                  ButtonSegment(
-                    value: 'sucursal',
-                    label: Text('Sucursal'),
-                    icon: Icon(Icons.store_mall_directory),
-                  ),
-                ],
-                selected: {_type},
-                onSelectionChanged: (Set<String> newSelection) {
-                  setState(() {
-                    _type = newSelection.first;
-                  });
+              TextFormField(
+                controller: _nombreController,
+                decoration: const InputDecoration(labelText: 'Nombre'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'El nombre es requerido';
+                  }
+                  return null;
                 },
               ),
-              const SizedBox(height: 16),
               TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Campo requerido' : null,
+                controller: _direccionController,
+                decoration: const InputDecoration(labelText: 'Dirección'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'La dirección es requerida';
+                  }
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
               TextFormField(
-                controller: _addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Dirección',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Campo requerido' : null,
+                controller: _telefonoController,
+                decoration: const InputDecoration(labelText: 'Teléfono'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'El teléfono es requerido';
+                  }
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
               TextFormField(
-                controller: _phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Teléfono',
-                  border: OutlineInputBorder(),
-                ),
+                controller: _encargadoController,
+                decoration: const InputDecoration(labelText: 'Encargado'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'El encargado es requerido';
+                  }
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _managerController,
-                decoration: const InputDecoration(
-                  labelText: 'Encargado',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                title: const Text('Local Activo'),
-                value: _isActive,
+              DropdownButtonFormField<String>(
+                value: _tipo,
+                decoration: const InputDecoration(labelText: 'Tipo'),
+                items: LocalesApi.tipos.values.map((tipo) {
+                  return DropdownMenuItem(
+                    value: tipo,
+                    child: Text(tipo),
+                  );
+                }).toList(),
                 onChanged: (value) {
-                  setState(() {
-                    _isActive = value;
-                  });
+                  setState(() => _tipo = value!);
                 },
               ),
             ],
@@ -304,17 +269,16 @@ class _BranchFormDialogState extends State<_BranchFormDialog> {
         ),
         ElevatedButton(
           onPressed: () {
-            if (_formKey.currentState?.validate() ?? false) {
-              final branch = Branch(
-                id: widget.branch?.id ?? 0,
-                name: _nameController.text,
-                address: _addressController.text,
-                type: _type,
-                phone: _phoneController.text,
-                manager: _managerController.text,
-                isActive: _isActive,
-              );
-              widget.onSave(branch);
+            if (_formKey.currentState!.validate()) {
+              final data = {
+                if (widget.local != null) 'id': widget.local!.id,
+                'nombre': _nombreController.text,
+                'direccion': _direccionController.text,
+                'telefono': _telefonoController.text,
+                'encargado': _encargadoController.text,
+                'tipo': _tipo,
+              };
+              widget.onSave(data);
               Navigator.pop(context);
             }
           },
@@ -322,14 +286,5 @@ class _BranchFormDialogState extends State<_BranchFormDialog> {
         ),
       ],
     );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _addressController.dispose();
-    _phoneController.dispose();
-    _managerController.dispose();
-    super.dispose();
   }
 }

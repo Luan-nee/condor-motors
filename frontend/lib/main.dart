@@ -3,13 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'routes/routes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'api/api.service.dart';
-import 'api/usuario.api.dart';
+import 'api/main.api.dart';
+import 'api/empleados.api.dart';
 import 'api/productos.api.dart';
 
 // Configuración global de APIs
 late ApiService apiService;
-late UsuarioApi usuarioApi;
+late EmpleadoApi empleadoApi;
 late ProductosApi productosApi;
 
 void main() async {
@@ -42,11 +42,11 @@ void main() async {
   }
 
   // Inicializar servicios de API
-  usuarioApi = UsuarioApi(apiService);
+  empleadoApi = EmpleadoApi(apiService);
   productosApi = ProductosApi(apiService);
 
   // Mostrar estado de la API en consola
-  debugPrint('URL Base: ${ApiService.baseUrl}');
+  debugPrint('URL Base: ${apiService.baseUrl}');
 
   runApp(MyApp(
     isOnline: apiAvailable,
@@ -74,14 +74,58 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.dark,
         primaryColor: const Color(0xFFE31E24),
         scaffoldBackgroundColor: const Color(0xFF1A1A1A),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFE31E24),
-          secondary: Color(0xFFE31E24),
-          surface: Color(0xFF2D2D2D),
+        colorScheme: ColorScheme.fromSeed(
+          brightness: Brightness.dark,
+          seedColor: const Color(0xFFE31E24),
+          primary: const Color(0xFFE31E24),
+          secondary: const Color(0xFF1E88E5),
         ),
+        fontFamily: 'Apercu',
         textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.white),
-          bodyMedium: TextStyle(color: Colors.white),
+          // Títulos
+          displayLarge: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+            height: 1.2,
+          ),
+          displayMedium: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+            height: 1.2,
+          ),
+          // Texto del cuerpo
+          bodyLarge: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.5,
+            height: 1.5,
+            leadingDistribution: TextLeadingDistribution.even,
+          ),
+          bodyMedium: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.25,
+            height: 1.5,
+            leadingDistribution: TextLeadingDistribution.even,
+          ),
+        ).apply(
+          fontFamily: 'Apercu',
+          displayColor: Colors.white,
+          bodyColor: Colors.white,
+        ),
+        platform: TargetPlatform.windows,
+        typography: Typography.material2021(
+          platform: TargetPlatform.windows,
+          black: Typography.blackMountainView.copyWith(
+            bodyLarge: const TextStyle(fontSize: 16, height: 1.5),
+            bodyMedium: const TextStyle(fontSize: 14, height: 1.5),
+          ),
+          white: Typography.whiteMountainView.copyWith(
+            bodyLarge: const TextStyle(fontSize: 16, height: 1.5),
+            bodyMedium: const TextStyle(fontSize: 14, height: 1.5),
+          ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,

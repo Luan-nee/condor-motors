@@ -1,11 +1,11 @@
 {
-    "name": "condorsmotors",
-    "short_name": "condorsmotors",
+    "name": "Condors Motors",
+    "short_name": "Condors Motors",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1A1A1A",
+    "theme_color": "#E31E24",
+    "description": "Sistema de Gestión Condors Motors",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

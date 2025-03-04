@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';  // Importar para KeyboardListener
-import '../api/api.service.dart';
+import '../api/main.api.dart';
 import '../routes/routes.dart';
-import '../api/usuario.api.dart';
+import '../api/empleados.api.dart';
 import 'dart:math' as math;
 
 class LoginScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   bool _isLoading = false;
   bool _capsLockOn = false;
   bool _obscurePassword = true;
-  final _usuarioApi = UsuarioApi(ApiService());
+  final _empleadoApi = EmpleadoApi(ApiService());
   late final AnimationController _animationController;
 
   @override
@@ -52,30 +52,25 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         final username = _usernameController.text;
         final password = _passwordController.text;
 
-        final userData = await _usuarioApi.login(username, password);
+        final userData = await _empleadoApi.login(username, password);
         
         if (!mounted) return;
 
-        // Navegar según el rol
-        switch (userData['rol'].toString().toUpperCase()) {
-          case 'ADMINISTRADOR':
-            Navigator.pushReplacementNamed(context, Routes.adminDashboard);
-            break;
-          case 'COLABORADOR':
-            Navigator.pushReplacementNamed(context, Routes.colabDashboard);
-            break;
-          case 'VENDEDOR':
-            Navigator.pushReplacementNamed(context, Routes.vendorDashboard);
-            break;
-          case 'COMPUTADORA':
-            Navigator.pushReplacementNamed(context, Routes.computerDashboard);
-            break;
-          default:
-            throw ApiException(
-              statusCode: 400,
-              message: 'Rol no válido: ${userData['rol']}',
-            );
+        // Validar que el rol sea válido
+        final rol = userData['empleado']['rol'].toString().toUpperCase();
+        if (!EmpleadoApi.roles.containsKey(rol)) {
+          throw Exception('Rol de usuario no válido');
         }
+
+        // Navegar según el rol del empleado
+        final route = Routes.getInitialRoute(rol);
+        
+        Navigator.pushReplacementNamed(
+          context, 
+          route,
+          arguments: userData['empleado'],
+        );
+
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -140,18 +135,19 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 20),
-                        // Logo container
+                        // Logo actualizado
                         Center(
                           child: Container(
-                            padding: const EdgeInsets.all(20),
+                            width: 250, // Ajustado para el logo
+                            height: 250, // Ajustado para el logo
+                            padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: Colors.white.withOpacity(0.1),
                             ),
-                            child: const Icon(
-                              Icons.motorcycle,
-                              size: 80,
-                              color: Color(0xFFE31E24),
+                            child: Image.asset(
+                              'assets/images/condor-motors-logo.webp',
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),

@@ -13,25 +13,57 @@ class Routes {
   static const String computerDashboard = '/computer';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
+    // Obtener datos del empleado si existen
+    final empleadoData = settings.arguments as Map<String, dynamic>?;
+
     // Verificar si el usuario está autenticado
-    final bool isAuthenticated = settings.name != login;
+    final bool isAuthenticated = settings.name != login && empleadoData != null;
 
     // Si no está autenticado y trata de acceder a una ruta protegida
     if (!isAuthenticated && settings.name != login) {
       return MaterialPageRoute(builder: (_) => const LoginScreen());
     }
 
+    // Verificar permisos según el rol
+    if (isAuthenticated) {
+      final rol = empleadoData['rol'].toString().toUpperCase();
+      final routeName = settings.name ?? '';
+
+      // Verificar si tiene acceso a la ruta
+      if (!_canAccessRoute(rol, routeName)) {
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            body: Center(
+              child: Text('No tienes permiso para acceder a esta ruta: $routeName'),
+            ),
+          ),
+        );
+      }
+    }
+
     switch (settings.name) {
       case login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
       case adminDashboard:
-        return MaterialPageRoute(builder: (_) => const DashboardAdminScreen());
+        return MaterialPageRoute(
+          builder: (_) => const DashboardAdminScreen(),
+          settings: settings,
+        );
       case colabDashboard:
-        return MaterialPageRoute(builder: (_) => const DashboardColabScreen());
+        return MaterialPageRoute(
+          builder: (_) => const DashboardColabScreen(),
+          settings: settings,
+        );
       case vendorDashboard:
-        return MaterialPageRoute(builder: (_) => const DashboardVendorScreen());
+        return MaterialPageRoute(
+          builder: (_) => const DashboardVendorScreen(),
+          settings: settings,
+        );
       case computerDashboard:
-        return MaterialPageRoute(builder: (_) => const DashboardComputerScreen());
+        return MaterialPageRoute(
+          builder: (_) => const DashboardComputerScreen(),
+          settings: settings,
+        );
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
@@ -43,8 +75,8 @@ class Routes {
     }
   }
 
-  static String getInitialRoute(String? userRole) {
-    switch (userRole?.toUpperCase()) {
+  static String getInitialRoute(String? rol) {
+    switch (rol?.toUpperCase()) {
       case 'ADMINISTRADOR':
         return adminDashboard;
       case 'COLABORADOR':
@@ -56,5 +88,15 @@ class Routes {
       default:
         return login;
     }
+  }
+
+  // Verificar si el rol tiene acceso a la ruta
+  static bool _canAccessRoute(String rol, String route) {
+    final rolUpper = rol.toUpperCase();
+    if (rolUpper == 'ADMINISTRADOR') return true; // Acceso total
+    if (rolUpper == 'COLABORADOR') return route == colabDashboard;
+    if (rolUpper == 'VENDEDOR') return route == vendorDashboard;
+    if (rolUpper == 'COMPUTADORA') return route == computerDashboard;
+    return false;
   }
 }

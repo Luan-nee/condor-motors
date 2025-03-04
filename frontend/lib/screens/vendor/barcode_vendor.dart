@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../api/productos.api.dart' as productos_api;
+import '../../api/main.api.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../models/product.dart';
-import '../../api/productos.api.dart';
-import '../../api/api.service.dart';
 
 class BarcodeVendorScreen extends StatefulWidget {
   const BarcodeVendorScreen({super.key});
@@ -12,47 +11,48 @@ class BarcodeVendorScreen extends StatefulWidget {
 }
 
 class _BarcodeVendorScreenState extends State<BarcodeVendorScreen> {
-  final _productosApi = ProductosApi(ApiService());
-  bool _isProcessing = false;
-  final MobileScannerController controller = MobileScannerController(
-    formats: [BarcodeFormat.code128, BarcodeFormat.ean13], // Solo formatos de barras
-    detectionSpeed: DetectionSpeed.normal,
-    facing: CameraFacing.back,
-    torchEnabled: false,
-  );
+  final _apiService = ApiService();
+  late final productos_api.ProductosApi _productosApi;
+  bool _isLoading = false;
+  productos_api.Producto? _productoEncontrado;
+  String? _error;
 
   @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _productosApi = productos_api.ProductosApi(_apiService);
   }
 
-  void _onDetect(BarcodeCapture capture) async {
-    if (_isProcessing) return;
-    final List<Barcode> barcodes = capture.barcodes;
-    
-    for (final barcode in barcodes) {
-      if (barcode.rawValue == null) continue;
+  Future<void> _buscarProducto(String codigo) async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _productoEncontrado = null;
+    });
+
+    try {
+      final productos = await _productosApi.searchProductos(codigo);
       
-      setState(() => _isProcessing = true);
+      if (!mounted) return;
       
-      try {
-        final productId = barcode.rawValue!;
-        final product = await _productosApi.getProduct(productId);
-        
-        if (!mounted) return;
-        Navigator.pop(context, Product.fromJson(product));
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al procesar producto: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } finally {
-        if (mounted) setState(() => _isProcessing = false);
+      if (productos.isEmpty) {
+        setState(() {
+          _error = 'No se encontró ningún producto con el código $codigo';
+          _isLoading = false;
+        });
+        return;
       }
+
+      setState(() {
+        _productoEncontrado = productos.first;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Error al buscar el producto: $e';
+        _isLoading = false;
+      });
     }
   }
 
@@ -60,120 +60,138 @@ class _BarcodeVendorScreenState extends State<BarcodeVendorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Escanear Código de Barras'),
-        actions: [
-          IconButton(
-            icon: ValueListenableBuilder(
-              valueListenable: controller.torchState,
-              builder: (context, state, child) {
-                return Icon(
-                  state == TorchState.off ? Icons.flash_off : Icons.flash_on,
-                );
+        title: const Text('Escáner de Productos'),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            flex: 2,
+            child: MobileScanner(
+              onDetect: (capture) {
+                final List<Barcode> barcodes = capture.barcodes;
+                for (final barcode in barcodes) {
+                  if (barcode.rawValue != null) {
+                    _buscarProducto(barcode.rawValue!);
+                  }
+                }
               },
             ),
-            onPressed: () => controller.toggleTorch(),
+          ),
+          Expanded(
+            flex: 3,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
+                                size: 48,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _error!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _productoEncontrado != null
+                          ? _buildProductoInfo(_productoEncontrado!)
+                          : const Center(
+                              child: Text(
+                                'Escanee un código de barras para ver la información del producto',
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+            ),
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          MobileScanner(
-            controller: controller,
-            onDetect: _onDetect,
-          ),
-          Positioned.fill(
-            child: CustomPaint(
-              painter: OverlayPainter(),
-            ),
-          ),
-          if (_isProcessing)
-            Container(
-              color: Colors.black54,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
-                ),
+    );
+  }
+
+  Widget _buildProductoInfo(productos_api.Producto producto) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              producto.nombre,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          Positioned(
-            bottom: 16,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.black87,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFE31E24).withOpacity(0.3),
+            const SizedBox(height: 8),
+            Text('Código: ${producto.codigo}'),
+            Text('Marca: ${producto.marca}'),
+            Text('Categoría: ${producto.categoria}'),
+            const Divider(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Precio Normal:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'S/ ${producto.precioNormal.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                child: const Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.barcode_reader,
-                      color: Color(0xFFE31E24),
-                      size: 32,
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Apunte la cámara al código de barras del producto',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ),
-          ),
-        ],
+            if (producto.precioMayorista != null)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Precio Mayorista:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'S/ ${producto.precioMayorista!.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.green[700],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            if (producto.precioDescuento != null)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Precio Descuento:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'S/ ${producto.precioDescuento!.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
-}
-
-class OverlayPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0x99000000);
-
-    final cutoutWidth = size.width * 0.7;
-    final cutoutHeight = cutoutWidth * 0.5;
-    final left = (size.width - cutoutWidth) / 2;
-    final top = (size.height - cutoutHeight) / 2;
-    final cutoutRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(left, top, cutoutWidth, cutoutHeight),
-      const Radius.circular(20),
-    );
-
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      paint,
-    );
-
-    canvas.drawRRect(
-      cutoutRect,
-      Paint()
-        ..color = Colors.transparent
-        ..blendMode = BlendMode.clear,
-    );
-
-    canvas.drawRRect(
-      cutoutRect,
-      Paint()
-        ..color = const Color(0xFFE31E24)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

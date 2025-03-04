@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../api/api.service.dart';
+import '../../api/ventas.api.dart' as ventas_api;
+import '../../api/main.api.dart';
 
 class VentasAdminScreen extends StatefulWidget {
   const VentasAdminScreen({super.key});
@@ -9,37 +10,40 @@ class VentasAdminScreen extends StatefulWidget {
 }
 
 class _VentasAdminScreenState extends State<VentasAdminScreen> {
-  final ApiService _apiService = ApiService();
+  final _apiService = ApiService();
+  late final ventas_api.VentasApi _ventaApi;
   bool _isLoading = false;
-  List<Map<String, dynamic>> _ventas = [];
+  List<ventas_api.Venta> _ventas = [];
 
   @override
   void initState() {
     super.initState();
-    _loadVentas();
+    _ventaApi = ventas_api.VentasApi(_apiService);
+    _cargarVentas();
   }
 
-  Future<void> _loadVentas() async {
+  Future<void> _cargarVentas() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
+    
     try {
-      final ventas = await _apiService.getVentas();
-      if (mounted) {
-        setState(() {
-          _ventas = ventas;
-        });
-      }
+      final ventas = await _ventaApi.getVentas();
+      if (!mounted) return;
+      setState(() {
+        _ventas = ventas;
+      });
     } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar ventas: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error al cargar ventas'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() => _isLoading = false);
       }
-    }
-    if (mounted) {
-      setState(() => _isLoading = false);
     }
   }
 
@@ -61,20 +65,20 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                     vertical: 8,
                   ),
                   child: ListTile(
-                    title: Text('Venta #${venta['id']}'),
-                    subtitle: Text('Fecha: ${venta['fecha']}'),
+                    title: Text('Venta #${venta.id}'),
+                    subtitle: Text('Fecha: ${venta.fechaCreacion?.toLocal() ?? 'No disponible'}'),
                     trailing: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'Total: S/ ${venta['total'].toStringAsFixed(2)}',
+                          'Total: S/ ${venta.total.toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
-                          'Ganancia: S/ ${venta['ganancia'].toStringAsFixed(2)}',
+                          'Subtotal: S/ ${venta.subtotal.toStringAsFixed(2)}',
                           style: TextStyle(
                             color: Colors.green[700],
                             fontWeight: FontWeight.bold,

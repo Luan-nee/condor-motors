@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../api/api.service.dart';
-import '../../api/stock.api.dart';
-import '../../api/pendientes.api.dart';
+import '../../api/main.api.dart';
+import '../../api/stocks.api.dart' as stocks_api;
+import '../../api/ventas.api.dart' as ventas_api;
+import '../../api/locales.api.dart';
 import 'barcode_vendor.dart';
 
 class DashboardVendorScreen extends StatefulWidget {
@@ -12,17 +13,21 @@ class DashboardVendorScreen extends StatefulWidget {
 }
 
 class _DashboardVendorScreenState extends State<DashboardVendorScreen> with SingleTickerProviderStateMixin {
-  final _stockApi = StockApi(ApiService());
-  final _ventasApi = VentasApi(ApiService());
-  final List<Producto> _scannedProducts = [];
+  final _apiService = ApiService();
+  late final stocks_api.StocksApi _stockApi;
+  late final ventas_api.VentasApi _ventasApi;
+  late final LocalesApi _localesApi;
+  final List<stocks_api.Producto> _scannedProducts = [];
   final TextEditingController _textSearchController = TextEditingController();
-  final Map<Producto, int> _quantities = {};
-  List<Stock> _stockProducts = [];
+  final Map<stocks_api.Producto, int> _quantities = {};
+  List<stocks_api.Stock> _stockProducts = [];
   bool _isLoading = false;
   String _selectedCategory = 'Todos';
-  final String _vendorId = '3';
-  final String _localId = '1';
-  final String _currentBranch = 'Sucursal';
+  
+  // TODO: Obtener estos valores del estado global de la aplicación
+  final int _vendorId = 3;
+  final int _localId = 1;
+  Local? _currentBranch;
   bool _showTempList = false;
 
   final List<String> _categories = [
@@ -42,6 +47,9 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
   @override
   void initState() {
     super.initState();
+    _stockApi = stocks_api.StocksApi(_apiService);
+    _ventasApi = ventas_api.VentasApi(_apiService);
+    _localesApi = LocalesApi(_apiService);
     _loadInitialData();
     
     _animationController = AnimationController(
@@ -53,32 +61,29 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
   Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
     try {
-      await Future.wait([
-        _loadStock(),
-      ]);
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _loadStock() async {
-    try {
-      final response = await _stockApi.getStocks(
+      // Cargar datos del local actual
+      _currentBranch = await _localesApi.getLocal(_localId);
+      
+      // Cargar stock del local
+      final stocks = await _stockApi.getStocks(
         localId: _localId,
         limit: 100,
       );
       
+      if (!mounted) return;
       setState(() {
-        _stockProducts = response;
+        _stockProducts = stocks;
+        _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al cargar stock: $e'),
+          content: Text('Error al cargar datos: $e'),
           backgroundColor: Colors.red,
         ),
       );
+      setState(() => _isLoading = false);
     }
   }
 
@@ -182,7 +187,7 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
               ),
             ),
             Text(
-              'Ventas - $_currentBranch',
+              'Ventas - ${_currentBranch?.nombre ?? 'Sucursal'}',
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -242,7 +247,7 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
                         }
                       }
 
-                      return _buildProductCard(Stock.fromJson(stock));
+                      return _buildProductCard(stocks_api.Stock.fromJson(stock));
                     },
                   ),
           ),
@@ -510,7 +515,7 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
     );
   }
 
-  Widget _buildProductCard(Stock stock) {
+  Widget _buildProductCard(stocks_api.Stock stock) {
     final producto = stock.producto;
     if (producto == null) return const SizedBox.shrink();
 
@@ -618,7 +623,7 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
     );
   }
 
-  Future<void> _addProduct(Producto producto) async {
+  Future<void> _addProduct(stocks_api.Producto producto) async {
     try {
       final isAvailable = await _verificarStock(producto, 1);
 
@@ -649,7 +654,7 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
     }
   }
 
-  void _updateQuantity(Producto producto, int quantity) {
+  void _updateQuantity(stocks_api.Producto producto, int quantity) {
     setState(() {
       if (quantity > 0) {
         _quantities[producto] = quantity;
@@ -661,32 +666,41 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
   }
 
   Future<void> _sendToComputer() async {
-    if (_scannedProducts.isEmpty) return;
+    if (_scannedProducts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay productos en la lista'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
+    setState(() => _isLoading = true);
     try {
       final ventaData = {
         'vendedor_id': _vendorId,
         'local_id': _localId,
+        'estado': ventas_api.VentasApi.estados['PENDIENTE'],
         'observaciones': 'Cliente espera en tienda',
         'detalles': _scannedProducts.map((p) => {
-          'producto_id': p.id.toString(),
-          'cantidad': (_quantities[p] ?? 1).toString(),
-          'precio_unitario': p.precio.toString(),
-          'descuento': '0',
+          'producto_id': p.id,
+          'cantidad': _quantities[p] ?? 1,
+          'precio_unitario': p.precio,
         }).toList(),
       };
 
-      await _ventasApi.createPendingSale(ventaData);
+      await _ventasApi.createVenta(ventaData);
       
       setState(() {
         _scannedProducts.clear();
         _quantities.clear();
       });
-      
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Venta enviada a computadora'),
+          content: Text('Venta enviada exitosamente'),
           backgroundColor: Colors.green,
         ),
       );
@@ -698,11 +712,15 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Future<void> _scanBarcode() async {
-    final Producto? scannedProduct = await Navigator.push(
+    final stocks_api.Producto? scannedProduct = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const BarcodeVendorScreen(),
@@ -764,11 +782,11 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
     });
   }
 
-  Future<bool> _verificarStock(Producto producto, int cantidad) async {
+  Future<bool> _verificarStock(stocks_api.Producto producto, int cantidad) async {
     try {
       return await _stockApi.checkStockAvailability(
         localId: _localId,
-        productId: producto.id.toString(),
+        productoId: producto.id,
         cantidad: cantidad,
       );
     } catch (e) {

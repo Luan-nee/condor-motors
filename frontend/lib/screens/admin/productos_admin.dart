@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../models/product.dart';
-import '../../api/api.service.dart';
-import 'product_form_dialog.dart';
-import '../../models/branch.dart';
+import '../../api/main.api.dart';
+import '../../api/productos.api.dart' as productos_api;
+import '../../api/locales.api.dart';
+import '../../widgets/dialogs/confirm_dialog.dart';
 
 class ProductosAdminScreen extends StatefulWidget {
   const ProductosAdminScreen({super.key});
@@ -12,15 +12,17 @@ class ProductosAdminScreen extends StatefulWidget {
 }
 
 class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
-  final ApiService _apiService = ApiService();
-  String _selectedCategory = 'Todos';
-  String _selectedLocal = 'Todos';
-  String _selectedView = 'todos'; // todos, escasos, masVendidos, menosVendidos
+  final _apiService = ApiService();
+  late final productos_api.ProductosApi _productosApi;
+  late final LocalesApi _localesApi;
   bool _isLoading = false;
-  List<Product> _products = [];
-  List<Branch> _branches = []; // Agregada lista de sucursales
-  Branch? _selectedBranch; // Agregada sucursal seleccionada
+  List<productos_api.Producto> _productos = [];
+  List<productos_api.Producto> _productosFiltrados = [];
   String _searchQuery = '';
+  String _selectedCategory = 'Todos';
+// todos, escasos, masVendidos, menosVendidos
+  List<Local> _locales = [];
+  Local? _localSeleccionado;
 
   final List<String> _categories = [
     'Todos',
@@ -32,47 +34,72 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     'llantas'
   ];
 
-  List<Product> get _filteredProducts {
-    var filtered = _products.where((product) {
-      final matchesCategory = _selectedCategory == 'Todos' || 
-                            product.category == _selectedCategory;
-      final matchesLocal = _selectedLocal == 'Todos' ||
-                          product.local == _selectedLocal;
-      final matchesSearch = _searchQuery.isEmpty ||
-          product.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          product.codigo.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesCategory && matchesLocal && matchesSearch;
-    }).toList();
-
-    // Aplicar filtros adicionales
-    switch (_selectedView) {
-      case 'escasos':
-        filtered.sort((a, b) => a.stock.compareTo(b.stock));
-        return filtered.take(20).toList();
-      case 'masVendidos':
-        filtered.sort((a, b) => b.profit.compareTo(a.profit));
-        return filtered.take(20).toList();
-      case 'menosVendidos':
-        filtered.sort((a, b) => a.profit.compareTo(b.profit));
-        return filtered.take(20).toList();
-      default:
-        return filtered;
-    }
-  }
+  final _formKey = GlobalKey<FormState>();
+  final _nombreController = TextEditingController();
+  final _codigoController = TextEditingController();
+  final _descripcionController = TextEditingController();
+  final _marcaController = TextEditingController();
+  final _categoriaController = TextEditingController();
+  final _precioNormalController = TextEditingController();
+  final _precioCompraController = TextEditingController();
+  final _precioMayoristaController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
+    _productosApi = productos_api.ProductosApi(_apiService);
+    _localesApi = LocalesApi(_apiService);
+    _cargarDatos();
   }
 
-  Future<void> _loadInitialData() async {
+  @override
+  void dispose() {
+    _nombreController.dispose();
+    _codigoController.dispose();
+    _descripcionController.dispose();
+    _marcaController.dispose();
+    _categoriaController.dispose();
+    _precioNormalController.dispose();
+    _precioCompraController.dispose();
+    _precioMayoristaController.dispose();
+    super.dispose();
+  }
+
+  void _filtrarProductos() {
+    setState(() {
+      _productosFiltrados = _productos.where((producto) {
+        final matchesSearch = producto.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            producto.codigo.toLowerCase().contains(_searchQuery.toLowerCase());
+        final matchesCategory = _selectedCategory == 'Todos' || 
+            producto.categoria == _selectedCategory;
+        return matchesSearch && matchesCategory;
+      }).toList();
+    });
+  }
+
+  Future<void> _cargarDatos() async {
     setState(() => _isLoading = true);
     try {
-      await Future.wait([
-        _loadProducts(),
-        _loadBranches(),
-      ]);
+      final locales = await _localesApi.getLocales();
+      final productos = await _productosApi.getProductos();
+      
+      if (!mounted) return;
+      setState(() {
+        _locales = locales;
+        _productos = productos;
+        _filtrarProductos();
+        if (_locales.isNotEmpty && _localSeleccionado == null) {
+          _localSeleccionado = _locales.first;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar datos: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -80,473 +107,237 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     }
   }
 
-  Future<void> _loadBranches() async {
+  Future<void> _guardarProducto(productos_api.Producto producto) async {
     try {
-      // TODO: Implementar carga desde API
-      setState(() {
-        _branches = [
-          Branch(
-            id: 1,
-            name: 'Central Lima',
-            address: 'Av. La Marina 123',
-            type: 'central',
-            phone: '(01) 123-4567',
-            manager: 'Juan Pérez',
-          ),
-          Branch(
-            id: 2,
-            name: 'Sucursal Miraflores',
-            address: 'Av. Larco 456',
-            type: 'sucursal',
-            phone: '(01) 987-6543',
-            manager: 'Ana García',
-          ),
-        ];
-      });
+      if (producto.id == 0) {
+        await _productosApi.createProducto(producto.toJson());
+      } else {
+        await _productosApi.updateProducto(producto.id, producto.toJson());
+      }
+      if (!mounted) return;
+      await _cargarDatos();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Producto guardado exitosamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
-      if (mounted) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al guardar producto: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _eliminarProducto(productos_api.Producto producto) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => ConfirmDialog(
+        title: 'Eliminar Producto',
+        message: '¿Está seguro que desea eliminar el producto "${producto.nombre}"?',
+        confirmText: 'Eliminar',
+        onConfirm: () => Navigator.of(context).pop(true),
+      ),
+    );
+
+    if (confirmed ?? false) {
+      setState(() => _isLoading = true);
+      try {
+        await _productosApi.deleteProducto(producto.id);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Error al cargar sucursales'),
+            content: Text('Producto eliminado exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _cargarDatos();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al eliminar producto: $e'),
             backgroundColor: Colors.red,
           ),
         );
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
   }
 
-  Future<void> _loadProducts() async {
-    try {
-      final products = await _apiService.getProducts();
-      if (mounted) {
-        setState(() {
-          _products = products.map((p) => Product.fromJson(p)).toList();
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error al cargar productos'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showAddEditProductDialog([Product? product]) {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
+  void _showProductDialog(productos_api.Producto? producto) {
+    ScaffoldMessenger.of(context);
     showDialog(
       context: context,
-      builder: (dialogContext) => ProductFormDialog(
-        product: product,
-        onSave: (editedProduct) async {
-          setState(() => _isLoading = true);
-          try {
-            await _apiService.saveProduct(editedProduct);
-            if (mounted) {
-              await _loadProducts();
-              Navigator.pop(dialogContext);
-            }
-          } catch (e) {
-            if (mounted) {
-              scaffoldMessenger.showSnackBar(
-                const SnackBar(
-                  content: Text('Error al guardar el producto'),
-                  backgroundColor: Colors.red,
+      builder: (dialogContext) => Dialog(
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  producto == null ? 'Nuevo Producto' : 'Editar Producto',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-              );
-            }
-          }
-          if (mounted) {
-            setState(() => _isLoading = false);
-          }
-        },
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _codigoController,
+                  decoration: const InputDecoration(labelText: 'Código'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese el código';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: _nombreController,
+                  decoration: const InputDecoration(labelText: 'Nombre'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingrese el nombre';
+                    }
+                    return null;
+                  },
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: const Text('Cancelar'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          final editedProducto = productos_api.Producto.fromJson({
+                            'id': producto?.id ?? 0,
+                            'codigo': _codigoController.text,
+                            'nombre': _nombreController.text,
+                            'descripcion': _descripcionController.text,
+                            'marca': _marcaController.text,
+                            'categoria': _categoriaController.text,
+                            'precio_normal': double.parse(_precioNormalController.text),
+                            'precio_compra': double.parse(_precioCompraController.text),
+                            'precio_mayorista': _precioMayoristaController.text.isNotEmpty 
+                              ? double.parse(_precioMayoristaController.text)
+                              : null,
+                          });
+                          _guardarProducto(editedProducto);
+                          Navigator.of(dialogContext).pop();
+                        }
+                      },
+                      child: const Text('Guardar'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 600;
-
-    if (isSmallScreen) {
-      // Vista móvil - Layout vertical
-      return Column(
-        children: [
-          // Barra superior con título y búsqueda
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Productos - $_selectedCategory',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: () => _showAddEditProductDialog(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Buscar productos...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // Filtros en modo compacto
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                // Botón de locales
-                PopupMenuButton<String>(
-                  initialValue: _selectedLocal,
-                  child: Chip(
-                    label: Text('Local: $_selectedLocal'),
-                    deleteIcon: const Icon(Icons.arrow_drop_down),
-                    onDeleted: () {},
-                  ),
-                  onSelected: (String value) {
-                    setState(() {
-                      _selectedLocal = value;
-                    });
-                  },
-                  itemBuilder: (BuildContext context) => [
-                    const PopupMenuItem(
-                      value: 'Todos',
-                      child: Text('Todos'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'central',
-                      child: Text('Centrales'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'sucursal',
-                      child: Text('Sucursales'),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 8),
-                // Filtros de vista en chips
-                ChoiceChip(
-                  label: const Text('Todos'),
-                  selected: _selectedView == 'todos',
-                  onSelected: (bool selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedView = 'todos';
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: const Text('Stock Bajo'),
-                  selected: _selectedView == 'escasos',
-                  onSelected: (bool selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedView = 'escasos';
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: const Text('Más Vendidos'),
-                  selected: _selectedView == 'masVendidos',
-                  onSelected: (bool selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedView = 'masVendidos';
-                      });
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // Categorías
-          SizedBox(
-            height: 50,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(category),
-                    selected: _selectedCategory == category,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedCategory = category;
-                      });
-                    },
-                  ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Administración de Productos'),
+        actions: [
+          if (_locales.isNotEmpty)
+            DropdownButton<Local>(
+              value: _localSeleccionado,
+              items: _locales.map((local) {
+                return DropdownMenuItem(
+                  value: local,
+                  child: Text(local.nombre),
                 );
+              }).toList(),
+              onChanged: (local) {
+                if (local != null) {
+                  setState(() => _localSeleccionado = local);
+                  _cargarDatos();
+                }
               },
             ),
-          ),
-
-          // Grid de productos
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, // 2 columnas en móvil
-                      childAspectRatio: 0.75,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                    ),
-                    itemCount: _filteredProducts.length,
-                    itemBuilder: (context, index) {
-                      final product = _filteredProducts[index];
-                      return _buildProductCard(product);
-                    },
-                  ),
-          ),
+          const SizedBox(width: 16),
         ],
-      );
-    } else {
-      // Vista desktop - Layout horizontal (código existente)
-      return Row(
-        children: [
-          // Contenido principal
-          Expanded(
-            child: Column(
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
-                // Barra superior con título, filtros y búsqueda
-                Container(
+                // Barra de búsqueda y filtros
+                Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            'Productos - $_selectedCategory',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Buscar productos',
+                            prefixIcon: Icon(Icons.search),
                           ),
-                          const Spacer(),
-                          // Campo de búsqueda
-                          Container(
-                            width: 300,
-                            margin: const EdgeInsets.symmetric(horizontal: 16),
-                            child: TextField(
-                              decoration: InputDecoration(
-                                hintText: 'Buscar productos...',
-                                prefixIcon: const Icon(Icons.search),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onChanged: (value) {
-                                setState(() {
-                                  _searchQuery = value;
-                                });
-                              },
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add),
-                            onPressed: () => _showAddEditProductDialog(),
-                          ),
-                        ],
+                          onChanged: (value) {
+                            setState(() {
+                              _searchQuery = value;
+                              _filtrarProductos();
+                            });
+                          },
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      // Filtros de vista
-                      SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(
-                            value: 'todos',
-                            label: Text('Todos'),
-                            icon: Icon(Icons.grid_view),
-                          ),
-                          ButtonSegment(
-                            value: 'escasos',
-                            label: Text('Stock Bajo'),
-                            icon: Icon(Icons.warning_outlined),
-                          ),
-                          ButtonSegment(
-                            value: 'masVendidos',
-                            label: Text('Más Vendidos'),
-                            icon: Icon(Icons.trending_up),
-                          ),
-                          ButtonSegment(
-                            value: 'menosVendidos',
-                            label: Text('Menos Vendidos'),
-                            icon: Icon(Icons.trending_down),
-                          ),
-                        ],
-                        selected: {_selectedView},
-                        onSelectionChanged: (Set<String> newSelection) {
-                          setState(() {
-                            _selectedView = newSelection.first;
-                          });
+                      const SizedBox(width: 16),
+                      DropdownButton<String>(
+                        value: _selectedCategory,
+                        items: _categories.map((category) {
+                          return DropdownMenuItem(
+                            value: category,
+                            child: Text(category),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _selectedCategory = value;
+                              _filtrarProductos();
+                            });
+                          }
                         },
                       ),
                     ],
                   ),
                 ),
-
-                // Categorías en chips horizontales
-                SizedBox(
-                  height: 50,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _categories.length,
-                    itemBuilder: (context, index) {
-                      final category = _categories[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(category),
-                          selected: _selectedCategory == category,
-                          onSelected: (selected) {
-                            setState(() {
-                              _selectedCategory = category;
-                            });
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                // Grid de productos
+                // Lista de productos
                 Expanded(
-                  child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            childAspectRatio: 0.75,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
-                          itemCount: _filteredProducts.length + 1,
-                          itemBuilder: (context, index) {
-                            if (index == 0) {
-                              return _buildAddProductCard();
-                            }
-                            final product = _filteredProducts[index - 1];
-                            return _buildProductCard(product);
-                          },
-                        ),
-                ),
-              ],
-            ),
-          ),
-
-          // Sidebar derecho - Locales
-          Container(
-            width: 250,
-            color: Theme.of(context).colorScheme.surface,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  child: const Text(
-                    'Locales',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                // Tabs de Centrales/Sucursales
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: SegmentedButton<String>(
-                          segments: const [
-                            ButtonSegment(
-                              value: 'Todos',
-                              label: Text('Todos'),
+                  child: ListView.builder(
+                    itemCount: _productosFiltrados.length,
+                    itemBuilder: (context, index) {
+                      final producto = _productosFiltrados[index];
+                      return ListTile(
+                        title: Text(producto.nombre),
+                        subtitle: Text('Código: ${producto.codigo}'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () => _showProductDialog(producto),
                             ),
-                            ButtonSegment(
-                              value: 'central',
-                              label: Text('Centrales'),
-                            ),
-                            ButtonSegment(
-                              value: 'sucursal',
-                              label: Text('Sucursales'),
+                            IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () => _eliminarProducto(producto),
                             ),
                           ],
-                          selected: {_selectedLocal},
-                          onSelectionChanged: (Set<String> newSelection) {
-                            setState(() {
-                              _selectedLocal = newSelection.first;
-                            });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Lista de locales
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _branches.length,
-                    itemBuilder: (context, index) {
-                      final branch = _branches[index];
-                      if (_selectedLocal != 'Todos' && branch.type != _selectedLocal) {
-                        return const SizedBox.shrink();
-                      }
-                      return Card(
-                        child: ListTile(
-                          leading: Icon(
-                            branch.type == 'central'
-                                ? Icons.store
-                                : Icons.store_mall_directory,
-                          ),
-                          title: Text(branch.name),
-                          subtitle: Text(branch.address),
-                          selected: _selectedBranch?.id == branch.id,
-                          onTap: () {
-                            setState(() {
-                              _selectedBranch = branch;
-                            });
-                          },
                         ),
                       );
                     },
@@ -554,67 +345,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                 ),
               ],
             ),
-          ),
-        ],
-      );
-    }
-  }
-
-  Widget _buildAddProductCard() {
-    return Card(
-      child: InkWell(
-        onTap: () => _showAddEditProductDialog(),
-        child: const Center(
-          child: Icon(Icons.add, size: 48),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProductCard(Product product) {
-    return Card(
-      child: InkWell(
-        onTap: () => _showAddEditProductDialog(product),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Center(
-                child: product.imageUrl != null
-                    ? Image.network(product.imageUrl)
-                    : const Icon(Icons.image, size: 64),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text('Stock: ${product.stock}'),
-                  Text(
-                    'S/ ${product.price.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: Theme.of(context).primaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (product.hasDiscount)
-                    Text(
-                      'Descuento disponible',
-                      style: TextStyle(
-                        color: Colors.green[700],
-                        fontSize: 12,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showProductDialog(null),
+        child: const Icon(Icons.add),
       ),
     );
   }

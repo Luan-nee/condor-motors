@@ -4,8 +4,9 @@ import 'productos_admin.dart';
 import 'ventas_admin.dart';
 import 'settings_admin.dart';
 import '../../routes/routes.dart';
-import '../../api/api.service.dart';
-import '../../models/product.dart';
+import '../../api/main.api.dart';
+import '../../api/productos.api.dart' as productos;
+import '../../api/stocks.api.dart' hide Producto;
 
 class DashboardAdminScreen extends StatefulWidget {
   const DashboardAdminScreen({super.key});
@@ -17,7 +18,10 @@ class DashboardAdminScreen extends StatefulWidget {
 class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   int _selectedIndex = 0;
   final ApiService _apiService = ApiService();
-  List<Product> _products = [];
+  late final productos.ProductosApi _productosApi;
+  late final StocksApi _stocksApi;
+  List<productos.Producto> _productos = [];
+  Map<int, int> _existencias = {};
   bool _isLoading = false;
   double _totalVentas = 0;
   double _totalGanancias = 0;
@@ -27,12 +31,15 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   @override
   void initState() {
     super.initState();
+    _productosApi = productos.ProductosApi(_apiService);
+    _stocksApi = StocksApi(_apiService);
     _screens.addAll([
       _DashboardContent(
-        products: _products,
+        productosList: _productos,
         totalVentas: _totalVentas,
         totalGanancias: _totalGanancias,
-        onNavigateToProducts: () => setState(() => _selectedIndex = 1),
+        onNavigateToProductos: () => setState(() => _selectedIndex = 1),
+        existencias: _existencias,
       ),
       const ProductosAdminScreen(),
       const VentasAdminScreen(),
@@ -46,14 +53,21 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     setState(() => _isLoading = true);
     
     try {
-      final products = await _apiService.getProducts();
-      final ventas = await _apiService.getVentas();
+      final productos = await _productosApi.getProductos();
+      final ventas = await _productosApi.getVentas();
+      
+      final stocks = await _stocksApi.getStocks(localId: 1);
+      final existencias = <int, int>{};
+      for (var stock in stocks) {
+        existencias[stock.productoId] = stock.cantidad;
+      }
       
       if (!mounted) return;
       setState(() {
-        _products = products.map((p) => Product.fromJson(p)).toList();
-        _totalVentas = ventas.fold(0, (sum, venta) => sum + venta['total']);
-        _totalGanancias = ventas.fold(0, (sum, venta) => sum + venta['ganancia']);
+        _productos = productos;
+        _existencias = existencias;
+        _totalVentas = (ventas['total'] as num).toDouble();
+        _totalGanancias = (ventas['ganancia'] as num).toDouble();
       });
     } catch (e) {
       if (!mounted) return;
@@ -153,17 +167,23 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
 }
 
 class _DashboardContent extends StatelessWidget {
-  final List<Product> products;
+  final List<productos.Producto> productosList;
   final double totalVentas;
   final double totalGanancias;
-  final VoidCallback onNavigateToProducts;
+  final VoidCallback onNavigateToProductos;
+  final Map<int, int> existencias;
 
   const _DashboardContent({
-    required this.products,
+    required this.productosList,
     required this.totalVentas,
     required this.totalGanancias,
-    required this.onNavigateToProducts,
+    required this.onNavigateToProductos,
+    required this.existencias,
   });
+
+  int getExistencias(productos.Producto producto) {
+    return existencias[producto.id] ?? 0;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +235,7 @@ class _DashboardContent extends StatelessWidget {
           const SizedBox(height: 32),
           _buildRecentProducts(context, isMediumScreen),
           const SizedBox(height: 32),
-          _buildTopSellingProducts(context),
+          _buildTopProducts(),
         ],
       ),
     );
@@ -343,12 +363,11 @@ class _DashboardContent extends StatelessWidget {
   }
 
   Widget _buildRecentProducts(BuildContext context, bool isMediumScreen) {
-    if (products.isEmpty) {
+    if (productosList.isEmpty) {
       return const Center(child: Text('No hay productos disponibles'));
     }
 
-    // Tomamos los 5 productos más recientes
-    final recentProducts = products.take(5).toList();
+    final recentProducts = productosList.take(5).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -364,7 +383,7 @@ class _DashboardContent extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: onNavigateToProducts,
+              onPressed: onNavigateToProductos,
               child: const Text('Ver todos'),
             ),
           ],
@@ -428,7 +447,7 @@ class _DashboardContent extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            product.name,
+                            product.nombre,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -438,7 +457,7 @@ class _DashboardContent extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Stock: ${product.stock} unidades',
+                            'Stock: ${getExistencias(product)} unidades',
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.7),
                               fontSize: 14,
@@ -446,7 +465,7 @@ class _DashboardContent extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'S/ ${product.price.toStringAsFixed(2)}',
+                            'S/ ${product.precioNormal.toStringAsFixed(2)}',
                             style: const TextStyle(
                               color: Color(0xFFE31E24),
                               fontWeight: FontWeight.bold,
@@ -466,63 +485,36 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 
-  Widget _buildTopSellingProducts(BuildContext context) {
-    if (products.isEmpty) {
-      return const Center(child: Text('No hay productos disponibles'));
-    }
-
-    // Simulamos productos más vendidos ordenando por precio
-    final topProducts = List<Product>.from(products)
-      ..sort((a, b) => b.price.compareTo(a.price));
+  Widget _buildTopProducts() {
+    final topProducts = List<productos.Producto>.from(productosList)
+      ..sort((a, b) => (b.precioNormal).compareTo(a.precioNormal));
     final top5Products = topProducts.take(5).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Productos Más Vendidos',
+          'Top 5 Productos',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+        ...top5Products.map((product) => ListTile(
+          title: Text(product.nombre),
+          subtitle: Text(
+            '${getExistencias(product)} unidades disponibles',
+            style: TextStyle(color: Colors.white.withOpacity(0.7)),
           ),
-          child: ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: top5Products.length,
-            itemBuilder: (context, index) {
-              final product = top5Products[index];
-              return ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2D2D2D),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.motorcycle_outlined),
-                ),
-                title: Text(product.name),
-                subtitle: Text(
-                  '${product.stock} unidades disponibles',
-                  style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                ),
-                trailing: Text(
-                  'S/ ${product.price.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    color: Color(0xFFE31E24),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              );
-            },
+          trailing: Text(
+            'S/ ${(product.precioNormal).toStringAsFixed(2)}',
+            style: const TextStyle(
+              color: Color(0xFFE31E24),
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
+        )),
       ],
     );
   }

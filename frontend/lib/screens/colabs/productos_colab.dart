@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/product.dart';
-import '../../api/api.service.dart';
-import '../../api/productos.api.dart';
+import '../../api/productos.api.dart' as productos_api;
+import '../../api/main.api.dart';
 
 class ProductosColabScreen extends StatefulWidget {
   const ProductosColabScreen({super.key});
@@ -12,11 +11,12 @@ class ProductosColabScreen extends StatefulWidget {
 
 class _ProductosColabScreenState extends State<ProductosColabScreen> {
   final _apiService = ApiService();
-  final _productosApi = ProductosApi(ApiService());
+  late final productos_api.ProductosApi _productosApi;
   bool _isLoading = false;
-  List<Product> _products = [];
+  List<productos_api.Producto> _productos = [];
+  List<productos_api.Producto> _productosFiltrados = [];
+  String _searchQuery = '';
   String _selectedCategory = 'Todos';
-  final TextEditingController _searchController = TextEditingController();
 
   final List<String> _categories = [
     'Todos',
@@ -31,18 +31,19 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    _productosApi = productos_api.ProductosApi(_apiService);
+    _cargarProductos();
   }
 
-  Future<void> _loadProducts() async {
-    if (!mounted) return;
+  Future<void> _cargarProductos() async {
     setState(() => _isLoading = true);
-
     try {
-      final products = await _productosApi.getProducts();
+      final productos = await _productosApi.getProductos();
+      
       if (!mounted) return;
       setState(() {
-        _products = products.map((p) => Product.fromJson(p)).toList();
+        _productos = productos;
+        _filtrarProductos();
       });
     } catch (e) {
       if (!mounted) return;
@@ -59,16 +60,16 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     }
   }
 
-  List<Product> get filteredProducts {
-    return _products.where((product) {
-      final matchesCategory = _selectedCategory == 'Todos' || 
-                            product.categoria == _selectedCategory;
-      final matchesSearch = product.name.toLowerCase()
-                                 .contains(_searchController.text.toLowerCase()) ||
-                           product.codigo.toLowerCase()
-                                 .contains(_searchController.text.toLowerCase());
-      return matchesCategory && matchesSearch;
-    }).toList();
+  void _filtrarProductos() {
+    setState(() {
+      _productosFiltrados = _productos.where((producto) {
+        final matchesSearch = producto.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            producto.codigo.toLowerCase().contains(_searchQuery.toLowerCase());
+        final matchesCategory = _selectedCategory == 'Todos' || 
+            producto.categoria == _selectedCategory;
+        return matchesSearch && matchesCategory;
+      }).toList();
+    });
   }
 
   @override
@@ -79,16 +80,20 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         Padding(
           padding: const EdgeInsets.all(16),
           child: TextField(
-            controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Buscar productos...',
+              labelText: 'Buscar productos',
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               filled: true,
             ),
-            onChanged: (value) => setState(() {}),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+                _filtrarProductos();
+              });
+            },
           ),
         ),
 
@@ -109,7 +114,10 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                   selected: isSelected,
                   onSelected: (selected) {
                     if (selected) {
-                      setState(() => _selectedCategory = category);
+                      setState(() {
+                        _selectedCategory = category;
+                        _filtrarProductos();
+                      });
                     }
                   },
                 ),
@@ -124,19 +132,40 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
               ? const Center(child: CircularProgressIndicator())
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: filteredProducts.length,
+                  itemCount: _productosFiltrados.length,
                   itemBuilder: (context, index) {
-                    final product = filteredProducts[index];
+                    final producto = _productosFiltrados[index];
                     return Card(
                       child: ListTile(
                         leading: const Icon(Icons.inventory),
-                        title: Text(product.name),
+                        title: Text(producto.nombre),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Código: ${product.codigo}'),
-                            Text('Stock: ${product.stock}'),
-                            Text('Precio: S/ ${product.price.toStringAsFixed(2)}'),
+                            Text('Código: ${producto.codigo}'),
+                            Text('Marca: ${producto.marca}'),
+                            Text('Categoría: ${producto.categoria}'),
+                          ],
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'S/ ${producto.precioNormal.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            if (producto.precioMayorista != null)
+                              Text(
+                                'Mayor: S/ ${producto.precioMayorista!.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: Colors.green[700],
+                                  fontSize: 12,
+                                ),
+                              ),
                           ],
                         ),
                         isThreeLine: true,
@@ -147,11 +176,5 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         ),
       ],
     );
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 }
