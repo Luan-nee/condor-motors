@@ -40,7 +40,7 @@ export class EmpleadoEntityMapper {
 
     const parsedFechaContratacion =
       fechaContratacion instanceof Date
-        ? fechaContratacion.getDate()
+        ? fechaContratacion.toISOString().split('T')[0]
         : fechaContratacion
 
     const parsedSueldo =
