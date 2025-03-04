@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
-import '../screens/admin/dashboard_admin.dart';
+import '../screens/admin/slides_admin.dart';
 import '../screens/colabs/dashboard_colab.dart';
 import '../screens/vendor/dashboard_vendor.dart';
 import '../screens/computer/dashboard_computer.dart';
 import '../screens/login.dart';
+
+// Mock roles for testing
+const mockRoles = {
+  'ADMINISTRADOR': 'ADMINISTRADOR',
+  'COLABORADOR': 'COLABORADOR',
+  'VENDEDOR': 'VENDEDOR',
+  'COMPUTADORA': 'COMPUTADORA',
+};
 
 class Routes {
   static const String login = '/';
@@ -17,7 +25,9 @@ class Routes {
     final empleadoData = settings.arguments as Map<String, dynamic>?;
 
     // Verificar si el usuario está autenticado
-    final bool isAuthenticated = settings.name != login && empleadoData != null;
+    final bool isAuthenticated = settings.name != login && 
+        empleadoData != null && 
+        empleadoData['token'] != null;
 
     // Si no está autenticado y trata de acceder a una ruta protegida
     if (!isAuthenticated && settings.name != login) {
@@ -28,6 +38,17 @@ class Routes {
     if (isAuthenticated) {
       final rol = empleadoData['rol'].toString().toUpperCase();
       final routeName = settings.name ?? '';
+
+      // Verificar si el rol es válido
+      if (!mockRoles.containsKey(rol)) {
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            body: Center(
+              child: Text('Rol no válido: $rol'),
+            ),
+          ),
+        );
+      }
 
       // Verificar si tiene acceso a la ruta
       if (!_canAccessRoute(rol, routeName)) {
@@ -46,7 +67,7 @@ class Routes {
         return MaterialPageRoute(builder: (_) => const LoginScreen());
       case adminDashboard:
         return MaterialPageRoute(
-          builder: (_) => const DashboardAdminScreen(),
+          builder: (_) => const SlidesAdminScreen(),
           settings: settings,
         );
       case colabDashboard:
@@ -76,7 +97,11 @@ class Routes {
   }
 
   static String getInitialRoute(String? rol) {
-    switch (rol?.toUpperCase()) {
+    if (rol == null || !mockRoles.containsKey(rol.toUpperCase())) {
+      return login;
+    }
+
+    switch (rol.toUpperCase()) {
       case 'ADMINISTRADOR':
         return adminDashboard;
       case 'COLABORADOR':
@@ -92,6 +117,8 @@ class Routes {
 
   // Verificar si el rol tiene acceso a la ruta
   static bool _canAccessRoute(String rol, String route) {
+    if (!mockRoles.containsKey(rol)) return false;
+    
     final rolUpper = rol.toUpperCase();
     if (rolUpper == 'ADMINISTRADOR') return true; // Acceso total
     if (rolUpper == 'COLABORADOR') return route == colabDashboard;

@@ -282,7 +282,7 @@ class ProductosApi {
       );
 
       if (response is List) {
-        return (response as List)
+        return (response)
           .map((json) => Producto.fromJson(json))
           .toList();
       }
@@ -302,7 +302,7 @@ class ProductosApi {
       );
 
       if (response is List) {
-        return (response as List)
+        return (response)
           .map((json) => Producto.fromJson(json))
           .toList();
       }

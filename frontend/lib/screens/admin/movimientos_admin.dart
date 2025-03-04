@@ -1,8 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../api/main.api.dart';
-import '../../api/movimientos_stock.api.dart';
-import '../../api/empleados.api.dart';
-import '../../api/detalles_movimiento.api.dart';
+
+// Modelos temporales para desarrollo
+class MovimientoStock {
+  final int id;
+  final int localOrigenId;
+  final int localDestinoId;
+  final String estado;
+  final List<DetalleMovimiento> detalles;
+
+  MovimientoStock({
+    required this.id,
+    required this.localOrigenId,
+    required this.localDestinoId,
+    required this.estado,
+    required this.detalles,
+  });
+}
+
+class DetalleMovimiento {
+  final int id;
+  final int movimientoId;
+  final int productoId;
+  final int cantidad;
+  final int? cantidadRecibida;
+  final String estado;
+
+  DetalleMovimiento({
+    required this.id,
+    required this.movimientoId,
+    required this.productoId,
+    required this.cantidad,
+    this.cantidadRecibida,
+    required this.estado,
+  });
+}
 
 class MovimientosAdminScreen extends StatefulWidget {
   const MovimientosAdminScreen({super.key});
@@ -12,42 +45,66 @@ class MovimientosAdminScreen extends StatefulWidget {
 }
 
 class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
-  final _apiService = ApiService();
-  late final MovimientosStockApi _movimientosApi;
-  late final EmpleadoApi _empleadosApi;
-  late final DetallesMovimientoApi _detallesApi;
   bool _isLoading = false;
   List<MovimientoStock> _movimientos = [];
-  String _filtroEstado = 'Todos';
-  String? _usuarioId;
+  String _filtroSeleccionado = 'Todos';
+  final TextEditingController _searchController = TextEditingController();
+  int? _usuarioId = 1; // ID de prueba
+
+  // Datos de prueba
+  static final List<MovimientoStock> _movimientosPrueba = [
+    MovimientoStock(
+      id: 1,
+      localOrigenId: 1,
+      localDestinoId: 2,
+      estado: 'PENDIENTE',
+      detalles: [
+        DetalleMovimiento(
+          id: 1,
+          movimientoId: 1,
+          productoId: 101,
+          cantidad: 5,
+          estado: 'PENDIENTE',
+        ),
+        DetalleMovimiento(
+          id: 2,
+          movimientoId: 1,
+          productoId: 102,
+          cantidad: 3,
+          estado: 'PENDIENTE',
+        ),
+      ],
+    ),
+    MovimientoStock(
+      id: 2,
+      localOrigenId: 2,
+      localDestinoId: 3,
+      estado: 'RECIBIDO',
+      detalles: [
+        DetalleMovimiento(
+          id: 3,
+          movimientoId: 2,
+          productoId: 103,
+          cantidad: 10,
+          cantidadRecibida: 10,
+          estado: 'RECIBIDO',
+        ),
+      ],
+    ),
+  ];
 
   @override
   void initState() {
     super.initState();
-    _movimientosApi = MovimientosStockApi(_apiService);
-    _empleadosApi = EmpleadoApi(_apiService);
-    _detallesApi = DetallesMovimientoApi(_apiService);
     _cargarDatos();
   }
 
   Future<void> _cargarDatos() async {
     setState(() => _isLoading = true);
     try {
-      // TODO: Implementar lógica para obtener el ID del usuario actual desde el estado de la aplicación o login
-      if (_usuarioId == null) {
-        // Por ahora solo cargamos los movimientos sin usuario
-        await _cargarMovimientos();
-        return;
-      }
-      
-      final empleado = await _empleadosApi.getEmpleado(_usuarioId!);
-      if (empleado != null) {
-        setState(() {
-          _usuarioId = empleado.id;
-        });
-      }
-      
-      await _cargarMovimientos();
+      // Simulamos una carga de datos
+      await Future.delayed(const Duration(seconds: 1));
+      setState(() => _movimientos = _movimientosPrueba);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -65,11 +122,17 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
 
   Future<void> _cargarMovimientos() async {
     try {
-      final movimientos = await _movimientosApi.getMovimientos(
-        estado: _filtroEstado != 'Todos' ? _filtroEstado : null,
-      );
-      if (!mounted) return;
-      setState(() => _movimientos = movimientos);
+      // Simulamos filtrado de datos
+      await Future.delayed(const Duration(milliseconds: 500));
+      setState(() {
+        if (_filtroSeleccionado == 'Todos') {
+          _movimientos = _movimientosPrueba;
+        } else {
+          _movimientos = _movimientosPrueba
+              .where((m) => m.estado == _filtroSeleccionado)
+              .toList();
+        }
+      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -93,25 +156,21 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
     }
 
     try {
-      // Primero verificamos que todos los detalles estén en estado RECIBIDO
-      final detalles = await _detallesApi.getDetallesByMovimiento(int.parse(movimiento.id));
-      final todosRecibidos = detalles.every((detalle) => detalle['estado'] == 'RECIBIDO');
+      // Simulamos la aprobación
+      await Future.delayed(const Duration(seconds: 1));
+      setState(() {
+        final index = _movimientosPrueba.indexWhere((m) => m.id == movimiento.id);
+        if (index != -1) {
+          _movimientosPrueba[index] = MovimientoStock(
+            id: movimiento.id,
+            localOrigenId: movimiento.localOrigenId,
+            localDestinoId: movimiento.localDestinoId,
+            estado: 'APROBADO',
+            detalles: movimiento.detalles,
+          );
+        }
+      });
       
-      if (!todosRecibidos) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Todos los productos deben estar recibidos antes de aprobar'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      await _movimientosApi.aprobarMovimiento(
-        movimiento.id,
-        _usuarioId!,
-      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -133,117 +192,242 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
 
   Widget _buildDetallesList(List<DetalleMovimiento> detalles) {
     return Column(
-      children: [
-        ...detalles.map((detalle) => FutureBuilder<List<Map<String, dynamic>>>(
-          future: _detallesApi.getDetallesByMovimiento(detalle.movimientoId),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const ListTile(
-                title: Center(child: CircularProgressIndicator()),
-              );
-            }
-            
-            if (snapshot.hasError) {
-              return ListTile(
-                title: Text('Error al cargar detalles: ${snapshot.error}'),
-                tileColor: Colors.red.shade100,
-              );
-            }
-
-            final detalleCompleto = snapshot.data?.firstWhere(
-              (d) => d['id'] == detalle.id,
-              orElse: () => {},
-            );
-
-            return ListTile(
-              title: Text('Producto #${detalle.productoId}'),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Cantidad: ${detalle.cantidad}'),
-                  if (detalle.cantidadRecibida != null)
-                    Text('Recibido: ${detalle.cantidadRecibida}'),
-                  Text('Estado: ${detalle.estado}'),
-                  if (detalleCompleto?['observaciones'] != null)
-                    Text('Observaciones: ${detalleCompleto!['observaciones']}'),
-                ],
-              ),
-              trailing: Text('Estado: ${detalle.estado}'),
-            );
-          },
-        )),
-      ],
+      children: detalles.map((detalle) => ListTile(
+        title: Text('Producto #${detalle.productoId}'),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Cantidad: ${detalle.cantidad}'),
+            if (detalle.cantidadRecibida != null)
+              Text('Recibido: ${detalle.cantidadRecibida}'),
+            Text('Estado: ${detalle.estado}'),
+          ],
+        ),
+        trailing: Text('Estado: ${detalle.estado}'),
+      )).toList(),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Movimientos'),
-        actions: [
-          DropdownButton<String>(
-            value: _filtroEstado,
-            items: [
-              'Todos',
-              ...MovimientosStockApi.estadosDetalle.keys.toList(),
-            ].map((estado) {
-              return DropdownMenuItem(
-                value: estado,
-                child: Text(estado),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() => _filtroEstado = value);
-                _cargarMovimientos();
-              }
-            },
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _movimientos.length,
-              itemBuilder: (context, index) {
-                final movimiento = _movimientos[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+      body: Column(
+        children: [
+          // Header rojo con título
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: const Color(0xFF1A1A1A),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'INVENTARIO / movimiento de inventario',
+                  style: TextStyle(
+                    color: Color(0xFFE31E24),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                  child: ExpansionTile(
-                    title: Text(
-                      'Movimiento #${movimiento.id}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
+                ),
+                const SizedBox(height: 16),
+                // Barra de búsqueda y filtros
+                Row(
+                  children: [
+                    // Dropdown de filtros
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2D2D2D),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: DropdownButton<String>(
+                        value: _filtroSeleccionado,
+                        dropdownColor: const Color(0xFF2D2D2D),
+                        style: const TextStyle(color: Colors.white),
+                        underline: const SizedBox(),
+                        items: const [
+                          DropdownMenuItem(value: 'Todos', child: Text('Todos')),
+                          DropdownMenuItem(value: 'Proveedor', child: Text('Proveedor')),
+                          DropdownMenuItem(value: 'Solicitante', child: Text('Solicitante')),
+                          DropdownMenuItem(value: 'Origen', child: Text('Origen')),
+                          DropdownMenuItem(value: 'Destino', child: Text('Destino')),
+                          DropdownMenuItem(value: 'Estado', child: Text('Estado')),
+                        ],
+                        onChanged: (String? value) {
+                          if (value != null) {
+                            setState(() => _filtroSeleccionado = value);
+                            _cargarMovimientos();
+                          }
+                        },
                       ),
                     ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(width: 16),
+                    // Campo de búsqueda
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Buscador',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                          filled: true,
+                          fillColor: const Color(0xFF2D2D2D),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(4),
+                            borderSide: BorderSide.none,
+                          ),
+                          suffixIcon: const Icon(Icons.search, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Tabla de movimientos
+          Expanded(
+            child: SingleChildScrollView(
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Table(
+                  border: TableBorder(
+                    horizontalInside: BorderSide(
+                      color: Colors.white.withOpacity(0.1),
+                      width: 1,
+                    ),
+                  ),
+                  columnWidths: const {
+                    0: FlexColumnWidth(1.2), // Fecha solicitada
+                    1: FlexColumnWidth(1.2), // Fecha de respuesta
+                    2: FlexColumnWidth(2), // Proveedor
+                    3: FlexColumnWidth(2), // Solicitante
+                    4: FlexColumnWidth(1.5), // Origen
+                    5: FlexColumnWidth(1.5), // Destino
+                    6: FlexColumnWidth(1), // Estado
+                    7: FlexColumnWidth(1), // Detalles
+                  },
+                  children: [
+                    // Encabezados
+                    TableRow(
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2D2D2D),
+                      ),
                       children: [
-                        Text('Origen: Local #${movimiento.localOrigenId}'),
-                        Text('Destino: Local #${movimiento.localDestinoId}'),
-                        Text('Estado: ${movimiento.estado}'),
+                        _buildHeaderCell('Fecha solicitada', color: const Color(0xFFE31E24)),
+                        _buildHeaderCell('Fecha de respuesta', color: const Color(0xFFE31E24)),
+                        _buildHeaderCell('Proveedor', color: const Color(0xFFE31E24)),
+                        _buildHeaderCell('Solicitante', color: const Color(0xFFE31E24)),
+                        _buildHeaderCell('Origen', color: const Color(0xFFE31E24)),
+                        _buildHeaderCell('Destino', color: const Color(0xFFE31E24)),
+                        _buildHeaderCell('Estado', color: const Color(0xFFE31E24)),
+                        _buildHeaderCell('Lista de\nproductos\nsolicitados', color: const Color(0xFFE31E24)),
                       ],
                     ),
-                    children: [
-                      _buildDetallesList(movimiento.detalles),
-                      if (movimiento.estado == 'RECIBIDO')
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: ElevatedButton(
-                            onPressed: () => _aprobarMovimiento(movimiento),
-                            child: const Text('Aprobar'),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
+                    // Filas de datos
+                    ..._movimientos.map((movimiento) => TableRow(
+                      children: [
+                        _buildCell(movimiento.id.toString()),
+                        _buildCell(movimiento.estado),
+                        _buildCell(movimiento.localOrigenId.toString()),
+                        _buildCell(movimiento.localDestinoId.toString()),
+                        _buildCell(movimiento.detalles.first.productoId.toString()),
+                        _buildCell(movimiento.detalles.first.cantidad.toString()),
+                        _buildEstadoCell(movimiento.estado),
+                        _buildDetallesCell(movimiento.detalles),
+                      ],
+                    )),
+                  ],
+                ),
+              ),
             ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildHeaderCell(String text, {required Color color}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCell(String text) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      child: Text(
+        text,
+        style: const TextStyle(color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildEstadoCell(String estado) {
+    Color backgroundColor;
+    Color textColor = Colors.white;
+
+    switch (estado.toLowerCase()) {
+      case 'finalizado':
+        backgroundColor = Colors.green;
+        break;
+      case 'solicitando':
+        backgroundColor = Colors.yellow;
+        textColor = Colors.black;
+        break;
+      case 'rechazado':
+        backgroundColor = Colors.red;
+        break;
+      default:
+        backgroundColor = Colors.grey;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          estado,
+          style: TextStyle(color: textColor),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetallesCell(List<DetalleMovimiento> detalles) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      child: TextButton(
+        onPressed: () {
+          // TODO: Implementar vista de detalles
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: const Color(0xFFE31E24),
+        ),
+        child: const Text('ver detalles'),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 } 

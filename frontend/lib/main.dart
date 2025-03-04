@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_fonts/google_fonts.dart';
 import 'routes/routes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api/main.api.dart';
 import 'api/empleados.api.dart';
 import 'api/productos.api.dart';
+import 'api/sucursales.api.dart';
 
 // Configuración global de APIs
 late ApiService apiService;
 late EmpleadoApi empleadoApi;
 late ProductosApi productosApi;
+late SucursalesApi sucursalesApi;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,40 +32,18 @@ void main() async {
     ),
   );
 
-  // Verificar estado inicial de la API
-  final apiService = ApiService();
-  bool apiAvailable = false;
-
-  try {
-    debugPrint('Iniciando verificación de API...');
-    apiAvailable = await apiService.checkApiStatus();
-    debugPrint('Estado de la API: ${apiAvailable ? 'Online' : 'Offline'}');
-  } catch (e) {
-    debugPrint('Error al verificar API: $e');
-  }
-
-  // Inicializar servicios de API
+  // Inicializar ApiService y servicios
+  apiService = ApiService();
+  await apiService.init();
   empleadoApi = EmpleadoApi(apiService);
   productosApi = ProductosApi(apiService);
+  sucursalesApi = SucursalesApi(apiService);
 
-  // Mostrar estado de la API en consola
-  debugPrint('URL Base: ${apiService.baseUrl}');
-
-  runApp(MyApp(
-    isOnline: apiAvailable,
-    apiService: apiService,
-  ));
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final bool isOnline;
-  final ApiService apiService;
-  
-  const MyApp({
-    super.key, 
-    required this.isOnline,
-    required this.apiService,
-  });
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -80,38 +61,34 @@ class MyApp extends StatelessWidget {
           primary: const Color(0xFFE31E24),
           secondary: const Color(0xFF1E88E5),
         ),
-        fontFamily: 'Apercu',
-        textTheme: const TextTheme(
+        textTheme: TextTheme(
           // Títulos
-          displayLarge: TextStyle(
+          displayLarge: GoogleFonts.inter(
             fontSize: 32,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.5,
             height: 1.2,
           ),
-          displayMedium: TextStyle(
+          displayMedium: GoogleFonts.inter(
             fontSize: 28,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.5,
             height: 1.2,
           ),
           // Texto del cuerpo
-          bodyLarge: TextStyle(
+          bodyLarge: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w400,
             letterSpacing: 0.5,
             height: 1.5,
-            leadingDistribution: TextLeadingDistribution.even,
           ),
-          bodyMedium: TextStyle(
+          bodyMedium: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w400,
             letterSpacing: 0.25,
             height: 1.5,
-            leadingDistribution: TextLeadingDistribution.even,
           ),
         ).apply(
-          fontFamily: 'Apercu',
           displayColor: Colors.white,
           bodyColor: Colors.white,
         ),
@@ -119,12 +96,12 @@ class MyApp extends StatelessWidget {
         typography: Typography.material2021(
           platform: TargetPlatform.windows,
           black: Typography.blackMountainView.copyWith(
-            bodyLarge: const TextStyle(fontSize: 16, height: 1.5),
-            bodyMedium: const TextStyle(fontSize: 14, height: 1.5),
+            bodyLarge: GoogleFonts.inter(fontSize: 16, height: 1.5),
+            bodyMedium: GoogleFonts.inter(fontSize: 14, height: 1.5),
           ),
           white: Typography.whiteMountainView.copyWith(
-            bodyLarge: const TextStyle(fontSize: 16, height: 1.5),
-            bodyMedium: const TextStyle(fontSize: 14, height: 1.5),
+            bodyLarge: GoogleFonts.inter(fontSize: 16, height: 1.5),
+            bodyMedium: GoogleFonts.inter(fontSize: 14, height: 1.5),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
@@ -154,19 +131,6 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      builder: (context, child) {
-        return Banner(
-          location: BannerLocation.topEnd,
-          message: isOnline ? 'Online' : 'Offline',
-          color: isOnline ? Colors.green : Colors.red,
-          textStyle: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-          child: child!,
-        );
-      },
       initialRoute: Routes.login,
       onGenerateRoute: Routes.generateRoute,
     );

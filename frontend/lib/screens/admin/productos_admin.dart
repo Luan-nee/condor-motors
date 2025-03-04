@@ -1,8 +1,24 @@
 import 'package:flutter/material.dart';
 import '../../api/main.api.dart';
 import '../../api/productos.api.dart' as productos_api;
-import '../../api/locales.api.dart';
 import '../../widgets/dialogs/confirm_dialog.dart';
+
+// Modelo temporal para desarrollo
+class Sucursal {
+  final int id;
+  final String nombre;
+  final String direccion;
+  final bool sucursalCentral;
+  final bool activo;
+
+  Sucursal({
+    required this.id,
+    required this.nombre,
+    required this.direccion,
+    this.sucursalCentral = false,
+    this.activo = true,
+  });
+}
 
 class ProductosAdminScreen extends StatefulWidget {
   const ProductosAdminScreen({super.key});
@@ -14,15 +30,33 @@ class ProductosAdminScreen extends StatefulWidget {
 class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   final _apiService = ApiService();
   late final productos_api.ProductosApi _productosApi;
-  late final LocalesApi _localesApi;
   bool _isLoading = false;
   List<productos_api.Producto> _productos = [];
   List<productos_api.Producto> _productosFiltrados = [];
   String _searchQuery = '';
   String _selectedCategory = 'Todos';
-// todos, escasos, masVendidos, menosVendidos
-  List<Local> _locales = [];
-  Local? _localSeleccionado;
+  List<Sucursal> _sucursales = [];
+  Sucursal? _sucursalSeleccionada;
+
+  // Datos de prueba para sucursales
+  static final List<Sucursal> _sucursalesPrueba = [
+    Sucursal(
+      id: 1,
+      nombre: 'Sucursal Principal',
+      direccion: 'Av. Principal 123',
+      sucursalCentral: true,
+    ),
+    Sucursal(
+      id: 2,
+      nombre: 'Sucursal Norte',
+      direccion: 'Calle Norte 456',
+    ),
+    Sucursal(
+      id: 3,
+      nombre: 'Sucursal Sur',
+      direccion: 'Av. Sur 789',
+    ),
+  ];
 
   final List<String> _categories = [
     'Todos',
@@ -48,7 +82,6 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   void initState() {
     super.initState();
     _productosApi = productos_api.ProductosApi(_apiService);
-    _localesApi = LocalesApi(_apiService);
     _cargarDatos();
   }
 
@@ -80,16 +113,17 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   Future<void> _cargarDatos() async {
     setState(() => _isLoading = true);
     try {
-      final locales = await _localesApi.getLocales();
+      // Simulamos carga de sucursales
+      await Future.delayed(const Duration(milliseconds: 500));
       final productos = await _productosApi.getProductos();
       
       if (!mounted) return;
       setState(() {
-        _locales = locales;
+        _sucursales = _sucursalesPrueba;
         _productos = productos;
         _filtrarProductos();
-        if (_locales.isNotEmpty && _localSeleccionado == null) {
-          _localSeleccionado = _locales.first;
+        if (_sucursales.isNotEmpty && _sucursalSeleccionada == null) {
+          _sucursalSeleccionada = _sucursales.first;
         }
       });
     } catch (e) {
@@ -173,7 +207,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   }
 
   void _showProductDialog(productos_api.Producto? producto) {
-    ScaffoldMessenger.of(context);
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
@@ -254,18 +288,18 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       appBar: AppBar(
         title: const Text('Administración de Productos'),
         actions: [
-          if (_locales.isNotEmpty)
-            DropdownButton<Local>(
-              value: _localSeleccionado,
-              items: _locales.map((local) {
+          if (_sucursales.isNotEmpty)
+            DropdownButton<Sucursal>(
+              value: _sucursalSeleccionada,
+              items: _sucursales.map((sucursal) {
                 return DropdownMenuItem(
-                  value: local,
-                  child: Text(local.nombre),
+                  value: sucursal,
+                  child: Text(sucursal.nombre),
                 );
               }).toList(),
-              onChanged: (local) {
-                if (local != null) {
-                  setState(() => _localSeleccionado = local);
+              onChanged: (sucursal) {
+                if (sucursal != null) {
+                  setState(() => _sucursalSeleccionada = sucursal);
                   _cargarDatos();
                 }
               },

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../api/main.api.dart';
 import '../../api/stocks.api.dart' as stocks_api;
 import '../../api/ventas.api.dart' as ventas_api;
-import '../../api/locales.api.dart';
+import '../../api/sucursales.api.dart';
 import 'barcode_vendor.dart';
 
 class DashboardVendorScreen extends StatefulWidget {
@@ -16,7 +16,7 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
   final _apiService = ApiService();
   late final stocks_api.StocksApi _stockApi;
   late final ventas_api.VentasApi _ventasApi;
-  late final LocalesApi _localesApi;
+  late final SucursalesApi _sucursalesApi;
   final List<stocks_api.Producto> _scannedProducts = [];
   final TextEditingController _textSearchController = TextEditingController();
   final Map<stocks_api.Producto, int> _quantities = {};
@@ -26,9 +26,27 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
   
   // TODO: Obtener estos valores del estado global de la aplicación
   final int _vendorId = 3;
-  final int _localId = 1;
-  Local? _currentBranch;
+  final int _sucursalId = 1;
+  Sucursal? _currentBranch;
   bool _showTempList = false;
+
+  // Datos de prueba para sucursales
+  static final List<Sucursal> _sucursalesPrueba = [
+    Sucursal.fromJson({
+      'id': 1,
+      'nombre': 'Sucursal Principal',
+      'direccion': 'Av. Principal 123',
+      'sucursalCentral': true,
+      'activo': true,
+    }),
+    Sucursal.fromJson({
+      'id': 2,
+      'nombre': 'Sucursal Norte',
+      'direccion': 'Calle Norte 456',
+      'sucursalCentral': false,
+      'activo': true,
+    }),
+  ];
 
   final List<String> _categories = [
     'Todos',
@@ -49,7 +67,7 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
     super.initState();
     _stockApi = stocks_api.StocksApi(_apiService);
     _ventasApi = ventas_api.VentasApi(_apiService);
-    _localesApi = LocalesApi(_apiService);
+    _sucursalesApi = SucursalesApi(_apiService);
     _loadInitialData();
     
     _animationController = AnimationController(
@@ -61,12 +79,20 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
   Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
     try {
-      // Cargar datos del local actual
-      _currentBranch = await _localesApi.getLocal(_localId);
+      // Intentar cargar datos de la sucursal actual
+      try {
+        _currentBranch = await _sucursalesApi.getSucursal(_sucursalId);
+      } catch (e) {
+        // Si falla, usar datos de prueba
+        _currentBranch = _sucursalesPrueba.firstWhere(
+          (s) => s.id == _sucursalId,
+          orElse: () => _sucursalesPrueba.first,
+        );
+      }
       
       // Cargar stock del local
       final stocks = await _stockApi.getStocks(
-        localId: _localId,
+        localId: _sucursalId,
         limit: 100,
       );
       
@@ -680,7 +706,7 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
     try {
       final ventaData = {
         'vendedor_id': _vendorId,
-        'local_id': _localId,
+        'local_id': _sucursalId,
         'estado': ventas_api.VentasApi.estados['PENDIENTE'],
         'observaciones': 'Cliente espera en tienda',
         'detalles': _scannedProducts.map((p) => {
@@ -785,7 +811,7 @@ class _DashboardVendorScreenState extends State<DashboardVendorScreen> with Sing
   Future<bool> _verificarStock(stocks_api.Producto producto, int cantidad) async {
     try {
       return await _stockApi.checkStockAvailability(
-        localId: _localId,
+        localId: _sucursalId,
         productoId: producto.id,
         cantidad: cantidad,
       );

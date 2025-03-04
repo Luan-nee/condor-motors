@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../models/producto.model.dart';
 
 class ProductosFormDialogAdmin extends StatefulWidget {
-  final Producto? producto;
-  final Function(Producto) onSave;
 
   const ProductosFormDialogAdmin({
     super.key,

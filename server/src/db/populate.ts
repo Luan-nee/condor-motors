@@ -10,7 +10,8 @@ import {
   permisosTable,
   rolesCuentasEmpleadosTable,
   rolesPermisosTable,
-  sucursalesTable
+  sucursalesTable,
+  marcasTable
 } from '@db/schema'
 import { exit } from 'process'
 
@@ -48,6 +49,8 @@ const populateDatabase = async (
       empleadoId: empleado.id
     })
 
+    await tx.insert(marcasTable).values(config.marca).returning()
+
     const permisosId = await tx
       .insert(permisosTable)
       .values(permissions)
@@ -84,6 +87,10 @@ const config: ConfigPopulateDb = {
   rolEmpleado: {
     codigo: 'administrador',
     nombreRol: 'Adminstrador'
+  },
+  marca: {
+    nombre: 'Marca Principal',
+    descripcion: 'Marca por defecto del sistema'
   }
 }
 

@@ -1,7 +1,7 @@
 import { SucursalesController } from '@presentation/entities/sucursales/controller'
 import { Router } from 'express'
 
-export class sucursalesRoutes {
+export class SucursalesRoutes {
   static get routes() {
     const router = Router()
 

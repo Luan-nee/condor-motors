@@ -5,7 +5,11 @@ import { authPayloadValidator } from '@/domain/validators/auth/auth-payload.vali
 import type { NextFunction, Request, Response } from 'express'
 
 export class AuthMiddleware {
-  static requests = (req: Request, res: Response, next: NextFunction) => {
+  static readonly requests = (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     const invalidTokenError = CustomError.unauthorized('Access token inválido')
 
     try {

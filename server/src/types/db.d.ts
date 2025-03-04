@@ -16,4 +16,8 @@ interface ConfigPopulateDb {
     codigo: string
     nombreRol: string
   }
+  marca: {
+    nombre: string
+    descripcion?: string
+  }
 }

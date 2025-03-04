@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'productos_admin.dart';
-import 'ventas_admin.dart';
-import 'settings_admin.dart';
-import '../../routes/routes.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../api/main.api.dart';
 import '../../api/productos.api.dart' as productos;
 import '../../api/stocks.api.dart' hide Producto;
@@ -16,7 +12,6 @@ class DashboardAdminScreen extends StatefulWidget {
 }
 
 class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
-  int _selectedIndex = 0;
   final ApiService _apiService = ApiService();
   late final productos.ProductosApi _productosApi;
   late final StocksApi _stocksApi;
@@ -26,25 +21,11 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   double _totalVentas = 0;
   double _totalGanancias = 0;
 
-  final List<Widget> _screens = [];
-
   @override
   void initState() {
     super.initState();
     _productosApi = productos.ProductosApi(_apiService);
     _stocksApi = StocksApi(_apiService);
-    _screens.addAll([
-      _DashboardContent(
-        productosList: _productos,
-        totalVentas: _totalVentas,
-        totalGanancias: _totalGanancias,
-        onNavigateToProductos: () => setState(() => _selectedIndex = 1),
-        existencias: _existencias,
-      ),
-      const ProductosAdminScreen(),
-      const VentasAdminScreen(),
-      const SettingsScreen(),
-    ]);
     _loadInitialData();
   }
 
@@ -84,84 +65,15 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Condors Motors - Administrador'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person_outline, size: 35, color: Color(0xFFE31E24)),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    'Administrador',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                    ),
-                  ),
-                  Text(
-                    'Central Principal',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Cerrar Sesión'),
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Cerrar Sesión'),
-                    content: const Text('¿Estás seguro que deseas cerrar sesión?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancelar'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context); // Cerrar diálogo
-                          Navigator.pushReplacementNamed(context, Routes.login);
-                        },
-                        child: const Text('Cerrar Sesión'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _screens[_selectedIndex],
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return _DashboardContent(
+      productosList: _productos,
+      totalVentas: _totalVentas,
+      totalGanancias: _totalGanancias,
+      existencias: _existencias,
     );
   }
 }
@@ -170,14 +82,12 @@ class _DashboardContent extends StatelessWidget {
   final List<productos.Producto> productosList;
   final double totalVentas;
   final double totalGanancias;
-  final VoidCallback onNavigateToProductos;
   final Map<int, int> existencias;
 
   const _DashboardContent({
     required this.productosList,
     required this.totalVentas,
     required this.totalGanancias,
-    required this.onNavigateToProductos,
     required this.existencias,
   });
 
@@ -187,335 +97,301 @@ class _DashboardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isWideScreen = screenWidth > 1200;
-    final isMediumScreen = screenWidth > 800;
-
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(
-        horizontal: isWideScreen ? screenWidth * 0.1 : 24.0,
-        vertical: 24.0,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Panel de Control',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 32),
-          Row(
+    return Row(
+      children: [
+        // Panel principal (ocupa el 75% del ancho)
+        Expanded(
+          flex: 75,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: _buildStatsCard(
-                  context,
-                  'Ventas Totales',
-                  'S/ ${totalVentas.toStringAsFixed(2)}',
-                  Icons.point_of_sale,
-                  Colors.blue,
+              // Header con nombre del local
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Text(
+                      'INVENTARIO',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const Text(
+                      ' / ',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.white54,
+                      ),
+                    ),
+                    Text(
+                      'Central Principal',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatsCard(
-                  context,
-                  'Ganancias',
-                  'S/ ${totalGanancias.toStringAsFixed(2)}',
-                  Icons.trending_up,
-                  Colors.green,
+
+              // Sección de productos con bajo stock
+              Container(
+                padding: const EdgeInsets.all(16),
+                color: const Color(0xFF1A1A1A),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Productos con bajo stock',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFE31E24),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Tabla de productos
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.1),
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          headingRowColor: MaterialStateProperty.all(
+                            const Color(0xFF2D2D2D),
+                          ),
+                          columns: const [
+                            DataColumn(
+                              label: Text(
+                                'Foto',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Producto',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Stock',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Cantidad máxima',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Cantidad mínima',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                          rows: productosList
+                              .where((producto) =>
+                                  getExistencias(producto) < 10) // Ejemplo de umbral
+                              .map(
+                                (producto) => DataRow(
+                                  cells: [
+                                    DataCell(
+                                      Container(
+                                        width: 50,
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF2D2D2D),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const FaIcon(
+                                          FontAwesomeIcons.motorcycle,
+                                          color: Colors.white54,
+                                          size: 24,
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(Text(
+                                      producto.nombre,
+                                      style: const TextStyle(color: Colors.white),
+                                    )),
+                                    DataCell(Text(
+                                      getExistencias(producto).toString(),
+                                      style: TextStyle(
+                                        color: getExistencias(producto) < 5
+                                            ? const Color(0xFFE31E24)
+                                            : Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )),
+                                    DataCell(Text(
+                                      '50', // Ejemplo de cantidad máxima
+                                      style: const TextStyle(color: Colors.white),
+                                    )),
+                                    DataCell(Text(
+                                      '10', // Ejemplo de cantidad mínima
+                                      style: const TextStyle(color: Colors.white),
+                                    )),
+                                  ],
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 32),
-          _buildSalesChart(context, isWideScreen),
-          const SizedBox(height: 32),
-          _buildRecentProducts(context, isMediumScreen),
-          const SizedBox(height: 32),
-          _buildTopProducts(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsCard(
-    BuildContext context,
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
         ),
-      ),
-    );
-  }
 
-  Widget _buildSalesChart(BuildContext context, bool isWideScreen) {
-    return Container(
-      height: isWideScreen ? 400 : 300,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Ventas Mensuales',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: LineChart(
-              LineChartData(
-                gridData: const FlGridData(show: false),
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (value, meta) {
-                        return Text('S/ ${value.toInt()}K');
-                      },
-                    ),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        const titles = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
-                        if (value.toInt() < titles.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(titles[value.toInt()]),
-                          );
-                        }
-                        return const Text('');
-                      },
-                    ),
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 3),
-                      FlSpot(1, 4),
-                      FlSpot(2, 3.5),
-                      FlSpot(3, 5),
-                      FlSpot(4, 4),
-                      FlSpot(5, 6),
-                    ],
-                    isCurved: true,
-                    color: const Color(0xFFE31E24),
-                    barWidth: 3,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: const Color(0xFFE31E24).withOpacity(0.1),
-                    ),
-                  ),
-                ],
+        // Panel lateral derecho (ocupa el 25% del ancho)
+        Container(
+          width: MediaQuery.of(context).size.width * 0.25,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            border: Border(
+              left: BorderSide(
+                color: Colors.white.withOpacity(0.1),
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecentProducts(BuildContext context, bool isMediumScreen) {
-    if (productosList.isEmpty) {
-      return const Center(child: Text('No hay productos disponibles'));
-    }
-
-    final recentProducts = productosList.take(5).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Productos Recientes',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: onNavigateToProductos,
-              child: const Text('Ver todos'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 220,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: recentProducts.length,
-            itemBuilder: (context, index) {
-              final product = recentProducts[index];
-              return Container(
-                width: isMediumScreen ? 280 : 220,
-                margin: const EdgeInsets.only(right: 16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Título del panel
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      height: 120,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2D2D2D),
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(16),
-                        ),
+                    const Text(
+                      'Administrar Locales',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.motorcycle, size: 48),
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
+                    ),
+                    IconButton(
+                      icon: const FaIcon(
+                        FontAwesomeIcons.circlePlus,
+                        color: Color(0xFFE31E24),
+                      ),
+                      onPressed: () {
+                        // TODO: Implementar agregar local
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              // Tabs de Centrales y Sucursales
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    _buildTab(true, 'Centrales'),
+                    const SizedBox(width: 8),
+                    _buildTab(false, 'Sucursales'),
+                  ],
+                ),
+              ),
+
+              // Lista de locales
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: 5, // Ejemplo de cantidad de locales
+                  itemBuilder: (context, index) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2D2D2D),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const FaIcon(
+                                FontAwesomeIcons.store,
+                                color: Color(0xFFE31E24),
+                                size: 18,
                               ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE31E24),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                product.codigo,
+                              const SizedBox(width: 8),
+                              Text(
+                                'Local ${index + 1}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            product.nombre,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Stock: ${getExistencias(product)} unidades',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 14,
-                            ),
+                            ],
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'S/ ${product.precioNormal.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              color: Color(0xFFE31E24),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                            'Describe la dirección en donde queda el local',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 12,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTopProducts() {
-    final topProducts = List<productos.Producto>.from(productosList)
-      ..sort((a, b) => (b.precioNormal).compareTo(a.precioNormal));
-    final top5Products = topProducts.take(5).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Top 5 Productos',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...top5Products.map((product) => ListTile(
-          title: Text(product.nombre),
-          subtitle: Text(
-            '${getExistencias(product)} unidades disponibles',
-            style: TextStyle(color: Colors.white.withOpacity(0.7)),
-          ),
-          trailing: Text(
-            'S/ ${(product.precioNormal).toStringAsFixed(2)}',
-            style: const TextStyle(
-              color: Color(0xFFE31E24),
-              fontWeight: FontWeight.bold,
+  Widget _buildTab(bool isSelected, String text) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isSelected
+                  ? const Color(0xFFE31E24)
+                  : Colors.white.withOpacity(0.1),
+              width: 2,
             ),
           ),
-        )),
-      ],
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
     );
   }
 }
