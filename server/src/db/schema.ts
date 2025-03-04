@@ -73,10 +73,10 @@ export const productosTable = pgTable('productos', {
     .references(() => unidadesTable.id),
   categoriaId: integer('categoria_id')
     .notNull()
-    .references(() => unidadesTable.id),
+    .references(() => categoriasTable.id),
   marcaId: integer('marca_id')
     .notNull()
-    .references(() => unidadesTable.id),
+    .references(() => marcasTable.id),
   ...timestampsColumns
 })
 
@@ -151,6 +151,7 @@ export const empleadosTable = pgTable('empleados', {
 
 export const tiposPersonasTable = pgTable('tipos_personas', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  codigo: text('codigo').notNull().unique(),
   nombre: text('nombre').notNull().unique()
 })
 
@@ -188,7 +189,7 @@ export const cuentasEmpleadosTable = pgTable('cuentas_empleados', {
   ...timestampsColumns
 })
 
-export const permisosTables = pgTable('permisos', {
+export const permisosTable = pgTable('permisos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   codigoPermiso: text('codigo_permiso').unique(),
   nombrePermiso: text('nombre_permiso').notNull().unique()
@@ -202,7 +203,7 @@ export const rolesPermisosTable = pgTable(
       .references(() => rolesCuentasEmpleadosTable.id),
     permisoId: integer('permiso_id')
       .notNull()
-      .references(() => permisosTables.id)
+      .references(() => permisosTable.id)
   },
   (table) => [primaryKey({ columns: [table.rolId, table.permisoId] })]
 )

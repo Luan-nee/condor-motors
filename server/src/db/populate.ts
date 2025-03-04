@@ -7,7 +7,7 @@ import { db } from '@db/connection'
 import {
   cuentasEmpleadosTable,
   empleadosTable,
-  permisosTables,
+  permisosTable,
   rolesCuentasEmpleadosTable,
   rolesPermisosTable,
   sucursalesTable
@@ -49,9 +49,9 @@ const populateDatabase = async (
     })
 
     const permisosId = await tx
-      .insert(permisosTables)
+      .insert(permisosTable)
       .values(permissions)
-      .returning({ id: permisosTables.id })
+      .returning({ id: permisosTable.id })
 
     await tx.insert(rolesPermisosTable).values(
       permisosId.map((permiso) => ({

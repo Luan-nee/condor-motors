@@ -1,7 +1,7 @@
 import { db } from '@/db/connection'
 import {
   cuentasEmpleadosTable,
-  permisosTables,
+  permisosTable,
   rolesPermisosTable
 } from '@/db/schema'
 import { and, eq, or } from 'drizzle-orm'
@@ -9,7 +9,7 @@ import { and, eq, or } from 'drizzle-orm'
 export class AccessControl {
   private static getConditionals(permissionCodes: string[]) {
     const conditionals = permissionCodes.map((permissionCode) =>
-      eq(permisosTables.codigoPermiso, permissionCode)
+      eq(permisosTable.codigoPermiso, permissionCode)
     )
 
     return or(...conditionals)
@@ -36,14 +36,14 @@ export class AccessControl {
 
     const permissions = await db
       .select({
-        permisoId: permisosTables.id,
-        codigoPermiso: permisosTables.codigoPermiso,
-        nombrePermiso: permisosTables.nombrePermiso
+        permisoId: permisosTable.id,
+        codigoPermiso: permisosTable.codigoPermiso,
+        nombrePermiso: permisosTable.nombrePermiso
       })
       .from(rolesPermisosTable)
       .innerJoin(
-        permisosTables,
-        eq(rolesPermisosTable.permisoId, permisosTables.id)
+        permisosTable,
+        eq(rolesPermisosTable.permisoId, permisosTable.id)
       )
       .where(
         and(
