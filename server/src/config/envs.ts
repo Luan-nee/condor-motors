@@ -4,6 +4,7 @@ import { get } from 'env-var'
 export const envs = {
   SERVER_PORT: get('SERVER_PORT').default(3000).asPortNumber(),
   DATABASE_URL: get('DATABASE_URL').required().asString(),
+  DATABASE_ENABLE_SSL: get('DATABASE_ENABLE_SSL').asBool(),
   JWT_SEED: get('JWT_SEED').required().asString(),
   NODE_ENV: get('NODE_ENV').default('development').asString(),
   REFRESH_TOKEN_DURATION: get('REFRESH_TOKEN_DURATION')
