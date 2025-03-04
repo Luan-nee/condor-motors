@@ -109,6 +109,15 @@ export class CustomResponse {
     })
   }
 
+  static invalidAccessToken({ res }: ErrorResponseArgs) {
+    this.send({
+      res,
+      error: 'Access token inválido',
+      status: responseStatus.fail,
+      statusCode: 401
+    })
+  }
+
   static notImplemented({ res }: ErrorResponseArgs) {
     this.send({
       res,
