@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Condor motors](assets/condor-motors-logo.webp)
+![Condor motors](readme-assets/condor-motors-logo.webp)
 
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D%2020.0.0-brightgreen)](https://nodejs.org)
 [![NPM Version](https://img.shields.io/badge/npm-%3E%3D%208.0.0-blue)](https://www.npmjs.com)
