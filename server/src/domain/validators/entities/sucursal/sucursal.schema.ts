@@ -1,28 +1,28 @@
 import { z } from 'zod'
 
+const isValidNombre = (str: string) =>
+  /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s.\-_]+$/.test(str)
+
+const isValidDireccion = (str: string) =>
+  /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s.,\-_]+$/.test(str)
+
 export const sucursalSchema = {
   nombre: z
-    .string({
-      message: 'El nombre de la sucursal debe ser de tipo string'
-    })
+    .string()
     .min(2)
     .max(255)
-    .refine((val) => /^[a-zA-Z0-9ñÑáéíóúÁÉÍÓÚ\s_-]{1,255}$/.test(val), {
+    .refine((val) => isValidNombre(val), {
       message:
-        'El nombre de la sucursal debe solo puede contener números, espacios, guiones y letras (mayúsculas o minúsculas)'
+        'El nombre de la sucursal solo puede contener números, espacios, guiones y letras (mayúsculas o minúsculas)'
     }),
   direccion: z
-    .string({
-      message: 'La dirección de la sucursal debe ser de tipo string'
-    })
+    .string()
     .min(2)
     .max(255)
-    .refine((val) => /^[a-zA-Z0-9ñÑáéíóúÁÉÍÓÚ\s_-]{1,255}$/.test(val), {
+    .refine((val) => isValidDireccion(val), {
       message:
-        'La dirección de la sucursal debe solo puede contener números, espacios, guiones y letras (mayúsculas o minúsculas)'
+        'La dirección de la sucursal solo puede contener números, espacios, puntos, guiones y letras (mayúsculas o minúsculas)'
     })
     .optional(),
-  sucursalCentral: z.boolean({
-    message: 'La propiedad "sucursalCentral" debe ser de tipo booleano'
-  })
+  sucursalCentral: z.boolean()
 }
