@@ -136,7 +136,7 @@ export const empleadosTable = pgTable('empleados', {
   dni: text('dni'),
   horaInicioJornada: time('hora_inicio_jornada'),
   horaFinJornada: time('hora_fin_jornada'),
-  fechaContratacion: date('', {
+  fechaContratacion: date('fecha_contratacion', {
     mode: 'date'
   }),
   sueldo: numeric('sueldo', {
@@ -160,8 +160,8 @@ export const clientesTable = pgTable('clientes', {
   dni: text('dni'),
   razonSocial: text('razon_social'),
   ruc: text('ruc'),
-  telefono: text(''),
-  correo: text(''),
+  telefono: text('telefono'),
+  correo: text('correo'),
   tipoPersonaId: integer('tipo_persona_id')
     .notNull()
     .references(() => tiposPersonasTable.id),
