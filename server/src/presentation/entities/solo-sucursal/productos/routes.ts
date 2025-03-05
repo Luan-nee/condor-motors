@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { ProductosController } from './controller'
+import { ProductosController } from '@/presentation/entities/solo-sucursal/productos/controller'
 
 export class ProductosRoutes {
   static get routes() {

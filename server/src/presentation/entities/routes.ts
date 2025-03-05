@@ -3,7 +3,7 @@ import { EmpleadosRoutes } from '@presentation/entities/empleados/routes'
 import { MarcasRoutes } from '@presentation/entities/marcas/routes'
 import { AuthMiddleware } from '@presentation/middlewares/auth.middleware'
 import { Router } from 'express'
-import { ProductosRoutes } from './productos/routes'
+import { SoloSucursalRoutes } from '@/presentation/entities/solo-sucursal/routes'
 
 export class EntitiesRoutes {
   static get routes() {
@@ -12,7 +12,12 @@ export class EntitiesRoutes {
     router.use('/sucursales', AuthMiddleware.requests, SucursalesRoutes.routes)
     router.use('/empleados', AuthMiddleware.requests, EmpleadosRoutes.routes)
     router.use('/marcas', AuthMiddleware.requests, MarcasRoutes.routes)
-    router.use('/productos', AuthMiddleware.requests, ProductosRoutes.routes)
+
+    router.use(
+      '/:sucursalId',
+      AuthMiddleware.requests,
+      SoloSucursalRoutes.routes
+    )
 
     return router
   }
