@@ -11,7 +11,9 @@ import {
   rolesCuentasEmpleadosTable,
   rolesPermisosTable,
   sucursalesTable,
-  marcasTable
+  marcasTable,
+  unidadesTable,
+  categoriasTable
 } from '@db/schema'
 import { exit } from 'process'
 
@@ -49,7 +51,9 @@ const populateDatabase = async (
       empleadoId: empleado.id
     })
 
-    await tx.insert(marcasTable).values(config.marca).returning()
+    await tx.insert(unidadesTable).values(config.defaultUnidad)
+    await tx.insert(categoriasTable).values(config.defaultCategoria)
+    await tx.insert(marcasTable).values(config.defaultCategoria)
 
     const permisosId = await tx
       .insert(permisosTable)
@@ -88,8 +92,16 @@ const config: ConfigPopulateDb = {
     codigo: 'administrador',
     nombreRol: 'Adminstrador'
   },
-  marca: {
-    nombre: 'Marca Principal',
+  defaultUnidad: {
+    nombre: 'Sin unidad',
+    descripcion: 'Unidad por defecto del sistema'
+  },
+  defaultCategoria: {
+    nombre: 'Sin categoria',
+    descripcion: 'Categoria por defecto del sistema'
+  },
+  defaultMarca: {
+    nombre: 'Sin marca',
     descripcion: 'Marca por defecto del sistema'
   }
 }

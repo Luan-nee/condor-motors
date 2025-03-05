@@ -12,7 +12,11 @@ const resetDatabase = async () => {
     empleados: schema.empleadosTable,
     roles: schema.rolesCuentasEmpleadosTable,
     rolesPermisos: schema.rolesPermisosTable,
-    permisos: schema.permisosTable
+    permisos: schema.permisosTable,
+    unidades: schema.unidadesTable,
+    categorias: schema.categoriasTable,
+    marcas: schema.marcasTable,
+    productos: schema.productosTable
   }
 
   await reset(db, newSchema)

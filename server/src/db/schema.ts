@@ -67,7 +67,7 @@ export const productosTable = pgTable('productos', {
   sku: text('sku').notNull().unique(),
   nombre: text('nombre').notNull().unique(),
   descripcion: text('descripcion'),
-  maxDiasSinReabastecer: integer('max_dias_sin_reabastecer').default(30),
+  maxDiasSinReabastecer: integer('max_dias_sin_reabastecer'),
   unidadId: integer('unidad_id')
     .notNull()
     .references(() => unidadesTable.id),

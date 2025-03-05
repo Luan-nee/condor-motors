@@ -44,7 +44,13 @@ export const permissionCodes = {
     updateRelated: 'sucursales:update_related'
   },
   empleados: {
-    createAny: 'empleados:create',
+    createAny: 'empleados:create_any',
     getAny: 'empleados:get_any'
+  },
+  productos: {
+    createAny: 'productos:create_any',
+    getAny: 'productos:get_any',
+    upateAny: 'productos:update_any',
+    deleteAny: 'productos:delete_any'
   }
 } as const

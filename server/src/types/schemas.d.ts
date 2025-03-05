@@ -2,7 +2,11 @@ import type {
   cuentasEmpleadosTable,
   sucursalesTable,
   empleadosTable,
-  rolesCuentasEmpleadosTable
+  rolesCuentasEmpleadosTable,
+  productosTable,
+  unidadesTable,
+  categoriasTable,
+  marcasTable
 } from '@/db/schema'
 import type { InferSelectModel } from 'drizzle-orm'
 
@@ -27,3 +31,17 @@ export type EmpleadoEntity = Omit<
   InferSelectModel<typeof empleadosTable>,
   'sueldo'
 > & { sueldo: number }
+
+type UnidadEntity = InferSelectModel<typeof unidadesTable>
+type CategoriaEntity = InferSelectModel<typeof categoriasTable>
+type MarcaEntity = InferSelectModel<typeof marcasTable>
+
+export interface RelacionadosProductoEntity {
+  unidadNombre: Pick<UnidadEntity, 'nombre'>
+  categoriaNombre: Pick<CategoriaEntity, 'nombre'>
+  marcaNombre: Pick<MarcaEntity, 'nombre'>
+}
+
+export type ProductoEntity = InferSelectModel<typeof productosTable> & {
+  relacionados: RelacionadosProductoEntity
+}

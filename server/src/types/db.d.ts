@@ -16,7 +16,15 @@ interface ConfigPopulateDb {
     codigo: string
     nombreRol: string
   }
-  marca: {
+  defaultUnidad: {
+    nombre: string
+    descripcion?: string
+  }
+  defaultCategoria: {
+    nombre: string
+    descripcion?: string
+  }
+  defaultMarca: {
     nombre: string
     descripcion?: string
   }
