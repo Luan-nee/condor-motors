@@ -9,7 +9,7 @@ export class ProductosRoutes {
 
     router.post('/', productosController.create)
 
-    // router.get('/:id', productosController.getById)
+    router.get('/:id', productosController.getById)
 
     // router.get('/', productosController.getAll)
 
