@@ -1,7 +1,6 @@
 import { CustomError } from '@/core/errors/custom.error'
 import { UserEntityMapper } from '@/domain/mappers/user-entity.mapper'
 import type { Encryptor, TokenAuthenticator } from '@/types/interfaces'
-import type { UserEntityWithTokens } from '@/types/schemas'
 import { db } from '@db/connection'
 import { cuentasEmpleadosTable, rolesCuentasEmpleadosTable } from '@db/schema'
 import type { LoginUserDto } from '@domain/dtos/auth/login-user.dto'
@@ -76,7 +75,7 @@ export class LoginUser {
     }
   }
 
-  async execute(loginUserDto: LoginUserDto): Promise<UserEntityWithTokens> {
+  async execute(loginUserDto: LoginUserDto) {
     const user = await this.login(loginUserDto)
     const payload = AuthPayloadMapper.authPayloadFromObject(user)
 

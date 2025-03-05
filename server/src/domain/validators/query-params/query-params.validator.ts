@@ -1,12 +1,22 @@
-import { queriesBaseSchema } from '@/domain/validators/query-params/query-params.schema'
+import {
+  paramsBaseSchema,
+  queriesBaseSchema
+} from '@/domain/validators/query-params/query-params.schema'
 import z from 'zod'
 
 const ParamsNumericIdSchema = z.object({
-  id: z.coerce.number().positive().min(1)
+  id: paramsBaseSchema.numericId
+})
+
+const ParamsUUIDSchema = z.object({
+  id: paramsBaseSchema.uuid
 })
 
 export const paramsNumericIdValidator = (object: unknown) =>
   ParamsNumericIdSchema.safeParse(object)
+
+export const paramsUUIDValidator = (object: unknown) =>
+  ParamsUUIDSchema.safeParse(object)
 
 export const QueriesSchema = z.object({
   sort_by: queriesBaseSchema.sort_by,

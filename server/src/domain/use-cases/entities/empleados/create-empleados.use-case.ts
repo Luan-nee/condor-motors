@@ -65,8 +65,7 @@ export class CreateEmpleado {
 
     const [empleado] = insertedEmpleadoResult
 
-    const mappedEmpleado =
-      EmpleadoEntityMapper.empleadoEntityFromObject(empleado)
+    const mappedEmpleado = EmpleadoEntityMapper.fromObject(empleado)
 
     return mappedEmpleado
   }

@@ -1,66 +1,30 @@
-import { CustomError } from '@/core/errors/custom.error'
 import type { ProductoEntity } from '@/types/schemas'
 import { RelacionadosProductoEntityMapper } from './relacionados-producto-entity.mapper'
 
 export class ProductoEntityMapper {
-  static fromObject(input: any): ProductoEntity {
-    const {
-      id,
-      sku,
-      nombre,
-      descripcion,
-      maxDiasSinReabastecer,
-      unidadId,
-      categoriaId,
-      marcaId,
-      fechaCreacion,
-      fechaActualizacion,
-      relacionados
-    } = input
-
-    if (id === undefined) {
-      throw CustomError.internalServer('Missing id')
-    }
-    if (sku === undefined) {
-      throw CustomError.internalServer('Missing sku')
-    }
-    if (nombre === undefined) {
-      throw CustomError.internalServer('Missing nombre')
-    }
-    if (descripcion === undefined) {
-      throw CustomError.internalServer('Missing descripcion')
-    }
-    if (unidadId === undefined) {
-      throw CustomError.internalServer('Missing unidadId')
-    }
-    if (categoriaId === undefined) {
-      throw CustomError.internalServer('Missing categoriaId')
-    }
-    if (marcaId === undefined) {
-      throw CustomError.internalServer('Missing marcaId')
-    }
-    if (fechaCreacion === undefined) {
-      throw CustomError.internalServer('Missing fechaCreacion')
-    }
-    if (fechaActualizacion === undefined) {
-      throw CustomError.internalServer('Missing fechaActualizacion')
-    }
+  static fromObject(input: ProductoEntity) {
+    const { relacionados } = input
 
     const mappedRelacionados =
       RelacionadosProductoEntityMapper.fromObject(relacionados)
 
+    const parsedId = String(input.id)
+    const parsedUnidadId = String(input.unidadId)
+    const parsedCategoriaId = String(input.categoriaId)
+    const parsedMarcaId = String(input.marcaId)
+
     return {
-      id,
-      nombre,
-      descripcion,
-      sku,
-      maxDiasSinReabastecer,
-      unidadId,
-      categoriaId,
-      marcaId,
+      id: parsedId,
+      nombre: input.nombre,
+      descripcion: input.descripcion,
+      sku: input.sku,
+      maxDiasSinReabastecer: input.maxDiasSinReabastecer,
+      unidadId: parsedUnidadId,
+      categoriaId: parsedCategoriaId,
+      marcaId: parsedMarcaId,
       relacionados: mappedRelacionados,
-      fechaCreacion,
-      fechaActualizacion
+      fechaCreacion: input.fechaCreacion,
+      fechaActualizacion: input.fechaActualizacion
     }
   }
 }

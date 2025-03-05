@@ -17,7 +17,7 @@ type RolCuentaEmpleadoEntity = InferSelectModel<
 export type UserEntity = Omit<
   InferSelectModel<typeof cuentasEmpleadosTable>,
   'secret' | 'clave'
-> & { rolCuentaEmpleadoCodigo: Pick<RolCuentaEmpleadoEntity, 'codigo'> }
+> & { rolCuentaEmpleadoCodigo: RolCuentaEmpleadoEntity['codigo'] }
 
 export interface UserEntityWithTokens {
   accessToken: string
@@ -27,19 +27,16 @@ export interface UserEntityWithTokens {
 
 export type SucursalEntity = InferSelectModel<typeof sucursalesTable>
 
-export type EmpleadoEntity = Omit<
-  InferSelectModel<typeof empleadosTable>,
-  'sueldo'
-> & { sueldo: number }
+export type EmpleadoEntity = InferSelectModel<typeof empleadosTable>
 
 type UnidadEntity = InferSelectModel<typeof unidadesTable>
 type CategoriaEntity = InferSelectModel<typeof categoriasTable>
 type MarcaEntity = InferSelectModel<typeof marcasTable>
 
 export interface RelacionadosProductoEntity {
-  unidadNombre: Pick<UnidadEntity, 'nombre'>
-  categoriaNombre: Pick<CategoriaEntity, 'nombre'>
-  marcaNombre: Pick<MarcaEntity, 'nombre'>
+  unidadNombre: UnidadEntity['nombre']
+  categoriaNombre: CategoriaEntity['nombre']
+  marcaNombre: MarcaEntity['nombre']
 }
 
 export type ProductoEntity = InferSelectModel<typeof productosTable> & {

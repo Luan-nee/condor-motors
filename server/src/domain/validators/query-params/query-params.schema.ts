@@ -2,9 +2,10 @@
 import { defaultQueries, filterTypeValues, orderValues } from '@/consts'
 import z from 'zod'
 
-// export const paramsSchema = {
-//   id: z.coerce.number().positive().min(1)
-// }
+export const paramsBaseSchema = {
+  numericId: z.coerce.number().positive(),
+  uuid: z.coerce.string().uuid()
+}
 
 export const queriesBaseSchema = {
   search: z.coerce.string().default(defaultQueries.search),

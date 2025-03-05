@@ -146,7 +146,7 @@ export class GetSucursales {
     const sucursales = await this.getSucursales(queriesDto, hasPermissionGetAny)
 
     const mappedSucursales = sucursales.map((sucursal) =>
-      SucursalEntityMapper.sucursalEntityFromObject(sucursal)
+      SucursalEntityMapper.fromObject(sucursal)
     )
 
     return mappedSucursales

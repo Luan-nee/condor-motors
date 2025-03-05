@@ -108,8 +108,7 @@ export class GetSucursalById {
       hasPermissionGetAny
     )
 
-    const mappedSucursal =
-      SucursalEntityMapper.sucursalEntityFromObject(sucursal)
+    const mappedSucursal = SucursalEntityMapper.fromObject(sucursal)
 
     return mappedSucursal
   }

@@ -60,10 +60,7 @@ export class RefreshToken {
     })
 
     return {
-      accessToken,
-      data: {
-        id: payload.id
-      }
+      accessToken
     }
   }
 }

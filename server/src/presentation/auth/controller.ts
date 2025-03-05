@@ -106,7 +106,6 @@ export class AuthController {
 
         CustomResponse.success({
           res,
-          data: user.data,
           authorization: bearerAccessToken
         })
       })

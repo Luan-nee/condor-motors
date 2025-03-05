@@ -56,8 +56,7 @@ export class UpdateSucursal {
 
     const [sucursal] = updatedSucursalResult
 
-    const mappedSucursal =
-      SucursalEntityMapper.sucursalEntityFromObject(sucursal)
+    const mappedSucursal = SucursalEntityMapper.fromObject(sucursal)
 
     return mappedSucursal
   }

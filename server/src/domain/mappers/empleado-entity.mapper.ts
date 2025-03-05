@@ -1,60 +1,27 @@
-import { CustomError } from '@/core/errors/custom.error'
 import type { EmpleadoEntity } from '@/types/schemas'
 
 export class EmpleadoEntityMapper {
-  static empleadoEntityFromObject(input: any): EmpleadoEntity {
-    const {
-      id,
-      nombre,
-      apellidos,
-      ubicacionFoto,
-      edad,
-      dni,
-      horaInicioJornada,
-      horaFinJornada,
-      fechaContratacion,
-      sueldo,
-      sucursalId,
-      fechaCreacion,
-      fechaActualizacion
-    } = input
-
-    if (id === undefined) {
-      throw CustomError.badRequest('Missing id')
-    }
-    if (nombre === undefined) {
-      throw CustomError.badRequest('Missing nombre')
-    }
-    if (apellidos === undefined) {
-      throw CustomError.badRequest('Missing apellidos')
-    }
-    if (sucursalId === undefined) {
-      throw CustomError.badRequest('Missing sucursalId')
-    }
-    if (fechaCreacion === undefined) {
-      throw CustomError.badRequest('Missing fechaCreacion')
-    }
-    if (fechaActualizacion === undefined) {
-      throw CustomError.badRequest('Missing fechaActualizacion')
-    }
+  static fromObject(input: EmpleadoEntity) {
+    const parsedId = String(input.id)
+    const parsedSucursalId = String(input.sucursalId)
 
     const parsedSueldo =
-      typeof sueldo === 'string' ? parseFloat(sueldo) : sueldo
+      typeof input.sueldo === 'string' ? parseFloat(input.sueldo) : input.sueldo
 
     return {
-      id,
-      nombre,
-      apellidos,
-      ubicacionFoto,
-      edad,
-      dni,
-      horaInicioJornada,
-      horaFinJornada,
-      fechaContratacion,
+      id: parsedId,
+      nombre: input.nombre,
+      apellidos: input.apellidos,
+      ubicacionFoto: input.ubicacionFoto,
+      edad: input.edad,
+      dni: input.dni,
+      horaInicioJornada: input.horaInicioJornada,
+      horaFinJornada: input.horaFinJornada,
+      fechaContratacion: input.fechaContratacion,
       sueldo: parsedSueldo,
-      sucursalId,
-      fechaCreacion,
-      fechaActualizacion
+      sucursalId: parsedSucursalId,
+      fechaCreacion: input.fechaCreacion,
+      fechaActualizacion: input.fechaActualizacion
     }
   }
 }

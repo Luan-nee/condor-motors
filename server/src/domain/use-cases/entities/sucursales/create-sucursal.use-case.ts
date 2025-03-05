@@ -44,8 +44,7 @@ export class CreateSucursal {
 
     const [sucursal] = insertedSucursalResult
 
-    const mappedSucursal =
-      SucursalEntityMapper.sucursalEntityFromObject(sucursal)
+    const mappedSucursal = SucursalEntityMapper.fromObject(sucursal)
 
     return mappedSucursal
   }

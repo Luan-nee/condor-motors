@@ -1,48 +1,19 @@
-import { CustomError } from '@/core/errors/custom.error'
 import type { UserEntity } from '@/types/schemas'
 
 export class UserEntityMapper {
-  static userEntityFromObject(input: any): UserEntity {
-    const {
-      id,
-      usuario,
-      rolCuentaEmpleadoId,
-      rolCuentaEmpleadoCodigo,
-      empleadoId,
-      fechaCreacion,
-      fechaActualizacion
-    } = input
-
-    if (id === undefined) {
-      throw CustomError.badRequest('Missing id')
-    }
-    if (usuario === undefined) {
-      throw CustomError.badRequest('Missing usuario')
-    }
-    if (rolCuentaEmpleadoId === undefined) {
-      throw CustomError.badRequest('Missing rolCuentaEmpleadoId')
-    }
-    if (rolCuentaEmpleadoCodigo === undefined) {
-      throw CustomError.badRequest('Missing rolCuentaEmpleadoCodigo')
-    }
-    if (empleadoId === undefined) {
-      throw CustomError.badRequest('Missing empleadoId')
-    }
-    if (fechaCreacion === undefined) {
-      throw CustomError.badRequest('Missing fechaCreacion')
-    }
-    if (fechaActualizacion === undefined) {
-      throw CustomError.badRequest('Missing fechaActualizacion')
-    }
+  static userEntityFromObject(input: UserEntity) {
+    const parsedId = String(input.id)
+    const parsedRolCuentaEmpleadoId = String(input.rolCuentaEmpleadoId)
+    const parsedEmpleadoId = String(input.empleadoId)
 
     return {
-      id,
-      usuario,
-      rolCuentaEmpleadoId,
-      rolCuentaEmpleadoCodigo,
-      empleadoId,
-      fechaCreacion,
-      fechaActualizacion
+      id: parsedId,
+      usuario: input.usuario,
+      rolCuentaEmpleadoId: parsedRolCuentaEmpleadoId,
+      rolCuentaEmpleadoCodigo: input.rolCuentaEmpleadoCodigo,
+      empleadoId: parsedEmpleadoId,
+      fechaCreacion: input.fechaCreacion,
+      fechaActualizacion: input.fechaActualizacion
     }
   }
 }
