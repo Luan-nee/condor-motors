@@ -1,4 +1,5 @@
 // import { permissionCodes } from "@/consts"; 
+import { CustomError } from "@/core/errors/custom.error";
 import { db } from "@/db/connection";
 import { empleadosTable, sucursalesTable } from "@/db/schema";
 import { NumericIdDto } from "@/domain/dtos/query-params/numeric-id.dto";
@@ -17,7 +18,7 @@ export class GetEmpleadoById{
         dni:empleadosTable.dni,
         horaInicioJornada:empleadosTable.horaInicioJornada,
         horaFinJornada:empleadosTable.horaFinJornada,
-        // fechaContratacion:empleadosTable.fechaContratacion,
+        fechaContratacion:empleadosTable.fechaContratacion,
         sueldo:empleadosTable.sueldo,
         sucursalId:empleadosTable.sucursalId
     }
@@ -34,7 +35,6 @@ export class GetEmpleadoById{
         ).where(
             and(
                 eq(empleadosTable.id,numericIdDto.id),
-                eq( sucursalesTable.id,this.authPayload.id)
             )
         )
     }
@@ -42,6 +42,9 @@ export class GetEmpleadoById{
     async execute(numericIdDto: NumericIdDto){
         const empleado = await this.getRelatedEmpleado(numericIdDto);
         // const 
+        if(empleado.length <= 0 ){
+            throw CustomError.forbidden(`El usuario con el ID : ${numericIdDto.id} no existe `);
+        }
         return empleado;
     }
 }
