@@ -8,6 +8,11 @@ export class CreateProductoDto {
   public unidadId: number
   public categoriaId: number
   public marcaId: number
+  public precioBase?: number
+  public precioMayorista?: number
+  public precioOferta?: number
+  public stock?: number
+  public sucursalId: number
 
   private constructor({
     sku,
@@ -16,7 +21,12 @@ export class CreateProductoDto {
     maxDiasSinReabastecer,
     unidadId,
     categoriaId,
-    marcaId
+    marcaId,
+    precioBase,
+    precioMayorista,
+    precioOferta,
+    stock,
+    sucursalId
   }: CreateProductoDto) {
     this.sku = sku
     this.nombre = nombre
@@ -25,15 +35,28 @@ export class CreateProductoDto {
     this.unidadId = unidadId
     this.categoriaId = categoriaId
     this.marcaId = marcaId
+    this.precioBase = precioBase
+    this.precioMayorista = precioMayorista
+    this.precioOferta = precioOferta
+    this.stock = stock
+    this.sucursalId = sucursalId
   }
 
-  static create(input: any): [string?, CreateProductoDto?] {
+  static create(input: any, sucursalId: number): [string?, CreateProductoDto?] {
     const result = createProductoValidator(input)
 
     if (!result.success) {
       return [result.error.message, undefined]
     }
 
-    return [undefined, new CreateProductoDto(result.data)]
+    const { data } = result
+
+    return [
+      undefined,
+      new CreateProductoDto({
+        ...data,
+        sucursalId
+      })
+    ]
   }
 }

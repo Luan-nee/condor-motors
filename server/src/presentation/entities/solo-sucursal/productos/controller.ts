@@ -18,7 +18,13 @@ export class ProductosController {
       return
     }
 
-    const [error, createProductoDto] = CreateProductoDto.create(req.body)
+    const { sucursalId } = req
+
+    const [error, createProductoDto] = CreateProductoDto.create(
+      req.body,
+      sucursalId
+    )
+
     if (error !== undefined || createProductoDto === undefined) {
       CustomResponse.badRequest({ res, error })
       return
