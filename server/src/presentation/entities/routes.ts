@@ -4,6 +4,7 @@ import { MarcasRoutes } from '@presentation/entities/marcas/routes'
 import { AuthMiddleware } from '@presentation/middlewares/auth.middleware'
 import { Router } from 'express'
 import { SoloSucursalRoutes } from '@/presentation/entities/solo-sucursal/routes'
+import { EntitiesMiddleware } from '@/presentation/middlewares/entities.middleware'
 
 export class EntitiesRoutes {
   static get routes() {
@@ -15,7 +16,7 @@ export class EntitiesRoutes {
 
     router.use(
       '/:sucursalId',
-      AuthMiddleware.requests,
+      [AuthMiddleware.requests, EntitiesMiddleware.soloSucursal],
       SoloSucursalRoutes.routes
     )
 

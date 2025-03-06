@@ -4,8 +4,11 @@ import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import {
   categoriasTable,
+  inventariosTable,
   marcasTable,
+  preciosProductosTable,
   productosTable,
+  sucursalesTable,
   unidadesTable
 } from '@/db/schema'
 import type { CreateProductoDto } from '@/domain/dtos/entities/productos/create-producto.dto'
@@ -21,6 +24,83 @@ export class CreateProducto {
   }
 
   private async createProducto(createProductoDto: CreateProductoDto) {
+    const mappedPrices = {
+      precioBase: createProductoDto.precioBase?.toFixed(2),
+      precioMayorista: createProductoDto.precioMayorista?.toFixed(2),
+      precioOferta: createProductoDto.precioOferta?.toFixed(2)
+    }
+
+    try {
+      const insertedProductResult = await db.transaction(async (tx) => {
+        const [producto] = await tx
+          .insert(productosTable)
+          .values({
+            sku: createProductoDto.sku,
+            nombre: createProductoDto.nombre,
+            descripcion: createProductoDto.descripcion,
+            maxDiasSinReabastecer: createProductoDto.maxDiasSinReabastecer,
+            unidadId: createProductoDto.unidadId,
+            categoriaId: createProductoDto.categoriaId,
+            marcaId: createProductoDto.marcaId
+          })
+          .returning()
+
+        const [preciosProducto] = await tx
+          .insert(preciosProductosTable)
+          .values({
+            precioBase: mappedPrices.precioBase,
+            precioMayorista: mappedPrices.precioMayorista,
+            precioOferta: mappedPrices.precioOferta,
+            productoId: producto.id,
+            sucursalId: createProductoDto.sucursalId
+          })
+          .returning({
+            precioBase: preciosProductosTable.precioBase,
+            precioMayorista: preciosProductosTable.precioMayorista,
+            precioOferta: preciosProductosTable.precioOferta
+          })
+
+        const [inventarioProducto] = await tx
+          .insert(inventariosTable)
+          .values({
+            stock: createProductoDto.stock,
+            productoId: producto.id,
+            sucursalId: createProductoDto.sucursalId
+          })
+          .returning({
+            stock: inventariosTable.stock
+          })
+
+        return {
+          ...producto,
+          precioBase: preciosProducto.precioBase,
+          precioMayorista: preciosProducto.precioMayorista,
+          precioOferta: preciosProducto.precioOferta,
+          sucursalId: createProductoDto.sucursalId,
+          stock: inventarioProducto.stock
+        }
+      })
+
+      return insertedProductResult
+    } catch (error) {
+      throw CustomError.internalServer(
+        'Ha ocurrido un error al intentar crear el producto'
+      )
+    }
+  }
+
+  private async validateRelacionados(createProductoDto: CreateProductoDto) {
+    const sucursales = await db
+      .select({
+        id: sucursalesTable.id
+      })
+      .from(sucursalesTable)
+      .where(eq(sucursalesTable.id, createProductoDto.sucursalId))
+
+    if (sucursales.length < 1) {
+      throw CustomError.badRequest('La sucursal que intentó asignar no existe')
+    }
+
     const productsWithSameSkuNombre = await db
       .select({ sku: productosTable.sku, nombre: productosTable.nombre })
       .from(productosTable)
@@ -36,7 +116,7 @@ export class CreateProducto {
 
       if (producto.sku === createProductoDto.sku) {
         throw CustomError.badRequest(
-          `Ya existe un producto con ese sku ${createProductoDto.nombre}`
+          `Ya existe un producto con ese sku ${createProductoDto.sku}`
         )
       }
 
@@ -80,38 +160,14 @@ export class CreateProducto {
       throw CustomError.badRequest('La marca que intentó asignar no existe')
     }
 
-    const insertedProductResult = await db
-      .insert(productosTable)
-      .values({
-        sku: createProductoDto.sku,
-        nombre: createProductoDto.nombre,
-        descripcion: createProductoDto.descripcion,
-        maxDiasSinReabastecer: createProductoDto.maxDiasSinReabastecer,
-        unidadId: createProductoDto.unidadId,
-        categoriaId: createProductoDto.categoriaId,
-        marcaId: createProductoDto.marcaId
-      })
-      .returning()
-
-    if (insertedProductResult.length < 1) {
-      throw CustomError.internalServer(
-        'Ha ocurrido un error al intentar crear el producto'
-      )
-    }
-
     const [selectedUnidad] = unidades
     const [selectedCategoria] = categorias
     const [selectedMarca] = marcas
 
-    const [producto] = insertedProductResult
-
     return {
-      ...producto,
-      relacionados: {
-        unidadNombre: selectedUnidad.nombre,
-        categoriaNombre: selectedCategoria.nombre,
-        marcaNombre: selectedMarca.nombre
-      }
+      unidadNombre: selectedUnidad.nombre,
+      categoriaNombre: selectedCategoria.nombre,
+      marcaNombre: selectedMarca.nombre
     }
   }
 
@@ -131,9 +187,13 @@ export class CreateProducto {
       )
     }
 
+    const relacionados = await this.validateRelacionados(createProductoDto)
     const producto = await this.createProducto(createProductoDto)
 
-    const mappedProducto = ProductoEntityMapper.fromObject(producto)
+    const mappedProducto = ProductoEntityMapper.fromObject({
+      ...producto,
+      relacionados
+    })
 
     return mappedProducto
   }

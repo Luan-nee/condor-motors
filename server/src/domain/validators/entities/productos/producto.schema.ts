@@ -27,5 +27,9 @@ export const productoSchema = {
   maxDiasSinReabastecer: z.number().positive().optional(),
   unidadId: z.number().positive(),
   categoriaId: z.number().positive(),
-  marcaId: z.number().positive()
+  marcaId: z.number().positive(),
+  precioBase: z.number().min(0).optional(),
+  precioMayorista: z.number().min(0).optional(),
+  precioOferta: z.number().min(0).optional(),
+  stock: z.number().min(0).default(0).optional()
 }

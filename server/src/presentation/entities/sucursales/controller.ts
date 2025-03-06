@@ -14,7 +14,7 @@ import type { Request, Response } from 'express'
 export class SucursalesController {
   create = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
-      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
+      CustomResponse.unauthorized({ res })
       return
     }
 
@@ -40,7 +40,7 @@ export class SucursalesController {
 
   getById = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
-      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
+      CustomResponse.unauthorized({ res })
       return
     }
 
@@ -66,7 +66,7 @@ export class SucursalesController {
 
   getAll = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
-      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
+      CustomResponse.unauthorized({ res })
       return
     }
 
@@ -92,7 +92,7 @@ export class SucursalesController {
 
   update = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
-      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
+      CustomResponse.unauthorized({ res })
       return
     }
 
@@ -128,7 +128,7 @@ export class SucursalesController {
 
   delete = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
-      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
+      CustomResponse.unauthorized({ res })
       return
     }
 
