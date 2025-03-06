@@ -11,7 +11,7 @@ export class NumericIdDto {
     const result = paramsNumericIdValidator(input)
 
     if (!result.success) {
-      return [result.error.message, undefined]
+      return ['Id inválido', undefined]
     }
 
     return [undefined, new NumericIdDto(result.data)]

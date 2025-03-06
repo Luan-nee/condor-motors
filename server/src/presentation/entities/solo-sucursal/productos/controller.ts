@@ -9,7 +9,12 @@ import type { Request, Response } from 'express'
 export class ProductosController {
   create = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
-      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    if (req.sucursalId === undefined) {
+      CustomResponse.badRequest({ res, error: 'Id de sucursal inválido' })
       return
     }
 
@@ -35,13 +40,13 @@ export class ProductosController {
 
   getById = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
-      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
+      CustomResponse.unauthorized({ res })
       return
     }
 
     const [error, numericIdDto] = NumericIdDto.create(req.params)
     if (error !== undefined || numericIdDto === undefined) {
-      CustomResponse.badRequest({ res, error: 'Id inválido' })
+      CustomResponse.badRequest({ res, error })
       return
     }
 
@@ -61,7 +66,7 @@ export class ProductosController {
 
   getAll = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
-      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
+      CustomResponse.unauthorized({ res })
       return
     }
 
@@ -70,7 +75,7 @@ export class ProductosController {
 
   update = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
-      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
+      CustomResponse.unauthorized({ res })
       return
     }
 
@@ -79,7 +84,7 @@ export class ProductosController {
 
   delete = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
-      CustomResponse.unauthorized({ res, error: 'Invalid access token' })
+      CustomResponse.unauthorized({ res })
       return
     }
 

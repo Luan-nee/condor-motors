@@ -8,15 +8,22 @@ const ParamsNumericIdSchema = z.object({
   id: paramsBaseSchema.numericId
 })
 
+export const paramsNumericIdValidator = (object: unknown) =>
+  ParamsNumericIdSchema.safeParse(object)
+
 const ParamsUUIDSchema = z.object({
   id: paramsBaseSchema.uuid
 })
 
-export const paramsNumericIdValidator = (object: unknown) =>
-  ParamsNumericIdSchema.safeParse(object)
-
 export const paramsUUIDValidator = (object: unknown) =>
   ParamsUUIDSchema.safeParse(object)
+
+const ParamsSucursalIdSchema = z.object({
+  sucursalId: paramsBaseSchema.numericId
+})
+
+export const paramsSucursalIdValidator = (object: unknown) =>
+  ParamsSucursalIdSchema.safeParse(object)
 
 export const QueriesSchema = z.object({
   sort_by: queriesBaseSchema.sort_by,
