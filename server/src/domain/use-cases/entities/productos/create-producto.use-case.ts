@@ -90,15 +90,38 @@ export class CreateProducto {
   }
 
   private async validateRelacionados(createProductoDto: CreateProductoDto) {
-    const sucursales = await db
+    const results = await db
       .select({
-        id: sucursalesTable.id
+        sucursalId: sucursalesTable.id,
+        unidadNombre: unidadesTable.nombre,
+        categoriaNombre: categoriasTable.nombre,
+        marcaNombre: marcasTable.nombre
       })
       .from(sucursalesTable)
+      .leftJoin(unidadesTable, eq(unidadesTable.id, createProductoDto.unidadId))
+      .leftJoin(
+        categoriasTable,
+        eq(categoriasTable.id, createProductoDto.categoriaId)
+      )
+      .leftJoin(marcasTable, eq(marcasTable.id, createProductoDto.marcaId))
       .where(eq(sucursalesTable.id, createProductoDto.sucursalId))
 
-    if (sucursales.length < 1) {
+    if (results.length < 1) {
       throw CustomError.badRequest('La sucursal que intentó asignar no existe')
+    }
+
+    const [result] = results
+
+    if (result.unidadNombre === null) {
+      throw CustomError.badRequest('La unidad que intentó asignar no existe')
+    }
+
+    if (result.categoriaNombre === null) {
+      throw CustomError.badRequest('La categoría que intentó asignar no existe')
+    }
+
+    if (result.marcaNombre === null) {
+      throw CustomError.badRequest('La marca que intentó asignar no existe')
     }
 
     const productsWithSameSkuNombre = await db
@@ -127,47 +150,10 @@ export class CreateProducto {
       }
     }
 
-    const unidades = await db
-      .select({
-        nombre: unidadesTable.nombre
-      })
-      .from(unidadesTable)
-      .where(eq(unidadesTable.id, createProductoDto.unidadId))
-
-    if (unidades.length < 1) {
-      throw CustomError.badRequest('La unidad que intentó asignar no existe')
-    }
-
-    const categorias = await db
-      .select({
-        nombre: categoriasTable.nombre
-      })
-      .from(categoriasTable)
-      .where(eq(categoriasTable.id, createProductoDto.categoriaId))
-
-    if (categorias.length < 1) {
-      throw CustomError.badRequest('La categoría que intentó asignar no existe')
-    }
-
-    const marcas = await db
-      .select({
-        nombre: marcasTable.nombre
-      })
-      .from(marcasTable)
-      .where(eq(marcasTable.id, createProductoDto.marcaId))
-
-    if (marcas.length < 1) {
-      throw CustomError.badRequest('La marca que intentó asignar no existe')
-    }
-
-    const [selectedUnidad] = unidades
-    const [selectedCategoria] = categorias
-    const [selectedMarca] = marcas
-
     return {
-      unidadNombre: selectedUnidad.nombre,
-      categoriaNombre: selectedCategoria.nombre,
-      marcaNombre: selectedMarca.nombre
+      unidadNombre: result.unidadNombre,
+      categoriaNombre: result.categoriaNombre,
+      marcaNombre: result.marcaNombre
     }
   }
 
