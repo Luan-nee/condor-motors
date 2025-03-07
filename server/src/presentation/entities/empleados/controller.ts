@@ -4,6 +4,7 @@ import { CreateEmpleadoDto } from '@/domain/dtos/entities/empleados/create-emple
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { CreateEmpleado } from '@/domain/use-cases/entities/empleados/create-empleados.use-case'
 import { GetEmpleadoById } from '@/domain/use-cases/entities/empleados/get-empleado-by-id.use-case'
+import { GetEmpleados } from '@/domain/use-cases/entities/empleados/get-empleados.use-case'
 
 import type { Request, Response } from 'express'
 
@@ -57,5 +58,19 @@ export class EmpleadosController {
         handleError(error,res);        
       })
 
+    }
+
+    getAll = (req:Request,res:Response)=>{
+      if(req.authPayload === undefined){
+        CustomResponse.unauthorized({res,error:"Esta Informacion es privada"});
+        return;
+      }
+
+      const {authPayload} = req;
+      const getEmpleados = new GetEmpleados(authPayload);
+
+      // getEmpleados.execute()
+
+      // const getEmpleados = 
     }
 }
