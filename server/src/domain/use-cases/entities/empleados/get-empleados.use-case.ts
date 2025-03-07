@@ -1,6 +1,6 @@
-import { orderValues, permissionCodes } from '@/consts'
+import { orderValues } from '@/consts'
 import { db } from "@/db/connection";
-import { empleadosTable, sucursalesTable } from "@/db/schema";
+import { empleadosTable } from "@/db/schema";
 import { QueriesDto } from "@/domain/dtos/query-params/queries.dto";
 import { ilike, or, SQL } from "drizzle-orm";
 import { asc,desc} from 'drizzle-orm'
