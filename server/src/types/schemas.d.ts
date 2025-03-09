@@ -28,6 +28,7 @@ export interface UserEntityWithTokens {
 }
 
 export type SucursalEntity = InferSelectModel<typeof sucursalesTable>
+export type SucursalIdType = SucursalEntity['id']
 
 export type EmpleadoEntity = InferSelectModel<typeof empleadosTable>
 

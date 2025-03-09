@@ -50,18 +50,23 @@ export class ProductosController {
       return
     }
 
+    if (req.sucursalId === undefined) {
+      CustomResponse.badRequest({ res, error: 'Id de sucursal inválido' })
+      return
+    }
+
     const [error, numericIdDto] = NumericIdDto.create(req.params)
     if (error !== undefined || numericIdDto === undefined) {
       CustomResponse.badRequest({ res, error })
       return
     }
 
-    const { authPayload } = req
+    const { authPayload, sucursalId } = req
 
     const getProdcutoById = new GetProductoById(authPayload)
 
     getProdcutoById
-      .execute(numericIdDto)
+      .execute(numericIdDto, sucursalId)
       .then((producto) => {
         CustomResponse.success({ res, data: producto })
       })

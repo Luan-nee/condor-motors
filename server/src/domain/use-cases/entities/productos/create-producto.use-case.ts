@@ -8,6 +8,7 @@ import {
   marcasTable,
   preciosProductosTable,
   productosTable,
+  sucursalesInventariosTable,
   sucursalesTable,
   unidadesTable
 } from '@/db/schema'
@@ -64,12 +65,17 @@ export class CreateProducto {
           .insert(inventariosTable)
           .values({
             stock: createProductoDto.stock,
-            productoId: producto.id,
-            sucursalId: createProductoDto.sucursalId
+            productoId: producto.id
           })
           .returning({
+            id: inventariosTable.id,
             stock: inventariosTable.stock
           })
+
+        await tx.insert(sucursalesInventariosTable).values({
+          inventarioId: inventarioProducto.id,
+          sucursalId: createProductoDto.sucursalId
+        })
 
         return {
           ...producto,
