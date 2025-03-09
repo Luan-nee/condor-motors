@@ -7,10 +7,12 @@ export class EmpleadosRoutes {
 
     const empleadosController = new EmpleadosController()
 
-    router.post('/', empleadosController.create);
+    router.post('/', empleadosController.create)
 
-    router.get('/:id',empleadosController.getById);
-    
+    router.get('/:id', empleadosController.getById)
+
+    router.get('/', empleadosController.getAll)
+
     return router
   }
 }
