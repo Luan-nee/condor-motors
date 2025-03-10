@@ -101,7 +101,8 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                       borderSide: BorderSide(color: Colors.white24),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFE31E24), width: 2),
+                      borderSide:
+                          BorderSide(color: Color(0xFFE31E24), width: 2),
                     ),
                   ),
                   validator: (value) {
@@ -124,7 +125,8 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                       borderSide: BorderSide(color: Colors.white24),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFE31E24), width: 2),
+                      borderSide:
+                          BorderSide(color: Color(0xFFE31E24), width: 2),
                     ),
                   ),
                 ),
@@ -140,7 +142,8 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                       borderSide: BorderSide(color: Colors.white24),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFE31E24), width: 2),
+                      borderSide:
+                          BorderSide(color: Color(0xFFE31E24), width: 2),
                     ),
                   ),
                 ),
@@ -226,7 +229,8 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                   ],
                 ),
                 ElevatedButton.icon(
-                  icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
+                  icon: const FaIcon(FontAwesomeIcons.plus,
+                      size: 16, color: Colors.white),
                   label: const Text('Nueva Marca'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE31E24),
@@ -373,7 +377,8 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                     color: Colors.white54,
                                     size: 16,
                                   ),
-                                  onPressed: () => _mostrarFormularioMarca(marca),
+                                  onPressed: () =>
+                                      _mostrarFormularioMarca(marca),
                                 ),
                                 IconButton(
                                   icon: const FaIcon(

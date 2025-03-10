@@ -65,12 +65,14 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                   children: [
                     const FaIcon(
                       FontAwesomeIcons.folderPlus,
-                      color: Colors.white,
+                      color: Colors.red,
                       size: 20,
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      categoria == null ? 'Crear nueva categoría' : 'Editar categoría',
+                      categoria == null
+                          ? 'Crear nueva categoría'
+                          : 'Editar categoría',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -91,7 +93,8 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                       borderSide: BorderSide(color: Colors.white24),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFE31E24), width: 2),
+                      borderSide:
+                          BorderSide(color: Color(0xFFE31E24), width: 2),
                     ),
                   ),
                   validator: (value) {
@@ -114,7 +117,8 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                       borderSide: BorderSide(color: Colors.white24),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFFE31E24), width: 2),
+                      borderSide:
+                          BorderSide(color: Color(0xFFE31E24), width: 2),
                     ),
                   ),
                 ),
@@ -200,7 +204,8 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                   ],
                 ),
                 ElevatedButton.icon(
-                  icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
+                  icon: const FaIcon(FontAwesomeIcons.plus,
+                      size: 16, color: Colors.white),
                   label: const Text('Nueva Categoría'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE31E24),
@@ -296,19 +301,24 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                           ),
                           DataCell(
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE31E24).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                categoria['cantidadProductos'].toString(),
-                                style: const TextStyle(
-                                  color: Color(0xFFE31E24),
-                                  fontWeight: FontWeight.bold,
+                              child: Center(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE31E24)
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
+                                  child: Text(
+                                    categoria['cantidadProductos'].toString(),
+                                    style: const TextStyle(
+                                      color: Color(0xFFE31E24),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -323,7 +333,8 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                     color: Colors.white54,
                                     size: 16,
                                   ),
-                                  onPressed: () => _mostrarFormularioCategoria(categoria),
+                                  onPressed: () =>
+                                      _mostrarFormularioCategoria(categoria),
                                 ),
                                 IconButton(
                                   icon: const FaIcon(

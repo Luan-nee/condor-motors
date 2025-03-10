@@ -150,7 +150,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                         ],
                       ),
                       ElevatedButton.icon(
-                        icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
+                        icon: const FaIcon(FontAwesomeIcons.plus,
+                            size: 16, color: Colors.white),
                         label: const Text('Nuevo Producto'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE31E24),
@@ -187,33 +188,79 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                         ),
                         columns: const [
                           DataColumn(
-                            label: Text(
-                              'Producto',
-                              style: TextStyle(color: Colors.white),
+                            label: SizedBox(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment
+                                    .center, // Centra verticalmente
+                                children: [
+                                  Text(
+                                    'Nombre del producto',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           DataColumn(
-                            label: Text(
-                              'Categoría',
-                              style: TextStyle(color: Colors.white),
+                            label: Center(
+                              child: Text(
+                                'Categoría',
+                                style: TextStyle(color: Colors.white),
+                              ),
                             ),
                           ),
                           DataColumn(
-                            label: Text(
-                              'Stock Actual',
-                              style: TextStyle(color: Colors.white),
+                            label: SizedBox(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment
+                                    .center, // Centra verticalmente
+                                children: [
+                                  Text(
+                                    'Stock',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  Text(
+                                    'Actual',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           DataColumn(
-                            label: Text(
-                              'Stock Mínimo',
-                              style: TextStyle(color: Colors.white),
+                            label: SizedBox(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment
+                                    .center, // Centra verticalmente
+                                children: [
+                                  Text(
+                                    'Stock',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  Text(
+                                    'Mínimo',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           DataColumn(
-                            label: Text(
-                              'Stock Máximo',
-                              style: TextStyle(color: Colors.white),
+                            label: SizedBox(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment
+                                    .center, // Centra verticalmente
+                                children: [
+                                  Text(
+                                    'Stock',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  Text(
+                                    'Máximo',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           DataColumn(
@@ -230,9 +277,10 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                           ),
                         ],
                         rows: _productos.map((producto) {
-                          final stockActual = producto['stock'][_selectedLocal] as int;
+                          final stockActual =
+                              producto['stock'][_selectedLocal] as int;
                           final stockMinimo = producto['minimo'] as int;
-                          
+
                           return DataRow(
                             cells: [
                               DataCell(
@@ -256,7 +304,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                     const SizedBox(width: 12),
                                     Text(
                                       producto['nombre'],
-                                      style: const TextStyle(color: Colors.white),
+                                      style:
+                                          const TextStyle(color: Colors.white),
                                     ),
                                   ],
                                 ),
@@ -268,7 +317,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE31E24).withOpacity(0.1),
+                                    color: const Color(0xFFE31E24)
+                                        .withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
@@ -279,8 +329,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                   ),
                                 ),
                               ),
-                              DataCell(
-                                Text(
+                              DataCell(Center(
+                                child: Text(
                                   stockActual.toString(),
                                   style: TextStyle(
                                     color: stockActual < stockMinimo
@@ -289,15 +339,17 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ),
-                              DataCell(Text(
+                              )),
+                              DataCell(Center(
+                                  child: Text(
                                 stockMinimo.toString(),
                                 style: const TextStyle(color: Colors.white),
-                              )),
-                              DataCell(Text(
+                              ))),
+                              DataCell(Center(
+                                  child: Text(
                                 producto['maximo'].toString(),
                                 style: const TextStyle(color: Colors.white),
-                              )),
+                              ))),
                               DataCell(Text(
                                 'S/ ${producto['precio']}',
                                 style: const TextStyle(color: Colors.white),
@@ -412,8 +464,10 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                     itemCount: _locales.length,
                     itemBuilder: (context, index) {
                       final local = _locales[index];
-                      if (_showCentrales && local['tipo'] != 'central') return const SizedBox.shrink();
-                      if (!_showCentrales && local['tipo'] != 'sucursal') return const SizedBox.shrink();
+                      if (_showCentrales && local['tipo'] != 'central')
+                        return const SizedBox.shrink();
+                      if (!_showCentrales && local['tipo'] != 'sucursal')
+                        return const SizedBox.shrink();
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 16),
@@ -471,7 +525,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                               ),
                               const SizedBox(height: 12),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   _buildStat(
                                     'Productos',
