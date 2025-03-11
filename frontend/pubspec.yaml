@@ -1,6 +1,6 @@
 name: condorsmotors
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
@@ -47,6 +47,7 @@ flutter:
 
   assets:
     - assets/images/condor-motors-logo.webp
+    - assets/json/inventario_admin/stockProducts.json
     # ... otros assets ...
 
   fonts:
