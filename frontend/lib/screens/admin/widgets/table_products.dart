@@ -117,56 +117,52 @@ class TableProducts extends StatelessWidget {
         } else if (snapshot.hasError) {
           return Text('Error: ${snapshot.error}');
         } else {
-          return SizedBox(
-            width: double.infinity,
-            child: DataTable(
-              headingRowColor: MaterialStateProperty.all(
-                const Color(0xFF2D2D2D),
-              ),
-              columns: _tituloTable
-                  .map((titulo) => titleColumnTable(titulo))
-                  .toList(),
-              rows: snapshot.data!.expand((listProduct) {
-                return (listProduct["productos"] as List<dynamic>)
-                    .map((infoProduct) {
-                  var product = infoProduct as Map<String, dynamic>;
-
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(product["nombre"].toString(),
-                          style: const TextStyle(color: Colors.white))),
-                      DataCell(Text(product["stock_actual"].toString(),
-                          style: const TextStyle(color: Colors.white))),
-                      DataCell(Text(product["stock_minimo"].toString(),
-                          style: const TextStyle(color: Colors.white))),
-                      DataCell(Text(product["stock_maximo"].toString(),
-                          style: const TextStyle(color: Colors.white))),
-                      DataCell(
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const FaIcon(FontAwesomeIcons.penToSquare,
-                                  color: Colors.white54, size: 16),
-                              onPressed: () {
-                                // TODO: Implementar edición
-                              },
-                            ),
-                            IconButton(
-                              icon: const FaIcon(FontAwesomeIcons.rightLeft,
-                                  color: Color(0xFFE31E24), size: 16),
-                              onPressed: () {
-                                // TODO: Implementar transferencia
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList();
-              }).toList(),
+          return DataTable(
+            headingRowColor: MaterialStateProperty.all(
+              const Color(0xFF2D2D2D),
             ),
+            columns:
+                _tituloTable.map((titulo) => titleColumnTable(titulo)).toList(),
+            rows: snapshot.data!.expand((listProduct) {
+              return (listProduct["productos"] as List<dynamic>)
+                  .map((infoProduct) {
+                var product = infoProduct as Map<String, dynamic>;
+
+                return DataRow(
+                  cells: [
+                    DataCell(Text(product["nombre"].toString(),
+                        style: const TextStyle(color: Colors.white))),
+                    DataCell(Text(product["stock_actual"].toString(),
+                        style: const TextStyle(color: Colors.white))),
+                    DataCell(Text(product["stock_minimo"].toString(),
+                        style: const TextStyle(color: Colors.white))),
+                    DataCell(Text(product["stock_maximo"].toString(),
+                        style: const TextStyle(color: Colors.white))),
+                    DataCell(
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const FaIcon(FontAwesomeIcons.penToSquare,
+                                color: Colors.white54, size: 16),
+                            onPressed: () {
+                              // TODO: Implementar edición
+                            },
+                          ),
+                          IconButton(
+                            icon: const FaIcon(FontAwesomeIcons.rightLeft,
+                                color: Color(0xFFE31E24), size: 16),
+                            onPressed: () {
+                              // TODO: Implementar transferencia
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }).toList();
+            }).toList(),
           );
         }
       },
