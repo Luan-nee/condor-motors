@@ -7,24 +7,15 @@
           "id": 1,
           "nombre": "Cascos",
           "descripcion": "Cascos de seguridad para motociclistas",
-          "cantidadProductos": 45,
-          "activo": true,
-          "fechaCreacion": "2024-03-12T10:00:00Z",
-          "fechaActualizacion": "2024-03-12T10:00:00Z"
+          "cantidadProductos": 45
         },
         {
           "id": 2,
           "nombre": "Lubricantes",
           "descripcion": "Aceites y lubricantes para motocicletas",
-          "cantidadProductos": 32,
-          "activo": true,
-          "fechaCreacion": "2024-03-12T10:00:00Z",
-          "fechaActualizacion": "2024-03-12T10:00:00Z"
+          "cantidadProductos": 32
         }
-      ],
-      "total": 2,
-      "pagina": 1,
-      "porPagina": 10
+      ]
     }
   },
   "GET": {
@@ -33,44 +24,33 @@
       "id": 1,
       "nombre": "Cascos",
       "descripcion": "Cascos de seguridad para motociclistas",
-      "cantidadProductos": 45,
-      "activo": true,
-      "fechaCreacion": "2024-03-12T10:00:00Z",
-      "fechaActualizacion": "2024-03-12T10:00:00Z"
+      "cantidadProductos": 45
     }
   },
   "POST": {
     "endpoint": "/api/categorias",
     "request": {
-      "nombre": "Nueva Categoría",
-      "descripcion": "Descripción de la nueva categoría",
-      "activo": true
+      "nombre": "Nueva Categoría (ejemplo)",
+      "descripcion": "Descripción de la nueva categoría (ejemplo)"
     },
     "response": {
       "id": 3,
-      "nombre": "Nueva Categoría",
-      "descripcion": "Descripción de la nueva categoría",
-      "cantidadProductos": 0,
-      "activo": true,
-      "fechaCreacion": "2024-03-12T10:00:00Z",
-      "fechaActualizacion": "2024-03-12T10:00:00Z"
+      "nombre": "Nueva Categoría (ejemplo)",
+      "descripcion": "Descripción de la nueva categoría (ejemplo)",
+      "cantidadProductos": 0
     }
   },
   "PATCH": {
     "endpoint": "/api/categorias/:id",
     "request": {
       "nombre": "Cascos Actualizados",
-      "descripcion": "Nueva descripción de cascos",
-      "activo": true
+      "descripcion": "Nueva descripción de cascos"
     },
     "response": {
       "id": 1,
       "nombre": "Cascos Actualizados",
       "descripcion": "Nueva descripción de cascos",
-      "cantidadProductos": 45,
-      "activo": true,
-      "fechaCreacion": "2024-03-12T10:00:00Z",
-      "fechaActualizacion": "2024-03-12T11:00:00Z"
+      "cantidadProductos": 45
     }
   },
   "DELETE": {
@@ -80,10 +60,9 @@
       "status": 200
     }
   },
+
   "COMENTARIOS": [
     "El backend debe implementar todos los endpoints CRUD para categorías",
-    "Se necesita un endpoint para obtener los productos por categoría",
-    "El frontend necesita poder filtrar categorías activas/inactivas",
     "Se debe validar que no se puedan eliminar categorías con productos asociados"
   ]
-} 
+}
