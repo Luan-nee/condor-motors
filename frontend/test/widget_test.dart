@@ -7,15 +7,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:condorsmotors/api/main.api.dart';
-import 'package:condorsmotors/main.dart';
 
 void main() {
   testWidgets('Login screen test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    final apiService = ApiService();
-    await tester.pumpWidget(MyApp(isOnline: true, apiService: apiService));
-
     // Verify login screen elements
     expect(find.text('Iniciar Sesión'), findsOneWidget);
     expect(find.byType(TextFormField), findsNWidgets(2));

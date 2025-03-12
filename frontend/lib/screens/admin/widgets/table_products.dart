@@ -38,7 +38,7 @@ class TableProducts extends StatelessWidget {
           return Text('Error: ${snapshot.error}');
         } else {
           return DataTable(
-            headingRowColor: MaterialStateProperty.all(
+            headingRowColor: WidgetStateProperty.all(
               const Color(0xFF2D2D2D),
             ),
             columns:

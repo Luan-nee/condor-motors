@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../api/main.api.dart';
 
 // Modelos temporales para desarrollo
 class MovimientoStock {
@@ -45,11 +43,10 @@ class MovimientosAdminScreen extends StatefulWidget {
 }
 
 class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
-  bool _isLoading = false;
   List<MovimientoStock> _movimientos = [];
   String _filtroSeleccionado = 'Todos';
   final TextEditingController _searchController = TextEditingController();
-  int? _usuarioId = 1; // ID de prueba
+// ID de prueba
 
   // Datos de prueba
   static final List<MovimientoStock> _movimientosPrueba = [
@@ -100,7 +97,6 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
   }
 
   Future<void> _cargarDatos() async {
-    setState(() => _isLoading = true);
     try {
       // Simulamos una carga de datos
       await Future.delayed(const Duration(seconds: 1));
@@ -115,7 +111,6 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
       }
     }
   }
@@ -142,70 +137,6 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
         ),
       );
     }
-  }
-
-  Future<void> _aprobarMovimiento(MovimientoStock movimiento) async {
-    if (_usuarioId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo obtener el ID del usuario actual'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    try {
-      // Simulamos la aprobación
-      await Future.delayed(const Duration(seconds: 1));
-      setState(() {
-        final index = _movimientosPrueba.indexWhere((m) => m.id == movimiento.id);
-        if (index != -1) {
-          _movimientosPrueba[index] = MovimientoStock(
-            id: movimiento.id,
-            localOrigenId: movimiento.localOrigenId,
-            localDestinoId: movimiento.localDestinoId,
-            estado: 'APROBADO',
-            detalles: movimiento.detalles,
-          );
-        }
-      });
-      
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Movimiento aprobado exitosamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      await _cargarMovimientos();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al aprobar movimiento: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Widget _buildDetallesList(List<DetalleMovimiento> detalles) {
-    return Column(
-      children: detalles.map((detalle) => ListTile(
-        title: Text('Producto #${detalle.productoId}'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Cantidad: ${detalle.cantidad}'),
-            if (detalle.cantidadRecibida != null)
-              Text('Recibido: ${detalle.cantidadRecibida}'),
-            Text('Estado: ${detalle.estado}'),
-          ],
-        ),
-        trailing: Text('Estado: ${detalle.estado}'),
-      )).toList(),
-    );
   }
 
   @override
@@ -415,7 +346,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
       padding: const EdgeInsets.all(12),
       child: TextButton(
         onPressed: () {
-          // TODO: Implementar vista de detalles
+          // Implementar vista de detalles
         },
         style: TextButton.styleFrom(
           foregroundColor: const Color(0xFFE31E24),

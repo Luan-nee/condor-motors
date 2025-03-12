@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/admin/slides_admin.dart';
-import '../screens/colabs/dashboard_colab.dart';
-import '../screens/vendor/dashboard_vendor.dart';
+import '../screens/colabs/selector_colab.dart';
 import '../screens/computer/dashboard_computer.dart';
 import '../screens/login.dart';
 
@@ -17,7 +16,6 @@ class Routes {
   static const String login = '/';
   static const String adminDashboard = '/admin';
   static const String colabDashboard = '/colab';
-  static const String vendorDashboard = '/vendor';
   static const String computerDashboard = '/computer';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -72,12 +70,7 @@ class Routes {
         );
       case colabDashboard:
         return MaterialPageRoute(
-          builder: (_) => const DashboardColabScreen(),
-          settings: settings,
-        );
-      case vendorDashboard:
-        return MaterialPageRoute(
-          builder: (_) => const DashboardVendorScreen(),
+          builder: (_) => const SelectorColabScreen(),
           settings: settings,
         );
       case computerDashboard:
@@ -106,8 +99,6 @@ class Routes {
         return adminDashboard;
       case 'COLABORADOR':
         return colabDashboard;
-      case 'VENDEDOR':
-        return vendorDashboard;
       case 'COMPUTADORA':
         return computerDashboard;
       default:
@@ -122,7 +113,6 @@ class Routes {
     final rolUpper = rol.toUpperCase();
     if (rolUpper == 'ADMINISTRADOR') return true; // Acceso total
     if (rolUpper == 'COLABORADOR') return route == colabDashboard;
-    if (rolUpper == 'VENDEDOR') return route == vendorDashboard;
     if (rolUpper == 'COMPUTADORA') return route == computerDashboard;
     return false;
   }

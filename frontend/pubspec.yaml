@@ -20,6 +20,7 @@ dependencies:
   local_auth: ^2.1.8
   flutter_secure_storage: ^9.0.0
   font_awesome_flutter: ^10.7.0
+  material_design_icons_flutter: ^7.0.7296
 
 dev_dependencies:
   flutter_test:
