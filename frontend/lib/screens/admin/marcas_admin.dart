@@ -12,7 +12,6 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nombreController = TextEditingController();
   final _descripcionController = TextEditingController();
-  final _paisController = TextEditingController();
 
   // Datos de ejemplo para las marcas
   final List<Map<String, dynamic>> _marcas = [
@@ -20,7 +19,6 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
       'id': 1,
       'nombre': 'MT Helmets',
       'descripcion': 'Fabricante líder de cascos de motocicleta',
-      'pais': 'España',
       'cantidadProductos': 45,
       'logo': FontAwesomeIcons.helmetSafety,
     },
@@ -28,7 +26,6 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
       'id': 2,
       'nombre': 'Motul',
       'descripcion': 'Aceites y lubricantes de alta calidad',
-      'pais': 'Francia',
       'cantidadProductos': 32,
       'logo': FontAwesomeIcons.oilCan,
     },
@@ -36,7 +33,6 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
       'id': 3,
       'nombre': 'Michelin',
       'descripcion': 'Llantas y neumáticos premium',
-      'pais': 'Francia',
       'cantidadProductos': 28,
       'logo': FontAwesomeIcons.ring,
     },
@@ -44,7 +40,6 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
       'id': 4,
       'nombre': 'Honda',
       'descripcion': 'Repuestos originales para motocicletas',
-      'pais': 'Japón',
       'cantidadProductos': 156,
       'logo': FontAwesomeIcons.motorcycle,
     },
@@ -53,7 +48,6 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
   void _mostrarFormularioMarca([Map<String, dynamic>? marca]) {
     _nombreController.text = marca?['nombre'] ?? '';
     _descripcionController.text = marca?['descripcion'] ?? '';
-    _paisController.text = marca?['pais'] ?? '';
 
     showDialog(
       context: context,
@@ -119,23 +113,6 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                   maxLines: 3,
                   decoration: const InputDecoration(
                     labelText: 'Descripción',
-                    labelStyle: TextStyle(color: Colors.white70),
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white24),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide:
-                          BorderSide(color: Color(0xFFE31E24), width: 2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _paisController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'País de origen',
                     labelStyle: TextStyle(color: Colors.white70),
                     border: OutlineInputBorder(),
                     enabledBorder: OutlineInputBorder(
@@ -257,145 +234,180 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                   ),
                 ),
                 child: SingleChildScrollView(
-                  child: DataTable(
-                    headingRowColor: WidgetStateProperty.all(
-                      const Color(0xFF2D2D2D),
-                    ),
-                    columns: const [
-                      DataColumn(
-                        label: Text(
-                          'Marca',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'País',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Descripción',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Cant. de productos',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Acciones',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                    rows: _marcas.map((marca) {
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            Row(
-                              children: [
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF2D2D2D),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: FaIcon(
-                                      marca['logo'] as IconData,
-                                      color: const Color(0xFFE31E24),
-                                      size: 14,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  marca['nombre'],
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                          DataCell(
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2D2D2D),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Encabezado de la tabla
+                      Container(
+                        color: const Color(0xFF2D2D2D),
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                        child: Row(
+                          children: [
+                            // Marca (35% del ancho)
+                            Expanded(
+                              flex: 35,
                               child: Text(
-                                marca['pais'],
+                                'Marca',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                          DataCell(
-                            Text(
-                              marca['descripcion'],
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
-                              ),
-                            ),
-                          ),
-                          DataCell(
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE31E24).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                marca['cantidadProductos'].toString(),
-                                style: const TextStyle(
-                                  color: Color(0xFFE31E24),
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                          ),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const FaIcon(
-                                    FontAwesomeIcons.penToSquare,
-                                    color: Colors.white54,
-                                    size: 16,
-                                  ),
-                                  onPressed: () =>
-                                      _mostrarFormularioMarca(marca),
+                            // Descripción (45% del ancho)
+                            Expanded(
+                              flex: 45,
+                              child: Text(
+                                'Descripción',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                IconButton(
-                                  icon: const FaIcon(
-                                    FontAwesomeIcons.trash,
-                                    color: Color(0xFFE31E24),
-                                    size: 16,
-                                  ),
-                                  onPressed: () {
-                                    // TODO: Implementar eliminación
-                                  },
+                              ),
+                            ),
+                            // Cant. de productos (10% del ancho)
+                            Expanded(
+                              flex: 10,
+                              child: Text(
+                                'Productos',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              ],
+                              ),
+                            ),
+                            // Acciones (10% del ancho)
+                            Expanded(
+                              flex: 10,
+                              child: Text(
+                                'Acciones',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Filas de marcas
+                      ..._marcas.map((marca) => Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.white.withOpacity(0.1),
+                              width: 1,
                             ),
                           ),
-                        ],
-                      );
-                    }).toList(),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                        child: Row(
+                          children: [
+                            // Marca
+                            Expanded(
+                              flex: 35,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2D2D2D),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Center(
+                                      child: FaIcon(
+                                        marca['logo'] as IconData,
+                                        color: const Color(0xFFE31E24),
+                                        size: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    marca['nombre'],
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Descripción
+                            Expanded(
+                              flex: 45,
+                              child: Text(
+                                marca['descripcion'],
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                ),
+                              ),
+                            ),
+                            // Cant. de productos
+                            Expanded(
+                              flex: 10,
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE31E24).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    marca['cantidadProductos'].toString(),
+                                    style: const TextStyle(
+                                      color: Color(0xFFE31E24),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Acciones
+                            Expanded(
+                              flex: 10,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  IconButton(
+                                    icon: const FaIcon(
+                                      FontAwesomeIcons.penToSquare,
+                                      color: Colors.white54,
+                                      size: 16,
+                                    ),
+                                    onPressed: () => _mostrarFormularioMarca(marca),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 30,
+                                      minHeight: 30,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  IconButton(
+                                    icon: const FaIcon(
+                                      FontAwesomeIcons.trash,
+                                      color: Color(0xFFE31E24),
+                                      size: 16,
+                                    ),
+                                    onPressed: () {
+                                      // TODO: Implementar eliminación
+                                    },
+                                    constraints: const BoxConstraints(
+                                      minWidth: 30,
+                                      minHeight: 30,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )).toList(),
+                    ],
                   ),
                 ),
               ),
@@ -410,7 +422,6 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
   void dispose() {
     _nombreController.dispose();
     _descripcionController.dispose();
-    _paisController.dispose();
     super.dispose();
   }
 }

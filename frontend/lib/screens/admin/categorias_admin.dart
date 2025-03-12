@@ -232,80 +232,123 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                   ),
                 ),
                 child: SingleChildScrollView(
-                  child: DataTable(
-                    headingRowColor: WidgetStateProperty.all(
-                      const Color(0xFF2D2D2D),
-                    ),
-                    columns: const [
-                      DataColumn(
-                        label: Text(
-                          'Categorías',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Descripción',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Cant. de productos',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Acciones',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                    rows: _categorias.map((categoria) {
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            Row(
-                              children: [
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF2D2D2D),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Center(
-                                    child: FaIcon(
-                                      FontAwesomeIcons.folder,
-                                      color: Color(0xFFE31E24),
-                                      size: 14,
-                                    ),
-                                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Encabezado de la tabla
+                      Container(
+                        color: const Color(0xFF2D2D2D),
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                        child: Row(
+                          children: [
+                            // Categorías (30% del ancho)
+                            Expanded(
+                              flex: 30,
+                              child: Text(
+                                'Categorías',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  categoria['nombre'],
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                          DataCell(
-                            Text(
-                              categoria['descripcion'],
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
                               ),
                             ),
+                            // Descripción (40% del ancho)
+                            Expanded(
+                              flex: 40,
+                              child: Text(
+                                'Descripción',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            // Cant. de productos (15% del ancho)
+                            Expanded(
+                              flex: 15,
+                              child: Text(
+                                'Cant. de productos',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            // Acciones (15% del ancho)
+                            Expanded(
+                              flex: 15,
+                              child: Text(
+                                'Acciones',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Filas de categorías
+                      ..._categorias.map((categoria) => Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.white.withOpacity(0.1),
+                              width: 1,
+                            ),
                           ),
-                          DataCell(
-                            Container(
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                        child: Row(
+                          children: [
+                            // Categoría
+                            Expanded(
+                              flex: 30,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2D2D2D),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Center(
+                                      child: FaIcon(
+                                        FontAwesomeIcons.folder,
+                                        color: Color(0xFFE31E24),
+                                        size: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    categoria['nombre'],
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Descripción
+                            Expanded(
+                              flex: 40,
+                              child: Text(
+                                categoria['descripcion'],
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                ),
+                              ),
+                            ),
+                            // Cant. de productos
+                            Expanded(
+                              flex: 15,
                               child: Center(
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE31E24)
-                                        .withOpacity(0.1),
+                                    color: const Color(0xFFE31E24).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   padding: const EdgeInsets.symmetric(
@@ -322,36 +365,47 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                 ),
                               ),
                             ),
-                          ),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const FaIcon(
-                                    FontAwesomeIcons.penToSquare,
-                                    color: Colors.white54,
-                                    size: 16,
+                            // Acciones
+                            Expanded(
+                              flex: 15,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  IconButton(
+                                    icon: const FaIcon(
+                                      FontAwesomeIcons.penToSquare,
+                                      color: Colors.white54,
+                                      size: 16,
+                                    ),
+                                    onPressed: () => _mostrarFormularioCategoria(categoria),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 30,
+                                      minHeight: 30,
+                                    ),
+                                    padding: EdgeInsets.zero,
                                   ),
-                                  onPressed: () =>
-                                      _mostrarFormularioCategoria(categoria),
-                                ),
-                                IconButton(
-                                  icon: const FaIcon(
-                                    FontAwesomeIcons.trash,
-                                    color: Color(0xFFE31E24),
-                                    size: 16,
+                                  IconButton(
+                                    icon: const FaIcon(
+                                      FontAwesomeIcons.trash,
+                                      color: Color(0xFFE31E24),
+                                      size: 16,
+                                    ),
+                                    onPressed: () {
+                                      // Implementar eliminación
+                                    },
+                                    constraints: const BoxConstraints(
+                                      minWidth: 30,
+                                      minHeight: 30,
+                                    ),
+                                    padding: EdgeInsets.zero,
                                   ),
-                                  onPressed: () {
-                                    // TODO: Implementar eliminación
-                                  },
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
+                          ],
+                        ),
+                      )).toList(),
+                    ],
                   ),
                 ),
               ),

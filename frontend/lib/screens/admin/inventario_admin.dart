@@ -135,9 +135,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                       ),
                     ),
                     child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child:
-                          TableProducts(), // luan es el responsable de agregar esto XD
+                      child: TableProducts(),
                     ),
                   ),
                 ),

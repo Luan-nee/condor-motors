@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 // Modelos temporales para desarrollo
 class MovimientoStock {
@@ -45,8 +46,7 @@ class MovimientosAdminScreen extends StatefulWidget {
 class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
   List<MovimientoStock> _movimientos = [];
   String _filtroSeleccionado = 'Todos';
-  final TextEditingController _searchController = TextEditingController();
-// ID de prueba
+  bool _isLoading = false;
 
   // Datos de prueba
   static final List<MovimientoStock> _movimientosPrueba = [
@@ -142,35 +142,61 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          // Header rojo con título
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: const Color(0xFF1A1A1A),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'INVENTARIO / movimiento de inventario',
-                  style: TextStyle(
-                    color: Color(0xFFE31E24),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Barra de búsqueda y filtros
                 Row(
                   children: [
-                    // Dropdown de filtros
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2D2D2D),
-                        borderRadius: BorderRadius.circular(4),
+                    const FaIcon(
+                      FontAwesomeIcons.truck,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'INVENTARIO',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'movimiento de inventario',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                // Barra de búsqueda y filtros
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D2D2D),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      const FaIcon(
+                        FontAwesomeIcons.filter,
+                        color: Color(0xFFE31E24),
+                        size: 14,
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: DropdownButton<String>(
+                      const SizedBox(width: 8),
+                      DropdownButton<String>(
                         value: _filtroSeleccionado,
                         dropdownColor: const Color(0xFF2D2D2D),
                         style: const TextStyle(color: Colors.white),
@@ -190,117 +216,258 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                           }
                         },
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    // Campo de búsqueda
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Buscador',
-                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                          filled: true,
-                          fillColor: const Color(0xFF2D2D2D),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(4),
-                            borderSide: BorderSide.none,
-                          ),
-                          suffixIcon: const Icon(Icons.search, color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 32),
 
-          // Tabla de movimientos
-          Expanded(
-            child: SingleChildScrollView(
+            // Tabla de movimientos
+            Expanded(
               child: Container(
-                margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Table(
-                  border: TableBorder(
-                    horizontalInside: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 1,
-                    ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.1),
                   ),
-                  columnWidths: const {
-                    0: FlexColumnWidth(1.2), // Fecha solicitada
-                    1: FlexColumnWidth(1.2), // Fecha de respuesta
-                    2: FlexColumnWidth(2), // Proveedor
-                    3: FlexColumnWidth(2), // Solicitante
-                    4: FlexColumnWidth(1.5), // Origen
-                    5: FlexColumnWidth(1.5), // Destino
-                    6: FlexColumnWidth(1), // Estado
-                    7: FlexColumnWidth(1), // Detalles
-                  },
-                  children: [
-                    // Encabezados
-                    TableRow(
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2D2D2D),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Encabezado de la tabla
+                      Container(
+                        color: const Color(0xFF2D2D2D),
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                        child: Row(
+                          children: [
+                            // Fecha solicitada (15%)
+                            Expanded(
+                              flex: 15,
+                              child: Row(
+                                children: [
+                                  const FaIcon(
+                                    FontAwesomeIcons.calendar,
+                                    color: Color(0xFFE31E24),
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Fecha solicitada',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Proveedor (20%)
+                            Expanded(
+                              flex: 20,
+                              child: Text(
+                                'Proveedor',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            // Solicitante (20%)
+                            Expanded(
+                              flex: 20,
+                              child: Text(
+                                'Solicitante',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            // Origen (15%)
+                            Expanded(
+                              flex: 15,
+                              child: Text(
+                                'Origen',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            // Destino (15%)
+                            Expanded(
+                              flex: 15,
+                              child: Text(
+                                'Destino',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            // Estado (15%)
+                            Expanded(
+                              flex: 15,
+                              child: Text(
+                                'Estado',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      children: [
-                        _buildHeaderCell('Fecha solicitada', color: const Color(0xFFE31E24)),
-                        _buildHeaderCell('Fecha de respuesta', color: const Color(0xFFE31E24)),
-                        _buildHeaderCell('Proveedor', color: const Color(0xFFE31E24)),
-                        _buildHeaderCell('Solicitante', color: const Color(0xFFE31E24)),
-                        _buildHeaderCell('Origen', color: const Color(0xFFE31E24)),
-                        _buildHeaderCell('Destino', color: const Color(0xFFE31E24)),
-                        _buildHeaderCell('Estado', color: const Color(0xFFE31E24)),
-                        _buildHeaderCell('Lista de\nproductos\nsolicitados', color: const Color(0xFFE31E24)),
-                      ],
-                    ),
-                    // Filas de datos
-                    ..._movimientos.map((movimiento) => TableRow(
-                      children: [
-                        _buildCell(movimiento.id.toString()),
-                        _buildCell(movimiento.estado),
-                        _buildCell(movimiento.localOrigenId.toString()),
-                        _buildCell(movimiento.localDestinoId.toString()),
-                        _buildCell(movimiento.detalles.first.productoId.toString()),
-                        _buildCell(movimiento.detalles.first.cantidad.toString()),
-                        _buildEstadoCell(movimiento.estado),
-                        _buildDetallesCell(movimiento.detalles),
-                      ],
-                    )),
-                  ],
+                      
+                      // Filas de movimientos
+                      ..._movimientos.map((movimiento) => Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.white.withOpacity(0.1),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                        child: Row(
+                          children: [
+                            // Fecha solicitada
+                            Expanded(
+                              flex: 15,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2D2D2D),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Center(
+                                      child: FaIcon(
+                                        FontAwesomeIcons.calendar,
+                                        color: Color(0xFFE31E24),
+                                        size: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    movimiento.id.toString(), // TODO: Cambiar por fecha real
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Proveedor
+                            Expanded(
+                              flex: 20,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2D2D2D),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const FaIcon(
+                                          FontAwesomeIcons.building,
+                                          color: Colors.white54,
+                                          size: 12,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Proveedor ${movimiento.localOrigenId}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Solicitante
+                            Expanded(
+                              flex: 20,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2D2D2D),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const FaIcon(
+                                          FontAwesomeIcons.user,
+                                          color: Colors.white54,
+                                          size: 12,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Solicitante ${movimiento.localDestinoId}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Origen
+                            Expanded(
+                              flex: 15,
+                              child: Text(
+                                'Local ${movimiento.localOrigenId}',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            // Destino
+                            Expanded(
+                              flex: 15,
+                              child: Text(
+                                'Local ${movimiento.localDestinoId}',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            // Estado
+                            Expanded(
+                              flex: 15,
+                              child: _buildEstadoCell(movimiento.estado),
+                            ),
+                          ],
+                        ),
+                      )).toList(),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderCell(String text, {required Color color}) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.bold,
+          ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildCell(String text) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.white),
       ),
     );
   }
@@ -308,57 +475,82 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
   Widget _buildEstadoCell(String estado) {
     Color backgroundColor;
     Color textColor = Colors.white;
+    IconData iconData;
+    String tooltipText;
 
     switch (estado.toLowerCase()) {
       case 'finalizado':
-        backgroundColor = Colors.green;
+        backgroundColor = const Color(0xFF2D8A3B).withOpacity(0.2);
+        textColor = const Color(0xFF4CAF50);
+        iconData = FontAwesomeIcons.circleCheck;
+        tooltipText = 'Movimiento finalizado';
         break;
       case 'solicitando':
-        backgroundColor = Colors.yellow;
-        textColor = Colors.black;
+        backgroundColor = const Color(0xFFFFA000).withOpacity(0.2);
+        textColor = const Color(0xFFFFA000);
+        iconData = FontAwesomeIcons.clockRotateLeft;
+        tooltipText = 'En proceso de solicitud';
         break;
       case 'rechazado':
-        backgroundColor = Colors.red;
+        backgroundColor = const Color(0xFFE31E24).withOpacity(0.2);
+        textColor = const Color(0xFFE31E24);
+        iconData = FontAwesomeIcons.circleXmark;
+        tooltipText = 'Movimiento rechazado';
+        break;
+      case 'pendiente':
+        backgroundColor = const Color(0xFF1976D2).withOpacity(0.2);
+        textColor = const Color(0xFF1976D2);
+        iconData = FontAwesomeIcons.hourglassHalf;
+        tooltipText = 'Pendiente de aprobación';
         break;
       default:
-        backgroundColor = Colors.grey;
+        backgroundColor = Colors.grey.withOpacity(0.2);
+        textColor = Colors.grey;
+        iconData = FontAwesomeIcons.circleQuestion;
+        tooltipText = 'Estado desconocido';
     }
 
     return Container(
       padding: const EdgeInsets.all(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(12),
+      child: Tooltip(
+        message: tooltipText,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: textColor.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              FaIcon(
+                iconData,
+                color: textColor,
+                size: 12,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                estado,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
-        child: Text(
-          estado,
-          style: TextStyle(color: textColor),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetallesCell(List<DetalleMovimiento> detalles) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      child: TextButton(
-        onPressed: () {
-          // Implementar vista de detalles
-        },
-        style: TextButton.styleFrom(
-          foregroundColor: const Color(0xFFE31E24),
-        ),
-        child: const Text('ver detalles'),
       ),
     );
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
   }
 } 
