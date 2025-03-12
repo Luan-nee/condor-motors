@@ -72,25 +72,14 @@ export const productosTable = pgTable('productos', {
   ...timestampsColumns
 })
 
-export const gruposProductosTable = pgTable('grupos_productos', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull().unique(),
-  cantidadGrupo: integer('cantidad_grupo').notNull().default(2),
-  productoId: integer('producto_id')
-    .notNull()
-    .references(() => productosTable.id),
-  ...timestampsColumns
-})
-
 export const preciosProductosTable = pgTable('precios_productos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   precioBase: numeric('precio_base', { precision: 7, scale: 2 }),
   precioMayorista: numeric('precio_mayorista', { precision: 7, scale: 2 }),
   precioOferta: numeric('precio_oferta', { precision: 7, scale: 2 }),
-  productoId: integer('producto_id').references(() => productosTable.id),
-  grupoProductoId: integer('grupo_producto_id').references(
-    () => gruposProductosTable.id
-  ),
+  productoId: integer('producto_id')
+    .notNull()
+    .references(() => productosTable.id),
   sucursalId: integer('sucursal_id')
     .notNull()
     .references(() => sucursalesTable.id)
@@ -99,10 +88,9 @@ export const preciosProductosTable = pgTable('precios_productos', {
 export const fotosProductosTable = pgTable('fotos_productos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   ubicacion: text('ubicacion').notNull(),
-  productoId: integer('producto_id').references(() => productosTable.id),
-  grupoProductoId: integer('grupo_producto_id').references(
-    () => gruposProductosTable.id
-  ),
+  productoId: integer('producto_id')
+    .notNull()
+    .references(() => productosTable.id),
   ...timestampsColumns
 })
 
@@ -290,10 +278,9 @@ export const detallesTable = pgTable('detalles', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   cantidad: integer('cantidad').notNull().default(1),
   subtotal: numeric('subtotal', { precision: 7, scale: 2 }).notNull(),
-  productoId: integer('producto_id').references(() => productosTable.id),
-  grupoProductoId: integer('grupo_producto_id').references(
-    () => gruposProductosTable.id
-  ),
+  productoId: integer('producto_id')
+    .notNull()
+    .references(() => productosTable.id),
   ventaId: integer('venta_id')
     .notNull()
     .references(() => ventasTable.id)
