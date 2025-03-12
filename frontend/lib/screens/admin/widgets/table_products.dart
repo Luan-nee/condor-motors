@@ -19,9 +19,6 @@ Future<List<Map<String, dynamic>>> loadJsonData() async {
 class TableProducts extends StatelessWidget {
   TableProducts({super.key});
 
-  // final String _selectedLocal = 'Central Principal';
-  // final bool _showCentrales = true;
-
   final List<List<String>> _tituloTable = [
     ['nombre de producto'],
     ['stock', 'actual'],
@@ -29,84 +26,7 @@ class TableProducts extends StatelessWidget {
     ['stock', 'máximo'],
     ['acciones'],
   ];
-/*
-  final List<Map<String, dynamic>> _productos = [
-    {
-      'id': 1,
-      'nombre': 'Casco MT Thunder',
-      'icon': FontAwesomeIcons.helmetSafety,
-      'stock': {
-        'Central Principal': 15,
-        'Sucursal San Miguel': 8,
-        'Sucursal Los Olivos': 5,
-      },
-      'precio': 299.99,
-      'marca': 'MT Helmets',
-      'minimo': 10,
-      'maximo': 50,
-    },
-    {
-      'id': 2,
-      'nombre': 'Aceite Motul 5100',
-      'categoria': 'Lubricantes',
-      'icon': FontAwesomeIcons.oilCan,
-      'stock': {
-        'Central Principal': 45,
-        'Sucursal San Miguel': 20,
-        'Sucursal Los Olivos': 15,
-      },
-      'precio': 89.99,
-      'marca': 'Motul',
-      'minimo': 30,
-      'maximo': 100,
-    },
-    {
-      'id': 3,
-      'nombre': 'Llanta Michelin Pilot',
-      'categoria': 'Llantas',
-      'icon': FontAwesomeIcons.ring,
-      'stock': {
-        'Central Principal': 12,
-        'Sucursal San Miguel': 6,
-        'Sucursal Los Olivos': 4,
-      },
-      'precio': 459.99,
-      'marca': 'Michelin',
-      'minimo': 8,
-      'maximo': 24,
-    },
-  ];
-  final List<List<String>> _testData = [
-    [
-      'Casco MT Thunder',
-      'Aceite Motul 5100',
-      'Llanta Michelin Pilot',
-      'Casco MT Thunder',
-      'Casco MT Thunder',
-    ],
-    [
-      'Casco MT Thunder',
-      'Aceite Motul 5100',
-      'Llanta Michelin Pilot',
-      'Casco MT Thunder',
-      'Casco MT Thunder',
-    ],
-    [
-      'Casco MT Thunder',
-      'Aceite Motul 5100',
-      'Llanta Michelin Pilot',
-      'Casco MT Thunder',
-      'Casco MT Thunder',
-    ],
-    [
-      'Casco MT Thunder',
-      'Aceite Motul 5100',
-      'Llanta Michelin Pilot',
-      'Casco MT Thunder',
-      'Casco MT Thunder',
-    ],
-  ];
-*/
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<Map<String, dynamic>>>(
