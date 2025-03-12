@@ -22,7 +22,6 @@ class _LocalAdminScreenState extends State<LocalAdminScreen> {
     _localesApi = LocalesApi(_apiService);
     _cargarLocales();
   }
-
   Future<void> _cargarLocales() async {
     setState(() => _isLoading = true);
     try {
@@ -35,8 +34,9 @@ class _LocalAdminScreenState extends State<LocalAdminScreen> {
         const SnackBar(content: Text('Error al cargar locales')),
       );
     } finally {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

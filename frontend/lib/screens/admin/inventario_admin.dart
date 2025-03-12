@@ -14,53 +14,6 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   bool _showCentrales = true;
 
   // Datos de ejemplo para el inventario
-  final List<Map<String, dynamic>> _productos = [
-    {
-      'id': 1,
-      'nombre': 'Casco MT Thunder',
-      'categoria': 'Cascos',
-      'icon': FontAwesomeIcons.helmetSafety,
-      'stock': {
-        'Central Principal': 15,
-        'Sucursal San Miguel': 8,
-        'Sucursal Los Olivos': 5,
-      },
-      'precio': 299.99,
-      'marca': 'MT Helmets',
-      'minimo': 10,
-      'maximo': 50,
-    },
-    {
-      'id': 2,
-      'nombre': 'Aceite Motul 5100',
-      'categoria': 'Lubricantes',
-      'icon': FontAwesomeIcons.oilCan,
-      'stock': {
-        'Central Principal': 45,
-        'Sucursal San Miguel': 20,
-        'Sucursal Los Olivos': 15,
-      },
-      'precio': 89.99,
-      'marca': 'Motul',
-      'minimo': 30,
-      'maximo': 100,
-    },
-    {
-      'id': 3,
-      'nombre': 'Llanta Michelin Pilot',
-      'categoria': 'Llantas',
-      'icon': FontAwesomeIcons.ring,
-      'stock': {
-        'Central Principal': 12,
-        'Sucursal San Miguel': 6,
-        'Sucursal Los Olivos': 4,
-      },
-      'precio': 459.99,
-      'marca': 'Michelin',
-      'minimo': 8,
-      'maximo': 24,
-    },
-  ];
 
   // Datos de ejemplo para los locales
   final List<Map<String, dynamic>> _locales = [
@@ -264,10 +217,12 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                     itemCount: _locales.length,
                     itemBuilder: (context, index) {
                       final local = _locales[index];
-                      if (_showCentrales && local['tipo'] != 'central')
+                      if (_showCentrales && local['tipo'] != 'central') {
                         return const SizedBox.shrink();
-                      if (!_showCentrales && local['tipo'] != 'sucursal')
+                      }
+                      if (!_showCentrales && local['tipo'] != 'sucursal') {
                         return const SizedBox.shrink();
+                      }
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 16),

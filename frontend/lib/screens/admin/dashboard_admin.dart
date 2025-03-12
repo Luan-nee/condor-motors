@@ -171,7 +171,7 @@ class _DashboardContent extends StatelessWidget {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: DataTable(
-                          headingRowColor: MaterialStateProperty.all(
+                          headingRowColor: WidgetStateProperty.all(
                             const Color(0xFF2D2D2D),
                           ),
                           columns: const [
@@ -240,13 +240,13 @@ class _DashboardContent extends StatelessWidget {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     )),
-                                    DataCell(Text(
+                                    const DataCell(Text(
                                       '50', // Ejemplo de cantidad máxima
-                                      style: const TextStyle(color: Colors.white),
+                                      style: TextStyle(color: Colors.white),
                                     )),
-                                    DataCell(Text(
+                                    const DataCell(Text(
                                       '10', // Ejemplo de cantidad mínima
-                                      style: const TextStyle(color: Colors.white),
+                                      style: TextStyle(color: Colors.white),
                                     )),
                                   ],
                                 ),

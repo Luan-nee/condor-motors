@@ -332,7 +332,7 @@ class ApiService {
         statusCode: response.statusCode!,
         message: response.data['error'] ?? 'Error en la solicitud',
       );
-    } on DioException catch (e) {
+    } on DioException {
       rethrow;
     }
   }

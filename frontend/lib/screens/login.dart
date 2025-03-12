@@ -121,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
   }
 
-  Future<void> _handleLogin({bool useBiometrics = false}) async {
+  Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../api/productos.api.dart' as productos_api;
 import '../../api/ventas.api.dart' as ventas_api;
 import '../../api/main.api.dart';
@@ -8,14 +9,14 @@ import 'ventas_colab.dart';
 import 'movimiento_colab.dart';
 import 'widgets/notificacion_movimiento.dart';
 
-class DashboardColabScreen extends StatefulWidget {
-  const DashboardColabScreen({super.key});
+class SlidesColabScreen extends StatefulWidget {
+  const SlidesColabScreen({super.key});
 
   @override
-  State<DashboardColabScreen> createState() => _DashboardColabScreenState();
+  State<SlidesColabScreen> createState() => _SlidesColabScreenState();
 }
 
-class _DashboardColabScreenState extends State<DashboardColabScreen> {
+class _SlidesColabScreenState extends State<SlidesColabScreen> {
   late final ApiService _apiService;
   late final productos_api.ProductosApi _productosApi;
   late final ventas_api.VentasApi _ventaApi;
@@ -112,7 +113,7 @@ class _DashboardColabScreenState extends State<DashboardColabScreen> {
               ),
             ),
             Text(
-              'Colaborador - $_branchName',
+              'Reabastecimiento - $_branchName',
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -137,6 +138,14 @@ class _DashboardColabScreenState extends State<DashboardColabScreen> {
             ),
           ),
           const SizedBox(width: 16),
+          IconButton(
+            icon: const FaIcon(FontAwesomeIcons.house),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            tooltip: 'Volver al selector',
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Row(
@@ -218,23 +227,23 @@ class _DashboardColabScreenState extends State<DashboardColabScreen> {
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.local_shipping_outlined),
-            selectedIcon: Icon(Icons.local_shipping),
+            icon: FaIcon(FontAwesomeIcons.truck),
+            selectedIcon: FaIcon(FontAwesomeIcons.truck, color: Colors.blue),
             label: 'Movimientos',
           ),
           NavigationDestination(
-            icon: Icon(Icons.inventory_2_outlined),
-            selectedIcon: Icon(Icons.inventory_2),
+            icon: FaIcon(FontAwesomeIcons.boxesStacked),
+            selectedIcon: FaIcon(FontAwesomeIcons.boxesStacked, color: Colors.blue),
             label: 'Inventario',
           ),
           NavigationDestination(
-            icon: Icon(Icons.point_of_sale_outlined),
-            selectedIcon: Icon(Icons.point_of_sale),
+            icon: FaIcon(FontAwesomeIcons.cashRegister),
+            selectedIcon: FaIcon(FontAwesomeIcons.cashRegister, color: Colors.blue),
             label: 'Ventas',
           ),
           NavigationDestination(
-            icon: Icon(Icons.analytics_outlined),
-            selectedIcon: Icon(Icons.analytics),
+            icon: FaIcon(FontAwesomeIcons.chartLine),
+            selectedIcon: FaIcon(FontAwesomeIcons.chartLine, color: Colors.blue),
             label: 'Reportes',
           ),
         ],
@@ -276,19 +285,19 @@ class _DashboardColabScreenState extends State<DashboardColabScreen> {
         _buildStatCard(
           'Productos Activos',
           productosEscasos.toString(),
-          Icons.warning,
+          FontAwesomeIcons.triangleExclamation,
           Colors.orange,
         ),
         _buildStatCard(
           'Ventas Hoy',
           ventasHoy.toString(),
-          Icons.shopping_cart,
+          FontAwesomeIcons.cartShopping,
           Colors.blue,
         ),
         _buildStatCard(
           'Ganancia Hoy',
           'S/ ${gananciaHoy.toStringAsFixed(2)}',
-          Icons.attach_money,
+          FontAwesomeIcons.moneyBill,
           Colors.green,
         ),
       ],
@@ -303,7 +312,7 @@ class _DashboardColabScreenState extends State<DashboardColabScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 32, color: color),
+            FaIcon(icon, size: 32, color: color),
             const SizedBox(height: 8),
             Text(
               title,

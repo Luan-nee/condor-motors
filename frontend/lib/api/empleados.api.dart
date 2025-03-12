@@ -96,8 +96,7 @@ class EmpleadoApi {
 
         if (e.type == DioExceptionType.connectionError) {
           throw Exception(
-            'Error de conexión: Verifica que el servidor esté corriendo y que CORS esté configurado correctamente. ' +
-            'El servidor debe permitir solicitudes desde http://localhost:51251'
+            'Error de conexión: Verifica que el servidor esté corriendo y que CORS esté configurado correctamente. ' 'El servidor debe permitir solicitudes desde http://localhost:51251'
           );
         }
         return handler.next(e);

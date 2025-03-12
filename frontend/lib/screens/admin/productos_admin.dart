@@ -150,6 +150,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       }
       if (!mounted) return;
       await _cargarDatos();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Producto guardado exitosamente'),

@@ -14,7 +14,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
   late final SucursalesApi _sucursalesApi;
   bool _isLoading = false;
   List<Sucursal> _sucursales = [];
-  int _currentPage = 1;
+  final int _currentPage = 1;
   final int _pageSize = 10;
   String? _searchQuery;
 
@@ -41,8 +41,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
         const SnackBar(content: Text('Error al cargar sucursales')),
       );
     } finally {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

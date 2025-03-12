@@ -258,7 +258,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                 ),
                 child: SingleChildScrollView(
                   child: DataTable(
-                    headingRowColor: MaterialStateProperty.all(
+                    headingRowColor: WidgetStateProperty.all(
                       const Color(0xFF2D2D2D),
                     ),
                     columns: const [
