@@ -1,0 +1,166 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/sucursales",
+    "response": {
+      "sucursales": [
+        {
+          "id": 1,
+          "nombre": "Central Principal",
+          "direccion": "Av. La Marina 123, San Miguel",
+          "telefono": "987654321",
+          "tipo": "central",
+          "icon": "warehouse",
+          "estado": true,
+          "cantidadProductos": 458,
+          "valorInventario": 125000.00,
+          "colaboradores": [
+            {
+              "id": 1,
+              "nombre": "Juan Pérez",
+              "rol": "Vendedor"
+            },
+            {
+              "id": 2,
+              "nombre": "María García",
+              "rol": "Administrador"
+            }
+          ],
+          "fechaCreacion": "2024-03-12T10:00:00Z",
+          "fechaActualizacion": "2024-03-12T10:00:00Z"
+        },
+        {
+          "id": 2,
+          "nombre": "Sucursal San Miguel",
+          "direccion": "Av. Universitaria 456, San Miguel",
+          "telefono": "987654322",
+          "tipo": "sucursal",
+          "icon": "store",
+          "estado": true,
+          "cantidadProductos": 325,
+          "valorInventario": 89000.00,
+          "colaboradores": [
+            {
+              "id": 3,
+              "nombre": "Carlos López",
+              "rol": "Vendedor"
+            }
+          ],
+          "fechaCreacion": "2024-03-12T10:00:00Z",
+          "fechaActualizacion": "2024-03-12T10:00:00Z"
+        }
+      ],
+      "total": 2,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/sucursales/:id",
+    "response": {
+      "id": 1,
+      "nombre": "Central Principal",
+      "direccion": "Av. La Marina 123, San Miguel",
+      "telefono": "987654321",
+      "tipo": "central",
+      "icon": "warehouse",
+      "estado": true,
+      "cantidadProductos": 458,
+      "valorInventario": 125000.00,
+      "colaboradores": [
+        {
+          "id": 1,
+          "nombre": "Juan Pérez",
+          "rol": "Vendedor"
+        },
+        {
+          "id": 2,
+          "nombre": "María García",
+          "rol": "Administrador"
+        }
+      ],
+      "fechaCreacion": "2024-03-12T10:00:00Z",
+      "fechaActualizacion": "2024-03-12T10:00:00Z"
+    }
+  },
+  "POST": {
+    "endpoint": "/api/sucursales",
+    "request": {
+      "nombre": "Nueva Sucursal",
+      "direccion": "Av. Nueva 789",
+      "telefono": "987654323",
+      "tipo": "sucursal",
+      "estado": true
+    },
+    "response": {
+      "id": 3,
+      "nombre": "Nueva Sucursal",
+      "direccion": "Av. Nueva 789",
+      "telefono": "987654323",
+      "tipo": "sucursal",
+      "icon": "store",
+      "estado": true,
+      "cantidadProductos": 0,
+      "valorInventario": 0.00,
+      "colaboradores": [],
+      "fechaCreacion": "2024-03-12T10:00:00Z",
+      "fechaActualizacion": "2024-03-12T10:00:00Z"
+    }
+  },
+  "PATCH": {
+    "endpoint": "/api/sucursales/:id",
+    "request": {
+      "nombre": "Sucursal San Miguel Actualizada",
+      "direccion": "Nueva Av. Universitaria 456",
+      "telefono": "987654322",
+      "tipo": "sucursal",
+      "estado": true
+    },
+    "response": {
+      "id": 2,
+      "nombre": "Sucursal San Miguel Actualizada",
+      "direccion": "Nueva Av. Universitaria 456",
+      "telefono": "987654322",
+      "tipo": "sucursal",
+      "icon": "store",
+      "estado": true,
+      "cantidadProductos": 325,
+      "valorInventario": 89000.00,
+      "colaboradores": [
+        {
+          "id": 3,
+          "nombre": "Carlos López",
+          "rol": "Vendedor"
+        }
+      ],
+      "fechaCreacion": "2024-03-12T10:00:00Z",
+      "fechaActualizacion": "2024-03-12T11:00:00Z"
+    }
+  },
+  "DELETE": {
+    "endpoint": "/api/sucursales/:id",
+    "response": {
+      "mensaje": "Sucursal eliminada correctamente",
+      "status": 200
+    }
+  },
+  "GET_STATS": {
+    "endpoint": "/api/sucursales/:id/stats",
+    "response": {
+      "cantidadProductos": 458,
+      "valorInventario": 125000.00,
+      "cantidadEmpleados": 10,
+      "ventasMensuales": 45000.00,
+      "productosAgotados": 5,
+      "productosBajoStock": 12
+    }
+  },
+  "COMENTARIOS": [
+    "El backend debe implementar todos los endpoints CRUD para sucursales",
+    "Se necesita un endpoint para obtener estadísticas de una sucursal",
+    "Se necesita un endpoint para obtener los productos de una sucursal",
+    "Se necesita un endpoint para obtener los empleados de una sucursal",
+    "El frontend necesita poder filtrar sucursales por tipo y estado",
+    "Se debe validar que no se puedan eliminar sucursales con productos o empleados asociados",
+    "Se debe implementar un sistema para transferir productos entre sucursales"
+  ]
+} 

@@ -1,0 +1,282 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/sucursales/:sucursalId/ventas",
+    "response": {
+      "ventas": [
+        {
+          "id": 1,
+          "codigo": "V001",
+          "fecha": "2024-03-12T10:00:00Z",
+          "subtotal": 389.98,
+          "igv": 70.20,
+          "total": 460.18,
+          "estado": "COMPLETADA",
+          "metodoPago": "EFECTIVO",
+          "sucursal": {
+            "id": 1,
+            "nombre": "Central Principal"
+          },
+          "vendedor": {
+            "id": 1,
+            "nombre": "Juan Pérez",
+            "rol": "Vendedor"
+          },
+          "detalles": [
+            {
+              "id": 1,
+              "producto": {
+                "id": 1,
+                "codigo": "CAS001",
+                "nombre": "Casco MT Thunder",
+                "precio": 299.99
+              },
+              "cantidad": 1,
+              "precioUnitario": 299.99,
+              "subtotal": 299.99
+            },
+            {
+              "id": 2,
+              "producto": {
+                "id": 2,
+                "codigo": "ACE001",
+                "nombre": "Aceite Motul 5100",
+                "precio": 89.99
+              },
+              "cantidad": 1,
+              "precioUnitario": 89.99,
+              "subtotal": 89.99
+            }
+          ]
+        }
+      ],
+      "total": 1,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/sucursales/:sucursalId/ventas/:id",
+    "response": {
+      "id": 1,
+      "codigo": "V001",
+      "fecha": "2024-03-12T10:00:00Z",
+      "subtotal": 389.98,
+      "igv": 70.20,
+      "total": 460.18,
+      "estado": "COMPLETADA",
+      "metodoPago": "EFECTIVO",
+      "sucursal": {
+        "id": 1,
+        "nombre": "Central Principal"
+      },
+      "vendedor": {
+        "id": 1,
+        "nombre": "Juan Pérez",
+        "rol": "Vendedor"
+      },
+      "detalles": [
+        {
+          "id": 1,
+          "producto": {
+            "id": 1,
+            "codigo": "CAS001",
+            "nombre": "Casco MT Thunder",
+            "precio": 299.99
+          },
+          "cantidad": 1,
+          "precioUnitario": 299.99,
+          "subtotal": 299.99
+        },
+        {
+          "id": 2,
+          "producto": {
+            "id": 2,
+            "codigo": "ACE001",
+            "nombre": "Aceite Motul 5100",
+            "precio": 89.99
+          },
+          "cantidad": 1,
+          "precioUnitario": 89.99,
+          "subtotal": 89.99
+        }
+      ]
+    }
+  },
+  "POST": {
+    "endpoint": "/api/sucursales/:sucursalId/ventas",
+    "request": {
+      "vendedorId": 1,
+      "metodoPago": "EFECTIVO",
+      "detalles": [
+        {
+          "productoId": 1,
+          "cantidad": 1,
+          "precioUnitario": 299.99
+        },
+        {
+          "productoId": 2,
+          "cantidad": 1,
+          "precioUnitario": 89.99
+        }
+      ]
+    },
+    "response": {
+      "id": 2,
+      "codigo": "V002",
+      "fecha": "2024-03-12T10:00:00Z",
+      "subtotal": 389.98,
+      "igv": 70.20,
+      "total": 460.18,
+      "estado": "COMPLETADA",
+      "metodoPago": "EFECTIVO",
+      "sucursal": {
+        "id": 1,
+        "nombre": "Central Principal"
+      },
+      "vendedor": {
+        "id": 1,
+        "nombre": "Juan Pérez",
+        "rol": "Vendedor"
+      },
+      "detalles": [
+        {
+          "id": 3,
+          "producto": {
+            "id": 1,
+            "codigo": "CAS001",
+            "nombre": "Casco MT Thunder",
+            "precio": 299.99
+          },
+          "cantidad": 1,
+          "precioUnitario": 299.99,
+          "subtotal": 299.99
+        },
+        {
+          "id": 4,
+          "producto": {
+            "id": 2,
+            "codigo": "ACE001",
+            "nombre": "Aceite Motul 5100",
+            "precio": 89.99
+          },
+          "cantidad": 1,
+          "precioUnitario": 89.99,
+          "subtotal": 89.99
+        }
+      ]
+    }
+  },
+  "PATCH": {
+    "endpoint": "/api/sucursales/:sucursalId/ventas/:id",
+    "request": {
+      "estado": "ANULADA",
+      "motivo": "Cliente canceló la compra"
+    },
+    "response": {
+      "id": 1,
+      "codigo": "V001",
+      "fecha": "2024-03-12T10:00:00Z",
+      "subtotal": 389.98,
+      "igv": 70.20,
+      "total": 460.18,
+      "estado": "ANULADA",
+      "metodoPago": "EFECTIVO",
+      "sucursal": {
+        "id": 1,
+        "nombre": "Central Principal"
+      },
+      "vendedor": {
+        "id": 1,
+        "nombre": "Juan Pérez",
+        "rol": "Vendedor"
+      },
+      "detalles": [
+        {
+          "id": 1,
+          "producto": {
+            "id": 1,
+            "codigo": "CAS001",
+            "nombre": "Casco MT Thunder",
+            "precio": 299.99
+          },
+          "cantidad": 1,
+          "precioUnitario": 299.99,
+          "subtotal": 299.99
+        },
+        {
+          "id": 2,
+          "producto": {
+            "id": 2,
+            "codigo": "ACE001",
+            "nombre": "Aceite Motul 5100",
+            "precio": 89.99
+          },
+          "cantidad": 1,
+          "precioUnitario": 89.99,
+          "subtotal": 89.99
+        }
+      ],
+      "motivo": "Cliente canceló la compra",
+      "fechaAnulacion": "2024-03-12T11:00:00Z"
+    }
+  },
+  "GET_STATS": {
+    "endpoint": "/api/sucursales/:sucursalId/ventas/stats",
+    "query": {
+      "desde": "2024-03-01",
+      "hasta": "2024-03-31"
+    },
+    "response": {
+      "totalVentas": 45,
+      "montoTotal": 15000.00,
+      "igvTotal": 2700.00,
+      "ventasPorDia": [
+        {
+          "fecha": "2024-03-01",
+          "cantidad": 3,
+          "monto": 1200.00
+        },
+        {
+          "fecha": "2024-03-02",
+          "cantidad": 5,
+          "monto": 1800.00
+        }
+      ],
+      "productosMasVendidos": [
+        {
+          "id": 1,
+          "nombre": "Casco MT Thunder",
+          "cantidad": 15,
+          "monto": 4499.85
+        }
+      ],
+      "metodoPago": {
+        "EFECTIVO": {
+          "cantidad": 25,
+          "monto": 8000.00
+        },
+        "TARJETA": {
+          "cantidad": 20,
+          "monto": 7000.00
+        }
+      }
+    }
+  },
+  "GENERAR_BOLETA": {
+    "endpoint": "/api/sucursales/:sucursalId/ventas/:id/boleta",
+    "response": {
+      "url": "/api/downloads/boletas/V001.pdf",
+      "mensaje": "Boleta generada correctamente"
+    }
+  },
+  "COMENTARIOS": [
+    "El backend debe implementar todos los endpoints CRUD para ventas",
+    "Se necesita un endpoint para generar boletas/facturas en PDF",
+    "Se necesita un endpoint para obtener estadísticas de ventas",
+    "Se necesita un endpoint para buscar ventas por código o cliente",
+    "El frontend necesita poder filtrar ventas por fecha, estado y método de pago",
+    "Se debe validar que haya stock suficiente al realizar una venta",
+    "Se debe actualizar automáticamente el stock al completar una venta",
+    "Se debe implementar un sistema para aplicar descuentos y promociones"
+  ]
+} 

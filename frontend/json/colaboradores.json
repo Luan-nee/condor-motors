@@ -1,0 +1,159 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/empleados",
+    "response": {
+      "colaboradores": [
+        {
+          "id": 1,
+          "nombre": "Juan Pérez",
+          "apellidos": "García López",
+          "dni": "12345678",
+          "email": "juan.perez@condormotors.com",
+          "telefono": "987654321",
+          "rol": "Vendedor",
+          "rolIcon": "cash-register",
+          "local": {
+            "id": 1,
+            "nombre": "Central Principal",
+            "tipo": "central"
+          },
+          "estado": true,
+          "fechaCreacion": "2024-03-12T10:00:00Z",
+          "fechaActualizacion": "2024-03-12T10:00:00Z"
+        },
+        {
+          "id": 2,
+          "nombre": "María García",
+          "apellidos": "Rodríguez Pérez",
+          "dni": "87654321",
+          "email": "maria.garcia@condormotors.com",
+          "telefono": "987654322",
+          "rol": "Administrador",
+          "rolIcon": "user-gear",
+          "local": {
+            "id": 1,
+            "nombre": "Central Principal",
+            "tipo": "central"
+          },
+          "estado": true,
+          "fechaCreacion": "2024-03-12T10:00:00Z",
+          "fechaActualizacion": "2024-03-12T10:00:00Z"
+        }
+      ],
+      "total": 2,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/empleados/:id",
+    "response": {
+      "id": 1,
+      "nombre": "Juan Pérez",
+      "apellidos": "García López",
+      "dni": "12345678",
+      "email": "juan.perez@condormotors.com",
+      "telefono": "987654321",
+      "rol": "Vendedor",
+      "rolIcon": "cash-register",
+      "local": {
+        "id": 1,
+        "nombre": "Central Principal",
+        "tipo": "central"
+      },
+      "estado": true,
+      "fechaCreacion": "2024-03-12T10:00:00Z",
+      "fechaActualizacion": "2024-03-12T10:00:00Z"
+    }
+  },
+  "POST": {
+    "endpoint": "/api/empleados",
+    "request": {
+      "nombre": "Nuevo",
+      "apellidos": "Colaborador",
+      "dni": "11223344",
+      "email": "nuevo.colaborador@condormotors.com",
+      "telefono": "987654323",
+      "rol": "Vendedor",
+      "localId": 1,
+      "estado": true,
+      "password": "contraseña123"
+    },
+    "response": {
+      "id": 3,
+      "nombre": "Nuevo",
+      "apellidos": "Colaborador",
+      "dni": "11223344",
+      "email": "nuevo.colaborador@condormotors.com",
+      "telefono": "987654323",
+      "rol": "Vendedor",
+      "rolIcon": "cash-register",
+      "local": {
+        "id": 1,
+        "nombre": "Central Principal",
+        "tipo": "central"
+      },
+      "estado": true,
+      "fechaCreacion": "2024-03-12T10:00:00Z",
+      "fechaActualizacion": "2024-03-12T10:00:00Z"
+    }
+  },
+  "PATCH": {
+    "endpoint": "/api/empleados/:id",
+    "request": {
+      "nombre": "Juan",
+      "apellidos": "Pérez Actualizado",
+      "dni": "12345678",
+      "email": "juan.perez@condormotors.com",
+      "telefono": "987654321",
+      "rol": "Supervisor",
+      "localId": 1,
+      "estado": true
+    },
+    "response": {
+      "id": 1,
+      "nombre": "Juan",
+      "apellidos": "Pérez Actualizado",
+      "dni": "12345678",
+      "email": "juan.perez@condormotors.com",
+      "telefono": "987654321",
+      "rol": "Supervisor",
+      "rolIcon": "user-tie",
+      "local": {
+        "id": 1,
+        "nombre": "Central Principal",
+        "tipo": "central"
+      },
+      "estado": true,
+      "fechaCreacion": "2024-03-12T10:00:00Z",
+      "fechaActualizacion": "2024-03-12T11:00:00Z"
+    }
+  },
+  "DELETE": {
+    "endpoint": "/api/empleados/:id",
+    "response": {
+      "mensaje": "Colaborador eliminado correctamente",
+      "status": 200
+    }
+  },
+  "CHANGE_PASSWORD": {
+    "endpoint": "/api/empleados/:id/password",
+    "request": {
+      "oldPassword": "contraseña123",
+      "newPassword": "nuevaContraseña456"
+    },
+    "response": {
+      "mensaje": "Contraseña actualizada correctamente",
+      "status": 200
+    }
+  },
+  "COMENTARIOS": [
+    "El backend debe implementar todos los endpoints CRUD para empleados",
+    "Se necesita un endpoint para cambiar la contraseña de un empleado",
+    "Se necesita un endpoint para obtener los empleados por sucursal",
+    "El frontend necesita poder filtrar empleados por rol y estado",
+    "Se debe implementar un sistema de permisos basado en roles",
+    "Se debe validar que el DNI y el email sean únicos",
+    "Se debe permitir subir fotos de perfil para los empleados"
+  ]
+} 

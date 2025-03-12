@@ -1,0 +1,89 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/categorias",
+    "response": {
+      "categorias": [
+        {
+          "id": 1,
+          "nombre": "Cascos",
+          "descripcion": "Cascos de seguridad para motociclistas",
+          "cantidadProductos": 45,
+          "activo": true,
+          "fechaCreacion": "2024-03-12T10:00:00Z",
+          "fechaActualizacion": "2024-03-12T10:00:00Z"
+        },
+        {
+          "id": 2,
+          "nombre": "Lubricantes",
+          "descripcion": "Aceites y lubricantes para motocicletas",
+          "cantidadProductos": 32,
+          "activo": true,
+          "fechaCreacion": "2024-03-12T10:00:00Z",
+          "fechaActualizacion": "2024-03-12T10:00:00Z"
+        }
+      ],
+      "total": 2,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/categorias/:id",
+    "response": {
+      "id": 1,
+      "nombre": "Cascos",
+      "descripcion": "Cascos de seguridad para motociclistas",
+      "cantidadProductos": 45,
+      "activo": true,
+      "fechaCreacion": "2024-03-12T10:00:00Z",
+      "fechaActualizacion": "2024-03-12T10:00:00Z"
+    }
+  },
+  "POST": {
+    "endpoint": "/api/categorias",
+    "request": {
+      "nombre": "Nueva Categoría",
+      "descripcion": "Descripción de la nueva categoría",
+      "activo": true
+    },
+    "response": {
+      "id": 3,
+      "nombre": "Nueva Categoría",
+      "descripcion": "Descripción de la nueva categoría",
+      "cantidadProductos": 0,
+      "activo": true,
+      "fechaCreacion": "2024-03-12T10:00:00Z",
+      "fechaActualizacion": "2024-03-12T10:00:00Z"
+    }
+  },
+  "PATCH": {
+    "endpoint": "/api/categorias/:id",
+    "request": {
+      "nombre": "Cascos Actualizados",
+      "descripcion": "Nueva descripción de cascos",
+      "activo": true
+    },
+    "response": {
+      "id": 1,
+      "nombre": "Cascos Actualizados",
+      "descripcion": "Nueva descripción de cascos",
+      "cantidadProductos": 45,
+      "activo": true,
+      "fechaCreacion": "2024-03-12T10:00:00Z",
+      "fechaActualizacion": "2024-03-12T11:00:00Z"
+    }
+  },
+  "DELETE": {
+    "endpoint": "/api/categorias/:id",
+    "response": {
+      "mensaje": "Categoría eliminada correctamente",
+      "status": 200
+    }
+  },
+  "COMENTARIOS": [
+    "El backend debe implementar todos los endpoints CRUD para categorías",
+    "Se necesita un endpoint para obtener los productos por categoría",
+    "El frontend necesita poder filtrar categorías activas/inactivas",
+    "Se debe validar que no se puedan eliminar categorías con productos asociados"
+  ]
+} 

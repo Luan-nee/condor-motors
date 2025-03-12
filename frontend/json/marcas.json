@@ -1,0 +1,97 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/marcas",
+    "response": {
+      "marcas": [
+        {
+          "id": 1,
+          "nombre": "MT Helmets",
+          "descripcion": "Fabricante líder de cascos de motocicleta",
+          "cantidadProductos": 45,
+          "logo": "helmet-safety",
+          "activo": true,
+          "fechaCreacion": "2024-03-12T10:00:00Z",
+          "fechaActualizacion": "2024-03-12T10:00:00Z"
+        },
+        {
+          "id": 2,
+          "nombre": "Motul",
+          "descripcion": "Aceites y lubricantes de alta calidad",
+          "cantidadProductos": 32,
+          "logo": "oil-can",
+          "activo": true,
+          "fechaCreacion": "2024-03-12T10:00:00Z",
+          "fechaActualizacion": "2024-03-12T10:00:00Z"
+        }
+      ],
+      "total": 2,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/marcas/:id",
+    "response": {
+      "id": 1,
+      "nombre": "MT Helmets",
+      "descripcion": "Fabricante líder de cascos de motocicleta",
+      "cantidadProductos": 45,
+      "logo": "helmet-safety",
+      "activo": true,
+      "fechaCreacion": "2024-03-12T10:00:00Z",
+      "fechaActualizacion": "2024-03-12T10:00:00Z"
+    }
+  },
+  "POST": {
+    "endpoint": "/api/marcas",
+    "request": {
+      "nombre": "Nueva Marca",
+      "descripcion": "Descripción de la nueva marca",
+      "logo": "motorcycle",
+      "activo": true
+    },
+    "response": {
+      "id": 3,
+      "nombre": "Nueva Marca",
+      "descripcion": "Descripción de la nueva marca",
+      "cantidadProductos": 0,
+      "logo": "motorcycle",
+      "activo": true,
+      "fechaCreacion": "2024-03-12T10:00:00Z",
+      "fechaActualizacion": "2024-03-12T10:00:00Z"
+    }
+  },
+  "PATCH": {
+    "endpoint": "/api/marcas/:id",
+    "request": {
+      "nombre": "MT Helmets Updated",
+      "descripcion": "Nueva descripción de MT Helmets",
+      "logo": "helmet-safety",
+      "activo": true
+    },
+    "response": {
+      "id": 1,
+      "nombre": "MT Helmets Updated",
+      "descripcion": "Nueva descripción de MT Helmets",
+      "cantidadProductos": 45,
+      "logo": "helmet-safety",
+      "activo": true,
+      "fechaCreacion": "2024-03-12T10:00:00Z",
+      "fechaActualizacion": "2024-03-12T11:00:00Z"
+    }
+  },
+  "DELETE": {
+    "endpoint": "/api/marcas/:id",
+    "response": {
+      "mensaje": "Marca eliminada correctamente",
+      "status": 200
+    }
+  },
+  "COMENTARIOS": [
+    "El backend debe implementar todos los endpoints CRUD para marcas",
+    "Se necesita un endpoint para obtener los productos por marca",
+    "El frontend necesita poder filtrar marcas activas/inactivas",
+    "Se debe validar que no se puedan eliminar marcas con productos asociados",
+    "Se debe permitir subir imágenes de logos para las marcas"
+  ]
+} 
