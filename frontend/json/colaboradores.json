@@ -18,12 +18,14 @@
           "fecha_contrato": "2024-03-12T10:00:00Z",
           "pago": 1000.0,
           "horarioIngreso": "08:00",
-          "horarioSalida": "18:00"
+          "horarioSalida": "18:00",
+          "informacionDeVenta": {
+            "ventasTotales": 400,
+            "ventasDelMes": 200,
+            "ventasDelDia": 10
+          }
         }
-      ],
-      "total": 2,
-      "pagina": 1,
-      "porPagina": 10
+      ]
     }
   },
   "GET": {
@@ -44,7 +46,12 @@
           "esCentral": true
         },
         "estado": true,
-        "fechaContrato": "2024-03-12T10:00:00Z"
+        "fechaContrato": "2024-03-12T10:00:00Z",
+        "informacionDeVenta": {
+          "ventasTotales": 400,
+          "ventasDelMes": 200,
+          "ventasDelDia": 10
+        }
       }
     }
   },
@@ -79,12 +86,13 @@
         "id": 3,
         "nombre": "Nuevo",
         "apellidos": "Colaborador",
-        "dni": "11223344",
         "telefono": "987654323",
+        "dni": "11223344",
         "horarioIngreso": "08:00",
         "horarioSalida": "18:00",
         "pago": 1000.0,
-        "localId": 1
+        "localId": 1,
+        "estado": true
       }
     }
   },
