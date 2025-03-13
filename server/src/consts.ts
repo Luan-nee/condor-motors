@@ -38,7 +38,7 @@ export const permissionCodes = {
   sucursales: {
     createAny: 'sucursales:create_any',
     getAny: 'sucursales:get_any',
-    upateAny: 'sucursales:update_any',
+    updateAny: 'sucursales:update_any',
     deleteAny: 'sucursales:delete_any',
     getRelated: 'sucursales:get_related',
     updateRelated: 'sucursales:update_related'
@@ -50,7 +50,10 @@ export const permissionCodes = {
   productos: {
     createAny: 'productos:create_any',
     getAny: 'productos:get_any',
-    upateAny: 'productos:update_any',
-    deleteAny: 'productos:delete_any'
+    updateAny: 'productos:update_any',
+    deleteAny: 'productos:delete_any',
+    createRelated: 'productos:create_related',
+    getRelated: 'productos:get_related',
+    updateRelated: 'productos:update_related'
   }
 } as const

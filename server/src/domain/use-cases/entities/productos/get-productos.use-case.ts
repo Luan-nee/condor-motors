@@ -1,4 +1,4 @@
-import { permissionCodes } from '@/consts'
+import { orderValues, permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
@@ -12,14 +12,22 @@ import {
   sucursalesTable,
   unidadesTable
 } from '@/db/schema'
-import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
+import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { ProductoEntityMapper } from '@/domain/mappers/producto-entity.mapper'
 import type { SucursalIdType } from '@/types/schemas'
-import { and, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, or, type SQL } from 'drizzle-orm'
 
-export class GetProductoById {
+interface GetArgs {
+  queriesDto: QueriesDto
+  order: SQL
+  whereCondition: SQL | undefined
+  sucursalId: SucursalIdType
+}
+
+export class GetProductos {
   private readonly authPayload: AuthPayload
   private readonly permissionGetAny = permissionCodes.productos.getAny
+  private readonly permissionGetRelated = permissionCodes.productos.getRelated
   private readonly selectFields = {
     id: productosTable.id,
     sku: productosTable.sku,
@@ -43,14 +51,42 @@ export class GetProductoById {
     sucursalId: sucursalesTable.id
   }
 
+  private readonly validSortBy = {
+    nombre: productosTable.nombre,
+    precioBase: detallesProductoTable.precioBase,
+    precioMayorista: detallesProductoTable.precioMayorista,
+    precioOferta: detallesProductoTable.precioOferta,
+    stock: detallesProductoTable.stock,
+    fechaCreacion: productosTable.fechaCreacion
+  } as const
+
   constructor(authPayload: AuthPayload) {
     this.authPayload = authPayload
   }
 
-  private async getRelated(
-    numericIdDto: NumericIdDto,
-    sucursalId: SucursalIdType
-  ) {
+  private isValidSortBy(
+    sortBy: string
+  ): sortBy is keyof typeof this.validSortBy {
+    return Object.keys(this.validSortBy).includes(sortBy)
+  }
+
+  private getSortByColumn(sortBy: string) {
+    if (
+      Object.keys(this.validSortBy).includes(sortBy) &&
+      this.isValidSortBy(sortBy)
+    ) {
+      return this.validSortBy[sortBy]
+    }
+
+    return this.validSortBy.fechaCreacion
+  }
+
+  private async getRelatedProductos({
+    queriesDto,
+    order,
+    whereCondition,
+    sucursalId
+  }: GetArgs) {
     return await db
       .select(this.selectFields)
       .from(productosTable)
@@ -78,14 +114,22 @@ export class GetProductoById {
       )
       .where(
         and(
-          eq(productosTable.id, numericIdDto.id),
-          eq(detallesProductoTable.sucursalId, sucursalId),
-          eq(cuentasEmpleadosTable.id, this.authPayload.id)
+          whereCondition,
+          eq(cuentasEmpleadosTable.id, this.authPayload.id),
+          eq(sucursalesTable.id, sucursalId)
         )
       )
+      .orderBy(order)
+      .limit(queriesDto.page_size)
+      .offset(queriesDto.page_size * (queriesDto.page - 1))
   }
 
-  private async getAny(numericIdDto: NumericIdDto, sucursalId: SucursalIdType) {
+  private async getAnyProductos({
+    queriesDto,
+    order,
+    whereCondition,
+    sucursalId
+  }: GetArgs) {
     return await db
       .select(this.selectFields)
       .from(productosTable)
@@ -103,43 +147,58 @@ export class GetProductoById {
         sucursalesTable,
         eq(sucursalesTable.id, detallesProductoTable.sucursalId)
       )
-      .where(
-        and(
-          eq(productosTable.id, numericIdDto.id),
-          eq(detallesProductoTable.sucursalId, sucursalId)
-        )
-      )
+      .where(and(whereCondition, eq(sucursalesTable.id, sucursalId)))
+      .orderBy(order)
+      .limit(queriesDto.page_size)
+      .offset(queriesDto.page_size * (queriesDto.page - 1))
   }
 
-  private async getProductoById(
-    numericIdDto: NumericIdDto,
+  private async getProductos(
+    queriesDto: QueriesDto,
     sucursalId: SucursalIdType,
     hasPermissionGetAny: boolean
   ) {
-    const productos = hasPermissionGetAny
-      ? await this.getAny(numericIdDto, sucursalId)
-      : await this.getRelated(numericIdDto, sucursalId)
+    const sortByColumn = this.getSortByColumn(queriesDto.sort_by)
 
-    if (productos.length < 1) {
-      throw CustomError.badRequest(
-        `No se encontró ningún producto con el id '${numericIdDto.id}'`
-      )
+    const order =
+      queriesDto.order === orderValues.asc
+        ? asc(sortByColumn)
+        : desc(sortByColumn)
+
+    const whereCondition =
+      queriesDto.search.length > 0
+        ? or(
+            ilike(productosTable.nombre, `%${queriesDto.search}%`),
+            ilike(productosTable.sku, `%${queriesDto.search}%`)
+          )
+        : undefined
+
+    const args = {
+      queriesDto,
+      order,
+      whereCondition,
+      sucursalId
     }
 
-    const [producto] = productos
+    const productos = hasPermissionGetAny
+      ? await this.getAnyProductos(args)
+      : await this.getRelatedProductos(args)
 
-    return producto
+    return productos
   }
 
-  async execute(numericIdDto: NumericIdDto, sucursalId: SucursalIdType) {
+  async execute(queriesDto: QueriesDto, sucursalId: SucursalIdType) {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
-      [this.permissionGetAny]
+      [this.permissionGetAny, this.permissionGetRelated]
     )
 
     if (
       !validPermissions.some(
         (permission) => permission.codigoPermiso === this.permissionGetAny
+      ) &&
+      !validPermissions.some(
+        (permission) => permission.codigoPermiso === this.permissionGetRelated
       )
     ) {
       throw CustomError.forbidden(
@@ -151,14 +210,16 @@ export class GetProductoById {
       (permission) => permission.codigoPermiso === this.permissionGetAny
     )
 
-    const producto = await this.getProductoById(
-      numericIdDto,
+    const productos = await this.getProductos(
+      queriesDto,
       sucursalId,
       hasPermissionGetAny
     )
 
-    const mappedProducto = ProductoEntityMapper.fromObject(producto)
+    const mappedProductos = productos.map((producto) =>
+      ProductoEntityMapper.fromObject(producto)
+    )
 
-    return mappedProducto
+    return mappedProductos
   }
 }

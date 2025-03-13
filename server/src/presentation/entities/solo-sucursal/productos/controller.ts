@@ -2,8 +2,10 @@ import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
 import { CreateProductoDto } from '@/domain/dtos/entities/productos/create-producto.dto'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
+import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { CreateProducto } from '@/domain/use-cases/entities/productos/create-producto.use-case'
 import { GetProductoById } from '@/domain/use-cases/entities/productos/get-producto-by-id.use-case'
+import { GetProductos } from '@/domain/use-cases/entities/productos/get-productos.use-case'
 import type { Request, Response } from 'express'
 
 export class ProductosController {
@@ -76,7 +78,29 @@ export class ProductosController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    if (req.sucursalId === undefined) {
+      CustomResponse.badRequest({ res, error: 'Id de sucursal inválido' })
+      return
+    }
+
+    const [error, queriesDto] = QueriesDto.create(req.query)
+    if (error !== undefined || queriesDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload, sucursalId } = req
+
+    const getProductos = new GetProductos(authPayload)
+
+    getProductos
+      .execute(queriesDto, sucursalId)
+      .then((productos) => {
+        CustomResponse.success({ res, data: productos })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
   update = (req: Request, res: Response) => {
