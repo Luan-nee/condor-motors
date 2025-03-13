@@ -14,7 +14,7 @@ import {
 } from '@/db/schema'
 import type { CreateProductoDto } from '@/domain/dtos/entities/productos/create-producto.dto'
 import { ProductoEntityMapper } from '@/domain/mappers/producto-entity.mapper'
-import { eq, ilike, or } from 'drizzle-orm'
+import { eq, ilike, ne, or } from 'drizzle-orm'
 
 export class CreateProducto {
   private readonly authPayload: AuthPayload
@@ -85,6 +85,43 @@ export class CreateProducto {
           sucursalId: createProductoDto.sucursalId,
           stock: inventarioProducto.stock
         }
+      })
+
+      await db.transaction(async (tx) => {
+        const sucursales = await tx
+          .select({ id: sucursalesTable.id })
+          .from(sucursalesTable)
+          .where(ne(sucursalesTable.id, createProductoDto.sucursalId))
+
+        const preciosProductosValues = sucursales.map((sucursal) => ({
+          precioBase: null,
+          precioMayorista: null,
+          precioOferta: null,
+          productoId: insertedProductResult.id,
+          sucursalId: sucursal.id
+        }))
+
+        await tx.insert(preciosProductosTable).values(preciosProductosValues)
+
+        const inventariosValues = sucursales.map(() => ({
+          stock: 0,
+          productoId: insertedProductResult.id
+        }))
+
+        const inventarios = await tx
+          .insert(inventariosTable)
+          .values(inventariosValues)
+          .returning({ id: inventariosTable.id })
+
+        let inventarioIndex = 0
+        const sucursalesInventarios = sucursales.map((sucursal) => ({
+          inventarioId: inventarios[inventarioIndex++].id,
+          sucursalId: sucursal.id
+        }))
+
+        await tx
+          .insert(sucursalesInventariosTable)
+          .values(sucursalesInventarios)
       })
 
       return insertedProductResult
