@@ -13,6 +13,8 @@ export class EmpleadosRoutes {
 
     router.get('/', empleadosController.getAll)
 
+    router.patch('/id', empleadosController.update)
+
     return router
   }
 }
