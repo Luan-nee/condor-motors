@@ -93,11 +93,11 @@ const config: ConfigPopulateDb = {
     nombreRol: 'Adminstrador'
   },
   defaultUnidad: {
-    nombre: 'Sin unidad',
+    nombre: 'No especificada',
     descripcion: 'Unidad por defecto del sistema'
   },
   defaultCategoria: {
-    nombre: 'Sin categoria',
+    nombre: 'No especificada',
     descripcion: 'Categoria por defecto del sistema'
   },
   defaultMarca: {
@@ -106,16 +106,13 @@ const config: ConfigPopulateDb = {
   }
 }
 
-const transformPermissionCodes = (codes: typeof permissionCodes) => {
-  const permissionsArray = Object.values(codes).flatMap((category) =>
+const transformPermissionCodes = (codes: typeof permissionCodes) =>
+  Object.values(codes).flatMap((category) =>
     Object.values(category).map((code) => ({
       nombrePermiso: code,
       codigoPermiso: code
     }))
   )
-
-  return permissionsArray
-}
 
 const permissions = transformPermissionCodes(permissionCodes)
 
