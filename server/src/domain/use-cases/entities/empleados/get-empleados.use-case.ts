@@ -1,4 +1,6 @@
-import { orderValues } from '@/consts'
+import { orderValues, permissionCodes } from '@/consts'
+import { AccessControl } from '@/core/access-control/access-control'
+import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import { empleadosTable } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
@@ -6,6 +8,7 @@ import { ilike, or, type SQL, asc, desc } from 'drizzle-orm'
 
 export class GetEmpleados {
   private readonly authPayload: AuthPayload
+  private readonly permissionGetAny = permissionCodes.empleados.createAny
   private readonly selectFields = {
     id: empleadosTable.id,
     nombre: empleadosTable.nombre,
@@ -72,7 +75,8 @@ export class GetEmpleados {
       queriesDto.search.length > 0
         ? or(
             ilike(empleadosTable.dni, `%${queriesDto.search}%`),
-            ilike(empleadosTable.nombre, `%${queriesDto.search}%`)
+            ilike(empleadosTable.nombre, `%${queriesDto.search}%`),
+            ilike(empleadosTable.apellidos, `%${queriesDto.search}%`)
           )
         : undefined
 
@@ -88,6 +92,17 @@ export class GetEmpleados {
   }
 
   async execute(queriesDto: QueriesDto) {
+    const validPermissions = await AccessControl.verifyPermissions(
+      this.authPayload,
+      [this.permissionGetAny]
+    )
+    if (
+      !validPermissions.some(
+        (permiso) => permiso.codigoPermiso === this.permissionGetAny
+      )
+    ) {
+      throw CustomError.forbidden('no tienes permisos')
+    }
     const empleados = await this.GetEmpleados(queriesDto)
 
     return empleados
