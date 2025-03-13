@@ -4,7 +4,9 @@ import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import {
   categoriasTable,
+  cuentasEmpleadosTable,
   detallesProductoTable,
+  empleadosTable,
   marcasTable,
   productosTable,
   sucursalesTable,
@@ -45,11 +47,46 @@ export class GetProductoById {
     this.authPayload = authPayload
   }
 
-  private async getProductoById(
+  private async getRelated(
     numericIdDto: NumericIdDto,
     sucursalId: SucursalIdType
   ) {
-    const productos = await db
+    return await db
+      .select(this.selectFields)
+      .from(productosTable)
+      .innerJoin(unidadesTable, eq(unidadesTable.id, productosTable.unidadId))
+      .innerJoin(
+        categoriasTable,
+        eq(categoriasTable.id, productosTable.categoriaId)
+      )
+      .innerJoin(marcasTable, eq(marcasTable.id, productosTable.marcaId))
+      .innerJoin(
+        detallesProductoTable,
+        eq(detallesProductoTable.productoId, productosTable.id)
+      )
+      .innerJoin(
+        sucursalesTable,
+        eq(sucursalesTable.id, detallesProductoTable.sucursalId)
+      )
+      .innerJoin(
+        empleadosTable,
+        eq(empleadosTable.sucursalId, sucursalesTable.id)
+      )
+      .innerJoin(
+        cuentasEmpleadosTable,
+        eq(cuentasEmpleadosTable.empleadoId, empleadosTable.id)
+      )
+      .where(
+        and(
+          eq(productosTable.id, numericIdDto.id),
+          eq(detallesProductoTable.sucursalId, sucursalId),
+          eq(cuentasEmpleadosTable.id, this.authPayload.id)
+        )
+      )
+  }
+
+  private async getAny(numericIdDto: NumericIdDto, sucursalId: SucursalIdType) {
+    return await db
       .select(this.selectFields)
       .from(productosTable)
       .innerJoin(unidadesTable, eq(unidadesTable.id, productosTable.unidadId))
@@ -72,10 +109,20 @@ export class GetProductoById {
           eq(detallesProductoTable.sucursalId, sucursalId)
         )
       )
+  }
+
+  private async getProductoById(
+    numericIdDto: NumericIdDto,
+    sucursalId: SucursalIdType,
+    hasPermissionGetAny: boolean
+  ) {
+    const productos = hasPermissionGetAny
+      ? await this.getAny(numericIdDto, sucursalId)
+      : await this.getRelated(numericIdDto, sucursalId)
 
     if (productos.length < 1) {
       throw CustomError.badRequest(
-        `No se encontró ningún producto con el id ${numericIdDto.id}`
+        `No se encontró ningún producto con el id '${numericIdDto.id}'`
       )
     }
 
@@ -100,7 +147,15 @@ export class GetProductoById {
       )
     }
 
-    const producto = await this.getProductoById(numericIdDto, sucursalId)
+    const hasPermissionGetAny = validPermissions.some(
+      (permission) => permission.codigoPermiso === this.permissionGetAny
+    )
+
+    const producto = await this.getProductoById(
+      numericIdDto,
+      sucursalId,
+      hasPermissionGetAny
+    )
 
     const mappedProducto = ProductoEntityMapper.fromObject(producto)
 
