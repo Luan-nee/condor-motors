@@ -4,13 +4,11 @@ import { envs } from '@/config/envs'
 import { JwtAdapter } from '@/config/jwt'
 import { isProduction, permissionCodes } from '@/consts'
 import { formatCode } from '@/core/lib/format-values'
+import { getRandomValueFromArray } from '@/core/lib/utils'
 import { db } from '@db/connection'
 import * as schema from '@db/schema'
 import { faker } from '@faker-js/faker'
 import { exit } from 'process'
-
-// const generateIds = (length: number) =>
-//   Array.from({ length }).map((_, i) => i + 1)
 
 const unidadesDefault = [
   'No especificada',
@@ -38,15 +36,6 @@ const estadosTransferenciasInventariosDefault = [
 ]
 
 const tiposPersonasDefault = ['Persona Natural', 'Persona Juridica']
-
-// const getRandomNumber = (min: number, max: number) => {
-//   const minCeiled = Math.ceil(min)
-//   const maxFloored = Math.floor(max) + 1
-//   return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled)
-// }
-
-const randomValue = <T>(values: T[]) =>
-  values[Math.floor(Math.random() * values.length)]
 
 const sucursalesCount = 3
 const empleadosCount = 6
@@ -160,7 +149,7 @@ const seedDatabase = async () => {
     return {
       nombre: faker.person.firstName(),
       apellidos: faker.person.lastName(),
-      sucursalId: randomValue(sucursales).id,
+      sucursalId: getRandomValueFromArray(sucursales).id,
       ...baseValues
     }
   })
@@ -216,9 +205,9 @@ const seedDatabase = async () => {
       nombre: faker.commerce.productName() + i.toString(),
       descripcion: faker.commerce.productDescription(),
       maxDiasSinReabastecer: faker.number.int({ min: 20, max: 90 }),
-      unidadId: randomValue(unidades).id,
-      categoriaId: randomValue(categorias).id,
-      marcaId: randomValue(marcas).id
+      unidadId: getRandomValueFromArray(unidades).id,
+      categoriaId: getRandomValueFromArray(categorias).id,
+      marcaId: getRandomValueFromArray(marcas).id
     })
   )
 
