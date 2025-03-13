@@ -5,34 +5,45 @@
       "data": [
         {
           "id": 1,
-          "tipo": "entrada",
-          "fecha": "2024-03-13T10:00:00Z",
-          "producto": {
+          "fechaSolicitada": "2024-03-12T10:00:00Z",
+          "fechaRespuesto": null,
+          "estado": "PENDIENTE",
+          "origen": {
             "id": 1,
-            "nombre": "Casco MT Thunder",
-            "marca": "MT Helmets",
-            "categoria": "Cascos"
+            "nombre": "Central Principal",
+            "esCentral": true
           },
-          "cantidad": 5,
-          "motivo": "Compra inicial",
-          "stockAnterior": 25,
-          "stockNuevo": 30,
-          "sucursal": {
-            "id": 1,
-            "nombre": "Sucursal Principal"
+          "destino": {
+            "id": 2,
+            "nombre": "Sucursal Norte",
+            "esCentral": false
           },
-          "realizadoPor": {
+          "solicitante": {
             "id": 1,
             "nombre": "Juan Pérez",
             "rol": "colaborador"
           },
-          "autorizadoPor": {
-            "id": 2,
-            "nombre": "Ana García",
-            "rol": "admin"
-          },
-          "estado": "completado",
-          "observaciones": "Compra realizada al proveedor XYZ"
+          "autorizadoPor": null,
+          "proveedor": null,
+          "productosSolicitados": [
+            {
+              "id": 1,
+              "fotoProducto": "foto de producto",
+              "nombre": "Casco MT Thunder",
+              "marca": "MT Helmets",
+              "categoria": "Cascos",
+              "cantidad": 40
+            },
+            {
+              "id": 2,
+              "fotoProducto": "foto de producto",
+              "nombre": "Slider MT Thunder",
+              "marca": "nombre de la marca2",
+              "categoria": "nombre de la categoria2",
+              "cantidad": 40
+            }
+          ],
+          "observaciones": "Solicitud de reposición de stock"
         }
       ],
       "total": 100,
@@ -44,42 +55,75 @@
     "endpoint": "/api/admin/movimientos/:id",
     "response": {
       "id": 1,
-      "tipo": "entrada",
-      "fecha": "2024-03-13T10:00:00Z",
-      "producto": {
+      "fechaSolicitada": "2024-03-12T10:00:00Z",
+      "fechaRespuesto": null,
+      "estado": "PENDIENTE",
+      "origen": {
         "id": 1,
-        "nombre": "Casco MT Thunder",
-        "marca": "MT Helmets",
-        "categoria": "Cascos",
-        "precioUnitario": 30.0
+        "nombre": "Central Principal",
+        "esCentral": true
       },
-      "cantidad": 5,
-      "motivo": "Compra inicial",
-      "stockAnterior": 25,
-      "stockNuevo": 30,
-      "sucursal": {
-        "id": 1,
-        "nombre": "Sucursal Principal"
+      "destino": {
+        "id": 2,
+        "nombre": "Sucursal Norte",
+        "esCentral": false
       },
-      "realizadoPor": {
+      "solicitante": {
         "id": 1,
         "nombre": "Juan Pérez",
         "rol": "colaborador"
       },
-      "autorizadoPor": {
-        "id": 2,
-        "nombre": "Ana García",
-        "rol": "admin"
-      },
-      "estado": "completado",
-      "observaciones": "Movimiento aprobado al proveedor XYZ",
+      "autorizadoPor": null,
+      "proveedor": null,
+      "productosSolicitados": [
+        {
+          "id": 1,
+          "fotoProducto": "foto de producto",
+          "nombre": "Casco MT Thunder",
+          "marca": "MT Helmets",
+          "categoria": "Cascos",
+          "precioUnitario": 30.0,
+          "cantidad": 40
+        },
+        {
+          "id": 2,
+          "fotoProducto": "foto de producto",
+          "nombre": "Slider MT Thunder",
+          "marca": "nombre de la marca2",
+          "categoria": "nombre de la categoria2",
+          "precioUnitario": 15.0,
+          "cantidad": 40
+        }
+      ],
+      "observaciones": "Solicitud de reposición de stock",
       "documentos": [
         {
-          "tipo": "factura",
-          "numero": "F001-123",
+          "tipo": "solicitud",
+          "numero": "S001-123",
           "url": "url_documento"
         }
       ]
+    }
+  },
+  "PATCH": {
+    "endpoint": "/api/admin/movimientos/:id",
+    "request": {
+      "estado": "APROBADO",
+      "observaciones": "Movimiento aprobado"
+    },
+    "response": {
+      "mensaje": "Movimiento actualizado exitosamente",
+      "status": 200
+    }
+  },
+  "DELETE": {
+    "endpoint": "/api/admin/movimientos/:id",
+    "request": {
+      "justificacion": "Movimiento duplicado"
+    },
+    "response": {
+      "mensaje": "Movimiento cancelado correctamente",
+      "status": 200
     }
   }
   // El administrador puede ver todos los movimientos de todas las sucursales

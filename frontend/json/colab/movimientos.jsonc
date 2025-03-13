@@ -5,23 +5,45 @@
       "data": [
         {
           "id": 1,
-          "tipo": "entrada",
-          "fecha": "2024-03-13T10:00:00Z",
-          "producto": {
+          "fechaSolicitada": "2024-03-12T10:00:00Z",
+          "fechaRespuesto": null,
+          "estado": "PENDIENTE",
+          "origen": {
             "id": 1,
-            "nombre": "Casco MT Thunder",
-            "marca": "MT Helmets",
-            "categoria": "Cascos"
+            "nombre": "Central Principal",
+            "esCentral": true
           },
-          "cantidad": 5,
-          "motivo": "Compra inicial",
-          "stockAnterior": 25,
-          "stockNuevo": 30,
-          "sucursal": {
+          "destino": {
+            "id": 2,
+            "nombre": "Sucursal Norte",
+            "esCentral": false
+          },
+          "solicitante": {
             "id": 1,
-            "nombre": "Sucursal Principal"
+            "nombre": "Juan Pérez",
+            "rol": "colaborador"
           },
-          "estado": "completado"
+          "autorizadoPor": null,
+          "proveedor": null,
+          "productosSolicitados": [
+            {
+              "id": 1,
+              "fotoProducto": "foto de producto",
+              "nombre": "Casco MT Thunder",
+              "marca": "MT Helmets",
+              "categoria": "Cascos",
+              "cantidad": 40
+            },
+            {
+              "id": 2,
+              "fotoProducto": "foto de producto",
+              "nombre": "Slider MT Thunder",
+              "marca": "nombre de la marca2",
+              "categoria": "nombre de la categoria2",
+              "cantidad": 40
+            }
+          ],
+          "observaciones": "Solicitud de reposición de stock"
         }
       ],
       "total": 100,
@@ -33,34 +55,63 @@
     "endpoint": "/api/colab/movimientos/:id",
     "response": {
       "id": 1,
-      "tipo": "entrada",
-      "fecha": "2024-03-13T10:00:00Z",
-      "producto": {
+      "fechaSolicitada": "2024-03-12T10:00:00Z",
+      "fechaRespuesto": null,
+      "estado": "PENDIENTE",
+      "origen": {
         "id": 1,
-        "nombre": "Casco MT Thunder",
-        "marca": "MT Helmets",
-        "categoria": "Cascos"
+        "nombre": "Central Principal",
+        "esCentral": true
       },
-      "cantidad": 5,
-      "motivo": "Compra inicial",
-      "stockAnterior": 25,
-      "stockNuevo": 30,
-      "sucursal": {
+      "destino": {
+        "id": 2,
+        "nombre": "Sucursal Norte",
+        "esCentral": false
+      },
+      "solicitante": {
         "id": 1,
-        "nombre": "Sucursal Principal"
+        "nombre": "Juan Pérez",
+        "rol": "colaborador"
       },
-      "estado": "completado",
-      "observaciones": "Compra realizada al proveedor XYZ"
+      "autorizadoPor": null,
+      "proveedor": null,
+      "productosSolicitados": [
+        {
+          "id": 1,
+          "fotoProducto": "foto de producto",
+          "nombre": "Casco MT Thunder",
+          "marca": "MT Helmets",
+          "categoria": "Cascos",
+          "cantidad": 40
+        },
+        {
+          "id": 2,
+          "fotoProducto": "foto de producto",
+          "nombre": "Slider MT Thunder",
+          "marca": "nombre de la marca2",
+          "categoria": "nombre de la categoria2",
+          "cantidad": 40
+        }
+      ],
+      "observaciones": "Solicitud de reposición de stock"
     }
   },
   "POST": {
     "endpoint": "/api/colab/movimientos",
     "request": {
-      "tipo": "entrada",
-      "producto": 1,
-      "cantidad": 5,
-      "motivo": "Reposición de stock",
-      "observaciones": "Entrada por compra al proveedor"
+      "origen": 1,
+      "destino": 2,
+      "productosSolicitados": [
+        {
+          "id": 1,
+          "cantidad": 40
+        },
+        {
+          "id": 2,
+          "cantidad": 40
+        }
+      ],
+      "observaciones": "Solicitud de reposición de stock"
     },
     "response": {
       "mensaje": "Movimiento registrado exitosamente",
@@ -69,7 +120,7 @@
     }
   }
   // Los colaboradores solo pueden ver movimientos de su sucursal
-  // Pueden registrar entradas y salidas de stock
+  // Pueden solicitar movimientos de productos entre sucursales
   // No pueden modificar ni eliminar movimientos
   // No tienen acceso a información financiera ni documentos adjuntos
   // Los movimientos registrados requieren autorización del administrador
