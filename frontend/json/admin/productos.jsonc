@@ -18,7 +18,7 @@
             "cantidad": 3,
             "unidad": "meses"
           },
-          "stockActual": 30,
+          "stock": 30,
           "stockMinimo": 10,
           "tieneDescuento": true,
           "descuento": {
@@ -56,7 +56,7 @@
         "cantidad": 3,
         "unidad": "meses"
       },
-      "stockActual": 30,
+      "stock": 30,
       "stockMinimo": 10,
       "tieneDescuento": true,
       "descuento": {

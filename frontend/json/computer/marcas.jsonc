@@ -6,13 +6,10 @@
         {
           "id": 1,
           "nombre": "MT Helmets",
-          "logo": "url_logo",
+          "logo": "logo.png",
           "estado": "activo"
         }
-      ],
-      "total": 50,
-      "pagina": 1,
-      "porPagina": 10
+      ]
     }
   },
   "GET": {
@@ -20,8 +17,7 @@
     "response": {
       "id": 1,
       "nombre": "MT Helmets",
-      "logo": "url_logo",
-      "estado": "activo",
+      "logo": "logo.png",
       "productos": [
         {
           "id": 1,
