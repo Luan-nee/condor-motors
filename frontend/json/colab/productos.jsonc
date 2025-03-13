@@ -5,6 +5,7 @@
       "data": [
         {
           "id": 1,
+          "codigo": "codigo de producto",
           "fotoProducto": "foto_producto",
           "nombre": "Casco MT Thunder Negro Tamaño XL",
           "marca": "MT Helmets",
@@ -19,47 +20,57 @@
             "porcentajeDescuento": 0.24,
             "cantidadMinimaParaAplicarDescuento": 2
           },
-          "precioDeVenta": 33.0
+          "precioDeVenta": 33.0,
+          "stockActual": 50 // para saber si el producto sigue disponible.
         }
-      ],
-      "total": 100,
-      "pagina": 1,
-      "porPagina": 10
+      ]
     }
   },
   "GET": {
     "endpoint": "/api/productos/:id",
     "response": {
-      "id": 1,
-      "fotoProducto": "foto_producto",
-      "nombre": "Casco MT Thunder Negro Tamaño XL",
-      "marca": {
-        "id": 1,
-        "nombre": "MT Helmets"
-      },
-      "color": "Negro",
-      "categoria": {
-        "id": 1,
-        "nombre": "Cascos"
-      },
-      "tieneDescuento": true,
-      "descuento": {
-        "tipo": "porcentual",
-        "porcentajeDescuento": 0.24,
-        "cantidadMinimaParaAplicarDescuento": 2
-      },
-      "precioDeVenta": 33.0
+      "data": [
+        {
+          "id": 1,
+          "codigo": "codigo de producto",
+          "fotoProducto": "foto_producto",
+          "nombre": "Casco MT Thunder Negro Tamaño XL",
+          "marca": "MT Helmets",
+          "color": "Negro",
+          "categoria": {
+            "id": 1,
+            "nombre": "Cascos"
+          },
+          "tieneDescuento": true,
+          "descuento": {
+            "tipo": "porcentual",
+            "porcentajeDescuento": 0.24,
+            "cantidadMinimaParaAplicarDescuento": 2
+          },
+          "precioDeVenta": 33.0,
+          "stockActual": 50 // para saber si el producto sigue disponible.
+        }
+      ]
     }
   },
   "PATCH_STOCK": {
     "endpoint": "/api/productos/:id/stock",
-    "request": {
-      "cantidad": 5,
-      "tipo": "entrada",
-      "motivo": "Reposición de stock"
-    },
+    "request": [
+      {
+        "id": 1,
+        "tieneDescuento": true,
+        "descuento": {
+          "tipo": "porcentual",
+          "porcentajeDescuento": 0.24,
+          "cantidadMinimaParaAplicarDescuento": 2
+        },
+        "stockActual": 50, // para saber si el producto sigue disponible.
+        "precioDeVenta": 33.0,
+        "cantidadSelecionada": 5 // se la cantidad de unidades que quiere comprar el cliente
+      }
+    ],
     "response": {
-      "mensaje": "Stock actualizado exitosamente",
+      "mensaje": "Proforma de venta registrada",
       "nuevoStock": 35,
       "status": 200
     }

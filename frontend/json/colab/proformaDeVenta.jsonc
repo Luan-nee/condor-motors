@@ -1,0 +1,57 @@
+{
+  /*Obtener las información de una proforma registrada con aterioridad*/
+  "GET":{
+    "endpoint": "/api/productos",
+    "response": {
+      "data": {
+        "fecha": "2024-03-12T10:00:00Z",
+        "estado": "pendiente", // pendiente o completado
+        "listaDeProductos": [
+          {
+            "id": 1,
+            "codigo": "codigo de producto",
+            "fotoProducto": "foto_producto",
+            "nombre": "Casco MT Thunder Negro Tamaño XL",
+            "marca": "MT Helmets",
+            "color": "Negro",
+            "categoria": {
+              "id": 1,
+              "nombre": "Cascos"
+            },
+            "tieneDescuento": true,
+            "descuento": {
+              "tipo": "porcentual",
+              "porcentajeDescuento": 0.24,
+              "cantidadMinimaParaAplicarDescuento": 2
+            },
+            "precioDeVenta": 33.0,
+            "stockActual": 50, // para saber si el producto sigue disponible.
+            "cantidadSelecionada": 5 // se la cantidad de unidades que quiere comprar el cliente
+          }
+        ]
+      }
+    } 
+  },  
+  /*
+    Se envía todos los productos que fueron registrador en 
+    la proforma de venta
+  */
+  "POST":{
+    "endpoint": "/api/productos",
+    "request":[
+        {
+          "idProducto": 1,
+          "cantidad": 3
+        },
+        {
+          "idProducto": 2,
+          "cantidad": 10
+        }
+      ],
+    "response": {
+      "mensaje": "Proforma de venta registrada",
+      "nuevoStock": 35,
+      "status": 200
+    }
+  }
+}
