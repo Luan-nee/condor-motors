@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
 
 const isValidSku = (str: string) =>
   /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s.\-_/\\]+$/.test(str)
@@ -25,9 +26,9 @@ export const productoSchema = {
     }),
   descripcion: z.string().min(2).max(1023).optional(),
   maxDiasSinReabastecer: z.number().positive().optional(),
-  unidadId: z.number().positive(),
-  categoriaId: z.number().positive(),
-  marcaId: z.number().positive(),
+  unidadId: idTypeBaseSchema.numericId,
+  categoriaId: idTypeBaseSchema.numericId,
+  marcaId: idTypeBaseSchema.numericId,
   precioBase: z.number().min(0).optional(),
   precioMayorista: z.number().min(0).optional(),
   precioOferta: z.number().min(0).optional(),

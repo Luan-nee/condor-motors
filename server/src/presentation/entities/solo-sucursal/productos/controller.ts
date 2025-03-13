@@ -18,24 +18,19 @@ export class ProductosController {
       return
     }
 
-    const { sucursalId } = req
-
-    const [error, createProductoDto] = CreateProductoDto.create(
-      req.body,
-      sucursalId
-    )
+    const [error, createProductoDto] = CreateProductoDto.create(req.body)
 
     if (error !== undefined || createProductoDto === undefined) {
       CustomResponse.badRequest({ res, error })
       return
     }
 
-    const { authPayload } = req
+    const { authPayload, sucursalId } = req
 
     const createProducto = new CreateProducto(authPayload)
 
     createProducto
-      .execute(createProductoDto)
+      .execute(createProductoDto, sucursalId)
       .then((producto) => {
         CustomResponse.success({ res, data: producto })
       })

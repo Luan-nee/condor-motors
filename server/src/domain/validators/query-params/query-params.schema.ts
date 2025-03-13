@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-type-assertion */
 import { defaultQueries, filterTypeValues, orderValues } from '@/consts'
 import z from 'zod'
+import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
 
 export const paramsBaseSchema = {
-  numericId: z.coerce.number().positive(),
-  uuid: z.coerce.string().uuid()
+  numericId: idTypeBaseSchema.numericId,
+  uuid: idTypeBaseSchema.uuid
 }
 
 export const queriesBaseSchema = {

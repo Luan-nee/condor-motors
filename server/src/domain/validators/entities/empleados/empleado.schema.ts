@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { Validator } from '@domain/validators/validator'
+import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
 
 export const empleadoSchema = {
   nombre: z
@@ -43,5 +44,5 @@ export const empleadoSchema = {
     .date('El formato esperado es el siguiente: yyyy-mm-dd')
     .optional(),
   sueldo: z.number().min(0).max(20000).optional(),
-  sucursalId: z.number()
+  sucursalId: idTypeBaseSchema.numericId
 }

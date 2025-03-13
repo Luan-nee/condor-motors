@@ -12,6 +12,7 @@ import {
 } from '@/db/schema'
 import type { CreateProductoDto } from '@/domain/dtos/entities/productos/create-producto.dto'
 import { ProductoEntityMapper } from '@/domain/mappers/producto-entity.mapper'
+import type { SucursalIdType } from '@/types/schemas'
 import { eq, ilike, ne, or } from 'drizzle-orm'
 
 export class CreateProducto {
@@ -22,7 +23,10 @@ export class CreateProducto {
     this.authPayload = authPayload
   }
 
-  private async createProducto(createProductoDto: CreateProductoDto) {
+  private async createProducto(
+    createProductoDto: CreateProductoDto,
+    sucursalId: SucursalIdType
+  ) {
     const mappedPrices = {
       precioBase: createProductoDto.precioBase?.toFixed(2),
       precioMayorista: createProductoDto.precioMayorista?.toFixed(2),
@@ -32,7 +36,7 @@ export class CreateProducto {
     const sucursales = await db
       .select({ id: sucursalesTable.id })
       .from(sucursalesTable)
-      .where(ne(sucursalesTable.id, createProductoDto.sucursalId))
+      .where(ne(sucursalesTable.id, sucursalId))
 
     try {
       const insertedProductResult = await db.transaction(async (tx) => {
@@ -57,7 +61,7 @@ export class CreateProducto {
             precioOferta: mappedPrices.precioOferta,
             stock: createProductoDto.stock,
             productoId: producto.id,
-            sucursalId: createProductoDto.sucursalId
+            sucursalId
           })
           .returning({
             precioBase: detallesProductoTable.precioBase,
@@ -83,7 +87,7 @@ export class CreateProducto {
           precioMayorista: detallesProducto.precioMayorista,
           precioOferta: detallesProducto.precioOferta,
           stock: detallesProducto.stock,
-          sucursalId: createProductoDto.sucursalId
+          sucursalId
         }
       })
 
@@ -95,7 +99,10 @@ export class CreateProducto {
     }
   }
 
-  private async validateRelacionados(createProductoDto: CreateProductoDto) {
+  private async validateRelacionados(
+    createProductoDto: CreateProductoDto,
+    sucursalId: SucursalIdType
+  ) {
     const results = await db
       .select({
         sucursalId: sucursalesTable.id,
@@ -110,7 +117,7 @@ export class CreateProducto {
         eq(categoriasTable.id, createProductoDto.categoriaId)
       )
       .leftJoin(marcasTable, eq(marcasTable.id, createProductoDto.marcaId))
-      .where(eq(sucursalesTable.id, createProductoDto.sucursalId))
+      .where(eq(sucursalesTable.id, sucursalId))
 
     if (results.length < 1) {
       throw CustomError.badRequest('La sucursal que intentó asignar no existe')
@@ -163,7 +170,10 @@ export class CreateProducto {
     }
   }
 
-  async execute(createProductoDto: CreateProductoDto) {
+  async execute(
+    createProductoDto: CreateProductoDto,
+    sucursalId: SucursalIdType
+  ) {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
       [this.permissionCreateAny]
@@ -179,8 +189,11 @@ export class CreateProducto {
       )
     }
 
-    const relacionados = await this.validateRelacionados(createProductoDto)
-    const producto = await this.createProducto(createProductoDto)
+    const relacionados = await this.validateRelacionados(
+      createProductoDto,
+      sucursalId
+    )
+    const producto = await this.createProducto(createProductoDto, sucursalId)
 
     const mappedProducto = ProductoEntityMapper.fromObject({
       ...producto,
