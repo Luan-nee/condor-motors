@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../api/productos.api.dart' as productos_api;
-import '../../api/main.api.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class ProductosColabScreen extends StatefulWidget {
   const ProductosColabScreen({super.key});
@@ -10,171 +9,384 @@ class ProductosColabScreen extends StatefulWidget {
 }
 
 class _ProductosColabScreenState extends State<ProductosColabScreen> {
-  final _apiService = ApiService();
-  late final productos_api.ProductosApi _productosApi;
   bool _isLoading = false;
-  List<productos_api.Producto> _productos = [];
-  List<productos_api.Producto> _productosFiltrados = [];
   String _searchQuery = '';
   String _selectedCategory = 'Todos';
 
-  final List<String> _categories = [
-    'Todos',
-    'Motor',
-    'Frenos',
-    'Suspensión',
-    'Eléctrico',
-    'Carrocería',
-    'Accesorios'
+  // Datos de ejemplo para productos
+  final List<Map<String, dynamic>> _productos = [
+    {
+      'id': 1,
+      'codigo': 'CAS001',
+      'nombre': 'Casco MT Thunder',
+      'descripcion': 'Casco integral MT Thunder con sistema de ventilación avanzado',
+      'precio': 299.99,
+      'precioMayorista': 250.00,
+      'stock': 15,
+      'stockMinimo': 5,
+      'categoria': 'Cascos',
+      'marca': 'MT Helmets',
+      'estado': 'ACTIVO',
+      'imagen': 'assets/images/casco_mt.jpg'
+    },
+    {
+      'id': 2,
+      'codigo': 'ACE001',
+      'nombre': 'Aceite Motul 5100',
+      'descripcion': 'Aceite sintético 4T 15W-50 para motocicletas',
+      'precio': 89.99,
+      'precioMayorista': 75.00,
+      'stock': 3,
+      'stockMinimo': 10,
+      'categoria': 'Lubricantes',
+      'marca': 'Motul',
+      'estado': 'BAJO_STOCK',
+      'imagen': 'assets/images/aceite_motul.jpg'
+    },
+    {
+      'id': 3,
+      'codigo': 'LLA001',
+      'nombre': 'Llanta Pirelli Diablo',
+      'descripcion': 'Llanta deportiva Pirelli Diablo Rosso III 180/55 ZR17',
+      'precio': 450.00,
+      'precioMayorista': 380.00,
+      'stock': 0,
+      'stockMinimo': 4,
+      'categoria': 'Llantas',
+      'marca': 'Pirelli',
+      'estado': 'AGOTADO',
+      'imagen': 'assets/images/llanta_pirelli.jpg'
+    },
+    {
+      'id': 4,
+      'codigo': 'FRE001',
+      'nombre': 'Kit de Frenos Brembo',
+      'descripcion': 'Kit completo de frenos Brembo con pastillas y disco',
+      'precio': 850.00,
+      'precioMayorista': 720.00,
+      'stock': 8,
+      'stockMinimo': 3,
+      'categoria': 'Frenos',
+      'marca': 'Brembo',
+      'estado': 'ACTIVO',
+      'imagen': 'assets/images/frenos_brembo.jpg'
+    },
+    {
+      'id': 5,
+      'codigo': 'AMO001',
+      'nombre': 'Amortiguador YSS',
+      'descripcion': 'Amortiguador trasero YSS ajustable en compresión y rebote',
+      'precio': 599.99,
+      'precioMayorista': 520.00,
+      'stock': 6,
+      'stockMinimo': 4,
+      'categoria': 'Suspensión',
+      'marca': 'YSS',
+      'estado': 'ACTIVO',
+      'imagen': 'assets/images/amortiguador_yss.jpg'
+    }
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _productosApi = productos_api.ProductosApi(_apiService);
-    _cargarProductos();
-  }
+  // Categorías disponibles
+  final List<String> _categorias = [
+    'Todos',
+    'Cascos',
+    'Lubricantes',
+    'Llantas',
+    'Frenos',
+    'Suspensión'
+  ];
 
-  Future<void> _cargarProductos() async {
-    setState(() => _isLoading = true);
-    try {
-      final productos = await _productosApi.getProductos();
-      
-      if (!mounted) return;
-      setState(() {
-        _productos = productos;
-        _filtrarProductos();
-      });
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cargar productos: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+  List<Map<String, dynamic>> _getProductosFiltrados() {
+    if (_searchQuery.isEmpty && _selectedCategory == 'Todos') {
+      return _productos;
     }
+
+    return _productos.where((producto) {
+      final matchesSearch = 
+          producto['codigo'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          producto['nombre'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          producto['marca'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
+      
+      final matchesCategory = _selectedCategory == 'Todos' || 
+          producto['categoria'] == _selectedCategory;
+      
+      return matchesSearch && matchesCategory;
+    }).toList();
   }
 
-  void _filtrarProductos() {
-    setState(() {
-      _productosFiltrados = _productos.where((producto) {
-        final matchesSearch = producto.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            producto.codigo.toLowerCase().contains(_searchQuery.toLowerCase());
-        final matchesCategory = _selectedCategory == 'Todos' || 
-            producto.categoria == _selectedCategory;
-        return matchesSearch && matchesCategory;
-      }).toList();
-    });
+  Color _getEstadoColor(String estado) {
+    switch (estado) {
+      case 'ACTIVO':
+        return Colors.green;
+      case 'BAJO_STOCK':
+        return Colors.orange;
+      case 'AGOTADO':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Buscador
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: TextField(
-            decoration: InputDecoration(
-              labelText: 'Buscar productos',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
+    final productosFiltrados = _getProductosFiltrados();
+    
+    return Scaffold(
+      body: Column(
+        children: [
+          // Header con título
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const FaIcon(
+                  FontAwesomeIcons.box,
+                  size: 24,
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'PRODUCTOS',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'gestión de productos',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-                _filtrarProductos();
-              });
-            },
           ),
-        ),
 
-        // Categorías
-        SizedBox(
-          height: 50,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _categories.length,
-            itemBuilder: (context, index) {
-              final category = _categories[index];
-              final isSelected = category == _selectedCategory;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(category),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) {
+          // Barra de búsqueda y filtros
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Buscador
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Buscar por código, nombre o marca...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    onChanged: (value) {
                       setState(() {
-                        _selectedCategory = category;
-                        _filtrarProductos();
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Filtro de categorías
+                DropdownButton<String>(
+                  value: _selectedCategory,
+                  items: _categorias.map((String categoria) {
+                    return DropdownMenuItem<String>(
+                      value: categoria,
+                      child: Text(categoria),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedCategory = newValue;
                       });
                     }
                   },
                 ),
-              );
-            },
+              ],
+            ),
           ),
-        ),
 
-        // Lista de productos
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _productosFiltrados.length,
-                  itemBuilder: (context, index) {
-                    final producto = _productosFiltrados[index];
-                    return Card(
-                      child: ListTile(
-                        leading: const Icon(Icons.inventory),
-                        title: Text(producto.nombre),
-                        subtitle: Column(
+          // Lista de productos
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: productosFiltrados.length,
+              itemBuilder: (context, index) {
+                final producto = productosFiltrados[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: ExpansionTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _getEstadoColor(producto['estado']).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: FaIcon(
+                        producto['estado'] == 'AGOTADO'
+                            ? FontAwesomeIcons.xmark
+                            : producto['estado'] == 'BAJO_STOCK'
+                                ? FontAwesomeIcons.exclamation
+                                : FontAwesomeIcons.check,
+                        color: _getEstadoColor(producto['estado']),
+                        size: 24,
+                      ),
+                    ),
+                    title: Row(
+                      children: [
+                        Text(
+                          producto['codigo'],
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            producto['nombre'],
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    subtitle: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            producto['categoria'],
+                            style: TextStyle(
+                              color: Theme.of(context).primaryColor,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          producto['marca'],
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'S/ ${producto['precio'].toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          'Stock: ${producto['stock']}',
+                          style: TextStyle(
+                            color: _getEstadoColor(producto['estado']),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    children: [
+                      // Detalles del producto
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Código: ${producto.codigo}'),
-                            Text('Marca: ${producto.marca}'),
-                            Text('Categoría: ${producto.categoria}'),
-                          ],
-                        ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'S/ ${producto.precioNormal.toStringAsFixed(2)}',
-                              style: const TextStyle(
+                            const Text(
+                              'Detalles del Producto',
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
                             ),
-                            if (producto.precioMayorista != null)
-                              Text(
-                                'Mayor: S/ ${producto.precioMayorista!.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  color: Colors.green[700],
-                                  fontSize: 12,
+                            const SizedBox(height: 8),
+                            Text(producto['descripcion']),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Precio Normal: S/ ${producto['precio'].toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Precio Mayorista: S/ ${producto['precioMayorista'].toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'Stock Actual: ${producto['stock']}',
+                                      style: TextStyle(
+                                        color: _getEstadoColor(producto['estado']),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Stock Mínimo: ${producto['stockMinimo']}',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                        isThreeLine: true,
                       ),
-                    );
-                  },
-                ),
-        ),
-      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // TODO: Implementar agregar nuevo producto
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Función de agregar producto en desarrollo'),
+            ),
+          );
+        },
+        child: const FaIcon(FontAwesomeIcons.plus),
+      ),
     );
   }
 }
