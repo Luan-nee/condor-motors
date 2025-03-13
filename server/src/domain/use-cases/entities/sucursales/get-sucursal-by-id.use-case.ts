@@ -65,9 +65,7 @@ export class GetSucursalById {
 
     if (sucursales.length <= 0) {
       if (!hasPermissionGetAny) {
-        throw CustomError.forbidden(
-          'No tienes los suficientes permisos para realizar esta acción'
-        )
+        throw CustomError.forbidden()
       }
 
       throw CustomError.badRequest(
@@ -80,28 +78,30 @@ export class GetSucursalById {
     return sucursal
   }
 
-  async execute(numericIdDto: NumericIdDto) {
+  private async validatePermissions() {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
       [this.permissionGetAny, this.permissionGetRelated]
     )
 
+    const hasPermissionGetAny = validPermissions.some(
+      (permission) => permission.codigoPermiso === this.permissionGetAny
+    )
+
     if (
-      !validPermissions.some(
-        (permission) => permission.codigoPermiso === this.permissionGetAny
-      ) &&
+      !hasPermissionGetAny &&
       !validPermissions.some(
         (permission) => permission.codigoPermiso === this.permissionGetRelated
       )
     ) {
-      throw CustomError.forbidden(
-        'No tienes los suficientes permisos para realizar esta acción'
-      )
+      throw CustomError.forbidden()
     }
 
-    const hasPermissionGetAny = validPermissions.some(
-      (permission) => permission.codigoPermiso === this.permissionGetAny
-    )
+    return hasPermissionGetAny
+  }
+
+  async execute(numericIdDto: NumericIdDto) {
+    const hasPermissionGetAny = await this.validatePermissions()
 
     const sucursal = await this.getSucursalById(
       numericIdDto,

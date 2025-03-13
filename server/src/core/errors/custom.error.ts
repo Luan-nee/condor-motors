@@ -18,7 +18,9 @@ export class CustomError extends Error {
     return new CustomError(401, message, responseStatus.fail)
   }
 
-  static forbidden(message: string) {
+  static forbidden(
+    message = 'No tienes los suficientes permisos para realizar esta acción'
+  ) {
     return new CustomError(403, message, responseStatus.fail)
   }
 
