@@ -4,11 +4,9 @@ import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import {
   categoriasTable,
-  inventariosTable,
+  detallesProductoTable,
   marcasTable,
-  preciosProductosTable,
   productosTable,
-  sucursalesInventariosTable,
   sucursalesTable,
   unidadesTable
 } from '@/db/schema'
@@ -31,6 +29,11 @@ export class CreateProducto {
       precioOferta: createProductoDto.precioOferta?.toFixed(2)
     }
 
+    const sucursales = await db
+      .select({ id: sucursalesTable.id })
+      .from(sucursalesTable)
+      .where(ne(sucursalesTable.id, createProductoDto.sucursalId))
+
     try {
       const insertedProductResult = await db.transaction(async (tx) => {
         const [producto] = await tx
@@ -46,82 +49,42 @@ export class CreateProducto {
           })
           .returning()
 
-        const [preciosProducto] = await tx
-          .insert(preciosProductosTable)
+        const [detallesProducto] = await tx
+          .insert(detallesProductoTable)
           .values({
             precioBase: mappedPrices.precioBase,
             precioMayorista: mappedPrices.precioMayorista,
             precioOferta: mappedPrices.precioOferta,
+            stock: createProductoDto.stock,
             productoId: producto.id,
             sucursalId: createProductoDto.sucursalId
           })
           .returning({
-            precioBase: preciosProductosTable.precioBase,
-            precioMayorista: preciosProductosTable.precioMayorista,
-            precioOferta: preciosProductosTable.precioOferta
+            precioBase: detallesProductoTable.precioBase,
+            precioMayorista: detallesProductoTable.precioMayorista,
+            precioOferta: detallesProductoTable.precioOferta,
+            stock: detallesProductoTable.stock
           })
 
-        const [inventarioProducto] = await tx
-          .insert(inventariosTable)
-          .values({
-            stock: createProductoDto.stock,
-            productoId: producto.id
-          })
-          .returning({
-            id: inventariosTable.id,
-            stock: inventariosTable.stock
-          })
-
-        await tx.insert(sucursalesInventariosTable).values({
-          inventarioId: inventarioProducto.id,
-          sucursalId: createProductoDto.sucursalId
-        })
-
-        return {
-          ...producto,
-          precioBase: preciosProducto.precioBase,
-          precioMayorista: preciosProducto.precioMayorista,
-          precioOferta: preciosProducto.precioOferta,
-          sucursalId: createProductoDto.sucursalId,
-          stock: inventarioProducto.stock
-        }
-      })
-
-      await db.transaction(async (tx) => {
-        const sucursales = await tx
-          .select({ id: sucursalesTable.id })
-          .from(sucursalesTable)
-          .where(ne(sucursalesTable.id, createProductoDto.sucursalId))
-
-        const preciosProductosValues = sucursales.map((sucursal) => ({
+        const detallesProductosValues = sucursales.map((sucursal) => ({
           precioBase: null,
           precioMayorista: null,
           precioOferta: null,
-          productoId: insertedProductResult.id,
-          sucursalId: sucursal.id
-        }))
-
-        await tx.insert(preciosProductosTable).values(preciosProductosValues)
-
-        const inventariosValues = sucursales.map(() => ({
           stock: 0,
-          productoId: insertedProductResult.id
-        }))
-
-        const inventarios = await tx
-          .insert(inventariosTable)
-          .values(inventariosValues)
-          .returning({ id: inventariosTable.id })
-
-        let inventarioIndex = 0
-        const sucursalesInventarios = sucursales.map((sucursal) => ({
-          inventarioId: inventarios[inventarioIndex++].id,
+          productoId: producto.id,
           sucursalId: sucursal.id
         }))
 
-        await tx
-          .insert(sucursalesInventariosTable)
-          .values(sucursalesInventarios)
+        await tx.insert(detallesProductoTable).values(detallesProductosValues)
+
+        return {
+          ...producto,
+          precioBase: detallesProducto.precioBase,
+          precioMayorista: detallesProducto.precioMayorista,
+          precioOferta: detallesProducto.precioOferta,
+          stock: detallesProducto.stock,
+          sucursalId: createProductoDto.sucursalId
+        }
       })
 
       return insertedProductResult

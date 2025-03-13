@@ -11,11 +11,11 @@ export class ProductosRoutes {
 
     router.get('/:id', productosController.getById)
 
-    // router.get('/', productosController.getAll)
+    router.get('/', productosController.getAll)
 
-    // router.patch('/:id', productosController.update)
+    router.patch('/:id', productosController.update)
 
-    // router.delete('/:id', productosController.delete)
+    router.delete('/:id', productosController.delete)
 
     return router
   }

@@ -227,17 +227,18 @@ const seedDatabase = async () => {
     .values(productosValues)
     .returning({ id: schema.productosTable.id })
 
-  const preciosProductosValues = productos.flatMap((producto) =>
+  const detallesProductosValues = productos.flatMap((producto) =>
     sucursales.flatMap((sucursal) => ({
       precioBase: faker.commerce.price({ min: 160, max: 200 }),
       precioMayorista: faker.commerce.price({ min: 150, max: 180 }),
       precioOferta: faker.commerce.price({ min: 155, max: 180 }),
+      stock: faker.number.int({ min: 50, max: 200 }),
       productoId: producto.id,
       sucursalId: sucursal.id
     }))
   )
 
-  await db.insert(schema.preciosProductosTable).values(preciosProductosValues)
+  await db.insert(schema.detallesProductoTable).values(detallesProductosValues)
 
   const fotosProductosValues = productos.map((producto) => ({
     ubicacion: faker.string.alphanumeric(10),
@@ -250,31 +251,6 @@ const seedDatabase = async () => {
     .insert(schema.estadosTransferenciasInventarios)
     .values(estadosTransferenciasInventariosValues)
 
-  const inventariosProductosValues = productos.flatMap((producto) =>
-    sucursales.flatMap(() => ({
-      stock: faker.number.int({ min: 50, max: 200 }),
-      productoId: producto.id
-    }))
-  )
-
-  const inventariosProductos = await db
-    .insert(schema.inventariosTable)
-    .values(inventariosProductosValues)
-    .returning({ id: schema.inventariosTable.id })
-
-  let inventarioIndex = 0
-  const sucursalesInventariosValues = productos.flatMap(() =>
-    sucursales.flatMap((sucursal) => ({
-      inventarioId: inventariosProductos[inventarioIndex++].id,
-      sucursalId: sucursal.id
-    }))
-  )
-
-  await db
-    .insert(schema.sucursalesInventariosTable)
-    .values(sucursalesInventariosValues)
-
-  // const tiposPersonas =
   await db.insert(schema.tiposPersonasTable).values(tiposPersonasValues)
 }
 
