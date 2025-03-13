@@ -1,0 +1,47 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/controlStock",
+    "response": {
+      "data": [
+        {
+          "local": {
+            "id": 1,
+            "nombreCentral": "Jr. Jaime Troncoso, Puerto Maldonado 17001",
+            "esCentral": false
+          },
+          "productosConBajoStock": [
+            {
+              "id": 1,
+              "foto": "foto del producto",
+              "nombre": "Casco XL Fibra de carbono Mediano",
+              "stock": {
+                "actual": 10,
+                "minimo": 5
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "GET": {
+    "endpoint": "",
+    "response": {
+      "data": {}
+    }
+  },
+
+  "POST": {
+    "endpoint": "/api/nuevoLocal",
+    "request": {
+      "nombreLocal": "indica la dirección en donde se encuentra el local",
+      "esCentral": false
+    },
+    "response": {
+      "id": 2,
+      "nombreCentral": "Jr. Jaime Troncoso, Puerto Maldonado 17001",
+      "esCentral": false,
+      "productosConBajoStock": []
+    }
+  }
+}
