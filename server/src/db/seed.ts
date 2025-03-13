@@ -139,7 +139,9 @@ const seedDatabase = async () => {
     const [fechaString] = faker.date.recent().toISOString().split('T')
     const baseValues = {
       edad: faker.number.int({ min: 18, max: 60 }),
-      dni: faker.number.int({ min: 11111111, max: 99999999 }).toString(),
+      dni:
+        faker.number.int({ min: 1111111, max: 9999999 }).toString() +
+        i.toString(),
       horaInicioJornada: '08:00:00',
       horaFinJornada: '17:00:00',
       fechaContratacion: fechaString
