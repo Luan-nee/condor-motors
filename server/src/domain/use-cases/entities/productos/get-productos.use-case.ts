@@ -187,28 +187,38 @@ export class GetProductos {
     return productos
   }
 
-  async execute(queriesDto: QueriesDto, sucursalId: SucursalIdType) {
+  private async validatePermissions(sucursalId: SucursalIdType) {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
       [this.permissionGetAny, this.permissionGetRelated]
     )
 
+    const hasPermissionGetAny = validPermissions.some(
+      (permission) => permission.codigoPermiso === this.permissionGetAny
+    )
+
     if (
-      !validPermissions.some(
-        (permission) => permission.codigoPermiso === this.permissionGetAny
-      ) &&
+      !hasPermissionGetAny &&
       !validPermissions.some(
         (permission) => permission.codigoPermiso === this.permissionGetRelated
       )
     ) {
-      throw CustomError.forbidden(
-        'No tienes los suficientes permisos para realizar esta acción'
-      )
+      throw CustomError.forbidden()
     }
 
-    const hasPermissionGetAny = validPermissions.some(
-      (permission) => permission.codigoPermiso === this.permissionGetAny
+    const isSameSucursal = validPermissions.some(
+      (permission) => permission.sucursalId === sucursalId
     )
+
+    if (!hasPermissionGetAny && !isSameSucursal) {
+      throw CustomError.forbidden()
+    }
+
+    return hasPermissionGetAny
+  }
+
+  async execute(queriesDto: QueriesDto, sucursalId: SucursalIdType) {
+    const hasPermissionGetAny = await this.validatePermissions(sucursalId)
 
     const productos = await this.getProductos(
       queriesDto,

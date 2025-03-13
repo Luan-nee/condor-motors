@@ -1,6 +1,7 @@
 import { db } from '@/db/connection'
 import {
   cuentasEmpleadosTable,
+  empleadosTable,
   permisosTable,
   rolesPermisosTable
 } from '@/db/schema'
@@ -19,35 +20,29 @@ export class AccessControl {
     authPayload: AuthPayload,
     permissionCodes: string[]
   ) {
-    const empleados = await db
-      .select({
-        rolCuentaEmpleadoId: cuentasEmpleadosTable.rolCuentaEmpleadoId
-      })
-      .from(cuentasEmpleadosTable)
-      .where(eq(cuentasEmpleadosTable.id, authPayload.id))
-
-    if (empleados.length < 1) {
-      return []
-    }
-
-    const [empleado] = empleados
-
     const permissionConditionals = this.getConditionals(permissionCodes)
 
     const permissions = await db
       .select({
-        permisoId: permisosTable.id,
         codigoPermiso: permisosTable.codigoPermiso,
-        nombrePermiso: permisosTable.nombrePermiso
+        sucursalId: empleadosTable.sucursalId
       })
       .from(rolesPermisosTable)
       .innerJoin(
         permisosTable,
-        eq(rolesPermisosTable.permisoId, permisosTable.id)
+        eq(permisosTable.id, rolesPermisosTable.permisoId)
+      )
+      .innerJoin(
+        cuentasEmpleadosTable,
+        eq(cuentasEmpleadosTable.rolCuentaEmpleadoId, rolesPermisosTable.rolId)
+      )
+      .innerJoin(
+        empleadosTable,
+        eq(empleadosTable.id, cuentasEmpleadosTable.empleadoId)
       )
       .where(
         and(
-          eq(rolesPermisosTable.rolId, empleado.rolCuentaEmpleadoId),
+          eq(cuentasEmpleadosTable.id, authPayload.id),
           permissionConditionals
         )
       )

@@ -44,12 +44,10 @@ export class CreateSucursal {
 
     const [sucursal] = insertedSucursalResult
 
-    const mappedSucursal = SucursalEntityMapper.fromObject(sucursal)
-
-    return mappedSucursal
+    return sucursal
   }
 
-  async execute(createSucursalDto: CreateSucursalDto) {
+  private async validatePermissions() {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
       [this.permissionCreateAny]
@@ -60,13 +58,17 @@ export class CreateSucursal {
         (permission) => permission.codigoPermiso === this.permissionCreateAny
       )
     ) {
-      throw CustomError.forbidden(
-        'No tienes los suficientes permisos para realizar esta acción'
-      )
+      throw CustomError.forbidden()
     }
+  }
+
+  async execute(createSucursalDto: CreateSucursalDto) {
+    await this.validatePermissions()
 
     const sucursal = await this.createSucursal(createSucursalDto)
 
-    return sucursal
+    const mappedSucursal = SucursalEntityMapper.fromObject(sucursal)
+
+    return mappedSucursal
   }
 }

@@ -18,6 +18,8 @@ import { eq, ilike, ne, or } from 'drizzle-orm'
 export class CreateProducto {
   private readonly authPayload: AuthPayload
   private readonly permissionCreateAny = permissionCodes.productos.createAny
+  private readonly permissionCreateRelated =
+    permissionCodes.productos.createRelated
 
   constructor(authPayload: AuthPayload) {
     this.authPayload = authPayload
@@ -170,29 +172,46 @@ export class CreateProducto {
     }
   }
 
+  private async validatePermissions(sucursalId: SucursalIdType) {
+    const validPermissions = await AccessControl.verifyPermissions(
+      this.authPayload,
+      [this.permissionCreateAny, this.permissionCreateRelated]
+    )
+
+    const hasPermissionCreateAny = validPermissions.some(
+      (permission) => permission.codigoPermiso === this.permissionCreateAny
+    )
+
+    if (
+      !hasPermissionCreateAny &&
+      !validPermissions.some(
+        (permission) =>
+          permission.codigoPermiso === this.permissionCreateRelated
+      )
+    ) {
+      throw CustomError.forbidden()
+    }
+
+    const isSameSucursal = validPermissions.some(
+      (permission) => permission.sucursalId === sucursalId
+    )
+
+    if (!hasPermissionCreateAny && !isSameSucursal) {
+      throw CustomError.forbidden()
+    }
+  }
+
   async execute(
     createProductoDto: CreateProductoDto,
     sucursalId: SucursalIdType
   ) {
-    const validPermissions = await AccessControl.verifyPermissions(
-      this.authPayload,
-      [this.permissionCreateAny]
-    )
-
-    if (
-      !validPermissions.some(
-        (permission) => permission.codigoPermiso === this.permissionCreateAny
-      )
-    ) {
-      throw CustomError.forbidden(
-        'No tienes los suficientes permisos para realizar esta acción'
-      )
-    }
+    await this.validatePermissions(sucursalId)
 
     const relacionados = await this.validateRelacionados(
       createProductoDto,
       sucursalId
     )
+
     const producto = await this.createProducto(createProductoDto, sucursalId)
 
     const mappedProducto = ProductoEntityMapper.fromObject({

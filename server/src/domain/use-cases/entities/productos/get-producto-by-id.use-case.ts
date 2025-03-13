@@ -20,6 +20,7 @@ import { and, eq } from 'drizzle-orm'
 export class GetProductoById {
   private readonly authPayload: AuthPayload
   private readonly permissionGetAny = permissionCodes.productos.getAny
+  private readonly permissionGetRelated = permissionCodes.productos.getRelated
   private readonly selectFields = {
     id: productosTable.id,
     sku: productosTable.sku,
@@ -131,25 +132,38 @@ export class GetProductoById {
     return producto
   }
 
-  async execute(numericIdDto: NumericIdDto, sucursalId: SucursalIdType) {
+  private async validatePermissions(sucursalId: SucursalIdType) {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
-      [this.permissionGetAny]
+      [this.permissionGetAny, this.permissionGetRelated]
     )
-
-    if (
-      !validPermissions.some(
-        (permission) => permission.codigoPermiso === this.permissionGetAny
-      )
-    ) {
-      throw CustomError.forbidden(
-        'No tienes los suficientes permisos para realizar esta acción'
-      )
-    }
 
     const hasPermissionGetAny = validPermissions.some(
       (permission) => permission.codigoPermiso === this.permissionGetAny
     )
+
+    if (
+      !hasPermissionGetAny &&
+      !validPermissions.some(
+        (permission) => permission.codigoPermiso === this.permissionGetRelated
+      )
+    ) {
+      throw CustomError.forbidden()
+    }
+
+    const isSameSucursal = validPermissions.some(
+      (permission) => permission.sucursalId === sucursalId
+    )
+
+    if (!hasPermissionGetAny && !isSameSucursal) {
+      throw CustomError.forbidden()
+    }
+
+    return hasPermissionGetAny
+  }
+
+  async execute(numericIdDto: NumericIdDto, sucursalId: SucursalIdType) {
+    const hasPermissionGetAny = await this.validatePermissions(sucursalId)
 
     const producto = await this.getProductoById(
       numericIdDto,

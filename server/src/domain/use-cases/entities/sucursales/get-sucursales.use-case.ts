@@ -113,35 +113,37 @@ export class GetSucursales {
       ? await this.getAnySucursales(queriesDto, order, whereCondition)
       : await this.getRelatedSucursales(queriesDto, order, whereCondition)
 
-    if (sucursales.length <= 0) {
+    if (sucursales.length < 1) {
       return []
     }
 
     return sucursales
   }
 
-  async execute(queriesDto: QueriesDto) {
+  private async validatePermissions() {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
       [this.permissionGetAny, this.permissionGetRelated]
     )
 
+    const hasPermissionGetAny = validPermissions.some(
+      (permission) => permission.codigoPermiso === this.permissionGetAny
+    )
+
     if (
-      !validPermissions.some(
-        (permission) => permission.codigoPermiso === this.permissionGetAny
-      ) &&
+      !hasPermissionGetAny &&
       !validPermissions.some(
         (permission) => permission.codigoPermiso === this.permissionGetRelated
       )
     ) {
-      throw CustomError.forbidden(
-        'No tienes los suficientes permisos para realizar esta acción'
-      )
+      throw CustomError.forbidden()
     }
 
-    const hasPermissionGetAny = validPermissions.some(
-      (permission) => permission.codigoPermiso === this.permissionGetAny
-    )
+    return hasPermissionGetAny
+  }
+
+  async execute(queriesDto: QueriesDto) {
+    const hasPermissionGetAny = await this.validatePermissions()
 
     const sucursales = await this.getSucursales(queriesDto, hasPermissionGetAny)
 
