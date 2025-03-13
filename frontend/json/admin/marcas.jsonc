@@ -7,7 +7,7 @@
           "id": 1,
           "nombre": "MT Helmets",
           "descripcion": "Marca líder en cascos de motocicleta",
-          "logo": "url_logo",
+          "logo": "logo.png",
           "estado": "activo",
           "cantidadProductos": 45,
           "fechaCreacion": "2024-03-13T10:00:00Z",
@@ -23,12 +23,9 @@
       "id": 1,
       "nombre": "MT Helmets",
       "descripcion": "Marca líder en cascos de motocicleta",
-      "logo": "url_logo",
+      "logo": "logo.png",
       "estado": "activo",
       "cantidadProductos": 45,
-      "fechaCreacion": "2024-03-13T10:00:00Z",
-      "ultimaModificacion": "2024-03-13T10:00:00Z",
-      "creadoPor": "admin@condormotors.com",
       "productos": [
         {
           "id": 1,
@@ -43,15 +40,13 @@
     "request": {
       "nombre": "Nueva Marca",
       "descripcion": "Descripción de la nueva marca",
-      "logo": "url_logo",
-      "estado": "activo"
+      "logo": "logo.png"
     },
     "response": {
       "id": 2,
       "nombre": "Nueva Marca",
       "descripcion": "Descripción de la nueva marca",
-      "logo": "url_logo",
-      "estado": "activo",
+      "logo": "logo.png",
       "cantidadProductos": 0,
       "fechaCreacion": "2024-03-13T10:00:00Z",
       "creadoPor": "admin@condormotors.com"
@@ -62,8 +57,7 @@
     "request": {
       "nombre": "MT Helmets Updated",
       "descripcion": "Nueva descripción de la marca",
-      "logo": "nueva_url_logo",
-      "estado": "inactivo"
+      "logo": "logo.png"
     },
     "response": {
       "mensaje": "Marca actualizada exitosamente",

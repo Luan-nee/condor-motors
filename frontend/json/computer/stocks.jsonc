@@ -1,6 +1,6 @@
 {
   "GET_SUCURSAL": {
-    "endpoint": "/api/stocks/mi-sucursal",
+    "endpoint": "/api/stocks/(sucursal)",
     "response": {
       "productos": [
         {

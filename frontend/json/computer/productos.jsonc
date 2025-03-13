@@ -56,7 +56,7 @@
     }
   },
   "GET_BY_BARCODE": {
-    "endpoint": "/api/productos/barcode/:code",
+    "endpoint": "/api/productos/codigo",
     "response": {
       "id": 1,
       "nombre": "Casco MT Thunder Negro Tamaño XL",

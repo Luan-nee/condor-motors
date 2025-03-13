@@ -7,8 +7,7 @@
           "id": 1,
           "nombre": "Cascos",
           "descripcion": "Cascos de seguridad para motociclistas",
-          "cantidadProductos": 45,
-          "estado": "activo"
+          "cantidadProductos": 45
         }
       ]
     }
@@ -20,7 +19,6 @@
       "nombre": "Cascos",
       "descripcion": "Cascos de seguridad para motociclistas",
       "cantidadProductos": 45,
-      "estado": "activo",
       "productos": [
         {
           "id": 1,
