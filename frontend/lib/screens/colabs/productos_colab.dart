@@ -9,7 +9,7 @@ class ProductosColabScreen extends StatefulWidget {
 }
 
 class _ProductosColabScreenState extends State<ProductosColabScreen> {
-  bool _isLoading = false;
+  final bool _isLoading = false;
   String _searchQuery = '';
   String _selectedCategory = 'Todos';
 

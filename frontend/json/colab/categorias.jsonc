@@ -1,0 +1,38 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/categorias",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "nombre": "Cascos",
+          "descripcion": "Cascos de seguridad para motociclistas",
+          "cantidadProductos": 45,
+          "estado": "activo"
+        }
+      ]
+    }
+  },
+  "GET": {
+    "endpoint": "/api/categorias/:id",
+    "response": {
+      "id": 1,
+      "nombre": "Cascos",
+      "descripcion": "Cascos de seguridad para motociclistas",
+      "cantidadProductos": 45,
+      "estado": "activo",
+      "productos": [
+        {
+          "id": 1,
+          "nombre": "Casco MT Thunder",
+          "stock": 30,
+          "precio": 33.0
+        }
+      ]
+    }
+  }
+  // Los colaboradores solo tienen acceso de lectura a las categorías
+  // No pueden crear, modificar ni eliminar categorías
+  // Solo ven las categorías activas
+  // Pueden ver los productos asociados a cada categoría
+} 

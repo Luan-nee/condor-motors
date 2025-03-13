@@ -1,0 +1,78 @@
+{
+  "GET_SUCURSAL": {
+    "endpoint": "/api/stocks/mi-sucursal",
+    "response": {
+      "sucursal": {
+        "id": 1,
+        "nombre": "Sucursal Principal"
+      },
+      "productos": [
+        {
+          "id": 1,
+          "nombre": "Casco MT Thunder Negro Tamaño XL",
+          "marca": "MT Helmets",
+          "categoria": {
+            "id": 1,
+            "nombre": "Cascos"
+          },
+          "stockActual": 30,
+          "stockMinimo": 10,
+          "ubicacion": "Estante A-1",
+          "estado": "activo",
+          "alertas": {
+            "stockBajo": false
+          }
+        }
+      ],
+      "resumen": {
+        "totalProductos": 150,
+        "productosStockBajo": 5
+      }
+    }
+  },
+  "GET_PRODUCTO": {
+    "endpoint": "/api/stocks/producto/:id",
+    "response": {
+      "producto": {
+        "id": 1,
+        "nombre": "Casco MT Thunder Negro Tamaño XL",
+        "marca": "MT Helmets",
+        "categoria": {
+          "id": 1,
+          "nombre": "Cascos"
+        },
+        "stockActual": 30,
+        "stockMinimo": 10,
+        "ubicacion": "Estante A-1",
+        "estado": "activo"
+      },
+      "movimientos": [
+        {
+          "fecha": "2024-03-13T10:00:00Z",
+          "tipo": "entrada",
+          "cantidad": 5,
+          "motivo": "Reposición de stock"
+        }
+      ]
+    }
+  },
+  "PATCH_STOCK": {
+    "endpoint": "/api/stocks/producto/:id/stock",
+    "request": {
+      "cantidad": 5,
+      "tipo": "entrada",
+      "motivo": "Reposición de stock"
+    },
+    "response": {
+      "mensaje": "Stock actualizado exitosamente",
+      "nuevoStock": 35,
+      "status": 200
+    }
+  }
+  // El colaborador solo puede ver stock de su sucursal
+  // Puede registrar entradas y salidas de stock
+  // Puede ver alertas de stock bajo
+  // No puede modificar límites de stock
+  // Puede ver ubicaciones de productos
+  // Solo ve productos activos
+} 

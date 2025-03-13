@@ -10,7 +10,7 @@ class VentasColabScreen extends StatefulWidget {
 }
 
 class _VentasColabScreenState extends State<VentasColabScreen> {
-  bool _isLoading = false;
+  final bool _isLoading = false;
   String _searchQuery = '';
   String _selectedFilter = 'Todos';
 

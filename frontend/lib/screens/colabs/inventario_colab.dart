@@ -9,7 +9,7 @@ class InventarioColabScreen extends StatefulWidget {
 }
 
 class _InventarioColabScreenState extends State<InventarioColabScreen> {
-  bool _isLoading = false;
+  final bool _isLoading = false;
   String _searchQuery = '';
   String _selectedCategory = 'Todos';
 

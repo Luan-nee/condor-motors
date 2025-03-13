@@ -1,0 +1,132 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/admin/movimientos",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "tipo": "entrada",
+          "fecha": "2024-03-13T10:00:00Z",
+          "producto": {
+            "id": 1,
+            "nombre": "Casco MT Thunder",
+            "marca": "MT Helmets",
+            "categoria": "Cascos"
+          },
+          "cantidad": 5,
+          "motivo": "Compra inicial",
+          "stockAnterior": 25,
+          "stockNuevo": 30,
+          "sucursal": {
+            "id": 1,
+            "nombre": "Sucursal Principal"
+          },
+          "realizadoPor": {
+            "id": 1,
+            "nombre": "Juan Pérez",
+            "rol": "colaborador"
+          },
+          "autorizadoPor": {
+            "id": 2,
+            "nombre": "Ana García",
+            "rol": "admin"
+          },
+          "estado": "completado",
+          "observaciones": "Compra realizada al proveedor XYZ"
+        }
+      ],
+      "total": 100,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/admin/movimientos/:id",
+    "response": {
+      "id": 1,
+      "tipo": "entrada",
+      "fecha": "2024-03-13T10:00:00Z",
+      "producto": {
+        "id": 1,
+        "nombre": "Casco MT Thunder",
+        "marca": "MT Helmets",
+        "categoria": "Cascos",
+        "precioUnitario": 30.0
+      },
+      "cantidad": 5,
+      "motivo": "Compra inicial",
+      "stockAnterior": 25,
+      "stockNuevo": 30,
+      "sucursal": {
+        "id": 1,
+        "nombre": "Sucursal Principal"
+      },
+      "realizadoPor": {
+        "id": 1,
+        "nombre": "Juan Pérez",
+        "rol": "colaborador"
+      },
+      "autorizadoPor": {
+        "id": 2,
+        "nombre": "Ana García",
+        "rol": "admin"
+      },
+      "estado": "completado",
+      "observaciones": "Movimiento aprobado al proveedor XYZ",
+      "documentos": [
+        {
+          "tipo": "factura",
+          "numero": "F001-123",
+          "url": "url_documento"
+        }
+      ]
+    }
+  },
+  "POST": {
+    "endpoint": "/api/admin/movimientos",
+    "request": {
+      "tipo": "entrada",
+      "producto": 1,
+      "cantidad": 5,
+      "motivo": "Compra inicial",
+      "sucursal": 1,
+      "observaciones": "Compra realizada al proveedor XYZ",
+      "documentos": [
+        {
+          "tipo": "factura",
+          "numero": "F001-123",
+          "url": "url_documento"
+        }
+      ]
+    },
+    "response": {
+      "mensaje": "Movimiento registrado exitosamente",
+      "id": 2,
+      "status": 200
+    }
+  },
+  "PATCH": {
+    "endpoint": "/api/admin/movimientos/:id",
+    "request": {
+      "estado": "cancelado",
+      "observaciones": "Movimiento cancelado por error en cantidad"
+    },
+    "response": {
+      "mensaje": "Movimiento actualizado exitosamente",
+      "status": 200
+    }
+  },
+  "DELETE": {
+    "endpoint": "/api/admin/movimientos/:id",
+    "response": {
+      "mensaje": "Movimiento eliminado correctamente",
+      "status": 200
+    }
+  }
+  // El administrador puede ver todos los movimientos de todas las sucursales
+  // Puede autorizar o rechazar movimientos pendientes
+  // Puede cancelar movimientos completados (con justificación)
+  // Tiene acceso a información detallada incluyendo documentos adjuntos
+  // Puede generar reportes de movimientos por período
+  // Los movimientos eliminados deben mantener registro en la base de datos
+} 

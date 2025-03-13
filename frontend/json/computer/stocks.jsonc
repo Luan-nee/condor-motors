@@ -1,0 +1,40 @@
+{
+  "GET_SUCURSAL": {
+    "endpoint": "/api/stocks/mi-sucursal",
+    "response": {
+      "productos": [
+        {
+          "id": 1,
+          "nombre": "Casco MT Thunder Negro Tamaño XL",
+          "stockActual": 30,
+          "estado": "activo",
+          "codigoBarras": "7891234567890"
+        }
+      ]
+    }
+  },
+  "GET_PRODUCTO": {
+    "endpoint": "/api/stocks/producto/:id",
+    "response": {
+      "id": 1,
+      "nombre": "Casco MT Thunder Negro Tamaño XL",
+      "stockActual": 30,
+      "estado": "activo",
+      "codigoBarras": "7891234567890"
+    }
+  },
+  "GET_BY_BARCODE": {
+    "endpoint": "/api/stocks/barcode/:code",
+    "response": {
+      "id": 1,
+      "nombre": "Casco MT Thunder Negro Tamaño XL",
+      "stockActual": 30,
+      "estado": "activo"
+    }
+  }
+  // El punto de venta solo puede ver stock actual
+  // Solo ve productos activos de su sucursal
+  // Acceso por código de barras para ventas rápidas
+  // No puede modificar stock
+  // Solo ve información necesaria para ventas
+} 

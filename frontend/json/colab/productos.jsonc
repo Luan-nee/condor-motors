@@ -1,0 +1,71 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/productos",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "fotoProducto": "foto_producto",
+          "nombre": "Casco MT Thunder Negro Tamaño XL",
+          "marca": "MT Helmets",
+          "color": "Negro",
+          "categoria": {
+            "id": 1,
+            "nombre": "Cascos"
+          },
+          "tieneDescuento": true,
+          "descuento": {
+            "tipo": "porcentual",
+            "porcentajeDescuento": 0.24,
+            "cantidadMinimaParaAplicarDescuento": 2
+          },
+          "precioDeVenta": 33.0
+        }
+      ],
+      "total": 100,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/productos/:id",
+    "response": {
+      "id": 1,
+      "fotoProducto": "foto_producto",
+      "nombre": "Casco MT Thunder Negro Tamaño XL",
+      "marca": {
+        "id": 1,
+        "nombre": "MT Helmets"
+      },
+      "color": "Negro",
+      "categoria": {
+        "id": 1,
+        "nombre": "Cascos"
+      },
+      "tieneDescuento": true,
+      "descuento": {
+        "tipo": "porcentual",
+        "porcentajeDescuento": 0.24,
+        "cantidadMinimaParaAplicarDescuento": 2
+      },
+      "precioDeVenta": 33.0
+    }
+  },
+  "PATCH_STOCK": {
+    "endpoint": "/api/productos/:id/stock",
+    "request": {
+      "cantidad": 5,
+      "tipo": "entrada",
+      "motivo": "Reposición de stock"
+    },
+    "response": {
+      "mensaje": "Stock actualizado exitosamente",
+      "nuevoStock": 35,
+      "status": 200
+    }
+  }
+  // Los colaboradores solo pueden ver productos
+  // No tienen acceso a información sensible como precios base y porcentajes de ganancia
+  // Solo pueden ver productos activos
+  // No pueden modificar precios ni descuentos
+} 

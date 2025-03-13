@@ -239,14 +239,14 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                       Container(
                         color: const Color(0xFF2D2D2D),
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                        child: Row(
+                        child: const Row(
                           children: [
                             // Categorías (30% del ancho)
                             Expanded(
                               flex: 30,
                               child: Text(
                                 'Categorías',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -257,7 +257,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                               flex: 40,
                               child: Text(
                                 'Descripción',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -269,7 +269,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                               child: Text(
                                 'Cant. de productos',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -281,7 +281,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                               child: Text(
                                 'Acciones',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),

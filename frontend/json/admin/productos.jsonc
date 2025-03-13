@@ -1,0 +1,120 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/productos",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "fotoProducto": "foto_producto",
+          "nombre": "Casco MT Thunder Negro Tamaño XL",
+          "marca": "MT Helmets",
+          "color": "Negro",
+          "categoria": {
+            "id": 1,
+            "nombre": "Cascos"
+          },
+          "liquidacion": {
+            "porcentajeDeLiquidacion": 20,
+            "cantidad": 3,
+            "unidad": "meses"
+          },
+          "stockActual": 30,
+          "stockMinimo": 10,
+          "tieneDescuento": true,
+          "descuento": {
+            "tipo": "porcentual",
+            "porcentajeDescuento": 0.24,
+            "cantidadMinimaParaAplicarDescuento": 2
+          },
+          "porcentajeDeGanancia": 10,
+          "precioBase": 30.0,
+          "precioDeVenta": 33.0
+        }
+      ],
+      "total": 100,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/productos/:id",
+    "response": {
+      "id": 1,
+      "fotoProducto": "foto_producto",
+      "nombre": "Casco MT Thunder Negro Tamaño XL",
+      "marca": {
+        "id": 1,
+        "nombre": "MT Helmets"
+      },
+      "color": "Negro",
+      "categoria": {
+        "id": 1,
+        "nombre": "Cascos"
+      },
+      "liquidacion": {
+        "porcentajeDeLiquidacion": 20,
+        "cantidad": 3,
+        "unidad": "meses"
+      },
+      "stockActual": 30,
+      "stockMinimo": 10,
+      "tieneDescuento": true,
+      "descuento": {
+        "tipo": "porcentual",
+        "porcentajeDescuento": 0.24,
+        "cantidadMinimaParaAplicarDescuento": 2
+      },
+      "porcentajeDeGanancia": 10,
+      "precioBase": 30.0,
+      "precioDeVenta": 33.0,
+      "fechaCreacion": "2024-03-13T10:00:00Z",
+      "ultimaModificacion": "2024-03-13T10:00:00Z"
+    }
+  },
+  "POST": {
+    "endpoint": "/api/productos",
+    "request": {
+      "nombre": "Nuevo Producto",
+      "marca": 1,
+      "color": "Negro",
+      "categoria": 1,
+      "stock": 30,
+      "stockMinimo": 10,
+      "tieneDescuento": false,
+      "porcentajeDeGanancia": 10,
+      "precioBase": 30.0
+    },
+    "response": {
+      "id": 2,
+      "mensaje": "Producto creado exitosamente"
+    }
+  },
+  "PATCH": {
+    "endpoint": "/api/productos/:id",
+    "request": {
+      "nombre": "Casco MT Thunder Negro Tamaño XXL",
+      "stock": 20,
+      "stockMinimo": 15,
+      "tieneDescuento": true,
+      "descuento": {
+        "tipo": "porcentual",
+        "porcentajeDescuento": 0.15,
+        "cantidadMinimaParaAplicarDescuento": 1
+      }
+    },
+    "response": {
+      "mensaje": "Producto actualizado exitosamente",
+      "status": 200
+    }
+  },
+  "DELETE": {
+    "endpoint": "/api/productos/:id",
+    "response": {
+      "mensaje": "Producto eliminado correctamente",
+      "status": 200
+    }
+  }
+  // El administrador tiene acceso completo a todas las operaciones CRUD
+  // Puede gestionar precios, descuentos y liquidaciones
+  // Los precios deben calcularse automáticamente basados en el precio base y el porcentaje de ganancia
+} 

@@ -46,7 +46,7 @@ class MovimientosAdminScreen extends StatefulWidget {
 class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
   List<MovimientoStock> _movimientos = [];
   String _filtroSeleccionado = 'Todos';
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   // Datos de prueba
   static final List<MovimientoStock> _movimientosPrueba = [
@@ -241,22 +241,22 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                       Container(
                         color: const Color(0xFF2D2D2D),
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                        child: Row(
+                        child: const Row(
                           children: [
                             // Fecha solicitada (15%)
                             Expanded(
                               flex: 15,
                               child: Row(
                                 children: [
-                                  const FaIcon(
+                                  FaIcon(
                                     FontAwesomeIcons.calendar,
                                     color: Color(0xFFE31E24),
                                     size: 14,
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: 8),
                                   Text(
                                     'Fecha solicitada',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -269,7 +269,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                               flex: 20,
                               child: Text(
                                 'Proveedor',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -280,7 +280,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                               flex: 20,
                               child: Text(
                                 'Solicitante',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -291,7 +291,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                               flex: 15,
                               child: Text(
                                 'Origen',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -302,7 +302,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                               flex: 15,
                               child: Text(
                                 'Destino',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -314,7 +314,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                               child: Text(
                                 'Estado',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),

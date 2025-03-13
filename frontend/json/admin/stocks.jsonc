@@ -1,0 +1,131 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/stocks",
+    "response": {
+      "data": [
+        {
+          "sucursal": {
+            "id": 1,
+            "nombre": "Sucursal Principal"
+          },
+          "productos": [
+            {
+              "id": 1,
+              "nombre": "Casco MT Thunder Negro Tamaño XL",
+              "marca": "MT Helmets",
+              "categoria": {
+                "id": 1,
+                "nombre": "Cascos"
+              },
+              "stockActual": 30,
+              "stockMinimo": 10,
+              "stockMaximo": 50,
+              "ubicacion": "Estante A-1",
+              "estado": "activo",
+              "ultimoMovimiento": "2024-03-13T10:00:00Z"
+            }
+          ]
+        }
+      ],
+      "total": 3,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET_BY_SUCURSAL": {
+    "endpoint": "/api/stocks/sucursal/:id",
+    "response": {
+      "sucursal": {
+        "id": 1,
+        "nombre": "Sucursal Principal"
+      },
+      "productos": [
+        {
+          "id": 1,
+          "nombre": "Casco MT Thunder Negro Tamaño XL",
+          "marca": "MT Helmets",
+          "categoria": {
+            "id": 1,
+            "nombre": "Cascos"
+          },
+          "stockActual": 30,
+          "stockMinimo": 10,
+          "stockMaximo": 50,
+          "ubicacion": "Estante A-1",
+          "estado": "activo",
+          "ultimoMovimiento": "2024-03-13T10:00:00Z",
+          "alertas": {
+            "stockBajo": false,
+            "sobreStock": false
+          }
+        }
+      ],
+      "resumen": {
+        "totalProductos": 150,
+        "productosStockBajo": 5,
+        "productosSobreStock": 2
+      }
+    }
+  },
+  "GET_PRODUCTO_SUCURSALES": {
+    "endpoint": "/api/stocks/producto/:id",
+    "response": {
+      "producto": {
+        "id": 1,
+        "nombre": "Casco MT Thunder Negro Tamaño XL"
+      },
+      "stocks": [
+        {
+          "sucursal": {
+            "id": 1,
+            "nombre": "Sucursal Principal"
+          },
+          "stockActual": 30,
+          "stockMinimo": 10,
+          "stockMaximo": 50,
+          "ubicacion": "Estante A-1",
+          "estado": "activo"
+        }
+      ]
+    }
+  },
+  "POST": {
+    "endpoint": "/api/stocks",
+    "request": {
+      "sucursal": 1,
+      "producto": 1,
+      "stockMinimo": 10,
+      "stockMaximo": 50,
+      "ubicacion": "Estante A-1"
+    },
+    "response": {
+      "mensaje": "Stock configurado exitosamente",
+      "status": 200
+    }
+  },
+  "PATCH": {
+    "endpoint": "/api/stocks/:sucursalId/:productoId",
+    "request": {
+      "stockMinimo": 15,
+      "stockMaximo": 60,
+      "ubicacion": "Estante B-2"
+    },
+    "response": {
+      "mensaje": "Configuración de stock actualizada",
+      "status": 200
+    }
+  },
+  "DELETE": {
+    "endpoint": "/api/stocks/:sucursalId/:productoId",
+    "response": {
+      "mensaje": "Producto removido de la sucursal",
+      "status": 200
+    }
+  }
+  // El administrador puede configurar stocks por sucursal
+  // Puede ver el estado de stock de todas las sucursales
+  // Puede configurar ubicaciones físicas de productos
+  // Puede establecer límites de stock mínimo y máximo
+  // Recibe alertas de stock bajo y sobre stock
+  // Puede ver el historial de movimientos por sucursal
+} 

@@ -1,0 +1,43 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/marcas",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "nombre": "MT Helmets",
+          "descripcion": "Marca líder en cascos de motocicleta",
+          "logo": "url_logo",
+          "estado": "activo",
+          "cantidadProductos": 45
+        }
+      ],
+      "total": 50,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/marcas/:id",
+    "response": {
+      "id": 1,
+      "nombre": "MT Helmets",
+      "descripcion": "Marca líder en cascos de motocicleta",
+      "logo": "url_logo",
+      "estado": "activo",
+      "cantidadProductos": 45,
+      "productos": [
+        {
+          "id": 1,
+          "nombre": "Casco MT Thunder",
+          "stock": 30,
+          "precio": 33.0
+        }
+      ]
+    }
+  }
+  // Los colaboradores solo tienen acceso de lectura a las marcas
+  // Solo pueden ver marcas activas
+  // Pueden ver los productos asociados a cada marca
+  // No tienen acceso a información de auditoría ni pueden modificar marcas
+} 
