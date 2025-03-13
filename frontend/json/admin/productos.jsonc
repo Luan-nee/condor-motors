@@ -1,3 +1,5 @@
+/* CONVERSAR SOBRE LA PARTE DE DESCUENTO */
+
 {
   "GET_ALL": {
     "endpoint": "/api/productos",
@@ -14,7 +16,7 @@
             "nombre": "Cascos"
           },
           "liquidacion": {
-            "porcentajeDeLiquidacion": 20,
+            "porcentajeDeLiquidacion": 0.20,
             "cantidad": 3,
             "unidad": "meses"
           },
@@ -26,14 +28,11 @@
             "porcentajeDescuento": 0.24,
             "cantidadMinimaParaAplicarDescuento": 2
           },
-          "porcentajeDeGanancia": 10,
+          "porcentajeDeGanancia": "10%", // es conveniente guardarlo como string o como un double (0.1)???
           "precioBase": 30.0,
           "precioDeVenta": 33.0
         }
-      ],
-      "total": 100,
-      "pagina": 1,
-      "porPagina": 10
+      ]
     }
   },
   "GET": {
@@ -52,7 +51,7 @@
         "nombre": "Cascos"
       },
       "liquidacion": {
-        "porcentajeDeLiquidacion": 20,
+        "porcentajeDeLiquidacion": 0.20,
         "cantidad": 3,
         "unidad": "meses"
       },
@@ -64,25 +63,41 @@
         "porcentajeDescuento": 0.24,
         "cantidadMinimaParaAplicarDescuento": 2
       },
-      "porcentajeDeGanancia": 10,
+      "porcentajeDeGanancia": "10%", // es conveniente guardarlo como string o como un double (0.1)???
       "precioBase": 30.0,
-      "precioDeVenta": 33.0,
-      "fechaCreacion": "2024-03-13T10:00:00Z",
-      "ultimaModificacion": "2024-03-13T10:00:00Z"
+      "precioDeVenta": 33.0
     }
   },
   "POST": {
     "endpoint": "/api/productos",
     "request": {
-      "nombre": "Nuevo Producto",
-      "marca": 1,
+      "fotoProducto": "foto_producto",
+      "nombre": "Casco MT Thunder Negro Tamaño XL",
+      "marca": {
+        "id": 1,
+        "nombre": "MT Helmets"
+      },
       "color": "Negro",
-      "categoria": 1,
-      "stock": 30,
+      "categoria": {
+        "id": 1,
+        "nombre": "Cascos"
+      },
+      "liquidacion": {
+        "cantidad": 3,
+        "unidad": "meses",
+        "porcentajeDeLiquidacion": 0.20
+      },
       "stockMinimo": 10,
-      "tieneDescuento": false,
-      "porcentajeDeGanancia": 10,
-      "precioBase": 30.0
+      "stock": 30,
+      "tieneDescuento": true,
+      "descuento": {
+        "tipo": "porcentual",
+        "porcentajeDescuento": 0.24,
+        "cantidadMinimaParaAplicarDescuento": 2
+      },
+      "porcentajeDeGanancia": "10%", // es conveniente guardarlo como string o como un double (0.1)???
+      "precioBase": 30.0,
+      "precioDeVenta": 33.0
     },
     "response": {
       "id": 2,
@@ -100,7 +115,10 @@
         "tipo": "porcentual",
         "porcentajeDescuento": 0.15,
         "cantidadMinimaParaAplicarDescuento": 1
-      }
+      },
+      "porcentajeDeGanancia": "10%", // es conveniente guardarlo como string o como un double (0.1)???
+      "precioBase": 30.0,
+      "precioDeVenta": 33.0
     },
     "response": {
       "mensaje": "Producto actualizado exitosamente",
@@ -116,5 +134,5 @@
   }
   // El administrador tiene acceso completo a todas las operaciones CRUD
   // Puede gestionar precios, descuentos y liquidaciones
-  // Los precios deben calcularse automáticamente basados en el precio base y el porcentaje de ganancia
+  // Los precios deben calcularse automáticamente basados en el precio base y precio de venta
 } 

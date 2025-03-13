@@ -8,7 +8,7 @@
           "nombre": "Juan Pérez",
           "apellidos": "García López",
           "telefono": "987654321",
-          "estado": true,
+          "estado": true, // activo o inhabilitado
           "foto_empleado": "cash-register",
           "local": {
             "id": 1,
@@ -18,12 +18,7 @@
           "fecha_contrato": "2024-03-12T10:00:00Z",
           "pago": 1000.0,
           "horarioIngreso": "08:00",
-          "horarioSalida": "18:00",
-          "informacionDeVenta": {
-            "ventasTotales": 400,
-            "ventasDelMes": 200,
-            "ventasDelDia": 10
-          }
+          "horarioSalida": "18:00"
         }
       ]
     }
@@ -33,24 +28,45 @@
     "response": {
       "data": {
         "id": 1,
+        "foto_  empleado": "cash-register",
         "nombre": "Juan Pérez",
         "apellidos": "García López",
         "telefono": "987654321",
         "dni": "12345678",
         "horarioIngreso": "08:00",
         "horarioSalida": "18:00",
-        "foto_empleado": "cash-register",
         "local": {
           "id": 1,
           "nombre": "Central Principal",
           "esCentral": true
         },
-        "estado": true,
+        "estado": true, // activo o inhabilitado
         "fechaContrato": "2024-03-12T10:00:00Z",
         "informacionDeVenta": {
           "ventasTotales": 400,
           "ventasDelMes": 200,
           "ventasDelDia": 10
+        },
+        "historialDeVenta": {
+          "fechaDeVenta": "2024-03-12T10:00:00Z",
+          "cantidadDeProductos": 10, // indica la cantidad de unidades de productos que fueron vendidos
+          "montoCobrado": 1000,
+          "listaDeProductos": [
+            {
+              "fotoProducto": "foto del producto",
+              "nombre":"nombre del producto",
+              "codigoProducto": "codigo de producto",
+              "cantidad": 10,
+              "precioDeVentaUnitario": 33,
+              "tieneDescuento": true,
+              "descuento": {
+                "tipo": "porcentual", // porcentual o compra x y recibe y gratis
+                "porcentajeDescuento": 0.24,
+                "cantidadMinimaParaAplicarDescuento": 2
+              },
+              "precioTotal": 100
+            }
+          ]
         }
       }
     }
@@ -67,7 +83,9 @@
       "pago": 1000.0,
       "localId": 1
     },
-    "response": { "data": {} }
+    "response": { "data": {
+      "id": 2 // la id del empleado recién creado
+    } }
   },
   "PATCH": {
     "endpoint": "/api/empleados/:id",
@@ -96,9 +114,9 @@
       }
     }
   },
-  "DELETE": {
-    "comentario": "no se puede eliminar a los colaboradores, solo cambiar su estado de 'activo' a 'inhabilitado'"
-  },
+  
+  "DELETE": {}, // "no se puede eliminar a los colaboradores, solo cambiar su estado de 'activo' a 'inhabilitado'"
+
   "CHANGE_PASSWORD": {
     "endpoint": "/api/empleados/:id/password",
     "request": {

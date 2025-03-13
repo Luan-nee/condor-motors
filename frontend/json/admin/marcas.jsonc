@@ -6,13 +6,14 @@
         {
           "id": 1,
           "nombre": "MT Helmets",
-          "descripcion": "Marca líder en cascos de motocicleta",
-          "logo": "logo.png",
-          "estado": "activo",
-          "cantidadProductos": 45,
-          "fechaCreacion": "2024-03-13T10:00:00Z",
-          "ultimaModificacion": "2024-03-13T10:00:00Z",
-          "creadoPor": "admin@condormotors.com"
+          "descripcion": "Fabricante líder de cascos de motocicleta",
+          "cantidadProductos": 45
+        },
+        {
+          "id": 2,
+          "nombre": "Motul",
+          "descripcion": "Aceites y lubricantes de alta calidad",
+          "cantidadProductos": 32
         }
       ]
     }
@@ -20,60 +21,55 @@
   "GET": {
     "endpoint": "/api/marcas/:id",
     "response": {
-      "id": 1,
-      "nombre": "MT Helmets",
-      "descripcion": "Marca líder en cascos de motocicleta",
-      "logo": "logo.png",
-      "estado": "activo",
-      "cantidadProductos": 45,
-      "productos": [
-        {
-          "id": 1,
-          "nombre": "Casco MT Thunder",
-          "stock": 30
-        }
-      ]
+      "data": {
+        "id": 1,
+        "nombre": "MT Helmets",
+        "descripcion": "Fabricante líder de cascos de motocicleta",
+        "cantidadProductos": 45
+      }
     }
   },
   "POST": {
     "endpoint": "/api/marcas",
     "request": {
       "nombre": "Nueva Marca",
-      "descripcion": "Descripción de la nueva marca",
-      "logo": "logo.png"
+      "descripcion": "Descripción de la nueva marca"
     },
     "response": {
-      "id": 2,
-      "nombre": "Nueva Marca",
-      "descripcion": "Descripción de la nueva marca",
-      "logo": "logo.png",
-      "cantidadProductos": 0,
-      "fechaCreacion": "2024-03-13T10:00:00Z",
-      "creadoPor": "admin@condormotors.com"
+      "data": {
+        "id": 3,
+        "nombre": "Nueva Marca",
+        "descripcion": "Descripción de la nueva marca",
+        "cantidadProductos": 0
+      }
     }
   },
   "PATCH": {
-    "endpoint": "/api/admin/marcas/:id",
+    "endpoint": "/api/marcas/:id",
     "request": {
       "nombre": "MT Helmets Updated",
-      "descripcion": "Nueva descripción de la marca",
-      "logo": "logo.png"
+      "descripcion": "Nueva descripción de MT Helmets"
     },
     "response": {
-      "mensaje": "Marca actualizada exitosamente",
-      "status": 200
+      "data": {
+        "id": 1,
+        "nombre": "MT Helmets Updated",
+        "descripcion": "Nueva descripción de MT Helmets",
+        "cantidadProductos": 45
+      }
     }
   },
   "DELETE": {
-    "endpoint": "/api/admin/marcas/:id",
+    "endpoint": "/api/marcas/:id",
     "response": {
-      "mensaje": "Marca eliminada correctamente",
-      "status": 200
+      "data": {
+        "mensaje": "Marca eliminada correctamente",
+        "status": 200
+      }
     }
   }
-  // El administrador tiene control total sobre las marcas
-  // Se debe validar que no se puedan eliminar marcas con productos asociados
-  // El logo debe ser una URL válida
-  // Se debe mantener un registro de auditoría de cambios
-  // Solo los administradores pueden crear, modificar y eliminar marcas
-} 
+  // "El backend debe implementar todos los endpoints CRUD para marca",
+  // "El frontend No necesita filtrar marcas",
+  // "No se puede eliminar una marcas cuando este esta relacionado a productos (solo se limina cuando
+  // la cantidad de productos associados es 0)"
+}

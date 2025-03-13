@@ -8,6 +8,12 @@
           "nombre": "Cascos",
           "descripcion": "Cascos de seguridad para motociclistas",
           "cantidadProductos": 45
+        },
+        {
+          "id": 2,
+          "nombre": "Lubricantes",
+          "descripcion": "Aceites y lubricantes para motocicletas",
+          "cantidadProductos": 32
         }
       ]
     }
@@ -18,26 +24,19 @@
       "id": 1,
       "nombre": "Cascos",
       "descripcion": "Cascos de seguridad para motociclistas",
-      "cantidadProductos": 45,
-      "productos": [
-        {
-          "id": 1,
-          "nombre": "Casco MT Thunder",
-          "stock": 30
-        }
-      ]
+      "cantidadProductos": 45
     }
   },
   "POST": {
     "endpoint": "/api/categorias",
     "request": {
-      "nombre": "Nueva Categoría",
-      "descripcion": "Descripción de la nueva categoría"
+      "nombre": "Nueva Categoría (ejemplo)",
+      "descripcion": "Descripción de la nueva categoría (ejemplo)"
     },
     "response": {
       "id": 3,
-      "nombre": "Nueva Categoría",
-      "descripcion": "Descripción de la nueva categoría",
+      "nombre": "Nueva Categoría (ejemplo)",
+      "descripcion": "Descripción de la nueva categoría (ejemplo)",
       "cantidadProductos": 0
     }
   },
@@ -60,9 +59,10 @@
       "mensaje": "Categoría eliminada correctamente",
       "status": 200
     }
-  }
-  // El backend debe implementar todos los endpoints CRUD para categorías
-  // Se debe validar que no se puedan eliminar categorías con productos asociados
-  // Solo los administradores pueden crear, modificar y eliminar categorías
-  // Se debe mantener un registro de auditoría de cambios
-} 
+  },
+
+  "COMENTARIOS": [
+    "El backend debe implementar todos los endpoints CRUD para categorías",
+    "Se debe validar que no se puedan eliminar categorías con productos asociados"
+  ]
+}

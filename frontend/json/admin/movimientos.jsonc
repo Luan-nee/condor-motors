@@ -5,87 +5,74 @@
       "data": [
         {
           "id": 1,
-          "tipo": "entrada",
-          "fecha": "2024-03-13T10:00:00Z",
-          "producto": {
+          "estado": "completado", // finalizado, solicitado o rechazado
+          "fechaSolicitada": "2024-03-12T10:00:00Z",
+          "fechaRespuesta": null,
+          "productosSolicitados": [
+            {
+              "id": 1,
+              "nombre": "Casco MT Thunder",
+              "marca": "MT Helmets",
+              "categoria": "Cascos",
+              "cantidad": 5
+            }
+          ],
+          "origen": {
             "id": 1,
-            "nombre": "Casco MT Thunder",
-            "marca": "MT Helmets",
-            "categoria": "Cascos"
+            "nombre": "Central Principal",
+            "esCentral": true
           },
-          "cantidad": 5,
-          "motivo": "Compra inicial",
-          "stockAnterior": 25,
-          "stockNuevo": 30,
-          "sucursal": {
-            "id": 1,
-            "nombre": "Sucursal Principal"
+          "destino": {
+            "id": 2,
+            "nombre": "Sucursal Norte",
+            "esCentral": false
           },
-          "realizadoPor": {
+          "solicitante": {
             "id": 1,
             "nombre": "Juan Pérez",
-            "rol": "colaborador"
+            "celular": "900000000"
           },
-          "autorizadoPor": {
-            "id": 2,
-            "nombre": "Ana García",
-            "rol": "admin"
-          },
-          "estado": "completado",
-          "observaciones": "Compra realizada al proveedor XYZ"
+          "proveedor": null
         }
-      ],
-      "total": 100,
-      "pagina": 1,
-      "porPagina": 10
+      ]
     }
   },
   "GET": {
     "endpoint": "/api/admin/movimientos/:id",
     "response": {
-      "id": 1,
-      "tipo": "entrada",
-      "fecha": "2024-03-13T10:00:00Z",
-      "producto": {
         "id": 1,
-        "nombre": "Casco MT Thunder",
-        "marca": "MT Helmets",
-        "categoria": "Cascos",
-        "precioUnitario": 30.0
-      },
-      "cantidad": 5,
-      "motivo": "Compra inicial",
-      "stockAnterior": 25,
-      "stockNuevo": 30,
-      "sucursal": {
-        "id": 1,
-        "nombre": "Sucursal Principal"
-      },
-      "realizadoPor": {
-        "id": 1,
-        "nombre": "Juan Pérez",
-        "rol": "colaborador"
-      },
-      "autorizadoPor": {
-        "id": 2,
-        "nombre": "Ana García",
-        "rol": "admin"
-      },
-      "estado": "completado",
-      "observaciones": "Movimiento aprobado al proveedor XYZ",
-      "documentos": [
-        {
-          "tipo": "factura",
-          "numero": "F001-123",
-          "url": "url_documento"
-        }
-      ]
+        "estado": "solicitando", // finalizado, solicitando o rechazado
+        "fechaSolicitada": "2024-03-12T10:00:00Z",
+        "fechaRespuesta": null,
+        "productosSolicitados": [
+          {
+            "id": 1,
+            "fotoProducto": "fotoProducto",
+            "nombre": "Casco MT Thunder",
+            "marca": "MT Helmets",
+            "categoria": "Cascos",
+            "cantidad": 5
+          }
+        ],
+        "origen": {
+          "id": 1,
+          "nombre": "Central Principal",
+          "esCentral": true
+        },
+        "destino": {
+          "id": 2,
+          "nombre": "Sucursal Norte",
+          "esCentral": false
+        },
+        "solicitante": {
+          "id": 1,
+          "nombre": "Juan Pérez",
+          "celular": "900000000"
+        },
+        "proveedor": null
     }
   }
   // El administrador puede ver todos los movimientos de todas las sucursales
-  // Puede autorizar o rechazar movimientos pendientes
-  // Puede cancelar movimientos completados (con justificación)
-  // Tiene acceso a información detallada incluyendo documentos adjuntos
-  // Puede generar reportes de movimientos por período
-  // Los movimientos eliminados deben mantener registro en la base de datos
+  // Tiene acceso a información detallada de los movimientos
+  // Los movimientos rechazados deben mantener registro en la base de datos
 }
