@@ -2,221 +2,163 @@
   "GET": {
     "endpoint": "/api/:sucursalId/productos/:id",
     "response": {
-      "id": 1,
-      "codigo": "CAS001",
-      "nombre": "Casco MT Thunder",
-      "descripcion": "Casco integral de alta seguridad",
-      "precio": 299.99,
-      "precioDescuento": null,
-      "stock": {
-        "actual": 15,
-        "minimo": 5,
-        "maximo": 30
-      },
-      "categoria": {
-        "id": 1,
-        "nombre": "Cascos"
-      },
-      "marca": {
-        "id": 1,
-        "nombre": "MT Helmets",
-        "logo": "helmet-safety"
-      },
-      "imagenes": [
+      "data": [
         {
           "id": 1,
-          "url": "cascos/mt-thunder-black.jpg",
-          "principal": true
+          "fotoProducto": "foto_producto",
+          "nombre": "Casco MT Thunder Negro Tamaño XL",
+          "marca": "Marca del producto",
+          "color": "rojo",
+          "categoria": "Casco",
+          "liquidacion": {
+            "porcentajeDeLiquidacion": 20,
+            "cantidad": 3,
+            "unidad": "meses"
+          },
+          "stockActual": 30,
+          "stockMinimo": 30,
+          "tieneDescuento": true,
+          "descuento": {
+            "tipo": "porcentural",
+            "porcentajeDescuento": 0.24,
+            "cantidadMinimaParaAplicarDescuento": 2
+          },
+          "porcentajeDeGanancia": "10%",
+          "precioBase": 30.0,
+          "precioDeVenta": 33.0
         }
-      ],
-      "activo": true,
-      "fechaCreacion": "2024-03-12T10:00:00Z",
-      "fechaActualizacion": "2024-03-12T10:00:00Z"
+      ]
     }
   },
   "GET_ALL": {
     "endpoint": "/api/:sucursalId/productos",
     "response": {
-      "productos": [
+      "data": [
         {
           "id": 1,
-          "codigo": "CAS001",
-          "nombre": "Casco MT Thunder",
-          "descripcion": "Casco integral de alta seguridad",
-          "precio": 299.99,
-          "precioDescuento": null,
-          "stock": {
-            "actual": 15,
-            "minimo": 5,
-            "maximo": 30
+          "fotoProducto": "foto_producto",
+          "nombre": "Casco MT Thunder Negro Tamaño XL",
+          "marca": "Marca del producto",
+          "color": "rojo",
+          "categoria": "Casco",
+          "liquidacion": {
+            "porcentajeDeLiquidacion": 20,
+            "cantidad": 3,
+            "unidad": "meses"
           },
-          "categoria": {
-            "id": 1,
-            "nombre": "Cascos"
+          "stockMinimo": 30,
+          "stockActual": 30,
+          "tieneDescuento": true,
+          "descuento": {
+            "tipo": "porcentural",
+            "porcentajeDescuento": 0.24,
+            "cantidadMinimaParaAplicarDescuento": 2
           },
-          "marca": {
-            "id": 1,
-            "nombre": "MT Helmets",
-            "logo": "helmet-safety"
-          },
-          "imagenes": [
-            {
-              "id": 1,
-              "url": "cascos/mt-thunder-black.jpg",
-              "principal": true
-            }
-          ],
-          "activo": true,
-          "fechaCreacion": "2024-03-12T10:00:00Z",
-          "fechaActualizacion": "2024-03-12T10:00:00Z"
+          "porcentajeDeGanancia": "10%",
+          "precioBase": 30.0,
+          "precioDeVenta": 33.0
         },
         {
           "id": 2,
-          "codigo": "ACE001",
-          "nombre": "Aceite Motul 5100",
-          "descripcion": "Aceite sintético 4T 15W50",
-          "precio": 89.99,
-          "precioDescuento": 79.99,
-          "stock": {
-            "actual": 50,
-            "minimo": 20,
-            "maximo": 100
+          "fotoProducto": "foto_producto",
+          "nombre": "Slider Fibra de carbono Yamaha",
+          "marca": "Yamaha",
+          "color": "rojo",
+          "categoria": "Slider",
+          "liquidacion": {
+            "porcentajeDeLiquidacion": 20,
+            "cantidad": 3,
+            "unidad": "meses"
           },
-          "categoria": {
-            "id": 2,
-            "nombre": "Lubricantes"
+          "stockMinimo": 30,
+          "stockActual": 30,
+          "tieneDescuento": true,
+          "descuento": {
+            "tipo": "compra x y recibe y gratis",
+            "compra": 3,
+            "recibe": 1
           },
-          "marca": {
-            "id": 2,
-            "nombre": "Motul",
-            "logo": "oil-can"
-          },
-          "imagenes": [
-            {
-              "id": 2,
-              "url": "lubricantes/motul-5100.jpg",
-              "principal": true
-            }
-          ],
-          "activo": true,
-          "fechaCreacion": "2024-03-12T10:00:00Z",
-          "fechaActualizacion": "2024-03-12T10:00:00Z"
+          "porcentajeDeGanancia": "25%",
+          "precioBase": 130.0,
+          "precioDeVenta": 162.5
         }
-      ],
-      "total": 2,
-      "pagina": 1,
-      "porPagina": 10
+      ]
     }
   },
   "POST": {
     "endpoint": "/api/:sucursalId/productos",
     "request": {
-      "codigo": "CAS002",
-      "nombre": "Nuevo Casco",
-      "descripcion": "Descripción del nuevo casco",
-      "precio": 199.99,
-      "precioDescuento": null,
-      "stock": {
-        "minimo": 5,
-        "maximo": 30,
-        "actual": 0
+      "id": 2,
+      "fotoProducto": "foto_producto",
+      "nombre": "Slider Fibra de carbono Yamaha",
+      "marca": "Yamaha",
+      "color": "rojo",
+      "categoria": "Slider",
+      "liquidacion": {
+        "porcentajeDeLiquidacion": 20,
+        "cantidad": 3,
+        "unidad": "meses"
       },
-      "categoriaId": 1,
-      "marcaId": 1,
-      "imagenes": [
-        {
-          "url": "cascos/nuevo-casco.jpg",
-          "principal": true
-        }
-      ],
-      "activo": true
+      "stockActual": 30,
+      "tieneDescuento": true,
+      "descuento": {
+        "tipo": "compra x y recibe y gratis",
+        "compra": 3,
+        "recibe": 1
+      },
+      "porcentajeDeGanancia": "25%",
+      "precioBase": 130.0,
+      "precioDeVenta": 162.5
     },
     "response": {
-      "id": 3,
-      "codigo": "CAS002",
-      "nombre": "Nuevo Casco",
-      "descripcion": "Descripción del nuevo casco",
-      "precio": 199.99,
-      "precioDescuento": null,
-      "stock": {
-        "actual": 0,
-        "minimo": 5,
-        "maximo": 30
-      },
-      "categoria": {
-        "id": 1,
-        "nombre": "Cascos"
-      },
-      "marca": {
-        "id": 1,
-        "nombre": "MT Helmets",
-        "logo": "helmet-safety"
-      },
-      "imagenes": [
-        {
-          "id": 3,
-          "url": "cascos/nuevo-casco.jpg",
-          "principal": true
-        }
-      ],
-      "activo": true,
-      "fechaCreacion": "2024-03-12T10:00:00Z",
-      "fechaActualizacion": "2024-03-12T10:00:00Z"
+      "data": {
+        "id": 2,
+        "fotoProducto": "foto_producto",
+        "nombre": "Slider Fibra de carbono Yamaha",
+        "marca": "Yamaha",
+        "color": "rojo",
+        "categoria": "Slider",
+        "liquidacion": {
+          "porcentajeDeLiquidacion": 20,
+          "cantidad": 3,
+          "unidad": "meses"
+        },
+        "stockActual": 30,
+        "tieneDescuento": true,
+        "descuento": {
+          "tipo": "compra x y recibe y gratis",
+          "compra": 3,
+          "recibe": 1
+        },
+        "porcentajeDeGanancia": "25%",
+        "precioBase": 130.0,
+        "precioDeVenta": 162.5
+      }
     }
   },
   "PATCH": {
     "endpoint": "/api/:sucursalId/productos/:id",
     "request": {
-      "nombre": "Casco MT Thunder Actualizado",
-      "descripcion": "Nueva descripción del casco",
-      "precio": 319.99,
-      "precioDescuento": 299.99,
-      "stock": {
-        "minimo": 10,
-        "maximo": 40
+      "id": 2,
+      "fotoProducto": "foto_producto",
+      "nombre": "Slider Fibra de carbono Yamaha",
+      "marca": "Yamaha",
+      "color": "rojo",
+      "categoria": "Slider",
+      "liquidacion": {
+        "porcentajeDeLiquidacion": 20,
+        "cantidad": 3,
+        "unidad": "meses"
       },
-      "categoriaId": 1,
-      "marcaId": 1,
-      "imagenes": [
-        {
-          "id": 1,
-          "url": "cascos/mt-thunder-black.jpg",
-          "principal": true
-        }
-      ],
-      "activo": true
-    },
-    "response": {
-      "id": 1,
-      "codigo": "CAS001",
-      "nombre": "Casco MT Thunder Actualizado",
-      "descripcion": "Nueva descripción del casco",
-      "precio": 319.99,
-      "precioDescuento": 299.99,
-      "stock": {
-        "actual": 15,
-        "minimo": 10,
-        "maximo": 40
+      "tieneDescuento": true,
+      "descuento": {
+        "tipo": "porcentural",
+        "porcentajeDescuento": 0.24,
+        "cantidadMinimaParaAplicarDescuento": 2
       },
-      "categoria": {
-        "id": 1,
-        "nombre": "Cascos"
-      },
-      "marca": {
-        "id": 1,
-        "nombre": "MT Helmets",
-        "logo": "helmet-safety"
-      },
-      "imagenes": [
-        {
-          "id": 1,
-          "url": "cascos/mt-thunder-black.jpg",
-          "principal": true
-        }
-      ],
-      "activo": true,
-      "fechaCreacion": "2024-03-12T10:00:00Z",
-      "fechaActualizacion": "2024-03-12T11:00:00Z"
+      "porcentajeDeGanancia": "25%",
+      "precioBase": 130.0,
+      "precioDeVenta": 162.5
     }
   },
   "DELETE": {
@@ -230,9 +172,8 @@
     "El backend debe implementar el endpoint GET para obtener todos los productos",
     "El backend debe implementar el endpoint PATCH para actualizar productos",
     "El backend debe implementar el endpoint DELETE para eliminar productos",
-    "Se necesita un endpoint para buscar productos por código de barras",
-    "Se necesita un endpoint para filtrar productos por categoría y marca",
+    "El frontend debe filtrar productos por categoría",
     "Se necesita un endpoint para actualizar solo el stock de un producto",
     "El frontend necesita la capacidad de cargar imágenes para los productos"
   ]
-} 
+}

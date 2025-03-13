@@ -2,7 +2,7 @@
   "GET_ALL": {
     "endpoint": "/api/categorias",
     "response": {
-      "categorias": [
+      "data": [
         {
           "id": 1,
           "nombre": "Cascos",

@@ -2,42 +2,23 @@
   "GET_ALL": {
     "endpoint": "/api/empleados",
     "response": {
-      "colaboradores": [
+      "data": [
         {
           "id": 1,
           "nombre": "Juan Pérez",
           "apellidos": "García López",
-          "dni": "12345678",
-          "email": "juan.perez@condormotors.com",
           "telefono": "987654321",
-          "rol": "Vendedor",
-          "rolIcon": "cash-register",
+          "estado": true,
+          "foto_empleado": "cash-register",
           "local": {
             "id": 1,
             "nombre": "Central Principal",
-            "tipo": "central"
+            "esCentral": true
           },
-          "estado": true,
-          "fechaCreacion": "2024-03-12T10:00:00Z",
-          "fechaActualizacion": "2024-03-12T10:00:00Z"
-        },
-        {
-          "id": 2,
-          "nombre": "María García",
-          "apellidos": "Rodríguez Pérez",
-          "dni": "87654321",
-          "email": "maria.garcia@condormotors.com",
-          "telefono": "987654322",
-          "rol": "Administrador",
-          "rolIcon": "user-gear",
-          "local": {
-            "id": 1,
-            "nombre": "Central Principal",
-            "tipo": "central"
-          },
-          "estado": true,
-          "fechaCreacion": "2024-03-12T10:00:00Z",
-          "fechaActualizacion": "2024-03-12T10:00:00Z"
+          "fecha_contrato": "2024-03-12T10:00:00Z",
+          "pago": 1000.0,
+          "horarioIngreso": "08:00",
+          "horarioSalida": "18:00"
         }
       ],
       "total": 2,
@@ -48,22 +29,23 @@
   "GET": {
     "endpoint": "/api/empleados/:id",
     "response": {
-      "id": 1,
-      "nombre": "Juan Pérez",
-      "apellidos": "García López",
-      "dni": "12345678",
-      "email": "juan.perez@condormotors.com",
-      "telefono": "987654321",
-      "rol": "Vendedor",
-      "rolIcon": "cash-register",
-      "local": {
+      "data": {
         "id": 1,
-        "nombre": "Central Principal",
-        "tipo": "central"
-      },
-      "estado": true,
-      "fechaCreacion": "2024-03-12T10:00:00Z",
-      "fechaActualizacion": "2024-03-12T10:00:00Z"
+        "nombre": "Juan Pérez",
+        "apellidos": "García López",
+        "telefono": "987654321",
+        "dni": "12345678",
+        "horarioIngreso": "08:00",
+        "horarioSalida": "18:00",
+        "foto_empleado": "cash-register",
+        "local": {
+          "id": 1,
+          "nombre": "Central Principal",
+          "esCentral": true
+        },
+        "estado": true,
+        "fechaContrato": "2024-03-12T10:00:00Z"
+      }
     }
   },
   "POST": {
@@ -72,69 +54,42 @@
       "nombre": "Nuevo",
       "apellidos": "Colaborador",
       "dni": "11223344",
-      "email": "nuevo.colaborador@condormotors.com",
       "telefono": "987654323",
-      "rol": "Vendedor",
-      "localId": 1,
-      "estado": true,
-      "password": "contraseña123"
+      "horarioIngreso": "08:00",
+      "horarioSalida": "18:00",
+      "pago": 1000.0,
+      "localId": 1
     },
-    "response": {
-      "id": 3,
-      "nombre": "Nuevo",
-      "apellidos": "Colaborador",
-      "dni": "11223344",
-      "email": "nuevo.colaborador@condormotors.com",
-      "telefono": "987654323",
-      "rol": "Vendedor",
-      "rolIcon": "cash-register",
-      "local": {
-        "id": 1,
-        "nombre": "Central Principal",
-        "tipo": "central"
-      },
-      "estado": true,
-      "fechaCreacion": "2024-03-12T10:00:00Z",
-      "fechaActualizacion": "2024-03-12T10:00:00Z"
-    }
+    "response": { "data": {} }
   },
   "PATCH": {
     "endpoint": "/api/empleados/:id",
     "request": {
-      "nombre": "Juan",
-      "apellidos": "Pérez Actualizado",
-      "dni": "12345678",
-      "email": "juan.perez@condormotors.com",
-      "telefono": "987654321",
-      "rol": "Supervisor",
-      "localId": 1,
-      "estado": true
+      "nombre": "Nuevo",
+      "apellidos": "Colaborador",
+      "dni": "11223344",
+      "telefono": "987654323",
+      "horarioIngreso": "08:00",
+      "horarioSalida": "18:00",
+      "pago": 1000.0,
+      "localId": 1
     },
     "response": {
-      "id": 1,
-      "nombre": "Juan",
-      "apellidos": "Pérez Actualizado",
-      "dni": "12345678",
-      "email": "juan.perez@condormotors.com",
-      "telefono": "987654321",
-      "rol": "Supervisor",
-      "rolIcon": "user-tie",
-      "local": {
-        "id": 1,
-        "nombre": "Central Principal",
-        "tipo": "central"
-      },
-      "estado": true,
-      "fechaCreacion": "2024-03-12T10:00:00Z",
-      "fechaActualizacion": "2024-03-12T11:00:00Z"
+      "data": {
+        "id": 3,
+        "nombre": "Nuevo",
+        "apellidos": "Colaborador",
+        "dni": "11223344",
+        "telefono": "987654323",
+        "horarioIngreso": "08:00",
+        "horarioSalida": "18:00",
+        "pago": 1000.0,
+        "localId": 1
+      }
     }
   },
   "DELETE": {
-    "endpoint": "/api/empleados/:id",
-    "response": {
-      "mensaje": "Colaborador eliminado correctamente",
-      "status": 200
-    }
+    "comentario": "no se puede eliminar a los colaboradores, solo cambiar su estado de 'activo' a 'inhabilitado'"
   },
   "CHANGE_PASSWORD": {
     "endpoint": "/api/empleados/:id/password",
@@ -143,17 +98,18 @@
       "newPassword": "nuevaContraseña456"
     },
     "response": {
-      "mensaje": "Contraseña actualizada correctamente",
-      "status": 200
+      "data": {
+        "mensaje": "Contraseña actualizada correctamente",
+        "status": 200
+      }
     }
   },
   "COMENTARIOS": [
-    "El backend debe implementar todos los endpoints CRUD para empleados",
+    "El backend debe implementar todos los endpoints CRUD para empleados, excepto el de eliminar",
     "Se necesita un endpoint para cambiar la contraseña de un empleado",
     "Se necesita un endpoint para obtener los empleados por sucursal",
-    "El frontend necesita poder filtrar empleados por rol y estado",
-    "Se debe implementar un sistema de permisos basado en roles",
+    "El frontend necesita poder filtrar empleados por nombre, apellido, dni y Nro. celular",
     "Se debe validar que el DNI y el email sean únicos",
     "Se debe permitir subir fotos de perfil para los empleados"
   ]
-} 
+}

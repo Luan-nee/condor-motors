@@ -1,0 +1,52 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/movimientos",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "fechaSolicitada": "2024-03-12T10:00:00Z",
+          "fechaRespuesto": null,
+          "estado": "PENDIENTE",
+          "origen": {
+            "id": 1,
+            "nombre": "Central Principal",
+            "esCentral": true
+          },
+          "destino": {
+            "id": 2,
+            "nombre": "Sucursal Norte",
+            "esCentral": false
+          },
+          "solicitante": {
+            "id": 1,
+            "nombre": "Juan Pérez"
+          },
+          "proveedor": null,
+          "productosSolicitados": [
+            {
+              "id": 1,
+              "fotoProducto": "foto de producto",
+              "nombre": "Casco MT Thunder",
+              "marca": "nombre de la marca1",
+              "categoria": "nombre de la categoria1",
+              "cantidad": 40
+            },
+            {
+              "id": 2,
+              "fotoProducto": "foto de producto",
+              "nombre": "Slider MT Thunder",
+              "marca": "nombre de la marca2",
+              "categoria": "nombre de la categoria2",
+              "cantidad": 40
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "COMENTARIOS": [
+    "Se necesita un endpoint para obtener todos los movimientos",
+    "El frontend necesita poder filtrar movimientos por el nombre del proveedor, nombre del Solicitante, origen y destino"
+  ]
+}
