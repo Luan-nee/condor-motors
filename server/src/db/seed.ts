@@ -9,96 +9,58 @@ import { db } from '@db/connection'
 import * as schema from '@db/schema'
 import { faker } from '@faker-js/faker'
 import { exit } from 'process'
+import { seedConfig } from '@db/config/seed.config'
 
-const unidadesDefault = [
-  'No especificada',
-  'Unidad',
-  'Paquete',
-  'Docena',
-  'Decena'
-]
+const sucursalesValues = Array.from({ length: seedConfig.sucursalesCount }).map(
+  (_, i) => {
+    if (i === 0) {
+      return {
+        nombre: 'Sucursal Principal',
+        sucursalCentral: true,
+        direccion: faker.location.streetAddress({ useFullAddress: true })
+      }
+    }
 
-const categoriasDefault = [
-  'No especificada',
-  'Cascos',
-  'Stickers',
-  'Motos',
-  'Toritos'
-]
-
-const marcasDefault = ['Sin marca', 'Genérico', 'Honda', 'Suzuki', 'Bajaj']
-
-const estadosTransferenciasInventariosDefault = [
-  'Pendiente',
-  'Solicitando',
-  'Rechazado',
-  'Completado'
-]
-
-const tiposPersonasDefault = ['Persona Natural', 'Persona Juridica']
-
-const sucursalesCount = 3
-const empleadosCount = 6
-const rolesCount = 2
-const productosCount = 15
-
-const sucursalesValues = Array.from({ length: sucursalesCount }).map((_, i) => {
-  if (i === 0) {
     return {
-      nombre: 'Sucursal Principal',
-      sucursalCentral: true,
-      direccion: 'Desconocida'
+      nombre: faker.company.name() + i.toString(),
+      sucursalCentral: faker.datatype.boolean(),
+      direccion: faker.location.streetAddress({ useFullAddress: true })
     }
   }
+)
 
-  return {
-    nombre: faker.company.name() + i.toString(),
-    sucursalCentral: faker.datatype.boolean(),
-    direccion: faker.location.streetAddress({ useFullAddress: true })
-  }
-})
+const rolesValues = seedConfig.rolesDefault.map((rol) => ({
+  codigo: formatCode(rol),
+  nombreRol: rol
+}))
 
-const rolesValues = Array.from({ length: rolesCount }).map((_, i) => {
-  if (i === 0) {
-    return {
-      codigo: 'administrador',
-      nombreRol: 'Adminstrador'
-    }
-  }
-
-  const rol = faker.person.jobArea()
-
-  return {
-    codigo: rol.toLocaleLowerCase(),
-    nombreRol: rol
-  }
-})
-
-const unidadesValues = unidadesDefault.map((unidad) => ({
+const unidadesValues = seedConfig.unidadesDefault.map((unidad) => ({
   nombre: unidad,
   descripcion: faker.lorem.words({ min: 10, max: 20 })
 }))
 
-const categoriasValues = categoriasDefault.map((categoria) => ({
+const categoriasValues = seedConfig.categoriasDefault.map((categoria) => ({
   nombre: categoria,
   descripcion: faker.lorem.words({ min: 10, max: 20 })
 }))
 
-const marcasValues = marcasDefault.map((marca) => ({
+const marcasValues = seedConfig.marcasDefault.map((marca) => ({
   nombre: marca,
   descripcion: faker.lorem.words({ min: 10, max: 20 })
 }))
 
 const estadosTransferenciasInventariosValues =
-  estadosTransferenciasInventariosDefault.map((estado) => ({
+  seedConfig.estadosTransferenciasInventariosDefault.map((estado) => ({
     nombre: estado,
     codigo: formatCode(estado)
   }))
 
-const tiposPersonasValues = tiposPersonasDefault.map((tipoPersona) => ({
-  nombre: tipoPersona,
-  codigo: formatCode(tipoPersona)
-}))
+const tiposPersonasValues = seedConfig.tiposPersonasDefault.map(
+  (tipoPersona) => ({
+    nombre: tipoPersona,
+    codigo: formatCode(tipoPersona)
+  })
+)
 
 const adminUser = {
   usuario: envs.ADMIN_USER,
@@ -124,35 +86,37 @@ const seedDatabase = async () => {
     .values(sucursalesValues)
     .returning({ id: schema.sucursalesTable.id })
 
-  const empleadosValues = Array.from({ length: empleadosCount }).map((_, i) => {
-    const [fechaString] = faker.date.recent().toISOString().split('T')
-    const baseValues = {
-      edad: faker.number.int({ min: 18, max: 60 }),
-      dni:
-        faker.number.int({ min: 1111111, max: 9999999 }).toString() +
-        i.toString(),
-      horaInicioJornada: '08:00:00',
-      horaFinJornada: '17:00:00',
-      fechaContratacion: fechaString
-    }
+  const empleadosValues = Array.from({ length: seedConfig.empleadosCount }).map(
+    (_, i) => {
+      const [fechaString] = faker.date.recent().toISOString().split('T')
+      const baseValues = {
+        edad: faker.number.int({ min: 18, max: 60 }),
+        dni:
+          faker.number.int({ min: 1111111, max: 9999999 }).toString() +
+          i.toString(),
+        horaInicioJornada: '08:00:00',
+        horaFinJornada: '17:00:00',
+        fechaContratacion: fechaString
+      }
 
-    if (i === 0) {
-      const [sucursal] = sucursales
+      if (i === 0) {
+        const [sucursal] = sucursales
+        return {
+          nombre: 'Administrador',
+          apellidos: 'Principal',
+          sucursalId: sucursal.id,
+          ...baseValues
+        }
+      }
+
       return {
-        nombre: 'Administrador',
-        apellidos: 'Principal',
-        sucursalId: sucursal.id,
+        nombre: faker.person.firstName(),
+        apellidos: faker.person.lastName(),
+        sucursalId: getRandomValueFromArray(sucursales).id,
         ...baseValues
       }
     }
-
-    return {
-      nombre: faker.person.firstName(),
-      apellidos: faker.person.lastName(),
-      sucursalId: getRandomValueFromArray(sucursales).id,
-      ...baseValues
-    }
-  })
+  )
 
   const [admin] = await db
     .insert(schema.empleadosTable)
@@ -199,7 +163,7 @@ const seedDatabase = async () => {
     .values(marcasValues)
     .returning({ id: schema.marcasTable.id })
 
-  const productosValues = Array.from({ length: productosCount }).map(
+  const productosValues = Array.from({ length: seedConfig.productosCount }).map(
     (_, i) => ({
       sku: faker.string.alphanumeric(11) + i.toString(),
       nombre: faker.commerce.productName() + i.toString(),
