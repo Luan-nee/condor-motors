@@ -4,11 +4,9 @@ import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import {
   categoriasTable,
-  inventariosTable,
+  detallesProductoTable,
   marcasTable,
-  preciosProductosTable,
   productosTable,
-  sucursalesInventariosTable,
   sucursalesTable,
   unidadesTable
 } from '@/db/schema'
@@ -31,10 +29,10 @@ export class GetProductoById {
     marcaId: productosTable.marcaId,
     fechaCreacion: productosTable.fechaCreacion,
     fechaActualizacion: productosTable.fechaActualizacion,
-    precioBase: preciosProductosTable.precioBase,
-    precioMayorista: preciosProductosTable.precioMayorista,
-    precioOferta: preciosProductosTable.precioOferta,
-    stock: inventariosTable.stock,
+    precioBase: detallesProductoTable.precioBase,
+    precioMayorista: detallesProductoTable.precioMayorista,
+    precioOferta: detallesProductoTable.precioOferta,
+    stock: detallesProductoTable.stock,
     relacionados: {
       unidadNombre: unidadesTable.nombre,
       categoriaNombre: categoriasTable.nombre,
@@ -61,26 +59,17 @@ export class GetProductoById {
       )
       .innerJoin(marcasTable, eq(marcasTable.id, productosTable.marcaId))
       .innerJoin(
-        preciosProductosTable,
-        eq(preciosProductosTable.productoId, productosTable.id)
-      )
-      .innerJoin(
-        inventariosTable,
-        eq(inventariosTable.productoId, productosTable.id)
-      )
-      .innerJoin(
-        sucursalesInventariosTable,
-        eq(sucursalesInventariosTable.inventarioId, inventariosTable.id)
+        detallesProductoTable,
+        eq(detallesProductoTable.productoId, productosTable.id)
       )
       .innerJoin(
         sucursalesTable,
-        eq(sucursalesTable.id, sucursalesInventariosTable.sucursalId)
+        eq(sucursalesTable.id, detallesProductoTable.sucursalId)
       )
       .where(
         and(
           eq(productosTable.id, numericIdDto.id),
-          eq(preciosProductosTable.sucursalId, sucursalId),
-          eq(sucursalesInventariosTable.sucursalId, sucursalId)
+          eq(detallesProductoTable.sucursalId, sucursalId)
         )
       )
 
