@@ -16,5 +16,5 @@ const createEmpleadoSchema = z.object({
 export const createEmpleadoValidator = (object: unknown) =>
   createEmpleadoSchema.safeParse(object)
 
-// export const updateEmpleadoValidator = (object: unknown) =>
-//   createEmpleadoSchema.partial().safeParse(object)
+export const updateEmpleadoValidator = (object: unknown) =>
+  createEmpleadoSchema.partial().safeParse(object)

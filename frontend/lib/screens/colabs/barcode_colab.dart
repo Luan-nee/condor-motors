@@ -78,437 +78,252 @@ class BarcodeColabScreen extends StatefulWidget {
 }
 
 class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
-  final _apiService = ApiService();
-  late final productos_api.ProductosApi _productosApi;
   bool _isLoading = false;
-  productos_api.Producto? _productoEncontrado;
-  String? _error;
-  final MobileScannerController _scannerController = MobileScannerController();
-  bool _isTorchOn = false;
+  String? _lastScannedCode;
+  Map<String, dynamic>? _foundProduct;
 
-  @override
-  void initState() {
-    super.initState();
-    _productosApi = productos_api.ProductosApi(_apiService);
+  // Datos de ejemplo para productos
+  final List<Map<String, dynamic>> _productos = [
+    {
+      'id': 1,
+      'codigo': 'CAS001',
+      'nombre': 'Casco MT Thunder',
+      'descripcion': 'Casco integral MT Thunder con sistema de ventilación avanzado',
+      'precio': 299.99,
+      'precioMayorista': 250.00,
+      'stock': 15,
+      'stockMinimo': 5,
+      'categoria': 'Cascos',
+      'marca': 'MT Helmets',
+      'estado': 'ACTIVO',
+      'imagen': 'assets/images/casco_mt.jpg'
+    },
+    {
+      'id': 2,
+      'codigo': 'ACE001',
+      'nombre': 'Aceite Motul 5100',
+      'descripcion': 'Aceite sintético 4T 15W-50 para motocicletas',
+      'precio': 89.99,
+      'precioMayorista': 75.00,
+      'stock': 3,
+      'stockMinimo': 10,
+      'categoria': 'Lubricantes',
+      'marca': 'Motul',
+      'estado': 'BAJO_STOCK',
+      'imagen': 'assets/images/aceite_motul.jpg'
+    },
+    {
+      'id': 3,
+      'codigo': 'LLA001',
+      'nombre': 'Llanta Pirelli Diablo',
+      'descripcion': 'Llanta deportiva Pirelli Diablo Rosso III 180/55 ZR17',
+      'precio': 450.00,
+      'precioMayorista': 380.00,
+      'stock': 0,
+      'stockMinimo': 4,
+      'categoria': 'Llantas',
+      'marca': 'Pirelli',
+      'estado': 'AGOTADO',
+      'imagen': 'assets/images/llanta_pirelli.jpg'
+    },
+    {
+      'id': 4,
+      'codigo': 'FRE001',
+      'nombre': 'Kit de Frenos Brembo',
+      'descripcion': 'Kit completo de frenos Brembo con pastillas y disco',
+      'precio': 850.00,
+      'precioMayorista': 720.00,
+      'stock': 8,
+      'stockMinimo': 3,
+      'categoria': 'Frenos',
+      'marca': 'Brembo',
+      'estado': 'ACTIVO',
+      'imagen': 'assets/images/frenos_brembo.jpg'
+    },
+    {
+      'id': 5,
+      'codigo': 'AMO001',
+      'nombre': 'Amortiguador YSS',
+      'descripcion': 'Amortiguador trasero YSS ajustable en compresión y rebote',
+      'precio': 599.99,
+      'precioMayorista': 520.00,
+      'stock': 6,
+      'stockMinimo': 4,
+      'categoria': 'Suspensión',
+      'marca': 'YSS',
+      'estado': 'ACTIVO',
+      'imagen': 'assets/images/amortiguador_yss.jpg'
+    }
+  ];
+
+  void _onDetect(BarcodeCapture capture) {
+    final List<Barcode> barcodes = capture.barcodes;
+    
+    for (final barcode in barcodes) {
+      if (barcode.rawValue == _lastScannedCode) {
+        return; // Evitar escaneos duplicados
+      }
+      
+      _lastScannedCode = barcode.rawValue;
+      _searchProduct(barcode.rawValue ?? '');
+    }
   }
 
-  @override
-  void dispose() {
-    _scannerController.dispose();
-    super.dispose();
-  }
+  void _searchProduct(String code) {
+    setState(() => _isLoading = true);
 
-  Future<void> _buscarProducto(String codigo) async {
+    // Simular búsqueda en datos locales
+    final producto = _productos.firstWhere(
+      (p) => p['codigo'] == code,
+      orElse: () => {},
+    );
+
     setState(() {
-      _isLoading = true;
-      _error = null;
-      _productoEncontrado = null;
+      _foundProduct = producto.isNotEmpty ? producto : null;
+      _isLoading = false;
     });
 
-    try {
-      final productos = await _productosApi.searchProductos(codigo);
-      
-      if (!mounted) return;
-      
-      if (productos.isEmpty) {
-        setState(() {
-          _error = 'No se encontró ningún producto con el código $codigo';
-          _isLoading = false;
-        });
-        return;
-      }
-
-      setState(() {
-        _productoEncontrado = productos.first;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Error al buscar el producto: $e';
-        _isLoading = false;
-      });
+    if (_foundProduct != null) {
+      _showProductDialog(_foundProduct!);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se encontró el producto con código: $code'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
+  }
+
+  void _showProductDialog(Map<String, dynamic> producto) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Producto Encontrado'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              producto['nombre'],
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text('Código: ${producto['codigo']}'),
+            Text('Marca: ${producto['marca']}'),
+            Text('Categoría: ${producto['categoria']}'),
+            const SizedBox(height: 8),
+            Text(
+              'S/ ${producto['precio'].toStringAsFixed(2)}',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).primaryColor,
+              ),
+            ),
+            Text(
+              'Stock: ${producto['stock']}',
+              style: TextStyle(
+                color: producto['estado'] == 'AGOTADO'
+                    ? Colors.red
+                    : producto['estado'] == 'BAJO_STOCK'
+                        ? Colors.orange
+                        : Colors.green,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context, producto);
+            },
+            child: const Text('Seleccionar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Calcular dimensiones adaptables para el cuadro de escaneo
-    final screenWidth = MediaQuery.of(context).size.width;
-    
-    // El ancho del cuadro será el 80% del ancho de la pantalla
-    final scanBoxWidth = screenWidth * 0.8;
-    
-    // La altura del cuadro será proporcional al ancho para mantener una relación de aspecto adecuada
-    // para códigos de barras (más ancho que alto)
-    final scanBoxHeight = scanBoxWidth * 0.4;
-    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Escanear Código de Barras'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: const Text('Escanear Código'),
         actions: [
           IconButton(
-            icon: Icon(
-              _isTorchOn ? MdiIcons.flashlight : MdiIcons.flashlightOff,
-              color: _isTorchOn ? Colors.yellow : null,
-            ),
+            icon: const FaIcon(FontAwesomeIcons.keyboard),
             onPressed: () {
-              setState(() {
-                _isTorchOn = !_isTorchOn;
-                _scannerController.toggleTorch();
-              });
+              // TODO: Implementar entrada manual de código
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Función de entrada manual en desarrollo'),
+                ),
+              );
             },
-            tooltip: _isTorchOn ? 'Apagar linterna' : 'Encender linterna',
-          ),
-          IconButton(
-            icon: Icon(MdiIcons.cameraSwitch),
-            onPressed: () {
-              _scannerController.switchCamera();
-            },
-            tooltip: 'Cambiar cámara',
+            tooltip: 'Entrada manual',
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            flex: 2,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Escáner
-                MobileScanner(
-                  controller: _scannerController,
-                  onDetect: (capture) {
-                    final List<Barcode> barcodes = capture.barcodes;
-                    for (final barcode in barcodes) {
-                      if (barcode.rawValue != null) {
-                        _buscarProducto(barcode.rawValue!);
-                        return;
-                      }
-                    }
-                  },
+          MobileScanner(
+            onDetect: _onDetect,
+          ),
+          // Overlay con guía de escaneo
+          Center(
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Theme.of(context).primaryColor,
+                  width: 2,
                 ),
-                
-                // Overlay oscuro con recorte transparente para el área de escaneo
-                ClipPath(
-                  clipper: ScannerOverlayClipper(
-                    scanBoxWidth: scanBoxWidth,
-                    scanBoxHeight: scanBoxHeight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    FontAwesomeIcons.barcode,
+                    size: 48,
+                    color: Theme.of(context).primaryColor,
                   ),
-                  child: Container(
-                    color: Colors.black.withOpacity(0.5),
-                  ),
-                ),
-                
-                // Cuadro de escaneo
-                Container(
-                  width: scanBoxWidth,
-                  height: scanBoxHeight,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                
-                // Líneas de esquina para mejorar la visibilidad
-                SizedBox(
-                  width: scanBoxWidth + 20,
-                  height: scanBoxHeight + 20,
-                  child: CustomPaint(
-                    painter: CornersPainter(
-                      color: Theme.of(context).colorScheme.primary,
-                      cornerSize: 20,
-                      cornerWidth: 4,
-                    ),
-                  ),
-                ),
-                
-                // Instrucciones
-                Positioned(
-                  bottom: 20,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          MdiIcons.barcode,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Coloque el código de barras dentro del recuadro',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Coloque el código de barras\ndentro del recuadro',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black,
+                          blurRadius: 4,
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: _buildResultsPanel(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResultsPanel() {
-    if (_isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(
-              'Buscando producto...',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.bold,
+                ],
               ),
             ),
-          ],
-        ),
-      );
-    }
-
-    if (_error != null) {
-      return Center(
-        child: Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.red.shade300),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const FaIcon(FontAwesomeIcons.circleExclamation, color: Colors.red, size: 48),
-              const SizedBox(height: 16),
-              Text(
-                _error!,
-                style: const TextStyle(color: Colors.red),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _error = null;
-                  });
-                },
-                icon: Icon(MdiIcons.refresh),
-                label: const Text('Volver a Escanear'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_productoEncontrado == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          if (_isLoading)
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Icon(
-                MdiIcons.barcode,
-                size: 64,
-                color: Theme.of(context).colorScheme.primary,
+              color: Colors.black54,
+              child: const Center(
+                child: CircularProgressIndicator(),
               ),
             ),
-            const SizedBox(height: 24),
-            const Text(
-              'Escanee un código de barras para buscar un producto',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Asegúrese de que el código esté bien iluminado y centrado',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  MdiIcons.packageVariantClosed,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Producto Encontrado',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      _productoEncontrado!.nombre,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _buildInfoRow(
-            'Código',
-            _productoEncontrado!.codigo,
-            FontAwesomeIcons.barcode,
-          ),
-          const Divider(),
-          _buildInfoRow(
-            'Categoría',
-            _productoEncontrado!.categoria,
-            FontAwesomeIcons.tag,
-          ),
-          const Divider(),
-          _buildInfoRow(
-            'Precio',
-            'S/ ${_productoEncontrado!.precioNormal.toStringAsFixed(2)}',
-            FontAwesomeIcons.moneyBill,
-          ),
-          const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context, _productoEncontrado);
-                  },
-                  icon: Icon(MdiIcons.check),
-                  label: const Text('Seleccionar'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _productoEncontrado = null;
-                    });
-                  },
-                  icon: Icon(MdiIcons.close),
-                  label: const Text('Cancelar'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          FaIcon(
-            icon,
-            size: 16,
-            color: Colors.grey,
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
-              ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
