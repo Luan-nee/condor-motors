@@ -1,0 +1,136 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/ventas",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "numeroVenta": "V001-00001",
+          "fecha": "2024-03-13T10:00:00Z",
+          "cliente": {
+            "id": 1,
+            "nombre": "Cliente Ejemplo",
+            "documento": "12345678"
+          },
+          "items": [
+            {
+              "producto": {
+                "id": 1,
+                "nombre": "Casco MT Thunder",
+                "marca": "MT Helmets",
+                "codigoBarras": "7891234567890"
+              },
+              "cantidad": 2,
+              "precioUnitario": 33.0,
+              "descuento": 0.24,
+              "subtotal": 50.16
+            }
+          ],
+          "subtotal": 50.16,
+          "descuentoTotal": 15.84,
+          "total": 62.16,
+          "metodoPago": "efectivo",
+          "estado": "completada",
+          "cajero": {
+            "id": 1,
+            "nombre": "Juan Pérez"
+          }
+        }
+      ],
+      "total": 100,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/ventas/:id",
+    "response": {
+      "id": 1,
+      "numeroVenta": "V001-00001",
+      "fecha": "2024-03-13T10:00:00Z",
+      "cliente": {
+        "id": 1,
+        "nombre": "Cliente Ejemplo",
+        "documento": "12345678",
+        "telefono": "123-456-789"
+      },
+      "items": [
+        {
+          "producto": {
+            "id": 1,
+            "nombre": "Casco MT Thunder",
+            "marca": "MT Helmets",
+            "codigoBarras": "7891234567890"
+          },
+          "cantidad": 2,
+          "precioUnitario": 33.0,
+          "descuento": 0.24,
+          "subtotal": 50.16
+        }
+      ],
+      "subtotal": 50.16,
+      "descuentoTotal": 15.84,
+      "total": 62.16,
+      "metodoPago": "efectivo",
+      "estado": "completada",
+      "cajero": {
+        "id": 1,
+        "nombre": "Juan Pérez"
+      },
+      "documentos": [
+        {
+          "tipo": "boleta",
+          "numero": "B001-00001",
+          "url": "url_boleta"
+        }
+      ],
+      "pago": {
+        "monto": 70.0,
+        "vuelto": 7.84,
+        "metodoPago": "efectivo"
+      }
+    }
+  },
+  "POST": {
+    "endpoint": "/api/ventas",
+    "request": {
+      "cliente": {
+        "documento": "12345678",
+        "nombre": "Cliente Ejemplo",
+        "telefono": "123-456-789"
+      },
+      "items": [
+        {
+          "producto": 1,
+          "cantidad": 2
+        }
+      ],
+      "metodoPago": "efectivo",
+      "montoPagado": 70.0
+    },
+    "response": {
+      "id": 2,
+      "numeroVenta": "V001-00002",
+      "mensaje": "Venta registrada exitosamente",
+      "vuelto": 7.84,
+      "status": 200,
+      "documentoUrl": "url_boleta"
+    }
+  },
+  "CANCEL": {
+    "endpoint": "/api/ventas/:id/cancel",
+    "request": {
+      "motivo": "Error en cantidad"
+    },
+    "response": {
+      "mensaje": "Venta cancelada exitosamente",
+      "status": 200
+    }
+  }
+  // El punto de venta puede crear y ver ventas del día
+  // Puede cancelar ventas solo del turno actual
+  // Maneja pagos en efectivo y cálculo de vuelto
+  // Genera automáticamente documentos de venta
+  // Registra información del cajero por turno
+  // Las ventas actualizan automáticamente el stock
+} 

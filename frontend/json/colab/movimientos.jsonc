@@ -1,0 +1,76 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/colab/movimientos",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "tipo": "entrada",
+          "fecha": "2024-03-13T10:00:00Z",
+          "producto": {
+            "id": 1,
+            "nombre": "Casco MT Thunder",
+            "marca": "MT Helmets",
+            "categoria": "Cascos"
+          },
+          "cantidad": 5,
+          "motivo": "Compra inicial",
+          "stockAnterior": 25,
+          "stockNuevo": 30,
+          "sucursal": {
+            "id": 1,
+            "nombre": "Sucursal Principal"
+          },
+          "estado": "completado"
+        }
+      ],
+      "total": 100,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/colab/movimientos/:id",
+    "response": {
+      "id": 1,
+      "tipo": "entrada",
+      "fecha": "2024-03-13T10:00:00Z",
+      "producto": {
+        "id": 1,
+        "nombre": "Casco MT Thunder",
+        "marca": "MT Helmets",
+        "categoria": "Cascos"
+      },
+      "cantidad": 5,
+      "motivo": "Compra inicial",
+      "stockAnterior": 25,
+      "stockNuevo": 30,
+      "sucursal": {
+        "id": 1,
+        "nombre": "Sucursal Principal"
+      },
+      "estado": "completado",
+      "observaciones": "Compra realizada al proveedor XYZ"
+    }
+  },
+  "POST": {
+    "endpoint": "/api/colab/movimientos",
+    "request": {
+      "tipo": "entrada",
+      "producto": 1,
+      "cantidad": 5,
+      "motivo": "Reposición de stock",
+      "observaciones": "Entrada por compra al proveedor"
+    },
+    "response": {
+      "mensaje": "Movimiento registrado exitosamente",
+      "id": 2,
+      "status": 200
+    }
+  }
+  // Los colaboradores solo pueden ver movimientos de su sucursal
+  // Pueden registrar entradas y salidas de stock
+  // No pueden modificar ni eliminar movimientos
+  // No tienen acceso a información financiera ni documentos adjuntos
+  // Los movimientos registrados requieren autorización del administrador
+} 

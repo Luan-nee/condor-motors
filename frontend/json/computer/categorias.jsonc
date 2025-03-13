@@ -1,0 +1,42 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/computer/categorias",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "nombre": "Cascos",
+          "descripcion": "Cascos de seguridad para motociclistas",
+          "estado": "activo"
+        }
+      ]
+    }
+  },
+  "GET": {
+    "endpoint": "/api/computer/categorias/:id",
+    "response": {
+      "id": 1,
+      "nombre": "Cascos",
+      "descripcion": "Cascos de seguridad para motociclistas",
+      "estado": "activo",
+      "productos": [
+        {
+          "id": 1,
+          "nombre": "Casco MT Thunder",
+          "stock": 30,
+          "precio": 33.0,
+          "tieneDescuento": true,
+          "descuento": {
+            "tipo": "porcentual",
+            "porcentajeDescuento": 0.24,
+            "cantidadMinimaParaAplicarDescuento": 2
+          }
+        }
+      ]
+    }
+  }
+  // El punto de venta solo tiene acceso de lectura a las categorías
+  // Solo ve las categorías activas
+  // Ve información mínima necesaria para ventas
+  // Puede ver productos asociados con sus precios y descuentos
+} 

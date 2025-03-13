@@ -1,0 +1,77 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/productos",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "fotoProducto": "foto_producto",
+          "nombre": "Casco MT Thunder Negro Tamaño XL",
+          "marca": "MT Helmets",
+          "color": "Negro",
+          "categoria": {
+            "id": 1,
+            "nombre": "Cascos"
+          },
+          "tieneDescuento": true,
+          "descuento": {
+            "tipo": "porcentual",
+            "porcentajeDescuento": 0.24,
+            "cantidadMinimaParaAplicarDescuento": 2
+          },
+          "precioDeVenta": 33.0,
+          "estado": "activo",
+          "codigoBarras": "7891234567890"
+        }
+      ],
+      "total": 100,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/productos/:id",
+    "response": {
+      "id": 1,
+      "fotoProducto": "foto_producto",
+      "nombre": "Casco MT Thunder Negro Tamaño XL",
+      "marca": {
+        "id": 1,
+        "nombre": "MT Helmets"
+      },
+      "color": "Negro",
+      "categoria": {
+        "id": 1,
+        "nombre": "Cascos"
+      },
+      "tieneDescuento": true,
+      "descuento": {
+        "tipo": "porcentual",
+        "porcentajeDescuento": 0.24,
+        "cantidadMinimaParaAplicarDescuento": 2
+      },
+      "precioDeVenta": 33.0,
+      "estado": "activo",
+      "codigoBarras": "7891234567890"
+    }
+  },
+  "GET_BY_BARCODE": {
+    "endpoint": "/api/productos/barcode/:code",
+    "response": {
+      "id": 1,
+      "nombre": "Casco MT Thunder Negro Tamaño XL",
+      "precioDeVenta": 33.0,
+      "tieneDescuento": true,
+      "descuento": {
+        "tipo": "porcentual",
+        "porcentajeDescuento": 0.24,
+        "cantidadMinimaParaAplicarDescuento": 2
+      }
+    }
+  }
+  // El punto de venta solo tiene acceso de lectura a los productos
+  // Incluye código de barras para lectura rápida
+  // Solo ve productos activos
+  // Ve información necesaria para ventas (precio, descuentos)
+  // No tiene acceso a información sensible (precios base, márgenes)
+} 

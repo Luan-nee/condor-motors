@@ -241,14 +241,14 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                       Container(
                         color: const Color(0xFF2D2D2D),
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                        child: Row(
+                        child: const Row(
                           children: [
                             // Marca (35% del ancho)
                             Expanded(
                               flex: 35,
                               child: Text(
                                 'Marca',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -259,7 +259,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                               flex: 45,
                               child: Text(
                                 'Descripción',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -271,7 +271,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                               child: Text(
                                 'Productos',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -283,7 +283,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                               child: Text(
                                 'Acciones',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),

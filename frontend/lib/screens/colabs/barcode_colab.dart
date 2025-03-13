@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import '../../api/productos.api.dart' as productos_api;
-import '../../api/main.api.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 // Clase para dibujar las esquinas del cuadro de escaneo

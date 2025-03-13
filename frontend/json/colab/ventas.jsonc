@@ -1,0 +1,109 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/colab/ventas",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "numeroVenta": "V001-00001",
+          "fecha": "2024-03-13T10:00:00Z",
+          "cliente": {
+            "id": 1,
+            "nombre": "Cliente Ejemplo",
+            "documento": "12345678"
+          },
+          "items": [
+            {
+              "producto": {
+                "id": 1,
+                "nombre": "Casco MT Thunder",
+                "marca": "MT Helmets"
+              },
+              "cantidad": 2,
+              "precioUnitario": 33.0,
+              "descuento": 0.24,
+              "subtotal": 50.16
+            }
+          ],
+          "subtotal": 50.16,
+          "descuentoTotal": 15.84,
+          "total": 62.16,
+          "metodoPago": "efectivo",
+          "estado": "completada"
+        }
+      ],
+      "total": 100,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/colab/ventas/:id",
+    "response": {
+      "id": 1,
+      "numeroVenta": "V001-00001",
+      "fecha": "2024-03-13T10:00:00Z",
+      "cliente": {
+        "id": 1,
+        "nombre": "Cliente Ejemplo",
+        "documento": "12345678",
+        "telefono": "123-456-789"
+      },
+      "items": [
+        {
+          "producto": {
+            "id": 1,
+            "nombre": "Casco MT Thunder",
+            "marca": "MT Helmets",
+            "codigo": "CSC-001"
+          },
+          "cantidad": 2,
+          "precioUnitario": 33.0,
+          "descuento": 0.24,
+          "subtotal": 50.16
+        }
+      ],
+      "subtotal": 50.16,
+      "descuentoTotal": 15.84,
+      "total": 62.16,
+      "metodoPago": "efectivo",
+      "estado": "completada",
+      "documentos": [
+        {
+          "tipo": "boleta",
+          "numero": "B001-00001",
+          "url": "url_boleta"
+        }
+      ]
+    }
+  },
+  "POST": {
+    "endpoint": "/api/colab/ventas",
+    "request": {
+      "cliente": {
+        "documento": "12345678",
+        "nombre": "Cliente Ejemplo",
+        "telefono": "123-456-789"
+      },
+      "items": [
+        {
+          "producto": 1,
+          "cantidad": 2
+        }
+      ],
+      "metodoPago": "efectivo"
+    },
+    "response": {
+      "id": 2,
+      "numeroVenta": "V001-00002",
+      "mensaje": "Venta registrada exitosamente",
+      "status": 200
+    }
+  }
+  // Los colaboradores solo pueden ver y crear ventas
+  // Solo pueden ver ventas de su sucursal
+  // No pueden modificar ni anular ventas (requiere administrador)
+  // No tienen acceso a información financiera detallada
+  // Pueden generar documentos de venta básicos (boletas)
+  // Las ventas creadas actualizan automáticamente el stock
+} 

@@ -1,0 +1,51 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/colab/sucursales",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "nombre": "Sucursal Principal",
+          "direccion": "Av. Principal 123",
+          "telefono": "123-456-789",
+          "email": "sucursal.principal@condormotors.com",
+          "horario": {
+            "lunes_viernes": "08:00-18:00",
+            "sabado": "09:00-13:00",
+            "domingo": "cerrado"
+          },
+          "estado": "activo",
+          "cantidadProductos": 500
+        }
+      ],
+      "total": 3,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/colab/sucursales/:id",
+    "response": {
+      "id": 1,
+      "nombre": "Sucursal Principal",
+      "direccion": "Av. Principal 123",
+      "telefono": "123-456-789",
+      "email": "sucursal.principal@condormotors.com",
+      "horario": {
+        "lunes_viernes": "08:00-18:00",
+        "sabado": "09:00-13:00",
+        "domingo": "cerrado"
+      },
+      "estado": "activo",
+      "cantidadProductos": 500,
+      "inventarioResumen": {
+        "productosStockBajo": 25
+      }
+    }
+  }
+  // Los colaboradores solo tienen acceso de lectura a las sucursales
+  // Solo pueden ver información básica y resumen de inventario
+  // No tienen acceso a información financiera ni de personal
+  // Solo ven las sucursales activas
+  // Pueden ver productos con stock bajo para gestionar reposición
+} 

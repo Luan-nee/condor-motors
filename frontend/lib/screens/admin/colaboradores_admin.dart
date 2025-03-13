@@ -125,14 +125,14 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                       Container(
                         color: const Color(0xFF2D2D2D),
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                        child: Row(
+                        child: const Row(
                           children: [
                             // Nombre (30% del ancho)
                             Expanded(
                               flex: 30,
                               child: Text(
                                 'Nombre',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -143,7 +143,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                               flex: 25,
                               child: Text(
                                 'Rol',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -154,7 +154,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                               flex: 25,
                               child: Text(
                                 'Local',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -166,7 +166,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                               child: Text(
                                 'Estado',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -178,7 +178,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                               child: Text(
                                 'Acciones',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),

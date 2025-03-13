@@ -1,0 +1,40 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/marcas",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "nombre": "MT Helmets",
+          "logo": "url_logo",
+          "estado": "activo"
+        }
+      ],
+      "total": 50,
+      "pagina": 1,
+      "porPagina": 10
+    }
+  },
+  "GET": {
+    "endpoint": "/api/marcas/:id",
+    "response": {
+      "id": 1,
+      "nombre": "MT Helmets",
+      "logo": "url_logo",
+      "estado": "activo",
+      "productos": [
+        {
+          "id": 1,
+          "nombre": "Casco MT Thunder",
+          "stock": 30,
+          "precio": 33.0,
+          "codigoBarras": "7891234567890"
+        }
+      ]
+    }
+  }
+  // El punto de venta solo tiene acceso de lectura a las marcas
+  // Solo ve marcas activas
+  // Ve información mínima necesaria para ventas
+  // Puede ver productos asociados con sus precios y códigos de barras
+} 

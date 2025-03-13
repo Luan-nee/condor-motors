@@ -1,0 +1,85 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/marcas",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "nombre": "MT Helmets",
+          "descripcion": "Marca líder en cascos de motocicleta",
+          "logo": "url_logo",
+          "estado": "activo",
+          "cantidadProductos": 45,
+          "fechaCreacion": "2024-03-13T10:00:00Z",
+          "ultimaModificacion": "2024-03-13T10:00:00Z",
+          "creadoPor": "admin@condormotors.com"
+        }
+      ]
+    }
+  },
+  "GET": {
+    "endpoint": "/api/marcas/:id",
+    "response": {
+      "id": 1,
+      "nombre": "MT Helmets",
+      "descripcion": "Marca líder en cascos de motocicleta",
+      "logo": "url_logo",
+      "estado": "activo",
+      "cantidadProductos": 45,
+      "fechaCreacion": "2024-03-13T10:00:00Z",
+      "ultimaModificacion": "2024-03-13T10:00:00Z",
+      "creadoPor": "admin@condormotors.com",
+      "productos": [
+        {
+          "id": 1,
+          "nombre": "Casco MT Thunder",
+          "stock": 30
+        }
+      ]
+    }
+  },
+  "POST": {
+    "endpoint": "/api/marcas",
+    "request": {
+      "nombre": "Nueva Marca",
+      "descripcion": "Descripción de la nueva marca",
+      "logo": "url_logo",
+      "estado": "activo"
+    },
+    "response": {
+      "id": 2,
+      "nombre": "Nueva Marca",
+      "descripcion": "Descripción de la nueva marca",
+      "logo": "url_logo",
+      "estado": "activo",
+      "cantidadProductos": 0,
+      "fechaCreacion": "2024-03-13T10:00:00Z",
+      "creadoPor": "admin@condormotors.com"
+    }
+  },
+  "PATCH": {
+    "endpoint": "/api/admin/marcas/:id",
+    "request": {
+      "nombre": "MT Helmets Updated",
+      "descripcion": "Nueva descripción de la marca",
+      "logo": "nueva_url_logo",
+      "estado": "inactivo"
+    },
+    "response": {
+      "mensaje": "Marca actualizada exitosamente",
+      "status": 200
+    }
+  },
+  "DELETE": {
+    "endpoint": "/api/admin/marcas/:id",
+    "response": {
+      "mensaje": "Marca eliminada correctamente",
+      "status": 200
+    }
+  }
+  // El administrador tiene control total sobre las marcas
+  // Se debe validar que no se puedan eliminar marcas con productos asociados
+  // El logo debe ser una URL válida
+  // Se debe mantener un registro de auditoría de cambios
+  // Solo los administradores pueden crear, modificar y eliminar marcas
+} 

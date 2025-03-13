@@ -1,0 +1,69 @@
+{
+  "GET_ALL": {
+    "endpoint": "/api/categorias",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "nombre": "Cascos",
+          "descripcion": "Cascos de seguridad para motociclistas",
+          "cantidadProductos": 45,
+          "estado": "activo"
+        }
+      ]
+    }
+  },
+  "GET": {
+    "endpoint": "/api/categorias/:id",
+    "response": {
+      "id": 1,
+      "nombre": "Cascos",
+      "descripcion": "Cascos de seguridad para motociclistas",
+      "cantidadProductos": 45,
+      "productos": [
+        {
+          "id": 1,
+          "nombre": "Casco MT Thunder",
+          "stock": 30
+        }
+      ]
+    }
+  },
+  "POST": {
+    "endpoint": "/api/categorias",
+    "request": {
+      "nombre": "Nueva Categoría",
+      "descripcion": "Descripción de la nueva categoría"
+    },
+    "response": {
+      "id": 3,
+      "nombre": "Nueva Categoría",
+      "descripcion": "Descripción de la nueva categoría",
+      "cantidadProductos": 0
+    }
+  },
+  "PATCH": {
+    "endpoint": "/api/categorias/:id",
+    "request": {
+      "nombre": "Cascos Actualizados",
+      "descripcion": "Nueva descripción de cascos"
+    },
+    "response": {
+      "id": 1,
+      "nombre": "Cascos Actualizados",
+      "descripcion": "Nueva descripción de cascos",
+      "cantidadProductos": 45
+    }
+  },
+  "DELETE": {
+    "endpoint": "/api/categorias/:id",
+    "response": {
+      "mensaje": "Categoría eliminada correctamente",
+      "status": 200
+    }
+  }
+  // El backend debe implementar todos los endpoints CRUD para categorías
+  // Se debe validar que no se puedan eliminar categorías con productos asociados
+  // Solo los administradores pueden crear, modificar y eliminar categorías
+  // Se debe mantener un registro de auditoría de cambios
+} 
