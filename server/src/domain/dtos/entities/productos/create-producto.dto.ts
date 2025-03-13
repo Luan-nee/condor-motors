@@ -12,7 +12,6 @@ export class CreateProductoDto {
   public precioMayorista?: number
   public precioOferta?: number
   public stock?: number
-  public sucursalId: number
 
   private constructor({
     sku,
@@ -25,8 +24,7 @@ export class CreateProductoDto {
     precioBase,
     precioMayorista,
     precioOferta,
-    stock,
-    sucursalId
+    stock
   }: CreateProductoDto) {
     this.sku = sku
     this.nombre = nombre
@@ -39,10 +37,9 @@ export class CreateProductoDto {
     this.precioMayorista = precioMayorista
     this.precioOferta = precioOferta
     this.stock = stock
-    this.sucursalId = sucursalId
   }
 
-  static create(input: any, sucursalId: number): [string?, CreateProductoDto?] {
+  static create(input: any): [string?, CreateProductoDto?] {
     const result = createProductoValidator(input)
 
     if (!result.success) {
@@ -51,12 +48,6 @@ export class CreateProductoDto {
 
     const { data } = result
 
-    return [
-      undefined,
-      new CreateProductoDto({
-        ...data,
-        sucursalId
-      })
-    ]
+    return [undefined, new CreateProductoDto(data)]
   }
 }

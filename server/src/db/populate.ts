@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 import { BcryptAdapter } from '@/config/bcrypt'
-import { envs } from '@/config/envs'
 import { JwtAdapter } from '@/config/jwt'
 import { permissionCodes } from '@/consts'
 import { db } from '@db/connection'
@@ -16,9 +15,10 @@ import {
   categoriasTable
 } from '@db/schema'
 import { exit } from 'process'
+import { populateConfig } from '@db/config/populate.config'
 
 const populateDatabase = async (
-  config: ConfigPopulateDb,
+  config: PopulateConfig,
   permissions: Array<{ nombrePermiso: string; codigoPermiso: string }>
 ) => {
   const hashedPassword = await BcryptAdapter.hash(config.user.clave)
@@ -74,38 +74,6 @@ const populateDatabase = async (
   }
 }
 
-const config: ConfigPopulateDb = {
-  user: {
-    usuario: envs.ADMIN_USER,
-    clave: envs.ADMIN_PASSWORD
-  },
-  sucursal: {
-    nombre: 'Sucursal Principal',
-    sucursalCentral: true,
-    direccion: 'Desconocida'
-  },
-  empleado: {
-    nombre: 'Administrador',
-    apellidos: 'Principal'
-  },
-  rolEmpleado: {
-    codigo: 'administrador',
-    nombreRol: 'Adminstrador'
-  },
-  defaultUnidad: {
-    nombre: 'No especificada',
-    descripcion: 'Unidad por defecto del sistema'
-  },
-  defaultCategoria: {
-    nombre: 'No especificada',
-    descripcion: 'Categoria por defecto del sistema'
-  },
-  defaultMarca: {
-    nombre: 'Sin marca',
-    descripcion: 'Marca por defecto del sistema'
-  }
-}
-
 const transformPermissionCodes = (codes: typeof permissionCodes) =>
   Object.values(codes).flatMap((category) =>
     Object.values(category).map((code) => ({
@@ -116,7 +84,7 @@ const transformPermissionCodes = (codes: typeof permissionCodes) =>
 
 const permissions = transformPermissionCodes(permissionCodes)
 
-populateDatabase(config, permissions)
+populateDatabase(populateConfig, permissions)
   .then((administrador) => {
     console.log('Database has been initialized correctly!')
     console.log('user credentials:', administrador)

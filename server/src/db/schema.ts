@@ -72,17 +72,19 @@ export const productosTable = pgTable('productos', {
   ...timestampsColumns
 })
 
-export const preciosProductosTable = pgTable('precios_productos', {
+export const detallesProductoTable = pgTable('detalles_producto', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   precioBase: numeric('precio_base', { precision: 7, scale: 2 }),
   precioMayorista: numeric('precio_mayorista', { precision: 7, scale: 2 }),
   precioOferta: numeric('precio_oferta', { precision: 7, scale: 2 }),
+  stock: integer('stock').notNull().default(0),
   productoId: integer('producto_id')
     .notNull()
     .references(() => productosTable.id),
   sucursalId: integer('sucursal_id')
     .notNull()
-    .references(() => sucursalesTable.id)
+    .references(() => sucursalesTable.id),
+  ...timestampsColumns
 })
 
 export const fotosProductosTable = pgTable('fotos_productos', {
@@ -103,28 +105,6 @@ export const estadosTransferenciasInventarios = pgTable(
     nombre: text('nombre').notNull().unique(),
     codigo: text('codigo').notNull().unique()
   }
-)
-
-export const inventariosTable = pgTable('inventarios', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  stock: integer('stock').notNull().default(0),
-  productoId: integer('producto_id')
-    .notNull()
-    .references(() => productosTable.id),
-  ...timestampsColumns
-})
-
-export const sucursalesInventariosTable = pgTable(
-  'sucursales_inventarios',
-  {
-    inventarioId: integer('inventario_id')
-      .notNull()
-      .references(() => inventariosTable.id),
-    sucursalId: integer('sucursal_id')
-      .notNull()
-      .references(() => sucursalesTable.id)
-  },
-  (table) => [primaryKey({ columns: [table.inventarioId, table.sucursalId] })]
 )
 
 export const entradasInventariosTable = pgTable('entradas_inventarios', {

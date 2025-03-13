@@ -6,9 +6,7 @@ import type {
   productosTable,
   unidadesTable,
   categoriasTable,
-  marcasTable,
-  preciosProductosTable,
-  inventariosTable
+  marcasTable
 } from '@/db/schema'
 import type { InferSelectModel } from 'drizzle-orm'
 

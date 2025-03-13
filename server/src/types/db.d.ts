@@ -1,4 +1,4 @@
-interface ConfigPopulateDb {
+interface PopulateConfig {
   user: {
     usuario: string
     clave: string
@@ -28,4 +28,16 @@ interface ConfigPopulateDb {
     nombre: string
     descripcion?: string
   }
+}
+
+interface SeedConfig {
+  rolesDefault: string[]
+  unidadesDefault: string[]
+  categoriasDefault: string[]
+  marcasDefault: string[]
+  estadosTransferenciasInventariosDefault: string[]
+  tiposPersonasDefault: string[]
+  sucursalesCount: number
+  empleadosCount: number
+  productosCount: number
 }
