@@ -87,17 +87,17 @@ const rolesValues = Array.from({ length: rolesCount }).map((_, i) => {
 
 const unidadesValues = unidadesDefault.map((unidad) => ({
   nombre: unidad,
-  description: faker.lorem.words({ min: 10, max: 20 })
+  descripcion: faker.lorem.words({ min: 10, max: 20 })
 }))
 
 const categoriasValues = categoriasDefault.map((categoria) => ({
   nombre: categoria,
-  description: faker.lorem.words({ min: 10, max: 20 })
+  descripcion: faker.lorem.words({ min: 10, max: 20 })
 }))
 
 const marcasValues = marcasDefault.map((marca) => ({
   nombre: marca,
-  description: faker.lorem.words({ min: 10, max: 20 })
+  descripcion: faker.lorem.words({ min: 10, max: 20 })
 }))
 
 const estadosTransferenciasInventariosValues =
@@ -212,7 +212,7 @@ const seedDatabase = async () => {
 
   const productosValues = Array.from({ length: productosCount }).map(
     (_, i) => ({
-      sku: faker.string.alphanumeric(10),
+      sku: faker.string.alphanumeric(11) + i.toString(),
       nombre: faker.commerce.productName() + i.toString(),
       descripcion: faker.commerce.productDescription(),
       maxDiasSinReabastecer: faker.number.int({ min: 20, max: 90 }),
