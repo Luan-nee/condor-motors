@@ -20,3 +20,6 @@ const createProductoSchema = z.object({
 
 export const createProductoValidator = (object: unknown) =>
   createProductoSchema.safeParse(object)
+
+export const updateProductoValidator = (object: unknown) =>
+  createProductoSchema.partial().safeParse(object)

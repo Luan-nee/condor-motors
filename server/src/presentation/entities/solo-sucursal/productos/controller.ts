@@ -109,6 +109,17 @@ export class ProductosController {
       return
     }
 
+    if (req.sucursalId === undefined) {
+      CustomResponse.badRequest({ res, error: 'Id de sucursal inválido' })
+      return
+    }
+
+    const [error, numericIdDto] = NumericIdDto.create(req.params)
+    if (error !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
     CustomResponse.notImplemented({ res })
   }
 

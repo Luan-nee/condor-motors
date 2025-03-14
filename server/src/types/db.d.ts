@@ -29,6 +29,20 @@ interface PopulateConfig {
 }
 
 interface SeedConfig {
+  cuentas: {
+    admin: {
+      usuario: string
+      clave: string
+    }
+    vendedor: {
+      usuario: string
+      clave: string
+    }
+    computadora: {
+      usuario: string
+      clave: string
+    }
+  }
   rolesDefault: string[]
   categoriasDefault: string[]
   marcasDefault: string[]
