@@ -6,7 +6,7 @@ import { detallesProductoTable, productosTable } from '@/db/schema'
 import type { UpdateProductoDto } from '@/domain/dtos/entities/productos/update-producto.dto'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 export class UpdateProducto {
   private readonly authPayload: AuthPayload
@@ -59,7 +59,12 @@ export class UpdateProducto {
             stock: updateProductoDto.stock,
             fechaActualizacion: now
           })
-          .where(eq(detallesProductoTable.sucursalId, sucursalId))
+          .where(
+            and(
+              eq(detallesProductoTable.sucursalId, sucursalId),
+              eq(detallesProductoTable.productoId, numericIdDto.id)
+            )
+          )
           .returning({ id: detallesProductoTable.id })
 
         if (updatedDetallesProducto.length < 1 && updatedProductos.length < 1) {
