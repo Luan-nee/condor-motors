@@ -13,8 +13,9 @@ export class EmpleadosRoutes {
 
     router.get('/', empleadosController.getAll)
 
-    router.patch('/id', empleadosController.update)
+    router.patch('/:id', empleadosController.update)
 
+    router.delete('/:id', empleadosController.delete)
     return router
   }
 }

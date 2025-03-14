@@ -5,6 +5,7 @@ import { UpdateEmpleadoDto } from '@/domain/dtos/entities/empleados/ubdate-emple
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { CreateEmpleado } from '@/domain/use-cases/entities/empleados/create-empleados.use-case'
+import { DeleteEmpleado } from '@/domain/use-cases/entities/empleados/delete-empleados.use-case'
 import { GetEmpleadoById } from '@/domain/use-cases/entities/empleados/get-empleado-by-id.use-case'
 import { GetEmpleados } from '@/domain/use-cases/entities/empleados/get-empleados.use-case'
 import { UpdateEmpleado } from '@/domain/use-cases/entities/empleados/update-empleado.use-case'
@@ -114,6 +115,32 @@ export class EmpleadosController {
       .execute(updateEmpleadoDto, numericIdDto)
       .then((empleado) => {
         const message = `Sucursal con id ${empleado.id} ha sido actualizada`
+        CustomResponse.success({ res, message, data: empleado })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
+
+  delete = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [error, numericIdDto] = NumericIdDto.create(req.params)
+
+    if (error !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: 'el ID ingresado no es valido' })
+      return
+    }
+
+    const deleteEmpleado = new DeleteEmpleado()
+
+    deleteEmpleado
+      .execute(numericIdDto)
+      .then((empleado) => {
+        const message = `Empleado con el id '${empleado.id}' eliminado`
         CustomResponse.success({ res, message, data: empleado })
       })
       .catch((error: unknown) => {
