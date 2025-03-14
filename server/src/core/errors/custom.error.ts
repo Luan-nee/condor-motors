@@ -5,7 +5,8 @@ export class CustomError extends Error {
   constructor(
     public readonly statusCode: number,
     public readonly message: string,
-    public readonly status: ResponseStatusType
+    public readonly status: ResponseStatusType,
+    public readonly data?: any
   ) {
     super(message)
   }
@@ -50,5 +51,11 @@ export class CustomError extends Error {
 
   static serviceUnavailable(message: string) {
     return new CustomError(503, message, responseStatus.error)
+  }
+
+  static corsError(message = 'Not allowed by CORS', allowedOrigins: string[]) {
+    return new CustomError(403, message, responseStatus.fail, {
+      allowedOrigins
+    })
   }
 }

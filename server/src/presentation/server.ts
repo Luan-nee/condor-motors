@@ -28,8 +28,8 @@ export class Server {
     this.app.use(express.json())
     this.app.disable('x-powered-by')
     this.app.use(CookieMiddleware.requests)
-    this.app.use(CorsMiddleware.requests)
     this.app.use(LoggerMiddleware.requests)
+    this.app.use(CorsMiddleware.requests)
 
     this.app.use(this.routes)
 

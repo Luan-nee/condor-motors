@@ -13,7 +13,7 @@ export class CorsMiddleware {
       ) {
         callback(null, true)
       } else {
-        callback(CustomError.forbidden('Not allowed by CORS'), false)
+        callback(CustomError.corsError(undefined, this.allowedOrigins), false)
       }
     }
   })
