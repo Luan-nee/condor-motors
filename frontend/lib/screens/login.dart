@@ -7,6 +7,26 @@ import '../api/empleados.api.dart';
 import '../api/main.api.dart';
 import '../api/sucursales.api.dart';  // Importar SucursalesApi
 
+// Clase para manejar el ciclo de vida de la aplicación
+class LifecycleObserver extends WidgetsBindingObserver {
+  final VoidCallback resumeCallBack;
+  final VoidCallback pauseCallBack;
+
+  LifecycleObserver({
+    required this.resumeCallBack,
+    required this.pauseCallBack,
+  });
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      resumeCallBack();
+    } else if (state == AppLifecycleState.paused) {
+      pauseCallBack();
+    }
+  }
+}
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -30,6 +50,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   bool _rememberMe = false;
   late final AnimationController _animationController;
   String _errorMessage = '';
+  String _serverIp = '192.168.1.66'; // IP fija para el servidor
+  late final LifecycleObserver _lifecycleObserver;
 
   @override
   void initState() {
@@ -41,8 +63,98 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     )..repeat();
     _empleadoApi = EmpleadoApi(_apiService);
     _sucursalesApi = SucursalesApi(_apiService);  // Inicializar SucursalesApi
+    _loadServerIp();
     _initializeApi();
     _loadSavedCredentials();
+    
+    // Reducir la velocidad de la animación cuando la app está en segundo plano
+    _lifecycleObserver = LifecycleObserver(
+      resumeCallBack: () {
+        if (!_animationController.isAnimating) {
+          _animationController.repeat();
+        }
+      },
+      pauseCallBack: () {
+        if (_animationController.isAnimating) {
+          _animationController.stop();
+        }
+      },
+    );
+    WidgetsBinding.instance.addObserver(_lifecycleObserver);
+  }
+
+  Future<void> _loadServerIp() async {
+    try {
+      final ip = await _storage.read(key: 'server_ip');
+      if (ip != null && ip.isNotEmpty) {
+        setState(() {
+          _serverIp = '192.168.1.66';
+        });
+        // Actualizar la URL base del API con la IP fija
+        _apiService.setBaseUrl('http://192.168.1.66:3000/api');
+      }
+    } catch (e) {
+      debugPrint('Error al cargar la IP del servidor: $e');
+    }
+  }
+
+  Future<void> _saveServerIp(String ip) async {
+    try {
+      // Siempre guardamos la IP fija
+      await _storage.write(key: 'server_ip', value: '192.168.1.66');
+      setState(() {
+        _serverIp = '192.168.1.66';
+      });
+      // Actualizar la URL base del API con la IP fija
+      _apiService.setBaseUrl('http://192.168.1.66:3000/api');
+    } catch (e) {
+      debugPrint('Error al guardar la IP del servidor: $e');
+    }
+  }
+
+  void _showServerConfigDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Configuración del Servidor'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'La dirección IP del servidor está configurada como:',
+              style: TextStyle(color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[400]!),
+              ),
+              child: const Text(
+                '192.168.1.66:3000',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'La dirección IP está fija y no se puede cambiar.',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Aceptar'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _initializeApi() async {
@@ -51,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       final isOnline = await _apiService.checkApiStatus();
       if (!isOnline) {
         setState(() {
-          _errorMessage = 'No se puede conectar al servidor. Verifique su conexión.';
+          _errorMessage = 'No se puede conectar al servidor. Verifique su conexión o la configuración del servidor.';
         });
       }
     } catch (e) {
@@ -69,6 +181,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     _usernameFocusNode.dispose();
     _passwordFocusNode.dispose();
     _animationController.dispose();
+    WidgetsBinding.instance.removeObserver(_lifecycleObserver);
     super.dispose();
   }
 
@@ -224,6 +337,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                 );
               },
+            ),
+          ),
+          // Botón de configuración del servidor
+          Positioned(
+            top: 16,
+            right: 16,
+            child: IconButton(
+              icon: const Icon(Icons.settings, color: Colors.white70),
+              onPressed: _showServerConfigDialog,
+              tooltip: 'Configurar servidor',
             ),
           ),
           // Contenido del login
@@ -456,6 +579,32 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   ),
                                 ),
                         ),
+                        
+                        // Test connection button
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: TextButton.icon(
+                            onPressed: _isLoading ? null : _testConnection,
+                            icon: const Icon(Icons.wifi_tethering, size: 18),
+                            label: const Text('Probar conexión'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white70,
+                            ),
+                          ),
+                        ),
+                        
+                        // Server info
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'Servidor: http://$_serverIp:3000',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -466,5 +615,40 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ],
       ),
     );
+  }
+  
+  Future<void> _testConnection() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+    
+    try {
+      final isOnline = await _apiService.checkApiStatus();
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+        if (isOnline) {
+          _errorMessage = '';
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Conexión exitosa al servidor'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          _errorMessage = 'No se pudo conectar al servidor. Verifique la configuración.';
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Error al probar la conexión: $e';
+      });
+    }
   }
 }

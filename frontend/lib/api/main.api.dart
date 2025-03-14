@@ -28,7 +28,53 @@ class ApiException implements Exception {
   };
 }
 
+// Clase para manejar el caché de respuestas
+class ApiCache {
+  final Map<String, _CacheEntry> _cache = {};
+  final Duration defaultExpiration;
+  
+  ApiCache({this.defaultExpiration = const Duration(minutes: 5)});
+  
+  void set(String key, dynamic data, {Duration? expiration}) {
+    final expiryTime = DateTime.now().add(expiration ?? defaultExpiration);
+    _cache[key] = _CacheEntry(data, expiryTime);
+  }
+  
+  dynamic get(String key) {
+    final entry = _cache[key];
+    if (entry == null) return null;
+    
+    if (DateTime.now().isAfter(entry.expiryTime)) {
+      _cache.remove(key);
+      return null;
+    }
+    
+    return entry.data;
+  }
+  
+  bool has(String key) {
+    return get(key) != null;
+  }
+  
+  void remove(String key) {
+    _cache.remove(key);
+  }
+  
+  void clear() {
+    _cache.clear();
+  }
+}
+
+class _CacheEntry {
+  final dynamic data;
+  final DateTime expiryTime;
+  
+  _CacheEntry(this.data, this.expiryTime);
+}
+
 class ApiService {
+  // Cambiamos la URL base para que funcione desde un dispositivo o emulador
+  // Usamos 10.0.2.2 para emuladores Android o la IP de tu máquina para dispositivos físicos
   final String baseUrl;
   bool _initialized = false;
   bool _isOnline = false;
@@ -37,6 +83,9 @@ class ApiService {
   String? _refreshToken;
   DateTime? _tokenExpiration;
   late final Dio _dio;
+  
+  // Agregar caché
+  final ApiCache _cache = ApiCache();
 
   // Singleton pattern
   static final ApiService _instance = ApiService._internal();
@@ -48,9 +97,15 @@ class ApiService {
   static const int maxRetries = 3;
 
   ApiService._internal({
-    this.baseUrl = 'http://localhost:3000/api'
-  }) {
+    String? baseUrl
+  }) : baseUrl = baseUrl ?? 
+       'http://192.168.1.66:3000/api' {
     _initializeDio();
+  }
+
+  // Método para cambiar la URL base (útil para configuración)
+  void setBaseUrl(String newBaseUrl) {
+    _dio.options.baseUrl = newBaseUrl;
   }
 
   void _initializeDio() {
@@ -227,6 +282,36 @@ class ApiService {
   bool get isOnline => _isOnline;
   String? get token => _authToken;
   String? get refreshToken => _refreshToken;
+  
+  // Método para obtener información del usuario desde el token
+  Map<String, dynamic>? getUserInfo() {
+    if (_authToken == null) return null;
+    
+    try {
+      // Decodificar el token JWT (formato: header.payload.signature)
+      final parts = _authToken!.split('.');
+      if (parts.length != 3) return null;
+      
+      // Decodificar la parte del payload (segunda parte)
+      String normalizedPayload = base64Url.normalize(parts[1]);
+      final payloadJson = utf8.decode(base64Url.decode(normalizedPayload));
+      final payload = json.decode(payloadJson) as Map<String, dynamic>;
+      
+      return payload;
+    } catch (e) {
+      _logger.warning('Error al decodificar token: $e');
+      return null;
+    }
+  }
+  
+  // Método para obtener el rol del usuario
+  String? getUserRole() {
+    final userInfo = getUserInfo();
+    if (userInfo == null) return null;
+    
+    // El campo del rol puede variar según la estructura de tu token
+    return userInfo['rol'] as String?;
+  }
 
   // Inicializar el servicio
   Future<void> init() async {
@@ -346,6 +431,8 @@ class ApiService {
     Map<String, dynamic>? queryParams,
     bool requiresAuth = true,
     int retryCount = 0,
+    bool useCache = true,
+    Duration? cacheExpiration,
   }) async {
     try {
       if (!_initialized) {
@@ -371,6 +458,18 @@ class ApiService {
           );
         }
       }
+      
+      // Verificar caché para solicitudes GET
+      final cacheKey = method == 'GET' ? 
+        '$endpoint${queryParams != null ? '?${_mapToQueryString(queryParams)}' : ''}' : 
+        null;
+      
+      if (useCache && method == 'GET' && cacheKey != null) {
+        final cachedData = _cache.get(cacheKey);
+        if (cachedData != null) {
+          return cachedData;
+        }
+      }
 
       final response = await _dio.request(
         endpoint,
@@ -386,6 +485,10 @@ class ApiService {
       if (response.statusCode! >= 200 && response.statusCode! < 300) {
         final responseData = response.data;
         if (responseData['status'] == 'success') {
+          // Guardar en caché si es GET
+          if (useCache && method == 'GET' && cacheKey != null) {
+            _cache.set(cacheKey, responseData['data'], expiration: cacheExpiration);
+          }
           return responseData['data'];
         } else {
           throw ApiException(
@@ -412,6 +515,8 @@ class ApiService {
           queryParams: queryParams,
           requiresAuth: requiresAuth,
           retryCount: retryCount + 1,
+          useCache: useCache,
+          cacheExpiration: cacheExpiration,
         );
       }
       rethrow;
@@ -439,11 +544,57 @@ class ApiService {
       
       // Si obtenemos 401 o 200, el servidor está funcionando
       _isOnline = response.statusCode == 200 || response.statusCode == 401;
+      
+      if (_isOnline) {
+        _logger.info('Servidor conectado correctamente en ${_dio.options.baseUrl}');
+      } else {
+        _logger.warning('Servidor respondió con código ${response.statusCode}');
+      }
+      
       return _isOnline;
+    } on DioException catch (e) {
+      String errorMessage;
+      
+      switch (e.type) {
+        case DioExceptionType.connectionError:
+          errorMessage = 'Error de conexión: No se pudo conectar al servidor en ${_dio.options.baseUrl}';
+          break;
+        case DioExceptionType.connectionTimeout:
+          errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+          break;
+        case DioExceptionType.receiveTimeout:
+          errorMessage = 'Tiempo de espera agotado al recibir respuesta del servidor';
+          break;
+        case DioExceptionType.badResponse:
+          errorMessage = 'Respuesta inesperada del servidor: ${e.response?.statusCode}';
+          break;
+        default:
+          errorMessage = 'Error al verificar estado del servidor: ${e.message}';
+      }
+      
+      _logger.warning(errorMessage);
+      _isOnline = false;
+      return false;
     } catch (e) {
-      _logger.warning('Error al verificar estado del servidor: $e');
+      _logger.warning('Error inesperado al verificar estado del servidor: $e');
       _isOnline = false;
       return false;
     }
+  }
+
+  // Método auxiliar para convertir Map a query string
+  String _mapToQueryString(Map<String, dynamic> map) {
+    return map.entries
+        .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value.toString())}')
+        .join('&');
+  }
+  
+  // Método para invalidar caché
+  void invalidateCache(String endpoint) {
+    _cache.remove(endpoint);
+  }
+  
+  void clearCache() {
+    _cache.clear();
   }
 }

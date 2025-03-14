@@ -15,12 +15,24 @@ late EmpleadoApi empleadoApi;
 late ProductosApi productosApi;
 late SucursalesApi sucursalesApi;
 
+// Clave global para el navegador
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+// Definir fuentes una sola vez para reutilizarlas
+final interFontFamily = GoogleFonts.inter().fontFamily;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Precarga de fuentes para evitar parpadeo
+  GoogleFonts.config.allowRuntimeFetching = false;
   
   if (kIsWeb) {
     SharedPreferences.setMockInitialValues({});
   }
+
+  // Nota: Las imágenes se precargarán automáticamente cuando se usen
+  // No es necesario precargarlas manualmente sin un contexto
 
   // Configurar UI del sistema
   SystemChrome.setSystemUIOverlayStyle(
@@ -39,11 +51,25 @@ void main() async {
   productosApi = ProductosApi(apiService);
   sucursalesApi = SucursalesApi(apiService);
 
-  runApp(const MyApp());
+  // Verificar si el usuario ya está autenticado
+  bool isAuthenticated = apiService.isAuthenticated;
+  String initialRoute = Routes.login;
+  
+  // Si está autenticado, determinar la ruta inicial según el rol
+  if (isAuthenticated) {
+    String? userRole = apiService.getUserRole();
+    if (userRole != null) {
+      initialRoute = Routes.getInitialRoute(userRole);
+    }
+  }
+
+  runApp(MyApp(initialRoute: initialRoute));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String initialRoute;
+  
+  const MyApp({Key? key, required this.initialRoute}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -63,26 +89,30 @@ class MyApp extends StatelessWidget {
         ),
         textTheme: TextTheme(
           // Títulos
-          displayLarge: GoogleFonts.inter(
+          displayLarge: TextStyle(
+            fontFamily: interFontFamily,
             fontSize: 32,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.5,
             height: 1.2,
           ),
-          displayMedium: GoogleFonts.inter(
+          displayMedium: TextStyle(
+            fontFamily: interFontFamily,
             fontSize: 28,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.5,
             height: 1.2,
           ),
           // Texto del cuerpo
-          bodyLarge: GoogleFonts.inter(
+          bodyLarge: TextStyle(
+            fontFamily: interFontFamily,
             fontSize: 16,
             fontWeight: FontWeight.w400,
             letterSpacing: 0.5,
             height: 1.5,
           ),
-          bodyMedium: GoogleFonts.inter(
+          bodyMedium: TextStyle(
+            fontFamily: interFontFamily,
             fontSize: 14,
             fontWeight: FontWeight.w400,
             letterSpacing: 0.25,
@@ -96,12 +126,12 @@ class MyApp extends StatelessWidget {
         typography: Typography.material2021(
           platform: TargetPlatform.windows,
           black: Typography.blackMountainView.copyWith(
-            bodyLarge: GoogleFonts.inter(fontSize: 16, height: 1.5),
-            bodyMedium: GoogleFonts.inter(fontSize: 14, height: 1.5),
+            bodyLarge: TextStyle(fontFamily: interFontFamily, fontSize: 16, height: 1.5),
+            bodyMedium: TextStyle(fontFamily: interFontFamily, fontSize: 14, height: 1.5),
           ),
           white: Typography.whiteMountainView.copyWith(
-            bodyLarge: GoogleFonts.inter(fontSize: 16, height: 1.5),
-            bodyMedium: GoogleFonts.inter(fontSize: 14, height: 1.5),
+            bodyLarge: TextStyle(fontFamily: interFontFamily, fontSize: 16, height: 1.5),
+            bodyMedium: TextStyle(fontFamily: interFontFamily, fontSize: 14, height: 1.5),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
@@ -131,8 +161,15 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      initialRoute: Routes.login,
+      navigatorKey: navigatorKey,
+      initialRoute: initialRoute,
       onGenerateRoute: Routes.generateRoute,
+      navigatorObservers: [
+        HeroController(),
+      ],
+      builder: (context, child) {
+        return child ?? const SizedBox.shrink();
+      },
     );
   }
 }

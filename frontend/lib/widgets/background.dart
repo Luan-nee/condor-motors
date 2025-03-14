@@ -4,8 +4,24 @@ import 'dart:math' as math;
 // Clase para dibujar el fondo
 class BackgroundPainter extends CustomPainter {
   final Animation<double> animation;
-
-  BackgroundPainter({required this.animation}) : super(repaint: animation);
+  final List<Offset> _particlePositions = [];
+  final List<double> _particleSizes = [];
+  
+  // Constructor con inicialización de partículas
+  BackgroundPainter({required this.animation}) : super(repaint: animation) {
+    // Inicializar posiciones y tamaños de partículas una sola vez
+    // en lugar de recalcularlos en cada frame
+    final random = math.Random(42); // Semilla fija para consistencia
+    for (var i = 0; i < 20; i++) {
+      _particlePositions.add(
+        Offset(
+          0.1 + 0.8 * random.nextDouble(),
+          0.1 + 0.8 * random.nextDouble(),
+        ),
+      );
+      _particleSizes.add(3 + random.nextDouble() * 2);
+    }
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -37,10 +53,14 @@ class BackgroundPainter extends CustomPainter {
       ..color = const Color(0xFFE31E24).withOpacity(0.05)
       ..style = PaintingStyle.fill;
 
-    for (var i = 0; i < 20; i++) {
-      final x = size.width * (0.1 + 0.8 * math.sin(animValue * math.pi + i));
-      final y = size.height * (0.1 + 0.8 * math.cos(animValue * math.pi + i));
-      final radius = (3 + math.sin(animValue * math.pi + i) * 2) * scale;
+    for (var i = 0; i < _particlePositions.length; i++) {
+      final position = _particlePositions[i];
+      final baseSize = _particleSizes[i];
+      
+      // Calcular posición animada
+      final x = size.width * position.dx + wave * math.sin(animValue * math.pi + i);
+      final y = size.height * position.dy + wave * math.cos(animValue * math.pi + i);
+      final radius = baseSize * scale;
       
       canvas.drawCircle(
         Offset(x, y),

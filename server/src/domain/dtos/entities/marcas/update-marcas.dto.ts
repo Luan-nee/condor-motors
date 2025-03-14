@@ -2,12 +2,11 @@ export class UpdateMarcasDto {
   private constructor(
     public readonly id: number,
     public readonly nombre: string,
-    public readonly descripcion?: string,
-    public readonly pais?: string
+    public readonly descripcion?: string
   ) {}
 
   static create(props: Record<string, any>): [string?, UpdateMarcasDto?] {
-    const { id, nombre, descripcion, pais } = props
+    const { id, nombre, descripcion } = props
 
     if (typeof id !== 'number' || Number.isNaN(id) || id <= 0) {
       return ['El ID es requerido y debe ser un número válido']
@@ -17,6 +16,6 @@ export class UpdateMarcasDto {
       return ['El nombre es requerido']
     }
 
-    return [undefined, new UpdateMarcasDto(id, nombre, descripcion, pais)]
+    return [undefined, new UpdateMarcasDto(id, nombre, descripcion)]
   }
 }

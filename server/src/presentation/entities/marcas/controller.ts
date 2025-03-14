@@ -5,9 +5,8 @@ import { UpdateMarcasDto } from '@/domain/dtos/entities/marcas/update-marcas.dto
 import { CreateMarcas } from '@/domain/use-cases/entities/marcas/create-marcas.use-case'
 import { UpdateMarcas } from '@/domain/use-cases/entities/marcas/update-marcas.use-case'
 import { DeleteMarcas } from '@/domain/use-cases/entities/marcas/delete-marcas.use-case'
-import { marcasTable } from '@/db/schema'
-import { db } from '@db/connection'
-import { eq } from 'drizzle-orm'
+import { GetAllMarcas } from '@/domain/use-cases/entities/marcas/get-all-marcas.use-case'
+import { GetMarcaById } from '@/domain/use-cases/entities/marcas/get-marca-by-id.use-case'
 import type { Request, Response } from 'express'
 
 interface MarcaResponse {
@@ -24,8 +23,24 @@ export class MarcasController {
     }
 
     try {
-      const marcas = await db.select().from(marcasTable)
-      CustomResponse.success({ res, data: marcas })
+      // Obtener parámetros de paginación de la query
+      const page = parseInt(req.query.page as string, 10) || 1
+      const pageSize = parseInt(req.query.pageSize as string, 10) || 10
+      
+      // Validar que los parámetros sean positivos
+      if (page < 1 || pageSize < 1) {
+        CustomResponse.badRequest({ 
+          res, 
+          error: 'Los parámetros de paginación deben ser números positivos' 
+        })
+        return
+      }
+      
+      // Usar el caso de uso para obtener las marcas paginadas
+      const getAllMarcas = new GetAllMarcas()
+      const result = await getAllMarcas.execute(page, pageSize)
+      
+      CustomResponse.success({ res, data: result })
     } catch (error) {
       handleError(error, res)
     }
@@ -44,12 +59,11 @@ export class MarcasController {
     }
 
     try {
-      const marca = await db
-        .select()
-        .from(marcasTable)
-        .where(eq(marcasTable.id, id))
+      // Usar el caso de uso para obtener la marca por ID
+      const getMarcaById = new GetMarcaById()
+      const marca = await getMarcaById.execute(id)
 
-      if (marca.length === 0) {
+      if (marca === null) {
         res.status(404).json({
           ok: false,
           error: 'Marca no encontrada'
@@ -57,7 +71,7 @@ export class MarcasController {
         return
       }
 
-      CustomResponse.success({ res, data: marca[0] })
+      CustomResponse.success({ res, data: marca })
     } catch (error) {
       handleError(error, res)
     }
