@@ -14,5 +14,9 @@ export const envs = {
     .default(60 * 30)
     .asIntPositive(),
   ADMIN_USER: get('ADMIN_USER').required().asString(),
-  ADMIN_PASSWORD: get('ADMIN_PASSWORD').required().asString()
+  ADMIN_PASSWORD: get('ADMIN_PASSWORD').required().asString(),
+  ALLOWED_ORIGINS: get('ALLOWED_ORIGINS')
+    .default('')
+    .asArray(',')
+    .filter(Boolean)
 }
