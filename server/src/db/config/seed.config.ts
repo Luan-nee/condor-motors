@@ -1,7 +1,6 @@
 // El primer rol siempre será tratado como administrador y tendrá todos los permisos
 export const seedConfig: SeedConfig = {
   rolesDefault: ['Adminstrador', 'Vendedor', 'Computadora'],
-  unidadesDefault: ['No especificada', 'Unidad', 'Paquete', 'Docena', 'Decena'],
   categoriasDefault: [
     'No especificada',
     'Cascos',
@@ -10,6 +9,15 @@ export const seedConfig: SeedConfig = {
     'Toritos'
   ],
   marcasDefault: ['Sin marca', 'Genérico', 'Honda', 'Suzuki', 'Bajaj'],
+  coloresDefault: [
+    'No definido',
+    'Negro',
+    'Amarillo',
+    'Rojo',
+    'Verde',
+    'Naranja',
+    'Morado'
+  ],
   estadosTransferenciasInventariosDefault: [
     'Pendiente',
     'Solicitando',

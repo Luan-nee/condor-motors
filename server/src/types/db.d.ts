@@ -11,14 +11,12 @@ interface PopulateConfig {
   empleado: {
     nombre: string
     apellidos: string
+    activo: boolean
+    dni: string
   }
   rolEmpleado: {
     codigo: string
     nombreRol: string
-  }
-  defaultUnidad: {
-    nombre: string
-    descripcion?: string
   }
   defaultCategoria: {
     nombre: string
@@ -32,9 +30,9 @@ interface PopulateConfig {
 
 interface SeedConfig {
   rolesDefault: string[]
-  unidadesDefault: string[]
   categoriasDefault: string[]
   marcasDefault: string[]
+  coloresDefault: string[]
   estadosTransferenciasInventariosDefault: string[]
   tiposPersonasDefault: string[]
   sucursalesCount: number

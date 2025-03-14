@@ -11,7 +11,6 @@ import {
   rolesPermisosTable,
   sucursalesTable,
   marcasTable,
-  unidadesTable,
   categoriasTable
 } from '@db/schema'
 import { exit } from 'process'
@@ -51,7 +50,6 @@ const populateDatabase = async (
       empleadoId: empleado.id
     })
 
-    await tx.insert(unidadesTable).values(config.defaultUnidad)
     await tx.insert(categoriasTable).values(config.defaultCategoria)
     await tx.insert(marcasTable).values(config.defaultCategoria)
 

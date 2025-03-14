@@ -75,21 +75,12 @@ export const productosTable = pgTable('productos', {
   ...timestampsColumns
 })
 
-export const estadosProductoTable = pgTable('estados_producto', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull().unique(),
-  codigo: text('codigo').notNull().unique()
-})
-
 export const detallesProductoTable = pgTable('detalles_producto', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   precioCompra: numeric('precio_compra', { precision: 7, scale: 2 }),
   precioVenta: numeric('precio_venta', { precision: 7, scale: 2 }),
   precioOferta: numeric('precio_oferta', { precision: 7, scale: 2 }),
   stock: integer('stock').notNull().default(0),
-  estadoId: integer('estado_id')
-    .notNull()
-    .references(() => productosTable.id),
   productoId: integer('producto_id')
     .notNull()
     .references(() => productosTable.id),

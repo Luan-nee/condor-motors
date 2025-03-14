@@ -12,15 +12,13 @@ export const populateConfig: PopulateConfig = {
   },
   empleado: {
     nombre: 'Administrador',
-    apellidos: 'Principal'
+    apellidos: 'Principal',
+    activo: true,
+    dni: '00000000'
   },
   rolEmpleado: {
     codigo: 'administrador',
     nombreRol: 'Adminstrador'
-  },
-  defaultUnidad: {
-    nombre: 'No especificada',
-    descripcion: 'Unidad por defecto del sistema'
   },
   defaultCategoria: {
     nombre: 'No especificada',

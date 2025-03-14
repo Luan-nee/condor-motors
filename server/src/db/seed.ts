@@ -34,11 +34,6 @@ const rolesValues = seedConfig.rolesDefault.map((rol) => ({
   nombreRol: rol
 }))
 
-const unidadesValues = seedConfig.unidadesDefault.map((unidad) => ({
-  nombre: unidad,
-  descripcion: faker.lorem.words({ min: 10, max: 20 })
-}))
-
 const categoriasValues = seedConfig.categoriasDefault.map((categoria) => ({
   nombre: categoria,
   descripcion: faker.lorem.words({ min: 10, max: 20 })
@@ -47,6 +42,10 @@ const categoriasValues = seedConfig.categoriasDefault.map((categoria) => ({
 const marcasValues = seedConfig.marcasDefault.map((marca) => ({
   nombre: marca,
   descripcion: faker.lorem.words({ min: 10, max: 20 })
+}))
+
+const coloresValues = seedConfig.coloresDefault.map((color) => ({
+  nombre: color
 }))
 
 const estadosTransferenciasInventariosValues =
@@ -148,11 +147,6 @@ const seedDatabase = async () => {
     empleadoId: admin.id
   })
 
-  const unidades = await db
-    .insert(schema.unidadesTable)
-    .values(unidadesValues)
-    .returning({ id: schema.unidadesTable.id })
-
   const categorias = await db
     .insert(schema.categoriasTable)
     .values(categoriasValues)
@@ -163,13 +157,22 @@ const seedDatabase = async () => {
     .values(marcasValues)
     .returning({ id: schema.marcasTable.id })
 
+  const colores = await db
+    .insert(schema.coloresTable)
+    .values(coloresValues)
+    .returning({ id: schema.coloresTable.id })
+
   const productosValues = Array.from({ length: seedConfig.productosCount }).map(
     (_, i) => ({
-      sku: faker.string.alphanumeric(11) + i.toString(),
+      // sku: faker.string.alphanumeric(11) + i.toString(),
       nombre: faker.commerce.productName() + i.toString(),
       descripcion: faker.commerce.productDescription(),
       maxDiasSinReabastecer: faker.number.int({ min: 20, max: 90 }),
-      unidadId: getRandomValueFromArray(unidades).id,
+      stockMinimo: faker.number.int({ min: 20, max: 30 }),
+      cantidadMinimaDescuento: faker.number.int({ min: 2, max: 5 }),
+      cantidadGratisDescuento: faker.number.int({ min: 1, max: 2 }),
+      porcentajeDescuento: faker.number.int({ min: 10, max: 20 }),
+      colorId: getRandomValueFromArray(colores).id,
       categoriaId: getRandomValueFromArray(categorias).id,
       marcaId: getRandomValueFromArray(marcas).id
     })
@@ -182,8 +185,8 @@ const seedDatabase = async () => {
 
   const detallesProductosValues = productos.flatMap((producto) =>
     sucursales.flatMap((sucursal) => ({
-      precioBase: faker.commerce.price({ min: 160, max: 200 }),
-      precioMayorista: faker.commerce.price({ min: 150, max: 180 }),
+      precioCompra: faker.commerce.price({ min: 160, max: 200 }),
+      precioVenta: faker.commerce.price({ min: 150, max: 180 }),
       precioOferta: faker.commerce.price({ min: 155, max: 180 }),
       stock: faker.number.int({ min: 50, max: 200 }),
       productoId: producto.id,
@@ -194,7 +197,7 @@ const seedDatabase = async () => {
   await db.insert(schema.detallesProductoTable).values(detallesProductosValues)
 
   const fotosProductosValues = productos.map((producto) => ({
-    ubicacion: faker.string.alphanumeric(10),
+    path: `static/img/${faker.string.alphanumeric(10)}/${faker.string.alphanumeric(5)}.jpg`,
     productoId: producto.id
   }))
 
