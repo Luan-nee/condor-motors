@@ -2,14 +2,19 @@
 import { BcryptAdapter } from '@/config/bcrypt'
 import { envs } from '@/config/envs'
 import { JwtAdapter } from '@/config/jwt'
-import { isProduction, permissionCodes } from '@/consts'
+import { isProduction } from '@/consts'
 import { formatCode } from '@/core/lib/format-values'
 import { getRandomValueFromArray } from '@/core/lib/utils'
 import { db } from '@db/connection'
 import * as schema from '@db/schema'
 import { faker } from '@faker-js/faker'
 import { exit } from 'process'
-import { seedConfig } from '@db/config/seed.config'
+import {
+  adminPermissions,
+  seedConfig,
+  vendedorPermisssions,
+  computadoraPermissions
+} from '@db/config/seed.config'
 
 const sucursalesValues = Array.from({ length: seedConfig.sucursalesCount }).map(
   (_, i) => {
@@ -61,24 +66,22 @@ const tiposPersonasValues = seedConfig.tiposPersonasDefault.map(
   })
 )
 
-const adminUser = {
-  usuario: envs.ADMIN_USER,
-  clave: envs.ADMIN_PASSWORD
-}
-
-const transformPermissionCodes = (codes: typeof permissionCodes) =>
-  Object.values(codes).flatMap((category) =>
-    Object.values(category).map((code) => ({
-      nombrePermiso: code,
-      codigoPermiso: code
-    }))
-  )
-
-const permissions = transformPermissionCodes(permissionCodes)
+const { cuentas } = seedConfig
+const {
+  admin: adminAccount,
+  vendedor: vendedorAccount,
+  computadora: computadoraAccount
+} = cuentas
 
 const seedDatabase = async () => {
-  const hashedPassword = await BcryptAdapter.hash(adminUser.clave)
-  const secret = JwtAdapter.randomSecret()
+  const hashedAdminPassword = await BcryptAdapter.hash(adminAccount.clave)
+  const hashedVendedorPassword = await BcryptAdapter.hash(vendedorAccount.clave)
+  const hashedComputadoraPassword = await BcryptAdapter.hash(
+    computadoraAccount.clave
+  )
+  const adminSecret = JwtAdapter.randomSecret()
+  const vendedorSecret = JwtAdapter.randomSecret()
+  const computadoraSecret = JwtAdapter.randomSecret()
 
   const sucursales = await db
     .insert(schema.sucursalesTable)
@@ -117,35 +120,76 @@ const seedDatabase = async () => {
     }
   )
 
-  const [admin] = await db
+  const [admin, vendedorEmpleado, computadoraEmpleado] = await db
     .insert(schema.empleadosTable)
     .values(empleadosValues)
     .returning({ id: schema.empleadosTable.id })
 
-  const [adminRole] = await db
+  const [adminRole, vendedorRole, computadoraRole] = await db
     .insert(schema.rolesCuentasEmpleadosTable)
     .values(rolesValues)
     .returning({ id: schema.rolesCuentasEmpleadosTable.id })
 
-  const permisosId = await db
+  const permisos = await db
     .insert(schema.permisosTable)
-    .values(permissions)
-    .returning({ id: schema.permisosTable.id })
+    .values(adminPermissions)
+    .returning({
+      id: schema.permisosTable.id,
+      codigoPermiso: schema.permisosTable.codigoPermiso
+    })
 
-  await db.insert(schema.rolesPermisosTable).values(
-    permisosId.map((permiso) => ({
-      permisoId: permiso.id,
-      rolId: adminRole.id
-    }))
+  const permisosVendedorId = permisos.filter((permiso) =>
+    vendedorPermisssions.some(
+      (vendedorPermiso) =>
+        vendedorPermiso.codigoPermiso === permiso.codigoPermiso
+    )
   )
 
-  await db.insert(schema.cuentasEmpleadosTable).values({
-    usuario: adminUser.usuario,
-    clave: hashedPassword,
-    secret,
-    rolCuentaEmpleadoId: adminRole.id,
-    empleadoId: admin.id
-  })
+  const permisosComputadoraId = permisos.filter((permiso) =>
+    computadoraPermissions.some(
+      (computadoraPermiso) =>
+        computadoraPermiso.codigoPermiso === permiso.codigoPermiso
+    )
+  )
+
+  await db.insert(schema.rolesPermisosTable).values([
+    ...permisos.map((permiso) => ({
+      permisoId: permiso.id,
+      rolId: adminRole.id
+    })),
+    ...permisosVendedorId.map((permiso) => ({
+      permisoId: permiso.id,
+      rolId: vendedorRole.id
+    })),
+    ...permisosComputadoraId.map((permiso) => ({
+      permisoId: permiso.id,
+      rolId: computadoraRole.id
+    }))
+  ])
+
+  await db.insert(schema.cuentasEmpleadosTable).values([
+    {
+      usuario: adminAccount.usuario,
+      clave: hashedAdminPassword,
+      secret: adminSecret,
+      rolCuentaEmpleadoId: adminRole.id,
+      empleadoId: admin.id
+    },
+    {
+      usuario: vendedorAccount.usuario,
+      clave: hashedVendedorPassword,
+      secret: vendedorSecret,
+      rolCuentaEmpleadoId: vendedorRole.id,
+      empleadoId: vendedorEmpleado.id
+    },
+    {
+      usuario: computadoraAccount.usuario,
+      clave: hashedComputadoraPassword,
+      secret: computadoraSecret,
+      rolCuentaEmpleadoId: computadoraRole.id,
+      empleadoId: computadoraEmpleado.id
+    }
+  ])
 
   const categorias = await db
     .insert(schema.categoriasTable)
@@ -213,10 +257,14 @@ const seedDatabase = async () => {
 const { NODE_ENV: nodeEnv } = envs
 
 if (!isProduction) {
+  if (seedConfig.empleadosCount < 3) {
+    throw new Error('La cantidad de empleados configurada debe ser al menos 3')
+  }
+
   seedDatabase()
     .then(() => {
       console.log('Database has been seeded correctly!')
-      console.log('user credentials:', adminUser)
+      console.log('users credentials:', seedConfig.cuentas)
       exit()
     })
     .catch((error: unknown) => {
