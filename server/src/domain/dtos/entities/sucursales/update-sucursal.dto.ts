@@ -15,6 +15,12 @@ export class UpdateSucursalDto {
     this.sucursalCentral = sucursalCentral
   }
 
+  private static isEmptyUpdate(
+    data: UpdateSucursalDto
+  ): data is Record<string, never> {
+    return Object.values(data).every((value) => value === undefined)
+  }
+
   static create(input: any): [string?, UpdateSucursalDto?] {
     const result = updateSucursalValidator(input)
 
@@ -22,12 +28,8 @@ export class UpdateSucursalDto {
       return [result.error.message, undefined]
     }
 
-    if (
-      result.data.nombre === undefined &&
-      result.data.direccion === undefined &&
-      result.data.sucursalCentral === undefined
-    ) {
-      return ['No se recibió información para actualizar', undefined]
+    if (this.isEmptyUpdate(result.data)) {
+      return ['No se recibio informacion para actualizar', undefined]
     }
 
     return [undefined, new UpdateSucursalDto(result.data)]

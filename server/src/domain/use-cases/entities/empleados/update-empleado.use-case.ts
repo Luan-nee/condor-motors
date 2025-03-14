@@ -1,6 +1,6 @@
 import { CustomError } from '@/core/errors/custom.error'
 import { empleadosTable } from '@/db/schema'
-import type { UpdateEmpleadoDto } from '@/domain/dtos/entities/empleados/ubdate-empleado.dto'
+import type { UpdateEmpleadoDto } from '@/domain/dtos/entities/empleados/update-empleado.dto'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { EmpleadoEntityMapper } from '@/domain/mappers/empleado-entity.mapper'
 import { db } from '@db/connection'
@@ -35,16 +35,24 @@ export class UpdateEmpleado {
       }
     }
 
+    const sueldoString =
+      updateEmpleadoDto.sueldo === undefined
+        ? undefined
+        : updateEmpleadoDto.sueldo.toFixed(2)
+
     const updateEmpleadoResultado = await db
       .update(empleadosTable)
       .set({
         nombre: updateEmpleadoDto.nombre,
-        apellidos: updateEmpleadoDto.apellido,
-        edad: updateEmpleadoDto.edad,
+        apellidos: updateEmpleadoDto.apellidos,
+        activo: updateEmpleadoDto.activo,
         dni: updateEmpleadoDto.dni,
+        // pathFoto: updateEmpleadoDto.pathFoto,
+        celular: updateEmpleadoDto.celular,
         horaInicioJornada: updateEmpleadoDto.horaInicioJornada,
         horaFinJornada: updateEmpleadoDto.horaFinJornada,
-        sueldo: String(updateEmpleadoDto.sueldo),
+        fechaContratacion: updateEmpleadoDto.fechaContratacion,
+        sueldo: sueldoString,
         sucursalId: updateEmpleadoDto.sucursalId
       })
       .where(eq(empleadosTable.id, numericIdDto.id))

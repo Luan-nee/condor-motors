@@ -2,50 +2,54 @@ import { updateEmpleadoValidator } from '@/domain/validators/entities/empleados/
 
 export class UpdateEmpleadoDto {
   public nombre?: string
-  public apellido?: string
-  public edad?: number
+  public apellidos?: string
+  public activo?: boolean
   public dni?: string
+  public celular?: string
   public horaInicioJornada?: string
   public horaFinJornada?: string
+  public fechaContratacion?: string
   public sueldo?: number
   public sucursalId?: number
 
   private constructor({
     nombre,
-    apellido,
-    edad,
+    apellidos,
+    activo,
     dni,
+    celular,
     horaInicioJornada,
     horaFinJornada,
+    fechaContratacion,
     sueldo,
     sucursalId
   }: UpdateEmpleadoDto) {
     this.nombre = nombre
-    this.apellido = apellido
-    this.edad = edad
+    this.apellidos = apellidos
+    this.activo = activo
     this.dni = dni
+    this.celular = celular
     this.horaInicioJornada = horaInicioJornada
     this.horaFinJornada = horaFinJornada
+    this.fechaContratacion = fechaContratacion
     this.sueldo = sueldo
     this.sucursalId = sucursalId
   }
 
+  private static isEmptyUpdate(
+    data: UpdateEmpleadoDto
+  ): data is Record<string, never> {
+    return Object.values(data).every((value) => value === undefined)
+  }
+
   static create(input: any): [string?, UpdateEmpleadoDto?] {
     const result = updateEmpleadoValidator(input)
+
     if (!result.success) {
       return [result.error.message, undefined]
     }
 
-    if (
-      result.data.nombre === undefined &&
-      result.data.apellidos === undefined &&
-      result.data.edad === undefined &&
-      result.data.dni === undefined &&
-      result.data.horaInicioJornada === undefined &&
-      result.data.horaFinJornada === undefined &&
-      result.data.sueldo === undefined &&
-      result.data.sucursalId === undefined
-    ) {
+    if (this.isEmptyUpdate(result.data)) {
       return ['No se recibio informacion para actualizar', undefined]
     }
 

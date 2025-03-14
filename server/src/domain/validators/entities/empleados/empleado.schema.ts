@@ -19,12 +19,18 @@ export const empleadoSchema = {
       message:
         'El apellido del empleado solo puede contener letras (mayúsculas o minúsculas) o tiene espacios demas'
     }),
-  edad: z.number().min(1).max(99).optional(),
+  activo: z.boolean().default(true),
   dni: z
     .string()
     .length(8)
     .refine((val) => Validator.isOnlyNumbers(val), {
-      message: 'El dni del empleado solo puede números'
+      message: 'El dni del empleado solo puede contener números'
+    }),
+  celular: z
+    .string()
+    .length(9)
+    .refine((val) => Validator.isOnlyNumbers(val), {
+      message: 'El celular del empleado solo puede contener números'
     })
     .optional(),
   horaInicioJornada: z

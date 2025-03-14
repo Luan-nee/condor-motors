@@ -1,10 +1,10 @@
 // import { permissionCodes } from '@/consts'
 import { CustomError } from '@/core/errors/custom.error'
 import { empleadosTable, sucursalesTable } from '@/db/schema'
-import type { CreateEmpleadoDto } from '@/domain/dtos/entities/empleados/create-empleados.dto'
+import type { CreateEmpleadoDto } from '@/domain/dtos/entities/empleados/create-empleado.dto'
 import { EmpleadoEntityMapper } from '@/domain/mappers/empleado-entity.mapper'
 import { db } from '@db/connection'
-import { eq, ilike } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 export class CreateEmpleado {
   // private readonly authPayload: AuthPayload
@@ -15,26 +15,25 @@ export class CreateEmpleado {
   // }
 
   async execute(createEmpleadoDto: CreateEmpleadoDto) {
-    if (createEmpleadoDto.dni !== undefined) {
-      const empleadosWithSameDni = await db
-        .select({ id: empleadosTable.id })
-        .from(empleadosTable)
-        .where(ilike(empleadosTable.dni, createEmpleadoDto.dni))
-
-      if (empleadosWithSameDni.length > 0) {
-        throw CustomError.badRequest(
-          `Ya existe un empleado con ese dni: ${createEmpleadoDto.dni}`
-        )
-      }
-    }
-
-    const sucursales = await db
-      .select({ id: sucursalesTable.id })
+    const results = await db
+      .select({
+        empleadoId: empleadosTable.id,
+        sucursalId: sucursalesTable.id
+      })
       .from(sucursalesTable)
+      .leftJoin(empleadosTable, eq(empleadosTable.dni, createEmpleadoDto.dni))
       .where(eq(sucursalesTable.id, createEmpleadoDto.sucursalId))
 
-    if (sucursales.length < 1) {
+    if (results.length < 1) {
       throw CustomError.badRequest('La sucursal ingresada no existe')
+    }
+
+    const [result] = results
+
+    if (result.empleadoId != null) {
+      throw CustomError.badRequest(
+        `Ya existe un empleado con ese dni: ${createEmpleadoDto.dni}`
+      )
     }
 
     const sueldoString =
@@ -47,8 +46,10 @@ export class CreateEmpleado {
       .values({
         nombre: createEmpleadoDto.nombre,
         apellidos: createEmpleadoDto.apellidos,
-        edad: createEmpleadoDto.edad,
+        activo: createEmpleadoDto.activo,
         dni: createEmpleadoDto.dni,
+        // pathFoto: createEmpleadoDto.pathFoto,
+        celular: createEmpleadoDto.celular,
         horaInicioJornada: createEmpleadoDto.horaInicioJornada,
         horaFinJornada: createEmpleadoDto.horaFinJornada,
         fechaContratacion: createEmpleadoDto.fechaContratacion,
@@ -57,7 +58,7 @@ export class CreateEmpleado {
       })
       .returning()
 
-    if (insertedEmpleadoResult.length <= 0) {
+    if (insertedEmpleadoResult.length < 1) {
       throw CustomError.internalServer(
         'Ha ocurrido un error al intentar registrar el empleado'
       )

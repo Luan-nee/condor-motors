@@ -3,8 +3,9 @@ import { createEmpleadoValidator } from '@/domain/validators/entities/empleados/
 export class CreateEmpleadoDto {
   public nombre: string
   public apellidos: string
-  public edad?: number
-  public dni?: string
+  public activo: boolean
+  public dni: string
+  public celular?: string
   public horaInicioJornada?: string
   public horaFinJornada?: string
   public fechaContratacion?: string
@@ -14,8 +15,9 @@ export class CreateEmpleadoDto {
   private constructor({
     nombre,
     apellidos,
-    edad,
+    activo,
     dni,
+    celular,
     horaInicioJornada,
     horaFinJornada,
     fechaContratacion,
@@ -24,14 +26,16 @@ export class CreateEmpleadoDto {
   }: CreateEmpleadoDto) {
     this.nombre = nombre
     this.apellidos = apellidos
-    this.edad = edad
+    this.activo = activo
     this.dni = dni
+    this.celular = celular
     this.horaInicioJornada = horaInicioJornada
     this.horaFinJornada = horaFinJornada
     this.fechaContratacion = fechaContratacion
     this.sueldo = sueldo
     this.sucursalId = sucursalId
   }
+
   static create(input: any): [string?, CreateEmpleadoDto?] {
     const resultado = createEmpleadoValidator(input)
 
