@@ -49,7 +49,6 @@ class MovimientoRequestDialog extends StatefulWidget {
 }
 
 class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
-  final _formKey = GlobalKey<FormState>();
   final _cantidadController = TextEditingController();
   
   Map<String, dynamic>? _productoSeleccionado;

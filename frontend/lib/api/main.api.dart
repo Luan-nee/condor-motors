@@ -4,16 +4,28 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:math' as math;
 
 // Definición de la clase ApiException
 class ApiException implements Exception {
   final int statusCode;
   final String message;
+  final dynamic data;
 
-  ApiException({required this.statusCode, required this.message});
+  ApiException({
+    required this.statusCode, 
+    required this.message,
+    this.data,
+  });
 
   @override
   String toString() => 'ApiException: $message (Status Code: $statusCode)';
+
+  Map<String, dynamic> toJson() => {
+    'statusCode': statusCode,
+    'message': message,
+    'data': data,
+  };
 }
 
 class ApiService {
@@ -29,11 +41,19 @@ class ApiService {
   // Singleton pattern
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
+
+  // Constantes para configuración
+  static const Duration defaultTimeout = Duration(seconds: 30);
+  static const Duration tokenRefreshThreshold = Duration(minutes: 5);
+  static const int maxRetries = 3;
+
   ApiService._internal({
-    this.baseUrl = 'http://localhost:3000/api', // Para Web
-    // this.baseUrl = 'http://10.0.2.2:3000/api', // Para Android Emulator
-    // this.baseUrl = 'http://127.0.0.1:3000/api', // Para iOS Simulator
+    this.baseUrl = 'http://localhost:3000/api'
   }) {
+    _initializeDio();
+  }
+
+  void _initializeDio() {
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
       contentType: 'application/json',
@@ -41,6 +61,9 @@ class ApiService {
       validateStatus: (status) => true,
       receiveDataWhenStatusError: true,
       followRedirects: true,
+      connectTimeout: defaultTimeout,
+      receiveTimeout: defaultTimeout,
+      sendTimeout: defaultTimeout,
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
@@ -63,109 +86,132 @@ class ApiService {
     }
 
     _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) {
-        // Debug log
-        if (kDebugMode) {
-          print('Request URL: ${options.uri}');
-          print('Request Method: ${options.method}');
-          print('Request Headers: ${options.headers}');
-          print('Request Data: ${options.data}');
-        }
-        
-        // Asegurar que el Content-Type esté establecido para POST/PUT
-        if (options.method != 'GET') {
-          options.headers['Content-Type'] = 'application/json';
-        }
-        
-        // Agregar token de autorización si existe
-        if (_authToken != null) {
-          options.headers['Authorization'] = 'Bearer $_authToken';
-        }
-        
-        return handler.next(options);
-      },
-      onResponse: (response, handler) {
-        if (kDebugMode) {
-          print('Response Status: ${response.statusCode}');
-          print('Response Headers: ${response.headers}');
-          print('Response Data: ${response.data}');
-        }
+      onRequest: _onRequest,
+      onResponse: _onResponse,
+      onError: _onError,
+    ));
+  }
 
-        // Verificar si hay headers de autorización
-        final authHeader = response.headers.value('authorization');
-        if (authHeader != null && authHeader.startsWith('Bearer ')) {
-          _authToken = authHeader.substring(7);
-        }
+  // Manejadores de interceptores
+  void _onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    if (kDebugMode) {
+      _logger.fine('Request URL: ${options.uri}');
+      _logger.fine('Request Method: ${options.method}');
+      _logger.fine('Request Headers: ${options.headers}');
+      _logger.fine('Request Data: ${options.data}');
+    }
+    
+    // Asegurar que el Content-Type esté establecido para POST/PUT
+    if (options.method != 'GET') {
+      options.headers['Content-Type'] = 'application/json';
+    }
+    
+    // Agregar token de autorización si existe
+    if (_authToken != null) {
+      options.headers['Authorization'] = 'Bearer $_authToken';
+    }
+    
+    return handler.next(options);
+  }
 
-        final refreshTokenHeader = response.headers.value('refresh-token');
-        if (refreshTokenHeader != null) {
-          _refreshToken = refreshTokenHeader;
-        }
+  void _onResponse(Response response, ResponseInterceptorHandler handler) {
+    if (kDebugMode) {
+      _logger.fine('Response Status: ${response.statusCode}');
+      _logger.fine('Response Headers: ${response.headers}');
+      _logger.fine('Response Data: ${response.data}');
+    }
 
-        return handler.next(response);
-      },
-      onError: (DioException e, handler) async {
-        if (kDebugMode) {
-          print('Error Type: ${e.type}');
-          print('Error Message: ${e.message}');
-          print('Error Response: ${e.response?.data}');
-          print('Error Headers: ${e.response?.headers}');
-        }
+    // Verificar si hay headers de autorización
+    final authHeader = response.headers.value('authorization');
+    if (authHeader != null && authHeader.startsWith('Bearer ')) {
+      _authToken = authHeader.substring(7);
+    }
 
-        // Manejar errores según la documentación
-        if (e.response?.statusCode == 401 && e.requestOptions.path != '/auth/login') {
-          // Intentar refrescar el token
-          if (await refreshAccessToken()) {
-            // Reintentar la petición original con el nuevo token
-            final opts = e.requestOptions;
-            opts.headers['Authorization'] = 'Bearer $_authToken';
-            try {
-              final response = await _dio.fetch(opts);
-              return handler.resolve(response);
-            } catch (retryError) {
-              return handler.reject(retryError as DioException);
-            }
-          } else {
-            // Si no se puede refrescar el token, limpiar la sesión
-            await clearTokens();
-            throw ApiException(
+    final refreshTokenHeader = response.headers.value('refresh-token');
+    if (refreshTokenHeader != null) {
+      _refreshToken = refreshTokenHeader;
+    }
+
+    return handler.next(response);
+  }
+
+  Future<void> _onError(DioException e, ErrorInterceptorHandler handler) async {
+    if (kDebugMode) {
+      _logger.warning('Error Type: ${e.type}');
+      _logger.warning('Error Message: ${e.message}');
+      _logger.warning('Error Response: ${e.response?.data}');
+      _logger.warning('Error Headers: ${e.response?.headers}');
+    }
+
+    // Manejar errores según la documentación
+    if (e.response?.statusCode == 401 && e.requestOptions.path != '/auth/login') {
+      try {
+        // Intentar refrescar el token
+        if (await refreshAccessToken()) {
+          // Reintentar la petición original con el nuevo token
+          final opts = e.requestOptions;
+          opts.headers['Authorization'] = 'Bearer $_authToken';
+          try {
+            final response = await _dio.fetch(opts);
+            return handler.resolve(response);
+          } catch (retryError) {
+            return handler.reject(retryError as DioException);
+          }
+        } else {
+          // Si no se puede refrescar el token, limpiar la sesión
+          await clearTokens();
+          return handler.reject(DioException(
+            requestOptions: e.requestOptions,
+            error: ApiException(
               statusCode: 401,
               message: 'Sesión expirada. Por favor, inicie sesión nuevamente.',
-            );
-          }
+            ),
+          ));
         }
+      } catch (refreshError) {
+        return handler.reject(DioException(
+          requestOptions: e.requestOptions,
+          error: ApiException(
+            statusCode: 401,
+            message: 'Error al refrescar la sesión: $refreshError',
+          ),
+        ));
+      }
+    }
 
-        // Manejar otros errores según la documentación
-        String message;
-        switch (e.response?.statusCode) {
-          case 400:
-            message = e.response?.data?['error'] ?? 'Solicitud inválida';
-            break;
-          case 403:
-            message = 'Acceso denegado';
-            break;
-          case 404:
-            message = 'Recurso no encontrado';
-            break;
-          case 429:
-            message = 'Demasiadas solicitudes. Intente más tarde';
-            break;
-          case 500:
-            message = 'Error interno del servidor';
-            break;
-          default:
-            if (e.type == DioExceptionType.connectionError) {
-              message = 'No se pudo conectar al servidor. Verifica que el servidor esté corriendo y que CORS esté configurado correctamente.';
-            } else {
-              message = e.message ?? 'Error desconocido';
-            }
+    // Manejar otros errores según la documentación
+    String message;
+    switch (e.response?.statusCode) {
+      case 400:
+        message = e.response?.data?['error'] ?? 'Solicitud inválida';
+        break;
+      case 403:
+        message = 'Acceso denegado';
+        break;
+      case 404:
+        message = 'Recurso no encontrado';
+        break;
+      case 429:
+        message = 'Demasiadas solicitudes. Intente más tarde';
+        break;
+      case 500:
+        message = 'Error interno del servidor';
+        break;
+      default:
+        if (e.type == DioExceptionType.connectionError) {
+          message = 'No se pudo conectar al servidor. Verifica tu conexión a internet.';
+        } else {
+          message = e.message ?? 'Error desconocido';
         }
-        
-        throw ApiException(
-          statusCode: e.response?.statusCode ?? 500,
-          message: message,
-        );
-      },
+    }
+    
+    return handler.reject(DioException(
+      requestOptions: e.requestOptions,
+      error: ApiException(
+        statusCode: e.response?.statusCode ?? 500,
+        message: message,
+        data: e.response?.data,
+      ),
     ));
   }
 
@@ -178,7 +224,6 @@ class ApiService {
 
   bool get isInitialized => _initialized;
   bool get isAuthenticated => _authToken != null;
-
   bool get isOnline => _isOnline;
   String? get token => _authToken;
   String? get refreshToken => _refreshToken;
@@ -196,8 +241,9 @@ class ApiService {
         _tokenExpiration = DateTime.parse(expirationStr);
       }
       
+      // Verificar conectividad inicial
+      _isOnline = await checkApiStatus();
       _initialized = true;
-      _isOnline = true;
     } catch (e) {
       _logger.severe('Error al inicializar ApiService: $e');
       rethrow;
@@ -211,6 +257,13 @@ class ApiService {
     required DateTime expiration,
   }) async {
     try {
+      if (token.isEmpty) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'Token inválido',
+        );
+      }
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', token);
       if (refreshToken != null) {
@@ -247,8 +300,7 @@ class ApiService {
   // Verificar si el token necesita ser refrescado
   bool _needsTokenRefresh() {
     if (_tokenExpiration == null || _refreshToken == null) return false;
-    // Refrescar si faltan menos de 5 minutos para que expire
-    return _tokenExpiration!.difference(DateTime.now()).inMinutes < 5;
+    return _tokenExpiration!.difference(DateTime.now()) < tokenRefreshThreshold;
   }
 
   // Refrescar token de acceso
@@ -273,7 +325,7 @@ class ApiService {
           final token = newToken!.substring(7);
           await setTokens(
             token: token,
-            refreshToken: _refreshToken, // Mantener el mismo refresh token
+            refreshToken: _refreshToken,
             expiration: DateTime.now().add(const Duration(minutes: 30)),
           );
           return true;
@@ -293,8 +345,23 @@ class ApiService {
     Map<String, dynamic>? body,
     Map<String, dynamic>? queryParams,
     bool requiresAuth = true,
+    int retryCount = 0,
   }) async {
     try {
+      if (!_initialized) {
+        throw ApiException(
+          statusCode: 500,
+          message: 'ApiService no está inicializado',
+        );
+      }
+
+      if (requiresAuth && !isAuthenticated) {
+        throw ApiException(
+          statusCode: 401,
+          message: 'Se requiere autenticación',
+        );
+      }
+
       if (requiresAuth && _needsTokenRefresh()) {
         final refreshed = await refreshAccessToken();
         if (!refreshed) {
@@ -324,6 +391,7 @@ class ApiService {
           throw ApiException(
             statusCode: response.statusCode!,
             message: responseData['error'] ?? 'Error desconocido',
+            data: responseData,
           );
         }
       }
@@ -331,8 +399,21 @@ class ApiService {
       throw ApiException(
         statusCode: response.statusCode!,
         message: response.data['error'] ?? 'Error en la solicitud',
+        data: response.data,
       );
-    } on DioException {
+    } on DioException catch (e) {
+      // Reintentar en caso de error de conexión
+      if (e.type == DioExceptionType.connectionError && retryCount < maxRetries) {
+        await Future.delayed(Duration(seconds: math.pow(2, retryCount).toInt()));
+        return request(
+          endpoint: endpoint,
+          method: method,
+          body: body,
+          queryParams: queryParams,
+          requiresAuth: requiresAuth,
+          retryCount: retryCount + 1,
+        );
+      }
       rethrow;
     }
   }
@@ -340,18 +421,27 @@ class ApiService {
   // Verificar estado del servidor
   Future<bool> checkApiStatus() async {
     try {
+      // En lugar de usar /health, intentamos obtener la primera página de empleados
+      // que es un endpoint que sabemos que existe y requiere autenticación
       final response = await _dio.get(
-        '/health',
+        '/empleados',
+        queryParameters: {
+          'page': 1,
+          'page_size': 1,
+        },
         options: Options(
           validateStatus: (status) => true,
           sendTimeout: const Duration(seconds: 5),
           receiveTimeout: const Duration(seconds: 5),
+          headers: headers,
         ),
       );
       
-      _isOnline = response.statusCode == 200;
+      // Si obtenemos 401 o 200, el servidor está funcionando
+      _isOnline = response.statusCode == 200 || response.statusCode == 401;
       return _isOnline;
     } catch (e) {
+      _logger.warning('Error al verificar estado del servidor: $e');
       _isOnline = false;
       return false;
     }

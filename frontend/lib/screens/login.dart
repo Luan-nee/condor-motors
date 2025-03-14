@@ -3,42 +3,9 @@ import 'package:flutter/services.dart';  // Importar para KeyboardListener
 import '../routes/routes.dart';
 import '../widgets/background.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
-// Mock data for testing
-const mockUsers = {
-  'admin': {
-    'usuario': 'admin',
-    'clave': 'admin123',
-    'rol': 'ADMINISTRADOR',
-    'nombre': 'Admin',
-    'apellido': 'Sistema',
-    'token': 'mock-token-admin',
-  },
-  'vendedor': {
-    'usuario': 'vendedor',
-    'clave': 'vendedor123',
-    'rol': 'VENDEDOR',
-    'nombre': 'Juan',
-    'apellido': 'Pérez',
-    'token': 'mock-token-vendedor',
-  },
-  'colab': {
-    'usuario': 'colab',
-    'clave': 'colab123',
-    'rol': 'COLABORADOR',
-    'nombre': 'María',
-    'apellido': 'García',
-    'token': 'mock-token-colab',
-  },
-  'pc': {
-    'usuario': 'pc',
-    'clave': 'PC123',
-    'rol': 'COMPUTADORA',
-    'nombre': 'Sistema',
-    'apellido': 'Automático',
-    'token': 'mock-token-pc',
-  },
-};
+import '../api/empleados.api.dart';
+import '../api/main.api.dart';
+import '../api/sucursales.api.dart';  // Importar SucursalesApi
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -54,6 +21,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   final _usernameFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   final _storage = const FlutterSecureStorage();
+  final _apiService = ApiService();
+  late final EmpleadoApi _empleadoApi;
+  late final SucursalesApi _sucursalesApi;  // Agregar SucursalesApi
   bool _isLoading = false;
   bool _capsLockOn = false;
   bool _obscurePassword = true;
@@ -69,7 +39,26 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       vsync: this,
       duration: const Duration(seconds: 10),
     )..repeat();
+    _empleadoApi = EmpleadoApi(_apiService);
+    _sucursalesApi = SucursalesApi(_apiService);  // Inicializar SucursalesApi
+    _initializeApi();
     _loadSavedCredentials();
+  }
+
+  Future<void> _initializeApi() async {
+    try {
+      await _apiService.init();
+      final isOnline = await _apiService.checkApiStatus();
+      if (!isOnline) {
+        setState(() {
+          _errorMessage = 'No se puede conectar al servidor. Verifique su conexión.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error al inicializar la conexión: $e';
+      });
+    }
   }
 
   @override
@@ -129,33 +118,90 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       _errorMessage = '';
     });
 
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final response = await _empleadoApi.login(
+        _usernameController.text,
+        _passwordController.text,
+      );
 
-    final username = _usernameController.text.toLowerCase();
-    final password = _passwordController.text;
-
-    final user = mockUsers[username];
-    if (user != null && user['clave'] == password) {
       if (_rememberMe) {
         await _saveCredentials();
       }
-      
+
       if (!mounted) return;
+
+      final empleadoData = response['empleado'];
+      if (empleadoData == null) {
+        throw ApiException(
+          statusCode: 500,
+          message: 'Error: Datos de empleado no encontrados en la respuesta',
+        );
+      }
+
+      // Convertir el código de rol a un rol válido
+      final rol = EmpleadoApi.getRoleFromCodigo(empleadoData['rolCuentaEmpleadoCodigo'] as String);
       
+      if (rol == 'DESCONOCIDO') {
+        throw ApiException(
+          statusCode: 500,
+          message: 'Error: Rol no reconocido',
+        );
+      }
+
+      final token = response['token'];
+      if (token == null) {
+        throw ApiException(
+          statusCode: 500,
+          message: 'Error: Token de autenticación no encontrado',
+        );
+      }
+
+      // Establecer el token en el servicio API antes de hacer la llamada a sucursales
+      await _apiService.setTokens(
+        token: token,
+        refreshToken: response['refresh_token'],
+        expiration: DateTime.now().add(const Duration(minutes: 30)),
+      );
+
+      // Obtener información de la sucursal
+      Sucursal? sucursal;
+      if (empleadoData['sucursalId'] != null) {
+        try {
+          // Ahora que el token está establecido, podemos obtener la información de la sucursal
+          sucursal = await _sucursalesApi.getSucursal(empleadoData['sucursalId']);
+          debugPrint('Sucursal obtenida: ${sucursal.nombre}');
+        } catch (e) {
+          debugPrint('Error al obtener información de la sucursal: $e');
+          // No lanzamos excepción aquí para permitir que el login continúe
+        }
+      }
+
       Navigator.pushReplacementNamed(
         context,
-        Routes.getInitialRoute(user['rol'] as String),
+        Routes.getInitialRoute(rol),
         arguments: {
-          'token': user['token'],
-          'rol': user['rol'],
-          'nombre': user['nombre'],
-          'apellido': user['apellido'],
-          'usuario': user['usuario'],
+          'token': token,
+          'rol': rol,
+          'usuario': empleadoData['usuario'],
+          'nombre': empleadoData['nombre'] ?? empleadoData['usuario'],
+          'apellido': empleadoData['apellidos'] ?? '',
+          'sucursalId': empleadoData['sucursalId'],
+          'sucursal': sucursal != null ? {
+            'id': sucursal.id,
+            'nombre': sucursal.nombre,
+            'direccion': sucursal.direccion,
+            'sucursalCentral': sucursal.sucursalCentral,
+          } : null,
         },
       );
-    } else {
+    } on ApiException catch (e) {
       setState(() {
-        _errorMessage = 'Usuario o clave incorrectos';
+        _errorMessage = e.message;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error inesperado: $e';
         _isLoading = false;
       });
     }
