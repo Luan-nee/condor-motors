@@ -5,6 +5,7 @@ import { UpdateProductoDto } from '@/domain/dtos/entities/productos/update-produ
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { CreateProducto } from '@/domain/use-cases/entities/productos/create-producto.use-case'
+import { GetAllProductos } from '@/domain/use-cases/entities/productos/get-all-productos.use-case'
 import { GetProductoById } from '@/domain/use-cases/entities/productos/get-producto-by-id.use-case'
 import { GetProductos } from '@/domain/use-cases/entities/productos/get-productos.use-case'
 import { UpdateProducto } from '@/domain/use-cases/entities/productos/update-producto.use-case'
@@ -155,5 +156,31 @@ export class ProductosController {
     }
 
     CustomResponse.notImplemented({ res })
+  }
+
+  all = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [error, queriesDto] = QueriesDto.create(req.query)
+    if (error !== undefined || queriesDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload } = req
+
+    const getAllProductos = new GetAllProductos(authPayload)
+
+    getAllProductos
+      .execute(queriesDto)
+      .then((productos) => {
+        CustomResponse.success({ res, data: productos })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 }
