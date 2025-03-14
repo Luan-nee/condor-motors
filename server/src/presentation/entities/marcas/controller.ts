@@ -26,7 +26,7 @@ export class MarcasController {
       // Obtener parámetros de paginación de la query con validación de tipo
       let page = 1
       let pageSize = 10
-      
+
       // Validar y convertir page
       if (req.query.page !== undefined) {
         const pageParam = Number(req.query.page)
@@ -34,7 +34,7 @@ export class MarcasController {
           page = pageParam
         }
       }
-      
+
       // Validar y convertir pageSize
       if (req.query.pageSize !== undefined) {
         const pageSizeParam = Number(req.query.pageSize)
@@ -42,20 +42,20 @@ export class MarcasController {
           pageSize = pageSizeParam
         }
       }
-      
+
       // Validar que los parámetros sean positivos
       if (page < 1 || pageSize < 1) {
-        CustomResponse.badRequest({ 
-          res, 
-          error: 'Los parámetros de paginación deben ser números positivos' 
+        CustomResponse.badRequest({
+          res,
+          error: 'Los parámetros de paginación deben ser números positivos'
         })
         return
       }
-      
+
       // Usar el caso de uso para obtener las marcas paginadas
       const getAllMarcas = new GetAllMarcas()
       const result = await getAllMarcas.execute(page, pageSize)
-      
+
       CustomResponse.success({ res, data: result })
     } catch (error) {
       handleError(error, res)

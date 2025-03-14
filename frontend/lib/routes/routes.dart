@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/admin/slides_admin.dart';
-import '../screens/computer/dashboard_computer.dart';
+import '../screens/computer/slides_computer.dart';
 import '../screens/colabs/selector_colab.dart';  // Vista para vendedores
 import '../screens/login.dart';
 import '../api/empleados.api.dart';
@@ -63,12 +63,12 @@ class Routes {
         );
       case vendedorDashboard:
         return MaterialPageRoute(
-          builder: (_) => const SelectorColabScreen(), // Usando la vista de colaborador para vendedores
+          builder: (_) => SelectorColabScreen(empleadoData: empleadoData),
           settings: settings,
         );
       case computerDashboard:
         return MaterialPageRoute(
-          builder: (_) => const DashboardComputerScreen(),
+          builder: (_) => const SlidesComputerScreen(),
           settings: settings,
         );
       default:

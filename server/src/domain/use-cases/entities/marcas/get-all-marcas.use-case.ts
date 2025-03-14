@@ -9,14 +9,14 @@ interface GetAllMarcasUseCase {
 export class GetAllMarcas implements GetAllMarcasUseCase {
   async execute(page = 1, pageSize = 10): Promise<any> {
     const offset = (page - 1) * pageSize
-    
+
     const [marcas, totalResult] = await Promise.all([
       db.select().from(marcasTable).limit(pageSize).offset(offset),
       db.select({ count: sql`count(*)` }).from(marcasTable)
     ])
-    
+
     const total = Number(totalResult[0].count)
-    
+
     return {
       data: marcas,
       pagination: {
@@ -27,4 +27,4 @@ export class GetAllMarcas implements GetAllMarcasUseCase {
       }
     }
   }
-} 
+}

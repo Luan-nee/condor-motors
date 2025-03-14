@@ -87,6 +87,8 @@ class NumericKeypad extends StatefulWidget {
 class _NumericKeypadState extends State<NumericKeypad> {
   final _focusNode = FocusNode();
   final _customerNameController = TextEditingController();
+  final _changeController = TextEditingController();
+  bool _isManualChange = false;
 
   @override
   void initState() {
@@ -99,10 +101,14 @@ class _NumericKeypadState extends State<NumericKeypad> {
   void dispose() {
     _focusNode.dispose();
     _customerNameController.dispose();
+    _changeController.dispose();
     super.dispose();
   }
 
   double get change {
+    if (_isManualChange) {
+      return double.tryParse(_changeController.text) ?? 0;
+    }
     final total = double.tryParse(widget.currentAmount) ?? 0;
     final payment = double.tryParse(widget.paymentAmount) ?? 0;
     return payment - total;
@@ -139,6 +145,26 @@ class _NumericKeypadState extends State<NumericKeypad> {
     } else if (key == LogicalKeyboardKey.period || key == LogicalKeyboardKey.numpadDecimal) {
       widget.onKeyPressed('.');
     }
+  }
+
+  void _handleChangeClick() {
+    setState(() {
+      _isManualChange = true;
+      _changeController.text = change.toStringAsFixed(2);
+    });
+  }
+
+  void _handleChangeChanged(String value) {
+    setState(() {
+      _changeController.text = value;
+    });
+  }
+
+  void _handleChangeFocusLost() {
+    setState(() {
+      _isManualChange = false;
+      _changeController.clear();
+    });
   }
 
   @override
@@ -263,12 +289,29 @@ class _NumericKeypadState extends State<NumericKeypad> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        'S/ ${change.abs().toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: change >= 0 ? Colors.green : Colors.red,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                      InkWell(
+                        onTap: _handleChangeClick,
+                        child: TextField(
+                          controller: _changeController,
+                          enabled: _isManualChange,
+                          onChanged: _handleChangeChanged,
+                          onEditingComplete: _handleChangeFocusLost,
+                          onSubmitted: (_) => _handleChangeFocusLost(),
+                          style: TextStyle(
+                            color: change >= 0 ? Colors.green : Colors.red,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'S/ ${change.abs().toStringAsFixed(2)}',
+                            hintStyle: TextStyle(
+                              color: change >= 0 ? Colors.green : Colors.red,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         ),
                       ),
                     ],

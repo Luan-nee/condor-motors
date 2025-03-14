@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../routes/routes.dart';
-import 'sales_computer.dart';
+import 'ventas_computer.dart';
 import 'dashboard_computer.dart';
 
 class SlidesComputerScreen extends StatefulWidget {
@@ -19,11 +19,13 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
       'title': 'Dashboard',
       'icon': FontAwesomeIcons.chartLine,
       'screen': const DashboardComputerScreen(),
+      'description': 'Información general de la sucursal',
     },
     {
-      'title': 'Ventas Pendientes',
+      'title': 'Aprobar Ventas',
       'icon': FontAwesomeIcons.cashRegister,
       'screen': const SalesComputerScreen(),
+      'description': 'Procesar ventas pendientes',
     },
   ];
 
@@ -91,6 +93,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                   return _buildMenuItem(
                     icon: item['icon'] as IconData,
                     text: item['title'] as String,
+                    description: item['description'] as String,
                     isSelected: _selectedIndex == index,
                     onTap: () => setState(() => _selectedIndex = index),
                   );
@@ -140,6 +143,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
   Widget _buildMenuItem({
     required IconData icon,
     required String text,
+    required String description,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
@@ -167,11 +171,25 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
               size: 18,
             ),
             const SizedBox(width: 12),
-            Text(
-              text,
-              style: TextStyle(
-                color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
-                fontSize: 14,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    text,
+                    style: TextStyle(
+                      color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: Colors.white54.withOpacity(0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

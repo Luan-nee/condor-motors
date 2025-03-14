@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   bool _rememberMe = false;
   late final AnimationController _animationController;
   String _errorMessage = '';
-  String _serverIp = '192.168.1.66'; // IP fija para el servidor
+  String _serverIp = 'localhost'; // IP local para el servidor
   late final LifecycleObserver _lifecycleObserver;
 
   @override
@@ -88,31 +88,43 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       final ip = await _storage.read(key: 'server_ip');
       if (ip != null && ip.isNotEmpty) {
         setState(() {
-          _serverIp = '192.168.1.66';
+          _serverIp = ip;
         });
-        // Actualizar la URL base del API con la IP fija
-        _apiService.setBaseUrl('http://192.168.1.66:3000/api');
+      } else {
+        // Si no hay IP guardada, usar localhost
+        setState(() {
+          _serverIp = 'localhost';
+        });
       }
+      // Actualizar la URL base del API
+      _apiService.setBaseUrl('http://$_serverIp:3000/api');
     } catch (e) {
       debugPrint('Error al cargar la IP del servidor: $e');
+      // En caso de error, asegurar que se use localhost
+      setState(() {
+        _serverIp = 'localhost';
+      });
+      _apiService.setBaseUrl('http://localhost:3000/api');
     }
   }
 
   Future<void> _saveServerIp(String ip) async {
     try {
-      // Siempre guardamos la IP fija
-      await _storage.write(key: 'server_ip', value: '192.168.1.66');
+      // Guardar la IP proporcionada
+      await _storage.write(key: 'server_ip', value: ip);
       setState(() {
-        _serverIp = '192.168.1.66';
+        _serverIp = ip;
       });
-      // Actualizar la URL base del API con la IP fija
-      _apiService.setBaseUrl('http://192.168.1.66:3000/api');
+      // Actualizar la URL base del API
+      _apiService.setBaseUrl('http://$_serverIp:3000/api');
     } catch (e) {
       debugPrint('Error al guardar la IP del servidor: $e');
     }
   }
 
   void _showServerConfigDialog() {
+    final TextEditingController ipController = TextEditingController(text: _serverIp);
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -121,36 +133,44 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'La dirección IP del servidor está configurada como:',
+              'Ingrese la dirección IP del servidor:',
               style: TextStyle(color: Colors.grey[700]),
             ),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[400]!),
-              ),
-              child: const Text(
-                '192.168.1.66:3000',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+            TextFormField(
+              controller: ipController,
+              decoration: InputDecoration(
+                labelText: 'Dirección IP',
+                hintText: 'Ej: localhost o 192.168.1.100',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
+              keyboardType: TextInputType.text,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Text(
-              'La dirección IP está fija y no se puede cambiar.',
+              '• Para desarrollo local: localhost\n• Para emuladores Android: 10.0.2.2\n• Para dispositivos físicos: IP de tu PC',
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
         ),
         actions: [
-          ElevatedButton(
+          TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Aceptar'),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final newIp = ipController.text.trim();
+              if (newIp.isNotEmpty) {
+                _saveServerIp(newIp);
+                Navigator.pop(context);
+                // Reintentar la conexión
+                _initializeApi();
+              }
+            },
+            child: const Text('Guardar'),
           ),
         ],
       ),

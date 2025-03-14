@@ -3,7 +3,7 @@ import { MarcasController } from './controller'
 
 /**
  * Rutas para el manejo de marcas
- * 
+ *
  * GET /marcas - Obtener todas las marcas (paginado)
  *   Query params:
  *     - page: número de página (default: 1, debe ser un número positivo)
@@ -23,16 +23,16 @@ export class MarcasRoutes {
 
     // Ruta para obtener una marca por ID
     router.get('/:id', controller.getById)
-    
+
     // Ruta para crear una nueva marca
     router.post('/', controller.create)
-    
+
     // Ruta para actualizar una marca existente
     router.put('/:id', controller.update)
-    
+
     // Ruta para eliminar una marca
     router.delete('/:id', controller.delete)
-    
+
     return router
   }
 }

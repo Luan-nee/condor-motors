@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../api/ventas.api.dart' as ventas_api;
-import '../../api/stocks.api.dart' as stocks_api;
 import '../../api/main.api.dart';
+import '../../services/ventas_transfer_service.dart';
 
 class DashboardComputerScreen extends StatefulWidget {
   const DashboardComputerScreen({super.key});
@@ -13,36 +14,63 @@ class DashboardComputerScreen extends StatefulWidget {
 class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
   final _apiService = ApiService();
   late final ventas_api.VentasApi _ventasApi;
-  late final stocks_api.StocksApi _stockApi;
   bool _isLoading = false;
-  List<ventas_api.Venta> _ventas = [];
-  List<stocks_api.Stock> _stocksBajos = [];
-  DateTime _fechaInicio = DateTime.now().subtract(const Duration(days: 7));
-  DateTime _fechaFin = DateTime.now();
-
+  List<ventas_api.Venta> _ultimasVentas = [];
+  List<Map<String, dynamic>> _productosBajos = [];
+  List<Map<String, dynamic>> _colaboradoresConectados = [];
+  
   @override
   void initState() {
     super.initState();
     _ventasApi = ventas_api.VentasApi(_apiService);
-    _stockApi = stocks_api.StocksApi(_apiService);
     _cargarDatos();
   }
 
   Future<void> _cargarDatos() async {
     setState(() => _isLoading = true);
     try {
-      final ventas = await _ventasApi.getVentas(
-        fechaInicio: _fechaInicio,
-        fechaFin: _fechaFin,
-      );
-      
-      final stocksBajos = await _stockApi.getLowStockProducts(1); // TODO: Obtener localId del estado global
-      
+      // Cargar últimas ventas
+      final ventas = await _ventasApi.getVentas();
       if (!mounted) return;
-      setState(() {
-        _ventas = ventas;
-        _stocksBajos = stocksBajos;
-      });
+      
+      // Ordenar por fecha y tomar las últimas 5
+      _ultimasVentas = ventas
+        ..sort((a, b) => b.fechaCreacion!.compareTo(a.fechaCreacion!));
+      _ultimasVentas = _ultimasVentas.take(5).toList();
+      
+      // TODO: Cargar productos con stock bajo
+      _productosBajos = [
+        {
+          'id': 1,
+          'nombre': 'Casco MT Thunder',
+          'stock': 2,
+          'stockMinimo': 5,
+        },
+        {
+          'id': 2,
+          'nombre': 'Aceite Motul 5100',
+          'stock': 3,
+          'stockMinimo': 10,
+        },
+      ];
+      
+      // TODO: Cargar colaboradores conectados
+      _colaboradoresConectados = [
+        {
+          'id': 1,
+          'nombre': 'Juan Pérez',
+          'rol': 'Vendedor',
+          'ultimaActividad': DateTime.now().subtract(const Duration(minutes: 5)),
+        },
+        {
+          'id': 2,
+          'nombre': 'María García',
+          'rol': 'Vendedor',
+          'ultimaActividad': DateTime.now().subtract(const Duration(minutes: 15)),
+        },
+      ];
+      
+      setState(() {});
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -58,22 +86,17 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
     }
   }
 
-  double get _totalVentas => _ventas.fold(
-    0, 
-    (sum, venta) => sum + venta.total,
-  );
-
-  int get _cantidadVentas => _ventas.length;
-
-  double get _promedioVentas => _cantidadVentas > 0 
-    ? _totalVentas / _cantidadVentas 
-    : 0;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF1A1A1A),
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        backgroundColor: const Color(0xFF2D2D2D),
+        title: const Text(
+          'Dashboard',
+          style: TextStyle(color: Colors.white),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -88,221 +111,274 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Filtros de fecha
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          decoration: const InputDecoration(
-                            labelText: 'Fecha inicio',
-                            suffixIcon: Icon(Icons.calendar_today),
-                          ),
-                          readOnly: true,
-                          initialValue: _formatDate(_fechaInicio),
-                          onTap: () async {
-                            final fecha = await showDatePicker(
-                              context: context,
-                              initialDate: _fechaInicio,
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime.now(),
-                            );
-                            if (fecha != null) {
-                              setState(() {
-                                _fechaInicio = fecha;
-                                _cargarDatos();
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TextFormField(
-                          decoration: const InputDecoration(
-                            labelText: 'Fecha fin',
-                            suffixIcon: Icon(Icons.calendar_today),
-                          ),
-                          readOnly: true,
-                          initialValue: _formatDate(_fechaFin),
-                          onTap: () async {
-                            final fecha = await showDatePicker(
-                              context: context,
-                              initialDate: _fechaFin,
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime.now(),
-                            );
-                            if (fecha != null) {
-                              setState(() {
-                                _fechaFin = fecha;
-                                _cargarDatos();
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Tarjetas de estadísticas
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          'Total Ventas',
-                          'S/ ${_totalVentas.toStringAsFixed(2)}',
-                          Icons.attach_money,
-                          Colors.green,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildStatCard(
-                          'Cantidad',
-                          _cantidadVentas.toString(),
-                          Icons.shopping_cart,
-                          Colors.blue,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildStatCard(
-                          'Promedio',
-                          'S/ ${_promedioVentas.toStringAsFixed(2)}',
-                          Icons.analytics,
-                          Colors.orange,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Lista de ventas recientes
-                  const Text(
-                    'Ventas Recientes',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  // Resumen de ventas
+                  _buildVentasCard(),
                   const SizedBox(height: 16),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _ventas.length,
-                    itemBuilder: (context, index) {
-                      final venta = _ventas[index];
-                      return Card(
-                        child: ListTile(
-                          title: Text('Venta #${venta.id}'),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Fecha: ${_formatDateTime(venta.fechaCreacion)}'),
-                              Text('Método: ${venta.metodoPago}'),
-                              Text('Estado: ${venta.estado}'),
-                            ],
-                          ),
-                          trailing: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'S/ ${venta.total.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                'IGV: S/ ${venta.igv.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                          isThreeLine: true,
-                        ),
-                      );
-                    },
-                  ),
-
-                  if (_stocksBajos.isNotEmpty) ...[
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Productos con Stock Bajo',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _stocksBajos.length,
-                      itemBuilder: (context, index) {
-                        final stock = _stocksBajos[index];
-                        final producto = stock.producto;
-                        if (producto == null) return const SizedBox.shrink();
-
-                        return Card(
-                          child: ListTile(
-                            leading: const Icon(Icons.warning, color: Colors.orange),
-                            title: Text(producto.nombre),
-                            subtitle: Text('Código: ${producto.codigo}'),
-                            trailing: Text(
-                              '${stock.cantidad} unidades',
-                              style: const TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                  
+                  // Productos con stock bajo
+                  _buildStockBajoCard(),
+                  const SizedBox(height: 16),
+                  
+                  // Colaboradores conectados
+                  _buildColaboradoresCard(),
                 ],
               ),
             ),
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildVentasCard() {
     return Card(
+      color: const Color(0xFF2D2D2D),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const FaIcon(
+                    FontAwesomeIcons.cashRegister,
+                    size: 16,
+                    color: Color(0xFF4CAF50),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Últimas Ventas',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            const SizedBox(height: 16),
+            if (_ultimasVentas.isEmpty)
+              Center(
+                child: Text(
+                  'No hay ventas recientes',
+                  style: TextStyle(color: Colors.grey[400]),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _ultimasVentas.length,
+                itemBuilder: (context, index) {
+                  final venta = _ultimasVentas[index];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      'Venta #${venta.id}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    subtitle: Text(
+                      '${_formatDateTime(venta.fechaCreacion)}',
+                      style: TextStyle(color: Colors.grey[400]),
+                    ),
+                    trailing: Text(
+                      'S/ ${venta.total.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        color: Color(0xFF4CAF50),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                },
               ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+  Widget _buildStockBajoCard() {
+    return Card(
+      color: const Color(0xFF2D2D2D),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE31E24).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const FaIcon(
+                    FontAwesomeIcons.triangleExclamation,
+                    size: 16,
+                    color: Color(0xFFE31E24),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Stock Bajo',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_productosBajos.isEmpty)
+              Center(
+                child: Text(
+                  'No hay productos con stock bajo',
+                  style: TextStyle(color: Colors.grey[400]),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _productosBajos.length,
+                itemBuilder: (context, index) {
+                  final producto = _productosBajos[index];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      producto['nombre'] as String,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    subtitle: Text(
+                      'Stock mínimo: ${producto['stockMinimo']}',
+                      style: TextStyle(color: Colors.grey[400]),
+                    ),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE31E24).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${producto['stock']}',
+                        style: const TextStyle(
+                          color: Color(0xFFE31E24),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColaboradoresCard() {
+    return Card(
+      color: const Color(0xFF2D2D2D),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2196F3).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const FaIcon(
+                    FontAwesomeIcons.users,
+                    size: 16,
+                    color: Color(0xFF2196F3),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Colaboradores Conectados',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_colaboradoresConectados.isEmpty)
+              Center(
+                child: Text(
+                  'No hay colaboradores conectados',
+                  style: TextStyle(color: Colors.grey[400]),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _colaboradoresConectados.length,
+                itemBuilder: (context, index) {
+                  final colaborador = _colaboradoresConectados[index];
+                  final ultimaActividad = colaborador['ultimaActividad'] as DateTime;
+                  final diferencia = DateTime.now().difference(ultimaActividad);
+                  final minutos = diferencia.inMinutes;
+                  
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const CircleAvatar(
+                      backgroundColor: Color(0xFF2196F3),
+                      child: FaIcon(
+                        FontAwesomeIcons.user,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                    title: Text(
+                      colaborador['nombre'] as String,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    subtitle: Text(
+                      '${colaborador['rol']} • Activo hace ${minutos} min',
+                      style: TextStyle(color: Colors.grey[400]),
+                    ),
+                    trailing: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF4CAF50),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _formatDateTime(DateTime? date) {

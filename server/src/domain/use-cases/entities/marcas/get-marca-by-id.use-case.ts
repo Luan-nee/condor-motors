@@ -12,7 +12,7 @@ export class GetMarcaById implements GetMarcaByIdUseCase {
       .select()
       .from(marcasTable)
       .where(eq(marcasTable.id, id))
-    
+
     return marca.length > 0 ? marca[0] : null
   }
-} 
+}

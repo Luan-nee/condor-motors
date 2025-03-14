@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../api/main.api.dart';
+import '../../routes/routes.dart';
 
 import 'productos_colab.dart';
 import 'ventas_colab.dart';
+import 'historial_ventas_colab.dart';
 import 'movimiento_colab.dart';
-import 'barcode_colab.dart';
 
 class SelectorColabScreen extends StatelessWidget {
-  const SelectorColabScreen({super.key});
+  final Map<String, dynamic>? empleadoData;
+  
+  const SelectorColabScreen({
+    super.key, 
+    this.empleadoData,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,174 +23,248 @@ class SelectorColabScreen extends StatelessWidget {
     final isMobile = screenWidth < 600;
     final cardWidth = isMobile ? screenWidth * 0.45 : 300.0;
     
+    // Obtener el nombre del empleado de los datos pasados
+    final nombre = empleadoData?['nombre'] ?? 'Colaborador';
+    
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
-      body: Container(
-        padding: EdgeInsets.all(isMobile ? 16 : 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header con información del usuario
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2D2D2D),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE31E24).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+      body: SafeArea(
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 12 : 24,
+            vertical: isMobile ? 12 : 20,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header con información del usuario
+              Container(
+                padding: EdgeInsets.all(isMobile ? 16 : 20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2D2D2D),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                    child: const FaIcon(
-                      FontAwesomeIcons.userGear,
-                      size: 24,
-                      color: Color(0xFFE31E24),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'COLABORADOR',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'Bienvenido al panel de control',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[400],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.green,
-                        width: 1,
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE31E24).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const FaIcon(
+                        FontAwesomeIcons.userGear,
+                        size: 24,
+                        color: Color(0xFFE31E24),
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            nombre.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: isMobile ? 18 : 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'En línea',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                          Text(
+                            'Bienvenido al panel de control',
+                            style: TextStyle(
+                              fontSize: isMobile ? 12 : 14,
+                              color: Colors.grey[400],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Título de sección
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                'MÓDULOS DISPONIBLES',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[400],
-                  letterSpacing: 1.2,
+                    // Botón de cierre de sesión
+                    InkWell(
+                      onTap: () => _showLogoutDialog(context),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isMobile ? 8 : 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.red.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const FaIcon(
+                              FontAwesomeIcons.rightFromBracket,
+                              size: 16,
+                              color: Colors.red,
+                            ),
+                            SizedBox(width: isMobile ? 4 : 8),
+                            Text(
+                              isMobile ? 'Salir' : 'Cerrar Sesión',
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Grid de opciones
-            Expanded(
-              child: GridView(
-                padding: const EdgeInsets.all(8),
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: cardWidth,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: isMobile ? 0.8 : 1,
+              const SizedBox(height: 24),
+              
+              // Título de sección
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 4 : 8,
+                  vertical: isMobile ? 8 : 12,
                 ),
-                children: [
-                  _buildOptionCard(
-                    context,
-                    'Ventas',
-                    'Gestión de ventas',
-                    FontAwesomeIcons.cashRegister,
-                    const VentasColabScreen(),
-                    const Color(0xFF4CAF50),
-                    'Registrar ventas y consultar historial',
+                child: Text(
+                  'MÓDULOS DISPONIBLES',
+                  style: TextStyle(
+                    fontSize: isMobile ? 12 : 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[400],
+                    letterSpacing: 1.2,
                   ),
-                  _buildOptionCard(
-                    context,
-                    'Productos',
-                    'Gestión de productos',
-                    FontAwesomeIcons.box,
-                    const ProductosColabScreen(),
-                    const Color(0xFF2196F3),
-                    'Consultar stock y precios',
-                  ),
-                  _buildOptionCard(
-                    context,
-                    'Movimientos',
-                    'Solicitar productos',
-                    FontAwesomeIcons.truck,
-                    const MovimientosColabScreen(),
-                    const Color(0xFFE31E24),
-                    'Gestionar traslados entre sucursales',
-                  ),
-                  _buildOptionCard(
-                    context,
-                    'Códigos',
-                    'Escanear productos',
-                    FontAwesomeIcons.barcode,
-                    const BarcodeColabScreen(),
-                    const Color(0xFF9C27B0),
-                    'Escanear códigos de barras',
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              
+              // Grid de opciones
+              Expanded(
+                child: GridView(
+                  padding: const EdgeInsets.all(8),
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: cardWidth,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: isMobile ? 0.75 : 0.85,
+                  ),
+                  children: [
+                    _buildOptionCard(
+                      context,
+                      'Nueva Venta',
+                      'Registrar ventas',
+                      FontAwesomeIcons.cashRegister,
+                      const VentasColabScreen(),
+                      const Color(0xFF4CAF50),
+                      'Crear nuevas ventas y gestionar productos',
+                    ),
+                    _buildOptionCard(
+                      context,
+                      'Historial',
+                      'Consultar ventas',
+                      FontAwesomeIcons.clockRotateLeft,
+                      const HistorialVentasColabScreen(),
+                      const Color(0xFF9C27B0),
+                      'Ver historial de ventas realizadas',
+                    ),
+                    _buildOptionCard(
+                      context,
+                      'Productos',
+                      'Gestión de inventario',
+                      FontAwesomeIcons.box,
+                      const ProductosColabScreen(),
+                      const Color(0xFF2196F3),
+                      'Consultar stock y precios',
+                    ),
+                    _buildOptionCard(
+                      context,
+                      'Movimientos',
+                      'Solicitar productos',
+                      FontAwesomeIcons.truck,
+                      const MovimientosColabScreen(),
+                      const Color(0xFFE31E24),
+                      'Gestionar traslados entre sucursales',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  // Método para mostrar el diálogo de confirmación de cierre de sesión
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cerrar Sesión'),
+        content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => _logout(context),
+            child: const Text('Cerrar Sesión'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Método para realizar el cierre de sesión
+  Future<void> _logout(BuildContext context) async {
+    try {
+      // Limpiar tokens de autenticación
+      final apiService = ApiService();
+      await apiService.clearTokens();
+      
+      // Limpiar preferencias si es necesario
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('auth_token');
+      await prefs.remove('refresh_token');
+      await prefs.remove('token_expiration');
+      
+      // Navegar a la pantalla de login
+      if (context.mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context, 
+          Routes.login, 
+          (route) => false
+        );
+      }
+    } catch (e) {
+      // Mostrar error si ocurre algún problema
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cerrar sesión: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildOptionCard(
@@ -194,6 +276,10 @@ class SelectorColabScreen extends StatelessWidget {
     Color color,
     String description,
   ) {
+    // Obtener el tamaño de la pantalla para hacer el diseño responsivo
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    
     return Card(
       elevation: 0,
       color: const Color(0xFF2D2D2D),
@@ -208,79 +294,83 @@ class SelectorColabScreen extends StatelessWidget {
           );
         },
         borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Icono en la parte superior
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: FaIcon(
                   icon,
-                  size: 32,
+                  size: 28,
                   color: color,
                 ),
               ),
-              const Spacer(),
+              
+              // Espacio flexible para ajustar el diseño
+              const SizedBox(height: 12),
+              
+              // Título con tamaño adaptativo
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 20,
+                style: TextStyle(
+                  fontSize: isMobile ? 18 : 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
+              
+              // Subtítulo
               Text(
                 subtitle,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: isMobile ? 12 : 14,
                   color: Colors.grey[400],
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Acceder',
+              
+              // Espacio flexible que se expande para llenar el espacio disponible
+              const Spacer(),
+              
+              // Botón de acceso en la parte inferior
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'ACCEDER',
                       style: TextStyle(
                         color: color,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
                     ),
-                  ),
-                  const Spacer(),
-                  FaIcon(
-                    FontAwesomeIcons.angleRight,
-                    size: 16,
-                    color: color,
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    FaIcon(
+                      FontAwesomeIcons.angleRight,
+                      size: 12,
+                      color: color,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

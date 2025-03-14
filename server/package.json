@@ -20,6 +20,7 @@
     "db:studio": "npx drizzle-kit studio"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.6.0",
     "@types/bcryptjs": "2.4.6",
     "@types/express": "5.0.0",
     "@types/jsonwebtoken": "9.0.8",
