@@ -23,9 +23,25 @@ export class MarcasController {
     }
 
     try {
-      // Obtener parámetros de paginación de la query
-      const page = parseInt(req.query.page as string, 10) || 1
-      const pageSize = parseInt(req.query.pageSize as string, 10) || 10
+      // Obtener parámetros de paginación de la query con validación de tipo
+      let page = 1
+      let pageSize = 10
+      
+      // Validar y convertir page
+      if (req.query.page !== undefined) {
+        const pageParam = Number(req.query.page)
+        if (!Number.isNaN(pageParam)) {
+          page = pageParam
+        }
+      }
+      
+      // Validar y convertir pageSize
+      if (req.query.pageSize !== undefined) {
+        const pageSizeParam = Number(req.query.pageSize)
+        if (!Number.isNaN(pageSizeParam)) {
+          pageSize = pageSizeParam
+        }
+      }
       
       // Validar que los parámetros sean positivos
       if (page < 1 || pageSize < 1) {
