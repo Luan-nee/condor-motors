@@ -23,7 +23,8 @@ export class LoginUser {
     empleadoId: cuentasEmpleadosTable.empleadoId,
     fechaCreacion: cuentasEmpleadosTable.fechaCreacion,
     fechaActualizacion: cuentasEmpleadosTable.fechaActualizacion,
-    sucursal: sucursalesTable.nombre
+    sucursal: sucursalesTable.nombre,
+    sucursalId: sucursalesTable.id
   }
 
   constructor(

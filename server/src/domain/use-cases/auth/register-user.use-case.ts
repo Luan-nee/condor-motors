@@ -31,7 +31,11 @@ export class RegisterUser {
     }
 
     const empleados = await db
-      .select({ id: empleadosTable.id, nombreSucursal: sucursalesTable.nombre })
+      .select({
+        id: empleadosTable.id,
+        nombreSucursal: sucursalesTable.nombre,
+        sucursalId: sucursalesTable.id
+      })
       .from(empleadosTable)
       .innerJoin(
         sucursalesTable,
@@ -98,7 +102,8 @@ export class RegisterUser {
     return {
       ...user,
       rolCuentaEmpleadoCodigo: selectedRol.codigo,
-      sucursal: empleado.nombreSucursal
+      sucursal: empleado.nombreSucursal,
+      sucursalId: empleado.sucursalId
     }
   }
 

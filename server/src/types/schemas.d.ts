@@ -20,6 +20,7 @@ export type UserEntity = Omit<
   'secret' | 'clave'
 > & { rolCuentaEmpleadoCodigo: RolCuentaEmpleadoEntity['codigo'] } & {
   sucursal: SucursalEntity['nombre']
+  sucursalId: SucursalEntity['id']
 }
 
 export interface UserEntityWithTokens {

@@ -14,7 +14,8 @@ export class UserEntityMapper {
       empleadoId: parsedEmpleadoId,
       fechaCreacion: input.fechaCreacion,
       fechaActualizacion: input.fechaActualizacion,
-      sucursal: input.sucursal
+      sucursal: input.sucursal,
+      sucursalId: input.sucursalId
     }
   }
 }
