@@ -4,16 +4,16 @@ import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import {
   categoriasTable,
+  coloresTable,
   detallesProductoTable,
   marcasTable,
   productosTable,
-  sucursalesTable,
-  unidadesTable
+  sucursalesTable
 } from '@/db/schema'
 import type { CreateProductoDto } from '@/domain/dtos/entities/productos/create-producto.dto'
 import { ProductoEntityMapper } from '@/domain/mappers/producto-entity.mapper'
 import type { SucursalIdType } from '@/types/schemas'
-import { eq, ilike, ne, or } from 'drizzle-orm'
+import { eq, ne } from 'drizzle-orm'
 
 export class CreateProducto {
   private readonly authPayload: AuthPayload
@@ -30,8 +30,8 @@ export class CreateProducto {
     sucursalId: SucursalIdType
   ) {
     const mappedPrices = {
-      precioBase: createProductoDto.precioBase?.toFixed(2),
-      precioMayorista: createProductoDto.precioMayorista?.toFixed(2),
+      precioCompra: createProductoDto.precioCompra?.toFixed(2),
+      precioVenta: createProductoDto.precioVenta?.toFixed(2),
       precioOferta: createProductoDto.precioOferta?.toFixed(2)
     }
 
@@ -45,11 +45,14 @@ export class CreateProducto {
         const [producto] = await tx
           .insert(productosTable)
           .values({
-            sku: createProductoDto.sku,
             nombre: createProductoDto.nombre,
             descripcion: createProductoDto.descripcion,
             maxDiasSinReabastecer: createProductoDto.maxDiasSinReabastecer,
-            unidadId: createProductoDto.unidadId,
+            stockMinimo: createProductoDto.stockMinimo,
+            cantidadMinimaDescuento: createProductoDto.cantidadMinimaDescuento,
+            cantidadGratisDescuento: createProductoDto.cantidadGratisDescuento,
+            porcentajeDescuento: createProductoDto.porcentajeDescuento,
+            colorId: createProductoDto.colorId,
             categoriaId: createProductoDto.categoriaId,
             marcaId: createProductoDto.marcaId
           })
@@ -58,23 +61,23 @@ export class CreateProducto {
         const [detallesProducto] = await tx
           .insert(detallesProductoTable)
           .values({
-            precioBase: mappedPrices.precioBase,
-            precioMayorista: mappedPrices.precioMayorista,
+            precioCompra: mappedPrices.precioCompra,
+            precioVenta: mappedPrices.precioVenta,
             precioOferta: mappedPrices.precioOferta,
             stock: createProductoDto.stock,
             productoId: producto.id,
             sucursalId
           })
           .returning({
-            precioBase: detallesProductoTable.precioBase,
-            precioMayorista: detallesProductoTable.precioMayorista,
+            precioCompra: detallesProductoTable.precioCompra,
+            precioVenta: detallesProductoTable.precioVenta,
             precioOferta: detallesProductoTable.precioOferta,
             stock: detallesProductoTable.stock
           })
 
         const detallesProductosValues = sucursales.map((sucursal) => ({
-          precioBase: null,
-          precioMayorista: null,
+          precioCompra: null,
+          precioVenta: null,
           precioOferta: null,
           stock: 0,
           productoId: producto.id,
@@ -85,11 +88,10 @@ export class CreateProducto {
 
         return {
           ...producto,
-          precioBase: detallesProducto.precioBase,
-          precioMayorista: detallesProducto.precioMayorista,
+          precioCompra: detallesProducto.precioCompra,
+          precioVenta: detallesProducto.precioVenta,
           precioOferta: detallesProducto.precioOferta,
-          stock: detallesProducto.stock,
-          sucursalId
+          stock: detallesProducto.stock
         }
       })
 
@@ -108,12 +110,12 @@ export class CreateProducto {
     const results = await db
       .select({
         sucursalId: sucursalesTable.id,
-        unidadNombre: unidadesTable.nombre,
+        colorNombre: coloresTable.nombre,
         categoriaNombre: categoriasTable.nombre,
         marcaNombre: marcasTable.nombre
       })
       .from(sucursalesTable)
-      .leftJoin(unidadesTable, eq(unidadesTable.id, createProductoDto.unidadId))
+      .leftJoin(coloresTable, eq(coloresTable.id, createProductoDto.colorId))
       .leftJoin(
         categoriasTable,
         eq(categoriasTable.id, createProductoDto.categoriaId)
@@ -127,8 +129,8 @@ export class CreateProducto {
 
     const [result] = results
 
-    if (result.unidadNombre === null) {
-      throw CustomError.badRequest('La unidad que intentó asignar no existe')
+    if (result.colorNombre === null) {
+      throw CustomError.badRequest('El color que intentó asignar no existe')
     }
 
     if (result.categoriaNombre === null) {
@@ -139,34 +141,19 @@ export class CreateProducto {
       throw CustomError.badRequest('La marca que intentó asignar no existe')
     }
 
-    const productsWithSameSkuNombre = await db
-      .select({ sku: productosTable.sku, nombre: productosTable.nombre })
-      .from(productosTable)
-      .where(
-        or(
-          ilike(productosTable.sku, createProductoDto.sku),
-          ilike(productosTable.nombre, createProductoDto.nombre)
-        )
-      )
+    // const productsWithSameSkuNombre = await db
+    //   .select({ sku: productosTable.sku })
+    //   .from(productosTable)
+    //   .where(or(ilike(productosTable.sku, createProductoDto.sku)))
 
-    if (productsWithSameSkuNombre.length > 0) {
-      const [producto] = productsWithSameSkuNombre
-
-      if (producto.sku === createProductoDto.sku) {
-        throw CustomError.badRequest(
-          `Ya existe un producto con ese sku ${createProductoDto.sku}`
-        )
-      }
-
-      if (producto.nombre === createProductoDto.nombre) {
-        throw CustomError.badRequest(
-          `Ya existe un producto con ese nombre ${createProductoDto.nombre}`
-        )
-      }
-    }
+    // if (productsWithSameSkuNombre.length > 0) {
+    //   throw CustomError.badRequest(
+    //     `Ya existe un producto con ese sku ${createProductoDto.sku}`
+    //   )
+    // }
 
     return {
-      unidadNombre: result.unidadNombre,
+      colorNombre: result.colorNombre,
       categoriaNombre: result.categoriaNombre,
       marcaNombre: result.marcaNombre
     }

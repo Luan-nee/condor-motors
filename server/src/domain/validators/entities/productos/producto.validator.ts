@@ -2,15 +2,18 @@ import { productoSchema } from '@domain/validators/entities/productos/producto.s
 import z from 'zod'
 
 const createProductoSchema = z.object({
-  sku: productoSchema.sku,
   nombre: productoSchema.nombre,
   descripcion: productoSchema.descripcion,
   maxDiasSinReabastecer: productoSchema.maxDiasSinReabastecer,
-  unidadId: productoSchema.unidadId,
+  stockMinimo: productoSchema.stockMinimo,
+  cantidadMinimaDescuento: productoSchema.cantidadMinimaDescuento,
+  cantidadGratisDescuento: productoSchema.cantidadGratisDescuento,
+  porcentajeDescuento: productoSchema.porcentajeDescuento,
+  colorId: productoSchema.colorId,
   categoriaId: productoSchema.categoriaId,
   marcaId: productoSchema.marcaId,
-  precioBase: productoSchema.precioBase,
-  precioMayorista: productoSchema.precioMayorista,
+  precioCompra: productoSchema.precioCompra,
+  precioVenta: productoSchema.precioVenta,
   precioOferta: productoSchema.precioOferta,
   stock: productoSchema.stock
 })

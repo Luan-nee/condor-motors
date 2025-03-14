@@ -3,25 +3,25 @@ import { RelacionadosProductoEntityMapper } from './relacionados-producto-entity
 
 interface parseDataArgs {
   id: ProductoEntity['id']
-  unidadId: ProductoEntity['unidadId']
+  colorId: ProductoEntity['colorId']
   categoriaId: ProductoEntity['categoriaId']
   marcaId: ProductoEntity['marcaId']
-  precioBase: ProductoEntity['precioBase']
-  precioMayorista: ProductoEntity['precioMayorista']
+  precioCompra: ProductoEntity['precioCompra']
+  precioVenta: ProductoEntity['precioVenta']
   precioOferta: ProductoEntity['precioOferta']
 }
 
 export class ProductoEntityMapper {
   private static parseData(input: parseDataArgs) {
-    const precioBase =
-      input.precioBase !== null
-        ? parseFloat(input.precioBase)
-        : input.precioBase
+    const precioCompra =
+      input.precioCompra !== null
+        ? parseFloat(input.precioCompra)
+        : input.precioCompra
 
-    const precioMayorista =
-      input.precioMayorista !== null
-        ? parseFloat(input.precioMayorista)
-        : input.precioMayorista
+    const precioVenta =
+      input.precioVenta !== null
+        ? parseFloat(input.precioVenta)
+        : input.precioVenta
 
     const precioOferta =
       input.precioOferta !== null
@@ -30,11 +30,11 @@ export class ProductoEntityMapper {
 
     return {
       id: String(input.id),
-      unidadId: String(input.unidadId),
+      colorId: String(input.colorId),
       categoriaId: String(input.categoriaId),
       marcaId: String(input.marcaId),
-      precioBase,
-      precioMayorista,
+      precioCompra,
+      precioVenta,
       precioOferta
     }
   }
@@ -45,19 +45,30 @@ export class ProductoEntityMapper {
     const mappedRelacionados =
       RelacionadosProductoEntityMapper.fromObject(relacionados)
 
-    const parsedData = this.parseData(input)
+    const parsedData = this.parseData({
+      id: input.id,
+      colorId: input.colorId,
+      categoriaId: input.categoriaId,
+      marcaId: input.marcaId,
+      precioCompra: input.precioCompra,
+      precioVenta: input.precioVenta,
+      precioOferta: input.precioOferta
+    })
 
     return {
       id: parsedData.id,
       nombre: input.nombre,
       descripcion: input.descripcion,
-      sku: input.sku,
       maxDiasSinReabastecer: input.maxDiasSinReabastecer,
-      unidadId: parsedData.unidadId,
+      stockMinimo: input.stockMinimo,
+      cantidadMinimaDescuento: input.cantidadMinimaDescuento,
+      cantidadGratisDescuento: input.cantidadGratisDescuento,
+      porcentajeDescuento: input.porcentajeDescuento,
+      colorId: parsedData.colorId,
       categoriaId: parsedData.categoriaId,
       marcaId: parsedData.marcaId,
-      precioBase: parsedData.precioBase,
-      precioMayorista: parsedData.precioMayorista,
+      precioCompra: parsedData.precioCompra,
+      precioVenta: parsedData.precioVenta,
       precioOferta: parsedData.precioOferta,
       stock: input.stock,
       relacionados: mappedRelacionados,

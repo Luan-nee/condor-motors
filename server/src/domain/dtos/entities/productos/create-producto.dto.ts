@@ -1,40 +1,49 @@
 import { createProductoValidator } from '@/domain/validators/entities/productos/producto.validator'
 
 export class CreateProductoDto {
-  public sku: string
   public nombre: string
   public descripcion?: string
   public maxDiasSinReabastecer?: number
-  public unidadId: number
+  public stockMinimo?: number
+  public cantidadMinimaDescuento?: number
+  public cantidadGratisDescuento?: number
+  public porcentajeDescuento?: number
+  public colorId: number
   public categoriaId: number
   public marcaId: number
-  public precioBase?: number
-  public precioMayorista?: number
+  public precioCompra?: number
+  public precioVenta?: number
   public precioOferta?: number
   public stock?: number
 
   private constructor({
-    sku,
     nombre,
     descripcion,
     maxDiasSinReabastecer,
-    unidadId,
+    stockMinimo,
+    cantidadMinimaDescuento,
+    cantidadGratisDescuento,
+    porcentajeDescuento,
+    colorId,
     categoriaId,
     marcaId,
-    precioBase,
-    precioMayorista,
+    precioCompra,
+    precioVenta,
     precioOferta,
     stock
   }: CreateProductoDto) {
-    this.sku = sku
     this.nombre = nombre
     this.descripcion = descripcion
     this.maxDiasSinReabastecer = maxDiasSinReabastecer
-    this.unidadId = unidadId
+    this.stockMinimo = stockMinimo
+    this.cantidadMinimaDescuento = cantidadMinimaDescuento
+    this.cantidadGratisDescuento = cantidadGratisDescuento
+    this.porcentajeDescuento = porcentajeDescuento
+    this.colorId = colorId
     this.categoriaId = categoriaId
     this.marcaId = marcaId
-    this.precioBase = precioBase
-    this.precioMayorista = precioMayorista
+    this.precioCompra = precioCompra
+    this.precioVenta = precioVenta
     this.precioOferta = precioOferta
     this.stock = stock
   }

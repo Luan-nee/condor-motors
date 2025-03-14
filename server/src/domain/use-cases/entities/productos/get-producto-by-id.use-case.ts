@@ -4,13 +4,13 @@ import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import {
   categoriasTable,
+  coloresTable,
   cuentasEmpleadosTable,
   detallesProductoTable,
   empleadosTable,
   marcasTable,
   productosTable,
-  sucursalesTable,
-  unidadesTable
+  sucursalesTable
 } from '@/db/schema'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { ProductoEntityMapper } from '@/domain/mappers/producto-entity.mapper'
@@ -23,25 +23,28 @@ export class GetProductoById {
   private readonly permissionGetRelated = permissionCodes.productos.getRelated
   private readonly selectFields = {
     id: productosTable.id,
-    sku: productosTable.sku,
     nombre: productosTable.nombre,
     descripcion: productosTable.descripcion,
     maxDiasSinReabastecer: productosTable.maxDiasSinReabastecer,
-    unidadId: productosTable.unidadId,
+    stockMinimo: productosTable.stockMinimo,
+    cantidadMinimaDescuento: productosTable.cantidadMinimaDescuento,
+    cantidadGratisDescuento: productosTable.cantidadGratisDescuento,
+    porcentajeDescuento: productosTable.porcentajeDescuento,
+    colorId: productosTable.colorId,
     categoriaId: productosTable.categoriaId,
     marcaId: productosTable.marcaId,
     fechaCreacion: productosTable.fechaCreacion,
     fechaActualizacion: productosTable.fechaActualizacion,
-    precioBase: detallesProductoTable.precioBase,
-    precioMayorista: detallesProductoTable.precioMayorista,
+    precioCompra: detallesProductoTable.precioCompra,
+    precioVenta: detallesProductoTable.precioVenta,
     precioOferta: detallesProductoTable.precioOferta,
     stock: detallesProductoTable.stock,
     relacionados: {
-      unidadNombre: unidadesTable.nombre,
+      colorNombre: coloresTable.nombre,
       categoriaNombre: categoriasTable.nombre,
       marcaNombre: marcasTable.nombre
-    },
-    sucursalId: sucursalesTable.id
+    }
+    // sucursalId: sucursalesTable.id
   }
 
   constructor(authPayload: AuthPayload) {
@@ -55,7 +58,7 @@ export class GetProductoById {
     return await db
       .select(this.selectFields)
       .from(productosTable)
-      .innerJoin(unidadesTable, eq(unidadesTable.id, productosTable.unidadId))
+      .innerJoin(coloresTable, eq(coloresTable.id, productosTable.colorId))
       .innerJoin(
         categoriasTable,
         eq(categoriasTable.id, productosTable.categoriaId)
@@ -90,7 +93,7 @@ export class GetProductoById {
     return await db
       .select(this.selectFields)
       .from(productosTable)
-      .innerJoin(unidadesTable, eq(unidadesTable.id, productosTable.unidadId))
+      .innerJoin(coloresTable, eq(coloresTable.id, productosTable.colorId))
       .innerJoin(
         categoriasTable,
         eq(categoriasTable.id, productosTable.categoriaId)

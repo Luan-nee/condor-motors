@@ -5,7 +5,9 @@ import type {
   rolesCuentasEmpleadosTable,
   productosTable,
   categoriasTable,
-  marcasTable
+  marcasTable,
+  coloresTable,
+  detallesProductoTable
 } from '@/db/schema'
 import type { InferSelectModel } from 'drizzle-orm'
 
@@ -31,24 +33,22 @@ export type SucursalIdType = SucursalEntity['id']
 
 export type EmpleadoEntity = InferSelectModel<typeof empleadosTable>
 
-type UnidadEntity = InferSelectModel<typeof unidadesTable>
+type ColorEntity = InferSelectModel<typeof coloresTable>
 type CategoriaEntity = InferSelectModel<typeof categoriasTable>
 type MarcaEntity = InferSelectModel<typeof marcasTable>
 
 interface RelacionadosProductoEntity {
-  unidadNombre: UnidadEntity['nombre']
+  colorNombre: ColorEntity['nombre']
   categoriaNombre: CategoriaEntity['nombre']
   marcaNombre: MarcaEntity['nombre']
 }
 
-type PreciosProductoEntity = Pick<
-  InferSelectModel<typeof preciosProductosTable>,
-  'precioBase' | 'precioMayorista' | 'precioOferta'
+export type DetallesProductoEntity = Omit<
+  InferSelectModel<typeof detallesProductoTable>,
+  'id' | 'fechaCreacion' | 'fechaActualizacion' | 'productoId' | 'sucursalId'
 >
 
-type InventarioEntity = InferSelectModel<typeof inventariosTable>
-type InventarioProductoEntity = Pick<InventarioEntity, 'stock'>
-
 export type ProductoEntity = InferSelectModel<typeof productosTable> &
-  PreciosProductoEntity &
-  InventarioProductoEntity & { relacionados: RelacionadosProductoEntity }
+  DetallesProductoEntity & {
+    relacionados: RelacionadosProductoEntity
+  }
