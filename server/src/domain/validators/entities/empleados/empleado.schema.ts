@@ -7,7 +7,7 @@ export const empleadoSchema = {
     .string()
     .min(2)
     .max(255)
-    .refine((val) => Validator.isOnlyLetters(val), {
+    .refine((val) => Validator.isOnlyLettersSpaces(val), {
       message:
         'El nombre del empleado solo puede contener letras (mayúsculas o minúsculas)'
     }),
@@ -15,9 +15,9 @@ export const empleadoSchema = {
     .string()
     .min(2)
     .max(255)
-    .refine((val) => Validator.isOnlyLetters(val), {
+    .refine((val) => Validator.isOnlyLettersSpaces(val), {
       message:
-        'El apellido del empleado solo puede contener letras (mayúsculas o minúsculas)'
+        'El apellido del empleado solo puede contener letras (mayúsculas o minúsculas) o tiene espacios demas'
     }),
   edad: z.number().min(1).max(99).optional(),
   dni: z
