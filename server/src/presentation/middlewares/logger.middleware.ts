@@ -2,31 +2,39 @@
 import type { NextFunction, Request, Response } from 'express'
 
 export class LoggerMiddleware {
-  static requests = (req: Request, _res: Response, next: NextFunction) => {
+  static requests = (req: Request, res: Response, next: NextFunction) => {
     const resource = 'http://' + req.headers.host + req.baseUrl + req.url
+    const startTime = Date.now()
 
-    console.log('==================================================')
-    console.log('Request logs ---------- |', new Date().toISOString())
-    console.log('START - - - - - - - - - - - - - - - - - - - - - --')
-    console.log('resource:', resource)
-    console.log('method:', req.method)
-    console.log('headers:', req.headers)
-    console.log('- - - - - - - - - - - - - - - - - Specific headers')
-    console.log(
-      'access-control-request-method:',
-      req.headers['access-control-request-method']
-    )
-    console.log(
-      'access-control-request-headers:',
-      req.headers['access-control-request-headers']
-    )
-    console.log('- - - - - - - - - - - - - - - - - - - - - - Others')
-    console.log('body:', req.body)
-    console.log('cookies:', req.cookies)
-    console.log('params:', req.params)
-    console.log('query:', req.query)
-    console.log('-- - - - - - - - - - - - - - - - - - - - - - - END')
-    console.log('==================================================')
+    res.on('finish', () => {
+      const duration = Date.now() - startTime
+      console.log('==================================================')
+      console.log('Request logs ---------- |', new Date().toISOString())
+      console.log('START - - - - - - - - - - - - - - - - - - - - - --')
+      console.log('resource:', resource)
+      console.log('method:', req.method)
+      console.log('origin:', req.ip)
+      console.log('status:', res.statusCode)
+      console.log('response time:', `${duration}ms`)
+      console.log('headers:', req.headers)
+      console.log('- - - - - - - - - - - - - - - - - Specific headers')
+      console.log(
+        'access-control-request-method:',
+        req.headers['access-control-request-method']
+      )
+      console.log(
+        'access-control-request-headers:',
+        req.headers['access-control-request-headers']
+      )
+      console.log('- - - - - - - - - - - - - - - - - - - - - - Others')
+      console.log('body:', req.body)
+      console.log('cookies:', req.cookies)
+      console.log('params:', req.params)
+      console.log('query:', req.query)
+      console.log('-- - - - - - - - - - - - - - - - - - - - - - - END')
+      console.log('==================================================')
+    })
+
     next()
   }
 }
