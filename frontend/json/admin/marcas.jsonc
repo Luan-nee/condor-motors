@@ -70,6 +70,6 @@
   }
   // "El backend debe implementar todos los endpoints CRUD para marca",
   // "El frontend No necesita filtrar marcas",
-  // "No se puede eliminar una marcas cuando este esta relacionado a productos (solo se limina cuando
-  // la cantidad de productos associados es 0)"
+  // "No se puede eliminar una marcas cuando este esta relacionado a productos (solo se elimina cuando
+  // la cantidad de productos asociados es 0)"
 }

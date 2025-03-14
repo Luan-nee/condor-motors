@@ -1,21 +1,14 @@
 import 'package:flutter/material.dart';
 import '../screens/admin/slides_admin.dart';
-import '../screens/colabs/selector_colab.dart';
 import '../screens/computer/dashboard_computer.dart';
+import '../screens/colabs/selector_colab.dart';  // Vista para vendedores
 import '../screens/login.dart';
-
-// Mock roles for testing
-const mockRoles = {
-  'ADMINISTRADOR': 'ADMINISTRADOR',
-  'COLABORADOR': 'COLABORADOR',
-  'VENDEDOR': 'VENDEDOR',
-  'COMPUTADORA': 'COMPUTADORA',
-};
+import '../api/empleados.api.dart';
 
 class Routes {
   static const String login = '/';
   static const String adminDashboard = '/admin';
-  static const String colabDashboard = '/colab';
+  static const String vendedorDashboard = '/vendedor';
   static const String computerDashboard = '/computer';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -37,8 +30,8 @@ class Routes {
       final rol = empleadoData['rol'].toString().toUpperCase();
       final routeName = settings.name ?? '';
 
-      // Verificar si el rol es válido
-      if (!mockRoles.containsKey(rol)) {
+      // Verificar si el rol es válido usando los roles definidos en EmpleadoApi
+      if (!EmpleadoApi.roles.containsKey(rol)) {
         return MaterialPageRoute(
           builder: (_) => Scaffold(
             body: Center(
@@ -68,9 +61,9 @@ class Routes {
           builder: (_) => const SlidesAdminScreen(),
           settings: settings,
         );
-      case colabDashboard:
+      case vendedorDashboard:
         return MaterialPageRoute(
-          builder: (_) => const SelectorColabScreen(),
+          builder: (_) => const SelectorColabScreen(), // Usando la vista de colaborador para vendedores
           settings: settings,
         );
       case computerDashboard:
@@ -90,15 +83,15 @@ class Routes {
   }
 
   static String getInitialRoute(String? rol) {
-    if (rol == null || !mockRoles.containsKey(rol.toUpperCase())) {
+    if (rol == null || !EmpleadoApi.roles.containsKey(rol.toUpperCase())) {
       return login;
     }
 
     switch (rol.toUpperCase()) {
       case 'ADMINISTRADOR':
         return adminDashboard;
-      case 'COLABORADOR':
-        return colabDashboard;
+      case 'VENDEDOR':
+        return vendedorDashboard;
       case 'COMPUTADORA':
         return computerDashboard;
       default:
@@ -108,12 +101,18 @@ class Routes {
 
   // Verificar si el rol tiene acceso a la ruta
   static bool _canAccessRoute(String rol, String route) {
-    if (!mockRoles.containsKey(rol)) return false;
+    if (!EmpleadoApi.roles.containsKey(rol)) return false;
     
     final rolUpper = rol.toUpperCase();
-    if (rolUpper == 'ADMINISTRADOR') return true; // Acceso total
-    if (rolUpper == 'COLABORADOR') return route == colabDashboard;
-    if (rolUpper == 'COMPUTADORA') return route == computerDashboard;
-    return false;
+    switch (rolUpper) {
+      case 'ADMINISTRADOR':
+        return true; // Acceso total
+      case 'VENDEDOR':
+        return route == vendedorDashboard;
+      case 'COMPUTADORA':
+        return route == computerDashboard;
+      default:
+        return false;
+    }
   }
 }
