@@ -4,7 +4,6 @@ import type {
   empleadosTable,
   rolesCuentasEmpleadosTable,
   productosTable,
-  unidadesTable,
   categoriasTable,
   marcasTable
 } from '@/db/schema'
@@ -17,7 +16,9 @@ type RolCuentaEmpleadoEntity = InferSelectModel<
 export type UserEntity = Omit<
   InferSelectModel<typeof cuentasEmpleadosTable>,
   'secret' | 'clave'
-> & { rolCuentaEmpleadoCodigo: RolCuentaEmpleadoEntity['codigo'] }
+> & { rolCuentaEmpleadoCodigo: RolCuentaEmpleadoEntity['codigo'] } & {
+  sucursal: SucursalEntity['nombre']
+}
 
 export interface UserEntityWithTokens {
   accessToken: string

@@ -13,7 +13,8 @@ export class UserEntityMapper {
       rolCuentaEmpleadoCodigo: input.rolCuentaEmpleadoCodigo,
       empleadoId: parsedEmpleadoId,
       fechaCreacion: input.fechaCreacion,
-      fechaActualizacion: input.fechaActualizacion
+      fechaActualizacion: input.fechaActualizacion,
+      sucursal: input.sucursal
     }
   }
 }

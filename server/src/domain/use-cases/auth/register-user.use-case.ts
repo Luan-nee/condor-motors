@@ -5,7 +5,8 @@ import { db } from '@db/connection'
 import {
   cuentasEmpleadosTable,
   empleadosTable,
-  rolesCuentasEmpleadosTable
+  rolesCuentasEmpleadosTable,
+  sucursalesTable
 } from '@db/schema'
 import type { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
 import { AuthPayloadMapper } from '@domain/mappers/auth-payload.mapper'
@@ -30,8 +31,12 @@ export class RegisterUser {
     }
 
     const empleados = await db
-      .select({ id: empleadosTable.id })
+      .select({ id: empleadosTable.id, nombreSucursal: sucursalesTable.nombre })
       .from(empleadosTable)
+      .innerJoin(
+        sucursalesTable,
+        eq(sucursalesTable.id, empleadosTable.sucursalId)
+      )
       .where(
         and(
           eq(empleadosTable.id, registerUserDto.empleadoId),
@@ -49,6 +54,8 @@ export class RegisterUser {
         'El empleado no existe o ya tiene una cuenta asociada'
       )
     }
+
+    const [empleado] = empleados
 
     const roles = await db
       .select({
@@ -90,7 +97,8 @@ export class RegisterUser {
 
     return {
       ...user,
-      rolCuentaEmpleadoCodigo: selectedRol.codigo
+      rolCuentaEmpleadoCodigo: selectedRol.codigo,
+      sucursal: empleado.nombreSucursal
     }
   }
 

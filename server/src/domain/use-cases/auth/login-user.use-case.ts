@@ -2,7 +2,12 @@ import { CustomError } from '@/core/errors/custom.error'
 import { UserEntityMapper } from '@/domain/mappers/user-entity.mapper'
 import type { Encryptor, TokenAuthenticator } from '@/types/interfaces'
 import { db } from '@db/connection'
-import { cuentasEmpleadosTable, rolesCuentasEmpleadosTable } from '@db/schema'
+import {
+  cuentasEmpleadosTable,
+  empleadosTable,
+  rolesCuentasEmpleadosTable,
+  sucursalesTable
+} from '@db/schema'
 import type { LoginUserDto } from '@domain/dtos/auth/login-user.dto'
 import { AuthPayloadMapper } from '@domain/mappers/auth-payload.mapper'
 import { eq, like } from 'drizzle-orm'
@@ -17,7 +22,8 @@ export class LoginUser {
     rolCuentaEmpleadoCodigo: rolesCuentasEmpleadosTable.codigo,
     empleadoId: cuentasEmpleadosTable.empleadoId,
     fechaCreacion: cuentasEmpleadosTable.fechaCreacion,
-    fechaActualizacion: cuentasEmpleadosTable.fechaActualizacion
+    fechaActualizacion: cuentasEmpleadosTable.fechaActualizacion,
+    sucursal: sucursalesTable.nombre
   }
 
   constructor(
@@ -35,6 +41,14 @@ export class LoginUser {
           rolesCuentasEmpleadosTable.id,
           cuentasEmpleadosTable.rolCuentaEmpleadoId
         )
+      )
+      .innerJoin(
+        empleadosTable,
+        eq(empleadosTable.id, cuentasEmpleadosTable.empleadoId)
+      )
+      .innerJoin(
+        sucursalesTable,
+        eq(sucursalesTable.id, empleadosTable.sucursalId)
       )
       .where(like(cuentasEmpleadosTable.usuario, loginUserDto.usuario))
 
