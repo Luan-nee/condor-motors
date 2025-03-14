@@ -59,7 +59,8 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           image: DecorationImage(
-                            image: AssetImage('assets/images/condor-motors-logo.webp'),
+                            image: AssetImage(
+                                'assets/images/condor-motors-logo.webp'),
                             fit: BoxFit.cover,
                           ),
                         ),
@@ -104,20 +105,20 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                   isExpanded: true,
                   subItems: [
                     _buildSubMenuItem(
+                      'Control de stock',
+                      onTap: () => setState(() {
+                        _selectedIndex = 2;
+                        _selectedSubIndex = 1;
+                      }),
+                      isSelected: _selectedIndex == 2 && _selectedSubIndex == 1,
+                    ),
+                    _buildSubMenuItem(
                       'Categorías',
                       onTap: () => setState(() {
                         _selectedIndex = 2;
                         _selectedSubIndex = 0;
                       }),
                       isSelected: _selectedIndex == 2 && _selectedSubIndex == 0,
-                    ),
-                    _buildSubMenuItem(
-                      'Productos',
-                      onTap: () => setState(() {
-                        _selectedIndex = 2;
-                        _selectedSubIndex = 1;
-                      }),
-                      isSelected: _selectedIndex == 2 && _selectedSubIndex == 1,
                     ),
                     _buildSubMenuItem(
                       'Movimiento de inventario',
@@ -138,7 +139,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                   ],
                   onTap: () => setState(() {
                     _selectedIndex = 2;
-                    _selectedSubIndex = 0;
+                    _selectedSubIndex = 1;
                   }),
                 ),
                 _buildMenuItem(
@@ -223,7 +224,9 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
           vertical: 12,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFE31E24).withOpacity(0.1) : Colors.transparent,
+          color: isSelected
+              ? const Color(0xFFE31E24).withOpacity(0.1)
+              : Colors.transparent,
           border: Border(
             left: BorderSide(
               color: isSelected ? const Color(0xFFE31E24) : Colors.transparent,
@@ -295,7 +298,9 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
         child: Text(
           text,
           style: TextStyle(
-            color: isSelected ? const Color(0xFFE31E24) : Colors.white.withOpacity(0.7),
+            color: isSelected
+                ? const Color(0xFFE31E24)
+                : Colors.white.withOpacity(0.7),
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),

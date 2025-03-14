@@ -10,7 +10,7 @@ class InventarioAdminScreen extends StatefulWidget {
 }
 
 class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
-  String _selectedLocal = 'Central Principal';
+  String _selectedLocal = '';
   bool _showCentrales = true;
 
   // Datos de ejemplo para el inventario

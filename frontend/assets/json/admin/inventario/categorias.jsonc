@@ -1,0 +1,38 @@
+{
+  "GET_ALL":{
+    "enpoint": "http://localhost:3000/api/categorias",
+    "response": {
+      "data": [
+        {
+          "id": 1,
+          "nombre": "Cascos",
+          "descripcion": "accesorios de seguridad para el cabeza del conductor" 
+        },
+        {
+          "id": 2,
+          "nombre": "Sliders",
+          "descripcion": "accesorios de seguridad para proteger las piernas del conductor ante un posible accidente" 
+        }
+      ]
+    }
+  },
+
+  "POST": {
+    "endpoint": "http://localhost:3000/api/categorias",
+    "request": {
+      "nombre": "Cofres",
+      "descripcion": "Accesorio de la monto que sirve equipar todo lo necesario, dicho accesorio normalmente se coloca en la punta del asiento trasero"
+    }
+  },
+
+  "GET": {
+    "endpoint": "http://localhost:3000/api/categorias/id",
+    "response": {
+      "data": {
+        "id": 2,
+        "nombre": "Sliders",
+        "descripcion": "accesorios de seguridad para proteger las piernas del conductor ante un posible accidente" 
+      }
+    }
+  }
+}
