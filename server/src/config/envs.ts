@@ -2,6 +2,7 @@ import 'dotenv/config'
 import { get } from 'env-var'
 
 export const envs = {
+  SERVER_HOST: get('SERVER_HOST').default('localhost').asString(),
   SERVER_PORT: get('SERVER_PORT').default(3000).asPortNumber(),
   DATABASE_URL: get('DATABASE_URL').required().asString(),
   DATABASE_ENABLE_SSL: get('DATABASE_ENABLE_SSL').asBool(),

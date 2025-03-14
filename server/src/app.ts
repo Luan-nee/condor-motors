@@ -4,7 +4,7 @@ import { AppRoutes } from '@presentation/routes'
 import { Server } from '@presentation/server'
 
 const main = async () => {
-  const { SERVER_PORT: port } = envs
+  const { SERVER_PORT: port, SERVER_HOST: host } = envs
   const { routes } = AppRoutes
 
   try {
@@ -12,6 +12,7 @@ const main = async () => {
 
     const server = new Server({
       port,
+      host,
       routes
     })
 

@@ -5,6 +5,7 @@ import { LoggerMiddleware } from './middlewares/logger.middleware'
 import { CorsMiddleware } from './middlewares/cors.middleware'
 
 interface ServerOptions {
+  host?: string
   port?: number
   routes: Router
 }
@@ -12,12 +13,14 @@ interface ServerOptions {
 export class Server {
   public readonly app = express()
   private readonly port: number
+  private readonly host: string
   private readonly routes: Router
 
   constructor(options: ServerOptions) {
-    const { port = 3000, routes } = options
+    const { port = 3000, host = 'localhost', routes } = options
 
     this.port = port
+    this.host = host
     this.routes = routes
   }
 
@@ -32,9 +35,9 @@ export class Server {
 
     this.app.use(ErrorMiddleware.requests)
 
-    this.app.listen(this.port, () => {
+    this.app.listen(this.port, this.host, () => {
       // eslint-disable-next-line no-console
-      console.log(`Server running on port: http://localhost:${this.port}`)
+      console.log(`Server running on port: http://${this.host}:${this.port}`)
     })
   }
 }
