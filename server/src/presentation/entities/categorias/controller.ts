@@ -30,4 +30,10 @@ export class CategoriasController {
         handleError(error, res)
       })
   }
+
+  getAll = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+    }
+  }
 }
