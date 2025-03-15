@@ -140,7 +140,9 @@ export class EmpleadosController {
     deleteEmpleado
       .execute(numericIdDto)
       .then((empleado) => {
-        const message = `Empleado con el id '${empleado.id}' eliminado`
+        const message = empleado.activo
+          ? `Empleado con el id '${empleado.id}' eliminado`
+          : `Empleado con el id '${empleado.id}' a sido dado de baja`
         CustomResponse.success({ res, message, data: empleado })
       })
       .catch((error: unknown) => {
