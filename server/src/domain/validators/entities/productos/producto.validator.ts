@@ -39,3 +39,13 @@ const updateProductoSchema = z.object({
 
 export const updateProductoValidator = (object: unknown) =>
   updateProductoSchema.partial().safeParse(object)
+
+const addProductoSchema = z.object({
+  precioCompra: productoSchema.precioCompra,
+  precioVenta: productoSchema.precioVenta,
+  precioOferta: productoSchema.precioOferta,
+  stock: productoSchema.stock
+})
+
+export const addProductoValidator = (object: unknown) =>
+  addProductoSchema.partial().safeParse(object)

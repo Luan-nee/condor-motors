@@ -1,9 +1,11 @@
 import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
+import { AddProductoDto } from '@/domain/dtos/entities/productos/add-producto.dto'
 import { CreateProductoDto } from '@/domain/dtos/entities/productos/create-producto.dto'
 import { UpdateProductoDto } from '@/domain/dtos/entities/productos/update-producto.dto'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
+import { AddProducto } from '@/domain/use-cases/entities/productos/add-producto.use-case'
 import { CreateProducto } from '@/domain/use-cases/entities/productos/create-producto.use-case'
 import { GetAllProductos } from '@/domain/use-cases/entities/productos/get-all-productos.use-case'
 import { GetProductoById } from '@/domain/use-cases/entities/productos/get-producto-by-id.use-case'
@@ -38,6 +40,44 @@ export class ProductosController {
       .execute(createProductoDto, sucursalId)
       .then((producto) => {
         CustomResponse.success({ res, data: producto })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
+
+  add = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    if (req.sucursalId === undefined) {
+      CustomResponse.badRequest({ res, error: 'Id de sucursal inválido' })
+      return
+    }
+
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
+    const [error, addProductoDto] = AddProductoDto.create(req.body)
+
+    if (error !== undefined || addProductoDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload, sucursalId } = req
+
+    const addProducto = new AddProducto(authPayload)
+
+    addProducto
+      .execute(numericIdDto, addProductoDto, sucursalId)
+      .then((detalleProducto) => {
+        CustomResponse.success({ res, data: detalleProducto })
       })
       .catch((error: unknown) => {
         handleError(error, res)

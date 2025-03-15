@@ -33,6 +33,7 @@ export class GetProductoById {
     categoria: categoriasTable.nombre,
     marca: marcasTable.nombre,
     fechaCreacion: productosTable.fechaCreacion,
+    detalleProductoId: detallesProductoTable.id,
     precioCompra: detallesProductoTable.precioCompra,
     precioVenta: detallesProductoTable.precioVenta,
     precioOferta: detallesProductoTable.precioOferta,
