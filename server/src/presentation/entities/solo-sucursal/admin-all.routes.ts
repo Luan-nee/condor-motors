@@ -1,16 +1,11 @@
-import { AuthMiddleware } from '@presentation/middlewares/auth.middleware'
 import { Router } from 'express'
-import { ProductosController } from './productos/controller'
+import { ProductosController } from '@/presentation/entities/solo-sucursal/productos/controller'
 
 export class AdminAllRoutes {
   static get routes() {
     const router = Router()
 
-    router.get(
-      '/productos',
-      AuthMiddleware.requests,
-      new ProductosController().all
-    )
+    router.get('/productos', new ProductosController().all)
 
     return router
   }

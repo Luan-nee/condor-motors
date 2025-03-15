@@ -1,25 +1,24 @@
 import { SucursalesRoutes } from '@presentation/entities/sucursales/routes'
 import { EmpleadosRoutes } from '@presentation/entities/empleados/routes'
 import { MarcasRoutes } from '@presentation/entities/marcas/routes'
-import { AuthMiddleware } from '@presentation/middlewares/auth.middleware'
 import { Router } from 'express'
 import { SoloSucursalRoutes } from '@/presentation/entities/solo-sucursal/routes'
 import { EntitiesMiddleware } from '@/presentation/middlewares/entities.middleware'
-import { AdminAllRoutes } from './solo-sucursal/admin-all.routes'
+import { AdminAllRoutes } from '@/presentation/entities/solo-sucursal/admin-all.routes'
 
 export class EntitiesRoutes {
   static get routes() {
     const router = Router()
 
-    router.use('/sucursales', AuthMiddleware.requests, SucursalesRoutes.routes)
-    router.use('/empleados', AuthMiddleware.requests, EmpleadosRoutes.routes)
-    router.use('/marcas', AuthMiddleware.requests, MarcasRoutes.routes)
+    router.use('/sucursales', SucursalesRoutes.routes)
+    router.use('/empleados', EmpleadosRoutes.routes)
+    router.use('/marcas', MarcasRoutes.routes)
 
-    router.use('/admin', AuthMiddleware.requests, AdminAllRoutes.routes)
+    router.use('/admin', AdminAllRoutes.routes)
 
     router.use(
       '/:sucursalId',
-      [AuthMiddleware.requests, EntitiesMiddleware.soloSucursal],
+      [EntitiesMiddleware.soloSucursal],
       SoloSucursalRoutes.routes
     )
 

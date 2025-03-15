@@ -45,7 +45,13 @@ export const permissionCodes = {
   },
   empleados: {
     createAny: 'empleados:create_any',
-    getAny: 'empleados:get_any'
+    getAny: 'empleados:get_any',
+    updateAny: 'empleados:update_any',
+    deleteAny: 'empleados:delete_any',
+    // createRelated: 'empleados:create_related',
+    getRelated: 'empleados:get_related',
+    updateRelated: 'empleados:update_related',
+    updateSelf: 'empleados:update_self'
   },
   productos: {
     createAny: 'productos:create_any',
@@ -55,5 +61,19 @@ export const permissionCodes = {
     createRelated: 'productos:create_related',
     getRelated: 'productos:get_related',
     updateRelated: 'productos:update_related'
+  },
+  inventarios: {
+    addAny: 'inventarios:add_any',
+    addRelated: 'inventarios:add_related'
+  },
+  ventas: {
+    createAny: 'ventas:create_any',
+    getAny: 'ventas:get_any',
+    updateAny: 'ventas:update_any',
+    deleteAny: 'ventas:delete_any',
+    createRelated: 'ventas:create_related',
+    getRelated: 'ventas:get_related',
+    updateRelated: 'ventas:update_related',
+    deleteRelated: 'ventas:delete_related'
   }
 } as const
