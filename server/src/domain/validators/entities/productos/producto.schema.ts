@@ -29,7 +29,7 @@ export const productoSchema = {
   stockMinimo: z.number().min(0).optional(),
   cantidadMinimaDescuento: z.number().min(1).optional(),
   cantidadGratisDescuento: z.number().min(1).optional(),
-  porcentajeDescuento: z.number().min(0).optional(),
+  porcentajeDescuento: z.number().min(0).max(100).optional(),
   colorId: idTypeBaseSchema.numericId,
   categoriaId: idTypeBaseSchema.numericId,
   marcaId: idTypeBaseSchema.numericId,
