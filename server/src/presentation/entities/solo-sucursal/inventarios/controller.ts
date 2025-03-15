@@ -30,7 +30,7 @@ export class InventariosController {
     createEntradaInventario
       .execute(createProductoDto, sucursalId)
       .then((entradaInventario) => {
-        CustomResponse.send({ res, data: entradaInventario })
+        CustomResponse.created({ res, data: entradaInventario })
       })
       .catch((error: unknown) => {
         handleError(error, res)

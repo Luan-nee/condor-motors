@@ -18,82 +18,75 @@ export class EntradaInventario {
 
   private async entradaInventario(
     entradaInventarioDto: EntradaInventarioDto,
-    sucursalId: SucursalIdType,
-    currentStock: number
-  ) {
-    const now = new Date()
-    const newStock = currentStock + entradaInventarioDto.cantidad
-
-    try {
-      const insertedResult = await db.transaction(async (tx) => {
-        const [entradaInventario] = await db
-          .insert(entradasInventariosTable)
-          .values({
-            cantidad: entradaInventarioDto.cantidad,
-            productoId: entradaInventarioDto.productoId,
-            sucursalId,
-            fechaCreacion: now,
-            fechaActualizacion: now
-          })
-          .returning({ id: entradasInventariosTable.id })
-
-        const updatedDetallesProducto = await tx
-          .update(detallesProductoTable)
-          .set({
-            stock: newStock,
-            fechaActualizacion: now
-          })
-          .where(
-            and(
-              eq(detallesProductoTable.sucursalId, sucursalId),
-              eq(
-                detallesProductoTable.productoId,
-                entradaInventarioDto.productoId
-              )
-            )
-          )
-          .returning()
-
-        if (updatedDetallesProducto.length < 1) {
-          tx.rollback()
-        }
-
-        return entradaInventario
-      })
-
-      return insertedResult
-    } catch (error) {
-      throw CustomError.internalServer(
-        'Ha ocurrido un error al intentar registar la entrada de inventario'
-      )
-    }
-  }
-
-  private async validateRelacionados(
-    entradaInventarioDto: EntradaInventarioDto,
     sucursalId: SucursalIdType
   ) {
-    const results = await db
-      .select({
-        currentStock: detallesProductoTable.stock
-      })
-      .from(detallesProductoTable)
-      .where(
-        and(
-          eq(detallesProductoTable.sucursalId, sucursalId),
-          eq(detallesProductoTable.productoId, entradaInventarioDto.productoId)
+    const now = new Date()
+
+    const insertedResult = await db.transaction(async (tx) => {
+      const detallesProductos = await tx
+        .select({
+          currentStock: detallesProductoTable.stock
+        })
+        .from(detallesProductoTable)
+        .where(
+          and(
+            eq(detallesProductoTable.sucursalId, sucursalId),
+            eq(
+              detallesProductoTable.productoId,
+              entradaInventarioDto.productoId
+            )
+          )
         )
-      )
 
-    if (results.length < 1) {
-      throw CustomError.badRequest(
-        'El producto especificado no se encontró en la sucursal especificada'
-      )
-    }
+      if (detallesProductos.length < 1) {
+        throw CustomError.badRequest(
+          'El producto especificado no se encontró en la sucursal especificada'
+        )
+      }
 
-    const [result] = results
+      const [detallesProducto] = detallesProductos
 
-    return result
+      const newStock =
+        detallesProducto.currentStock + entradaInventarioDto.cantidad
+
+      const [entradaInventario] = await tx
+        .insert(entradasInventariosTable)
+        .values({
+          cantidad: entradaInventarioDto.cantidad,
+          productoId: entradaInventarioDto.productoId,
+          sucursalId,
+          fechaCreacion: now,
+          fechaActualizacion: now
+        })
+        .returning({ id: entradasInventariosTable.id })
+
+      const updatedDetallesProducto = await tx
+        .update(detallesProductoTable)
+        .set({
+          stock: newStock,
+          fechaActualizacion: now
+        })
+        .where(
+          and(
+            eq(detallesProductoTable.sucursalId, sucursalId),
+            eq(
+              detallesProductoTable.productoId,
+              entradaInventarioDto.productoId
+            )
+          )
+        )
+        .returning()
+
+      if (updatedDetallesProducto.length < 1) {
+        throw CustomError.internalServer(
+          'Ha ocurrido un error al intentar registar la entrada de inventario'
+        )
+      }
+
+      return entradaInventario
+    })
+
+    return insertedResult
   }
 
   private async validatePermissions(sucursalId: SucursalIdType) {
@@ -130,15 +123,9 @@ export class EntradaInventario {
   ) {
     await this.validatePermissions(sucursalId)
 
-    const detalleProducto = await this.validateRelacionados(
-      entradaInventarioDto,
-      sucursalId
-    )
-
     const entradaInventario = await this.entradaInventario(
       entradaInventarioDto,
-      sucursalId,
-      detalleProducto.currentStock
+      sucursalId
     )
 
     return entradaInventario
