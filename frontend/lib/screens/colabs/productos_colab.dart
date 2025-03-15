@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'selector_colab.dart'; // Importar la pantalla de selector
 
 class ProductosColabScreen extends StatefulWidget {
   const ProductosColabScreen({super.key});
@@ -133,41 +134,44 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     final productosFiltrados = _getProductosFiltrados();
     
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF2D2D2D),
+        elevation: 0,
+        leading: IconButton(
+          icon: const FaIcon(
+            FontAwesomeIcons.arrowLeft,
+            size: 20,
+            color: Colors.white,
+          ),
+          onPressed: () {
+            // Navegar de regreso a la pantalla de Selector
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const SelectorColabScreen()),
+            );
+          },
+          tooltip: 'Volver al Selector',
+        ),
+        title: Row(
+          children: [
+            const FaIcon(
+              FontAwesomeIcons.box,
+              size: 20,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Productos',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
       body: Column(
         children: [
-          // Header con título
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                const FaIcon(
-                  FontAwesomeIcons.box,
-                  size: 24,
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'PRODUCTOS',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'gestión de productos',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
           // Barra de búsqueda y filtros
           Padding(
             padding: const EdgeInsets.all(16),

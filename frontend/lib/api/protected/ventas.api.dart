@@ -35,20 +35,28 @@ class VentasApi {
         queryParams['fecha_fin'] = fechaFin.toIso8601String();
       }
       
-      if (sucursalId != null) {
-        queryParams['sucursal_id'] = sucursalId;
-      }
-      
       if (estado != null && estado.isNotEmpty) {
         queryParams['estado'] = estado;
       }
       
+      // Construir el endpoint de forma adecuada cuando se especifica la sucursal
+      String endpoint = _endpoint;
+      if (sucursalId != null && sucursalId.isNotEmpty) {
+        // Ruta con sucursal: /api/{sucursalId}/ventas
+        endpoint = '/$sucursalId/ventas';
+        debugPrint('Solicitando ventas para sucursal específica: $endpoint');
+      } else {
+        // Ruta general: /api/ventas (sin sucursal específica)
+        debugPrint('Solicitando ventas globales: $endpoint');
+      }
+      
       final response = await _api.request(
-        endpoint: _endpoint,
+        endpoint: endpoint,
         method: 'GET',
         queryParams: queryParams,
       );
       
+      debugPrint('Respuesta de getVentas recibida: ${response.keys.toString()}');
       return response;
     } catch (e) {
       debugPrint('Error al obtener ventas: $e');
@@ -57,10 +65,16 @@ class VentasApi {
   }
   
   // Obtener una venta específica
-  Future<Map<String, dynamic>> getVenta(String id) async {
+  Future<Map<String, dynamic>> getVenta(String id, {String? sucursalId}) async {
     try {
+      // Construir el endpoint según si hay sucursal o no
+      String endpoint = _endpoint;
+      if (sucursalId != null && sucursalId.isNotEmpty) {
+        endpoint = '/$sucursalId/ventas';
+      }
+      
       final response = await _api.request(
-        endpoint: '$_endpoint/$id',
+        endpoint: '$endpoint/$id',
         method: 'GET',
       );
       
@@ -72,10 +86,16 @@ class VentasApi {
   }
   
   // Crear una nueva venta
-  Future<Map<String, dynamic>> createVenta(Map<String, dynamic> ventaData) async {
+  Future<Map<String, dynamic>> createVenta(Map<String, dynamic> ventaData, {String? sucursalId}) async {
     try {
+      // Construir el endpoint según si hay sucursal o no
+      String endpoint = _endpoint;
+      if (sucursalId != null && sucursalId.isNotEmpty) {
+        endpoint = '/$sucursalId/ventas';
+      }
+      
       final response = await _api.request(
-        endpoint: _endpoint,
+        endpoint: endpoint,
         method: 'POST',
         body: ventaData,
       );
@@ -88,10 +108,16 @@ class VentasApi {
   }
   
   // Actualizar una venta existente
-  Future<Map<String, dynamic>> updateVenta(String id, Map<String, dynamic> ventaData) async {
+  Future<Map<String, dynamic>> updateVenta(String id, Map<String, dynamic> ventaData, {String? sucursalId}) async {
     try {
+      // Construir el endpoint según si hay sucursal o no
+      String endpoint = _endpoint;
+      if (sucursalId != null && sucursalId.isNotEmpty) {
+        endpoint = '/$sucursalId/ventas';
+      }
+      
       final response = await _api.request(
-        endpoint: '$_endpoint/$id',
+        endpoint: '$endpoint/$id',
         method: 'PUT',
         body: ventaData,
       );
@@ -104,10 +130,16 @@ class VentasApi {
   }
   
   // Cancelar una venta
-  Future<bool> cancelarVenta(String id, String motivo) async {
+  Future<bool> cancelarVenta(String id, String motivo, {String? sucursalId}) async {
     try {
+      // Construir el endpoint según si hay sucursal o no
+      String endpoint = _endpoint;
+      if (sucursalId != null && sucursalId.isNotEmpty) {
+        endpoint = '/$sucursalId/ventas';
+      }
+      
       await _api.request(
-        endpoint: '$_endpoint/$id/cancel',
+        endpoint: '$endpoint/$id/cancel',
         method: 'POST',
         body: {
           'motivo': motivo
@@ -123,20 +155,19 @@ class VentasApi {
   // Anular una venta
   Future<bool> anularVenta(String id, String motivo, {String? sucursalId}) async {
     try {
-      final queryParams = <String, String>{};
-      if (sucursalId != null) {
-        queryParams['sucursal_id'] = sucursalId;
+      // Construir el endpoint según si hay sucursal o no
+      String endpoint = _endpoint;
+      if (sucursalId != null && sucursalId.isNotEmpty) {
+        endpoint = '/$sucursalId/ventas';
       }
       
       await _api.request(
-        endpoint: '$_endpoint/$id/anular',
+        endpoint: '$endpoint/$id/anular',
         method: 'POST',
         body: {
           'motivo': motivo,
           'fecha_anulacion': DateTime.now().toIso8601String(),
-          if (sucursalId != null) 'sucursal_id': sucursalId,
         },
-        queryParams: queryParams,
       );
       return true;
     } catch (e) {
@@ -149,7 +180,6 @@ class VentasApi {
   Future<Map<String, dynamic>> getEstadisticas({
     DateTime? fechaInicio,
     DateTime? fechaFin,
-    String? sucursal,
     String? sucursalId,
   }) async {
     try {
@@ -163,16 +193,14 @@ class VentasApi {
         queryParams['fecha_fin'] = fechaFin.toIso8601String();
       }
       
-      if (sucursal != null) {
-        queryParams['sucursal'] = sucursal;
-      }
-      
-      if (sucursalId != null) {
-        queryParams['sucursal_id'] = sucursalId;
+      // Construir el endpoint según si hay sucursal o no
+      String endpoint = '$_endpoint/estadisticas';
+      if (sucursalId != null && sucursalId.isNotEmpty) {
+        endpoint = '/$sucursalId/ventas/estadisticas';
       }
       
       final response = await _api.request(
-        endpoint: '$_endpoint/estadisticas',
+        endpoint: endpoint,
         method: 'GET',
         queryParams: queryParams,
       );

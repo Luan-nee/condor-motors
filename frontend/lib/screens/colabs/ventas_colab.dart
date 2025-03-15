@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../services/ventas_transfer_service.dart';
+import '../../api/index.dart';
+import '../../main.dart' show api;
 import 'barcode_colab.dart';
 import 'historial_ventas_colab.dart';
 
@@ -13,18 +15,16 @@ class VentasColabScreen extends StatefulWidget {
 
 class _VentasColabScreenState extends State<VentasColabScreen> {
   bool _isLoading = false;
+  late final StocksApi _stocksApi;
+  late String _sucursalId; // Será obtenido del usuario autenticado
+  List<Map<String, dynamic>> _productos = []; // Lista de productos obtenidos de la API
+  bool _productosLoaded = false; // Flag para controlar si ya se cargaron los productos
   
   // Lista de productos en la venta actual
   final List<Map<String, dynamic>> _productosVenta = [];
   
   // Cliente seleccionado
   Map<String, dynamic>? _clienteSeleccionado;
-  
-  // Método de pago seleccionado
-  String _metodoPago = 'EFECTIVO';
-  
-  // Lista de métodos de pago disponibles
-  final List<String> _metodosPago = ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE'];
   
   // Controlador para el campo de búsqueda de productos
   final TextEditingController _searchController = TextEditingController();
@@ -36,46 +36,85 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
     {'id': 3, 'nombre': 'Carlos López', 'documento': '45678912', 'telefono': '789456123'},
   ];
   
-  // Datos de ejemplo para productos
-  final List<Map<String, dynamic>> _productos = [
-    {
-      'id': 1,
-      'codigo': 'P001',
-      'nombre': 'Casco MT Thunder',
-      'precio': 299.99,
-      'stock': 10,
-      'categoria': 'Cascos',
-    },
-    {
-      'id': 2,
-      'codigo': 'P002',
-      'nombre': 'Aceite Motul 5100',
-      'precio': 89.99,
-      'stock': 20,
-      'categoria': 'Lubricantes',
-    },
-    {
-      'id': 3,
-      'codigo': 'P003',
-      'nombre': 'Kit de Frenos Brembo',
-      'precio': 850.00,
-      'stock': 5,
-      'categoria': 'Frenos',
-    },
-    {
-      'id': 4,
-      'codigo': 'P004',
-      'nombre': 'Amortiguador YSS',
-      'precio': 599.99,
-      'stock': 8,
-      'categoria': 'Suspensión',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _stocksApi = api.stocks;
+    
+    // Obtener el ID de sucursal del usuario autenticado
+    final userData = api.authService.getUserData();
+    if (userData != null && userData['sucursalId'] != null) {
+      _sucursalId = userData['sucursalId'].toString();
+      debugPrint('Usando sucursal del usuario autenticado: $_sucursalId');
+    } else {
+      // Fallback por si no se puede obtener el ID de sucursal
+      _sucursalId = '9'; // Usamos la sucursal 9 como fallback según los logs
+      debugPrint('No se pudo obtener la sucursal del usuario, usando fallback: $_sucursalId');
+    }
+    
+    _cargarProductos();
+  }
   
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+  
+  // Cargar productos desde la API
+  Future<void> _cargarProductos() async {
+    if (_productosLoaded) return; // Evitar cargar múltiples veces
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      debugPrint('Cargando productos para sucursal ID: $_sucursalId (Sucursal del vendedor)');
+      
+      final stocksResponse = await _stocksApi.getStockBySucursal(
+        sucursalId: _sucursalId,
+      );
+      
+      if (!mounted) return;
+      
+      final List<Map<String, dynamic>> productosFormateados = [];
+      
+      if (stocksResponse is List) {
+        for (var item in stocksResponse) {
+          // Convertir cada producto al formato esperado por la UI
+          productosFormateados.add({
+            'id': item['id'].toString(),
+            'codigo': item['codigo'] ?? 'SIN-COD',
+            'nombre': item['nombre'] ?? 'Producto sin nombre',
+            'precio': (item['precioVenta'] ?? 0.0).toDouble(),
+            'stock': item['stockActual'] ?? 0,
+            'categoria': item['categoria'] is Map 
+                ? item['categoria']['nombre'] 
+                : (item['categoria'] as String? ?? 'Sin categoría'),
+          });
+        }
+      }
+      
+      setState(() {
+        _productos = productosFormateados;
+        _productosLoaded = true;
+        _isLoading = false;
+      });
+      
+      debugPrint('Productos cargados: ${_productos.length}');
+    } catch (e) {
+      if (!mounted) return;
+      
+      debugPrint('Error al cargar productos: $e');
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar productos: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      
+      setState(() => _isLoading = false);
+    }
   }
   
   // Calcular el total de la venta
@@ -127,7 +166,6 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
     setState(() {
       _productosVenta.clear();
       _clienteSeleccionado = null;
-      _metodoPago = 'EFECTIVO';
     });
   }
   
@@ -176,6 +214,11 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
   
   // Mostrar diálogo para buscar productos
   void _mostrarDialogoProductos() {
+    // Asegurarse de que los productos estén cargados
+    if (!_productosLoaded) {
+      _cargarProductos();
+    }
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -198,28 +241,36 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: ListView.builder(
-                  itemCount: _productos.length,
-                  itemBuilder: (context, index) {
-                    final producto = _productos[index];
-                    // Filtrar por búsqueda
-                    if (_searchController.text.isNotEmpty &&
-                        !producto['nombre'].toString().toLowerCase().contains(_searchController.text.toLowerCase()) &&
-                        !producto['codigo'].toString().toLowerCase().contains(_searchController.text.toLowerCase())) {
-                      return const SizedBox.shrink();
-                    }
-                    
-                    return ListTile(
-                      title: Text(producto['nombre']),
-                      subtitle: Text('Código: ${producto['codigo']} - Stock: ${producto['stock']}'),
-                      trailing: Text('S/ ${producto['precio'].toStringAsFixed(2)}'),
-                      onTap: () {
-                        _agregarProducto(producto);
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
-                ),
+                child: _isLoading && !_productosLoaded
+                    ? const Center(
+                        child: CircularProgressIndicator(),
+                      )
+                    : _productos.isEmpty
+                        ? const Center(
+                            child: Text('No hay productos disponibles'),
+                          )
+                        : ListView.builder(
+                            itemCount: _productos.length,
+                            itemBuilder: (context, index) {
+                              final producto = _productos[index];
+                              // Filtrar por búsqueda
+                              if (_searchController.text.isNotEmpty &&
+                                  !producto['nombre'].toString().toLowerCase().contains(_searchController.text.toLowerCase()) &&
+                                  !producto['codigo'].toString().toLowerCase().contains(_searchController.text.toLowerCase())) {
+                                return const SizedBox.shrink();
+                              }
+                              
+                              return ListTile(
+                                title: Text(producto['nombre']),
+                                subtitle: Text('Código: ${producto['codigo']} - Stock: ${producto['stock']}'),
+                                trailing: Text('S/ ${producto['precio'].toStringAsFixed(2)}'),
+                                onTap: () {
+                                  _agregarProducto(producto);
+                                  Navigator.pop(context);
+                                },
+                              );
+                            },
+                          ),
               ),
             ],
           ),
@@ -229,6 +280,11 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar'),
           ),
+          if (!_productosLoaded || _isLoading)
+            TextButton(
+              onPressed: _cargarProductos,
+              child: const Text('Recargar'),
+            ),
         ],
       ),
     );
@@ -236,19 +292,40 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
   
   // Escanear producto con código de barras
   Future<void> _escanearProducto() async {
-    final producto = await Navigator.push(
+    // Asegurarse de que los productos estén cargados
+    if (!_productosLoaded) {
+      await _cargarProductos();
+    }
+    
+    final codigoBarras = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const BarcodeColabScreen()),
     );
 
-    if (producto != null) {
-      _agregarProducto(producto);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Producto agregado: ${producto['nombre']}'),
-          backgroundColor: Colors.green,
-        ),
+    if (codigoBarras != null && codigoBarras is String) {
+      // Buscar el producto por código de barras en la lista de productos
+      final productoEncontrado = _productos.firstWhere(
+        (p) => p['codigo'] == codigoBarras,
+        orElse: () => {},
       );
+      
+      if (productoEncontrado.isNotEmpty) {
+        _agregarProducto(productoEncontrado);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Producto agregado: ${productoEncontrado['nombre']}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        // Si no se encuentra el producto, mostrar mensaje de error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Producto no encontrado: $codigoBarras'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
   
@@ -287,7 +364,6 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       final ventaData = {
         'cliente': _clienteSeleccionado,
         'productos': _productosVenta,
-        'metodoPago': _metodoPago,
         'total': _totalVenta,
         'fecha': DateTime.now().toIso8601String(),
       };
@@ -322,7 +398,6 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text('Cliente: ${_clienteSeleccionado!['nombre']}'),
-                Text('Método de pago: $_metodoPago'),
                 const SizedBox(height: 16),
                 const Text(
                   'La venta ha sido enviada a la caja para su procesamiento.',
@@ -413,6 +488,25 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          // Botón para recargar productos
+          IconButton(
+            icon: const FaIcon(
+              FontAwesomeIcons.arrowsRotate,
+              color: Colors.white,
+              size: 20,
+            ),
+            tooltip: 'Recargar Productos',
+            onPressed: () {
+              setState(() => _productosLoaded = false);
+              _cargarProductos();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Recargando productos...'),
+                  backgroundColor: Colors.blue,
+                ),
+              );
+            },
+          ),
           // Botón para ir al historial
           IconButton(
             icon: const FaIcon(
@@ -483,40 +577,6 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
-                // Selección de método de pago
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.grey[700]!,
-                      width: 1,
-                    ),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _metodoPago,
-                      dropdownColor: const Color(0xFF2D2D2D),
-                      style: const TextStyle(color: Colors.white),
-                      icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-                      items: _metodosPago.map((String metodo) {
-                        return DropdownMenuItem<String>(
-                          value: metodo,
-                          child: Text(metodo),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            _metodoPago = newValue;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -541,18 +601,27 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                         vertical: 12,
                       ),
                     ),
-                    onPressed: _escanearProducto,
+                    onPressed: _isLoading ? null : _escanearProducto,
                   ),
                 ),
                 const SizedBox(width: 8),
                 // Botón para buscar producto
                 Expanded(
                   child: ElevatedButton.icon(
-                    icon: const FaIcon(
-                      FontAwesomeIcons.magnifyingGlass,
-                      size: 16,
-                    ),
-                    label: const Text('Buscar'),
+                    icon: _isLoading && !_productosLoaded
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const FaIcon(
+                            FontAwesomeIcons.magnifyingGlass,
+                            size: 16,
+                          ),
+                    label: Text(_isLoading && !_productosLoaded ? 'Cargando...' : 'Buscar'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2196F3),
                       foregroundColor: Colors.white,
@@ -560,7 +629,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                         vertical: 12,
                       ),
                     ),
-                    onPressed: _mostrarDialogoProductos,
+                    onPressed: _isLoading ? null : _mostrarDialogoProductos,
                   ),
                 ),
                 const SizedBox(width: 8),

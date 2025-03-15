@@ -640,19 +640,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   ),
                                 ),
                         ),
-                        
-                        // Server info
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16),
-                          child: Text(
-                            'Servidor: http://$_serverIp:3000',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
-                              fontSize: 12,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
                       ],
                     ),
                   ),
