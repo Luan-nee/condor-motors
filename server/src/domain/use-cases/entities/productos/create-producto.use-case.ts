@@ -12,7 +12,7 @@ import {
 } from '@/db/schema'
 import type { CreateProductoDto } from '@/domain/dtos/entities/productos/create-producto.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { eq, ne } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 export class CreateProducto {
   private readonly authPayload: AuthPayload
@@ -34,10 +34,10 @@ export class CreateProducto {
       precioOferta: createProductoDto.precioOferta?.toFixed(2)
     }
 
-    const sucursales = await db
-      .select({ id: sucursalesTable.id })
-      .from(sucursalesTable)
-      .where(ne(sucursalesTable.id, sucursalId))
+    // const sucursales = await db
+    //   .select({ id: sucursalesTable.id })
+    //   .from(sucursalesTable)
+    //   .where(ne(sucursalesTable.id, sucursalId))
 
     const detalleProductoStockBajo =
       createProductoDto.stockMinimo !== undefined &&
@@ -85,17 +85,17 @@ export class CreateProducto {
         )
       }
 
-      const detallesProductosValues = sucursales.map((sucursal) => ({
-        precioCompra: null,
-        precioVenta: null,
-        precioOferta: null,
-        stock: 0,
-        stockBajo: false,
-        productoId: producto.id,
-        sucursalId: sucursal.id
-      }))
+      // const detallesProductosValues = sucursales.map((sucursal) => ({
+      //   precioCompra: null,
+      //   precioVenta: null,
+      //   precioOferta: null,
+      //   stock: 0,
+      //   stockBajo: false,
+      //   productoId: producto.id,
+      //   sucursalId: sucursal.id
+      // }))
 
-      await tx.insert(detallesProductoTable).values(detallesProductosValues)
+      // await tx.insert(detallesProductoTable).values(detallesProductosValues)
 
       return producto
     })
