@@ -551,8 +551,8 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showProductDialog(null),
-        child: const Icon(Icons.add),
         tooltip: 'Agregar producto',
+        child: const Icon(Icons.add),
       ),
     );
   }

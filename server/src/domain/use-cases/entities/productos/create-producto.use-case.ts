@@ -11,7 +11,6 @@ import {
   sucursalesTable
 } from '@/db/schema'
 import type { CreateProductoDto } from '@/domain/dtos/entities/productos/create-producto.dto'
-import { ProductoEntityMapper } from '@/domain/mappers/producto-entity.mapper'
 import type { SucursalIdType } from '@/types/schemas'
 import { eq, ne } from 'drizzle-orm'
 
@@ -40,67 +39,68 @@ export class CreateProducto {
       .from(sucursalesTable)
       .where(ne(sucursalesTable.id, sucursalId))
 
-    try {
-      const insertedProductResult = await db.transaction(async (tx) => {
-        const [producto] = await tx
-          .insert(productosTable)
-          .values({
-            nombre: createProductoDto.nombre,
-            descripcion: createProductoDto.descripcion,
-            maxDiasSinReabastecer: createProductoDto.maxDiasSinReabastecer,
-            stockMinimo: createProductoDto.stockMinimo,
-            cantidadMinimaDescuento: createProductoDto.cantidadMinimaDescuento,
-            cantidadGratisDescuento: createProductoDto.cantidadGratisDescuento,
-            porcentajeDescuento: createProductoDto.porcentajeDescuento,
-            colorId: createProductoDto.colorId,
-            categoriaId: createProductoDto.categoriaId,
-            marcaId: createProductoDto.marcaId
-          })
-          .returning()
+    const detalleProductoStockBajo =
+      createProductoDto.stockMinimo !== undefined &&
+      createProductoDto.stock !== undefined
+        ? createProductoDto.stock < createProductoDto.stockMinimo
+        : false
 
-        const [detallesProducto] = await tx
-          .insert(detallesProductoTable)
-          .values({
-            precioCompra: mappedPrices.precioCompra,
-            precioVenta: mappedPrices.precioVenta,
-            precioOferta: mappedPrices.precioOferta,
-            stock: createProductoDto.stock,
-            productoId: producto.id,
-            sucursalId
-          })
-          .returning({
-            precioCompra: detallesProductoTable.precioCompra,
-            precioVenta: detallesProductoTable.precioVenta,
-            precioOferta: detallesProductoTable.precioOferta,
-            stock: detallesProductoTable.stock
-          })
+    const insertedProductResult = await db.transaction(async (tx) => {
+      const [producto] = await tx
+        .insert(productosTable)
+        .values({
+          nombre: createProductoDto.nombre,
+          descripcion: createProductoDto.descripcion,
+          maxDiasSinReabastecer: createProductoDto.maxDiasSinReabastecer,
+          stockMinimo: createProductoDto.stockMinimo,
+          cantidadMinimaDescuento: createProductoDto.cantidadMinimaDescuento,
+          cantidadGratisDescuento: createProductoDto.cantidadGratisDescuento,
+          porcentajeDescuento: createProductoDto.porcentajeDescuento,
+          colorId: createProductoDto.colorId,
+          categoriaId: createProductoDto.categoriaId,
+          marcaId: createProductoDto.marcaId
+        })
+        .returning({
+          id: productosTable.id
+        })
 
-        const detallesProductosValues = sucursales.map((sucursal) => ({
-          precioCompra: null,
-          precioVenta: null,
-          precioOferta: null,
-          stock: 0,
+      const detallesProductos = await tx
+        .insert(detallesProductoTable)
+        .values({
+          precioCompra: mappedPrices.precioCompra,
+          precioVenta: mappedPrices.precioVenta,
+          precioOferta: mappedPrices.precioOferta,
+          stock: createProductoDto.stock,
+          stockBajo: detalleProductoStockBajo,
           productoId: producto.id,
-          sucursalId: sucursal.id
-        }))
+          sucursalId
+        })
+        .returning({
+          id: detallesProductoTable.id
+        })
 
-        await tx.insert(detallesProductoTable).values(detallesProductosValues)
+      if (detallesProductos.length < 1) {
+        throw CustomError.badRequest(
+          'Ha ocurrido un error al intentar crear el producto'
+        )
+      }
 
-        return {
-          ...producto,
-          precioCompra: detallesProducto.precioCompra,
-          precioVenta: detallesProducto.precioVenta,
-          precioOferta: detallesProducto.precioOferta,
-          stock: detallesProducto.stock
-        }
-      })
+      const detallesProductosValues = sucursales.map((sucursal) => ({
+        precioCompra: null,
+        precioVenta: null,
+        precioOferta: null,
+        stock: 0,
+        stockBajo: false,
+        productoId: producto.id,
+        sucursalId: sucursal.id
+      }))
 
-      return insertedProductResult
-    } catch (error) {
-      throw CustomError.internalServer(
-        'Ha ocurrido un error al intentar crear el producto'
-      )
-    }
+      await tx.insert(detallesProductoTable).values(detallesProductosValues)
+
+      return producto
+    })
+
+    return insertedProductResult
   }
 
   private async validateRelacionados(
@@ -110,9 +110,9 @@ export class CreateProducto {
     const results = await db
       .select({
         sucursalId: sucursalesTable.id,
-        colorNombre: coloresTable.nombre,
-        categoriaNombre: categoriasTable.nombre,
-        marcaNombre: marcasTable.nombre
+        color: coloresTable.nombre,
+        categoria: categoriasTable.nombre,
+        marca: marcasTable.nombre
       })
       .from(sucursalesTable)
       .leftJoin(coloresTable, eq(coloresTable.id, createProductoDto.colorId))
@@ -129,34 +129,23 @@ export class CreateProducto {
 
     const [result] = results
 
-    if (result.colorNombre === null) {
+    if (result.color === null) {
       throw CustomError.badRequest('El color que intentó asignar no existe')
     }
 
-    if (result.categoriaNombre === null) {
+    if (result.categoria === null) {
       throw CustomError.badRequest('La categoría que intentó asignar no existe')
     }
 
-    if (result.marcaNombre === null) {
+    if (result.marca === null) {
       throw CustomError.badRequest('La marca que intentó asignar no existe')
     }
 
-    // const productsWithSameSkuNombre = await db
-    //   .select({ sku: productosTable.sku })
-    //   .from(productosTable)
-    //   .where(or(ilike(productosTable.sku, createProductoDto.sku)))
-
-    // if (productsWithSameSkuNombre.length > 0) {
-    //   throw CustomError.badRequest(
-    //     `Ya existe un producto con ese sku ${createProductoDto.sku}`
-    //   )
+    // return {
+    //   color: result.color,
+    //   categoria: result.categoria,
+    //   marca: result.marca
     // }
-
-    return {
-      colorNombre: result.colorNombre,
-      categoriaNombre: result.categoriaNombre,
-      marcaNombre: result.marcaNombre
-    }
   }
 
   private async validatePermissions(sucursalId: SucursalIdType) {
@@ -194,18 +183,10 @@ export class CreateProducto {
   ) {
     await this.validatePermissions(sucursalId)
 
-    const relacionados = await this.validateRelacionados(
-      createProductoDto,
-      sucursalId
-    )
+    await this.validateRelacionados(createProductoDto, sucursalId)
 
     const producto = await this.createProducto(createProductoDto, sucursalId)
 
-    const mappedProducto = ProductoEntityMapper.fromObject({
-      ...producto,
-      relacionados
-    })
-
-    return mappedProducto
+    return producto
   }
 }

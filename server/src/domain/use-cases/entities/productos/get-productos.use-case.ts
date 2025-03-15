@@ -13,7 +13,6 @@ import {
   sucursalesTable
 } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
-import { ProductoEntityMapper } from '@/domain/mappers/producto-entity.mapper'
 import type { SucursalIdType } from '@/types/schemas'
 import { and, asc, desc, eq, ilike, or, type SQL } from 'drizzle-orm'
 
@@ -37,20 +36,15 @@ export class GetProductos {
     cantidadMinimaDescuento: productosTable.cantidadMinimaDescuento,
     cantidadGratisDescuento: productosTable.cantidadGratisDescuento,
     porcentajeDescuento: productosTable.porcentajeDescuento,
-    colorId: productosTable.colorId,
-    categoriaId: productosTable.categoriaId,
-    marcaId: productosTable.marcaId,
+    color: coloresTable.nombre,
+    categoria: categoriasTable.nombre,
+    marca: marcasTable.nombre,
     fechaCreacion: productosTable.fechaCreacion,
-    fechaActualizacion: productosTable.fechaActualizacion,
     precioCompra: detallesProductoTable.precioCompra,
     precioVenta: detallesProductoTable.precioVenta,
     precioOferta: detallesProductoTable.precioOferta,
     stock: detallesProductoTable.stock,
-    relacionados: {
-      colorNombre: coloresTable.nombre,
-      categoriaNombre: categoriasTable.nombre,
-      marcaNombre: marcasTable.nombre
-    }
+    stockBajo: detallesProductoTable.stockBajo
   }
 
   private readonly validSortBy = {
@@ -230,10 +224,6 @@ export class GetProductos {
       hasPermissionGetAny
     )
 
-    const mappedProductos = productos.map((producto) =>
-      ProductoEntityMapper.fromObject(producto)
-    )
-
-    return mappedProductos
+    return productos
   }
 }

@@ -225,17 +225,25 @@ const seedDatabase = async () => {
   const productos = await db
     .insert(schema.productosTable)
     .values(productosValues)
-    .returning({ id: schema.productosTable.id })
+    .returning({
+      id: schema.productosTable.id,
+      stockMinimo: schema.productosTable.stockMinimo
+    })
 
   const detallesProductosValues = productos.flatMap((producto) =>
-    sucursales.flatMap((sucursal) => ({
-      precioCompra: faker.commerce.price({ min: 160, max: 200 }),
-      precioVenta: faker.commerce.price({ min: 150, max: 180 }),
-      precioOferta: faker.commerce.price({ min: 155, max: 180 }),
-      stock: faker.number.int({ min: 50, max: 200 }),
-      productoId: producto.id,
-      sucursalId: sucursal.id
-    }))
+    sucursales.flatMap((sucursal) => {
+      const stock = faker.number.int({ min: 10, max: 200 })
+      return {
+        precioCompra: faker.commerce.price({ min: 160, max: 200 }),
+        precioVenta: faker.commerce.price({ min: 150, max: 180 }),
+        precioOferta: faker.commerce.price({ min: 155, max: 180 }),
+        stock,
+        stockBajo:
+          producto.stockMinimo !== null ? stock < producto.stockMinimo : false,
+        productoId: producto.id,
+        sucursalId: sucursal.id
+      }
+    })
   )
 
   await db.insert(schema.detallesProductoTable).values(detallesProductosValues)

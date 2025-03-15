@@ -31,24 +31,15 @@ export class GetAllProductos {
     cantidadMinimaDescuento: productosTable.cantidadMinimaDescuento,
     cantidadGratisDescuento: productosTable.cantidadGratisDescuento,
     porcentajeDescuento: productosTable.porcentajeDescuento,
-    colorId: productosTable.colorId,
-    categoriaId: productosTable.categoriaId,
-    marcaId: productosTable.marcaId,
+    color: coloresTable.nombre,
+    categoria: categoriasTable.nombre,
+    marca: marcasTable.nombre,
     fechaCreacion: productosTable.fechaCreacion,
-    fechaActualizacion: productosTable.fechaActualizacion,
     precioCompra: detallesProductoTable.precioCompra,
     precioVenta: detallesProductoTable.precioVenta,
     precioOferta: detallesProductoTable.precioOferta,
     stock: detallesProductoTable.stock,
-    relacionados: {
-      colorNombre: coloresTable.nombre,
-      categoriaNombre: categoriasTable.nombre,
-      marcaNombre: marcasTable.nombre
-    },
-    sucursal: {
-      nombre: sucursalesTable.nombre,
-      id: sucursalesTable.id
-    }
+    stockBajo: detallesProductoTable.stockBajo
   }
 
   private readonly validSortBy = {
