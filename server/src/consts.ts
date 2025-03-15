@@ -75,5 +75,8 @@ export const permissionCodes = {
     getRelated: 'ventas:get_related',
     updateRelated: 'ventas:update_related',
     deleteRelated: 'ventas:delete_related'
+  },
+  categorias: {
+    createAny: 'categorias:create_any'
   }
 } as const
