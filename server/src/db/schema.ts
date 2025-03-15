@@ -81,6 +81,7 @@ export const detallesProductoTable = pgTable('detalles_producto', {
   precioVenta: numeric('precio_venta', { precision: 7, scale: 2 }),
   precioOferta: numeric('precio_oferta', { precision: 7, scale: 2 }),
   stock: integer('stock').notNull().default(0),
+  stockBajo: boolean('stock_bajo').notNull().default(false),
   productoId: integer('producto_id')
     .notNull()
     .references(() => productosTable.id),

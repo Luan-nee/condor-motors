@@ -13,7 +13,6 @@ import {
   sucursalesTable
 } from '@/db/schema'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
-import { ProductoEntityMapper } from '@/domain/mappers/producto-entity.mapper'
 import type { SucursalIdType } from '@/types/schemas'
 import { and, eq } from 'drizzle-orm'
 
@@ -30,21 +29,15 @@ export class GetProductoById {
     cantidadMinimaDescuento: productosTable.cantidadMinimaDescuento,
     cantidadGratisDescuento: productosTable.cantidadGratisDescuento,
     porcentajeDescuento: productosTable.porcentajeDescuento,
-    colorId: productosTable.colorId,
-    categoriaId: productosTable.categoriaId,
-    marcaId: productosTable.marcaId,
+    color: coloresTable.nombre,
+    categoria: categoriasTable.nombre,
+    marca: marcasTable.nombre,
     fechaCreacion: productosTable.fechaCreacion,
-    fechaActualizacion: productosTable.fechaActualizacion,
     precioCompra: detallesProductoTable.precioCompra,
     precioVenta: detallesProductoTable.precioVenta,
     precioOferta: detallesProductoTable.precioOferta,
     stock: detallesProductoTable.stock,
-    relacionados: {
-      colorNombre: coloresTable.nombre,
-      categoriaNombre: categoriasTable.nombre,
-      marcaNombre: marcasTable.nombre
-    }
-    // sucursalId: sucursalesTable.id
+    stockBajo: detallesProductoTable.stockBajo
   }
 
   constructor(authPayload: AuthPayload) {
@@ -174,8 +167,6 @@ export class GetProductoById {
       hasPermissionGetAny
     )
 
-    const mappedProducto = ProductoEntityMapper.fromObject(producto)
-
-    return mappedProducto
+    return producto
   }
 }
