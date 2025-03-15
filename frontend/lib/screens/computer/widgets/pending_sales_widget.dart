@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../../services/ventas_transfer_service.dart';
 
 class PendingSalesWidget extends StatefulWidget {
   final Function(Map<String, dynamic>) onSaleSelected;
@@ -18,7 +17,6 @@ class PendingSalesWidget extends StatefulWidget {
 
 class _PendingSalesWidgetState extends State<PendingSalesWidget> {
   bool _isLoading = false;
-  final _ventasTransferService = VentasTransferService();
 
   @override
   void initState() {

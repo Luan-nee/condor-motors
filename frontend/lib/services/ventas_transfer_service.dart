@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 /// Servicio para manejar la transferencia de ventas entre el colaborador y la computadora

@@ -1,101 +1,146 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../api/ventas.api.dart' as ventas_api;
-import '../../api/main.api.dart';
+import '../../api/index.dart';
+import '../../main.dart' show api;
 import '../../services/ventas_transfer_service.dart';
 import 'widgets/pending_sales_widget.dart';
-import 'widgets/form_sales_computer.dart';
+import 'widgets/form_sales_computer.dart' show NumericKeypad, ProcessingDialog, DebugPrint;
+
+/// Clase utilitaria para operaciones con ventas y formateo de montos
+/// 
+/// Esta clase centraliza todas las operaciones de cálculo y formateo
+/// relacionadas con ventas, precios y montos, lo que ayuda a mantener
+/// la consistencia en toda la aplicación.
+class VentasUtils {
+  /// Calcula el subtotal para un producto (precio * cantidad)
+  /// 
+  /// Parámetros:
+  /// - producto: Mapa con datos del producto que debe incluir 'precio' y 'cantidad'
+  /// 
+  /// Retorna el subtotal formateado a 2 decimales
+  static double calcularSubtotal(Map<String, dynamic> producto) {
+    final precio = producto['precio'] as double;
+    final cantidad = producto['cantidad'] as int;
+    return formatearMonto(precio * cantidad);
+  }
+  
+  /// Calcula el total para una venta completa sumando los subtotales de todos sus productos
+  /// 
+  /// Parámetros:
+  /// - productos: Lista de productos, cada uno debe contener 'precio' y 'cantidad'
+  /// 
+  /// Retorna el total formateado a 2 decimales
+  static double calcularTotalVenta(List<dynamic> productos) {
+    double total = 0;
+    for (var producto in productos) {
+      total += calcularSubtotal(producto);
+    }
+    return formatearMonto(total);
+  }
+  
+  /// Formatea un monto a 2 decimales, evitando problemas de precisión
+  static double formatearMonto(double monto) {
+    return double.parse(monto.toStringAsFixed(2));
+  }
+  
+  /// Formatea un monto como texto para mostrar, incluyendo el símbolo de moneda
+  static String formatearMontoTexto(double monto) {
+    return 'S/ ${monto.toStringAsFixed(2)}';
+  }
+}
+
+// Definición de la clase Venta para manejar los datos
+class Venta {
+  final String id;
+  final DateTime? fechaCreacion;
+  final String estado;
+  final double subtotal;
+  final double igv;
+  final double total;
+  final double? descuentoTotal;
+  final List<DetalleVenta> detalles;
+
+  Venta({
+    required this.id,
+    this.fechaCreacion,
+    required this.estado,
+    required this.subtotal,
+    required this.igv,
+    required this.total,
+    this.descuentoTotal,
+    required this.detalles,
+  });
+
+  factory Venta.fromJson(Map<String, dynamic> json) {
+    return Venta(
+      id: json['id'] ?? '',
+      fechaCreacion: json['fecha_creacion'] != null 
+          ? DateTime.parse(json['fecha_creacion']) 
+          : null,
+      estado: json['estado'] ?? 'PENDIENTE',
+      subtotal: (json['subtotal'] ?? 0.0).toDouble(),
+      igv: (json['igv'] ?? 0.0).toDouble(),
+      total: (json['total'] ?? 0.0).toDouble(),
+      descuentoTotal: json['descuento_total'] != null 
+          ? (json['descuento_total']).toDouble() 
+          : null,
+      detalles: (json['detalles'] as List<dynamic>?)
+          ?.map((detalle) => DetalleVenta.fromJson(detalle))
+          .toList() ?? [],
+    );
+  }
+}
+
+class DetalleVenta {
+  final String productoId;
+  final int cantidad;
+  final double subtotal;
+
+  DetalleVenta({
+    required this.productoId,
+    required this.cantidad,
+    required this.subtotal,
+  });
+
+  factory DetalleVenta.fromJson(Map<String, dynamic> json) {
+    return DetalleVenta(
+      productoId: json['producto_id'] ?? '',
+      cantidad: json['cantidad'] ?? 0,
+      subtotal: (json['subtotal'] ?? 0.0).toDouble(),
+    );
+  }
+}
+
+// Constantes para los estados de venta
+class EstadosVenta {
+  static const String PENDIENTE = 'PENDIENTE';
+  static const String COMPLETADA = 'COMPLETADA';
+  static const String ANULADA = 'ANULADA';
+}
 
 class SalesComputerScreen extends StatefulWidget {
-  const SalesComputerScreen({super.key});
+  final int? sucursalId;
+  final String nombreSucursal;
+
+  const SalesComputerScreen({
+    super.key,
+    this.sucursalId,
+    this.nombreSucursal = 'Sucursal',
+  });
 
   @override
   State<SalesComputerScreen> createState() => _SalesComputerScreenState();
 }
 
 class _SalesComputerScreenState extends State<SalesComputerScreen> {
-  final _apiService = ApiService();
-  late final ventas_api.VentasApi _ventasApi;
+  late final VentasApi _ventasApi;
   bool _isLoading = false;
-  List<ventas_api.Venta> _ventas = [];
+  List<Venta> _ventas = [];
   
   // Datos de prueba para productos
-  final List<Map<String, dynamic>> _productos = [
-    {
-      'id': 1,
-      'codigo': 'CAS001',
-      'nombre': 'Casco MT Thunder 3',
-      'precio': 299.99,
-      'stock': 15,
-      'categoria': 'Cascos',
-      'imagen': 'assets/images/casco-mt.jpg',
-    },
-    {
-      'id': 2,
-      'codigo': 'ACE001',
-      'nombre': 'Aceite Motul 5100 4T',
-      'precio': 89.99,
-      'stock': 25,
-      'categoria': 'Lubricantes',
-      'imagen': 'assets/images/aceite-motul.jpg',
-    },
-    {
-      'id': 3,
-      'codigo': 'FRE001',
-      'nombre': 'Kit de Frenos Brembo',
-      'precio': 850.00,
-      'stock': 8,
-      'categoria': 'Frenos',
-      'imagen': 'assets/images/frenos-brembo.jpg',
-    },
-    {
-      'id': 4,
-      'codigo': 'SUS001',
-      'nombre': 'Amortiguador YSS',
-      'precio': 599.99,
-      'stock': 12,
-      'categoria': 'Suspensión',
-      'imagen': 'assets/images/amortiguador-yss.jpg',
-    },
-    {
-      'id': 5,
-      'codigo': 'LLA001',
-      'nombre': 'Llanta Michelin Pilot',
-      'precio': 450.00,
-      'stock': 20,
-      'categoria': 'Llantas',
-      'imagen': 'assets/images/llanta-michelin.jpg',
-    },
-  ];
 
   // Datos de prueba para clientes
-  final List<Map<String, dynamic>> _clientes = [
-    {
-      'id': 1,
-      'nombre': 'Juan Pérez',
-      'documento': '12345678',
-      'telefono': '987654321',
-      'tipo': 'DNI',
-      'direccion': 'Av. Principal 123',
-    },
-    {
-      'id': 2,
-      'nombre': 'María García',
-      'documento': '87654321',
-      'telefono': '123456789',
-      'tipo': 'DNI',
-      'direccion': 'Calle 45 #789',
-    },
-    {
-      'id': 3,
-      'nombre': 'Carlos López',
-      'documento': '45678912',
-      'telefono': '789456123',
-      'tipo': 'RUC',
-      'direccion': 'Jr. Comercial 456',
-    },
-  ];
 
   // Datos de prueba para ventas pendientes
   final List<Map<String, dynamic>> _ventasPendientes = [
@@ -158,7 +203,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   @override
   void initState() {
     super.initState();
-    _ventasApi = ventas_api.VentasApi(_apiService);
+    _ventasApi = api.ventas;
     _cargarVentas();
   }
 
@@ -207,10 +252,21 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   Future<void> _cargarVentas() async {
     setState(() => _isLoading = true);
     try {
-      final ventas = await _ventasApi.getVentas();
+      final ventasResponse = await _ventasApi.getVentas(
+        sucursalId: widget.sucursalId?.toString(),
+      );
+      
       if (!mounted) return;
+      
+      final List<Venta> ventasList = [];
+      if (ventasResponse['data'] != null && ventasResponse['data'] is List) {
+        for (var item in ventasResponse['data']) {
+          ventasList.add(Venta.fromJson(item));
+        }
+      }
+      
       setState(() {
-        _ventas = ventas;
+        _ventas = ventasList;
       });
     } catch (e) {
       if (!mounted) return;
@@ -227,7 +283,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     }
   }
 
-  Future<void> _anularVenta(ventas_api.Venta venta) async {
+  Future<void> _anularVenta(Venta venta) async {
     try {
       await _ventasApi.anularVenta(
         venta.id,
@@ -256,82 +312,590 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   
   // Método para seleccionar una venta pendiente para procesar
   void _seleccionarVenta(Map<String, dynamic> venta) {
+    // Crear una copia profunda para evitar referencias compartidas
+    final ventaCopia = _crearCopiaVenta(venta);
+    
+    // Guardar el total original para mostrar si hay cambios
+    ventaCopia['total_original'] = ventaCopia['total'];
+    
     setState(() {
-      _ventaSeleccionada = venta;
+      _ventaSeleccionada = ventaCopia;
       _montoIngresado = '';
-      _nombreCliente = venta['cliente']['nombre'];
+      _nombreCliente = ventaCopia['cliente']['nombre'];
       _tipoDocumento = 'Boleta'; // Por defecto
     });
+    
+    // Mostrar el formulario como popup
+    _mostrarFormularioVenta(ventaCopia);
+  }
+  
+  // Método para crear una copia profunda de una venta
+  Map<String, dynamic> _crearCopiaVenta(Map<String, dynamic> original) {
+    final copia = Map<String, dynamic>.from(original);
+    
+    // Copiar profundamente los productos
+    if (copia.containsKey('productos') && copia['productos'] is List) {
+      copia['productos'] = (copia['productos'] as List).map((producto) {
+        return Map<String, dynamic>.from(producto);
+      }).toList();
+    }
+    
+    // Copiar profundamente el cliente
+    if (copia.containsKey('cliente') && copia['cliente'] is Map) {
+      copia['cliente'] = Map<String, dynamic>.from(copia['cliente']);
+    }
+    
+    return copia;
+  }
+  
+  // Método para mostrar el formulario de ventas como un popup
+  void _mostrarFormularioVenta(Map<String, dynamic> venta) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.85,
+          height: MediaQuery.of(context).size.height * 0.85,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 10,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Cabecera del popup
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF2D2D2D),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const FaIcon(
+                      FontAwesomeIcons.fileInvoiceDollar,
+                      color: Color(0xFFE31E24),
+                      size: 24,
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Text(
+                        'Procesar Venta',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const FaIcon(
+                        FontAwesomeIcons.xmark,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _cancelarProcesamiento();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Cuerpo del popup (detalles de la venta y formulario)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Columna izquierda: Detalles de la venta
+                      Expanded(
+                        flex: 3,
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2D2D2D),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const CircleAvatar(
+                                    backgroundColor: Color(0xFF4CAF50),
+                                    child: FaIcon(
+                                      FontAwesomeIcons.user,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          venta['cliente']['nombre'],
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Doc: ${venta['cliente']['documento']}',
+                                          style: TextStyle(
+                                            color: Colors.grey[400],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE31E24).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      VentasUtils.formatearMontoTexto(venta['total']),
+                                      key: ValueKey('header-total-${venta['total']}'),
+                                      style: const TextStyle(
+                                        color: Color(0xFFE31E24),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              const Divider(color: Colors.white24),
+                              const SizedBox(height: 8),
+                              
+                              // Etiqueta de Productos
+                              const Text(
+                                'PRODUCTOS',
+                                style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              
+                              // Lista de productos
+                              Expanded(
+                                child: ListView.builder(
+                                  itemCount: (venta['productos'] as List<dynamic>).length,
+                                  itemBuilder: (context, index) {
+                                    final producto = venta['productos'][index];
+                                    final subtotal = VentasUtils.calcularSubtotal(producto);
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1A1A1A),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.white12),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            // Icono del producto
+                                            Container(
+                                              width: 40,
+                                              height: 40,
+                                              margin: const EdgeInsets.all(8.0),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF4CAF50).withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: const Center(
+                                                child: FaIcon(
+                                                  FontAwesomeIcons.box,
+                                                  color: Color(0xFF4CAF50),
+                                                  size: 16,
+                                                ),
+                                              ),
+                                            ),
+                                            // Información del producto
+                                            Expanded(
+                                              child: Padding(
+                                                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      producto['nombre'] as String,
+                                                      style: const TextStyle(
+                                                        color: Colors.white, 
+                                                        fontWeight: FontWeight.bold
+                                                      ),
+                                                    ),
+                                                    Row(
+                                                      children: [
+                                                        Text(
+                                                          'Precio: S/ ${(producto['precio'] as double).toStringAsFixed(2)}',
+                                                          style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                                                        ),
+                                                        const SizedBox(width: 4),
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
+                                                          decoration: BoxDecoration(
+                                                            color: const Color(0xFF4CAF50).withOpacity(0.1),
+                                                            borderRadius: BorderRadius.circular(4),
+                                                          ),
+                                                          child: Text(
+                                                            'x${producto['cantidad']}',
+                                                            style: const TextStyle(
+                                                              color: Color(0xFF4CAF50),
+                                                              fontWeight: FontWeight.bold,
+                                                              fontSize: 11,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            // Control de cantidad
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                              child: Row(
+                                                children: [
+                                                  // Botón disminuir
+                                                  _buildQuantityButton(
+                                                    icon: Icons.remove,
+                                                    onPressed: () => _actualizarCantidadProducto(venta, index, -1),
+                                                    enabled: producto['cantidad'] > 1,
+                                                  ),
+                                                  // Mostrar cantidad
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                                                    margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(0xFF2D2D2D),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                    ),
+                                                    child: Text(
+                                                      '${producto['cantidad']}',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  // Botón aumentar
+                                                  _buildQuantityButton(
+                                                    icon: Icons.add,
+                                                    onPressed: () => _actualizarCantidadProducto(venta, index, 1),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            // Subtotal
+                                            Container(
+                                              width: 80,
+                                              padding: const EdgeInsets.all(8.0),
+                                              alignment: Alignment.centerRight,
+                                              child: Text(
+                                                VentasUtils.formatearMontoTexto(subtotal),
+                                                key: ValueKey('subtotal-$index-$subtotal'),
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              
+                              const Divider(color: Colors.white24),
+                              
+                              // Total
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'TOTAL',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        VentasUtils.formatearMontoTexto(venta['total']),
+                                        key: ValueKey('total-${venta['total']}'),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                        ),
+                                      ),
+                                      if (_ventaSeleccionada != null && 
+                                          _ventaSeleccionada!['total_original'] != null && 
+                                          _ventaSeleccionada!['total_original'] != _ventaSeleccionada!['total'])
+                                        Text(
+                                          'Monto original: ${VentasUtils.formatearMontoTexto(_ventaSeleccionada!['total_original'])}',
+                                          style: TextStyle(
+                                            color: Colors.orange.shade300,
+                                            fontSize: 12,
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(width: 16),
+                      
+                      // Columna derecha: Teclado numérico y opciones de pago
+                      Expanded(
+                        flex: 4,
+                        child: NumericKeypad(
+                          onKeyPressed: _handleKeyPress,
+                          onClear: _clearAmount,
+                          onSubmit: () {
+                            Navigator.pop(context);
+                            _procesarPago();
+                          },
+                          currentAmount: venta['total'].toString(),
+                          paymentAmount: _montoIngresado,
+                          customerName: _nombreCliente,
+                          documentType: _tipoDocumento,
+                          onCustomerNameChanged: _changeCustomerName,
+                          onDocumentTypeChanged: _changeDocumentType,
+                          isProcessing: _procesandoPago,
+                          minAmount: venta['total'],
+                          onCharge: (monto) {
+                            DebugPrint.log('Monto recibido para cobrar: $monto');
+                            Navigator.pop(context);
+                            _procesarPago();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
   
   // Método para procesar el pago de una venta
   Future<void> _procesarPago() async {
     if (_ventaSeleccionada == null) return;
     
+    DebugPrint.log('Procesando pago para venta: ${_ventaSeleccionada!['id']} con monto: $_montoIngresado');
     setState(() => _procesandoPago = true);
     
     try {
-      // Mostrar diálogo de procesamiento
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => ProcessingDialog(documentType: _tipoDocumento),
-      );
+      // Primero actualizamos las cantidades de productos si hubo cambios
+      await _actualizarProductosVenta();
       
-      // Simular procesamiento (en un entorno real, aquí se llamaría a la API)
+      // Mostrar dialog de procesamiento
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => ProcessingDialog(documentType: _tipoDocumento),
+        );
+      }
+      
+      // Simular procesamiento (aquí harías la llamada a la API)
       await Future.delayed(const Duration(seconds: 2));
       
-      // Marcar la venta como procesada
-      final ventasTransferService = VentasTransferService();
-      await ventasTransferService.marcarVentaComoProcesada(_ventaSeleccionada!['id']);
+      DebugPrint.log('Pago procesado exitosamente');
+      DebugPrint.log('Marcando venta como procesada');
       
-      if (!mounted) return;
+      // Cerrar dialog de procesamiento
+      if (mounted) {
+        Navigator.of(context).pop();
+        
+        // Mostrar mensaje de éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pago procesado exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
       
-      // Cerrar diálogo de procesamiento
-      Navigator.pop(context);
-      
-      // Mostrar mensaje de éxito
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Venta procesada exitosamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      // Mostrar diálogo de impresión
-      await _mostrarDialogoImpresion();
-      
-      // Limpiar selección
+      // Reiniciar estado
       setState(() {
         _ventaSeleccionada = null;
+        _montoIngresado = '';
+        _nombreCliente = '';
+        _tipoDocumento = 'Boleta';
         _procesandoPago = false;
       });
       
       // Recargar ventas
       await _cargarVentas();
     } catch (e) {
-      if (!mounted) return;
+      DebugPrint.log('Error al procesar pago: $e');
       
-      // Cerrar diálogo de procesamiento si está abierto
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
+      if (mounted) {
+        // Cerrar dialog de procesamiento si está abierto
+        Navigator.of(context, rootNavigator: true).popUntil(
+          (route) => route.isFirst || route.settings.name == 'ventas_dialog'
+        );
+        
+        // Mostrar mensaje de error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al procesar pago: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        
+        setState(() => _procesandoPago = false);
       }
-      
-      // Mostrar mensaje de error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al procesar venta: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      
-      setState(() => _procesandoPago = false);
     }
   }
   
-  // Método para cancelar el procesamiento de una venta
+  // Método para actualizar productos de la venta (cantidades modificadas)
+  Future<void> _actualizarProductosVenta() async {
+    if (_ventaSeleccionada == null) return;
+    
+    try {
+      DebugPrint.log('Actualizando cantidades de productos para venta: ${_ventaSeleccionada!['id']}');
+      
+      // Crear estructura de datos para enviar a la API
+      final Map<String, dynamic> ventaData = {
+        'productos': _ventaSeleccionada!['productos'].map((producto) {
+          return {
+            'id': producto['id'],
+            'cantidad': producto['cantidad'],
+            'precio': producto['precio'],
+          };
+        }).toList(),
+        'total': _ventaSeleccionada!['total'],
+      };
+      
+      // Actualizar la venta en la API
+      await _ventasApi.updateVenta(_ventaSeleccionada!['id'], ventaData);
+      
+      DebugPrint.log('Cantidades de productos actualizadas correctamente');
+      
+    } catch (e) {
+      DebugPrint.log('Error al actualizar cantidades de productos: $e');
+      throw Exception('No se pudieron actualizar las cantidades de productos: $e');
+    }
+  }
+
+  // Método para cancelar procesamiento de venta
   void _cancelarProcesamiento() {
-    setState(() => _ventaSeleccionada = null);
+    setState(() {
+      _ventaSeleccionada = null;
+      _montoIngresado = '';
+      _nombreCliente = '';
+      _tipoDocumento = 'Boleta';
+      _procesandoPago = false;
+    });
+  }
+
+  // Método para actualizar la cantidad de un producto
+  void _actualizarCantidadProducto(Map<String, dynamic> venta, int index, int cambio) {
+    setState(() {
+      final producto = venta['productos'][index];
+      final cantidadActual = producto['cantidad'] as int;
+      final nuevaCantidad = cantidadActual + cambio;
+      
+      // Asegurar que la cantidad no sea menor que 1
+      if (nuevaCantidad >= 1) {
+        producto['cantidad'] = nuevaCantidad;
+        
+        // Recalcular el total de la venta usando la clase utilitaria
+        venta['total'] = VentasUtils.calcularTotalVenta(venta['productos']);
+        
+        // Si hay una venta seleccionada, actualizarla también
+        if (_ventaSeleccionada != null && _ventaSeleccionada!['id'] == venta['id']) {
+          _ventaSeleccionada = Map<String, dynamic>.from(venta);
+        }
+        
+        DebugPrint.log('Cantidad actualizada para ${producto['nombre']}: $nuevaCantidad');
+        DebugPrint.log('Nuevo total de la venta: ${venta['total']}');
+      }
+    });
+    
+    // Forzar una actualización más explícita
+    if (mounted) {
+      Future.delayed(Duration.zero, () {
+        // Forzar una reconstrucción completa del widget actual
+        setState(() {});
+        
+        // Forzar reconstrucción del diálogo si está abierto
+        if (_ventaSeleccionada != null) {
+          Navigator.of(context).pop();
+          _mostrarFormularioVenta(_ventaSeleccionada!);
+        }
+      });
+    }
+  }
+  
+  // Modificar la referencia a _formatearMonto para usar la clase utilitaria
+  double _formatearMonto(double monto) {
+    return VentasUtils.formatearMonto(monto);
+  }
+
+  // Widget para botones de cantidad
+  Widget _buildQuantityButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    bool enabled = true,
+  }) {
+    return Material(
+      color: enabled ? const Color(0xFF2D2D2D) : Colors.grey.withOpacity(0.3),
+      borderRadius: BorderRadius.circular(4),
+      child: InkWell(
+        onTap: enabled ? onPressed : null,
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          child: Icon(
+            icon,
+            size: 16,
+            color: enabled ? Colors.white : Colors.grey,
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _mostrarDialogoImpresion() async {
@@ -459,9 +1023,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
-              'Sistema de Ventas',
-              style: TextStyle(
+            Text(
+              'Sistema de Ventas - ${widget.nombreSucursal}',
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -481,7 +1045,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         children: [
           // Panel izquierdo: Ventas pendientes
           Expanded(
-            flex: 1,
+            flex: 3,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: PendingSalesWidget(
@@ -491,183 +1055,25 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
             ),
           ),
           
-          // Panel derecho: Procesamiento de venta o historial
+          // Panel derecho: Historial de ventas
           Expanded(
             flex: 2,
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: _ventaSeleccionada != null
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Encabezado
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.arrow_back, color: Colors.white),
-                              onPressed: _cancelarProcesamiento,
-                            ),
-                            const Text(
-                              'Procesar Venta',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        // Detalles de la venta
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2D2D2D),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const CircleAvatar(
-                                    backgroundColor: Color(0xFF4CAF50),
-                                    child: FaIcon(
-                                      FontAwesomeIcons.user,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          _ventaSeleccionada!['cliente']['nombre'],
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Doc: ${_ventaSeleccionada!['cliente']['documento']}',
-                                          style: TextStyle(
-                                            color: Colors.grey[400],
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE31E24).withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      'S/ ${_ventaSeleccionada!['total'].toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        color: Color(0xFFE31E24),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              const Divider(color: Colors.white24),
-                              const SizedBox(height: 16),
-                              
-                              // Lista de productos
-                              ...(_ventaSeleccionada!['productos'] as List<dynamic>).map((producto) {
-                                final subtotal = (producto['precio'] as double) * (producto['cantidad'] as int);
-                                return ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  leading: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF4CAF50).withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Center(
-                                      child: FaIcon(
-                                        FontAwesomeIcons.box,
-                                        color: Color(0xFF4CAF50),
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  title: Text(
-                                    producto['nombre'] as String,
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                  subtitle: Text(
-                                    'Cantidad: ${producto['cantidad']} x S/ ${(producto['precio'] as double).toStringAsFixed(2)}',
-                                    style: TextStyle(color: Colors.grey[400]),
-                                  ),
-                                  trailing: Text(
-                                    'S/ ${subtotal.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                              
-                              const Divider(color: Colors.white24),
-                              
-                              // Total
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'TOTAL',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    'S/ ${(_ventaSeleccionada!['total'] as double).toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Campo de monto con teclado virtual
-                        Expanded(
-                          child: NumericKeypad(
-                            onKeyPressed: _handleKeyPress,
-                            onClear: _clearAmount,
-                            onSubmit: _procesarPago,
-                            currentAmount: _ventaSeleccionada!['total'].toString(),
-                            paymentAmount: _montoIngresado,
-                            customerName: _nombreCliente,
-                            documentType: _tipoDocumento,
-                            onCustomerNameChanged: _changeCustomerName,
-                            onDocumentTypeChanged: _changeDocumentType,
-                            isProcessing: _procesandoPago,
-                          ),
-                        ),
-                      ],
-                    )
-                  : _isLoading
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'HISTORIAL DE VENTAS',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: _isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : ListView.builder(
                           itemCount: _ventas.length,
@@ -699,15 +1105,15 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                     Text(
                                       'Estado: ${venta.estado}',
                                       style: TextStyle(
-                                        color: venta.estado == ventas_api.VentasApi.estados['COMPLETADA']
+                                        color: venta.estado == EstadosVenta.COMPLETADA
                                             ? Colors.green
-                                            : venta.estado == ventas_api.VentasApi.estados['ANULADA']
+                                            : venta.estado == EstadosVenta.ANULADA
                                                 ? Colors.red
                                                 : Colors.orange,
                                       ),
                                     ),
                                     Text(
-                                      'Total: S/ ${venta.total.toStringAsFixed(2)}',
+                                      'Total: S/ ${VentasUtils.formatearMontoTexto(venta.total)}',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -813,7 +1219,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                               ),
                                             ),
                                             Text(
-                                              'S/ ${venta.total.toStringAsFixed(2)}',
+                                              VentasUtils.formatearMontoTexto(venta.total),
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 18,
@@ -846,7 +1252,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                                 backgroundColor: const Color(0xFF9C27B0),
                                               ),
                                             ),
-                                            if (venta.estado != ventas_api.VentasApi.estados['ANULADA'])
+                                            if (venta.estado != EstadosVenta.ANULADA)
                                               ElevatedButton.icon(
                                                 onPressed: () => _anularVenta(venta),
                                                 icon: const Icon(Icons.cancel),
@@ -865,6 +1271,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                             );
                           },
                         ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

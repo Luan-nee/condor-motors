@@ -13,21 +13,124 @@ class SlidesComputerScreen extends StatefulWidget {
 
 class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
   int _selectedIndex = 0;
+  Map<String, dynamic>? _sucursalInfo;
+  String _nombreSucursal = 'Sucursal';
+  String _nombreUsuario = 'Usuario';
+  int? _sucursalId;
 
-  final List<Map<String, dynamic>> _menuItems = [
-    {
-      'title': 'Dashboard',
-      'icon': FontAwesomeIcons.chartLine,
-      'screen': const DashboardComputerScreen(),
-      'description': 'Información general de la sucursal',
-    },
-    {
-      'title': 'Aprobar Ventas',
-      'icon': FontAwesomeIcons.cashRegister,
-      'screen': const SalesComputerScreen(),
-      'description': 'Procesar ventas pendientes',
-    },
-  ];
+  // Los widgets de pantalla se inicializarán después de obtener la información de la sucursal
+  late List<Map<String, dynamic>> _menuItems;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicializar los elementos del menú con valores por defecto
+    _menuItems = [
+      {
+        'title': 'Dashboard',
+        'icon': FontAwesomeIcons.chartLine,
+        'screen': const DashboardComputerScreen(),
+        'description': 'Información general de la sucursal',
+      },
+      {
+        'title': 'Aprobar Ventas',
+        'icon': FontAwesomeIcons.cashRegister,
+        'screen': const SalesComputerScreen(),
+        'description': 'Procesar ventas pendientes',
+      },
+    ];
+    
+    // Obtener la información después de que el widget esté completamente inicializado
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _obtenerInformacionSucursal();
+    });
+  }
+
+  void _obtenerInformacionSucursal() {
+    debugPrint('Obteniendo información de sucursal...');
+    try {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      debugPrint('Argumentos recibidos: ${args?.toString()}');
+      
+      if (args != null) {
+        // Manejar el caso donde sucursal puede ser un String o un Map
+        dynamic sucursalData = args['sucursal'];
+        Map<String, dynamic>? sucursalInfo;
+        
+        if (sucursalData is Map<String, dynamic>) {
+          debugPrint('Sucursal es un Map');
+          sucursalInfo = sucursalData;
+        } else if (sucursalData is String) {
+          debugPrint('Sucursal es un String: $sucursalData');
+          // Si es un string, podemos crear un mapa con el nombre
+          sucursalInfo = {'nombre': sucursalData};
+        } else {
+          debugPrint('Sucursal es de tipo: ${sucursalData?.runtimeType}');
+          sucursalInfo = null;
+        }
+        
+        // Obtener sucursalId de manera segura
+        dynamic sucursalIdData = args['sucursalId'];
+        int? sucursalId;
+        
+        if (sucursalIdData is int) {
+          sucursalId = sucursalIdData;
+        } else if (sucursalIdData is String) {
+          sucursalId = int.tryParse(sucursalIdData);
+          debugPrint('Convertido sucursalId de String a int: $sucursalId');
+        } else {
+          sucursalId = sucursalInfo?['id'] as int?;
+        }
+        
+        if (sucursalId == null) {
+          debugPrint('ADVERTENCIA: No se pudo obtener un sucursalId válido');
+        }
+        
+        setState(() {
+          _sucursalInfo = sucursalInfo;
+          _nombreSucursal = sucursalInfo?['nombre'] ?? args['sucursal']?.toString() ?? 'Sucursal sin nombre';
+          _nombreUsuario = args['usuario'] ?? args['nombre'] ?? 'Usuario';
+          _sucursalId = sucursalId;
+          
+          // Actualizar los widgets con la información de la sucursal
+          _actualizarWidgets();
+        });
+        
+        debugPrint('Información de sucursal actualizada: nombre=$_nombreSucursal, id=$_sucursalId');
+      } else {
+        debugPrint('No se recibieron argumentos');
+      }
+    } catch (e) {
+      debugPrint('ERROR al obtener información de sucursal: $e');
+      // Establecer valores por defecto en caso de error
+      setState(() {
+        _nombreSucursal = 'Sucursal sin nombre';
+        _nombreUsuario = 'Usuario';
+        _sucursalId = null;
+        _actualizarWidgets();
+      });
+    }
+  }
+  
+  void _actualizarWidgets() {
+    // Actualizar los widgets con la información de la sucursal
+    setState(() {
+      _menuItems = [
+        {
+          'title': 'Dashboard',
+          'icon': FontAwesomeIcons.chartLine,
+          'screen': DashboardComputerScreen(sucursalId: _sucursalId, nombreSucursal: _nombreSucursal),
+          'description': 'Información general de la sucursal',
+        },
+        {
+          'title': 'Aprobar Ventas',
+          'icon': FontAwesomeIcons.cashRegister,
+          'screen': SalesComputerScreen(sucursalId: _sucursalId, nombreSucursal: _nombreSucursal),
+          'description': 'Procesar ventas pendientes',
+        },
+      ];
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,32 +162,89 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                 // Logo y título
                 Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          image: DecorationImage(
-                            image: AssetImage('assets/images/condor-motors-logo.webp'),
-                            fit: BoxFit.cover,
+                      Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              image: DecorationImage(
+                                image: AssetImage('assets/images/condor-motors-logo.webp'),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
                           ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Condor Motors',
+                            style: TextStyle(
+                              color: Color(0xFFE31E24),
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Información de la sucursal
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE31E24).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          children: [
+                            const FaIcon(
+                              FontAwesomeIcons.store,
+                              color: Color(0xFFE31E24),
+                              size: 12,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _nombreSucursal,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Condor Motors',
-                        style: TextStyle(
-                          color: Color(0xFFE31E24),
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      const SizedBox(height: 4),
+                      // Información del usuario
+                      Row(
+                        children: [
+                          const FaIcon(
+                            FontAwesomeIcons.user,
+                            color: Colors.white54,
+                            size: 12,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _nombreUsuario,
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // Menú de opciones
                 ..._menuItems.asMap().entries.map((entry) {

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../api/main.api.dart';
 import '../../routes/routes.dart';
+import '../../main.dart' show api;
 
 import 'productos_colab.dart';
 import 'ventas_colab.dart';
@@ -237,14 +236,7 @@ class SelectorColabScreen extends StatelessWidget {
   Future<void> _logout(BuildContext context) async {
     try {
       // Limpiar tokens de autenticación
-      final apiService = ApiService();
-      await apiService.clearTokens();
-      
-      // Limpiar preferencias si es necesario
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('auth_token');
-      await prefs.remove('refresh_token');
-      await prefs.remove('token_expiration');
+      await api.authService.logout();
       
       // Navegar a la pantalla de login
       if (context.mounted) {

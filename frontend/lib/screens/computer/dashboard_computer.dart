@@ -1,28 +1,70 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../api/ventas.api.dart' as ventas_api;
-import '../../api/main.api.dart';
-import '../../services/ventas_transfer_service.dart';
+import '../../api/index.dart';
+import '../../main.dart' show api;
+
+// Definición de la clase Venta para manejar los datos
+class Venta {
+  final String id;
+  final DateTime? fechaCreacion;
+  final String estado;
+  final double subtotal;
+  final double igv;
+  final double total;
+  final double? descuentoTotal;
+
+  Venta({
+    required this.id,
+    this.fechaCreacion,
+    required this.estado,
+    required this.subtotal,
+    required this.igv,
+    required this.total,
+    this.descuentoTotal,
+  });
+
+  factory Venta.fromJson(Map<String, dynamic> json) {
+    return Venta(
+      id: json['id'] ?? '',
+      fechaCreacion: json['fecha_creacion'] != null 
+          ? DateTime.parse(json['fecha_creacion']) 
+          : null,
+      estado: json['estado'] ?? 'PENDIENTE',
+      subtotal: (json['subtotal'] ?? 0.0).toDouble(),
+      igv: (json['igv'] ?? 0.0).toDouble(),
+      total: (json['total'] ?? 0.0).toDouble(),
+      descuentoTotal: json['descuento_total'] != null 
+          ? (json['descuento_total']).toDouble() 
+          : null,
+    );
+  }
+}
 
 class DashboardComputerScreen extends StatefulWidget {
-  const DashboardComputerScreen({super.key});
+  final int? sucursalId;
+  final String nombreSucursal;
+
+  const DashboardComputerScreen({
+    super.key, 
+    this.sucursalId,
+    this.nombreSucursal = 'Sucursal',
+  });
 
   @override
   State<DashboardComputerScreen> createState() => _DashboardComputerScreenState();
 }
 
 class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
-  final _apiService = ApiService();
-  late final ventas_api.VentasApi _ventasApi;
+  late final VentasApi _ventasApi;
   bool _isLoading = false;
-  List<ventas_api.Venta> _ultimasVentas = [];
+  List<Venta> _ultimasVentas = [];
   List<Map<String, dynamic>> _productosBajos = [];
   List<Map<String, dynamic>> _colaboradoresConectados = [];
   
   @override
   void initState() {
     super.initState();
-    _ventasApi = ventas_api.VentasApi(_apiService);
+    _ventasApi = api.ventas;
     _cargarDatos();
   }
 
@@ -30,13 +72,27 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
     setState(() => _isLoading = true);
     try {
       // Cargar últimas ventas
-      final ventas = await _ventasApi.getVentas();
+      final ventasResponse = await _ventasApi.getVentas(
+        sucursalId: widget.sucursalId?.toString(),
+      );
+      
       if (!mounted) return;
       
+      // Convertir los datos de la API a objetos Venta
+      final List<Venta> ventasList = [];
+      if (ventasResponse['data'] != null && ventasResponse['data'] is List) {
+        for (var item in ventasResponse['data']) {
+          ventasList.add(Venta.fromJson(item));
+        }
+      }
+      
       // Ordenar por fecha y tomar las últimas 5
-      _ultimasVentas = ventas
-        ..sort((a, b) => b.fechaCreacion!.compareTo(a.fechaCreacion!));
-      _ultimasVentas = _ultimasVentas.take(5).toList();
+      ventasList.sort((a, b) => 
+        (b.fechaCreacion ?? DateTime.now())
+            .compareTo(a.fechaCreacion ?? DateTime.now())
+      );
+      
+      _ultimasVentas = ventasList.take(5).toList();
       
       // TODO: Cargar productos con stock bajo
       _productosBajos = [
@@ -92,9 +148,9 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
       backgroundColor: const Color(0xFF1A1A1A),
       appBar: AppBar(
         backgroundColor: const Color(0xFF2D2D2D),
-        title: const Text(
-          'Dashboard',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          'Dashboard - ${widget.nombreSucursal}',
+          style: const TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [

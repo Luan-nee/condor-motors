@@ -1,6 +1,58 @@
 import 'package:flutter/material.dart';
-import '../../api/main.api.dart';
-import '../../api/sucursales.api.dart';
+import '../../main.dart' show api;
+
+// Definición de la clase Sucursal para manejar los datos
+class Sucursal {
+  final String id;
+  final String nombre;
+  final String direccion;
+  final bool sucursalCentral;
+  final bool activo;
+  final DateTime? fechaCreacion;
+
+  Sucursal({
+    required this.id,
+    required this.nombre,
+    required this.direccion,
+    this.sucursalCentral = false,
+    this.activo = true,
+    this.fechaCreacion,
+  });
+
+  factory Sucursal.fromJson(Map<String, dynamic> json) {
+    return Sucursal(
+      id: json['id']?.toString() ?? '',
+      nombre: json['nombre'] ?? '',
+      direccion: json['direccion'] ?? '',
+      sucursalCentral: json['sucursalCentral'] ?? false,
+      activo: json['activo'] ?? true,
+      fechaCreacion: json['fechaCreacion'] != null 
+          ? DateTime.parse(json['fechaCreacion']) 
+          : null,
+    );
+  }
+}
+
+// Clase para la solicitud de creación/actualización de sucursal
+class SucursalRequest {
+  final String nombre;
+  final String direccion;
+  final bool sucursalCentral;
+
+  SucursalRequest({
+    required this.nombre,
+    required this.direccion,
+    this.sucursalCentral = false,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'nombre': nombre,
+      'direccion': direccion,
+      'sucursalCentral': sucursalCentral,
+    };
+  }
+}
 
 class SucursalAdminScreen extends StatefulWidget {
   const SucursalAdminScreen({super.key});
@@ -10,31 +62,28 @@ class SucursalAdminScreen extends StatefulWidget {
 }
 
 class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
-  final _apiService = ApiService();
-  late final SucursalesApi _sucursalesApi;
   bool _isLoading = false;
   List<Sucursal> _sucursales = [];
-  final int _currentPage = 1;
-  final int _pageSize = 10;
-  String? _searchQuery;
+
 
   @override
   void initState() {
     super.initState();
-    _sucursalesApi = SucursalesApi(_apiService);
     _cargarSucursales();
   }
 
   Future<void> _cargarSucursales() async {
     setState(() => _isLoading = true);
     try {
-      final response = await _sucursalesApi.getSucursales(
-        page: _currentPage,
-        pageSize: _pageSize,
-        search: _searchQuery,
-      );
+      final response = await api.sucursales.getSucursales();
+      
+      final List<Sucursal> sucursales = [];
+      for (var item in response) {
+        sucursales.add(Sucursal.fromJson(item));
+      }
+      
       if (!mounted) return;
-      setState(() => _sucursales = response.items);
+      setState(() => _sucursales = sucursales);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -56,9 +105,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
       );
 
       if (data['id'] != null) {
-        await _sucursalesApi.updateSucursal(data['id'], request);
+        await api.sucursales.updateSucursal(data['id'].toString(), request.toJson());
       } else {
-        await _sucursalesApi.createSucursal(request);
+        await api.sucursales.createSucursal(request.toJson());
       }
       
       if (!mounted) return;
@@ -106,7 +155,6 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                 prefixIcon: Icon(Icons.search),
               ),
               onChanged: (value) {
-                setState(() => _searchQuery = value);
                 _cargarSucursales();
               },
             ),
@@ -168,7 +216,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                                   );
 
                                   if (confirm == true) {
-                                    await _sucursalesApi.deleteSucursal(sucursal.id);
+                                    await api.sucursales.deleteSucursal(sucursal.id);
                                     _cargarSucursales();
                                   }
                                 },

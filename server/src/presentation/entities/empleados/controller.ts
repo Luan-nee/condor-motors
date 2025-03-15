@@ -149,4 +149,62 @@ export class EmpleadosController {
         handleError(error, res)
       })
   }
+
+  // Método para activar empleado
+  activar = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [error, numericIdDto] = NumericIdDto.create(req.params)
+
+    if (error !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: 'El ID ingresado no es válido' })
+      return
+    }
+
+    // Usar el caso de uso de actualización con activo=true
+    const updateEmpleado = new UpdateEmpleado()
+    const updateData = { activo: true }
+    
+    updateEmpleado
+      .execute(updateData, numericIdDto)
+      .then((empleado) => {
+        const message = `Empleado con id ${empleado.id} ha sido activado`
+        CustomResponse.success({ res, message, data: empleado })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
+
+  // Método para desactivar empleado
+  desactivar = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [error, numericIdDto] = NumericIdDto.create(req.params)
+
+    if (error !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: 'El ID ingresado no es válido' })
+      return
+    }
+
+    // Usar el caso de uso de actualización con activo=false
+    const updateEmpleado = new UpdateEmpleado()
+    const updateData = { activo: false }
+    
+    updateEmpleado
+      .execute(updateData, numericIdDto)
+      .then((empleado) => {
+        const message = `Empleado con id ${empleado.id} ha sido desactivado`
+        CustomResponse.success({ res, message, data: empleado })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
 }

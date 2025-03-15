@@ -46,7 +46,6 @@ class MovimientosAdminScreen extends StatefulWidget {
 class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
   List<MovimientoStock> _movimientos = [];
   String _filtroSeleccionado = 'Todos';
-  final bool _isLoading = false;
 
   // Datos de prueba
   static final List<MovimientoStock> _movimientosPrueba = [

@@ -1,6 +1,68 @@
 import 'package:flutter/material.dart';
-import '../../../api/movimientos_stock.api.dart';
-import '../../../api/main.api.dart';
+import '../../../api/protected/movimientos.api.dart';
+import '../../../main.dart' show api;
+
+// Definición de la clase MovimientoStock para manejar los datos
+class MovimientoStock {
+  final String id;
+  final String localOrigenId;
+  final String localDestinoId;
+  final String estado;
+  final DateTime fechaCreacion;
+  final List<DetalleMovimiento> detalles;
+
+  MovimientoStock({
+    required this.id,
+    required this.localOrigenId,
+    required this.localDestinoId,
+    required this.estado,
+    required this.fechaCreacion,
+    required this.detalles,
+  });
+
+  factory MovimientoStock.fromJson(Map<String, dynamic> json) {
+    return MovimientoStock(
+      id: json['id'] ?? '',
+      localOrigenId: json['local_origen_id'] ?? '',
+      localDestinoId: json['local_destino_id'] ?? '',
+      estado: json['estado'] ?? 'PENDIENTE',
+      fechaCreacion: json['fecha_creacion'] != null 
+          ? DateTime.parse(json['fecha_creacion']) 
+          : DateTime.now(),
+      detalles: (json['detalles'] as List<dynamic>?)
+          ?.map((detalle) => DetalleMovimiento.fromJson(detalle))
+          .toList() ?? [],
+    );
+  }
+}
+
+class DetalleMovimiento {
+  final String productoId;
+  final int cantidad;
+
+  DetalleMovimiento({
+    required this.productoId,
+    required this.cantidad,
+  });
+
+  factory DetalleMovimiento.fromJson(Map<String, dynamic> json) {
+    return DetalleMovimiento(
+      productoId: json['producto_id'] ?? '',
+      cantidad: json['cantidad'] ?? 0,
+    );
+  }
+}
+
+// Constantes para los estados de movimientos
+class EstadosMovimiento {
+  static const String PENDIENTE = 'PENDIENTE';
+  static const String EN_PROCESO = 'EN_PROCESO';
+  static const String EN_TRANSITO = 'EN_TRANSITO';
+  static const String ENTREGADO = 'ENTREGADO';
+  static const String COMPLETADO = 'COMPLETADO';
+  static const String PREPARADO = 'PREPARADO';
+  static const String RECIBIDO = 'RECIBIDO';
+}
 
 class NotificacionMovimiento extends StatefulWidget {
   const NotificacionMovimiento({super.key});
@@ -10,7 +72,7 @@ class NotificacionMovimiento extends StatefulWidget {
 }
 
 class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
-  final _movimientosApi = MovimientosStockApi(ApiService());
+  late final MovimientosApi _movimientosApi;
   bool _isLoading = false;
   List<MovimientoStock> _notificaciones = [];
   String? _error;
@@ -18,26 +80,33 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
   @override
   void initState() {
     super.initState();
+    _movimientosApi = api.movimientos;
     _cargarNotificaciones();
   }
 
   Future<void> _cargarNotificaciones() async {
     if (!mounted) return;
-    setState(() {
+    setState(() { 
       _isLoading = true;
       _error = null;
     });
 
     try {
       final response = await _movimientosApi.getMovimientos(
-        estado: MovimientosStockApi.estadosDetalle['PENDIENTE'],
+        estado: EstadosMovimiento.PENDIENTE,
       );
       
       if (!mounted) return;
+      
+      final List<MovimientoStock> movimientosList = [];
+      for (var item in response) {
+        movimientosList.add(MovimientoStock.fromJson(item));
+      }
+      
       setState(() {
-        _notificaciones = response
-            .where((m) => m.estado == MovimientosStockApi.estadosDetalle['PENDIENTE'] || 
-                        m.estado == MovimientosStockApi.estadosDetalle['PREPARADO'])
+        _notificaciones = movimientosList
+            .where((m) => m.estado == EstadosMovimiento.PENDIENTE || 
+                        m.estado == EstadosMovimiento.PREPARADO)
             .toList();
         _isLoading = false;
       });
@@ -67,7 +136,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
     try {
       await _movimientosApi.updateMovimiento(
         movimiento.id,
-        {'estado': MovimientosStockApi.estadosDetalle['PREPARADO']},
+        {'estado': EstadosMovimiento.PREPARADO},
       );
       
       if (!mounted) return;
@@ -98,11 +167,11 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
   }
 
   List<MovimientoStock> get _movimientosPendientes => _notificaciones.where((m) => 
-      m.estado == MovimientosStockApi.estadosDetalle['PENDIENTE'] || 
-      m.estado == MovimientosStockApi.estadosDetalle['PREPARADO']).toList();
+      m.estado == EstadosMovimiento.PENDIENTE || 
+      m.estado == EstadosMovimiento.PREPARADO).toList();
 
   List<MovimientoStock> get _movimientosParaAprobar => _notificaciones.where((m) => 
-      m.estado == MovimientosStockApi.estadosDetalle['RECIBIDO']).toList();
+      m.estado == EstadosMovimiento.RECIBIDO).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -233,7 +302,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
                 Text(
                   paraAprobar 
                       ? 'Movimiento para aprobar'
-                      : movimiento.estado == MovimientosStockApi.estadosDetalle['PENDIENTE']
+                      : movimiento.estado == EstadosMovimiento.PENDIENTE
                           ? 'Nueva solicitud de productos'
                           : 'Productos listos para envío',
                   style: const TextStyle(
@@ -271,7 +340,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          movimiento.estado == MovimientosStockApi.estadosDetalle['PENDIENTE']
+          movimiento.estado == EstadosMovimiento.PENDIENTE
               ? 'Nueva Solicitud de Productos'
               : 'Productos Listos para Envío',
         ),
@@ -293,13 +362,13 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cerrar'),
           ),
-          if (movimiento.estado == MovimientosStockApi.estadosDetalle['PENDIENTE'])
+          if (movimiento.estado == EstadosMovimiento.PENDIENTE)
             ElevatedButton(
               onPressed: () async {
                 try {
                   await _movimientosApi.updateMovimiento(
                     movimiento.id,
-                    {'estado': MovimientosStockApi.estadosDetalle['PREPARADO']},
+                    {'estado': EstadosMovimiento.PREPARADO},
                   );
                   
                   if (!mounted) return;

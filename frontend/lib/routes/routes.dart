@@ -3,13 +3,19 @@ import '../screens/admin/slides_admin.dart';
 import '../screens/computer/slides_computer.dart';
 import '../screens/colabs/selector_colab.dart';  // Vista para vendedores
 import '../screens/login.dart';
-import '../api/empleados.api.dart';
 
 class Routes {
   static const String login = '/';
   static const String adminDashboard = '/admin';
   static const String vendedorDashboard = '/vendedor';
   static const String computerDashboard = '/computer';
+  
+  // Definición de roles disponibles en la aplicación
+  static const Map<String, String> roles = {
+    'ADMINISTRADOR': 'ADMINISTRADOR',
+    'VENDEDOR': 'VENDEDOR',
+    'COMPUTADORA': 'COMPUTADORA',
+  };
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     // Obtener datos del empleado si existen
@@ -30,8 +36,8 @@ class Routes {
       final rol = empleadoData['rol'].toString().toUpperCase();
       final routeName = settings.name ?? '';
 
-      // Verificar si el rol es válido usando los roles definidos en EmpleadoApi
-      if (!EmpleadoApi.roles.containsKey(rol)) {
+      // Verificar si el rol es válido usando los roles definidos
+      if (!roles.containsKey(rol)) {
         return MaterialPageRoute(
           builder: (_) => Scaffold(
             body: Center(
@@ -83,7 +89,7 @@ class Routes {
   }
 
   static String getInitialRoute(String? rol) {
-    if (rol == null || !EmpleadoApi.roles.containsKey(rol.toUpperCase())) {
+    if (rol == null || !roles.containsKey(rol.toUpperCase())) {
       return login;
     }
 
@@ -101,9 +107,14 @@ class Routes {
 
   // Verificar si el rol tiene acceso a la ruta
   static bool _canAccessRoute(String rol, String route) {
-    if (!EmpleadoApi.roles.containsKey(rol)) return false;
+    if (!roles.containsKey(rol)) {
+      debugPrint('Rol no reconocido en _canAccessRoute: $rol');
+      return false;
+    }
     
     final rolUpper = rol.toUpperCase();
+    debugPrint('Verificando acceso para rol: $rolUpper a ruta: $route');
+    
     switch (rolUpper) {
       case 'ADMINISTRADOR':
         return true; // Acceso total
@@ -112,6 +123,7 @@ class Routes {
       case 'COMPUTADORA':
         return route == computerDashboard;
       default:
+        debugPrint('Rol no manejado específicamente: $rolUpper');
         return false;
     }
   }

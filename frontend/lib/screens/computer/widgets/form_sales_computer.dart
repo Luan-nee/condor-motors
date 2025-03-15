@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../ventas_computer.dart' show VentasUtils;
+
+// Clase para depurar eventos
+class DebugPrint {
+  static void log(String message) {
+    debugPrint('FORM_SALES_DEBUG: $message');
+  }
+}
 
 class ProcessingDialog extends StatelessWidget {
   final String documentType;
@@ -65,6 +73,8 @@ class NumericKeypad extends StatefulWidget {
   final Function(String) onCustomerNameChanged;
   final Function(String) onDocumentTypeChanged;
   final bool isProcessing;
+  final double minAmount;
+  final Function(double) onCharge;
 
   const NumericKeypad({
     super.key,
@@ -78,6 +88,8 @@ class NumericKeypad extends StatefulWidget {
     required this.onCustomerNameChanged,
     required this.onDocumentTypeChanged,
     required this.isProcessing,
+    required this.minAmount,
+    required this.onCharge,
   });
 
   @override
@@ -89,12 +101,31 @@ class _NumericKeypadState extends State<NumericKeypad> {
   final _customerNameController = TextEditingController();
   final _changeController = TextEditingController();
   bool _isManualChange = false;
+  String _enteredAmount = '';
 
   @override
   void initState() {
     super.initState();
-    _customerNameController.text = widget.customerName;
+    DebugPrint.log('Inicializando NumericKeypad');
     _focusNode.requestFocus();
+    _customerNameController.text = widget.customerName;
+    // Establecer valores iniciales si es necesario
+    if (widget.paymentAmount.isNotEmpty) {
+      _enteredAmount = widget.paymentAmount;
+    }
+  }
+
+  @override
+  void didUpdateWidget(NumericKeypad oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Actualizar el monto si cambia desde el componente padre
+    if (widget.paymentAmount != oldWidget.paymentAmount && 
+        widget.paymentAmount != _enteredAmount) {
+      setState(() {
+        _enteredAmount = widget.paymentAmount;
+      });
+    }
   }
 
   @override
@@ -110,47 +141,429 @@ class _NumericKeypadState extends State<NumericKeypad> {
       return double.tryParse(_changeController.text) ?? 0;
     }
     final total = double.tryParse(widget.currentAmount) ?? 0;
-    final payment = double.tryParse(widget.paymentAmount) ?? 0;
-    return payment - total;
+    final payment = double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
+    return VentasUtils.formatearMonto(payment - total);
   }
 
-  void _handleKeyEvent(KeyEvent event) {
-    if (event is! KeyDownEvent) return;
-
-    final key = event.logicalKey;
-    if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.numpadEnter) {
-      widget.onSubmit();
-    } else if (key == LogicalKeyboardKey.backspace) {
-      widget.onClear();
-    } else if (key == LogicalKeyboardKey.digit0 || key == LogicalKeyboardKey.numpad0) {
-      widget.onKeyPressed('0');
-    } else if (key == LogicalKeyboardKey.digit1 || key == LogicalKeyboardKey.numpad1) {
-      widget.onKeyPressed('1');
-    } else if (key == LogicalKeyboardKey.digit2 || key == LogicalKeyboardKey.numpad2) {
-      widget.onKeyPressed('2');
-    } else if (key == LogicalKeyboardKey.digit3 || key == LogicalKeyboardKey.numpad3) {
-      widget.onKeyPressed('3');
-    } else if (key == LogicalKeyboardKey.digit4 || key == LogicalKeyboardKey.numpad4) {
-      widget.onKeyPressed('4');
-    } else if (key == LogicalKeyboardKey.digit5 || key == LogicalKeyboardKey.numpad5) {
-      widget.onKeyPressed('5');
-    } else if (key == LogicalKeyboardKey.digit6 || key == LogicalKeyboardKey.numpad6) {
-      widget.onKeyPressed('6');
-    } else if (key == LogicalKeyboardKey.digit7 || key == LogicalKeyboardKey.numpad7) {
-      widget.onKeyPressed('7');
-    } else if (key == LogicalKeyboardKey.digit8 || key == LogicalKeyboardKey.numpad8) {
-      widget.onKeyPressed('8');
-    } else if (key == LogicalKeyboardKey.digit9 || key == LogicalKeyboardKey.numpad9) {
-      widget.onKeyPressed('9');
-    } else if (key == LogicalKeyboardKey.period || key == LogicalKeyboardKey.numpadDecimal) {
-      widget.onKeyPressed('.');
+  void _handleKeyEvent(String key) {
+    DebugPrint.log('Tecla presionada: $key');
+    
+    if (key == 'Enter') {
+      DebugPrint.log('Intentando ejecutar onCharge - Monto ingresado: $_enteredAmount');
+      final montoIngresado = double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
+      if (_enteredAmount.isNotEmpty && montoIngresado >= widget.minAmount) {
+        DebugPrint.log('Ejecutando onCharge con monto: $montoIngresado');
+        widget.onCharge(montoIngresado);
+      } else {
+        DebugPrint.log('Monto insuficiente para ejecutar onCharge');
+      }
+      return;
+    }
+    
+    if (key == 'Backspace') {
+      DebugPrint.log('Borrando último dígito');
+      if (_enteredAmount.isNotEmpty) {
+        setState(() {
+          _enteredAmount = _enteredAmount.substring(0, _enteredAmount.length - 1);
+          // Sincronizar con el componente padre
+          widget.onKeyPressed(_enteredAmount);
+        });
+      }
+      return;
+    }
+    
+    // Si es un número y no sobrepasa el máximo de dígitos
+    if (_enteredAmount.length < 10) {
+      setState(() {
+        // Si estamos empezando y el usuario presiona el punto, agregamos "0."
+        if (_enteredAmount.isEmpty && key == '.') {
+          _enteredAmount = '0.';
+        } 
+        // Si ya existe un punto, no permitir agregar otro
+        else if (key == '.' && _enteredAmount.contains('.')) {
+          return;
+        } 
+        // Agregar dígito normalmente
+        else {
+          _enteredAmount += key;
+        }
+        
+        // Sincronizar con el componente padre
+        widget.onKeyPressed(_enteredAmount);
+      });
     }
   }
 
+  void _handleClearClick() {
+    DebugPrint.log('Limpiando campo de monto');
+    setState(() {
+      _enteredAmount = '';
+      // Sincronizar con el componente padre
+      widget.onKeyPressed('');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    DebugPrint.log('Construyendo NumericKeypad');
+    return KeyboardListener(
+      focusNode: _focusNode,
+      onKeyEvent: (KeyEvent event) {
+        if (event is! KeyDownEvent) return;
+
+        final key = event.logicalKey;
+        DebugPrint.log('Tecla física presionada: ${key.keyLabel}');
+        
+        if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.numpadEnter) {
+          _handleKeyEvent('Enter');
+        } else if (key == LogicalKeyboardKey.backspace) {
+          _handleKeyEvent('Backspace');
+        } else if (key == LogicalKeyboardKey.digit0 || key == LogicalKeyboardKey.numpad0) {
+          _handleKeyEvent('0');
+        } else if (key == LogicalKeyboardKey.digit1 || key == LogicalKeyboardKey.numpad1) {
+          _handleKeyEvent('1');
+        } else if (key == LogicalKeyboardKey.digit2 || key == LogicalKeyboardKey.numpad2) {
+          _handleKeyEvent('2');
+        } else if (key == LogicalKeyboardKey.digit3 || key == LogicalKeyboardKey.numpad3) {
+          _handleKeyEvent('3');
+        } else if (key == LogicalKeyboardKey.digit4 || key == LogicalKeyboardKey.numpad4) {
+          _handleKeyEvent('4');
+        } else if (key == LogicalKeyboardKey.digit5 || key == LogicalKeyboardKey.numpad5) {
+          _handleKeyEvent('5');
+        } else if (key == LogicalKeyboardKey.digit6 || key == LogicalKeyboardKey.numpad6) {
+          _handleKeyEvent('6');
+        } else if (key == LogicalKeyboardKey.digit7 || key == LogicalKeyboardKey.numpad7) {
+          _handleKeyEvent('7');
+        } else if (key == LogicalKeyboardKey.digit8 || key == LogicalKeyboardKey.numpad8) {
+          _handleKeyEvent('8');
+        } else if (key == LogicalKeyboardKey.digit9 || key == LogicalKeyboardKey.numpad9) {
+          _handleKeyEvent('9');
+        } else if (key == LogicalKeyboardKey.period || key == LogicalKeyboardKey.numpadDecimal) {
+          _handleKeyEvent('.');
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2D2D2D),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Información del cliente
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Campo de nombre del cliente
+                  Row(
+                    children: [
+                      const FaIcon(
+                        FontAwesomeIcons.user, 
+                        color: Color(0xFFE31E24), 
+                        size: 16
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _customerNameController,
+                          onChanged: widget.onCustomerNameChanged,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre del Cliente',
+                            labelStyle: TextStyle(color: Colors.white54),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white24),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Color(0xFFE31E24)),
+                            ),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Selector de tipo de documento
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              DebugPrint.log('Seleccionado tipo de documento: Boleta');
+                              widget.onDocumentTypeChanged('Boleta');
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: widget.documentType == 'Boleta' 
+                                  ? const Color(0xFFE31E24).withOpacity(0.1) 
+                                  : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: widget.documentType == 'Boleta' 
+                                    ? const Color(0xFFE31E24) 
+                                    : Colors.white24,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  FaIcon(
+                                    FontAwesomeIcons.receipt,
+                                    color: widget.documentType == 'Boleta' 
+                                      ? const Color(0xFFE31E24) 
+                                      : Colors.white54,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Boleta',
+                                    style: TextStyle(
+                                      color: widget.documentType == 'Boleta' 
+                                        ? const Color(0xFFE31E24) 
+                                        : Colors.white54,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              DebugPrint.log('Seleccionado tipo de documento: Factura');
+                              widget.onDocumentTypeChanged('Factura');
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: widget.documentType == 'Factura' 
+                                  ? const Color(0xFFE31E24).withOpacity(0.1) 
+                                  : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: widget.documentType == 'Factura' 
+                                    ? const Color(0xFFE31E24) 
+                                    : Colors.white24,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  FaIcon(
+                                    FontAwesomeIcons.fileInvoiceDollar,
+                                    color: widget.documentType == 'Factura' 
+                                      ? const Color(0xFFE31E24) 
+                                      : Colors.white54,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Factura',
+                                    style: TextStyle(
+                                      color: widget.documentType == 'Factura' 
+                                        ? const Color(0xFFE31E24) 
+                                        : Colors.white54,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Total, monto a pagar y cambio en la misma fila
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2D2D2D),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  // Total a pagar
+                  Expanded(
+                    child: Column(
+                      children: [
+                        const Text(
+                          'TOTAL A PAGAR',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          VentasUtils.formatearMontoTexto(double.tryParse(widget.currentAmount) ?? 0),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Monto recibido
+                  Expanded(
+                    child: Column(
+                      children: [
+                        const Text(
+                          'MONTO RECIBIDO',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          VentasUtils.formatearMontoTexto(double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0),
+                          style: TextStyle(
+                            color: _enteredAmount.isNotEmpty && double.parse(_enteredAmount.isEmpty ? '0' : _enteredAmount) >= widget.minAmount 
+                              ? const Color(0xFF4CAF50) 
+                              : Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Cambio a devolver (visible solo si hay suficiente monto)
+                  if (_esMontoSuficiente())
+                    Expanded(
+                      child: Column(
+                        children: [
+                          const Text(
+                            'CAMBIO A DEVOLVER',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            VentasUtils.formatearMontoTexto(change),
+                            style: const TextStyle(
+                              color: Color(0xFF4CAF50),
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Teclado numérico
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Fila 1: 1, 2, 3
+                  Expanded(
+                    child: Row(
+                      children: [
+                        _buildNumberKeyButton('1'),
+                        _buildNumberKeyButton('2'),
+                        _buildNumberKeyButton('3'),
+                      ],
+                    ),
+                  ),
+                  // Fila 2: 4, 5, 6
+                  Expanded(
+                    child: Row(
+                      children: [
+                        _buildNumberKeyButton('4'),
+                        _buildNumberKeyButton('5'),
+                        _buildNumberKeyButton('6'),
+                      ],
+                    ),
+                  ),
+                  // Fila 3: 7, 8, 9
+                  Expanded(
+                    child: Row(
+                      children: [
+                        _buildNumberKeyButton('7'),
+                        _buildNumberKeyButton('8'),
+                        _buildNumberKeyButton('9'),
+                      ],
+                    ),
+                  ),
+                  // Fila 4: ., 0, Borrar
+                  Expanded(
+                    child: Row(
+                      children: [
+                        _buildNumberKeyButton('.'),
+                        _buildNumberKeyButton('0'),
+                        _buildActionButton(
+                          icon: const Icon(Icons.backspace, color: Colors.white70),
+                          label: 'Borrar',
+                          onPressed: _handleClearClick,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Botón de Cobrar
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: _buildActionButton(
+                        icon: const Icon(Icons.payment, color: Color(0xFFE31E24), size: 20),
+                        label: 'Cobrar',
+                        onPressed: () => _handleKeyEvent('Enter'),
+                        isEnabled: _esMontoSuficiente(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _handleChangeClick() {
+    DebugPrint.log('Click en cambio manual');
     setState(() {
       _isManualChange = true;
-      _changeController.text = change.toStringAsFixed(2);
+      _changeController.text = VentasUtils.formatearMonto(change).toStringAsFixed(2);
     });
   }
 
@@ -167,248 +580,36 @@ class _NumericKeypadState extends State<NumericKeypad> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return KeyboardListener(
-      focusNode: _focusNode,
-      onKeyEvent: _handleKeyEvent,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2D2D2D),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Información del cliente y tipo de documento
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  children: [
-                    // Campo de nombre del cliente
-                    TextField(
-                      controller: _customerNameController,
-                      onChanged: widget.onCustomerNameChanged,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre del Cliente',
-                        labelStyle: TextStyle(color: Colors.white54),
-                        prefixIcon: FaIcon(FontAwesomeIcons.user, color: Color(0xFFE31E24), size: 16),
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.white24),
-                        ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFFE31E24)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Selector de tipo de documento
-                    Row(
-                      children: [
-                        _buildDocumentTypeButton(
-                          'Boleta',
-                          FontAwesomeIcons.receipt,
-                          widget.documentType == 'Boleta',
-                          () => widget.onDocumentTypeChanged('Boleta'),
-                        ),
-                        const SizedBox(width: 8),
-                        _buildDocumentTypeButton(
-                          'Factura',
-                          FontAwesomeIcons.fileInvoiceDollar,
-                          widget.documentType == 'Factura',
-                          () => widget.onDocumentTypeChanged('Factura'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Display de montos
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      'TOTAL A COBRAR',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'S/ ${widget.currentAmount.isEmpty ? '0.00' : widget.currentAmount}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Divider(color: Colors.white24),
-                    const Text(
-                      'PAGO CON',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'S/ ${widget.paymentAmount.isEmpty ? '0.00' : widget.paymentAmount}',
-                      style: TextStyle(
-                        color: change >= 0 ? Colors.green : Colors.red,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (change != 0) ...[
-                      const Divider(color: Colors.white24),
-                      const Text(
-                        'VUELTO',
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      InkWell(
-                        onTap: _handleChangeClick,
-                        child: TextField(
-                          controller: _changeController,
-                          enabled: _isManualChange,
-                          onChanged: _handleChangeChanged,
-                          onEditingComplete: _handleChangeFocusLost,
-                          onSubmitted: (_) => _handleChangeFocusLost(),
-                          style: TextStyle(
-                            color: change >= 0 ? Colors.green : Colors.red,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            hintText: 'S/ ${change.abs().toStringAsFixed(2)}',
-                            hintStyle: TextStyle(
-                              color: change >= 0 ? Colors.green : Colors.red,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Teclado numérico
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            _buildNumberKey('7'),
-                            _buildNumberKey('8'),
-                            _buildNumberKey('9'),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            _buildNumberKey('4'),
-                            _buildNumberKey('5'),
-                            _buildNumberKey('6'),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            _buildNumberKey('1'),
-                            _buildNumberKey('2'),
-                            _buildNumberKey('3'),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            _buildNumberKey('00'),
-                            _buildNumberKey('0'),
-                            _buildNumberKey('.'),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Columna de acciones
-                  Column(
-                    children: [
-                      _buildActionButton(
-                        onPressed: widget.onClear,
-                        icon: FontAwesomeIcons.deleteLeft,
-                        color: Colors.orange,
-                        text: 'BORRAR',
-                      ),
-                      const SizedBox(height: 8),
-                      _buildActionButton(
-                        onPressed: change >= 0 && !widget.isProcessing ? widget.onSubmit : null,
-                        icon: widget.isProcessing ? FontAwesomeIcons.spinner : FontAwesomeIcons.check,
-                        color: const Color(0xFFE31E24),
-                        text: widget.isProcessing ? 'PROCESANDO' : 'COBRAR',
-                        height: 156,
-                        isLoading: widget.isProcessing,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNumberKey(String number) {
+  Widget _buildNumberKeyButton(String number) {
     return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        child: TextButton(
-          onPressed: () => widget.onKeyPressed(number),
-          style: TextButton.styleFrom(
-            backgroundColor: const Color(0xFF1A1A1A),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: Container(
+          padding: const EdgeInsets.all(2.0),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                DebugPrint.log('Botón numérico presionado: $number');
+                _handleKeyEvent(number);
+              },
               borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            number,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white24),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(
+                    number,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -417,98 +618,79 @@ class _NumericKeypadState extends State<NumericKeypad> {
   }
 
   Widget _buildActionButton({
-    required VoidCallback? onPressed,
-    required IconData icon,
-    required Color color,
-    required String text,
-    double height = 72,
-    bool isLoading = false,
+    required Icon icon,
+    required String label,
+    required VoidCallback onPressed,
+    bool isEnabled = true,
   }) {
-    return Container(
-      width: 100,
-      height: height,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      child: TextButton(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          backgroundColor: onPressed == null 
-              ? Colors.grey.withOpacity(0.1) 
-              : color.withOpacity(0.1),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            side: BorderSide(
-              color: onPressed == null ? Colors.grey : color,
-            ),
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (isLoading)
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
+    return Expanded(
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: Container(
+          padding: const EdgeInsets.all(2.0),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: isEnabled ? () {
+                DebugPrint.log('Botón de acción presionado: $label');
+                onPressed();
+              } : null,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isEnabled 
+                    ? (label == 'Cobrar' ? const Color(0xFFE31E24).withOpacity(0.1) : Colors.transparent)
+                    : Colors.grey.withOpacity(0.1),
+                  border: Border.all(
+                    color: isEnabled 
+                      ? (label == 'Cobrar' ? const Color(0xFFE31E24) : Colors.white24)
+                      : Colors.grey,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              )
-            else
-              FaIcon(icon, color: onPressed == null ? Colors.grey : color, size: 20),
-            const SizedBox(height: 4),
-            Text(
-              text,
-              style: TextStyle(
-                color: onPressed == null ? Colors.grey : color,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    icon,
+                    const SizedBox(height: 2),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isEnabled 
+                          ? (label == 'Cobrar' ? const Color(0xFFE31E24) : Colors.white)
+                          : Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildDocumentTypeButton(
-    String text,
-    IconData icon,
-    bool isSelected,
-    VoidCallback onTap,
-  ) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFE31E24).withOpacity(0.1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isSelected ? const Color(0xFFE31E24) : Colors.white24,
-            ),
-          ),
-          child: Column(
-            children: [
-              FaIcon(
-                icon,
-                color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
-                size: 16,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                text,
-                style: TextStyle(
-                  color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  /// Verifica si el monto ingresado es suficiente para realizar el pago
+  /// 
+  /// Compara _enteredAmount con widget.minAmount para determinar si 
+  /// se puede proceder con el cobro.
+  /// 
+  /// Retorna true si el monto es suficiente, false en caso contrario.
+  bool _esMontoSuficiente() {
+    if (_enteredAmount.isEmpty) return false;
+    final montoIngresado = double.tryParse(_enteredAmount) ?? 0;
+    return montoIngresado >= widget.minAmount;
+  }
+  
+  /// Convierte el texto ingresado a un valor double para operaciones matemáticas
+  /// 
+  /// Maneja el caso de string vacío retornando 0 y aplica tryParse con fallback.
+  /// 
+  /// Retorna el monto como double.
+  double _obtenerMontoIngresado() {
+    return double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
   }
 }

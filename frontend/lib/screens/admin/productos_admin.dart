@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../api/main.api.dart';
-import '../../api/productos.api.dart' as productos_api;
+import '../../main.dart' show api;
+import '../../models/producto.model.dart';
 import '../../widgets/dialogs/confirm_dialog.dart';
 
 // Modelo temporal para desarrollo
@@ -28,11 +28,9 @@ class ProductosAdminScreen extends StatefulWidget {
 }
 
 class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
-  final _apiService = ApiService();
-  late final productos_api.ProductosApi _productosApi;
   bool _isLoading = false;
-  List<productos_api.Producto> _productos = [];
-  List<productos_api.Producto> _productosFiltrados = [];
+  List<Producto> _productos = [];
+  List<Producto> _productosFiltrados = [];
   String _searchQuery = '';
   String _selectedCategory = 'Todos';
   List<Sucursal> _sucursales = [];
@@ -74,14 +72,14 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   final _descripcionController = TextEditingController();
   final _marcaController = TextEditingController();
   final _categoriaController = TextEditingController();
-  final _precioNormalController = TextEditingController();
+  final _precioController = TextEditingController();
   final _precioCompraController = TextEditingController();
-  final _precioMayoristaController = TextEditingController();
+  final _existenciasController = TextEditingController();
+  final _localController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _productosApi = productos_api.ProductosApi(_apiService);
     _cargarDatos();
   }
 
@@ -92,9 +90,10 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     _descripcionController.dispose();
     _marcaController.dispose();
     _categoriaController.dispose();
-    _precioNormalController.dispose();
+    _precioController.dispose();
     _precioCompraController.dispose();
-    _precioMayoristaController.dispose();
+    _existenciasController.dispose();
+    _localController.dispose();
     super.dispose();
   }
 
@@ -115,12 +114,17 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     try {
       // Simulamos carga de sucursales
       await Future.delayed(const Duration(milliseconds: 500));
-      final productos = await _productosApi.getProductos();
+      final productosResponse = await api.productos.getProductos();
+      
+      final List<Producto> productosList = [];
+      for (var item in productosResponse) {
+        productosList.add(Producto.fromJson(item));
+      }
       
       if (!mounted) return;
       setState(() {
         _sucursales = _sucursalesPrueba;
-        _productos = productos;
+        _productos = productosList;
         _filtrarProductos();
         if (_sucursales.isNotEmpty && _sucursalSeleccionada == null) {
           _sucursalSeleccionada = _sucursales.first;
@@ -141,12 +145,12 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     }
   }
 
-  Future<void> _guardarProducto(productos_api.Producto producto) async {
+  Future<void> _guardarProducto(Producto producto) async {
     try {
       if (producto.id == 0) {
-        await _productosApi.createProducto(producto.toJson());
+        await api.productos.createProducto(producto.toJson());
       } else {
-        await _productosApi.updateProducto(producto.id, producto.toJson());
+        await api.productos.updateProducto(producto.id.toString(), producto.toJson());
       }
       if (!mounted) return;
       await _cargarDatos();
@@ -168,7 +172,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     }
   }
 
-  Future<void> _eliminarProducto(productos_api.Producto producto) async {
+  Future<void> _eliminarProducto(Producto producto) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => ConfirmDialog(
@@ -182,7 +186,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     if (confirmed ?? false) {
       setState(() => _isLoading = true);
       try {
-        await _productosApi.deleteProducto(producto.id);
+        await api.productos.deleteProducto(producto.id.toString());
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -207,75 +211,222 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     }
   }
 
-  void _showProductDialog(productos_api.Producto? producto) {
+  void _showProductDialog(Producto? producto) {
+    if (producto != null) {
+      // Inicializar controladores con datos del producto
+      _nombreController.text = producto.nombre;
+      _codigoController.text = producto.codigo;
+      _descripcionController.text = producto.descripcion;
+      _marcaController.text = producto.marca;
+      _categoriaController.text = producto.categoria;
+      _precioController.text = producto.precio.toString();
+      _precioCompraController.text = producto.precioCompra.toString();
+      _existenciasController.text = producto.existencias.toString();
+      _localController.text = producto.local;
+    } else {
+      // Limpiar controladores para nuevo producto
+      _nombreController.clear();
+      _codigoController.clear();
+      _descripcionController.clear();
+      _marcaController.clear();
+      _categoriaController.text = _categories.length > 1 ? _categories[1] : '';
+      _precioController.clear();
+      _precioCompraController.clear();
+      _existenciasController.text = '0';
+      _localController.text = _sucursalSeleccionada?.nombre ?? '';
+    }
+
     if (!mounted) return;
     showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
         child: Container(
+          width: 500, // Ancho fijo para el diálogo
           padding: const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  producto == null ? 'Nuevo Producto' : 'Editar Producto',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _codigoController,
-                  decoration: const InputDecoration(labelText: 'Código'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese el código';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  controller: _nombreController,
-                  decoration: const InputDecoration(labelText: 'Nombre'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingrese el nombre';
-                    }
-                    return null;
-                  },
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: const Text('Cancelar'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          final editedProducto = productos_api.Producto.fromJson({
-                            'id': producto?.id ?? 0,
-                            'codigo': _codigoController.text,
-                            'nombre': _nombreController.text,
-                            'descripcion': _descripcionController.text,
-                            'marca': _marcaController.text,
-                            'categoria': _categoriaController.text,
-                            'precio_normal': double.parse(_precioNormalController.text),
-                            'precio_compra': double.parse(_precioCompraController.text),
-                            'precio_mayorista': _precioMayoristaController.text.isNotEmpty 
-                              ? double.parse(_precioMayoristaController.text)
-                              : null,
-                          });
-                          _guardarProducto(editedProducto);
-                          Navigator.of(dialogContext).pop();
-                        }
-                      },
-                      child: const Text('Guardar'),
-                    ),
-                  ],
-                ),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    producto == null ? 'Nuevo Producto' : 'Editar Producto',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _codigoController,
+                          decoration: const InputDecoration(labelText: 'Código'),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingrese el código';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _categoriaController,
+                          decoration: const InputDecoration(labelText: 'Categoría'),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingrese la categoría';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  TextFormField(
+                    controller: _nombreController,
+                    decoration: const InputDecoration(labelText: 'Nombre'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingrese el nombre';
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller: _descripcionController,
+                    decoration: const InputDecoration(labelText: 'Descripción'),
+                    maxLines: 3,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingrese la descripción';
+                      }
+                      return null;
+                    },
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _marcaController,
+                          decoration: const InputDecoration(labelText: 'Marca'),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingrese la marca';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _localController,
+                          decoration: const InputDecoration(labelText: 'Local'),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingrese el local';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _precioController,
+                          decoration: const InputDecoration(labelText: 'Precio'),
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingrese el precio';
+                            }
+                            if (double.tryParse(value) == null) {
+                              return 'Ingrese un número válido';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _precioCompraController,
+                          decoration: const InputDecoration(labelText: 'Precio de compra'),
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Por favor ingrese el precio de compra';
+                            }
+                            if (double.tryParse(value) == null) {
+                              return 'Ingrese un número válido';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  TextFormField(
+                    controller: _existenciasController,
+                    decoration: const InputDecoration(labelText: 'Existencias'),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingrese las existencias';
+                      }
+                      if (int.tryParse(value) == null) {
+                        return 'Ingrese un número entero válido';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            // Crear un nuevo objeto Producto con los valores del formulario
+                            final now = DateTime.now();
+                            final editedProducto = Producto(
+                              id: producto?.id ?? 0,
+                              nombre: _nombreController.text,
+                              codigo: _codigoController.text,
+                              precio: double.parse(_precioController.text),
+                              precioCompra: double.parse(_precioCompraController.text),
+                              existencias: int.parse(_existenciasController.text),
+                              descripcion: _descripcionController.text,
+                              categoria: _categoriaController.text,
+                              marca: _marcaController.text,
+                              esLiquidacion: producto?.esLiquidacion ?? false,
+                              local: _localController.text,
+                              reglasDescuento: producto?.reglasDescuento ?? [],
+                              fechaCreacion: producto?.fechaCreacion ?? now,
+                              fechaActualizacion: now,
+                              tieneDescuento: producto?.tieneDescuento ?? false,
+                            );
+                            
+                            _guardarProducto(editedProducto);
+                            Navigator.of(dialogContext).pop();
+                          }
+                        },
+                        child: const Text('Guardar'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -354,35 +505,54 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                 ),
                 // Lista de productos
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: _productosFiltrados.length,
-                    itemBuilder: (context, index) {
-                      final producto = _productosFiltrados[index];
-                      return ListTile(
-                        title: Text(producto.nombre),
-                        subtitle: Text('Código: ${producto.codigo}'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () => _showProductDialog(producto),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () => _eliminarProducto(producto),
-                            ),
-                          ],
+                  child: _productosFiltrados.isEmpty
+                      ? const Center(
+                          child: Text('No se encontraron productos'),
+                        )
+                      : ListView.builder(
+                          itemCount: _productosFiltrados.length,
+                          itemBuilder: (context, index) {
+                            final producto = _productosFiltrados[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              child: ListTile(
+                                title: Text(producto.nombre),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Código: ${producto.codigo}'),
+                                    Text('Precio: S/ ${producto.precio.toStringAsFixed(2)} | Stock: ${producto.existencias}'),
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit),
+                                      onPressed: () => _showProductDialog(producto),
+                                      tooltip: 'Editar',
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete),
+                                      onPressed: () => _eliminarProducto(producto),
+                                      tooltip: 'Eliminar',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               ],
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showProductDialog(null),
         child: const Icon(Icons.add),
+        tooltip: 'Agregar producto',
       ),
     );
   }

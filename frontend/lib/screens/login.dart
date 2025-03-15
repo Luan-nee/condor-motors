@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';  // Importar para KeyboardListener
 import '../routes/routes.dart';
 import '../widgets/background.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../api/empleados.api.dart';
 import '../api/main.api.dart';
-import '../api/sucursales.api.dart';  // Importar SucursalesApi
+import '../main.dart' show api;
+import '../api/index.dart' show CondorMotorsApi;
+import 'dart:async';
 
 // Clase para manejar el ciclo de vida de la aplicación
 class LifecycleObserver extends WidgetsBindingObserver {
@@ -41,9 +42,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   final _usernameFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   final _storage = const FlutterSecureStorage();
-  final _apiService = ApiService();
-  late final EmpleadoApi _empleadoApi;
-  late final SucursalesApi _sucursalesApi;  // Agregar SucursalesApi
   bool _isLoading = false;
   bool _capsLockOn = false;
   bool _obscurePassword = true;
@@ -59,12 +57,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10),
+      duration: const Duration(seconds: 2),
     )..repeat();
-    _empleadoApi = EmpleadoApi(_apiService);
-    _sucursalesApi = SucursalesApi(_apiService);  // Inicializar SucursalesApi
+    
     _loadServerIp();
-    _initializeApi();
     _loadSavedCredentials();
     
     // Reducir la velocidad de la animación cuando la app está en segundo plano
@@ -90,21 +86,38 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         setState(() {
           _serverIp = ip;
         });
+        // Actualizar la URL base de la API global
+        await _updateApiBaseUrl(_serverIp);
       } else {
         // Si no hay IP guardada, usar localhost
         setState(() {
           _serverIp = 'localhost';
         });
+        // Actualizar la URL base de la API global
+        await _updateApiBaseUrl('localhost');
       }
-      // Actualizar la URL base del API
-      _apiService.setBaseUrl('http://$_serverIp:3000/api');
     } catch (e) {
       debugPrint('Error al cargar la IP del servidor: $e');
       // En caso de error, asegurar que se use localhost
       setState(() {
         _serverIp = 'localhost';
       });
-      _apiService.setBaseUrl('http://localhost:3000/api');
+      // Actualizar la URL base de la API global
+      await _updateApiBaseUrl('localhost');
+    }
+  }
+
+  // Método para actualizar la URL base de la API global
+  Future<void> _updateApiBaseUrl(String serverIp) async {
+    debugPrint('Actualizando URL base de la API a: http://$serverIp:3000/api');
+    try {
+      // Reinicializar la API global con la nueva URL base
+      api = CondorMotorsApi(baseUrl: 'http://$serverIp:3000/api');
+      // Inicializar el servicio de autenticación
+      await api.initAuthService();
+      debugPrint('API inicializada correctamente con nueva URL base');
+    } catch (e) {
+      debugPrint('Error al inicializar API con nueva URL base: $e');
     }
   }
 
@@ -115,8 +128,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       setState(() {
         _serverIp = ip;
       });
-      // Actualizar la URL base del API
-      _apiService.setBaseUrl('http://$_serverIp:3000/api');
+      // Actualizar la URL base de la API global
+      await _updateApiBaseUrl(ip);
     } catch (e) {
       debugPrint('Error al guardar la IP del servidor: $e');
     }
@@ -161,13 +174,27 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final newIp = ipController.text.trim();
               if (newIp.isNotEmpty) {
-                _saveServerIp(newIp);
                 Navigator.pop(context);
-                // Reintentar la conexión
-                _initializeApi();
+                // Mostrar indicador de carga mientras se actualiza la URL
+                setState(() {
+                  _isLoading = true;
+                });
+                await _saveServerIp(newIp);
+                if (mounted) {
+                  setState(() {
+                    _isLoading = false;
+                  });
+                  // Mostrar mensaje de confirmación
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Servidor actualizado a: $newIp'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
               }
             },
             child: const Text('Guardar'),
@@ -175,22 +202,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ],
       ),
     );
-  }
-
-  Future<void> _initializeApi() async {
-    try {
-      await _apiService.init();
-      final isOnline = await _apiService.checkApiStatus();
-      if (!isOnline) {
-        setState(() {
-          _errorMessage = 'No se puede conectar al servidor. Verifique su conexión o la configuración del servidor.';
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Error al inicializar la conexión: $e';
-      });
-    }
   }
 
   @override
@@ -252,91 +263,121 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     });
 
     try {
-      final response = await _empleadoApi.login(
+      debugPrint('Iniciando proceso de login con usuario: ${_usernameController.text}');
+      
+      // Usar la API global en lugar de la local
+      final usuarioAutenticado = await api.auth.login(
         _usernameController.text,
         _passwordController.text,
       );
 
+      debugPrint('Login exitoso, usuario autenticado: $usuarioAutenticado');
+      
+      // Guardar los datos del usuario en el servicio global de autenticación
+      try {
+        await api.authService.saveUserData(usuarioAutenticado);
+        debugPrint('Datos de usuario guardados correctamente en el servicio global');
+      } catch (e) {
+        debugPrint('Error al guardar datos en el servicio global: $e');
+        // Continuamos aunque haya error, ya que el token ya está configurado en el cliente API
+      }
+      
       if (_rememberMe) {
         await _saveCredentials();
       }
 
       if (!mounted) return;
 
-      final empleadoData = response['empleado'];
-      if (empleadoData == null) {
-        throw ApiException(
-          statusCode: 500,
-          message: 'Error: Datos de empleado no encontrados en la respuesta',
-        );
-      }
-
-      // Convertir el código de rol a un rol válido
-      final rol = EmpleadoApi.getRoleFromCodigo(empleadoData['rolCuentaEmpleadoCodigo'] as String);
+      // Navegar a la ruta correspondiente según el rol del usuario
+      final userData = usuarioAutenticado.toMap();
+      final rolCodigo = usuarioAutenticado.rolCuentaEmpleadoCodigo;
       
-      if (rol == 'DESCONOCIDO') {
-        throw ApiException(
-          statusCode: 500,
-          message: 'Error: Rol no reconocido',
-        );
+      debugPrint('Rol del usuario (código original): $rolCodigo');
+      
+      // Convertir el código de rol a un rol válido
+      final rol = _getRoleFromCodigo(rolCodigo);
+      debugPrint('Rol convertido para la aplicación: $rol');
+      
+      // Verificar que el rol sea válido
+      if (!Routes.roles.containsKey(rol)) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Rol no válido: $rol. Contacte al administrador.';
+        });
+        return;
       }
-
-      final token = response['token'];
-      if (token == null) {
-        throw ApiException(
-          statusCode: 500,
-          message: 'Error: Token de autenticación no encontrado',
-        );
-      }
-
-      // Establecer el token en el servicio API antes de hacer la llamada a sucursales
-      await _apiService.setTokens(
-        token: token,
-        refreshToken: response['refresh_token'],
-        expiration: DateTime.now().add(const Duration(minutes: 30)),
-      );
-
-      // Obtener información de la sucursal
-      Sucursal? sucursal;
-      if (empleadoData['sucursalId'] != null) {
-        try {
-          // Ahora que el token está establecido, podemos obtener la información de la sucursal
-          sucursal = await _sucursalesApi.getSucursal(empleadoData['sucursalId']);
-          debugPrint('Sucursal obtenida: ${sucursal.nombre}');
-        } catch (e) {
-          debugPrint('Error al obtener información de la sucursal: $e');
-          // No lanzamos excepción aquí para permitir que el login continúe
-        }
-      }
-
+      
+      final initialRoute = Routes.getInitialRoute(rol);
+      debugPrint('Ruta inicial determinada: $initialRoute');
+      
+      // Actualizar el rol en userData para que coincida con los roles de la aplicación
+      userData['rol'] = rol;
+      
       Navigator.pushReplacementNamed(
         context,
-        Routes.getInitialRoute(rol),
-        arguments: {
-          'token': token,
-          'rol': rol,
-          'usuario': empleadoData['usuario'],
-          'nombre': empleadoData['nombre'] ?? empleadoData['usuario'],
-          'apellido': empleadoData['apellidos'] ?? '',
-          'sucursalId': empleadoData['sucursalId'],
-          'sucursal': sucursal != null ? {
-            'id': sucursal.id,
-            'nombre': sucursal.nombre,
-            'direccion': sucursal.direccion,
-            'sucursalCentral': sucursal.sucursalCentral,
-          } : null,
-        },
+        initialRoute,
+        arguments: userData,
       );
-    } on ApiException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-        _isLoading = false;
-      });
     } catch (e) {
+      debugPrint('Error durante el login: $e');
+      if (!mounted) return;
+      
+      String errorMsg = 'Error de autenticación';
+      
+      if (e is ApiException) {
+        switch (e.errorCode) {
+          case ApiException.ERROR_UNAUTHORIZED:
+            errorMsg = 'Usuario o contraseña incorrectos';
+            break;
+          case ApiException.ERROR_NETWORK:
+            errorMsg = 'Error de conexión. Verifique su conexión a internet o la configuración del servidor.';
+            break;
+          case ApiException.ERROR_SERVER:
+            errorMsg = 'Error en el servidor. Intente más tarde.';
+            break;
+          default:
+            errorMsg = 'Error: ${e.message}';
+        }
+      } else {
+        errorMsg = 'Error inesperado: ${e.toString()}';
+      }
+      
       setState(() {
-        _errorMessage = 'Error inesperado: $e';
         _isLoading = false;
+        _errorMessage = errorMsg;
       });
+    }
+  }
+  
+  // Método para convertir código de rol a un rol válido
+  String _getRoleFromCodigo(String codigo) {
+    // Normalizar el código a mayúsculas para comparación
+    final codigoUpper = codigo.toUpperCase();
+    
+    switch (codigoUpper) {
+      case 'ADM':
+      case 'ADMIN':
+      case 'ADMINISTRADOR':
+      case 'ADMINSTRADOR': // Corregir error tipográfico del servidor
+        return 'ADMINISTRADOR';
+      case 'VEN':
+      case 'VENDEDOR':
+        return 'VENDEDOR';
+      case 'COMP':
+      case 'COMPUTER':
+      case 'COMPUTADORA':
+        return 'COMPUTADORA';
+      case 'GER':
+      case 'GERENTE':
+        return 'ADMINISTRADOR'; // Los gerentes tienen acceso de administrador
+      case 'SUP':
+      case 'SUPERVISOR':
+        return 'ADMINISTRADOR'; // Los supervisores tienen acceso de administrador
+      default:
+        debugPrint('Rol desconocido: $codigo, intentando usar como está');
+        // Si no coincide con ninguno conocido, devolver el código en mayúsculas
+        // para intentar que coincida con alguno de los roles definidos
+        return codigoUpper;
     }
   }
 
@@ -600,22 +641,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 ),
                         ),
                         
-                        // Test connection button
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16),
-                          child: TextButton.icon(
-                            onPressed: _isLoading ? null : _testConnection,
-                            icon: const Icon(Icons.wifi_tethering, size: 18),
-                            label: const Text('Probar conexión'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.white70,
-                            ),
-                          ),
-                        ),
-                        
                         // Server info
                         Padding(
-                          padding: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.only(top: 16),
                           child: Text(
                             'Servidor: http://$_serverIp:3000',
                             style: TextStyle(
@@ -635,40 +663,5 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ],
       ),
     );
-  }
-  
-  Future<void> _testConnection() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
-    
-    try {
-      final isOnline = await _apiService.checkApiStatus();
-      
-      if (!mounted) return;
-      
-      setState(() {
-        _isLoading = false;
-        if (isOnline) {
-          _errorMessage = '';
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Conexión exitosa al servidor'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          _errorMessage = 'No se pudo conectar al servidor. Verifique la configuración.';
-        }
-      });
-    } catch (e) {
-      if (!mounted) return;
-      
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Error al probar la conexión: $e';
-      });
-    }
   }
 }

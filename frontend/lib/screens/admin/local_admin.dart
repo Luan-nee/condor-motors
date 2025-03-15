@@ -1,6 +1,52 @@
 import 'package:flutter/material.dart';
-import '../../api/main.api.dart';
-import '../../api/locales.api.dart';
+import '../../main.dart' show api;
+
+// Definición de la clase Local para manejar los datos
+class Local {
+  final int id;
+  final String nombre;
+  final String direccion;
+  final String telefono;
+  final String encargado;
+  final String tipo;
+  final bool activo;
+  final DateTime? fechaCreacion;
+
+  Local({
+    required this.id,
+    required this.nombre,
+    required this.direccion,
+    required this.telefono,
+    required this.encargado,
+    required this.tipo,
+    required this.activo,
+    this.fechaCreacion,
+  });
+
+  factory Local.fromJson(Map<String, dynamic> json) {
+    return Local(
+      id: json['id'] ?? 0,
+      nombre: json['nombre'] ?? '',
+      direccion: json['direccion'] ?? '',
+      telefono: json['telefono'] ?? '',
+      encargado: json['encargado'] ?? '',
+      tipo: json['tipo'] ?? 'TIENDA',
+      activo: json['activo'] ?? true,
+      fechaCreacion: json['fecha_creacion'] != null 
+          ? DateTime.parse(json['fecha_creacion']) 
+          : null,
+    );
+  }
+}
+
+// Constantes para los tipos de locales
+class TiposLocal {
+  static const Map<String, String> tipos = {
+    'TIENDA': 'TIENDA',
+    'ALMACEN': 'ALMACEN',
+    'OFICINA': 'OFICINA',
+  };
+}
 
 class LocalAdminScreen extends StatefulWidget {
   const LocalAdminScreen({super.key});
@@ -10,8 +56,6 @@ class LocalAdminScreen extends StatefulWidget {
 }
 
 class _LocalAdminScreenState extends State<LocalAdminScreen> {
-  final _apiService = ApiService();
-  late final LocalesApi _localesApi;
   bool _isLoading = false;
   List<Local> _locales = [];
   String _selectedView = 'todos'; // todos, tiendas, almacenes, oficinas
@@ -19,13 +63,19 @@ class _LocalAdminScreenState extends State<LocalAdminScreen> {
   @override
   void initState() {
     super.initState();
-    _localesApi = LocalesApi(_apiService);
     _cargarLocales();
   }
+  
   Future<void> _cargarLocales() async {
     setState(() => _isLoading = true);
     try {
-      final locales = await _localesApi.getLocales();
+      final sucursalesResponse = await api.sucursales.getSucursales();
+      
+      final List<Local> locales = [];
+      for (var item in sucursalesResponse) {
+        locales.add(Local.fromJson(item));
+      }
+      
       if (!mounted) return;
       setState(() => _locales = locales);
     } catch (e) {
@@ -43,9 +93,9 @@ class _LocalAdminScreenState extends State<LocalAdminScreen> {
   Future<void> _guardarLocal(Map<String, dynamic> data) async {
     try {
       if (data['id'] != null) {
-        await _localesApi.updateLocal(data['id'], data);
+        await api.sucursales.updateSucursal(data['id'].toString(), data);
       } else {
-        await _localesApi.createLocal(data);
+        await api.sucursales.createSucursal(data);
       }
       if (!mounted) return;
       _cargarLocales();
@@ -141,8 +191,8 @@ class _LocalAdminScreenState extends State<LocalAdminScreen> {
                               Switch(
                                 value: local.activo,
                                 onChanged: (value) async {
-                                  await _localesApi.updateLocal(
-                                    local.id,
+                                  await api.sucursales.updateSucursal(
+                                    local.id.toString(),
                                     {'activo': value},
                                   );
                                   _cargarLocales();
@@ -181,7 +231,7 @@ class _LocalFormDialogState extends State<LocalFormDialog> {
   final _direccionController = TextEditingController();
   final _telefonoController = TextEditingController();
   final _encargadoController = TextEditingController();
-  String _tipo = LocalesApi.tipos['TIENDA']!;
+  String _tipo = TiposLocal.tipos['TIENDA']!;
 
   @override
   void initState() {
@@ -248,7 +298,7 @@ class _LocalFormDialogState extends State<LocalFormDialog> {
               DropdownButtonFormField<String>(
                 value: _tipo,
                 decoration: const InputDecoration(labelText: 'Tipo'),
-                items: LocalesApi.tipos.values.map((tipo) {
+                items: TiposLocal.tipos.values.map((tipo) {
                   return DropdownMenuItem(
                     value: tipo,
                     child: Text(tipo),

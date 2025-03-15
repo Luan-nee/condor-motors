@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../api/movimientos_stock.api.dart';
+import '../api/protected/movimientos.api.dart';
 
 class ProgresoMovimiento extends StatelessWidget {
   final String estadoActual;
@@ -13,8 +13,9 @@ class ProgresoMovimiento extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final estados = MovimientosStockApi.estadosDetalle.values.toList();
-    final currentIndex = estados.indexOf(estadoActual);
+    final estados = MovimientosApi.estadosDetalle;
+    final estadosValues = estados.values.toList();
+    final currentIndex = estadosValues.indexOf(estadoActual);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,7 +39,7 @@ class ProgresoMovimiento extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Row(
-          children: estados.asMap().entries.map((entry) {
+          children: estadosValues.asMap().entries.map((entry) {
             final index = entry.key;
             final estado = entry.value;
             final isActive = index <= currentIndex;
@@ -71,7 +72,7 @@ class ProgresoMovimiento extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: estados.asMap().entries.map((entry) {
+          children: estadosValues.asMap().entries.map((entry) {
             final index = entry.key;
             final estado = entry.value;
             final isActive = index <= currentIndex;

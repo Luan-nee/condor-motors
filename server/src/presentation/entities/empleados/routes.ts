@@ -15,6 +15,10 @@ export class EmpleadosRoutes {
 
     router.patch('/:id', empleadosController.update)
 
+    // Nuevas rutas para activar/desactivar empleados
+    router.put('/:id/activar', empleadosController.activar)
+    router.put('/:id/desactivar', empleadosController.desactivar)
+
     router.delete('/:id', empleadosController.delete)
     return router
   }
