@@ -14,7 +14,6 @@ export class UpdateProductoDto {
   public precioCompra?: number
   public precioVenta?: number
   public precioOferta?: number
-  public stock?: number
 
   private constructor({
     nombre,
@@ -29,8 +28,7 @@ export class UpdateProductoDto {
     marcaId,
     precioCompra,
     precioVenta,
-    precioOferta,
-    stock
+    precioOferta
   }: UpdateProductoDto) {
     this.nombre = nombre
     this.descripcion = descripcion
@@ -45,7 +43,6 @@ export class UpdateProductoDto {
     this.precioCompra = precioCompra
     this.precioVenta = precioVenta
     this.precioOferta = precioOferta
-    this.stock = stock
   }
 
   private static isEmptyUpdate(
