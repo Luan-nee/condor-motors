@@ -55,13 +55,13 @@ class DetalleMovimiento {
 
 // Constantes para los estados de movimientos
 class EstadosMovimiento {
-  static const String PENDIENTE = 'PENDIENTE';
-  static const String EN_PROCESO = 'EN_PROCESO';
-  static const String EN_TRANSITO = 'EN_TRANSITO';
-  static const String ENTREGADO = 'ENTREGADO';
-  static const String COMPLETADO = 'COMPLETADO';
-  static const String PREPARADO = 'PREPARADO';
-  static const String RECIBIDO = 'RECIBIDO';
+  static const String pendiente = 'PENDIENTE';
+  static const String enProceso = 'EN_PROCESO';
+  static const String enTransito = 'EN_TRANSITO';
+  static const String entregado = 'ENTREGADO';
+  static const String completado = 'COMPLETADO';
+  static const String preparado = 'PREPARADO';
+  static const String recibido = 'RECIBIDO';
 }
 
 class NotificacionMovimiento extends StatefulWidget {
@@ -93,7 +93,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
 
     try {
       final response = await _movimientosApi.getMovimientos(
-        estado: EstadosMovimiento.PENDIENTE,
+        estado: EstadosMovimiento.pendiente,
       );
       
       if (!mounted) return;
@@ -105,8 +105,8 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
       
       setState(() {
         _notificaciones = movimientosList
-            .where((m) => m.estado == EstadosMovimiento.PENDIENTE || 
-                        m.estado == EstadosMovimiento.PREPARADO)
+            .where((m) => m.estado == EstadosMovimiento.pendiente || 
+                        m.estado == EstadosMovimiento.preparado)
             .toList();
         _isLoading = false;
       });
@@ -132,46 +132,13 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
     }
   }
 
-  Future<void> _manejarAccionMovimiento(MovimientoStock movimiento) async {
-    try {
-      await _movimientosApi.updateMovimiento(
-        movimiento.id,
-        {'estado': EstadosMovimiento.PREPARADO},
-      );
-      
-      if (!mounted) return;
-      
-      setState(() {
-        _notificaciones.remove(movimiento);
-      });
-      
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Estado actualizado correctamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      await _cargarNotificaciones();
-    } catch (e) {
-      if (!mounted) return;
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al actualizar estado: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 
   List<MovimientoStock> get _movimientosPendientes => _notificaciones.where((m) => 
-      m.estado == EstadosMovimiento.PENDIENTE || 
-      m.estado == EstadosMovimiento.PREPARADO).toList();
+      m.estado == EstadosMovimiento.pendiente || 
+      m.estado == EstadosMovimiento.preparado).toList();
 
   List<MovimientoStock> get _movimientosParaAprobar => _notificaciones.where((m) => 
-      m.estado == EstadosMovimiento.RECIBIDO).toList();
+      m.estado == EstadosMovimiento.recibido).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -302,7 +269,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
                 Text(
                   paraAprobar 
                       ? 'Movimiento para aprobar'
-                      : movimiento.estado == EstadosMovimiento.PENDIENTE
+                      : movimiento.estado == EstadosMovimiento.pendiente
                           ? 'Nueva solicitud de productos'
                           : 'Productos listos para envío',
                   style: const TextStyle(
@@ -338,9 +305,9 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
   void _mostrarDetallesMovimiento(BuildContext context, MovimientoStock movimiento) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(
-          movimiento.estado == EstadosMovimiento.PENDIENTE
+          movimiento.estado == EstadosMovimiento.pendiente
               ? 'Nueva Solicitud de Productos'
               : 'Productos Listos para Envío',
         ),
@@ -359,30 +326,41 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cerrar'),
           ),
-          if (movimiento.estado == EstadosMovimiento.PENDIENTE)
+          if (movimiento.estado == EstadosMovimiento.pendiente)
             ElevatedButton(
               onPressed: () async {
+                // Guardar una referencia al contexto del diálogo antes de la operación asíncrona
+                final BuildContext dialogContextCopy = dialogContext;
+                
                 try {
                   await _movimientosApi.updateMovimiento(
                     movimiento.id,
-                    {'estado': EstadosMovimiento.PREPARADO},
+                    {'estado': EstadosMovimiento.preparado},
                   );
                   
                   if (!mounted) return;
-                  Navigator.of(context).pop();
+                  
+                  // Usar la referencia guardada del contexto
+                  if (dialogContextCopy.mounted) {
+                    Navigator.of(dialogContextCopy).pop();
+                  }
                   
                   await _cargarNotificaciones();
                 } catch (e) {
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  
+                  // Usar la referencia guardada del contexto
+                  if (dialogContextCopy.mounted) {
+                    ScaffoldMessenger.of(dialogContextCopy).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               },
               child: const Text('Marcar como Preparado'),

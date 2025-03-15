@@ -197,6 +197,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
         }
       });
       
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(nuevoEstado 
@@ -207,6 +208,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cambiar estado: $e'),
@@ -254,11 +256,14 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
     try {
       await api.empleados.deleteEmpleado(empleado.id);
       
+      if (!mounted) return;
+      
       // Actualizar localmente
       setState(() {
         _empleados.removeWhere((e) => e.id == empleado.id);
       });
       
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Colaborador eliminado correctamente'),
@@ -266,6 +271,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al eliminar colaborador: $e'),
@@ -503,6 +509,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       if (empleadoExistente != null) {
         // Actualizar empleado existente
         await api.empleados.updateEmpleado(empleadoExistente.id, empleadoData);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Colaborador actualizado correctamente'),
@@ -512,6 +519,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       } else {
         // Crear nuevo empleado
         await api.empleados.createEmpleado(empleadoData);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Colaborador creado correctamente'),
@@ -521,9 +529,11 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       }
       
       // Cerrar el diálogo y recargar datos
+      if (!mounted) return;
       Navigator.pop(context);
       _cargarDatos();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al guardar colaborador: $e'),

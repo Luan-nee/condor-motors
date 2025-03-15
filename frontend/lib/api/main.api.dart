@@ -10,13 +10,12 @@ class ApiException implements Exception {
   final dynamic data;
   
   // Códigos de error comunes
-  static const String ERROR_UNAUTHORIZED = 'unauthorized';
-  static const String ERROR_NOT_FOUND = 'not_found';
-  static const String ERROR_BAD_REQUEST = 'bad_request';
-  static const String ERROR_SERVER = 'server_error';
-  static const String ERROR_NETWORK = 'network_error';
-  static const String ERROR_UNKNOWN = 'unknown_error';
-  
+  static const String errorUnauthorized = 'unauthorized';
+  static const String errorNotFound = 'not_found';
+  static const String errorBadRequest = 'bad_request';
+  static const String errorServer = 'server_error';
+  static const String errorNetwork = 'network_error';
+  static const String errorUnknown = 'unknown_error';
   ApiException({
     required this.statusCode,
     required this.message,
@@ -30,22 +29,22 @@ class ApiException implements Exception {
     
     switch (statusCode) {
       case 400:
-        errorCode = ERROR_BAD_REQUEST;
+        errorCode = errorBadRequest;
         break;
       case 401:
       case 403:
-        errorCode = ERROR_UNAUTHORIZED;
+        errorCode = errorUnauthorized;
         break;
       case 404:
-        errorCode = ERROR_NOT_FOUND;
+        errorCode = errorNotFound;
         break;
       case 500:
       case 502:
       case 503:
-        errorCode = ERROR_SERVER;
+        errorCode = errorServer;
         break;
       default:
-        errorCode = ERROR_UNKNOWN;
+        errorCode = errorUnknown;
     }
     
     return ApiException(
@@ -284,7 +283,7 @@ class ApiClient {
       throw ApiException(
         statusCode: 0,
         message: 'Error de conexión: $e',
-        errorCode: ApiException.ERROR_NETWORK,
+        errorCode: ApiException.errorNetwork,
       );
     }
   }
@@ -334,7 +333,7 @@ class ApiClient {
       );
     } on ApiException catch (e) {
       // Si es un error de autorización y no estamos ya intentando renovar
-      if ((e.statusCode == 401 || e.errorCode == ApiException.ERROR_UNAUTHORIZED) && !attemptingRefresh) {
+      if ((e.statusCode == 401 || e.errorCode == ApiException.errorUnauthorized) && !attemptingRefresh) {
         debugPrint('ApiClient: Token expirado, intentando renovar automáticamente');
         
         try {
@@ -359,7 +358,7 @@ class ApiClient {
           throw ApiException(
             statusCode: 401,
             message: 'Sesión expirada, inicie sesión nuevamente',
-            errorCode: ApiException.ERROR_UNAUTHORIZED,
+            errorCode: ApiException.errorUnauthorized,
           );
         }
       }

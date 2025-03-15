@@ -148,12 +148,10 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
         if (!mounted) return;
         
         final List<ProductoStockBajo> productosBajosList = [];
-        if (stocksResponse is List) {
-          for (var item in stocksResponse) {
-            productosBajosList.add(ProductoStockBajo.fromJson(item));
-          }
+        for (var item in stocksResponse) {
+          productosBajosList.add(ProductoStockBajo.fromJson(item));
         }
-        
+              
         _productosBajos = productosBajosList;
         _mostrandoTodosProductos = false;
         debugPrint('Productos con stock bajo cargados: ${_productosBajos.length}');
@@ -313,7 +311,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                       style: const TextStyle(color: Colors.white),
                     ),
                     subtitle: Text(
-                      '${_formatDateTime(venta.fechaCreacion)}',
+                      _formatDateTime(venta.fechaCreacion),
                       style: TextStyle(color: Colors.grey[400]),
                     ),
                     trailing: Text(
@@ -392,12 +390,10 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                       if (!mounted) return;
                       
                       final List<ProductoStockBajo> productosList = [];
-                      if (stocksResponse is List) {
-                        for (var item in stocksResponse) {
-                          productosList.add(ProductoStockBajo.fromJson(item));
-                        }
+                      for (var item in stocksResponse) {
+                        productosList.add(ProductoStockBajo.fromJson(item));
                       }
-                      
+                                          
                       setState(() {
                         _productosBajos = productosList;
                         _isLoading = false;
@@ -462,8 +458,8 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                       const SizedBox(width: 4),
                       Text(
                         '(${_productosBajos.where((p) => p.stock < p.stockMinimo).length} con stock bajo)',
-                        style: TextStyle(
-                          color: const Color(0xFFE31E24),
+                        style: const TextStyle(
+                          color: Color(0xFFE31E24),
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -656,7 +652,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                       style: const TextStyle(color: Colors.white),
                     ),
                     subtitle: Text(
-                      '${colaborador['rol']} • Activo hace ${minutos} min',
+                      '${colaborador['rol']} • Activo hace $minutos min',
                       style: TextStyle(color: Colors.grey[400]),
                     ),
                     trailing: Container(

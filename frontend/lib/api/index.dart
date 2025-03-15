@@ -13,6 +13,7 @@ import 'protected/ventas.api.dart';
 import 'protected/movimientos.api.dart';
 import 'protected/productos.api.dart';
 import 'protected/stocks.api.dart';
+import 'protected/categorias.api.dart';
 
 /// Clase principal para acceder a todas las APIs
 class CondorMotorsApi {
@@ -27,6 +28,7 @@ class CondorMotorsApi {
   late final MovimientosApi movimientos;
   late final ProductosApi productos;
   late final StocksApi stocks;
+  late final CategoriasApi categorias;
   
   /// Inicializa todas las APIs con la URL base
   CondorMotorsApi({required String baseUrl}) {
@@ -40,6 +42,7 @@ class CondorMotorsApi {
     movimientos = MovimientosApi(_apiClient);
     productos = ProductosApi(_apiClient);
     stocks = StocksApi(_apiClient);
+    categorias = CategoriasApi(_apiClient);
   }
   
   /// Inicializa el servicio de autenticación

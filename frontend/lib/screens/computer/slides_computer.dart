@@ -13,7 +13,6 @@ class SlidesComputerScreen extends StatefulWidget {
 
 class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
   int _selectedIndex = 0;
-  Map<String, dynamic>? _sucursalInfo;
   String _nombreSucursal = 'Sucursal';
   String _nombreUsuario = 'Usuario';
   int? _sucursalId;
@@ -87,7 +86,6 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
         }
         
         setState(() {
-          _sucursalInfo = sucursalInfo;
           _nombreSucursal = sucursalInfo?['nombre'] ?? args['sucursal']?.toString() ?? 'Sucursal sin nombre';
           _nombreUsuario = args['usuario'] ?? args['nombre'] ?? 'Usuario';
           _sucursalId = sucursalId;

@@ -5,4 +5,5 @@ export 'sucursal.admin.api.dart';
 export 'ventas.api.dart';
 export 'movimientos.api.dart';
 export 'productos.api.dart';
-export 'stocks.api.dart'; 
+export 'stocks.api.dart';
+export 'categorias.api.dart'; 

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../api/index.dart';
 import '../../main.dart' show api;
-import '../../services/ventas_transfer_service.dart';
-import 'widgets/pending_sales_widget.dart';
+import 'widgets/ventas_pendientes_widget.dart';
 import 'widgets/form_sales_computer.dart' show NumericKeypad, ProcessingDialog, DebugPrint;
 
 /// Clase utilitaria para operaciones con ventas y formateo de montos
@@ -114,9 +112,9 @@ class DetalleVenta {
 
 // Constantes para los estados de venta
 class EstadosVenta {
-  static const String PENDIENTE = 'PENDIENTE';
-  static const String COMPLETADA = 'COMPLETADA';
-  static const String ANULADA = 'ANULADA';
+  static const String pendiente = 'PENDIENTE';
+  static const String completada = 'COMPLETADA';
+  static const String anulada = 'ANULADA';
 }
 
 class SalesComputerScreen extends StatefulWidget {
@@ -855,20 +853,28 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     });
     
     // Forzar una actualización más explícita
+    // Usamos una variable local para capturar el estado actual
+    final ventaSeleccionadaActual = _ventaSeleccionada;
+    
     if (mounted) {
       Future.delayed(Duration.zero, () {
+        // Verificar si el widget sigue montado después del delay
+        if (!mounted) return;
+        
         // Forzar una reconstrucción completa del widget actual
         setState(() {});
         
         // Forzar reconstrucción del diálogo si está abierto
-        if (_ventaSeleccionada != null) {
-          Navigator.of(context).pop();
-          _mostrarFormularioVenta(_ventaSeleccionada!);
+        if (ventaSeleccionadaActual != null && mounted) {
+          // Verificar si el contexto es válido antes de usarlo
+          if (Navigator.canPop(context)) {
+            Navigator.of(context).pop();
+            _mostrarFormularioVenta(ventaSeleccionadaActual);
+          }
         }
       });
     }
   }
-  
   // Modificar la referencia a _formatearMonto para usar la clase utilitaria
   double _formatearMonto(double monto) {
     return VentasUtils.formatearMonto(monto);
@@ -948,7 +954,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                 ),
                 ElevatedButton.icon(
                   onPressed: () => Navigator.pop(context),
-                  icon: const FaIcon(FontAwesomeIcons.times),
+                  icon: const FaIcon(FontAwesomeIcons.xmark),
                   label: const Text('Cancelar'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE31E24),
@@ -967,16 +973,16 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF2D2D2D),
+      builder: (context) => const AlertDialog(
+        backgroundColor: Color(0xFF2D2D2D),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(
+            CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 16),
+            Text(
               'Generando comprobante...',
               style: TextStyle(color: Colors.white),
             ),
@@ -1105,9 +1111,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                     Text(
                                       'Estado: ${venta.estado}',
                                       style: TextStyle(
-                                        color: venta.estado == EstadosVenta.COMPLETADA
+                                        color: venta.estado == EstadosVenta.completada
                                             ? Colors.green
-                                            : venta.estado == EstadosVenta.ANULADA
+                                            : venta.estado == EstadosVenta.anulada
                                                 ? Colors.red
                                                 : Colors.orange,
                                       ),
@@ -1252,7 +1258,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                                 backgroundColor: const Color(0xFF9C27B0),
                                               ),
                                             ),
-                                            if (venta.estado != EstadosVenta.ANULADA)
+                                            if (venta.estado != EstadosVenta.anulada)
                                               ElevatedButton.icon(
                                                 onPressed: () => _anularVenta(venta),
                                                 icon: const Icon(Icons.cancel),

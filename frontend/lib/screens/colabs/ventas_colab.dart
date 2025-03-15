@@ -78,22 +78,20 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       
       final List<Map<String, dynamic>> productosFormateados = [];
       
-      if (stocksResponse is List) {
-        for (var item in stocksResponse) {
-          // Convertir cada producto al formato esperado por la UI
-          productosFormateados.add({
-            'id': item['id'].toString(),
-            'codigo': item['codigo'] ?? 'SIN-COD',
-            'nombre': item['nombre'] ?? 'Producto sin nombre',
-            'precio': (item['precioVenta'] ?? 0.0).toDouble(),
-            'stock': item['stockActual'] ?? 0,
-            'categoria': item['categoria'] is Map 
-                ? item['categoria']['nombre'] 
-                : (item['categoria'] as String? ?? 'Sin categoría'),
-          });
-        }
+      for (var item in stocksResponse) {
+        // Convertir cada producto al formato esperado por la UI
+        productosFormateados.add({
+          'id': item['id'].toString(),
+          'codigo': item['codigo'] ?? 'SIN-COD',
+          'nombre': item['nombre'] ?? 'Producto sin nombre',
+          'precio': (item['precioVenta'] ?? 0.0).toDouble(),
+          'stock': item['stockActual'] ?? 0,
+          'categoria': item['categoria'] is Map 
+              ? item['categoria']['nombre'] 
+              : (item['categoria'] as String? ?? 'Sin categoría'),
+        });
       }
-      
+          
       setState(() {
         _productos = productosFormateados;
         _productosLoaded = true;
@@ -289,7 +287,6 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       ),
     );
   }
-  
   // Escanear producto con código de barras
   Future<void> _escanearProducto() async {
     // Asegurarse de que los productos estén cargados
@@ -297,10 +294,14 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       await _cargarProductos();
     }
     
+    if (!mounted) return;
+    
     final codigoBarras = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const BarcodeColabScreen()),
     );
+
+    if (!mounted) return;
 
     if (codigoBarras != null && codigoBarras is String) {
       // Buscar el producto por código de barras en la lista de productos

@@ -159,7 +159,7 @@ class AuthApi {
         throw ApiException(
           statusCode: 401,
           message: 'Error: No se pudo obtener el token de autenticación',
-          errorCode: ApiException.ERROR_UNAUTHORIZED,
+          errorCode: ApiException.errorUnauthorized,
         );
       }
       
@@ -232,7 +232,7 @@ class AuthApi {
         throw ApiException(
           statusCode: 401,
           message: 'No se pudo obtener un token válido al refrescar',
-          errorCode: ApiException.ERROR_UNAUTHORIZED,
+          errorCode: ApiException.errorUnauthorized,
         );
       }
       

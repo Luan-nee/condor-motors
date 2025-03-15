@@ -10,7 +10,6 @@ class ProductosColabScreen extends StatefulWidget {
 }
 
 class _ProductosColabScreenState extends State<ProductosColabScreen> {
-  final bool _isLoading = false;
   String _searchQuery = '';
   String _selectedCategory = 'Todos';
 
@@ -152,15 +151,15 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
           },
           tooltip: 'Volver al Selector',
         ),
-        title: Row(
+        title: const Row(
           children: [
-            const FaIcon(
+            FaIcon(
               FontAwesomeIcons.box,
               size: 20,
               color: Colors.white,
             ),
-            const SizedBox(width: 12),
-            const Text(
+            SizedBox(width: 12),
+            Text(
               'Productos',
               style: TextStyle(
                 color: Colors.white,

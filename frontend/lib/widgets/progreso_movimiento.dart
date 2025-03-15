@@ -13,7 +13,7 @@ class ProgresoMovimiento extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final estados = MovimientosApi.estadosDetalle;
+    const estados = MovimientosApi.estadosDetalle;
     final estadosValues = estados.values.toList();
     final currentIndex = estadosValues.indexOf(estadoActual);
 

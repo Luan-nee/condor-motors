@@ -188,12 +188,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     _isLoading = false;
                   });
                   // Mostrar mensaje de confirmación
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Servidor actualizado a: $newIp'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Servidor actualizado a: $newIp'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
                 }
               }
             },
@@ -326,13 +328,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       
       if (e is ApiException) {
         switch (e.errorCode) {
-          case ApiException.ERROR_UNAUTHORIZED:
+          case ApiException.errorUnauthorized:
             errorMsg = 'Usuario o contraseña incorrectos';
             break;
-          case ApiException.ERROR_NETWORK:
+          case ApiException.errorNetwork:
             errorMsg = 'Error de conexión. Verifique su conexión a internet o la configuración del servidor.';
             break;
-          case ApiException.ERROR_SERVER:
+          case ApiException.errorServer:
             errorMsg = 'Error en el servidor. Intente más tarde.';
             break;
           default:
