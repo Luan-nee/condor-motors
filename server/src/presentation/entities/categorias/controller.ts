@@ -39,7 +39,6 @@ export class CategoriasController {
       return
     }
 
-    const { authPayload } = req
     const [error, queriesDto] = QueriesDto.create(req.query)
 
     if (error !== undefined || queriesDto === undefined) {
@@ -47,7 +46,7 @@ export class CategoriasController {
       return
     }
 
-    const getCategorias = new GetCategorias(authPayload)
+    const getCategorias = new GetCategorias()
 
     getCategorias
       .execute(queriesDto)

@@ -2,7 +2,7 @@ import { createCategoriaValidator } from '@/domain/validators/entities/categoria
 
 export class CreateCategoriaDto {
   public nombre: string
-  public descripcion: string
+  public descripcion?: string
 
   private constructor({ nombre, descripcion }: CreateCategoriaDto) {
     this.nombre = nombre
