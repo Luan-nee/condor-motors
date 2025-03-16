@@ -18,7 +18,7 @@ export const productoSchema = {
     .max(255)
     .refine((val) => Validator.isValidGeneralName(val), {
       message:
-        'El nombre solo puede contener números, espacios, guiones y letras (mayúsculas o minúsculas)'
+        'El nombre solo puede contener este set de caracteres: a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ-_'
     }),
   descripcion: z
     .string()

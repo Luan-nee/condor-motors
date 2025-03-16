@@ -9,7 +9,7 @@ export const sucursalSchema = {
     .max(255)
     .refine((val) => Validator.isValidGeneralName(val), {
       message:
-        'El nombre solo puede contener este set de caracteres: a-zA-ZáéíóúÁÉÍÓÚñÑüÜ-_'
+        'El nombre solo puede contener este set de caracteres: a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ-_'
     }),
   direccion: z
     .string()
