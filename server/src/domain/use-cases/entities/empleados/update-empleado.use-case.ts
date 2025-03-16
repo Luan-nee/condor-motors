@@ -1,40 +1,24 @@
+import { permissionCodes } from '@/consts'
+import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
-import { empleadosTable } from '@/db/schema'
+import { empleadosTable, sucursalesTable } from '@/db/schema'
 import type { UpdateEmpleadoDto } from '@/domain/dtos/entities/empleados/update-empleado.dto'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
-import { EmpleadoEntityMapper } from '@/domain/mappers/empleado-entity.mapper'
 import { db } from '@db/connection'
-import { eq, ilike } from 'drizzle-orm'
+import { eq, ilike, or } from 'drizzle-orm'
 
 export class UpdateEmpleado {
-  async execute(
+  private readonly authPayload: AuthPayload
+  private readonly permissionAny = permissionCodes.empleados.updateAny
+  // private readonly permissionSelf = permissionCodes.empleados.updateSelf
+  constructor(authPayload: AuthPayload) {
+    this.authPayload = authPayload
+  }
+
+  private async updateEmpleado(
     updateEmpleadoDto: UpdateEmpleadoDto,
     numericIdDto: NumericIdDto
   ) {
-    const empleados = await db
-      .select()
-      .from(empleadosTable)
-      .where(eq(empleadosTable.id, numericIdDto.id))
-
-    if (empleados.length <= 0) {
-      throw CustomError.badRequest(
-        `No se encontró ningun empleado con el id '${numericIdDto.id}'`
-      )
-    }
-
-    if (updateEmpleadoDto.dni !== undefined) {
-      const empleadoWithSameName = await db
-        .select()
-        .from(empleadosTable)
-        .where(ilike(empleadosTable.dni, updateEmpleadoDto.dni))
-
-      if (empleadoWithSameName.length > 0) {
-        throw CustomError.badRequest(
-          `Ya existe una sucursal con ese nombre: '${updateEmpleadoDto.dni}'`
-        )
-      }
-    }
-
     const sueldoString =
       updateEmpleadoDto.sueldo === undefined
         ? undefined
@@ -56,17 +40,90 @@ export class UpdateEmpleado {
         sucursalId: updateEmpleadoDto.sucursalId
       })
       .where(eq(empleadosTable.id, numericIdDto.id))
-      .returning()
+      .returning({ id: empleadosTable.id })
 
     if (updateEmpleadoResultado.length <= 0) {
       throw CustomError.internalServer(
-        'Ocurrio un error al actualizar los datos , asegurese de enviar los datos correctamente'
+        'Ha ocurrido un error al intentar actualizar los datos del empleado'
       )
     }
+
     const [empleado] = updateEmpleadoResultado
 
-    const MappedEmpleado = EmpleadoEntityMapper.fromObject(empleado)
+    return empleado
+  }
 
-    return MappedEmpleado
+  private async validateRelacionados(
+    updateEmpleadoDto: UpdateEmpleadoDto,
+    numericIdDto: NumericIdDto
+  ) {
+    const whereCondition =
+      updateEmpleadoDto.sucursalId !== undefined
+        ? eq(sucursalesTable.id, updateEmpleadoDto.sucursalId)
+        : undefined
+
+    const results = await db
+      .select({
+        sucursalId: sucursalesTable.id,
+        empleadoId: empleadosTable.id,
+        empleadoDni: empleadosTable.dni
+      })
+      .from(sucursalesTable)
+      .leftJoin(
+        empleadosTable,
+        or(
+          eq(empleadosTable.id, numericIdDto.id),
+          ilike(
+            empleadosTable.dni,
+            updateEmpleadoDto.dni ?? 'this-is-not-a-dni'
+          )
+        )
+      )
+      .where(whereCondition)
+
+    if (results.length < 1) {
+      throw CustomError.badRequest('La sucursal ingresada no existe')
+    }
+
+    if (!results.some((result) => result.empleadoId === numericIdDto.id)) {
+      throw CustomError.badRequest('El empleado especificado no existe')
+    }
+
+    if (updateEmpleadoDto.dni !== undefined) {
+      if (
+        results.some((result) => result.empleadoDni === updateEmpleadoDto.dni)
+      ) {
+        throw CustomError.badRequest(
+          `Ya existe un empleado con el dni ${updateEmpleadoDto.dni}`
+        )
+      }
+    }
+  }
+
+  private async validatePermissions() {
+    const validPermissions = await AccessControl.verifyPermissions(
+      this.authPayload,
+      [this.permissionAny]
+    )
+
+    const hasPermissionAny = validPermissions.some(
+      (permission) => permission.codigoPermiso === this.permissionAny
+    )
+
+    if (!hasPermissionAny) {
+      throw CustomError.forbidden()
+    }
+  }
+
+  async execute(
+    updateEmpleadoDto: UpdateEmpleadoDto,
+    numericIdDto: NumericIdDto
+  ) {
+    await this.validatePermissions()
+    await this.validateRelacionados(updateEmpleadoDto, numericIdDto)
+
+    const empleado = await this.updateEmpleado(updateEmpleadoDto, numericIdDto)
+
+    return empleado
   }
 }
