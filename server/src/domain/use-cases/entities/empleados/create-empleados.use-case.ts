@@ -1,27 +1,30 @@
-// import { permissionCodes } from '@/consts'
+import { permissionCodes } from '@/consts'
+import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { empleadosTable, sucursalesTable } from '@/db/schema'
 import type { CreateEmpleadoDto } from '@/domain/dtos/entities/empleados/create-empleado.dto'
-import { EmpleadoEntityMapper } from '@/domain/mappers/empleado-entity.mapper'
 import { db } from '@db/connection'
-import { eq } from 'drizzle-orm'
+import { eq, ilike } from 'drizzle-orm'
 
 export class CreateEmpleado {
-  // private readonly authPayload: AuthPayload
-  // private readonly permissionCreateAny = permissionCodes.empleados
+  private readonly authPayload: AuthPayload
+  private readonly permissionAny = permissionCodes.empleados.createAny
 
-  // constructor(authPayload: AuthPayload) {
-  //   this.authPayload = authPayload
-  // }
+  constructor(authPayload: AuthPayload) {
+    this.authPayload = authPayload
+  }
 
-  async execute(createEmpleadoDto: CreateEmpleadoDto) {
+  private async createEmpleado(createEmpleadoDto: CreateEmpleadoDto) {
     const results = await db
       .select({
         empleadoId: empleadosTable.id,
         sucursalId: sucursalesTable.id
       })
       .from(sucursalesTable)
-      .leftJoin(empleadosTable, eq(empleadosTable.dni, createEmpleadoDto.dni))
+      .leftJoin(
+        empleadosTable,
+        ilike(empleadosTable.dni, createEmpleadoDto.dni)
+      )
       .where(eq(sucursalesTable.id, createEmpleadoDto.sucursalId))
 
     if (results.length < 1) {
@@ -56,7 +59,7 @@ export class CreateEmpleado {
         sueldo: sueldoString,
         sucursalId: createEmpleadoDto.sucursalId
       })
-      .returning()
+      .returning({ id: empleadosTable.id, pathFoto: empleadosTable.pathFoto })
 
     if (insertedEmpleadoResult.length < 1) {
       throw CustomError.internalServer(
@@ -64,10 +67,29 @@ export class CreateEmpleado {
       )
     }
 
-    const [empleado] = insertedEmpleadoResult
+    return insertedEmpleadoResult
+  }
 
-    const mappedEmpleado = EmpleadoEntityMapper.fromObject(empleado)
+  private async validatePermissions() {
+    const validPermissions = await AccessControl.verifyPermissions(
+      this.authPayload,
+      [this.permissionAny]
+    )
 
-    return mappedEmpleado
+    const hasPermissionAny = validPermissions.some(
+      (permission) => permission.codigoPermiso === this.permissionAny
+    )
+
+    if (!hasPermissionAny) {
+      throw CustomError.forbidden()
+    }
+  }
+
+  async execute(createEmpleadoDto: CreateEmpleadoDto) {
+    await this.validatePermissions()
+
+    const empleado = await this.createEmpleado(createEmpleadoDto)
+
+    return empleado
   }
 }
