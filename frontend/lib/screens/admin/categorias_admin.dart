@@ -130,13 +130,25 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
         // Recargar las categorías para mostrar la nueva
         await _cargarCategorias();
       } else {
-        // TODO: Implementar actualización de categoría cuando esté disponible en la API
+        // Actualizar categoría existente
+        debugPrint('Actualizando categoría: ${categoriaExistente['id']}');
+        final categoriaActualizada = await api.categorias.updateCategoria(
+          id: categoriaExistente['id'].toString(),
+          nombre: nombre,
+          descripcion: descripcion.isNotEmpty ? descripcion : null,
+        );
+        
+        if (!mounted) return;
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('La actualización de categorías aún no está implementada'),
-            backgroundColor: Colors.orange,
+            content: Text('Categoría actualizada correctamente'),
+            backgroundColor: Colors.green,
           ),
         );
+        
+        // Recargar las categorías para mostrar los cambios
+        await _cargarCategorias();
       }
     } catch (e) {
       if (!mounted) return;
@@ -154,6 +166,114 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
           _isCreating = false;
         });
         Navigator.pop(context);
+      }
+    }
+  }
+
+  // Método para eliminar una categoría
+  Future<void> _eliminarCategoria(Map<String, dynamic> categoria) async {
+    // Mostrar diálogo de confirmación
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text(
+          '¿Eliminar categoría?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Esta acción eliminará la categoría "${categoria['nombre']}" y no se puede deshacer.',
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            if (categoria['cantidadProductos'] > 0)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Esta categoría tiene ${categoria['cantidadProductos']} productos asociados. Al eliminarla, estos productos quedarán sin categoría.',
+                        style: const TextStyle(color: Colors.orange),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE31E24),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmar != true) return;
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final result = await api.categorias.deleteCategoria(categoria['id'].toString());
+      
+      if (!mounted) return;
+      
+      if (result) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Categoría eliminada correctamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Recargar las categorías
+        await _cargarCategorias();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo eliminar la categoría'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      debugPrint('Error al eliminar categoría: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al eliminar categoría: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -616,15 +736,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                                 color: Color(0xFFE31E24),
                                                 size: 16,
                                               ),
-                                              onPressed: () {
-                                                // TODO: Implementar eliminación cuando esté disponible en la API
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text('La eliminación de categorías aún no está implementada'),
-                                                    backgroundColor: Colors.orange,
-                                                  ),
-                                                );
-                                              },
+                                              onPressed: () => _eliminarCategoria(categoria),
                                               constraints: const BoxConstraints(
                                                 minWidth: 30,
                                                 minHeight: 30,

@@ -99,4 +99,111 @@ class CategoriasApi {
       rethrow;
     }
   }
+  
+  /// Actualiza una categoría existente
+  /// 
+  /// [id] ID de la categoría a actualizar
+  /// [nombre] Nuevo nombre de la categoría (opcional)
+  /// [descripcion] Nueva descripción de la categoría (opcional)
+  Future<Map<String, dynamic>> updateCategoria({
+    required String id,
+    String? nombre,
+    String? descripcion,
+  }) async {
+    try {
+      debugPrint('CategoriasApi: Actualizando categoría con ID: $id');
+      
+      // Construir el cuerpo de la solicitud solo con los campos que se van a actualizar
+      final body = <String, dynamic>{};
+      
+      if (nombre != null) {
+        body['nombre'] = nombre;
+      }
+      
+      if (descripcion != null) {
+        body['descripcion'] = descripcion;
+      }
+      
+      // Si no hay campos para actualizar, lanzar un error
+      if (body.isEmpty) {
+        throw Exception('Debe proporcionar al menos un campo para actualizar');
+      }
+      
+      final response = await _api.request(
+        endpoint: '$_endpoint/$id',
+        method: 'PATCH', // Usar PATCH para actualización parcial
+        body: body,
+      );
+      
+      debugPrint('CategoriasApi: Categoría actualizada con éxito');
+      
+      return response['data'];
+    } catch (e) {
+      debugPrint('CategoriasApi: Error al actualizar categoría: $e');
+      // Capturar más detalles sobre el error
+      if (e is ApiException) {
+        debugPrint('CategoriasApi: Código de error: ${e.statusCode}, Mensaje: ${e.message}');
+        if (e.data != null) {
+          debugPrint('CategoriasApi: Datos adicionales del error: ${e.data}');
+        }
+      }
+      rethrow;
+    }
+  }
+  
+  /// Elimina una categoría
+  /// 
+  /// [id] ID de la categoría a eliminar
+  Future<bool> deleteCategoria(String id) async {
+    try {
+      debugPrint('CategoriasApi: Eliminando categoría con ID: $id');
+      
+      await _api.request(
+        endpoint: '$_endpoint/$id',
+        method: 'DELETE',
+      );
+      
+      debugPrint('CategoriasApi: Categoría eliminada con éxito');
+      
+      return true;
+    } catch (e) {
+      debugPrint('CategoriasApi: Error al eliminar categoría: $e');
+      // Capturar más detalles sobre el error
+      if (e is ApiException) {
+        debugPrint('CategoriasApi: Código de error: ${e.statusCode}, Mensaje: ${e.message}');
+        if (e.data != null) {
+          debugPrint('CategoriasApi: Datos adicionales del error: ${e.data}');
+        }
+      }
+      return false;
+    }
+  }
+  
+  /// Obtiene una categoría específica por su ID
+  /// 
+  /// [id] ID de la categoría a obtener
+  Future<Map<String, dynamic>> getCategoria(String id) async {
+    try {
+      debugPrint('CategoriasApi: Obteniendo categoría con ID: $id');
+      
+      final response = await _api.request(
+        endpoint: '$_endpoint/$id',
+        method: 'GET',
+      );
+      
+      debugPrint('CategoriasApi: Categoría obtenida con éxito');
+      
+      return response['data'];
+    } catch (e) {
+      debugPrint('CategoriasApi: Error al obtener categoría: $e');
+      // Capturar más detalles sobre el error
+      if (e is ApiException) {
+        debugPrint('CategoriasApi: Código de error: ${e.statusCode}, Mensaje: ${e.message}');
+        if (e.data != null) {
+          debugPrint('CategoriasApi: Datos adicionales del error: ${e.data}');
+        }
+      }
+      rethrow;
+    }
+  }
 }

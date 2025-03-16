@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../api/protected/empleados.api.dart';
 import '../../main.dart' show api;
 import '../../api/main.api.dart' show ApiException;
+import 'widgets/empleado_form.dart';
 
 class ColaboradoresAdminScreen extends StatefulWidget {
   const ColaboradoresAdminScreen({super.key});
@@ -23,15 +24,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
   final int _pageSize = 10;
   bool _hasMorePages = false;
   
-  // Para formulario de empleado
-  final _formKey = GlobalKey<FormState>();
-  final _nombreController = TextEditingController();
-  final _apellidosController = TextEditingController();
-  final _dniController = TextEditingController();
-  final _edadController = TextEditingController();
-  final _sueldoController = TextEditingController();
-  String? _selectedSucursalId;
-  String? _selectedRol;
+  // Lista de roles disponibles
   final List<String> _roles = ['Administrador', 'Vendedor', 'Computadora'];
 
   @override
@@ -43,11 +36,6 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
   @override
   void dispose() {
     _searchController.dispose();
-    _nombreController.dispose();
-    _apellidosController.dispose();
-    _dniController.dispose();
-    _edadController.dispose();
-    _sueldoController.dispose();
     super.dispose();
   }
 
@@ -112,7 +100,14 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       
       for (var item in sucursalesData) {
         final id = item['id']?.toString() ?? '';
-        final nombre = item['nombre']?.toString() ?? 'Sucursal sin nombre';
+        String nombre = item['nombre']?.toString() ?? 'Sucursal sin nombre';
+        final bool esCentral = item['sucursalCentral'] == true;
+        
+        // Agregar indicador de Central al nombre si corresponde
+        if (esCentral) {
+          nombre = "$nombre (Central)";
+        }
+        
         if (id.isNotEmpty) {
           sucursales[id] = nombre;
         }
@@ -282,229 +277,20 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
   }
 
   void _mostrarFormularioEmpleado([Empleado? empleado]) {
-    // Limpiar controladores
-    _nombreController.text = empleado?.nombre ?? '';
-    _apellidosController.text = empleado?.apellidos ?? '';
-    _dniController.text = empleado?.dni ?? '';
-    _edadController.text = empleado?.edad?.toString() ?? '';
-    _sueldoController.text = empleado?.sueldo?.toString() ?? '';
-    _selectedSucursalId = empleado?.sucursalId;
-    _selectedRol = empleado != null ? _obtenerRolDeEmpleado(empleado) : _roles.first;
-    
+    // Importar el widget EmpleadoForm
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Container(
-          width: 600,
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const FaIcon(
-                        FontAwesomeIcons.userPlus,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        empleado == null ? 'Nuevo Colaborador' : 'Editar Colaborador',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Formulario organizado en 2 columnas
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Columna izquierda
-                      Expanded(
-                        child: Column(
-                          children: [
-                            TextFormField(
-                              controller: _nombreController,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
-                                labelText: 'Nombre',
-                                labelStyle: TextStyle(color: Colors.white70),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'El nombre es requerido';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _dniController,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
-                                labelText: 'DNI',
-                                labelStyle: TextStyle(color: Colors.white70),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            DropdownButtonFormField<String>(
-                              value: _selectedRol,
-                              style: const TextStyle(color: Colors.white),
-                              dropdownColor: const Color(0xFF2D2D2D),
-                              decoration: const InputDecoration(
-                                labelText: 'Rol',
-                                labelStyle: TextStyle(color: Colors.white70),
-                              ),
-                              items: _roles.map((rol) {
-                                return DropdownMenuItem<String>(
-                                  value: rol,
-                                  child: Text(rol),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedRol = value;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      const SizedBox(width: 16),
-                      
-                      // Columna derecha
-                      Expanded(
-                        child: Column(
-                          children: [
-                            TextFormField(
-                              controller: _apellidosController,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
-                                labelText: 'Apellidos',
-                                labelStyle: TextStyle(color: Colors.white70),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Los apellidos son requeridos';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _edadController,
-                              style: const TextStyle(color: Colors.white),
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Edad',
-                                labelStyle: TextStyle(color: Colors.white70),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            DropdownButtonFormField<String>(
-                              value: _selectedSucursalId,
-                              style: const TextStyle(color: Colors.white),
-                              dropdownColor: const Color(0xFF2D2D2D),
-                              decoration: const InputDecoration(
-                                labelText: 'Sucursal',
-                                labelStyle: TextStyle(color: Colors.white70),
-                              ),
-                              items: _nombresSucursales.entries.map((entry) {
-                                return DropdownMenuItem<String>(
-                                  value: entry.key,
-                                  child: Text(entry.value),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedSucursalId = value;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _sueldoController,
-                    style: const TextStyle(color: Colors.white),
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Sueldo',
-                      labelStyle: TextStyle(color: Colors.white70),
-                      prefixText: 'S/ ',
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text(
-                          'Cancelar',
-                          style: TextStyle(color: Colors.white54),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE31E24),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                        ),
-                        onPressed: () => _guardarEmpleado(empleado),
-                        child: const Text('Guardar'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+      builder: (context) => EmpleadoForm(
+        empleado: empleado,
+        sucursales: _nombresSucursales,
+        roles: _roles,
+        onSave: (empleadoData) => _guardarEmpleado(empleado, empleadoData),
+        onCancel: () => Navigator.pop(context),
       ),
     );
   }
   
-  Future<void> _guardarEmpleado(Empleado? empleadoExistente) async {
-    if (!_formKey.currentState!.validate()) return;
-    
-    // Construir datos del empleado
-    final empleadoData = {
-      'nombre': _nombreController.text,
-      'apellidos': _apellidosController.text,
-      'dni': _dniController.text,
-      'edad': _edadController.text.isNotEmpty ? int.parse(_edadController.text) : null,
-      'sueldo': _sueldoController.text.isNotEmpty ? double.parse(_sueldoController.text) : null,
-      'sucursalId': _selectedSucursalId,
-      'rol': _selectedRol,
-    };
-    
-    // Remover valores nulos
-    empleadoData.removeWhere((key, value) => value == null);
-    
+  Future<void> _guardarEmpleado(Empleado? empleadoExistente, Map<String, dynamic> empleadoData) async {
     try {
       if (empleadoExistente != null) {
         // Actualizar empleado existente
@@ -590,6 +376,14 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       return 'Sin asignar';
     }
     return _nombresSucursales[sucursalId] ?? 'Sucursal $sucursalId';
+  }
+
+  bool _esSucursalCentral(String? sucursalId) {
+    if (sucursalId == null || sucursalId.isEmpty) {
+      return false;
+    }
+    final nombre = _nombresSucursales[sucursalId] ?? '';
+    return nombre.contains('(Central)');
   }
 
   @override
@@ -905,22 +699,32 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF2D2D2D),
                                       borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: _esSucursalCentral(empleado.sucursalId) 
+                                            ? const Color.fromARGB(255, 95, 208, 243) // Verde para centrales
+                                            : Colors.white.withOpacity(0.1),
+                                        width: 1,
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         FaIcon(
-                                                  _getNombreSucursal(empleado.sucursalId).contains('Central') 
+                                          _esSucursalCentral(empleado.sucursalId)
                                             ? FontAwesomeIcons.building
                                             : FontAwesomeIcons.store,
-                                          color: Colors.white54,
+                                          color: _esSucursalCentral(empleado.sucursalId)
+                                            ? const Color.fromARGB(255, 76, 152, 175) // Verde para centrales
+                                            : Colors.white54,
                                           size: 12,
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
-                                                  _getNombreSucursal(empleado.sucursalId),
-                                          style: const TextStyle(
-                                            color: Colors.white,
+                                          _getNombreSucursal(empleado.sucursalId),
+                                          style: TextStyle(
+                                            color: _esSucursalCentral(empleado.sucursalId)
+                                              ? const Color.fromARGB(255, 76, 160, 175) // Verde para centrales
+                                              : Colors.white,
                                             fontSize: 13,
                                           ),
                                         ),
@@ -1157,8 +961,6 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                           _buildInfoItem('DNI', empleado.dni ?? 'No especificado'),
                           const SizedBox(height: 12),
                           _buildInfoItem('Edad', empleado.edad?.toString() ?? 'No especificada'),
-                          const SizedBox(height: 12),
-                          _buildInfoItem('Sucursal', _getNombreSucursal(empleado.sucursalId)),
                         ],
                       ),
                     ),
@@ -1170,8 +972,6 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                         children: [
                           _buildInfoItem('Estado', empleado.activo ? 'Activo' : 'Inactivo'),
                           const SizedBox(height: 12),
-                          _buildInfoItem('Fecha Contratación', empleado.fechaContratacion ?? 'No especificada'),
-                          const SizedBox(height: 12),
                           _buildInfoItem('Fecha Registro', empleado.fechaRegistro ?? 'No especificada'),
                         ],
                       ),
@@ -1181,9 +981,9 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                 
                 const SizedBox(height: 24),
                 
-                // Información laboral
+                // Información de sucursal
                 const Text(
-                  'INFORMACIÓN LABORAL',
+                  'SUCURSAL',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -1192,22 +992,127 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                 ),
                 const SizedBox(height: 12),
                 
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D2D2D),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: _esSucursalCentral(empleado.sucursalId) 
+                          ? const Color(0xFF4CAF50) 
+                          : Colors.white.withOpacity(0.1),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A1A1A),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: FaIcon(
+                            _esSucursalCentral(empleado.sucursalId)
+                                ? FontAwesomeIcons.building
+                                : FontAwesomeIcons.store,
+                            color: _esSucursalCentral(empleado.sucursalId)
+                                ? const Color(0xFF4CAF50)
+                                : Colors.white54,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getNombreSucursal(empleado.sucursalId),
+                              style: TextStyle(
+                                color: _esSucursalCentral(empleado.sucursalId)
+                                    ? const Color(0xFF4CAF50)
+                                    : Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (_esSucursalCentral(empleado.sucursalId))
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  'Sucursal Central',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                'Fecha Contratación: ${empleado.fechaContratacion ?? 'No especificada'}',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Información laboral
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'INFORMACIÓN LABORAL',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFE31E24),
+                      ),
+                    ),
+                    // Botón para ver horario
+                    TextButton.icon(
+                      icon: const FaIcon(
+                        FontAwesomeIcons.clock,
+                        size: 14,
+                        color: Colors.white70,
+                      ),
+                      label: const Text(
+                        'Ver horario',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                      onPressed: () => _mostrarHorarioEmpleado(empleado),
+                      style: TextButton.styleFrom(
+                        backgroundColor: const Color(0xFF2D2D2D),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Columna izquierda
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildInfoItem('Hora Inicio Jornada', empleado.horaInicioJornada ?? 'No especificada'),
-                          const SizedBox(height: 12),
-                          _buildInfoItem('Hora Fin Jornada', empleado.horaFinJornada ?? 'No especificada'),
-                        ],
-                      ),
-                    ),
-                    
-                    // Columna derecha
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1268,6 +1173,164 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
           ),
         ),
       ),
+    );
+  }
+  
+  // Método para mostrar el horario del empleado
+  void _mostrarHorarioEmpleado(Empleado empleado) {
+    // Formatear las horas para asegurar que no tengan segundos
+    final horaInicio = _formatearHora(empleado.horaInicioJornada);
+    final horaFin = _formatearHora(empleado.horaFinJornada);
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Container(
+          width: 400,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const FaIcon(
+                    FontAwesomeIcons.clock,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Horario de ${empleado.nombre}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              
+              // Horario
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2D2D2D),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    _buildHorarioItem(
+                      'Hora de inicio',
+                      horaInicio,
+                      FontAwesomeIcons.solidClock,
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Divider(color: Colors.white24),
+                    ),
+                    _buildHorarioItem(
+                      'Hora de fin',
+                      horaFin,
+                      FontAwesomeIcons.solidClockFour,
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Botón para cerrar
+              Center(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2D2D2D),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cerrar'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  // Método para formatear la hora sin segundos
+  String _formatearHora(String? hora) {
+    if (hora == null || hora.isEmpty) {
+      return 'No especificada';
+    }
+    
+    // Si la hora ya tiene el formato HH:MM, devolverla como está
+    if (RegExp(r'^\d{1,2}:\d{2}$').hasMatch(hora)) {
+      return hora;
+    }
+    
+    // Si la hora tiene formato HH:MM:SS, quitar los segundos
+    if (RegExp(r'^\d{1,2}:\d{2}:\d{2}$').hasMatch(hora)) {
+      return hora.substring(0, 5);
+    }
+    
+    // Si no se puede formatear, devolver la hora original
+    return hora;
+  }
+  
+  // Widget para mostrar un elemento de horario
+  Widget _buildHorarioItem(String label, String value, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: FaIcon(
+              icon,
+              color: const Color(0xFFE31E24),
+              size: 16,
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
   
