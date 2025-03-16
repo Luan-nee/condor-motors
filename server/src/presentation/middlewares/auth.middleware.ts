@@ -1,9 +1,8 @@
 import { JwtAdapter } from '@/config/jwt'
-import { CustomError } from '@/core/errors/custom.error'
-import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
 import { authPayloadValidator } from '@/domain/validators/auth/auth-payload.validator'
 import type { NextFunction, Request, Response } from 'express'
+import { JsonWebTokenError } from 'jsonwebtoken'
 
 export class AuthMiddleware {
   static readonly requests = (
@@ -34,16 +33,21 @@ export class AuthMiddleware {
       const result = authPayloadValidator(decodedAuthPayload)
 
       if (!result.success) {
-        throw CustomError.unauthorized('Access token inválido')
+        CustomResponse.invalidAccessToken({ res })
+        return
       }
 
       const { data: authPayload } = result
 
       req.authPayload = authPayload
-    } catch (error) {
-      handleError(error, res)
-    }
 
-    next()
+      next()
+    } catch (error) {
+      if (error instanceof JsonWebTokenError) {
+        CustomResponse.invalidAccessToken({ res })
+      }
+
+      next(error)
+    }
   }
 }

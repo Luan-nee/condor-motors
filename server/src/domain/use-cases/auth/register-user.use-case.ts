@@ -1,3 +1,5 @@
+import { permissionCodes } from '@/consts'
+import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { UserEntityMapper } from '@/domain/mappers/user-entity.mapper'
 import type { Encryptor, TokenAuthenticator } from '@/types/interfaces'
@@ -13,9 +15,11 @@ import { AuthPayloadMapper } from '@domain/mappers/auth-payload.mapper'
 import { and, eq, ilike, notExists } from 'drizzle-orm'
 
 export class RegisterUser {
+  private readonly permissionAny = permissionCodes.cuentasEmpleados.createAny
   constructor(
     private readonly tokenAuthenticator: TokenAuthenticator,
-    private readonly encryptor: Encryptor
+    private readonly encryptor: Encryptor,
+    private readonly authPayload: AuthPayload
   ) {}
 
   private readonly register = async (registerUserDto: RegisterUserDto) => {
@@ -127,7 +131,24 @@ export class RegisterUser {
     }
   }
 
+  private async validatePermissions() {
+    const validPermissions = await AccessControl.verifyPermissions(
+      this.authPayload,
+      [this.permissionAny]
+    )
+
+    const hasPermissionCreateAny = validPermissions.some(
+      (permission) => permission.codigoPermiso === this.permissionAny
+    )
+
+    if (!hasPermissionCreateAny) {
+      throw CustomError.forbidden()
+    }
+  }
+
   async execute(registerUserDto: RegisterUserDto) {
+    await this.validatePermissions()
+
     const user = await this.register(registerUserDto)
     const payload = AuthPayloadMapper.authPayloadFromObject(user)
 

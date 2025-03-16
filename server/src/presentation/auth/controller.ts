@@ -22,15 +22,23 @@ export class AuthController {
   ) {}
 
   registerUser = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
     const [error, registerUserDto] = RegisterUserDto.create(req.body)
     if (error !== undefined || registerUserDto === undefined) {
       CustomResponse.badRequest({ res, error })
       return
     }
 
+    const { authPayload } = req
+
     const registerUser = new RegisterUser(
       this.tokenAuthenticator,
-      this.encryptor
+      this.encryptor,
+      authPayload
     )
 
     registerUser

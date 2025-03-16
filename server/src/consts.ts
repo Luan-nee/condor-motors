@@ -77,5 +77,13 @@ export const permissionCodes = {
   },
   categorias: {
     createAny: 'categorias:create_any'
+  },
+  cuentasEmpleados: {
+    createAny: 'cuentas_empleados:create_any',
+    getAny: 'cuentas_empleados:get_any',
+    updateAny: 'cuentas_empleados:update_any',
+    deleteAny: 'cuentas_empleados:delete_any',
+    getSelf: 'cuentas_empleados:get_self',
+    updateSelf: 'cuentas_empleados:update_self'
   }
 } as const

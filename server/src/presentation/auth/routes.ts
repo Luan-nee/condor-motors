@@ -3,6 +3,7 @@ import { CookieTokenAdapter } from '@/config/cookie'
 import { JwtAdapter } from '@/config/jwt'
 import { AuthController } from '@presentation/auth/controller'
 import { Router } from 'express'
+import { AuthMiddleware } from '@/presentation/middlewares/auth.middleware'
 
 export class AuthRoutes {
   static get routes() {
@@ -14,7 +15,11 @@ export class AuthRoutes {
       CookieTokenAdapter
     )
 
-    router.post('/register', authController.registerUser)
+    router.post(
+      '/register',
+      [AuthMiddleware.requests],
+      authController.registerUser
+    )
 
     router.post('/login', authController.loginUser)
 
