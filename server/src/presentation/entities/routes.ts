@@ -4,8 +4,9 @@ import { MarcasRoutes } from '@presentation/entities/marcas/routes'
 import { Router } from 'express'
 import { SoloSucursalRoutes } from '@/presentation/entities/solo-sucursal/routes'
 import { EntitiesMiddleware } from '@/presentation/middlewares/entities.middleware'
-// import { AdminAllRoutes } from '@/presentation/entities/solo-sucursal/admin-all.routes'
-import { CategoriasRoutes } from './categorias/routes'
+import { CategoriasRoutes } from '@presentation/entities/categorias/routes'
+import { TiposPersonasRoutes } from '@presentation/entities/tipos-personas/routes'
+
 export class EntitiesRoutes {
   static get routes() {
     const router = Router()
@@ -14,7 +15,7 @@ export class EntitiesRoutes {
     router.use('/empleados', EmpleadosRoutes.routes)
     router.use('/marcas', MarcasRoutes.routes)
     router.use('/categorias', CategoriasRoutes.routes)
-    // router.use('/admin', AdminAllRoutes.routes)
+    router.use('/tipospersonas', TiposPersonasRoutes.routes)
 
     router.use(
       '/:sucursalId',
