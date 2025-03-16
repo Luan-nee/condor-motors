@@ -2,13 +2,21 @@ import { orderValues, permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import { empleadosTable } from '@/db/schema'
+import { empleadosTable, sucursalesTable } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
-import { ilike, or, type SQL, asc, desc } from 'drizzle-orm'
+import type { SucursalIdType } from '@/types/schemas'
+import { ilike, or, type SQL, asc, desc, and, eq } from 'drizzle-orm'
+
+interface GetEmpleadoArgs {
+  queriesDto: QueriesDto
+  order: SQL
+  whereCondition: SQL | undefined
+}
 
 export class GetEmpleados {
   private readonly authPayload: AuthPayload
-  private readonly permissionGetAny = permissionCodes.empleados.createAny
+  private readonly permissionAny = permissionCodes.empleados.getAny
+  private readonly permissionRelated = permissionCodes.empleados.getRelated
   private readonly selectFields = {
     id: empleadosTable.id,
     nombre: empleadosTable.nombre,
@@ -51,11 +59,26 @@ export class GetEmpleados {
     return this.validSortBy.fechaCreacion
   }
 
-  private async getAnyEmpleados(
-    queriesDto: QueriesDto,
-    order: SQL,
-    whereCondition: SQL | undefined
-  ) {
+  private async getRelated({
+    queriesDto,
+    order,
+    whereCondition,
+    sucursalId
+  }: GetEmpleadoArgs & { sucursalId: SucursalIdType }) {
+    return await db
+      .select(this.selectFields)
+      .from(empleadosTable)
+      .innerJoin(
+        sucursalesTable,
+        eq(sucursalesTable.id, empleadosTable.sucursalId)
+      )
+      .where(and(eq(sucursalesTable.id, sucursalId), whereCondition))
+      .orderBy(order)
+      .limit(queriesDto.page_size)
+      .offset(queriesDto.page_size * (queriesDto.page - 1))
+  }
+
+  private async getAny({ queriesDto, order, whereCondition }: GetEmpleadoArgs) {
     return await db
       .select(this.selectFields)
       .from(empleadosTable)
@@ -65,7 +88,11 @@ export class GetEmpleados {
       .offset(queriesDto.page_size * (queriesDto.page - 1))
   }
 
-  private async GetEmpleados(queriesDto: QueriesDto) {
+  private async getEmpleados(
+    queriesDto: QueriesDto,
+    hasPermissionAny: boolean,
+    sucursalId: SucursalIdType
+  ) {
     const sortByColumn = this.getSortByColumn(queriesDto.sort_by)
     const order =
       queriesDto.order === orderValues.asc
@@ -81,30 +108,55 @@ export class GetEmpleados {
           )
         : undefined
 
-    const empleados = await this.getAnyEmpleados(
+    const args = {
       queriesDto,
       order,
       whereCondition
-    )
-    if (empleados.length <= 0) {
+    }
+
+    const empleados = hasPermissionAny
+      ? await this.getAny(args)
+      : await this.getRelated({ ...args, sucursalId })
+
+    if (empleados.length < 1) {
       return []
     }
+
     return empleados
   }
 
-  async execute(queriesDto: QueriesDto) {
+  private async validatePermissions() {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
-      [this.permissionGetAny]
+      [this.permissionAny, this.permissionRelated]
     )
+
+    const hasPermissionAny = validPermissions.some(
+      (permission) => permission.codigoPermiso === this.permissionAny
+    )
+
     if (
+      !hasPermissionAny &&
       !validPermissions.some(
-        (permiso) => permiso.codigoPermiso === this.permissionGetAny
+        (permission) => permission.codigoPermiso === this.permissionRelated
       )
     ) {
-      throw CustomError.forbidden('no tienes permisos')
+      throw CustomError.forbidden()
     }
-    const empleados = await this.GetEmpleados(queriesDto)
+
+    const [permission] = validPermissions
+
+    return { hasPermissionAny, sucursalId: permission.sucursalId }
+  }
+
+  async execute(queriesDto: QueriesDto) {
+    const { hasPermissionAny, sucursalId } = await this.validatePermissions()
+
+    const empleados = await this.getEmpleados(
+      queriesDto,
+      hasPermissionAny,
+      sucursalId
+    )
 
     return empleados
   }
