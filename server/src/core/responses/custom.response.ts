@@ -118,6 +118,15 @@ export class CustomResponse {
     })
   }
 
+  static notFound({ res }: ErrorResponseArgs) {
+    this.send({
+      res,
+      error: 'Not found',
+      status: responseStatus.fail,
+      statusCode: 401
+    })
+  }
+
   static notImplemented({ res }: ErrorResponseArgs) {
     this.send({
       res,

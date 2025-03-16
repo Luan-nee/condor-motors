@@ -11,7 +11,7 @@ export class EntitiesMiddleware {
     const result = paramsSucursalIdValidator(req.params)
 
     if (!result.success) {
-      CustomResponse.badRequest({ res, error: 'Id de sucursal inválido' })
+      CustomResponse.notFound({ res })
       return
     }
 

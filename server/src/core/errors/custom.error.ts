@@ -25,7 +25,7 @@ export class CustomError extends Error {
     return new CustomError(403, message, responseStatus.fail)
   }
 
-  static notFound(message: string) {
+  static notFound(message = 'Not found') {
     return new CustomError(404, message, responseStatus.fail)
   }
 
