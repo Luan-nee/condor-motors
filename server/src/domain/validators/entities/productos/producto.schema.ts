@@ -1,11 +1,6 @@
 import { z } from 'zod'
 import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
-
-// const isValidSku = (str: string) =>
-//   /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s.\-_/\\]+$/.test(str)
-
-const isValidNombre = (str: string) =>
-  /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s\-_]+$/.test(str)
+import { Validator } from '@/domain/validators/validator'
 
 export const productoSchema = {
   // sku: z
@@ -14,17 +9,27 @@ export const productoSchema = {
   //   .max(255)
   //   .refine((val) => isValidSku(val), {
   //     message:
-  //       'El sku del producto solo puede contener números, espacios, puntos, guiones, barras diagonales y letras (mayúsculas o minúsculas)'
+  //       'El sku solo puede contener números, espacios, puntos, guiones, barras diagonales y letras (mayúsculas o minúsculas)'
   //   }),
   nombre: z
     .string()
+    .trim()
     .min(2)
     .max(255)
-    .refine((val) => isValidNombre(val), {
+    .refine((val) => Validator.isValidGeneralName(val), {
       message:
-        'El nombre del producto solo puede contener números, espacios, guiones y letras (mayúsculas o minúsculas)'
+        'El nombre solo puede contener números, espacios, guiones y letras (mayúsculas o minúsculas)'
     }),
-  descripcion: z.string().min(2).max(1023).optional(),
+  descripcion: z
+    .string()
+    .trim()
+    .min(2)
+    .max(1023)
+    .refine((val) => Validator.isValidDescription(val), {
+      message:
+        'La descripción solo puede contener este set de caracteres: a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ.,¡!¿?-()[]{}$%&*\'_"@#+'
+    })
+    .optional(),
   maxDiasSinReabastecer: z.number().positive().optional(),
   stockMinimo: z.number().min(0).optional(),
   cantidadMinimaDescuento: z.number().min(1).optional(),

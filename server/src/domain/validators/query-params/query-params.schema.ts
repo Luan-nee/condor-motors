@@ -9,10 +9,11 @@ export const paramsBaseSchema = {
 }
 
 export const queriesBaseSchema = {
-  search: z.coerce.string().default(defaultQueries.search),
-  sort_by: z.coerce.string().default(defaultQueries.sort_by),
+  search: z.coerce.string().trim().default(defaultQueries.search),
+  sort_by: z.coerce.string().trim().default(defaultQueries.sort_by),
   order: z.coerce
     .string()
+    .trim()
     .default(defaultQueries.order)
     .transform((value) => {
       if (
@@ -40,10 +41,11 @@ export const queriesBaseSchema = {
           return value
       }
     }),
-  filter: z.coerce.string().default(defaultQueries.filter),
+  filter: z.coerce.string().trim().default(defaultQueries.filter),
   filter_value: z.any().default(defaultQueries.filter_value),
   filter_type: z.coerce
     .string()
+    .trim()
     .default(defaultQueries.filter_type)
     .transform((value) => {
       if (

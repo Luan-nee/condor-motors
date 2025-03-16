@@ -1,27 +1,24 @@
 import { z } from 'zod'
-
-const isValidNombre = (str: string) =>
-  /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s.\-_]+$/.test(str)
-
-const isValidDireccion = (str: string) =>
-  /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s.,\-_]+$/.test(str)
+import { Validator } from '@/domain/validators/validator'
 
 export const sucursalSchema = {
   nombre: z
     .string()
+    .trim()
     .min(2)
     .max(255)
-    .refine((val) => isValidNombre(val), {
+    .refine((val) => Validator.isValidGeneralName(val), {
       message:
-        'El nombre de la sucursal solo puede contener números, espacios, guiones y letras (mayúsculas o minúsculas)'
+        'El nombre solo puede contener este set de caracteres: a-zA-ZáéíóúÁÉÍÓÚñÑüÜ-_'
     }),
   direccion: z
     .string()
+    .trim()
     .min(2)
     .max(255)
-    .refine((val) => isValidDireccion(val), {
+    .refine((val) => Validator.isValidAddress(val), {
       message:
-        'La dirección de la sucursal solo puede contener números, espacios, puntos, guiones y letras (mayúsculas o minúsculas)'
+        'La dirección solo puede contener este set de caracteres: a-zA-ZáéíóúÁÉÍÓÚñÑüÜ-_.,'
     })
     .optional(),
   sucursalCentral: z.boolean()
