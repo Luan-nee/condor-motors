@@ -47,11 +47,10 @@ export const permissionCodes = {
     createAny: 'empleados:create_any',
     getAny: 'empleados:get_any',
     updateAny: 'empleados:update_any',
-    deleteAny: 'empleados:delete_any',
-    // createRelated: 'empleados:create_related',
-    getRelated: 'empleados:get_related',
-    updateRelated: 'empleados:update_related',
-    updateSelf: 'empleados:update_self'
+    // deleteAny: 'empleados:delete_any',
+    getRelated: 'empleados:get_related'
+    // updateSelf: 'empleados:update_self'
+    // deleteSelf: 'empleados:delete_self',
   },
   productos: {
     createAny: 'productos:create_any',
