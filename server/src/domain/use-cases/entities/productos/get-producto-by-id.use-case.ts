@@ -5,9 +5,7 @@ import { db } from '@/db/connection'
 import {
   categoriasTable,
   coloresTable,
-  cuentasEmpleadosTable,
   detallesProductoTable,
-  empleadosTable,
   marcasTable,
   productosTable,
   sucursalesTable
@@ -45,11 +43,11 @@ export class GetProductoById {
     this.authPayload = authPayload
   }
 
-  private async getRelated(
+  private async getProductoById(
     numericIdDto: NumericIdDto,
     sucursalId: SucursalIdType
   ) {
-    return await db
+    const productos = await db
       .select(this.selectFields)
       .from(productosTable)
       .innerJoin(coloresTable, eq(coloresTable.id, productosTable.colorId))
@@ -58,65 +56,15 @@ export class GetProductoById {
         eq(categoriasTable.id, productosTable.categoriaId)
       )
       .innerJoin(marcasTable, eq(marcasTable.id, productosTable.marcaId))
-      .innerJoin(
+      .leftJoin(
         detallesProductoTable,
-        eq(detallesProductoTable.productoId, productosTable.id)
-      )
-      .innerJoin(
-        sucursalesTable,
-        eq(sucursalesTable.id, detallesProductoTable.sucursalId)
-      )
-      .innerJoin(
-        empleadosTable,
-        eq(empleadosTable.sucursalId, sucursalesTable.id)
-      )
-      .innerJoin(
-        cuentasEmpleadosTable,
-        eq(cuentasEmpleadosTable.empleadoId, empleadosTable.id)
-      )
-      .where(
         and(
-          eq(productosTable.id, numericIdDto.id),
-          eq(detallesProductoTable.sucursalId, sucursalId),
-          eq(cuentasEmpleadosTable.id, this.authPayload.id)
-        )
-      )
-  }
-
-  private async getAny(numericIdDto: NumericIdDto, sucursalId: SucursalIdType) {
-    return await db
-      .select(this.selectFields)
-      .from(productosTable)
-      .innerJoin(coloresTable, eq(coloresTable.id, productosTable.colorId))
-      .innerJoin(
-        categoriasTable,
-        eq(categoriasTable.id, productosTable.categoriaId)
-      )
-      .innerJoin(marcasTable, eq(marcasTable.id, productosTable.marcaId))
-      .innerJoin(
-        detallesProductoTable,
-        eq(detallesProductoTable.productoId, productosTable.id)
-      )
-      .innerJoin(
-        sucursalesTable,
-        eq(sucursalesTable.id, detallesProductoTable.sucursalId)
-      )
-      .where(
-        and(
-          eq(productosTable.id, numericIdDto.id),
+          eq(productosTable.id, detallesProductoTable.productoId),
           eq(detallesProductoTable.sucursalId, sucursalId)
         )
       )
-  }
-
-  private async getProductoById(
-    numericIdDto: NumericIdDto,
-    sucursalId: SucursalIdType,
-    hasPermissionGetAny: boolean
-  ) {
-    const productos = hasPermissionGetAny
-      ? await this.getAny(numericIdDto, sucursalId)
-      : await this.getRelated(numericIdDto, sucursalId)
+      .leftJoin(sucursalesTable, eq(sucursalesTable.id, sucursalId))
+      .where(eq(productosTable.id, numericIdDto.id))
 
     if (productos.length < 1) {
       throw CustomError.badRequest(
@@ -155,18 +103,12 @@ export class GetProductoById {
     if (!hasPermissionGetAny && !isSameSucursal) {
       throw CustomError.forbidden()
     }
-
-    return hasPermissionGetAny
   }
 
   async execute(numericIdDto: NumericIdDto, sucursalId: SucursalIdType) {
-    const hasPermissionGetAny = await this.validatePermissions(sucursalId)
+    await this.validatePermissions(sucursalId)
 
-    const producto = await this.getProductoById(
-      numericIdDto,
-      sucursalId,
-      hasPermissionGetAny
-    )
+    const producto = await this.getProductoById(numericIdDto, sucursalId)
 
     return producto
   }

@@ -5,23 +5,14 @@ import { db } from '@/db/connection'
 import {
   categoriasTable,
   coloresTable,
-  cuentasEmpleadosTable,
   detallesProductoTable,
-  empleadosTable,
   marcasTable,
   productosTable,
   sucursalesTable
 } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { and, asc, desc, eq, ilike, or, type SQL } from 'drizzle-orm'
-
-interface GetArgs {
-  queriesDto: QueriesDto
-  order: SQL
-  whereCondition: SQL | undefined
-  sucursalId: SucursalIdType
-}
+import { and, asc, desc, eq, ilike, or } from 'drizzle-orm'
 
 export class GetProductos {
   private readonly authPayload: AuthPayload
@@ -78,82 +69,9 @@ export class GetProductos {
     return this.validSortBy.fechaCreacion
   }
 
-  private async getRelatedProductos({
-    queriesDto,
-    order,
-    whereCondition,
-    sucursalId
-  }: GetArgs) {
-    return await db
-      .select(this.selectFields)
-      .from(productosTable)
-      .innerJoin(coloresTable, eq(coloresTable.id, productosTable.colorId))
-      .innerJoin(
-        categoriasTable,
-        eq(categoriasTable.id, productosTable.categoriaId)
-      )
-      .innerJoin(marcasTable, eq(marcasTable.id, productosTable.marcaId))
-      .innerJoin(
-        detallesProductoTable,
-        eq(detallesProductoTable.productoId, productosTable.id)
-      )
-      .innerJoin(
-        sucursalesTable,
-        eq(sucursalesTable.id, detallesProductoTable.sucursalId)
-      )
-      .innerJoin(
-        empleadosTable,
-        eq(empleadosTable.sucursalId, sucursalesTable.id)
-      )
-      .innerJoin(
-        cuentasEmpleadosTable,
-        eq(cuentasEmpleadosTable.empleadoId, empleadosTable.id)
-      )
-      .where(
-        and(
-          whereCondition,
-          eq(cuentasEmpleadosTable.id, this.authPayload.id),
-          eq(sucursalesTable.id, sucursalId)
-        )
-      )
-      .orderBy(order)
-      .limit(queriesDto.page_size)
-      .offset(queriesDto.page_size * (queriesDto.page - 1))
-  }
-
-  private async getAnyProductos({
-    queriesDto,
-    order,
-    whereCondition,
-    sucursalId
-  }: GetArgs) {
-    return await db
-      .select(this.selectFields)
-      .from(productosTable)
-      .innerJoin(coloresTable, eq(coloresTable.id, productosTable.colorId))
-      .innerJoin(
-        categoriasTable,
-        eq(categoriasTable.id, productosTable.categoriaId)
-      )
-      .innerJoin(marcasTable, eq(marcasTable.id, productosTable.marcaId))
-      .innerJoin(
-        detallesProductoTable,
-        eq(detallesProductoTable.productoId, productosTable.id)
-      )
-      .innerJoin(
-        sucursalesTable,
-        eq(sucursalesTable.id, detallesProductoTable.sucursalId)
-      )
-      .where(and(whereCondition, eq(sucursalesTable.id, sucursalId)))
-      .orderBy(order)
-      .limit(queriesDto.page_size)
-      .offset(queriesDto.page_size * (queriesDto.page - 1))
-  }
-
   private async getProductos(
     queriesDto: QueriesDto,
-    sucursalId: SucursalIdType,
-    hasPermissionGetAny: boolean
+    sucursalId: SucursalIdType
   ) {
     const sortByColumn = this.getSortByColumn(queriesDto.sort_by)
 
@@ -172,16 +90,27 @@ export class GetProductos {
           )
         : undefined
 
-    const args = {
-      queriesDto,
-      order,
-      whereCondition,
-      sucursalId
-    }
-
-    const productos = hasPermissionGetAny
-      ? await this.getAnyProductos(args)
-      : await this.getRelatedProductos(args)
+    const productos = await db
+      .select(this.selectFields)
+      .from(productosTable)
+      .innerJoin(coloresTable, eq(coloresTable.id, productosTable.colorId))
+      .innerJoin(
+        categoriasTable,
+        eq(categoriasTable.id, productosTable.categoriaId)
+      )
+      .innerJoin(marcasTable, eq(marcasTable.id, productosTable.marcaId))
+      .leftJoin(
+        detallesProductoTable,
+        and(
+          eq(productosTable.id, detallesProductoTable.productoId),
+          eq(detallesProductoTable.sucursalId, sucursalId)
+        )
+      )
+      .leftJoin(sucursalesTable, eq(sucursalesTable.id, sucursalId))
+      .where(whereCondition)
+      .orderBy(order)
+      .limit(queriesDto.page_size)
+      .offset(queriesDto.page_size * (queriesDto.page - 1))
 
     return productos
   }
@@ -212,18 +141,12 @@ export class GetProductos {
     if (!hasPermissionGetAny && !isSameSucursal) {
       throw CustomError.forbidden()
     }
-
-    return hasPermissionGetAny
   }
 
   async execute(queriesDto: QueriesDto, sucursalId: SucursalIdType) {
-    const hasPermissionGetAny = await this.validatePermissions(sucursalId)
+    await this.validatePermissions(sucursalId)
 
-    const productos = await this.getProductos(
-      queriesDto,
-      sucursalId,
-      hasPermissionGetAny
-    )
+    const productos = await this.getProductos(queriesDto, sucursalId)
 
     return productos
   }
