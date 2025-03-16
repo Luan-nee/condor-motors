@@ -15,7 +15,7 @@ export class SucursalesRoutes {
 
     router.patch('/:id', sucursalesController.update)
 
-    router.delete('/:id', sucursalesController.delete)
+    // router.delete('/:id', sucursalesController.delete)
 
     return router
   }

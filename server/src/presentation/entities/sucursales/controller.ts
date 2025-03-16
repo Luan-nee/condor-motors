@@ -5,7 +5,6 @@ import { UpdateSucursalDto } from '@/domain/dtos/entities/sucursales/update-sucu
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { CreateSucursal } from '@/domain/use-cases/entities/sucursales/create-sucursal.use-case'
-import { DeleteSucursal } from '@/domain/use-cases/entities/sucursales/delete-sucursal.use-case'
 import { GetSucursalById } from '@/domain/use-cases/entities/sucursales/get-sucursal-by-id.use-case'
 import { GetSucursales } from '@/domain/use-cases/entities/sucursales/get-sucursales.use-case'
 import { UpdateSucursal } from '@/domain/use-cases/entities/sucursales/update-sucursal.use-case'
@@ -126,29 +125,29 @@ export class SucursalesController {
       })
   }
 
-  delete = (req: Request, res: Response) => {
-    if (req.authPayload === undefined) {
-      CustomResponse.unauthorized({ res })
-      return
-    }
+  // delete = (req: Request, res: Response) => {
+  //   if (req.authPayload === undefined) {
+  //     CustomResponse.unauthorized({ res })
+  //     return
+  //   }
 
-    const [error, numericIdDto] = NumericIdDto.create(req.params)
-    if (error !== undefined || numericIdDto === undefined) {
-      CustomResponse.badRequest({ res, error: 'Id inválido' })
-      return
-    }
+  //   const [error, numericIdDto] = NumericIdDto.create(req.params)
+  //   if (error !== undefined || numericIdDto === undefined) {
+  //     CustomResponse.badRequest({ res, error: 'Id inválido' })
+  //     return
+  //   }
 
-    const deleteSucursal = new DeleteSucursal()
+  //   const deleteSucursal = new DeleteSucursal()
 
-    deleteSucursal
-      .execute(numericIdDto)
-      .then((sucursal) => {
-        const message = `Sucursal con id '${sucursal.id}' eliminada`
+  //   deleteSucursal
+  //     .execute(numericIdDto)
+  //     .then((sucursal) => {
+  //       const message = `Sucursal con id '${sucursal.id}' eliminada`
 
-        CustomResponse.success({ res, message, data: sucursal })
-      })
-      .catch((error: unknown) => {
-        handleError(error, res)
-      })
-  }
+  //       CustomResponse.success({ res, message, data: sucursal })
+  //     })
+  //     .catch((error: unknown) => {
+  //       handleError(error, res)
+  //     })
+  // }
 }
