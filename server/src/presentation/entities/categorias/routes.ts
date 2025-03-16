@@ -6,9 +6,9 @@ export class CategoriasRoutes {
     const router = Router()
     const categoriasController = new CategoriasController()
 
-    router.get('/', categoriasController.getAll)
-
     router.post('/', categoriasController.create)
+
+    router.get('/', categoriasController.getAll)
 
     return router
   }

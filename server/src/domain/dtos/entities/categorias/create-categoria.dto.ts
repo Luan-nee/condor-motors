@@ -10,6 +10,7 @@ export class CreateCategoriaDto {
   }
   static create(input: any): [string?, CreateCategoriaDto?] {
     const resultado = createCategoriaValidator(input)
+
     if (!resultado.success) {
       return [resultado.error.message, undefined]
     }
