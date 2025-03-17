@@ -2,6 +2,7 @@ import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
 import { UpdateCuentaEmpleadoDto } from '@/domain/dtos/entities/cuentas-empleados/update-cuenta-empleado.dto'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
+import { DeleteCuentaEmpleado } from '@/domain/use-cases/entities/cuentas-empleados/delete-cuenta-empleado.use-case'
 import { GetCuentaEmpleado } from '@/domain/use-cases/entities/cuentas-empleados/get-cuenta-empleado.use-case'
 import { GetCuentasEmpleados } from '@/domain/use-cases/entities/cuentas-empleados/get-cuentas-empleados.use-case'
 import { UpdateCuentaEmpleado } from '@/domain/use-cases/entities/cuentas-empleados/update-cuenta-empleado.use-case'
@@ -104,6 +105,23 @@ export class CuentasEmpleadosController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
+    const { authPayload } = req
+
+    const deleteCuentaEmpleado = new DeleteCuentaEmpleado(authPayload)
+
+    deleteCuentaEmpleado
+      .execute(numericIdDto)
+      .then((cuentaEmpleado) => {
+        CustomResponse.success({ res, data: cuentaEmpleado })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 }
