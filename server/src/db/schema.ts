@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   boolean,
   date,
@@ -55,7 +56,9 @@ export const coloresTable = pgTable('colores', {
 
 export const productosTable = pgTable('productos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  // sku: text('sku').notNull().unique(),
+  sku: text('sku')
+    .notNull()
+    .generatedAlwaysAs(sql`LPAD(id::TEXT, 9, '0')`),
   nombre: text('nombre').notNull(),
   descripcion: text('descripcion'),
   maxDiasSinReabastecer: integer('max_dias_sin_reabastecer'),

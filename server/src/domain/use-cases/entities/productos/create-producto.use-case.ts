@@ -34,11 +34,6 @@ export class CreateProducto {
       precioOferta: createProductoDto.precioOferta?.toFixed(2)
     }
 
-    // const sucursales = await db
-    //   .select({ id: sucursalesTable.id })
-    //   .from(sucursalesTable)
-    //   .where(ne(sucursalesTable.id, sucursalId))
-
     const detalleProductoStockBajo =
       createProductoDto.stockMinimo !== undefined &&
       createProductoDto.stock !== undefined
@@ -64,7 +59,7 @@ export class CreateProducto {
           id: productosTable.id
         })
 
-      const detallesProductos = await tx
+      await tx
         .insert(detallesProductoTable)
         .values({
           precioCompra: mappedPrices.precioCompra,
@@ -78,24 +73,6 @@ export class CreateProducto {
         .returning({
           id: detallesProductoTable.id
         })
-
-      if (detallesProductos.length < 1) {
-        throw CustomError.badRequest(
-          'Ha ocurrido un error al intentar crear el producto'
-        )
-      }
-
-      // const detallesProductosValues = sucursales.map((sucursal) => ({
-      //   precioCompra: null,
-      //   precioVenta: null,
-      //   precioOferta: null,
-      //   stock: 0,
-      //   stockBajo: false,
-      //   productoId: producto.id,
-      //   sucursalId: sucursal.id
-      // }))
-
-      // await tx.insert(detallesProductoTable).values(detallesProductosValues)
 
       return producto
     })
