@@ -83,7 +83,10 @@ export const permissionCodes = {
     getAny: 'cuentas_empleados:get_any',
     updateAny: 'cuentas_empleados:update_any',
     deleteAny: 'cuentas_empleados:delete_any',
-    getSelf: 'cuentas_empleados:get_self',
+    getRelated: 'cuentas_empleados:get_related',
     updateSelf: 'cuentas_empleados:update_self'
+  },
+  rolesCuentasEmpleados: {
+    getAny: 'roles_cuentas_empleados:get_any'
   }
 } as const

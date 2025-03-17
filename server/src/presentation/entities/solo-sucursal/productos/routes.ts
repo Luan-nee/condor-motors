@@ -17,7 +17,7 @@ export class ProductosRoutes {
 
     router.patch('/:id', productosController.update)
 
-    router.delete('/:id', productosController.delete)
+    // router.delete('/:id', productosController.delete)
 
     return router
   }
