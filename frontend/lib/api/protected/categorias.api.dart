@@ -23,7 +23,7 @@ class CategoriasApi {
         'page_size': pageSize.toString(),
       };
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: _endpoint,
         method: 'GET',
         queryParams: queryParams,
@@ -78,7 +78,7 @@ class CategoriasApi {
         body['descripcion'] = descripcion;
       }
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: _endpoint,
         method: 'POST',
         body: body,
@@ -129,7 +129,7 @@ class CategoriasApi {
         throw Exception('Debe proporcionar al menos un campo para actualizar');
       }
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
         method: 'PATCH', // Usar PATCH para actualización parcial
         body: body,
@@ -158,7 +158,7 @@ class CategoriasApi {
     try {
       debugPrint('CategoriasApi: Eliminando categoría con ID: $id');
       
-      await _api.request(
+      await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
         method: 'DELETE',
       );
@@ -186,7 +186,7 @@ class CategoriasApi {
     try {
       debugPrint('CategoriasApi: Obteniendo categoría con ID: $id');
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
         method: 'GET',
       );

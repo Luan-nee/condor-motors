@@ -159,9 +159,9 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   void _guardar() {
     if (!_formKey.currentState!.validate()) return;
     
-    // Formatear horarios
-    final horaInicio = '${_horaInicioHoraController.text.padLeft(2, '0')}:${_horaInicioMinutoController.text.padLeft(2, '0')}';
-    final horaFin = '${_horaFinHoraController.text.padLeft(2, '0')}:${_horaFinMinutoController.text.padLeft(2, '0')}';
+    // Formatear horarios en formato hh:mm:ss
+    final horaInicio = '${_horaInicioHoraController.text.padLeft(2, '0')}:${_horaInicioMinutoController.text.padLeft(2, '0')}:00';
+    final horaFin = '${_horaFinHoraController.text.padLeft(2, '0')}:${_horaFinMinutoController.text.padLeft(2, '0')}:00';
     
     // Construir datos del empleado
     final empleadoData = {
@@ -535,7 +535,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                 if (value.length > 2) {
                                   _horaInicioHoraController.text = value.substring(0, 2);
                                   _horaInicioHoraController.selection = TextSelection.fromPosition(
-                                    TextPosition(offset: 2),
+                                    const TextPosition(offset: 2),
                                   );
                                 }
                                 
@@ -554,8 +554,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                           ),
                           
                           // Separador
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
                             child: Text(
                               ':',
                               style: TextStyle(
@@ -596,7 +596,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                 if (value.length > 2) {
                                   _horaInicioMinutoController.text = value.substring(0, 2);
                                   _horaInicioMinutoController.selection = TextSelection.fromPosition(
-                                    TextPosition(offset: 2),
+                                    const TextPosition(offset: 2),
                                   );
                                 }
                                 
@@ -675,7 +675,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                 if (value.length > 2) {
                                   _horaFinHoraController.text = value.substring(0, 2);
                                   _horaFinHoraController.selection = TextSelection.fromPosition(
-                                    TextPosition(offset: 2),
+                                    const TextPosition(offset: 2),
                                   );
                                 }
                                 
@@ -694,8 +694,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                           ),
                           
                           // Separador
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
                             child: Text(
                               ':',
                               style: TextStyle(
@@ -736,7 +736,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                 if (value.length > 2) {
                                   _horaFinMinutoController.text = value.substring(0, 2);
                                   _horaFinMinutoController.selection = TextSelection.fromPosition(
-                                    TextPosition(offset: 2),
+                                    const TextPosition(offset: 2),
                                   );
                                 }
                                 

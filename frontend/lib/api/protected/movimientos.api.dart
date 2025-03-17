@@ -42,7 +42,7 @@ class MovimientosApi {
         queryParams['fecha_fin'] = fechaFin.toIso8601String();
       }
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: _endpoint,
         method: 'GET',
         queryParams: queryParams,
@@ -58,7 +58,7 @@ class MovimientosApi {
   // Obtener un movimiento específico
   Future<Map<String, dynamic>> getMovimiento(String id) async {
     try {
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
         method: 'GET',
       );
@@ -73,7 +73,7 @@ class MovimientosApi {
   // Crear un nuevo movimiento
   Future<Map<String, dynamic>> createMovimiento(Map<String, dynamic> movimientoData) async {
     try {
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: _endpoint,
         method: 'POST',
         body: movimientoData,
@@ -89,9 +89,9 @@ class MovimientosApi {
   // Actualizar un movimiento existente
   Future<Map<String, dynamic>> updateMovimiento(String id, Map<String, dynamic> movimientoData) async {
     try {
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
-        method: 'PUT',
+        method: 'PATCH',
         body: movimientoData,
       );
       
@@ -105,9 +105,9 @@ class MovimientosApi {
   // Cambiar el estado de un movimiento
   Future<Map<String, dynamic>> cambiarEstado(String id, String nuevoEstado, {String? observacion}) async {
     try {
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id/estado',
-        method: 'PUT',
+        method: 'PATCH',
         body: {
           'estado': nuevoEstado,
           if (observacion != null) 'observacion': observacion,
@@ -124,7 +124,7 @@ class MovimientosApi {
   // Cancelar un movimiento
   Future<bool> cancelarMovimiento(String id, String motivo) async {
     try {
-      await _api.request(
+      await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id/cancelar',
         method: 'POST',
         body: {

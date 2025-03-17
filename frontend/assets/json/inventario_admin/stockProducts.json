@@ -1,757 +1,130 @@
 [
   {
-    "id_local": 1,
+    "id": "1",
     "es_central": true,
-    "nombre_local": "Manu, Puerto Maldonado 17001",
+    "nombre": "Central Principal",
     "productos": [
       {
         "id": 1,
         "nombre": "Casco MT Thunder",
+        "descripcion": "Casco integral para motocicleta",
         "stock_actual": 15,
         "stock_minimo": 8,
-        "stock_maximo": 20
+        "stock_maximo": 20,
+        "precio_compra": 150.00,
+        "precio_venta": 250.00,
+        "categoria_id": 1,
+        "marca_id": 3
       },
       {
         "id": 2,
         "nombre": "Guantes de motocross",
+        "descripcion": "Guantes protectores para motociclista",
         "stock_actual": 25,
         "stock_minimo": 10,
-        "stock_maximo": 30
+        "stock_maximo": 30,
+        "precio_compra": 45.00,
+        "precio_venta": 85.00,
+        "categoria_id": 1,
+        "marca_id": 2
       },
       {
         "id": 3,
         "nombre": "Aceite Motul 5100",
+        "descripcion": "Aceite sintético para motor 4T 15W50",
         "stock_actual": 30,
         "stock_minimo": 15,
-        "stock_maximo": 35
+        "stock_maximo": 35,
+        "precio_compra": 35.00,
+        "precio_venta": 65.00,
+        "categoria_id": 2,
+        "marca_id": 1
       }
     ]
   },
   {
-    "id_local": 2,
+    "id": "2",
     "es_central": false,
-    "nombre_local": "Sucursal San Miguel, Lima",
+    "nombre": "Sucursal San Miguel",
     "productos": [
       {
         "id": 1,
         "nombre": "Casco MT Thunder",
+        "descripcion": "Casco integral para motocicleta",
         "stock_actual": 10,
         "stock_minimo": 5,
-        "stock_maximo": 18
+        "stock_maximo": 18,
+        "precio_compra": 150.00,
+        "precio_venta": 250.00,
+        "categoria_id": 1,
+        "marca_id": 3
       },
       {
         "id": 2,
         "nombre": "Guantes de motocross",
+        "descripcion": "Guantes protectores para motociclista",
         "stock_actual": 20,
         "stock_minimo": 10,
-        "stock_maximo": 30
+        "stock_maximo": 30,
+        "precio_compra": 45.00,
+        "precio_venta": 85.00,
+        "categoria_id": 1,
+        "marca_id": 2
       },
       {
         "id": 3,
         "nombre": "Aceite Motul 5100",
+        "descripcion": "Aceite sintético para motor 4T 15W50",
         "stock_actual": 25,
         "stock_minimo": 12,
-        "stock_maximo": 32
+        "stock_maximo": 32,
+        "precio_compra": 35.00,
+        "precio_venta": 65.00,
+        "categoria_id": 2,
+        "marca_id": 1
       }
     ]
   },
   {
-    "id_local": 3,
+    "id": "3",
     "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
+    "nombre": "Sucursal Los Olivos",
     "productos": [
       {
         "id": 1,
         "nombre": "Casco MT Thunder",
+        "descripcion": "Casco integral para motocicleta",
         "stock_actual": 5,
         "stock_minimo": 3,
-        "stock_maximo": 12
+        "stock_maximo": 12,
+        "precio_compra": 150.00,
+        "precio_venta": 250.00,
+        "categoria_id": 1,
+        "marca_id": 3
       },
       {
         "id": 2,
         "nombre": "Guantes de motocross",
+        "descripcion": "Guantes protectores para motociclista",
         "stock_actual": 15,
         "stock_minimo": 7,
-        "stock_maximo": 25
+        "stock_maximo": 25,
+        "precio_compra": 45.00,
+        "precio_venta": 85.00,
+        "categoria_id": 1,
+        "marca_id": 2
       },
       {
         "id": 3,
         "nombre": "Aceite Motul 5100",
+        "descripcion": "Aceite sintético para motor 4T 15W50",
         "stock_actual": 20,
         "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
-      }
-    ]
-  },
-  {
-    "id_local": 3,
-    "es_central": false,
-    "nombre_local": "Sucursal Los Olivos, Lima",
-    "productos": [
-      {
-        "id": 1,
-        "nombre": "Casco MT Thunder",
-        "stock_actual": 5,
-        "stock_minimo": 3,
-        "stock_maximo": 12
-      },
-      {
-        "id": 2,
-        "nombre": "Guantes de motocross",
-        "stock_actual": 15,
-        "stock_minimo": 7,
-        "stock_maximo": 25
-      },
-      {
-        "id": 3,
-        "nombre": "Aceite Motul 5100",
-        "stock_actual": 20,
-        "stock_minimo": 10,
-        "stock_maximo": 30
+        "stock_maximo": 30,
+        "precio_compra": 35.00,
+        "precio_venta": 65.00,
+        "categoria_id": 2,
+        "marca_id": 1
       }
     ]
   }

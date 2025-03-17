@@ -9,6 +9,7 @@ import 'movimientos_admin.dart';
 import 'marcas_admin.dart';
 import 'colaboradores_admin.dart';
 import 'settings_admin.dart';
+import 'productos_admin.dart';
 
 class SlidesAdminScreen extends StatefulWidget {
   const SlidesAdminScreen({super.key});
@@ -113,6 +114,14 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                       isSelected: _selectedIndex == 2 && _selectedSubIndex == 1,
                     ),
                     _buildSubMenuItem(
+                      'Productos',
+                      onTap: () => setState(() {
+                        _selectedIndex = 2;
+                        _selectedSubIndex = 4;
+                      }),
+                      isSelected: _selectedIndex == 2 && _selectedSubIndex == 4,
+                    ),
+                    _buildSubMenuItem(
                       'Categorías',
                       onTap: () => setState(() {
                         _selectedIndex = 2;
@@ -198,6 +207,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                     InventarioAdminScreen(),
                     MovimientosAdminScreen(),
                     MarcasAdminScreen(),
+                    ProductosAdminScreen(),
                   ],
                 ),
                 const ColaboradoresAdminScreen(),

@@ -189,7 +189,7 @@ class MarcasApi {
       debugPrint('MarcasApi: Actualizando marca con ID: $marcaId');
       final response = await _api.authenticatedRequest(
         endpoint: '/marcas/$marcaId',
-        method: 'PUT',
+        method: 'PATCH',
         body: marcaData,
       );
       

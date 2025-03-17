@@ -33,7 +33,7 @@ class ProductosApi {
         queryParams['disponible'] = disponible.toString();
       }
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: _endpoint,
         method: 'GET',
         queryParams: queryParams,
@@ -49,7 +49,7 @@ class ProductosApi {
   // Obtener un producto específico
   Future<Map<String, dynamic>> getProducto(String id) async {
     try {
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
         method: 'GET',
       );
@@ -64,7 +64,7 @@ class ProductosApi {
   // Crear un nuevo producto
   Future<Map<String, dynamic>> createProducto(Map<String, dynamic> productoData) async {
     try {
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: _endpoint,
         method: 'POST',
         body: productoData,
@@ -80,9 +80,9 @@ class ProductosApi {
   // Actualizar un producto existente
   Future<Map<String, dynamic>> updateProducto(String id, Map<String, dynamic> productoData) async {
     try {
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
-        method: 'PUT',
+        method: 'PATCH',
         body: productoData,
       );
       
@@ -96,7 +96,7 @@ class ProductosApi {
   // Eliminar un producto
   Future<bool> deleteProducto(String id) async {
     try {
-      await _api.request(
+      await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
         method: 'DELETE',
       );
@@ -111,12 +111,12 @@ class ProductosApi {
   // Actualizar el stock de un producto
   Future<Map<String, dynamic>> updateStock(String id, int cantidad, String tipo) async {
     try {
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id/stock',
-        method: 'PUT',
+        method: 'PATCH',
         body: {
           'cantidad': cantidad,
-          'tipo': tipo, // "incremento" o "decremento"
+          'tipo': tipo,
         },
       );
       
@@ -168,7 +168,7 @@ class ProductosApi {
       // Construir el endpoint específico para la sucursal
       final endpoint = '/$sucursalId/productos/$productoId';
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: endpoint,
         method: 'POST',
         body: body,
@@ -215,7 +215,7 @@ class ProductosApi {
       // Construir el endpoint específico para la sucursal
       final endpoint = '/$sucursalId/productos';
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: endpoint,
         method: 'GET',
         queryParams: queryParams,
@@ -240,7 +240,7 @@ class ProductosApi {
       // Construir el endpoint específico para la sucursal
       final endpoint = '/$sucursalId/productos/$productoId';
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: endpoint,
         method: 'GET',
       );
@@ -266,7 +266,7 @@ class ProductosApi {
       // Construir el endpoint específico para la sucursal
       final endpoint = '/$sucursalId/productos/$productoId';
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: endpoint,
         method: 'PATCH',
         body: productoData,
@@ -291,7 +291,7 @@ class ProductosApi {
       // Construir el endpoint específico para la sucursal
       final endpoint = '/$sucursalId/productos/$productoId';
       
-      await _api.request(
+      await _api.authenticatedRequest(
         endpoint: endpoint,
         method: 'DELETE',
       );

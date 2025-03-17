@@ -45,8 +45,8 @@ class StocksApi {
       final endpoint = '/$sucursalId/productos';
       debugPrint('StocksApi: Solicitando a endpoint: $endpoint con parámetros: $queryParams');
       
-      final response = await _api.request(
-        endpoint: endpoint,
+      final response = await _api.authenticatedRequest(
+        endpoint: '/stocks',
         method: 'GET',
         queryParams: queryParams,
       );
@@ -94,7 +94,7 @@ class StocksApi {
       
       debugPrint('StocksApi: Obteniendo stock del producto $productoId en sucursal $sucursalId');
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
         method: 'GET',
       );
@@ -130,9 +130,9 @@ class StocksApi {
       debugPrint('StocksApi: Actualizando stock del producto $productoId en sucursal $sucursalId');
       debugPrint('StocksApi: Operación: $tipo, Cantidad: $cantidad');
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId/stock',
-        method: 'PUT',
+        method: 'PATCH',
         body: {
           'cantidad': cantidad,
           'tipo': tipo,
@@ -170,10 +170,16 @@ class StocksApi {
         body['motivo'] = motivo;
       }
       
-      final response = await _api.request(
-        endpoint: '/$sucursalId/productos/$productoId/movimiento',
+      final response = await _api.authenticatedRequest(
+        endpoint: '/movimientos',
         method: 'POST',
-        body: body,
+        body: {
+          'sucursalId': sucursalId,
+          'productoId': productoId,
+          'cantidad': cantidad,
+          'tipo': tipo,
+          'motivo': motivo,
+        },
       );
       
       return response['data'];
@@ -210,8 +216,8 @@ class StocksApi {
         queryParams['fecha_fin'] = fechaFin.toIso8601String();
       }
       
-      final response = await _api.request(
-        endpoint: '/$sucursalId/historial-stock',
+      final response = await _api.authenticatedRequest(
+        endpoint: '/movimientos',
         method: 'GET',
         queryParams: queryParams,
       );

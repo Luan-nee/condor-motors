@@ -219,6 +219,13 @@ class ApiClient {
             body: body != null ? json.encode(body) : null,
           );
           break;
+        case 'PATCH':
+          response = await _httpClient.patch(
+            uri, 
+            headers: headers,
+            body: body != null ? json.encode(body) : null,
+          );
+          break;
         case 'DELETE':
           response = await _httpClient.delete(uri, headers: headers);
           break;

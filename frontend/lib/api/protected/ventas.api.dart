@@ -50,7 +50,7 @@ class VentasApi {
         debugPrint('Solicitando ventas globales: $endpoint');
       }
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: endpoint,
         method: 'GET',
         queryParams: queryParams,
@@ -73,7 +73,7 @@ class VentasApi {
         endpoint = '/$sucursalId/ventas';
       }
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: '$endpoint/$id',
         method: 'GET',
       );
@@ -94,7 +94,7 @@ class VentasApi {
         endpoint = '/$sucursalId/ventas';
       }
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: endpoint,
         method: 'POST',
         body: ventaData,
@@ -116,9 +116,9 @@ class VentasApi {
         endpoint = '/$sucursalId/ventas';
       }
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: '$endpoint/$id',
-        method: 'PUT',
+        method: 'PATCH',
         body: ventaData,
       );
       
@@ -138,7 +138,7 @@ class VentasApi {
         endpoint = '/$sucursalId/ventas';
       }
       
-      await _api.request(
+      await _api.authenticatedRequest(
         endpoint: '$endpoint/$id/cancel',
         method: 'POST',
         body: {
@@ -161,7 +161,7 @@ class VentasApi {
         endpoint = '/$sucursalId/ventas';
       }
       
-      await _api.request(
+      await _api.authenticatedRequest(
         endpoint: '$endpoint/$id/anular',
         method: 'POST',
         body: {
@@ -199,7 +199,7 @@ class VentasApi {
         endpoint = '/$sucursalId/ventas/estadisticas';
       }
       
-      final response = await _api.request(
+      final response = await _api.authenticatedRequest(
         endpoint: endpoint,
         method: 'GET',
         queryParams: queryParams,

@@ -218,11 +218,24 @@ class EmpleadosApi {
         );
       }
       
-      debugPrint('EmpleadosApi: Creando nuevo empleado: ${empleadoData['nombre']} ${empleadoData['apellidos']}');
+      // Formatear las horas correctamente si están presentes
+      final Map<String, dynamic> formattedData = Map.from(empleadoData);
+      
+      // Asegurar que horaInicioJornada tenga el formato correcto (hh:mm:ss)
+      if (formattedData.containsKey('horaInicioJornada') && formattedData['horaInicioJornada'] != null) {
+        formattedData['horaInicioJornada'] = _formatTimeString(formattedData['horaInicioJornada']);
+      }
+      
+      // Asegurar que horaFinJornada tenga el formato correcto (hh:mm:ss)
+      if (formattedData.containsKey('horaFinJornada') && formattedData['horaFinJornada'] != null) {
+        formattedData['horaFinJornada'] = _formatTimeString(formattedData['horaFinJornada']);
+      }
+      
+      debugPrint('EmpleadosApi: Creando nuevo empleado: ${formattedData['nombre']} ${formattedData['apellidos']}');
       final response = await _api.authenticatedRequest(
         endpoint: '/empleados',
         method: 'POST',
-        body: empleadoData,
+        body: formattedData,
       );
       
       debugPrint('EmpleadosApi: Respuesta de createEmpleado recibida');
@@ -264,29 +277,24 @@ class EmpleadosApi {
       
       debugPrint('EmpleadosApi: Actualizando empleado con ID: $empleadoId');
       
-      // Si se está actualizando el estado activo, usar el endpoint específico
-      if (empleadoData.length == 1 && empleadoData.containsKey('activo')) {
-        final bool estadoActivo = empleadoData['activo'] as bool;
-        final endpoint = estadoActivo 
-            ? '/empleados/$empleadoId/activar'
-            : '/empleados/$empleadoId/desactivar';
-            
-        debugPrint('EmpleadosApi: Usando endpoint de cambio de estado: $endpoint');
-        
-        final response = await _api.authenticatedRequest(
-          endpoint: endpoint,
-          method: 'PUT',
-        );
-        
-        debugPrint('EmpleadosApi: Respuesta de cambio de estado recibida');
-        return _processResponse(response);
+      // Formatear las horas correctamente si están presentes
+      final Map<String, dynamic> formattedData = Map.from(empleadoData);
+      
+      // Asegurar que horaInicioJornada tenga el formato correcto (hh:mm:ss)
+      if (formattedData.containsKey('horaInicioJornada') && formattedData['horaInicioJornada'] != null) {
+        formattedData['horaInicioJornada'] = _formatTimeString(formattedData['horaInicioJornada']);
       }
       
-      // Si estamos actualizando otros datos
+      // Asegurar que horaFinJornada tenga el formato correcto (hh:mm:ss)
+      if (formattedData.containsKey('horaFinJornada') && formattedData['horaFinJornada'] != null) {
+        formattedData['horaFinJornada'] = _formatTimeString(formattedData['horaFinJornada']);
+      }
+      
+      // Usar PATCH para actualizar el empleado
       final response = await _api.authenticatedRequest(
         endpoint: '/empleados/$empleadoId',
-        method: 'PUT',
-        body: empleadoData,
+        method: 'PATCH',
+        body: formattedData,
       );
       
       debugPrint('EmpleadosApi: Respuesta de updateEmpleado recibida');
@@ -297,9 +305,40 @@ class EmpleadosApi {
     }
   }
   
+  /// Formatea una cadena de tiempo para asegurar que tenga el formato hh:mm:ss
+  String _formatTimeString(String timeString) {
+    // Si ya tiene el formato correcto (hh:mm:ss), devolverlo tal cual
+    if (RegExp(r'^\d{2}:\d{2}:\d{2}$').hasMatch(timeString)) {
+      return timeString;
+    }
+    
+    // Si tiene el formato hh:mm, agregar :00 para los segundos
+    if (RegExp(r'^\d{2}:\d{2}$').hasMatch(timeString)) {
+      return '$timeString:00';
+    }
+    
+    // Para otros formatos, intentar convertir a hh:mm:ss
+    try {
+      final parts = timeString.split(':');
+      if (parts.length == 1) {
+        // Si solo hay horas, agregar minutos y segundos
+        return '${parts[0].padLeft(2, '0')}:00:00';
+      } else if (parts.length == 2) {
+        // Si hay horas y minutos, agregar segundos
+        return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}:00';
+      }
+    } catch (e) {
+      debugPrint('EmpleadosApi: Error al formatear hora: $e');
+    }
+    
+    // Si no se puede formatear, devolver el valor original
+    return timeString;
+  }
+  
   /// Elimina un empleado
   /// 
   /// El ID debe ser un string, aunque represente un número
+  /// NOTA: Este endpoint está comentado en el servidor actualmente
   Future<void> deleteEmpleado(String empleadoId) async {
     try {
       // Validar que empleadoId no sea nulo o vacío
@@ -311,12 +350,16 @@ class EmpleadosApi {
       }
       
       debugPrint('EmpleadosApi: Eliminando empleado con ID: $empleadoId');
+      
+      // Como el endpoint DELETE está comentado en el servidor,
+      // usamos PATCH para desactivar el empleado en su lugar
       await _api.authenticatedRequest(
         endpoint: '/empleados/$empleadoId',
-        method: 'DELETE',
+        method: 'PATCH',
+        body: {'activo': false},
       );
       
-      debugPrint('EmpleadosApi: Empleado eliminado correctamente');
+      debugPrint('EmpleadosApi: Empleado desactivado correctamente');
     } catch (e) {
       debugPrint('EmpleadosApi: ERROR al eliminar empleado #$empleadoId: $e');
       rethrow;
