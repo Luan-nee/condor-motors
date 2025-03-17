@@ -8,11 +8,10 @@ import {
   rolesCuentasEmpleadosTable,
   sucursalesTable
 } from '@/db/schema'
-import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
-export class GetCuentaEmpleado {
+export class GetCuentasEmpleados {
   private readonly authPayload: AuthPayload
   private readonly permissionAny = permissionCodes.cuentasEmpleados.getAny
   private readonly permissionRelated =
@@ -28,10 +27,7 @@ export class GetCuentaEmpleado {
     this.authPayload = authPayload
   }
 
-  private async getRelated(
-    numericIdDto: NumericIdDto,
-    sucursalId: SucursalIdType
-  ) {
+  private async getRelated(sucursalId: SucursalIdType) {
     return await db
       .select(this.selectFields)
       .from(cuentasEmpleadosTable)
@@ -50,15 +46,10 @@ export class GetCuentaEmpleado {
         sucursalesTable,
         eq(empleadosTable.sucursalId, sucursalesTable.id)
       )
-      .where(
-        and(
-          eq(cuentasEmpleadosTable.id, numericIdDto.id),
-          eq(empleadosTable.sucursalId, sucursalId)
-        )
-      )
+      .where(eq(empleadosTable.sucursalId, sucursalId))
   }
 
-  private async getAny(numericIdDto: NumericIdDto) {
+  private async getAny() {
     return await db
       .select(this.selectFields)
       .from(cuentasEmpleadosTable)
@@ -77,27 +68,17 @@ export class GetCuentaEmpleado {
         sucursalesTable,
         eq(empleadosTable.sucursalId, sucursalesTable.id)
       )
-      .where(eq(cuentasEmpleadosTable.id, numericIdDto.id))
   }
 
   private async getCuentaEmpleado(
-    numericIdDto: NumericIdDto,
     hasPermissionAny: boolean,
     sucursalId: SucursalIdType
   ) {
     const empleados = hasPermissionAny
-      ? await this.getAny(numericIdDto)
-      : await this.getRelated(numericIdDto, sucursalId)
+      ? await this.getAny()
+      : await this.getRelated(sucursalId)
 
-    if (empleados.length < 1) {
-      throw CustomError.notFound(
-        `No se encontró ninguna cuenta con el id ${numericIdDto.id}`
-      )
-    }
-
-    const [empleado] = empleados
-
-    return empleado
+    return empleados
   }
 
   private async validatePermissions() {
@@ -124,11 +105,10 @@ export class GetCuentaEmpleado {
     return { hasPermissionAny, sucursalId: permission.sucursalId }
   }
 
-  async execute(numericIdDto: NumericIdDto) {
+  async execute() {
     const { hasPermissionAny, sucursalId } = await this.validatePermissions()
 
     const cuentaEmpleado = await this.getCuentaEmpleado(
-      numericIdDto,
       hasPermissionAny,
       sucursalId
     )

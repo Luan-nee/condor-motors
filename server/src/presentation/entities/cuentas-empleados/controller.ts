@@ -2,6 +2,7 @@ import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { GetCuentaEmpleado } from '@/domain/use-cases/entities/cuentas-empleados/get-cuenta-empleado.use-case'
+import { GetCuentasEmpleados } from '@/domain/use-cases/entities/cuentas-empleados/get-cuentas-empleados.use-case'
 import type { Request, Response } from 'express'
 
 export class CuentasEmpleadosController {
@@ -37,7 +38,18 @@ export class CuentasEmpleadosController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    const { authPayload } = req
+
+    const getCuentasEmpleados = new GetCuentasEmpleados(authPayload)
+
+    getCuentasEmpleados
+      .execute()
+      .then((cuentasEmpleados) => {
+        CustomResponse.success({ res, data: cuentasEmpleados })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
   update = (req: Request, res: Response) => {
