@@ -18,10 +18,16 @@ export class GetCuentaEmpleado {
   private readonly permissionRelated =
     permissionCodes.cuentasEmpleados.getRelated
   private readonly selectFields = {
-    nombre: empleadosTable.nombre,
+    id: cuentasEmpleadosTable.id,
     usuario: cuentasEmpleadosTable.usuario,
     rolEmpleado: rolesCuentasEmpleadosTable.nombreRol,
-    sucursal: sucursalesTable.nombre
+    empleado: {
+      id: empleadosTable.id,
+      nombre: empleadosTable.nombre
+    },
+    sucursal: {
+      nombre: sucursalesTable.nombre
+    }
   }
 
   constructor(authPayload: AuthPayload) {
