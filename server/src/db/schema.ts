@@ -58,7 +58,7 @@ export const productosTable = pgTable('productos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   sku: text('sku')
     .notNull()
-    .generatedAlwaysAs(sql`LPAD(id::TEXT, 9, '0')`),
+    .generatedAlwaysAs(sql`LPAD(id::TEXT, 7, '0')`),
   nombre: text('nombre').notNull(),
   descripcion: text('descripcion'),
   maxDiasSinReabastecer: integer('max_dias_sin_reabastecer'),
