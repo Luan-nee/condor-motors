@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../api/protected/empleados.api.dart';
+import '../../../main.dart' show api;
+import 'empleado_cuenta_dialog.dart';
+import 'package:flutter/services.dart';
 
 class EmpleadoForm extends StatefulWidget {
   final Empleado? empleado;
@@ -31,6 +34,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   final _dniController = TextEditingController();
   final _edadController = TextEditingController();
   final _sueldoController = TextEditingController();
+  final _celularController = TextEditingController();
   
   // Controladores para el horario
   final _horaInicioHoraController = TextEditingController();
@@ -41,11 +45,74 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   String? _selectedSucursalId;
   String? _selectedRol;
   bool _esSucursalCentral = false;
+  bool _isLoading = false;
+  String? _usuarioActual;
+  String? _rolCuentaActual;
   
   @override
   void initState() {
     super.initState();
     _inicializarFormulario();
+    
+    // Si hay un empleado existente, obtener su información de cuenta
+    if (widget.empleado != null) {
+      _cargarInformacionCuenta();
+    }
+  }
+  
+  Future<void> _cargarInformacionCuenta() async {
+    if (widget.empleado == null) return;
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      final cuentaInfo = await api.empleados.getCuentaByEmpleadoId(widget.empleado!.id);
+      
+      if (cuentaInfo != null) {
+        setState(() {
+          _usuarioActual = cuentaInfo['usuario']?.toString();
+          
+          // Intentar obtener el nombre del rol
+          final rolId = cuentaInfo['rolCuentaEmpleadoId'];
+          if (rolId != null) {
+            _obtenerNombreRol(rolId);
+          }
+        });
+      }
+    } catch (e) {
+      // Manejar específicamente errores de autenticación
+      if (e.toString().contains('401') || 
+          e.toString().contains('Sesión expirada') || 
+          e.toString().contains('No autorizado')) {
+        debugPrint('Error de autenticación al cargar información de cuenta: $e');
+        // No mostrar error en la UI para este componente
+      } else {
+        debugPrint('Error al cargar información de cuenta: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+  
+  Future<void> _obtenerNombreRol(int rolId) async {
+    try {
+      final roles = await api.empleados.getRolesCuentas();
+      final rol = roles.firstWhere(
+        (r) => r['id'] == rolId,
+        orElse: () => <String, dynamic>{},
+      );
+      
+      if (mounted) {
+        setState(() {
+          _rolCuentaActual = rol['nombre'] ?? rol['codigo'] ?? 'Rol #$rolId';
+        });
+      }
+    } catch (e) {
+      // No actualizar el estado si hay error
+      debugPrint('Error al obtener nombre de rol: $e');
+    }
   }
   
   @override
@@ -55,6 +122,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     _dniController.dispose();
     _edadController.dispose();
     _sueldoController.dispose();
+    _celularController.dispose();
     _horaInicioHoraController.dispose();
     _horaInicioMinutoController.dispose();
     _horaFinHoraController.dispose();
@@ -69,6 +137,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       _dniController.text = widget.empleado!.dni ?? '';
       _edadController.text = widget.empleado!.edad?.toString() ?? '';
       _sueldoController.text = widget.empleado!.sueldo?.toString() ?? '';
+      _celularController.text = widget.empleado!.celular ?? '';
       
       // Inicializar horarios
       _inicializarHorarios(
@@ -174,6 +243,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       'rol': _selectedRol,
       'horaInicioJornada': horaInicio,
       'horaFinJornada': horaFin,
+      'celular': _celularController.text.isNotEmpty ? _celularController.text : null,
     };
     
     // Remover valores nulos
@@ -219,6 +289,95 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                 ),
                 const SizedBox(height: 24),
                 
+                // Información de cuenta (si existe)
+                if (_isLoading) ...[
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                      ),
+                    ),
+                  ),
+                ] else if (_usuarioActual != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2D2D2D),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFFE31E24).withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const FaIcon(
+                              FontAwesomeIcons.userGear,
+                              color: Color(0xFFE31E24),
+                              size: 14,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'INFORMACIÓN DE CUENTA',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFE31E24),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildInfoItem('Usuario', _usuarioActual!),
+                            ),
+                            if (_rolCuentaActual != null)
+                              Expanded(
+                                child: _buildInfoItem('Rol de cuenta', _rolCuentaActual!),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton.icon(
+                              icon: const FaIcon(
+                                FontAwesomeIcons.key,
+                                size: 12,
+                                color: Colors.white70,
+                              ),
+                              label: const Text(
+                                'Gestionar cuenta',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              onPressed: () => _gestionarCuenta(context),
+                              style: TextButton.styleFrom(
+                                backgroundColor: const Color(0xFF3D3D3D),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+                
                 // Información personal
                 const Text(
                   'INFORMACIÓN PERSONAL',
@@ -257,11 +416,45 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                           TextFormField(
                             controller: _dniController,
                             style: const TextStyle(color: Colors.white),
+                            keyboardType: TextInputType.number,
+                            maxLength: 8,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
                             decoration: const InputDecoration(
                               labelText: 'DNI',
                               labelStyle: TextStyle(color: Colors.white70),
                               prefixIcon: Icon(Icons.badge, color: Colors.white54, size: 20),
+                              counterText: '',
                             ),
+                            validator: (value) {
+                              if (value != null && value.isNotEmpty && value.length != 8) {
+                                return 'El DNI debe tener 8 dígitos';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _celularController,
+                            style: const TextStyle(color: Colors.white),
+                            keyboardType: TextInputType.phone,
+                            maxLength: 9,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            decoration: const InputDecoration(
+                              labelText: 'Celular',
+                              labelStyle: TextStyle(color: Colors.white70),
+                              prefixIcon: Icon(Icons.phone, color: Colors.white54, size: 20),
+                              counterText: '',
+                            ),
+                            validator: (value) {
+                              if (value != null && value.isNotEmpty && value.length != 9) {
+                                return 'El celular debe tener 9 dígitos';
+                              }
+                              return null;
+                            },
                           ),
                         ],
                       ),
@@ -293,11 +486,28 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                             controller: _edadController,
                             style: const TextStyle(color: Colors.white),
                             keyboardType: TextInputType.number,
+                            maxLength: 2,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
                             decoration: const InputDecoration(
                               labelText: 'Edad',
                               labelStyle: TextStyle(color: Colors.white70),
                               prefixIcon: Icon(Icons.cake, color: Colors.white54, size: 20),
+                              counterText: '',
                             ),
+                            validator: (value) {
+                              if (value != null && value.isNotEmpty) {
+                                final edad = int.tryParse(value);
+                                if (edad == null) {
+                                  return 'Ingrese un número válido';
+                                }
+                                if (edad < 18 || edad > 80) {
+                                  return 'La edad debe estar entre 18 y 80 años';
+                                }
+                              }
+                              return null;
+                            },
                           ),
                         ],
                       ),
@@ -454,13 +664,28 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                 TextFormField(
                   controller: _sueldoController,
                   style: const TextStyle(color: Colors.white),
-                  keyboardType: TextInputType.number,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                  ],
                   decoration: const InputDecoration(
                     labelText: 'Sueldo',
                     labelStyle: TextStyle(color: Colors.white70),
                     prefixText: 'S/ ',
                     prefixIcon: Icon(Icons.attach_money, color: Colors.white54, size: 20),
                   ),
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final sueldo = double.tryParse(value);
+                      if (sueldo == null) {
+                        return 'Ingrese un monto válido';
+                      }
+                      if (sueldo < 0) {
+                        return 'El sueldo no puede ser negativo';
+                      }
+                    }
+                    return null;
+                  },
                 ),
                 
                 const SizedBox(height: 24),
@@ -788,5 +1013,126 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
         ),
       ),
     );
+  }
+  
+  Widget _buildInfoItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.white.withOpacity(0.6),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Future<void> _gestionarCuenta(BuildContext context) async {
+    if (widget.empleado == null) return;
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      // Obtener roles disponibles
+      final roles = await api.empleados.getRolesCuentas();
+      
+      // Obtener información de la cuenta (si existe)
+      Map<String, dynamic>? cuentaInfo;
+      String? cuentaId;
+      String? usuarioActual;
+      int? rolActualId;
+      
+      try {
+        cuentaInfo = await api.empleados.getCuentaByEmpleadoId(widget.empleado!.id);
+        if (cuentaInfo != null) {
+          cuentaId = cuentaInfo['id']?.toString();
+          usuarioActual = cuentaInfo['usuario']?.toString();
+          rolActualId = cuentaInfo['rolCuentaEmpleadoId'];
+        }
+      } catch (e) {
+        // Manejar específicamente errores de autenticación
+        if (e.toString().contains('401') || 
+            e.toString().contains('Sesión expirada') || 
+            e.toString().contains('No autorizado')) {
+          debugPrint('Error de autenticación al obtener cuenta: $e');
+        } else {
+          debugPrint('Error al obtener cuenta: $e');
+        }
+        // La cuenta no existe o hubo un error, se creará una nueva si es posible
+      }
+      
+      setState(() => _isLoading = false);
+      
+      if (!mounted) return;
+      
+      // Mostrar diálogo de gestión de cuenta
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => Dialog(
+          child: EmpleadoCuentaDialog(
+            empleadoId: widget.empleado!.id,
+            empleadoNombre: '${widget.empleado!.nombre} ${widget.empleado!.apellidos}',
+            cuentaId: cuentaId,
+            usuarioActual: usuarioActual,
+            rolActualId: rolActualId,
+            roles: roles,
+          ),
+        ),
+      );
+      
+      // Si se realizó algún cambio, actualizar la información
+      if (result == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cuenta actualizada correctamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Recargar información de cuenta
+        _cargarInformacionCuenta();
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      
+      if (!mounted) return;
+      
+      // Determinar el tipo de error para mostrar un mensaje apropiado
+      String errorMessage;
+      if (e.toString().contains('401') || 
+          e.toString().contains('Sesión expirada') || 
+          e.toString().contains('No autorizado')) {
+        errorMessage = 'Sesión expirada. Por favor, inicie sesión nuevamente.';
+      } else {
+        errorMessage = 'Error al gestionar cuenta: $e';
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+          action: e.toString().contains('401') ? SnackBarAction(
+            label: 'Iniciar sesión',
+            textColor: Colors.white,
+            onPressed: () {
+              // TODO: Implementar navegación a la pantalla de login
+              // Navigator.of(context).pushReplacementNamed('/login');
+            },
+          ) : null,
+        ),
+      );
+    }
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../api/protected/empleados.api.dart';
 import 'empleado_list_item.dart';
 
@@ -83,9 +82,9 @@ class EmpleadosTable extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                       child: const Row(
                         children: [
-                          // Nombre (30% del ancho)
+                          // Nombre (25% del ancho)
                           Expanded(
-                            flex: 30,
+                            flex: 25,
                             child: Text(
                               'Nombre',
                               style: TextStyle(
@@ -94,9 +93,20 @@ class EmpleadosTable extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Rol (25% del ancho)
+                          // Celular (15% del ancho)
                           Expanded(
-                            flex: 25,
+                            flex: 15,
+                            child: Text(
+                              'Celular',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          // Rol (20% del ancho)
+                          Expanded(
+                            flex: 20,
                             child: Text(
                               'Rol',
                               style: TextStyle(
@@ -105,9 +115,9 @@ class EmpleadosTable extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Local (25% del ancho)
+                          // Local (20% del ancho)
                           Expanded(
-                            flex: 25,
+                            flex: 20,
                             child: Text(
                               'Local',
                               style: TextStyle(
