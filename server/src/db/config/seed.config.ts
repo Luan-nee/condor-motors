@@ -71,5 +71,6 @@ export const computadoraPermissions = transformPermissionsCodesFromArray([
   permissionCodes.empleados.getRelated,
   permissionCodes.productos.getRelated,
   permissionCodes.ventas.getRelated,
-  permissionCodes.cuentasEmpleados.getRelated
+  permissionCodes.cuentasEmpleados.getRelated,
+  permissionCodes.categorias.createAny
 ])
