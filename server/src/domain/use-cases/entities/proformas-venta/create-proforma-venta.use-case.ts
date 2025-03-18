@@ -39,13 +39,15 @@ export class CreateProformaVenta {
       )
 
       const cantidad = detalleProforma?.cantidad ?? 1
+      const precio = parseFloat(detalle.precioVenta)
+      const subtotal = parseFloat((cantidad * precio).toFixed(2))
 
       return {
         productoId: detalle.id,
         nombre: detalle.nombre,
         cantidad,
-        precioUnitario: parseFloat(detalle.precioVenta),
-        subtotal: cantidad * parseFloat(detalle.precioVenta)
+        precioUnitario: precio,
+        subtotal
       }
     })
 
