@@ -11,10 +11,10 @@ export class CreateProductoDto {
   public colorId: number
   public categoriaId: number
   public marcaId: number
-  public precioCompra?: number
-  public precioVenta?: number
+  public precioCompra: number
+  public precioVenta: number
   public precioOferta?: number
-  public stock?: number
+  public stock: number
 
   private constructor({
     nombre,

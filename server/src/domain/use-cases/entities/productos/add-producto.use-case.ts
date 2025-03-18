@@ -66,13 +66,13 @@ export class AddProducto {
     }
 
     const mappedPrices = {
-      precioCompra: addProductoDto.precioCompra?.toFixed(2),
-      precioVenta: addProductoDto.precioVenta?.toFixed(2),
+      precioCompra: addProductoDto.precioCompra.toFixed(2),
+      precioVenta: addProductoDto.precioVenta.toFixed(2),
       precioOferta: addProductoDto.precioOferta?.toFixed(2)
     }
 
     const detalleProductoStockBajo =
-      producto.stockMinimo !== null && addProductoDto.stock !== undefined
+      producto.stockMinimo !== null && addProductoDto.stock > 0
         ? addProductoDto.stock < producto.stockMinimo
         : false
 

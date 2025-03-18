@@ -48,4 +48,4 @@ const addProductoSchema = z.object({
 })
 
 export const addProductoValidator = (object: unknown) =>
-  addProductoSchema.partial().safeParse(object)
+  addProductoSchema.safeParse(object)
