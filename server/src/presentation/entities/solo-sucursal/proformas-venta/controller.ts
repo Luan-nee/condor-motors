@@ -1,7 +1,9 @@
 import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
 import { CreateProformaVentaDto } from '@/domain/dtos/entities/proformas-venta/create-proforma-venta.dto'
+import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { CreateProformaVenta } from '@/domain/use-cases/entities/proformas-venta/create-proforma-venta.use-case'
+import { GetProformasVenta } from '@/domain/use-cases/entities/proformas-venta/get-proformas-venta.use-case'
 import type { Request, Response } from 'express'
 
 export class ProformasVentaController {
@@ -49,7 +51,24 @@ export class ProformasVentaController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    const [error, queriesDto] = QueriesDto.create(req.query)
+    if (error !== undefined || queriesDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload, sucursalId } = req
+
+    const getProformasVenta = new GetProformasVenta(authPayload)
+
+    getProformasVenta
+      .execute(queriesDto, sucursalId)
+      .then((proformasVenta) => {
+        CustomResponse.success({ res, data: proformasVenta })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
   update = (req: Request, res: Response) => {
