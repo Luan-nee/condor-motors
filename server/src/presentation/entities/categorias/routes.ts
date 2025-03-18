@@ -9,7 +9,7 @@ export class CategoriasRoutes {
     router.post('/', categoriasController.create)
     router.get('/:id', categoriasController.getById)
     router.get('/', categoriasController.getAll)
-
+    router.patch('/:id', categoriasController.update)
     return router
   }
 }

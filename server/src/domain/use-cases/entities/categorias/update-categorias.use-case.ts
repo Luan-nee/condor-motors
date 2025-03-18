@@ -1,11 +1,31 @@
+import { permissionCodes } from '@/consts'
+import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import { categoriasTable, empleadosTable } from '@/db/schema'
+import { categoriasTable } from '@/db/schema'
 import type { UpdateCategoriaDto } from '@/domain/dtos/entities/categorias/update-categoria.dto'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
-import { eq, ilike, count } from 'drizzle-orm'
+import { count, eq, ilike } from 'drizzle-orm'
 
 export class UpdateCategoria {
+  private readonly authPayload: AuthPayload
+  private readonly permisionAny = permissionCodes.categorias.createAny
+
+  constructor(authpayload: AuthPayload) {
+    this.authPayload = authpayload
+  }
+  private async validatePermissions() {
+    const validaPermisos = await AccessControl.verifyPermissions(
+      this.authPayload,
+      [this.permisionAny]
+    )
+    const hasPermissionAny = validaPermisos.some(
+      (permiso) => permiso.codigoPermiso === this.permisionAny
+    )
+    if (!hasPermissionAny) {
+      throw CustomError.forbidden()
+    }
+  }
   async execute(
     updateCategoriaDto: UpdateCategoriaDto,
     numericIdDto: NumericIdDto
@@ -33,6 +53,7 @@ export class UpdateCategoria {
         )
       }
     }
+    await this.validatePermissions()
 
     const updateCategoria = await db
       .update(categoriasTable)
@@ -40,7 +61,7 @@ export class UpdateCategoria {
         nombre: updateCategoriaDto.nombre,
         descripcion: updateCategoriaDto.descripcion
       })
-      .where(eq(empleadosTable.id, numericIdDto.id))
+      .where(eq(categoriasTable.id, numericIdDto.id))
       .returning()
 
     if (updateCategoria.length <= 0) {

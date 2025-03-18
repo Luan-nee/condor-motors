@@ -8,6 +8,7 @@ import type { Request, Response } from 'express'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { GetCategoriaById } from '@/domain/use-cases/entities/categorias/get-categoria-by-id.use-case'
 import { UpdateCategoriaDto } from '@/domain/dtos/entities/categorias/update-categoria.dto'
+import { UpdateCategoria } from '@/domain/use-cases/entities/categorias/update-categorias.use-case'
 
 export class CategoriasController {
   create = (req: Request, res: Response) => {
@@ -96,6 +97,7 @@ export class CategoriasController {
 
     if (paramErrors !== undefined || numericIdDto === undefined) {
       CustomResponse.badRequest({ res, error: 'El id es invalido' })
+      return
     }
 
     const [updateCategoriaValidationError, updateCategoriaDto] =
@@ -106,6 +108,19 @@ export class CategoriasController {
       updateCategoriaDto === undefined
     ) {
       CustomResponse.badRequest({ res, error: updateCategoriaValidationError })
+      return
     }
+    const { authPayload } = req
+    const updateCategoria = new UpdateCategoria(authPayload)
+
+    updateCategoria
+      .execute(updateCategoriaDto, numericIdDto)
+      .then((categoria) => {
+        const message = `La categoria con id ${categoria.id} ha sido actualizada`
+        CustomResponse.success({ res, message, data: categoria })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 }
