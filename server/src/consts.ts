@@ -88,5 +88,15 @@ export const permissionCodes = {
   },
   rolesCuentasEmpleados: {
     getAny: 'roles_cuentas_empleados:get_any'
+  },
+  proformasVenta: {
+    createAny: 'proformas_venta:create_any',
+    getAny: 'proformas_venta:get_any',
+    updateAny: 'proformas_venta:update_any',
+    deleteAny: 'proformas_venta:delete_any',
+    createRelated: 'proformas_venta:create_related',
+    getRelated: 'proformas_venta:get_related',
+    updateRelated: 'proformas_venta:update_related',
+    deleteRelated: 'proformas_venta:delete_related'
   }
 } as const
