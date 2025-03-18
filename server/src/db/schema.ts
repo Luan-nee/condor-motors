@@ -80,8 +80,8 @@ export const productosTable = pgTable('productos', {
 
 export const detallesProductoTable = pgTable('detalles_producto', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  precioCompra: numeric('precio_compra', { precision: 7, scale: 2 }),
-  precioVenta: numeric('precio_venta', { precision: 7, scale: 2 }),
+  precioCompra: numeric('precio_compra', { precision: 7, scale: 2 }).notNull(),
+  precioVenta: numeric('precio_venta', { precision: 7, scale: 2 }).notNull(),
   precioOferta: numeric('precio_oferta', { precision: 7, scale: 2 }),
   stock: integer('stock').notNull().default(0),
   stockBajo: boolean('stock_bajo').notNull().default(false),
@@ -330,6 +330,7 @@ export const proformasVentaTable = pgTable('proformas_venta', {
     Array<{
       productoId: number
       nombre: string
+      precioUnitario: number
       cantidad: number
       subtotal: number
     }>
