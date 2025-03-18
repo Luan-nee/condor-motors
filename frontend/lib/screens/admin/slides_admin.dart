@@ -160,6 +160,14 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                     _selectedSubIndex = 0;
                   }),
                 ),
+                _buildMenuItem(
+                  icon: FontAwesomeIcons.fileInvoiceDollar,
+                  text: 'Locales',
+                  isSelected: _selectedIndex == 4,
+                  onTap: () => setState(() {
+                    // definir la interfaz que se abrirá al pulsa el apartado "Locales"
+                  }),
+                ),
 
                 const Spacer(),
                 // Botón de salir
