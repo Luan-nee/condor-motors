@@ -8,3 +8,6 @@ const createCategoriaSchema = z.object({
 
 export const createCategoriaValidator = (object: unknown) =>
   createCategoriaSchema.safeParse(object)
+
+export const updateCategoriaValidator = (object: unknown) =>
+  createCategoriaSchema.partial().safeParse(object)

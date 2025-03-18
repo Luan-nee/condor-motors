@@ -5,6 +5,9 @@ import { CreateCategoria } from '@/domain/use-cases/entities/categorias/create-c
 import { GetCategorias } from '@/domain/use-cases/entities/categorias/get-categorias.use-case'
 import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import type { Request, Response } from 'express'
+import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
+import { GetCategoriaById } from '@/domain/use-cases/entities/categorias/get-categoria-by-id.use-case'
+import { UpdateCategoriaDto } from '@/domain/dtos/entities/categorias/update-categoria.dto'
 
 export class CategoriasController {
   create = (req: Request, res: Response) => {
@@ -56,5 +59,53 @@ export class CategoriasController {
       .catch((error: unknown) => {
         handleError(error, res)
       })
+  }
+
+  getById = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [error, numericIdDto] = NumericIdDto.create(req.params)
+
+    if (error !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: 'id Invalido' })
+      return
+    }
+
+    const { authPayload } = req
+    const getCategoriaById = new GetCategoriaById(authPayload)
+    getCategoriaById
+      .execute(numericIdDto)
+      .then((categoria) => {
+        CustomResponse.success({ res, data: categoria })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
+
+  update = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: 'El id es invalido' })
+    }
+
+    const [updateCategoriaValidationError, updateCategoriaDto] =
+      UpdateCategoriaDto.create(req.body)
+
+    if (
+      updateCategoriaValidationError !== undefined ||
+      updateCategoriaDto === undefined
+    ) {
+      CustomResponse.badRequest({ res, error: updateCategoriaValidationError })
+    }
   }
 }
