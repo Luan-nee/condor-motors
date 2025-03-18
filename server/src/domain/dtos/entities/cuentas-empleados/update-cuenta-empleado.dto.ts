@@ -1,4 +1,4 @@
-import { updateCuentaEmpleadoValidator } from '@domain/validators/cuentas-empleados/cuenta-empleado.validator'
+import { updateCuentaEmpleadoValidator } from '@/domain/validators/entities/cuentas-empleados/cuenta-empleado.validator'
 
 export class UpdateCuentaEmpleadoDto {
   public usuario?: string
