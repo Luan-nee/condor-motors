@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../api/protected/empleados.api.dart';
 import 'empleado_list_item.dart';
+import 'empleados_utils.dart';
 
 class EmpleadosTable extends StatelessWidget {
   final List<Empleado> empleados;
@@ -35,6 +35,14 @@ class EmpleadosTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Agrupar empleados por estado
+    final gruposEmpleados = EmpleadosUtils.agruparEmpleadosPorEstado(empleados);
+    final empleadosActivos = gruposEmpleados['activos'] ?? [];
+    final empleadosInactivos = gruposEmpleados['inactivos'] ?? [];
+    
+    // Determinar si hay empleados inactivos para mostrar
+    final hayEmpleadosInactivos = empleadosInactivos.isNotEmpty;
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
@@ -83,9 +91,9 @@ class EmpleadosTable extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                       child: const Row(
                         children: [
-                          // Nombre (30% del ancho)
+                          // Nombre (25% del ancho)
                           Expanded(
-                            flex: 30,
+                            flex: 25,
                             child: Text(
                               'Nombre',
                               style: TextStyle(
@@ -94,9 +102,20 @@ class EmpleadosTable extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Rol (25% del ancho)
+                          // Celular (15% del ancho)
                           Expanded(
-                            flex: 25,
+                            flex: 15,
+                            child: Text(
+                              'Celular',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          // Rol (20% del ancho)
+                          Expanded(
+                            flex: 20,
                             child: Text(
                               'Rol',
                               style: TextStyle(
@@ -105,23 +124,11 @@ class EmpleadosTable extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Local (25% del ancho)
+                          // Local (30% del ancho - aumentado del 20% al 30%)
                           Expanded(
-                            flex: 25,
+                            flex: 30,
                             child: Text(
                               'Local',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          // Estado (10% del ancho)
-                          Expanded(
-                            flex: 10,
-                            child: Text(
-                              'Estado',
-                              textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -144,16 +151,49 @@ class EmpleadosTable extends StatelessWidget {
                       ),
                     ),
                     
-                    // Filas de colaboradores
-                    ...empleados.map((empleado) => EmpleadoListItem(
-                      empleado: empleado,
-                      nombresSucursales: nombresSucursales,
-                      onEdit: onEdit,
-                      onDelete: onDelete,
-                      onViewDetails: onViewDetails,
-                      onChangeStatus: onChangeStatus,
-                      obtenerRolDeEmpleado: obtenerRolDeEmpleado,
-                    )),
+                    // Filas de colaboradores activos
+                    if (empleadosActivos.isNotEmpty) ...[
+                      ...empleadosActivos.map((empleado) => EmpleadoListItem(
+                        empleado: empleado,
+                        nombresSucursales: nombresSucursales,
+                        onEdit: onEdit,
+                        onDelete: onDelete,
+                        onViewDetails: onViewDetails,
+                        onChangeStatus: onChangeStatus,
+                        obtenerRolDeEmpleado: obtenerRolDeEmpleado,
+                      )),
+                    ],
+                    
+                    // Sección de colaboradores inactivos
+                    if (hayEmpleadosInactivos) ...[
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                        child: EmpleadosUtils.getEtiquetaGrupoEmpleados('inactivos', empleadosInactivos.length),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Contenedor con fondo especial para empleados inactivos
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E1E1E),
+                          border: Border.all(
+                            color: const Color(0xFFE31E24).withOpacity(0.1),
+                          ),
+                        ),
+                        child: Column(
+                          children: empleadosInactivos.map((empleado) => EmpleadoListItem(
+                            empleado: empleado,
+                            nombresSucursales: nombresSucursales,
+                            onEdit: onEdit,
+                            onDelete: onDelete,
+                            onViewDetails: onViewDetails,
+                            onChangeStatus: onChangeStatus,
+                            obtenerRolDeEmpleado: obtenerRolDeEmpleado,
+                          )).toList(),
+                        ),
+                      ),
+                    ],
                     
                     // Botón para cargar más
                     if (hasMorePages && !isLoading)

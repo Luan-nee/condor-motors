@@ -20,6 +20,7 @@ export class GetProductoById {
   private readonly permissionGetRelated = permissionCodes.productos.getRelated
   private readonly selectFields = {
     id: productosTable.id,
+    sku: productosTable.sku,
     nombre: productosTable.nombre,
     descripcion: productosTable.descripcion,
     maxDiasSinReabastecer: productosTable.maxDiasSinReabastecer,
@@ -63,7 +64,7 @@ export class GetProductoById {
           eq(detallesProductoTable.sucursalId, sucursalId)
         )
       )
-      .leftJoin(sucursalesTable, eq(sucursalesTable.id, sucursalId))
+      .innerJoin(sucursalesTable, eq(sucursalesTable.id, sucursalId))
       .where(eq(productosTable.id, numericIdDto.id))
 
     if (productos.length < 1) {

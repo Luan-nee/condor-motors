@@ -29,6 +29,7 @@ class CondorMotorsApi {
   late final ProductosApi productos;
   late final StocksApi stocks;
   late final CategoriasApi categorias;
+  late final CuentasEmpleadosApi cuentasEmpleados;
   
   /// Inicializa todas las APIs con la URL base
   CondorMotorsApi({required String baseUrl}) {
@@ -43,6 +44,7 @@ class CondorMotorsApi {
     productos = ProductosApi(_apiClient);
     stocks = StocksApi(_apiClient);
     categorias = CategoriasApi(_apiClient);
+    cuentasEmpleados = CuentasEmpleadosApi(_apiClient);
   }
   
   /// Inicializa el servicio de autenticación

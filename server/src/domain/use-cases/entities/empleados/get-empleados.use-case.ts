@@ -2,7 +2,11 @@ import { orderValues, permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import { empleadosTable, sucursalesTable } from '@/db/schema'
+import {
+  cuentasEmpleadosTable,
+  empleadosTable,
+  sucursalesTable
+} from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import type { SucursalIdType } from '@/types/schemas'
 import { ilike, or, type SQL, asc, desc, and, eq } from 'drizzle-orm'
@@ -29,7 +33,14 @@ export class GetEmpleados {
     horaFinJornada: empleadosTable.horaFinJornada,
     fechaContratacion: empleadosTable.fechaContratacion,
     sueldo: empleadosTable.sueldo,
-    sucursalId: empleadosTable.sucursalId
+    sucursal: {
+      id: sucursalesTable.id,
+      nombre: sucursalesTable.nombre,
+      sucursalCentral: sucursalesTable.sucursalCentral
+    },
+    cuentaEmpleado: {
+      id: cuentasEmpleadosTable.id
+    }
   }
 
   private readonly validSortBy = {
@@ -70,7 +81,11 @@ export class GetEmpleados {
       .from(empleadosTable)
       .innerJoin(
         sucursalesTable,
-        eq(sucursalesTable.id, empleadosTable.sucursalId)
+        eq(empleadosTable.sucursalId, sucursalesTable.id)
+      )
+      .leftJoin(
+        cuentasEmpleadosTable,
+        eq(empleadosTable.id, cuentasEmpleadosTable.empleadoId)
       )
       .where(and(eq(sucursalesTable.id, sucursalId), whereCondition))
       .orderBy(order)
@@ -82,6 +97,14 @@ export class GetEmpleados {
     return await db
       .select(this.selectFields)
       .from(empleadosTable)
+      .innerJoin(
+        sucursalesTable,
+        eq(empleadosTable.sucursalId, sucursalesTable.id)
+      )
+      .leftJoin(
+        cuentasEmpleadosTable,
+        eq(empleadosTable.id, cuentasEmpleadosTable.empleadoId)
+      )
       .where(whereCondition)
       .orderBy(order)
       .limit(queriesDto.page_size)

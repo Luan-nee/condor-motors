@@ -7,7 +7,6 @@ class Empleado {
   final String nombre;
   final String apellidos;
   final String? ubicacionFoto;
-  final int? edad;
   final String? dni;
   final String? horaInicioJornada;
   final String? horaFinJornada;
@@ -15,14 +14,17 @@ class Empleado {
   final double? sueldo;
   final String? fechaRegistro;
   final String? sucursalId;
+  final String? sucursalNombre;
+  final bool sucursalCentral;
   final bool activo;
+  final String? celular;
+  final String? cuentaEmpleadoId;
 
   Empleado({
     required this.id,
     required this.nombre,
     required this.apellidos,
     this.ubicacionFoto,
-    this.edad,
     this.dni,
     this.horaInicioJornada,
     this.horaFinJornada,
@@ -30,24 +32,53 @@ class Empleado {
     this.sueldo,
     this.fechaRegistro,
     this.sucursalId,
+    this.sucursalNombre,
+    this.sucursalCentral = false,
     this.activo = true,
+    this.celular,
+    this.cuentaEmpleadoId,
   });
 
   factory Empleado.fromJson(Map<String, dynamic> json) {
+    // Extraer información de sucursal si está disponible
+    String? sucursalId;
+    String? sucursalNombre;
+    bool sucursalCentral = false;
+    
+    if (json['sucursal'] is Map<String, dynamic>) {
+      final sucursal = json['sucursal'] as Map<String, dynamic>;
+      sucursalId = sucursal['id']?.toString();
+      sucursalNombre = sucursal['nombre']?.toString();
+      sucursalCentral = sucursal['sucursalCentral'] == true;
+    } else {
+      // Mantener compatibilidad con el formato anterior
+      sucursalId = json['sucursalId']?.toString();
+    }
+    
+    // Extraer ID de cuenta de empleado si está disponible
+    String? cuentaEmpleadoId;
+    if (json['cuentaEmpleado'] is Map<String, dynamic>) {
+      final cuenta = json['cuentaEmpleado'] as Map<String, dynamic>;
+      cuentaEmpleadoId = cuenta['id']?.toString();
+    }
+
     return Empleado(
       id: json['id']?.toString() ?? '',
       nombre: json['nombre'] ?? '',
       apellidos: json['apellidos'] ?? '',
-      ubicacionFoto: json['ubicacionFoto'],
-      edad: json['edad'],
+      ubicacionFoto: json['ubicacionFoto'] ?? json['pathFoto'],
       dni: json['dni'],
       horaInicioJornada: json['horaInicioJornada'],
       horaFinJornada: json['horaFinJornada'],
       fechaContratacion: json['fechaContratacion'],
       sueldo: json['sueldo'] != null ? double.parse(json['sueldo'].toString()) : null,
       fechaRegistro: json['fechaRegistro'],
-      sucursalId: json['sucursalId']?.toString(),
+      sucursalId: sucursalId,
+      sucursalNombre: sucursalNombre,
+      sucursalCentral: sucursalCentral,
       activo: json['activo'] ?? true,
+      celular: json['celular'],
+      cuentaEmpleadoId: cuentaEmpleadoId,
     );
   }
 
@@ -56,7 +87,6 @@ class Empleado {
       'nombre': nombre,
       'apellidos': apellidos,
       'ubicacionFoto': ubicacionFoto,
-      'edad': edad,
       'dni': dni,
       'horaInicioJornada': horaInicioJornada,
       'horaFinJornada': horaFinJornada,
@@ -64,6 +94,7 @@ class Empleado {
       'sueldo': sueldo,
       'sucursalId': sucursalId,
       'activo': activo,
+      'celular': celular,
     };
   }
   
@@ -143,19 +174,20 @@ class EmpleadosApi {
       );
       
       debugPrint('EmpleadosApi: Respuesta de getEmpleados recibida');
-      debugPrint('EmpleadosApi: Estructura de respuesta: ${response.keys.toList()}');
       
-      // Manejar estructura anidada: response.data.data
-      if (response['data'] is Map && response['data'].containsKey('data')) {
-        debugPrint('EmpleadosApi: Encontrada estructura anidada en la respuesta');
-        final items = response['data']['data'] ?? [];
-        debugPrint('EmpleadosApi: Total de empleados encontrados: ${items.length}');
-        return items;
+      // Extraer los datos de la respuesta
+      List<dynamic> items = [];
+      
+      if (response['data'] is List) {
+        // Nueva estructura: { status: "success", data: [ ... ] }
+        items = response['data'] as List<dynamic>;
+      } else if (response['data'] is Map) {
+        if (response['data'].containsKey('data') && response['data']['data'] is List) {
+          // Estructura anterior anidada: { data: { data: [ ... ] } }
+          items = response['data']['data'] as List<dynamic>;
+        }
       }
       
-      // Si la estructura cambia en el futuro y ya no está anidada
-      debugPrint('EmpleadosApi: Usando estructura directa de respuesta');
-      final items = response['data'] ?? [];
       debugPrint('EmpleadosApi: Total de empleados encontrados: ${items.length}');
       return items;
     } catch (e) {
@@ -188,9 +220,9 @@ class EmpleadosApi {
       // Manejar estructura anidada
       Map<String, dynamic>? data;
       if (response['data'] is Map && response['data'].containsKey('data')) {
-        data = response['data']['data'];
+        data = response['data']['data'] as Map<String, dynamic>;
       } else {
-        data = response['data'];
+        data = response['data'] as Map<String, dynamic>;
       }
       
       if (data == null) {
@@ -414,5 +446,195 @@ class EmpleadosApi {
       filter: 'activo',
       filterValue: 'true',
     );
+  }
+
+  /// Registra una cuenta para un empleado
+  /// 
+  /// Crea una nueva cuenta de usuario asociada a un empleado existente
+  Future<Map<String, dynamic>> registerEmpleadoAccount({
+    required String empleadoId,
+    required String usuario,
+    required String clave,
+    required int rolCuentaEmpleadoId,
+  }) async {
+    try {
+      debugPrint('EmpleadosApi: Registrando cuenta para empleado $empleadoId');
+      
+      final response = await _api.authenticatedRequest(
+        endpoint: '/auth/register',
+        method: 'POST',
+        body: {
+          'empleadoId': empleadoId,
+          'usuario': usuario,
+          'clave': clave,
+          'rolCuentaEmpleadoId': rolCuentaEmpleadoId,
+        },
+      );
+      
+      // Procesar la respuesta
+      if (response['data'] is Map<String, dynamic>) {
+        return response['data'] as Map<String, dynamic>;
+      } else {
+        throw ApiException(
+          statusCode: 500,
+          message: 'Formato de respuesta inesperado al registrar cuenta',
+        );
+      }
+      
+    } catch (e) {
+      debugPrint('EmpleadosApi: ERROR al registrar cuenta de empleado: $e');
+      rethrow;
+    }
+  }
+  
+  /// Actualiza la cuenta de un empleado (usuario y/o clave)
+  /// 
+  /// Permite cambiar el nombre de usuario y/o la contraseña de una cuenta existente
+  Future<Map<String, dynamic>> updateCuentaEmpleado({
+    required String cuentaId,
+    String? usuario,
+    String? clave,
+  }) async {
+    // Validar que al menos un campo sea proporcionado
+    if (usuario == null && clave == null) {
+      throw ApiException(
+        statusCode: 400,
+        message: 'Debe proporcionar al menos un campo para actualizar',
+      );
+    }
+
+    final Map<String, dynamic> data = {};
+    if (usuario != null) data['usuario'] = usuario;
+    if (clave != null) data['clave'] = clave;
+
+    final response = await _api.authenticatedRequest(
+      endpoint: '/cuentas-empleados/$cuentaId',
+      method: 'PATCH',
+      body: data,
+    );
+
+    if (response['data'] is Map<String, dynamic>) {
+      return response['data'];
+    }
+
+    throw ApiException(
+      statusCode: 500,
+      message: 'Formato de respuesta inesperado',
+    );
+  }
+  
+  /// Obtiene la información de la cuenta de un empleado
+  /// 
+  /// Retorna los detalles de la cuenta asociada a un empleado
+  Future<Map<String, dynamic>> getCuentaEmpleado(String cuentaId) async {
+    try {
+      debugPrint('EmpleadosApi: Obteniendo información de cuenta $cuentaId');
+      
+      final response = await _api.authenticatedRequest(
+        endpoint: '/cuentas-empleados/$cuentaId',
+        method: 'GET',
+      );
+      
+      debugPrint('EmpleadosApi: Información de cuenta obtenida correctamente');
+      return _processResponse(response);
+    } catch (e) {
+      debugPrint('EmpleadosApi: ERROR al obtener información de cuenta: $e');
+      rethrow;
+    }
+  }
+  
+  /// Obtiene todas las cuentas de empleados
+  /// 
+  /// Retorna una lista con todas las cuentas de empleados registradas
+  Future<List<dynamic>> getCuentasEmpleados() async {
+    try {
+      debugPrint('EmpleadosApi: Obteniendo lista de cuentas de empleados');
+      
+      final response = await _api.authenticatedRequest(
+        endpoint: '/cuentas-empleados',
+        method: 'GET',
+      );
+      
+      // Procesar la respuesta
+      List<dynamic> data;
+      if (response['data'] is List) {
+        data = response['data'];
+      } else if (response['data'] is Map && response['data']['data'] is List) {
+        data = response['data']['data'];
+      } else {
+        data = [];
+      }
+      
+      debugPrint('EmpleadosApi: Total de cuentas encontradas: ${data.length}');
+      return data;
+    } catch (e) {
+      debugPrint('EmpleadosApi: ERROR al obtener cuentas de empleados: $e');
+      rethrow;
+    }
+  }
+  
+  /// Elimina la cuenta de un empleado
+  /// 
+  /// Elimina permanentemente una cuenta de usuario
+  Future<bool> deleteCuentaEmpleado(String cuentaId) async {
+    try {
+      debugPrint('EmpleadosApi: Eliminando cuenta de empleado $cuentaId');
+      
+      await _api.authenticatedRequest(
+        endpoint: '/cuentas-empleados/$cuentaId',
+        method: 'DELETE',
+      );
+      
+      debugPrint('EmpleadosApi: Cuenta de empleado eliminada correctamente');
+      return true;
+    } catch (e) {
+      debugPrint('EmpleadosApi: ERROR al eliminar cuenta de empleado: $e');
+      return false;
+    }
+  }
+
+  /// Obtiene los roles disponibles para cuentas de empleados
+  Future<List<Map<String, dynamic>>> getRolesCuentas() async {
+    try {
+      final response = await _api.authenticatedRequest(
+        endpoint: '/rolescuentas',
+        method: 'GET',
+      );
+      
+      if (response['data'] is List) {
+        return (response['data'] as List)
+            .map((item) => item as Map<String, dynamic>)
+            .toList();
+      }
+      
+      return [];
+    } catch (e) {
+      debugPrint('Error al obtener roles de cuentas: $e');
+      return [];
+    }
+  }
+
+  /// Obtiene la cuenta de un empleado por su ID
+  Future<Map<String, dynamic>?> getCuentaByEmpleadoId(String empleadoId) async {
+    try {
+      final response = await _api.authenticatedRequest(
+        endpoint: '/cuentas-empleados/empleado/$empleadoId',
+        method: 'GET',
+      );
+      
+      if (response['data'] is Map<String, dynamic>) {
+        return response['data'];
+      }
+      
+      return null;
+    } catch (e) {
+      // Si el error es 404, significa que el empleado no tiene cuenta
+      if (e is ApiException && e.statusCode == 404) {
+        return null;
+      }
+      
+      // Para otros errores, propagar la excepción
+      rethrow;
+    }
   }
 }
