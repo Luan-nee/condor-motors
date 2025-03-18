@@ -43,6 +43,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
     
     try {
       // Cargar sucursales primero para mostrar nombres en lugar de IDs
+      // Esta llamada todavía es necesaria para el formulario de creación/edición
       await _cargarSucursales();
       
       // Luego cargar empleados
@@ -54,7 +55,17 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       final List<Empleado> empleados = [];
       for (var item in empleadosData) {
         try {
-          empleados.add(Empleado.fromJson(item));
+          final empleado = Empleado.fromJson(item);
+          
+          // Si el empleado tiene información de sucursal, actualizamos el mapa de nombres
+          if (empleado.sucursalId != null && empleado.sucursalNombre != null) {
+            _nombresSucursales[empleado.sucursalId!] = empleado.sucursalNombre!;
+            if (empleado.sucursalCentral) {
+              _nombresSucursales[empleado.sucursalId!] = "${empleado.sucursalNombre!} (Central)";
+            }
+          }
+          
+          empleados.add(empleado);
         } catch (e) {
           debugPrint('Error al convertir empleado: $e');
         }
@@ -128,9 +139,24 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
         pageSize: _pageSize,
       );
       
-      final nuevosEmpleados = empleadosData
-          .map((item) => Empleado.fromJson(item))
-          .toList();
+      final List<Empleado> nuevosEmpleados = [];
+      for (var item in empleadosData) {
+        try {
+          final empleado = Empleado.fromJson(item);
+          
+          // Si el empleado tiene información de sucursal, actualizamos el mapa de nombres
+          if (empleado.sucursalId != null && empleado.sucursalNombre != null) {
+            _nombresSucursales[empleado.sucursalId!] = empleado.sucursalNombre!;
+            if (empleado.sucursalCentral) {
+              _nombresSucursales[empleado.sucursalId!] = "${empleado.sucursalNombre!} (Central)";
+            }
+          }
+          
+          nuevosEmpleados.add(empleado);
+        } catch (e) {
+          debugPrint('Error al convertir empleado: $e');
+        }
+      }
       
       // Verificar si hay más páginas
       _hasMorePages = nuevosEmpleados.length >= _pageSize;
@@ -167,7 +193,6 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
             nombre: empleado.nombre,
             apellidos: empleado.apellidos,
             ubicacionFoto: empleado.ubicacionFoto,
-            edad: empleado.edad,
             dni: empleado.dni,
             horaInicioJornada: empleado.horaInicioJornada,
             horaFinJornada: empleado.horaFinJornada,
@@ -175,7 +200,11 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
             sueldo: empleado.sueldo,
             fechaRegistro: empleado.fechaRegistro,
             sucursalId: empleado.sucursalId,
+            sucursalNombre: empleado.sucursalNombre,
+            sucursalCentral: empleado.sucursalCentral,
             activo: nuevoEstado,
+            celular: empleado.celular,
+            cuentaEmpleadoId: empleado.cuentaEmpleadoId,
           );
           _empleados[index] = empleadoActualizado;
         }

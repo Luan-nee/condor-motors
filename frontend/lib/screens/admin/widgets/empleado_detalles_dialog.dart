@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../api/protected/empleados.api.dart';
 import '../../../main.dart' show api;
+import '../../../api/main.api.dart' show ApiException;
 import 'empleado_horario_dialog.dart';
 import 'empleado_cuenta_dialog.dart';
 import 'empleados_utils.dart';
@@ -32,25 +33,57 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
   @override
   void initState() {
     super.initState();
-    _cargarInformacionCuenta();
+    
+    // Verificar si ya tenemos información de la cuenta directamente en el objeto Empleado
+    if (widget.empleado.cuentaEmpleadoId != null) {
+      // Ya tenemos referencia a una cuenta, cargar sus detalles
+      _cargarInformacionCuenta();
+    } else {
+      // Intentar obtener la información de cuenta por ID de empleado
+      _cargarInformacionCuenta();
+    }
   }
   
   Future<void> _cargarInformacionCuenta() async {
     setState(() => _isLoadingCuenta = true);
     
     try {
-      final cuentaInfo = await api.empleados.getCuentaByEmpleadoId(widget.empleado.id);
-      
-      if (cuentaInfo != null) {
-        setState(() {
-          _usuarioEmpleado = cuentaInfo['usuario']?.toString();
+      // Verificar si el empleado ya tiene una cuenta asociada
+      if (EmpleadosUtils.tieneCuentaAsociada(widget.empleado)) {
+        final cuentaId = widget.empleado.cuentaEmpleadoId!;
+        final cuentaIdInt = int.tryParse(cuentaId);
+        
+        if (cuentaIdInt != null) {
+          // Obtener información de la cuenta usando la nueva API
+          final cuentaInfo = await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
           
-          // Intentar obtener el nombre del rol
-          final rolId = cuentaInfo['rolCuentaEmpleadoId'];
-          if (rolId != null) {
-            _obtenerNombreRol(rolId);
+          if (cuentaInfo != null && mounted) {
+            setState(() {
+              _usuarioEmpleado = cuentaInfo['usuario']?.toString();
+              
+              // Obtener información del rol si está disponible
+              final rolId = cuentaInfo['rolCuentaEmpleadoId'];
+              if (rolId != null) {
+                _obtenerNombreRol(rolId);
+              }
+            });
           }
-        });
+        }
+      } else {
+        // Intentar obtener la cuenta por ID de empleado
+        final cuentaInfo = await api.cuentasEmpleados.getCuentaByEmpleadoId(widget.empleado.id);
+        
+        if (cuentaInfo != null && mounted) {
+          setState(() {
+            _usuarioEmpleado = cuentaInfo['usuario']?.toString();
+            
+            // Obtener información del rol si está disponible
+            final rolId = cuentaInfo['rolCuentaEmpleadoId'];
+            if (rolId != null) {
+              _obtenerNombreRol(rolId);
+            }
+          });
+        }
       }
     } catch (e) {
       // Manejar específicamente errores de autenticación
@@ -71,7 +104,7 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
   
   Future<void> _obtenerNombreRol(int rolId) async {
     try {
-      final roles = await api.empleados.getRolesCuentas();
+      final roles = await api.cuentasEmpleados.getRolesCuentas();
       final rol = roles.firstWhere(
         (r) => r['id'] == rolId,
         orElse: () => <String, dynamic>{},
@@ -90,8 +123,9 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final esCentral = EmpleadosUtils.esSucursalCentral(widget.empleado.sucursalId, widget.nombresSucursales);
-    final nombreSucursal = EmpleadosUtils.getNombreSucursal(widget.empleado.sucursalId, widget.nombresSucursales);
+    // Usar los nuevos métodos para obtener información de sucursal
+    final esCentral = EmpleadosUtils.esSucursalCentralEmpleado(widget.empleado, widget.nombresSucursales);
+    final nombreSucursal = EmpleadosUtils.getNombreSucursalEmpleado(widget.empleado, widget.nombresSucursales);
     final rol = widget.obtenerRolDeEmpleado(widget.empleado);
     
     return Dialog(
@@ -236,8 +270,6 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildInfoItem('DNI', widget.empleado.dni ?? 'No especificado'),
-                        const SizedBox(height: 12),
-                        _buildInfoItem('Edad', widget.empleado.edad?.toString() ?? 'No especificada'),
                         const SizedBox(height: 12),
                         _buildInfoItem('Celular', widget.empleado.celular ?? 'No especificado'),
                       ],
@@ -582,33 +614,84 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
       );
 
       // Obtener roles disponibles
-      final roles = await api.empleados.getRolesCuentas();
+      final roles = await api.cuentasEmpleados.getRolesCuentas();
       
       // Obtener información de la cuenta (si existe)
       Map<String, dynamic>? cuentaInfo;
       String? cuentaId;
       String? usuarioActual;
       int? rolActualId;
-      
-      try {
-        cuentaInfo = await api.empleados.getCuentaByEmpleadoId(widget.empleado.id);
-        if (cuentaInfo != null) {
-          cuentaId = cuentaInfo['id']?.toString();
-          usuarioActual = cuentaInfo['usuario']?.toString();
-          rolActualId = cuentaInfo['rolCuentaEmpleadoId'];
-          debugPrint('Cuenta encontrada: ID=$cuentaId, Usuario=$usuarioActual, RolID=$rolActualId');
+
+      // Verificar si el empleado ya tiene asociada una cuenta directamente desde su modelo
+      if (EmpleadosUtils.tieneCuentaAsociada(widget.empleado)) {
+        cuentaId = widget.empleado.cuentaEmpleadoId;
+        
+        try {
+          // Obtener detalles de la cuenta usando el ID de cuenta del empleado
+          if (cuentaId != null) {
+            final cuentaIdInt = int.tryParse(cuentaId);
+            if (cuentaIdInt != null) {
+              cuentaInfo = await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
+              if (cuentaInfo != null) {
+                usuarioActual = cuentaInfo['usuario']?.toString();
+                rolActualId = cuentaInfo['rolCuentaEmpleadoId'];
+              }
+            }
+          }
+        } catch (e) {
+          // Manejar específicamente errores de autenticación
+          if (e.toString().contains('401') || 
+              e.toString().contains('Sesión expirada') || 
+              e.toString().contains('No autorizado')) {
+            debugPrint('Error de autenticación al obtener detalles de cuenta: $e');
+          } else {
+            debugPrint('Error al obtener detalles de cuenta: $e');
+          }
         }
-      } catch (e) {
-        // Manejar específicamente errores de autenticación
-        if (e.toString().contains('401') || 
-            e.toString().contains('Sesión expirada') || 
-            e.toString().contains('No autorizado')) {
-          debugPrint('Error de autenticación al obtener cuenta: $e');
-        } else {
-          debugPrint('Error al obtener cuenta: $e');
+        
+      } else {
+        // Si no tiene cuenta asociada en el modelo, intentar buscarla por ID de empleado
+        try {
+          cuentaInfo = await api.cuentasEmpleados.getCuentaByEmpleadoId(widget.empleado.id);
+          if (cuentaInfo != null) {
+            cuentaId = cuentaInfo['id']?.toString();
+            usuarioActual = cuentaInfo['usuario']?.toString();
+            rolActualId = cuentaInfo['rolCuentaEmpleadoId'];
+          }
+        } catch (e) {
+          // Manejar específicamente errores de autenticación
+          if (e.toString().contains('401') || 
+              e.toString().contains('Sesión expirada') || 
+              e.toString().contains('No autorizado')) {
+            debugPrint('Error de autenticación al obtener cuenta por empleado: $e');
+          } else {
+            debugPrint('Error al obtener cuenta por empleado: $e');
+          }
+          // Si hay un error que no sea 404, propagar para manejo general
+          if (!(e is ApiException && e.statusCode == 404)) {
+            rethrow;
+          }
         }
-        // La cuenta no existe o hubo un error, se creará una nueva si es posible
       }
+      
+      // Si ya tenemos información del usuario y rol en el estado, usarla
+      if (_usuarioEmpleado != null && cuentaId != null && usuarioActual == null) {
+        usuarioActual = _usuarioEmpleado;
+        
+        if (_rolCuentaEmpleado != null && rolActualId == null) {
+          // Buscar el ID del rol basado en el nombre
+          final rolInfo = roles.firstWhere(
+            (r) => r['nombre'] == _rolCuentaEmpleado || r['codigo'] == _rolCuentaEmpleado,
+            orElse: () => <String, dynamic>{},
+          );
+          
+          if (rolInfo.isNotEmpty) {
+            rolActualId = rolInfo['id'];
+          }
+        }
+      }
+      
+      debugPrint('Cuenta encontrada: ID=$cuentaId, Usuario=$usuarioActual, RolID=$rolActualId');
       
       if (!context.mounted) return;
       

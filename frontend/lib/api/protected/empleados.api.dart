@@ -7,7 +7,6 @@ class Empleado {
   final String nombre;
   final String apellidos;
   final String? ubicacionFoto;
-  final int? edad;
   final String? dni;
   final String? horaInicioJornada;
   final String? horaFinJornada;
@@ -15,15 +14,17 @@ class Empleado {
   final double? sueldo;
   final String? fechaRegistro;
   final String? sucursalId;
+  final String? sucursalNombre;
+  final bool sucursalCentral;
   final bool activo;
   final String? celular;
+  final String? cuentaEmpleadoId;
 
   Empleado({
     required this.id,
     required this.nombre,
     required this.apellidos,
     this.ubicacionFoto,
-    this.edad,
     this.dni,
     this.horaInicioJornada,
     this.horaFinJornada,
@@ -31,26 +32,53 @@ class Empleado {
     this.sueldo,
     this.fechaRegistro,
     this.sucursalId,
+    this.sucursalNombre,
+    this.sucursalCentral = false,
     this.activo = true,
     this.celular,
+    this.cuentaEmpleadoId,
   });
 
   factory Empleado.fromJson(Map<String, dynamic> json) {
+    // Extraer información de sucursal si está disponible
+    String? sucursalId;
+    String? sucursalNombre;
+    bool sucursalCentral = false;
+    
+    if (json['sucursal'] is Map<String, dynamic>) {
+      final sucursal = json['sucursal'] as Map<String, dynamic>;
+      sucursalId = sucursal['id']?.toString();
+      sucursalNombre = sucursal['nombre']?.toString();
+      sucursalCentral = sucursal['sucursalCentral'] == true;
+    } else {
+      // Mantener compatibilidad con el formato anterior
+      sucursalId = json['sucursalId']?.toString();
+    }
+    
+    // Extraer ID de cuenta de empleado si está disponible
+    String? cuentaEmpleadoId;
+    if (json['cuentaEmpleado'] is Map<String, dynamic>) {
+      final cuenta = json['cuentaEmpleado'] as Map<String, dynamic>;
+      cuentaEmpleadoId = cuenta['id']?.toString();
+    }
+
     return Empleado(
       id: json['id']?.toString() ?? '',
       nombre: json['nombre'] ?? '',
       apellidos: json['apellidos'] ?? '',
       ubicacionFoto: json['ubicacionFoto'] ?? json['pathFoto'],
-      edad: json['edad'],
       dni: json['dni'],
       horaInicioJornada: json['horaInicioJornada'],
       horaFinJornada: json['horaFinJornada'],
       fechaContratacion: json['fechaContratacion'],
       sueldo: json['sueldo'] != null ? double.parse(json['sueldo'].toString()) : null,
       fechaRegistro: json['fechaRegistro'],
-      sucursalId: json['sucursalId']?.toString(),
+      sucursalId: sucursalId,
+      sucursalNombre: sucursalNombre,
+      sucursalCentral: sucursalCentral,
       activo: json['activo'] ?? true,
       celular: json['celular'],
+      cuentaEmpleadoId: cuentaEmpleadoId,
     );
   }
 
@@ -59,7 +87,6 @@ class Empleado {
       'nombre': nombre,
       'apellidos': apellidos,
       'ubicacionFoto': ubicacionFoto,
-      'edad': edad,
       'dni': dni,
       'horaInicioJornada': horaInicioJornada,
       'horaFinJornada': horaFinJornada,
@@ -147,19 +174,20 @@ class EmpleadosApi {
       );
       
       debugPrint('EmpleadosApi: Respuesta de getEmpleados recibida');
-      debugPrint('EmpleadosApi: Estructura de respuesta: ${response.keys.toList()}');
       
-      // Manejar estructura anidada: response.data.data
-      if (response['data'] is Map && response['data'].containsKey('data')) {
-        debugPrint('EmpleadosApi: Encontrada estructura anidada en la respuesta');
-        final items = response['data']['data'] ?? [];
-        debugPrint('EmpleadosApi: Total de empleados encontrados: ${items.length}');
-        return items;
+      // Extraer los datos de la respuesta
+      List<dynamic> items = [];
+      
+      if (response['data'] is List) {
+        // Nueva estructura: { status: "success", data: [ ... ] }
+        items = response['data'] as List<dynamic>;
+      } else if (response['data'] is Map) {
+        if (response['data'].containsKey('data') && response['data']['data'] is List) {
+          // Estructura anterior anidada: { data: { data: [ ... ] } }
+          items = response['data']['data'] as List<dynamic>;
+        }
       }
       
-      // Si la estructura cambia en el futuro y ya no está anidada
-      debugPrint('EmpleadosApi: Usando estructura directa de respuesta');
-      final items = response['data'] ?? [];
       debugPrint('EmpleadosApi: Total de empleados encontrados: ${items.length}');
       return items;
     } catch (e) {
@@ -192,9 +220,9 @@ class EmpleadosApi {
       // Manejar estructura anidada
       Map<String, dynamic>? data;
       if (response['data'] is Map && response['data'].containsKey('data')) {
-        data = response['data']['data'];
+        data = response['data']['data'] as Map<String, dynamic>;
       } else {
-        data = response['data'];
+        data = response['data'] as Map<String, dynamic>;
       }
       
       if (data == null) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../main.dart' show api;
 import '../../../widgets/dialogs/confirm_dialog.dart';
+import '../../../api/main.api.dart' show ApiException;
 
 /// Diálogo para gestionar la cuenta de un empleado
 /// 
@@ -112,8 +113,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     
     try {
       if (_esNuevaCuenta) {
-        // Crear nueva cuenta
-        await api.empleados.registerEmpleadoAccount(
+        // Crear nueva cuenta - usar la nueva API
+        await api.cuentasEmpleados.registerEmpleadoAccount(
           empleadoId: widget.empleadoId,
           usuario: _usuarioController.text,
           clave: _claveController.text,
@@ -128,25 +129,30 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           ),
         );
       } else {
-        // Actualizar cuenta existente
+        // Actualizar cuenta existente - usar la nueva API
         final Map<String, dynamic> updateData = {};
         
-        // Solo incluir usuario si ha cambiado
+        // Solo incluir usuario si ha cambiado y si se puede editar
         if (_usuarioController.text != widget.usuarioActual) {
           updateData['usuario'] = _usuarioController.text;
         }
         
-        // Solo incluir clave si se ha ingresado una nueva
-        if (_claveController.text.isNotEmpty) {
-          updateData['clave'] = _claveController.text;
-        }
-        
         // Solo actualizar si hay datos para actualizar
-        if (updateData.isNotEmpty) {
-          await api.empleados.updateCuentaEmpleado(
-            cuentaId: widget.cuentaId!,
+        if (updateData.isNotEmpty || _claveController.text.isNotEmpty) {
+          final cuentaId = int.tryParse(widget.cuentaId!);
+          if (cuentaId == null) {
+            throw ApiException(
+              statusCode: 400,
+              message: 'ID de cuenta inválido',
+            );
+          }
+          
+          await api.cuentasEmpleados.updateCuentaEmpleado(
+            id: cuentaId,
             usuario: updateData['usuario'],
-            clave: updateData['clave'],
+            // Si hay una clave nueva, se enviará para actualización
+            clave: _claveController.text.isNotEmpty ? _claveController.text : null,
+            rolCuentaEmpleadoId: null, // No modificamos el rol en la actualización
           );
           
           if (!mounted) return;
@@ -156,15 +162,42 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
               backgroundColor: Colors.green,
             ),
           );
+        } else {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se realizaron cambios'),
+              backgroundColor: Colors.blue,
+            ),
+          );
         }
       }
       
       if (!mounted) return;
       Navigator.of(context).pop(true); // Cerrar diálogo con resultado exitoso
     } catch (e) {
+      String errorMsg = e.toString();
+      
+      // Mejorar mensajes de error comunes
+      if (e is ApiException) {
+        if (e.statusCode == 401) {
+          errorMsg = 'Sesión expirada. Inicie sesión nuevamente.';
+        } else if (e.statusCode == 400) {
+          if (e.message.contains('exists') || e.message.contains('ya existe')) {
+            errorMsg = 'El nombre de usuario ya está en uso. Por favor, elija otro.';
+          } else {
+            errorMsg = 'Error en los datos: ${e.message}';
+          }
+        } else if (e.statusCode == 403) {
+          errorMsg = 'No tiene permisos para realizar esta acción.';
+        } else if (e.statusCode == 500) {
+          errorMsg = 'Error en el servidor. Intente nuevamente más tarde.';
+        }
+      }
+      
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Error: ${e.toString()}';
+        _errorMessage = 'Error: $errorMsg';
       });
     }
   }
@@ -191,7 +224,16 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     });
     
     try {
-      final success = await api.empleados.deleteCuentaEmpleado(widget.cuentaId!);
+      final cuentaId = int.tryParse(widget.cuentaId!);
+      if (cuentaId == null) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'ID de cuenta inválido',
+        );
+      }
+      
+      // Usar la nueva API para eliminar la cuenta
+      final success = await api.cuentasEmpleados.deleteCuentaEmpleado(cuentaId);
       
       if (!mounted) return;
       
@@ -210,9 +252,22 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         });
       }
     } catch (e) {
+      String errorMsg = e.toString();
+      
+      // Mejorar mensajes de error comunes
+      if (e is ApiException) {
+        if (e.statusCode == 401) {
+          errorMsg = 'Sesión expirada. Inicie sesión nuevamente.';
+        } else if (e.statusCode == 403) {
+          errorMsg = 'No tiene permisos para eliminar esta cuenta.';
+        } else if (e.statusCode == 500) {
+          errorMsg = 'Error en el servidor. Intente nuevamente más tarde.';
+        }
+      }
+      
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Error: ${e.toString()}';
+        _errorMessage = 'Error: $errorMsg';
       });
     }
   }

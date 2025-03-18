@@ -36,16 +36,29 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
   @override
   void initState() {
     super.initState();
-    _cargarUsuarioEmpleado();
+    
+    // Solo cargar la información de usuario si no viene en la respuesta de la API
+    if (widget.empleado.cuentaEmpleadoId != null && _usuarioEmpleado == null) {
+      _cargarUsuarioEmpleado();
+    }
   }
   
   Future<void> _cargarUsuarioEmpleado() async {
     try {
       setState(() => _isLoading = true);
       
-      final cuentaInfo = await api.empleados.getCuentaByEmpleadoId(widget.empleado.id);
-      if (cuentaInfo != null && cuentaInfo['usuario'] != null) {
-        setState(() => _usuarioEmpleado = cuentaInfo['usuario'].toString());
+      // Obtener información de la cuenta de empleado por su ID
+      if (widget.empleado.cuentaEmpleadoId != null) {
+        final cuentaInfo = await api.empleados.getCuentaEmpleado(widget.empleado.cuentaEmpleadoId!);
+        if (cuentaInfo != null && cuentaInfo['usuario'] != null) {
+          setState(() => _usuarioEmpleado = cuentaInfo['usuario'].toString());
+        }
+      } else {
+        // Compatibilidad con versión anterior: obtener por ID de empleado
+        final cuentaInfo = await api.empleados.getCuentaByEmpleadoId(widget.empleado.id);
+        if (cuentaInfo != null && cuentaInfo['usuario'] != null) {
+          setState(() => _usuarioEmpleado = cuentaInfo['usuario'].toString());
+        }
       }
     } catch (e) {
       // Manejar específicamente errores de autenticación
@@ -68,27 +81,32 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
 
   @override
   Widget build(BuildContext context) {
-    final esCentral = EmpleadosUtils.esSucursalCentral(
-      widget.empleado.sucursalId, 
-      widget.nombresSucursales
-    );
+    // Determinar información de sucursal utilizando los datos directos si están disponibles
+    final bool esCentral = widget.empleado.sucursalCentral || 
+                           EmpleadosUtils.esSucursalCentral(
+                             widget.empleado.sucursalId,
+                             widget.nombresSucursales
+                           );
     
-    final nombreSucursal = EmpleadosUtils.getNombreSucursal(
-      widget.empleado.sucursalId, 
-      widget.nombresSucursales
-    );
+    // Obtener rol del empleado
+    final String rol = widget.obtenerRolDeEmpleado(widget.empleado);
     
-    final rol = widget.obtenerRolDeEmpleado(widget.empleado);
+    // Determinar si el empleado está activo o inactivo
+    final bool esInactivo = !widget.empleado.activo;
     
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: Container(
         decoration: BoxDecoration(
-          color: _isHovered ? const Color(0xFF2D2D2D) : Colors.transparent,
+          color: _isHovered 
+            ? const Color(0xFF2D2D2D)
+            : (esInactivo ? Colors.transparent : Colors.transparent),
           border: Border(
             bottom: BorderSide(
-              color: Colors.white.withOpacity(0.1),
+              color: esInactivo 
+                ? const Color(0xFFE31E24).withOpacity(0.1)
+                : Colors.white.withOpacity(0.1),
               width: 1,
             ),
           ),
@@ -109,27 +127,65 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                       decoration: BoxDecoration(
                         color: const Color(0xFF2D2D2D),
                         borderRadius: BorderRadius.circular(8),
+                        border: esInactivo ? Border.all(
+                          color: const Color(0xFFE31E24).withOpacity(0.3),
+                          width: 1,
+                        ) : null,
                       ),
                       child: Center(
                         child: widget.empleado.ubicacionFoto != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                widget.empleado.ubicacionFoto!,
-                                width: 36,
-                                height: 36,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => const FaIcon(
+                              child: Stack(
+                                children: [
+                                  Image.network(
+                                    widget.empleado.ubicacionFoto!,
+                                    width: 36,
+                                    height: 36,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => const FaIcon(
+                                      FontAwesomeIcons.user,
+                                      color: Color(0xFFE31E24),
+                                      size: 16,
+                                    ),
+                                  ),
+                                  if (esInactivo)
+                                    Container(
+                                      width: 36,
+                                      height: 36,
+                                      color: Colors.black.withOpacity(0.5),
+                                    ),
+                                ],
+                              ),
+                            )
+                          : Stack(
+                              children: [
+                                const FaIcon(
                                   FontAwesomeIcons.user,
                                   color: Color(0xFFE31E24),
                                   size: 16,
                                 ),
-                              ),
-                            )
-                          : const FaIcon(
-                              FontAwesomeIcons.user,
-                              color: Color(0xFFE31E24),
-                              size: 16,
+                                if (esInactivo)
+                                  Positioned(
+                                    right: 0,
+                                    bottom: 0,
+                                    child: Container(
+                                      width: 12,
+                                      height: 12,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFE31E24),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Center(
+                                        child: FaIcon(
+                                          FontAwesomeIcons.xmark,
+                                          color: Colors.white,
+                                          size: 8,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                       ),
                     ),
@@ -141,8 +197,10 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                         children: [
                           Text(
                             '${widget.empleado.nombre} ${widget.empleado.apellidos}',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: esInactivo
+                                ? Colors.white.withOpacity(0.6)
+                                : Colors.white,
                               fontWeight: FontWeight.w500,
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -168,6 +226,27 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
+                          if (esInactivo) ...[
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE31E24).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: const Color(0xFFE31E24).withOpacity(0.3),
+                                ),
+                              ),
+                              child: const Text(
+                                'Inactivo',
+                                style: TextStyle(
+                                  color: Color(0xFFE31E24),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -180,16 +259,20 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                 flex: 15,
                 child: Row(
                   children: [
-                    const FaIcon(
+                    FaIcon(
                       FontAwesomeIcons.phone,
-                      color: Color(0xFFE31E24),
+                      color: esInactivo
+                        ? const Color(0xFFE31E24).withOpacity(0.5)
+                        : const Color(0xFFE31E24),
                       size: 14,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       widget.empleado.celular ?? 'No disponible',
                       style: TextStyle(
-                        color: widget.empleado.celular != null ? Colors.white : Colors.white.withOpacity(0.5),
+                        color: widget.empleado.celular != null 
+                          ? (esInactivo ? Colors.white.withOpacity(0.4) : Colors.white)
+                          : Colors.white.withOpacity(0.3),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -204,62 +287,52 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                   children: [
                     FaIcon(
                       EmpleadosUtils.getRolIcon(rol),
-                      color: const Color(0xFFE31E24),
+                      color: esInactivo
+                        ? const Color(0xFFE31E24).withOpacity(0.5)
+                        : const Color(0xFFE31E24),
                       size: 14,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       rol,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: esInactivo ? Colors.white.withOpacity(0.4) : Colors.white,
                       ),
                     ),
                   ],
                 ),
               ),
               
-              // Local (20% del ancho)
+              // Sucursal (30% del ancho - aumentado del 20% al 30%)
               Expanded(
-                flex: 20,
+                flex: 30,
                 child: Row(
                   children: [
                     FaIcon(
-                      esCentral
+                      EmpleadosUtils.esSucursalCentral(widget.empleado.sucursalId, widget.nombresSucursales)
                           ? FontAwesomeIcons.building
                           : FontAwesomeIcons.store,
-                      color: esCentral
-                          ? const Color.fromARGB(255, 95, 208, 243)
-                          : Colors.white54,
+                      color: EmpleadosUtils.esSucursalCentral(widget.empleado.sucursalId, widget.nombresSucursales)
+                          ? (esInactivo ? const Color.fromARGB(255, 95, 208, 243).withOpacity(0.5) : const Color.fromARGB(255, 95, 208, 243))
+                          : (esInactivo ? Colors.grey[400]!.withOpacity(0.5) : Colors.grey[400]),
                       size: 14,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        nombreSucursal,
+                        _getSucursalName(),
                         style: TextStyle(
-                          color: esCentral
-                              ? const Color.fromARGB(255, 95, 208, 243)
-                              : Colors.white,
+                          color: EmpleadosUtils.esSucursalCentral(widget.empleado.sucursalId, widget.nombresSucursales)
+                              ? (esInactivo ? const Color.fromARGB(255, 95, 208, 243).withOpacity(0.5) : const Color.fromARGB(255, 95, 208, 243))
+                              : (esInactivo ? Colors.white.withOpacity(0.4) : Colors.white),
+                          fontWeight: EmpleadosUtils.esSucursalCentral(widget.empleado.sucursalId, widget.nombresSucursales)
+                              ? FontWeight.w500
+                              : FontWeight.normal,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
-                ),
-              ),
-              
-              // Estado (10% del ancho)
-              Expanded(
-                flex: 10,
-                child: Center(
-                  child: Switch(
-                    value: widget.empleado.activo,
-                    onChanged: (value) => widget.onChangeStatus(widget.empleado, value),
-                    activeColor: Colors.green,
-                    inactiveThumbColor: Colors.red,
-                    activeTrackColor: Colors.green.withOpacity(0.3),
-                    inactiveTrackColor: Colors.red.withOpacity(0.3),
-                  ),
                 ),
               ),
               
@@ -271,10 +344,10 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                   children: [
                     // Botón para ver detalles
                     IconButton(
-                      icon: const FaIcon(
+                      icon: FaIcon(
                         FontAwesomeIcons.eye,
                         size: 16,
-                        color: Colors.white70,
+                        color: esInactivo ? Colors.white38 : Colors.white70,
                       ),
                       onPressed: () => widget.onViewDetails(widget.empleado),
                       tooltip: 'Ver detalles',
@@ -282,10 +355,10 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                     ),
                     // Botón para editar
                     IconButton(
-                      icon: const FaIcon(
+                      icon: FaIcon(
                         FontAwesomeIcons.penToSquare,
                         size: 16,
-                        color: Colors.white70,
+                        color: esInactivo ? Colors.white38 : Colors.white70,
                       ),
                       onPressed: () => widget.onEdit(widget.empleado),
                       tooltip: 'Editar',
@@ -311,4 +384,22 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
       ),
     );
   }
-} 
+
+  // Método para obtener el nombre de la sucursal
+  String _getSucursalName() {
+    // Primero intentar usar el nombre de sucursal que viene directamente del empleado
+    if (widget.empleado.sucursalNombre != null) {
+      if (widget.empleado.sucursalCentral) {
+        return "${widget.empleado.sucursalNombre!} (Central)";
+      }
+      return widget.empleado.sucursalNombre!;
+    }
+    
+    // Si no está disponible, usar el mapa de nombres de sucursales
+    if (widget.empleado.sucursalId != null) {
+      return widget.nombresSucursales[widget.empleado.sucursalId!] ?? 'Sin sucursal';
+    }
+    
+    return 'Sin sucursal';
+  }
+}
