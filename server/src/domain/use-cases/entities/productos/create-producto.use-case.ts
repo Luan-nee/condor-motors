@@ -29,14 +29,13 @@ export class CreateProducto {
     sucursalId: SucursalIdType
   ) {
     const mappedPrices = {
-      precioCompra: createProductoDto.precioCompra?.toFixed(2),
-      precioVenta: createProductoDto.precioVenta?.toFixed(2),
+      precioCompra: createProductoDto.precioCompra.toFixed(2),
+      precioVenta: createProductoDto.precioVenta.toFixed(2),
       precioOferta: createProductoDto.precioOferta?.toFixed(2)
     }
 
     const detalleProductoStockBajo =
-      createProductoDto.stockMinimo !== undefined &&
-      createProductoDto.stock !== undefined
+      createProductoDto.stockMinimo !== undefined && createProductoDto.stock > 0
         ? createProductoDto.stock < createProductoDto.stockMinimo
         : false
 

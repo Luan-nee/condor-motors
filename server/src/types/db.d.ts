@@ -52,4 +52,5 @@ interface SeedConfig {
   sucursalesCount: number
   empleadosCount: number
   productosCount: number
+  proformasVentaCount: number
 }

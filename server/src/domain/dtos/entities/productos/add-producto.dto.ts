@@ -1,10 +1,10 @@
 import { addProductoValidator } from '@/domain/validators/entities/productos/producto.validator'
 
 export class AddProductoDto {
-  public precioCompra?: number
-  public precioVenta?: number
+  public precioCompra: number
+  public precioVenta: number
   public precioOferta?: number
-  public stock?: number
+  public stock: number
 
   private constructor({
     precioCompra,

@@ -1,4 +1,4 @@
-import { cuentaEmpleadoSchema } from '@/domain/validators/cuentas-empleados/cuenta-empleado.schema'
+import { cuentaEmpleadoSchema } from '@/domain/validators/entities/cuentas-empleados/cuenta-empleado.schema'
 import { z } from 'zod'
 
 const UpdateCuentaEmpleadoSchema = z.object({

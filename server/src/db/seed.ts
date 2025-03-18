@@ -4,7 +4,11 @@ import { envs } from '@/config/envs'
 import { JwtAdapter } from '@/config/jwt'
 import { isProduction } from '@/consts'
 import { formatCode } from '@/core/lib/format-values'
-import { getRandomValueFromArray } from '@/core/lib/utils'
+import {
+  getRandomNumber,
+  getRandomUniqueElementsFromArray,
+  getRandomValueFromArray
+} from '@/core/lib/utils'
 import { db } from '@db/connection'
 import * as schema from '@db/schema'
 import { faker } from '@faker-js/faker'
@@ -120,10 +124,15 @@ const seedDatabase = async () => {
     }
   )
 
-  const [admin, vendedorEmpleado, computadoraEmpleado] = await db
+  const empleados = await db
     .insert(schema.empleadosTable)
     .values(empleadosValues)
-    .returning({ id: schema.empleadosTable.id })
+    .returning({
+      id: schema.empleadosTable.id,
+      sucursalId: schema.empleadosTable.sucursalId
+    })
+
+  const [admin, vendedorEmpleado, computadoraEmpleado] = empleados
 
   const [adminRole, vendedorRole, computadoraRole] = await db
     .insert(schema.rolesCuentasEmpleadosTable)
@@ -227,6 +236,7 @@ const seedDatabase = async () => {
     .values(productosValues)
     .returning({
       id: schema.productosTable.id,
+      nombre: schema.productosTable.nombre,
       stockMinimo: schema.productosTable.stockMinimo
     })
 
@@ -260,6 +270,53 @@ const seedDatabase = async () => {
     .values(estadosTransferenciasInventariosValues)
 
   await db.insert(schema.tiposPersonasTable).values(tiposPersonasValues)
+
+  const generateDetalles = (length: number, sucursalId: number) =>
+    getRandomUniqueElementsFromArray(productos, length).map((producto) => {
+      const detallesProducto = detallesProductosValues.find(
+        (d) => d.productoId === producto.id && d.sucursalId === sucursalId
+      )
+
+      if (detallesProducto === undefined) {
+        throw new Error('Product not found')
+      }
+
+      const cantidad = faker.number.int({ min: 2, max: 7 })
+      const precio = parseFloat(detallesProducto.precioVenta)
+      const subtotal = parseFloat((cantidad * precio).toFixed(2))
+
+      return {
+        productoId: producto.id,
+        nombre: producto.nombre,
+        cantidad,
+        precioUnitario: precio,
+        subtotal
+      }
+    })
+
+  const proformasVentaValues = Array.from({
+    length: seedConfig.proformasVentaCount
+  }).map(() => {
+    const empleado = getRandomValueFromArray(empleados)
+    const detalles = generateDetalles(
+      getRandomNumber(2, 12),
+      empleado.sucursalId
+    )
+    const total = detalles.reduce(
+      (prev, current) => current.precioUnitario + prev,
+      0
+    )
+
+    return {
+      nombre: faker.lorem.words({ min: 3, max: 6 }),
+      total: total.toFixed(2),
+      detalles,
+      empleadoId: empleado.id,
+      sucursalId: empleado.sucursalId
+    }
+  })
+
+  await db.insert(schema.proformasVentaTable).values(proformasVentaValues)
 }
 
 const { NODE_ENV: nodeEnv } = envs

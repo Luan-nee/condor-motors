@@ -30,8 +30,8 @@ export const productoSchema = {
   colorId: idTypeBaseSchema.numericId,
   categoriaId: idTypeBaseSchema.numericId,
   marcaId: idTypeBaseSchema.numericId,
-  precioCompra: z.number().min(0).optional(),
-  precioVenta: z.number().min(0).optional(),
+  precioCompra: z.number().min(0),
+  precioVenta: z.number().min(0),
   precioOferta: z.number().min(0).optional(),
-  stock: z.number().min(0).default(0).optional()
+  stock: z.number().min(0).default(0)
 }

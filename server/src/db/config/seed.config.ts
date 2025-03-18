@@ -47,8 +47,9 @@ export const seedConfig: SeedConfig = {
   ],
   tiposPersonasDefault: ['Persona Natural', 'Persona Juridica'],
   sucursalesCount: 3,
-  empleadosCount: 6,
-  productosCount: 15
+  empleadosCount: 9,
+  productosCount: 30,
+  proformasVentaCount: 16
 }
 
 export const adminPermissions = transformPermissionCodes(permissionCodes)
