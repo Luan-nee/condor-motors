@@ -3,14 +3,6 @@ import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
 import { Validator } from '@/domain/validators/validator'
 
 export const productoSchema = {
-  // sku: z
-  //   .string()
-  //   .min(2)
-  //   .max(255)
-  //   .refine((val) => isValidSku(val), {
-  //     message:
-  //       'El sku solo puede contener números, espacios, puntos, guiones, barras diagonales y letras (mayúsculas o minúsculas)'
-  //   }),
   nombre: z
     .string()
     .trim()
