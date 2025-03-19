@@ -9,6 +9,8 @@ export class NotificacionesRoutes {
 
     router.get('/', notificacionesController.getAll)
 
+    router.delete('/:id', notificacionesController.delete)
+
     return router
   }
 }
