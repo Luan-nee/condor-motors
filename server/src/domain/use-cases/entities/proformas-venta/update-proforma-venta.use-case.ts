@@ -24,6 +24,7 @@ export class UpdateProformaVenta {
 
   private async updateProformaVenta(
     numericIdDto: NumericIdDto,
+    sucursalId: SucursalIdType,
     updateProformaVentaDto: UpdateProformaVentaDto,
     detallesProformaVenta?: Array<{
       id: number
@@ -65,12 +66,17 @@ export class UpdateProformaVenta {
         detalles: mappedDetalles,
         fechaActualizacion: now
       })
-      .where(eq(proformasVentaTable.id, numericIdDto.id))
+      .where(
+        and(
+          eq(proformasVentaTable.id, numericIdDto.id),
+          eq(proformasVentaTable.sucursalId, sucursalId)
+        )
+      )
       .returning({ id: proformasVentaTable.id })
 
     if (results.length < 1) {
       throw CustomError.badRequest(
-        `No se pudo actualizar la proforma de venta con el id '${numericIdDto.id}' (No encontrada)`
+        `No se pudo actualizar la proforma de venta con el id ${numericIdDto.id} (No encontrada)`
       )
     }
 
@@ -83,7 +89,10 @@ export class UpdateProformaVenta {
     updateProformaVentaDto: UpdateProformaVentaDto,
     sucursalId: SucursalIdType
   ) {
-    if (updateProformaVentaDto.detalles === undefined) {
+    if (
+      updateProformaVentaDto.detalles === undefined ||
+      updateProformaVentaDto.detalles.length < 1
+    ) {
       return
     }
 
@@ -191,6 +200,7 @@ export class UpdateProformaVenta {
 
     const proformaVenta = await this.updateProformaVenta(
       numericIdDto,
+      sucursalId,
       updateProformaVentaDto,
       detallesProformaVenta
     )
