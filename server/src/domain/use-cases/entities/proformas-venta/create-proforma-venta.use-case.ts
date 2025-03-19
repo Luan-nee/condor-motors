@@ -78,6 +78,19 @@ export class CreateProformaVenta {
     createProformaVentaDto: CreateProformaVentaDto,
     sucursalId: SucursalIdType
   ) {
+    const productoIds = createProformaVentaDto.detalles.map(
+      (detalle) => detalle.productoId
+    )
+    const duplicateProductoIds = productoIds.filter(
+      (id, index, self) => self.indexOf(id) !== index
+    )
+
+    if (duplicateProductoIds.length > 0) {
+      throw CustomError.badRequest(
+        `Existen productos duplicados en los detalles: ${[...new Set(duplicateProductoIds)].join(', ')}`
+      )
+    }
+
     const results = await db
       .select({
         sucursalId: sucursalesTable.id,
