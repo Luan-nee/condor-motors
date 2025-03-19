@@ -1,5 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
+  uniqueIndex,
+  index,
   boolean,
   date,
   integer,
@@ -54,45 +56,69 @@ export const coloresTable = pgTable('colores', {
   nombre: text('nombre').notNull().unique()
 })
 
-export const productosTable = pgTable('productos', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  sku: text('sku')
-    .notNull()
-    .generatedAlwaysAs(sql`LPAD(id::TEXT, 7, '0')`),
-  nombre: text('nombre').notNull(),
-  descripcion: text('descripcion'),
-  maxDiasSinReabastecer: integer('max_dias_sin_reabastecer'),
-  stockMinimo: integer('stock_minimo'),
-  cantidadMinimaDescuento: integer('cantidad_minima_descuento'),
-  cantidadGratisDescuento: integer('cantidad_gratis_descuento'),
-  porcentajeDescuento: integer('porcentaje_descuento'),
-  colorId: integer('color_id')
-    .notNull()
-    .references(() => coloresTable.id),
-  categoriaId: integer('categoria_id')
-    .notNull()
-    .references(() => categoriasTable.id),
-  marcaId: integer('marca_id')
-    .notNull()
-    .references(() => marcasTable.id),
-  ...timestampsColumns
-})
+export const productosTable = pgTable(
+  'productos',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    sku: text('sku')
+      .notNull()
+      .unique()
+      .generatedAlwaysAs(sql`LPAD(id::TEXT, 7, '0')`),
+    nombre: text('nombre').notNull(),
+    descripcion: text('descripcion'),
+    maxDiasSinReabastecer: integer('max_dias_sin_reabastecer'),
+    stockMinimo: integer('stock_minimo'),
+    cantidadMinimaDescuento: integer('cantidad_minima_descuento'),
+    cantidadGratisDescuento: integer('cantidad_gratis_descuento'),
+    porcentajeDescuento: integer('porcentaje_descuento'),
+    colorId: integer('color_id')
+      .notNull()
+      .references(() => coloresTable.id),
+    categoriaId: integer('categoria_id')
+      .notNull()
+      .references(() => categoriasTable.id),
+    marcaId: integer('marca_id')
+      .notNull()
+      .references(() => marcasTable.id),
+    ...timestampsColumns
+  },
+  (table) => [
+    index('productos_nombre_idx').on(table.nombre),
+    uniqueIndex('productos_sku_idx').on(table.sku),
+    index('productos_fecha_creacion_idx').on(table.fechaCreacion),
+    index('productos_color_id_idx').on(table.colorId),
+    index('productos_categoria_id_idx').on(table.categoriaId),
+    index('productos_marca_id_idx').on(table.marcaId)
+  ]
+)
 
-export const detallesProductoTable = pgTable('detalles_producto', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  precioCompra: numeric('precio_compra', { precision: 7, scale: 2 }).notNull(),
-  precioVenta: numeric('precio_venta', { precision: 7, scale: 2 }).notNull(),
-  precioOferta: numeric('precio_oferta', { precision: 7, scale: 2 }),
-  stock: integer('stock').notNull().default(0),
-  stockBajo: boolean('stock_bajo').notNull().default(false),
-  productoId: integer('producto_id')
-    .notNull()
-    .references(() => productosTable.id),
-  sucursalId: integer('sucursal_id')
-    .notNull()
-    .references(() => sucursalesTable.id),
-  ...timestampsColumns
-})
+export const detallesProductoTable = pgTable(
+  'detalles_producto',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    precioCompra: numeric('precio_compra', {
+      precision: 7,
+      scale: 2
+    }).notNull(),
+    precioVenta: numeric('precio_venta', { precision: 7, scale: 2 }).notNull(),
+    precioOferta: numeric('precio_oferta', { precision: 7, scale: 2 }),
+    stock: integer('stock').notNull().default(0),
+    stockBajo: boolean('stock_bajo').notNull().default(false),
+    productoId: integer('producto_id')
+      .notNull()
+      .references(() => productosTable.id),
+    sucursalId: integer('sucursal_id')
+      .notNull()
+      .references(() => sucursalesTable.id),
+    ...timestampsColumns
+  },
+  (table) => [
+    index('detalles_producto_precio_compra_idx').on(table.precioCompra),
+    index('detalles_producto_precio_venta_idx').on(table.precioVenta),
+    index('detalles_producto_precio_oferta_idx').on(table.precioOferta),
+    index('detalles_producto_precio_stock_idx').on(table.stock)
+  ]
+)
 
 export const fotosProductosTable = pgTable('fotos_productos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
