@@ -55,11 +55,11 @@ export class CreateProformaVenta {
     const now = new Date()
 
     const total = mappedDetalles.reduce(
-      (prev, current) => current.precioUnitario + prev,
+      (prev, current) => current.subtotal + prev,
       0
     )
 
-    const proformaVenta = await db
+    const results = await db
       .insert(proformasVentaTable)
       .values({
         nombre: createProformaVentaDto.nombre,
@@ -71,6 +71,8 @@ export class CreateProformaVenta {
         fechaActualizacion: now
       })
       .returning({ id: proformasVentaTable.id })
+
+    const [proformaVenta] = results
 
     return proformaVenta
   }

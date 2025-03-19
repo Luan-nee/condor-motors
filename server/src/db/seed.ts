@@ -302,10 +302,7 @@ const seedDatabase = async () => {
       getRandomNumber(2, 12),
       empleado.sucursalId
     )
-    const total = detalles.reduce(
-      (prev, current) => current.precioUnitario + prev,
-      0
-    )
+    const total = detalles.reduce((prev, current) => current.subtotal + prev, 0)
 
     return {
       nombre: faker.lorem.words({ min: 3, max: 6 }),
