@@ -9,7 +9,7 @@ const { DATABASE_URL: databaseUrl } = envs
 const dbConfig: PoolConfig = {
   connectionString: databaseUrl,
   ssl: databaseEnableSSL,
-  max: 5,
+  max: 10,
   idleTimeoutMillis: 30000
 }
 
