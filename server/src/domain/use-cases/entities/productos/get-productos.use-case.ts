@@ -12,7 +12,7 @@ import {
 } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { and, asc, desc, eq, ilike, or } from 'drizzle-orm'
+import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm'
 
 export class GetProductos {
   private readonly authPayload: AuthPayload
@@ -41,6 +41,15 @@ export class GetProductos {
   }
 
   private readonly validSortBy = {
+    nombre: productosTable.nombre,
+    precioCompra: detallesProductoTable.precioCompra,
+    precioVenta: detallesProductoTable.precioVenta,
+    precioOferta: detallesProductoTable.precioOferta,
+    stock: detallesProductoTable.stock,
+    fechaCreacion: productosTable.fechaCreacion
+  } as const
+
+  private readonly validFilter = {
     nombre: productosTable.nombre,
     precioCompra: detallesProductoTable.precioCompra,
     precioVenta: detallesProductoTable.precioVenta,
@@ -116,6 +125,59 @@ export class GetProductos {
     return productos
   }
 
+  private getMetadata() {
+    return {
+      sortByOptions: Object.keys(this.validSortBy),
+      filterOptions: Object.keys(this.validFilter)
+    }
+  }
+
+  private async getPagination(
+    queriesDto: QueriesDto,
+    sucursalId: SucursalIdType
+  ) {
+    const whereCondition =
+      queriesDto.search.length > 0
+        ? or(
+            ilike(productosTable.nombre, `%${queriesDto.search}%`),
+            ilike(coloresTable.nombre, `%${queriesDto.search}%`),
+            ilike(categoriasTable.nombre, `%${queriesDto.search}%`),
+            ilike(marcasTable.nombre, `%${queriesDto.search}%`)
+          )
+        : undefined
+
+    const results = await db
+      .select({ count: count(productosTable.id) })
+      .from(productosTable)
+      .innerJoin(coloresTable, eq(coloresTable.id, productosTable.colorId))
+      .innerJoin(
+        categoriasTable,
+        eq(categoriasTable.id, productosTable.categoriaId)
+      )
+      .innerJoin(marcasTable, eq(marcasTable.id, productosTable.marcaId))
+      .leftJoin(
+        detallesProductoTable,
+        and(
+          eq(productosTable.id, detallesProductoTable.productoId),
+          eq(detallesProductoTable.sucursalId, sucursalId)
+        )
+      )
+      .innerJoin(sucursalesTable, eq(sucursalesTable.id, sucursalId))
+      .where(whereCondition)
+
+    const [totalItems] = results
+
+    const totalPages = Math.ceil(totalItems.count / queriesDto.page_size)
+
+    return {
+      total_items: totalItems.count,
+      total_pages: totalPages,
+      current_page: queriesDto.page,
+      has_next: queriesDto.page < totalPages,
+      has_prev: queriesDto.page > 1
+    }
+  }
+
   private async validatePermissions(sucursalId: SucursalIdType) {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
@@ -147,8 +209,15 @@ export class GetProductos {
   async execute(queriesDto: QueriesDto, sucursalId: SucursalIdType) {
     await this.validatePermissions(sucursalId)
 
-    const productos = await this.getProductos(queriesDto, sucursalId)
+    const results = await this.getProductos(queriesDto, sucursalId)
 
-    return productos
+    const pagination = await this.getPagination(queriesDto, sucursalId)
+    const metadata = this.getMetadata()
+
+    return {
+      results,
+      pagination,
+      metadata
+    }
   }
 }

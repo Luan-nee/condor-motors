@@ -139,7 +139,12 @@ export class ProductosController {
     getProductos
       .execute(queriesDto, sucursalId)
       .then((productos) => {
-        CustomResponse.success({ res, data: productos })
+        CustomResponse.success({
+          res,
+          data: productos.results,
+          pagination: productos.pagination,
+          metadata: productos.metadata
+        })
       })
       .catch((error: unknown) => {
         handleError(error, res)
