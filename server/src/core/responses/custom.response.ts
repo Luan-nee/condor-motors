@@ -14,6 +14,7 @@ export class CustomResponse {
     message,
     data,
     pagination,
+    metadata,
     status = responseStatus.success,
     statusCode = 200,
     error,
@@ -25,6 +26,7 @@ export class CustomResponse {
       message,
       data,
       pagination,
+      metadata,
       error
     }
 
@@ -47,6 +49,7 @@ export class CustomResponse {
     message,
     data,
     pagination,
+    metadata,
     cookie,
     authorization
   }: SuccessArgs) {
@@ -57,6 +60,7 @@ export class CustomResponse {
       status: responseStatus.success,
       statusCode: 200,
       pagination,
+      metadata,
       cookie,
       authorization
     })

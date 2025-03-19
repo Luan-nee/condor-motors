@@ -9,6 +9,7 @@ export interface SendResponseArgs {
   message?: string
   data?: any
   pagination?: any
+  metadata?: any
   status?: ResponseStatusType
   statusCode?: number
   error?: any
@@ -18,7 +19,13 @@ export interface SendResponseArgs {
 
 export type SuccessArgs = Pick<
   SendResponseArgs,
-  'res' | 'message' | 'data' | 'pagination' | 'cookie' | 'authorization'
+  | 'res'
+  | 'message'
+  | 'data'
+  | 'pagination'
+  | 'metadata'
+  | 'cookie'
+  | 'authorization'
 >
 export type CreatedArgs = Pick<SendResponseArgs, 'res' | 'message' | 'data'>
 export type AcceptedArgs = Pick<SendResponseArgs, 'res' | 'message' | 'data'>
