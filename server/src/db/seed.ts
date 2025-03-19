@@ -20,6 +20,30 @@ import {
   computadoraPermissions
 } from '@db/config/seed.config'
 
+const BATCH_SIZE = 500
+
+const insertInBatches = async (
+  data: any[],
+  table: any,
+  returningFields?: any
+) => {
+  const results = []
+  for (let i = 0; i < data.length; i += BATCH_SIZE) {
+    const batch = data.slice(i, i + BATCH_SIZE)
+    if (returningFields !== undefined) {
+      const result = await db
+        .insert(table)
+        .values(batch)
+        .returning(returningFields)
+      results.push(...result)
+    } else {
+      await db.insert(table).values(batch)
+    }
+  }
+
+  return returningFields !== undefined ? results : undefined
+}
+
 const sucursalesValues = Array.from({ length: seedConfig.sucursalesCount }).map(
   (_, i) => {
     if (i === 0) {
@@ -217,7 +241,6 @@ const seedDatabase = async () => {
 
   const productosValues = Array.from({ length: seedConfig.productosCount }).map(
     (_, i) => ({
-      // sku: faker.string.alphanumeric(11) + i.toString(),
       nombre: faker.commerce.productName() + i.toString(),
       descripcion: faker.commerce.productDescription(),
       maxDiasSinReabastecer: faker.number.int({ min: 20, max: 90 }),
@@ -231,14 +254,21 @@ const seedDatabase = async () => {
     })
   )
 
-  const productos = await db
-    .insert(schema.productosTable)
-    .values(productosValues)
-    .returning({
+  const productos = await insertInBatches(
+    productosValues,
+    schema.productosTable,
+    {
       id: schema.productosTable.id,
       nombre: schema.productosTable.nombre,
       stockMinimo: schema.productosTable.stockMinimo
-    })
+    }
+  )
+
+  if (productos === undefined) {
+    throw new Error(
+      'Ha ocurrido un error inesperado al intentar insertar productos en la base de datos'
+    )
+  }
 
   const detallesProductosValues = productos.flatMap((producto) =>
     sucursales.flatMap((sucursal) => {
@@ -256,7 +286,7 @@ const seedDatabase = async () => {
     })
   )
 
-  await db.insert(schema.detallesProductoTable).values(detallesProductosValues)
+  await insertInBatches(detallesProductosValues, schema.detallesProductoTable)
 
   const fotosProductosValues = productos.map((producto) => ({
     path: `static/img/${faker.string.alphanumeric(10)}/${faker.string.alphanumeric(5)}.jpg`,
