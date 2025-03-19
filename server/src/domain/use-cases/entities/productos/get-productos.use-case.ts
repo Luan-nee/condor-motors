@@ -168,13 +168,15 @@ export class GetProductos {
     const [totalItems] = results
 
     const totalPages = Math.ceil(totalItems.count / queriesDto.page_size)
+    const hasNext = queriesDto.page < totalPages && queriesDto.page >= 1
+    const hasPrev = queriesDto.page > 1 && queriesDto.page <= totalPages
 
     return {
       total_items: totalItems.count,
       total_pages: totalPages,
       current_page: queriesDto.page,
-      has_next: queriesDto.page < totalPages,
-      has_prev: queriesDto.page > 1
+      has_next: hasNext,
+      has_prev: hasPrev
     }
   }
 
@@ -209,10 +211,14 @@ export class GetProductos {
   async execute(queriesDto: QueriesDto, sucursalId: SucursalIdType) {
     await this.validatePermissions(sucursalId)
 
-    const results = await this.getProductos(queriesDto, sucursalId)
-
-    const pagination = await this.getPagination(queriesDto, sucursalId)
     const metadata = this.getMetadata()
+    const pagination = await this.getPagination(queriesDto, sucursalId)
+
+    const isValidPage = pagination.has_prev || pagination.has_next
+
+    const results = isValidPage
+      ? await this.getProductos(queriesDto, sucursalId)
+      : []
 
     return {
       results,
