@@ -24,4 +24,5 @@ export const proformaVentaSchema = {
       cantidad: detalleProformaVentaSchema.cantidad
     })
     .array()
+    .min(1)
 }

@@ -116,6 +116,10 @@ export class CreateProformaVenta {
       throw CustomError.badRequest('El empleado que intentó asignar no existe')
     }
 
+    if (createProformaVentaDto.detalles.length < 1) {
+      return []
+    }
+
     const productosConditonals = createProformaVentaDto.detalles.map(
       (detalle) => eq(productosTable.id, detalle.productoId)
     )
