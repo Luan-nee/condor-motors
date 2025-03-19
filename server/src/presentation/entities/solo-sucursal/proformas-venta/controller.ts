@@ -5,6 +5,7 @@ import { UpdateProformaVentaDto } from '@/domain/dtos/entities/proformas-venta/u
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { CreateProformaVenta } from '@/domain/use-cases/entities/proformas-venta/create-proforma-venta.use-case'
+import { DeleteProformaVenta } from '@/domain/use-cases/entities/proformas-venta/delete-proforma-venta.use-case'
 import { GetProformasVenta } from '@/domain/use-cases/entities/proformas-venta/get-proformas-venta.use-case'
 import { UpdateProformaVenta } from '@/domain/use-cases/entities/proformas-venta/update-proforma-venta.use-case'
 import type { Request, Response } from 'express'
@@ -124,6 +125,23 @@ export class ProformasVentaController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
+    const { authPayload, sucursalId } = req
+
+    const deleteProformaVenta = new DeleteProformaVenta(authPayload)
+
+    deleteProformaVenta
+      .execute(numericIdDto, sucursalId)
+      .then((proformaVenta) => {
+        CustomResponse.success({ res, data: proformaVenta })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 }
