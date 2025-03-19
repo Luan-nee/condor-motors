@@ -15,8 +15,9 @@ import { and, eq, or } from 'drizzle-orm'
 
 export class CreateProformaVenta {
   private readonly authPayload: AuthPayload
-  private readonly permissionAny = permissionCodes.productos.createAny
-  private readonly permissionRelated = permissionCodes.productos.createRelated
+  private readonly permissionAny = permissionCodes.proformasVenta.createAny
+  private readonly permissionRelated =
+    permissionCodes.proformasVenta.createRelated
 
   constructor(authPayload: AuthPayload) {
     this.authPayload = authPayload
