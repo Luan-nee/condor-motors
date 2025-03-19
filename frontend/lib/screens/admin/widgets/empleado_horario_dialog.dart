@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../api/protected/empleados.api.dart';
+import '../../../models/empleado.model.dart';
 import 'empleados_utils.dart';
 
 class EmpleadoHorarioDialog extends StatelessWidget {

@@ -69,9 +69,9 @@ class DetalleVenta {
 
 // Constantes para los estados de venta
 class EstadosVenta {
-  static const String PENDIENTE = 'PENDIENTE';
-  static const String COMPLETADA = 'COMPLETADA';
-  static const String ANULADA = 'ANULADA';
+  static const String pendiente = 'PENDIENTE';
+  static const String completada = 'COMPLETADA';
+  static const String anulada = 'ANULADA';
 }
 
 class VentasAdminScreen extends StatefulWidget {

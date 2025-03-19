@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../api/protected/empleados.api.dart';
+import '../../../models/empleado.model.dart';
 import '../../main.dart' show api;
 import '../../api/main.api.dart' show ApiException;
 import 'widgets/empleado_form.dart';
@@ -21,10 +21,9 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
   List<Empleado> _empleados = [];
   Map<String, String> _nombresSucursales = {};
   
-  // Para paginación
-  int _currentPage = 1;
-  final int _pageSize = 10;
-  bool _hasMorePages = false;
+  // Ya no necesitamos estos parámetros de paginación
+  // int _currentPage = 1;
+  // final int _pageSize = 10;
   
   // Lista de roles disponibles
   final List<String> _roles = ['Administrador', 'Vendedor', 'Computadora'];
@@ -46,16 +45,14 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       // Esta llamada todavía es necesaria para el formulario de creación/edición
       await _cargarSucursales();
       
-      // Luego cargar empleados
-      final empleadosData = await api.empleados.getEmpleados(
-        page: _currentPage,
-        pageSize: _pageSize,
-      );
+      // Cargar todos los empleados de una vez, sin paginación
+      final empleadosData = await api.empleados.getEmpleados();
       
       final List<Empleado> empleados = [];
       for (var item in empleadosData) {
         try {
-          final empleado = Empleado.fromJson(item);
+          // Los datos ya vienen como objetos Empleado, no necesitamos convertirlos
+          final empleado = item;
           
           // Si el empleado tiene información de sucursal, actualizamos el mapa de nombres
           if (empleado.sucursalId != null && empleado.sucursalNombre != null) {
@@ -71,8 +68,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
         }
       }
       
-      // Verificar si hay más páginas
-      _hasMorePages = empleados.length >= _pageSize;
+      // Ya no necesitamos verificar si hay más páginas
       
       if (!mounted) return;
       setState(() {
@@ -126,111 +122,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       debugPrint('Error al cargar sucursales: $e');
     }
   }
-  
-  Future<void> _cargarMasPaginas() async {
-    if (!_hasMorePages) return;
-    
-    _currentPage++;
-    setState(() => _isLoading = true);
-    
-    try {
-      final empleadosData = await api.empleados.getEmpleados(
-        page: _currentPage,
-        pageSize: _pageSize,
-      );
-      
-      final List<Empleado> nuevosEmpleados = [];
-      for (var item in empleadosData) {
-        try {
-          final empleado = Empleado.fromJson(item);
-          
-          // Si el empleado tiene información de sucursal, actualizamos el mapa de nombres
-          if (empleado.sucursalId != null && empleado.sucursalNombre != null) {
-            _nombresSucursales[empleado.sucursalId!] = empleado.sucursalNombre!;
-            if (empleado.sucursalCentral) {
-              _nombresSucursales[empleado.sucursalId!] = "${empleado.sucursalNombre!} (Central)";
-            }
-          }
-          
-          nuevosEmpleados.add(empleado);
-        } catch (e) {
-          debugPrint('Error al convertir empleado: $e');
-        }
-      }
-      
-      // Verificar si hay más páginas
-      _hasMorePages = nuevosEmpleados.length >= _pageSize;
-      
-      if (!mounted) return;
-      setState(() {
-        _empleados.addAll(nuevosEmpleados);
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar más empleados: $e')),
-        );
-      });
-    }
-  }
-  
-  Future<void> _cambiarEstadoEmpleado(Empleado empleado, bool nuevoEstado) async {
-    try {
-      await api.empleados.updateEmpleado(
-        empleado.id, 
-        {'activo': nuevoEstado}
-      );
-      
-      // Actualizar localmente
-      setState(() {
-        final index = _empleados.indexWhere((e) => e.id == empleado.id);
-        if (index >= 0) {
-          final empleadoActualizado = Empleado(
-            id: empleado.id,
-            nombre: empleado.nombre,
-            apellidos: empleado.apellidos,
-            ubicacionFoto: empleado.ubicacionFoto,
-            dni: empleado.dni,
-            horaInicioJornada: empleado.horaInicioJornada,
-            horaFinJornada: empleado.horaFinJornada,
-            fechaContratacion: empleado.fechaContratacion,
-            sueldo: empleado.sueldo,
-            fechaRegistro: empleado.fechaRegistro,
-            sucursalId: empleado.sucursalId,
-            sucursalNombre: empleado.sucursalNombre,
-            sucursalCentral: empleado.sucursalCentral,
-            activo: nuevoEstado,
-            celular: empleado.celular,
-            cuentaEmpleadoId: empleado.cuentaEmpleadoId,
-          );
-          _empleados[index] = empleadoActualizado;
-        }
-      });
-      
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(nuevoEstado 
-            ? 'Empleado activado correctamente' 
-            : 'Empleado desactivado correctamente'
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cambiar estado: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-  
+
   Future<void> _eliminarEmpleado(Empleado empleado) async {
     final confirmacion = await showDialog<bool>(
       context: context,
@@ -418,8 +310,8 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
             ),
             const SizedBox(height: 24),
             
-            // Tabla de empleados
-                  Expanded(
+            // Tabla de empleados - modificada para no usar paginación
+            Expanded(
               child: EmpleadosTable(
                 empleados: _empleados,
                 nombresSucursales: _nombresSucursales,
@@ -427,10 +319,9 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                 onEdit: _mostrarFormularioEmpleado,
                 onDelete: _eliminarEmpleado,
                 onViewDetails: _mostrarDetallesEmpleado,
-                onChangeStatus: _cambiarEstadoEmpleado,
                 isLoading: _isLoading,
-                hasMorePages: _hasMorePages,
-                onLoadMore: _cargarMasPaginas,
+                hasMorePages: false, // Siempre false ya que cargamos todo de una vez
+                onLoadMore: () {}, // Función vacía, nunca se ejecutará porque hasMorePages es false
                 errorMessage: _errorMessage,
                 onRetry: _cargarDatos,
               ),

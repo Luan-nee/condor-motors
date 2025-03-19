@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../api/protected/empleados.api.dart';
+import '../../../models/empleado.model.dart';
 import '../../../main.dart' show api;
 import 'empleados_utils.dart';
 
@@ -11,7 +11,6 @@ class EmpleadoListItem extends StatefulWidget {
   final Function(Empleado) onEdit;
   final Function(Empleado) onDelete;
   final Function(Empleado) onViewDetails;
-  final Function(Empleado, bool) onChangeStatus;
 
   const EmpleadoListItem({
     Key? key,
@@ -21,7 +20,6 @@ class EmpleadoListItem extends StatefulWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onViewDetails,
-    required this.onChangeStatus,
   }) : super(key: key);
 
   @override
@@ -50,7 +48,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
       // Obtener información de la cuenta de empleado por su ID
       if (widget.empleado.cuentaEmpleadoId != null) {
         final cuentaInfo = await api.empleados.getCuentaEmpleado(widget.empleado.cuentaEmpleadoId!);
-        if (cuentaInfo != null && cuentaInfo['usuario'] != null) {
+        if (cuentaInfo['usuario'] != null) {
           setState(() => _usuarioEmpleado = cuentaInfo['usuario'].toString());
         }
       } else {
@@ -81,13 +79,6 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
 
   @override
   Widget build(BuildContext context) {
-    // Determinar información de sucursal utilizando los datos directos si están disponibles
-    final bool esCentral = widget.empleado.sucursalCentral || 
-                           EmpleadosUtils.esSucursalCentral(
-                             widget.empleado.sucursalId,
-                             widget.nombresSucursales
-                           );
-    
     // Obtener rol del empleado
     final String rol = widget.obtenerRolDeEmpleado(widget.empleado);
     
@@ -105,7 +96,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
           border: Border(
             bottom: BorderSide(
               color: esInactivo 
-                ? const Color(0xFFE31E24).withOpacity(0.1)
+                ? Colors.grey.withOpacity(0.2)
                 : Colors.white.withOpacity(0.1),
               width: 1,
             ),
@@ -128,7 +119,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                         color: const Color(0xFF2D2D2D),
                         borderRadius: BorderRadius.circular(8),
                         border: esInactivo ? Border.all(
-                          color: const Color(0xFFE31E24).withOpacity(0.3),
+                          color: Colors.grey.withOpacity(0.4),
                           width: 1,
                         ) : null,
                       ),
@@ -195,15 +186,31 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            '${widget.empleado.nombre} ${widget.empleado.apellidos}',
-                            style: TextStyle(
-                              color: esInactivo
-                                ? Colors.white.withOpacity(0.6)
-                                : Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${widget.empleado.nombre} ${widget.empleado.apellidos}',
+                                  style: TextStyle(
+                                    color: esInactivo
+                                      ? Colors.white.withOpacity(0.6)
+                                      : Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (esInactivo)
+                                Container(
+                                  margin: const EdgeInsets.only(left: 4),
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.grey,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                            ],
                           ),
                           if (_isLoading) ...[
                             const SizedBox(height: 4),
@@ -231,16 +238,16 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE31E24).withOpacity(0.1),
+                                color: Colors.grey.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
-                                  color: const Color(0xFFE31E24).withOpacity(0.3),
+                                  color: Colors.grey.withOpacity(0.3),
                                 ),
                               ),
                               child: const Text(
                                 'Inactivo',
                                 style: TextStyle(
-                                  color: Color(0xFFE31E24),
+                                  color: Colors.grey,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -262,7 +269,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                     FaIcon(
                       FontAwesomeIcons.phone,
                       color: esInactivo
-                        ? const Color(0xFFE31E24).withOpacity(0.5)
+                        ? Colors.grey.withOpacity(0.5)
                         : const Color(0xFFE31E24),
                       size: 14,
                     ),
@@ -288,7 +295,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                     FaIcon(
                       EmpleadosUtils.getRolIcon(rol),
                       color: esInactivo
-                        ? const Color(0xFFE31E24).withOpacity(0.5)
+                        ? Colors.grey.withOpacity(0.5)
                         : const Color(0xFFE31E24),
                       size: 14,
                     ),
@@ -303,9 +310,9 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                 ),
               ),
               
-              // Sucursal (30% del ancho - aumentado del 20% al 30%)
+              // Sucursal (25% del ancho - ajustado para dar más espacio a las acciones)
               Expanded(
-                flex: 30,
+                flex: 25,
                 child: Row(
                   children: [
                     FaIcon(
@@ -336,11 +343,11 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                 ),
               ),
               
-              // Acciones (10% del ancho)
+              // Acciones (15% del ancho - aumentado de 10% a 15% para evitar overflow)
               Expanded(
-                flex: 10,
+                flex: 15,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     // Botón para ver detalles
                     IconButton(
@@ -351,7 +358,9 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                       ),
                       onPressed: () => widget.onViewDetails(widget.empleado),
                       tooltip: 'Ver detalles',
-                      splashRadius: 20,
+                      splashRadius: 18,
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
                     ),
                     // Botón para editar
                     IconButton(
@@ -362,7 +371,9 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                       ),
                       onPressed: () => widget.onEdit(widget.empleado),
                       tooltip: 'Editar',
-                      splashRadius: 20,
+                      splashRadius: 18,
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
                     ),
                     // Botón para eliminar
                     IconButton(
@@ -373,7 +384,9 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                       ),
                       onPressed: () => widget.onDelete(widget.empleado),
                       tooltip: 'Eliminar',
-                      splashRadius: 20,
+                      splashRadius: 18,
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ),

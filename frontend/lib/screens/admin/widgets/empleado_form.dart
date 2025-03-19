@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../api/protected/empleados.api.dart';
+import '../../../models/empleado.model.dart';
 import '../../../main.dart' show api;
-import '../../../api/main.api.dart' show ApiException;
 import 'empleado_cuenta_dialog.dart';
 import 'empleados_utils.dart';
 import 'package:flutter/services.dart';
@@ -49,6 +48,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   bool _isLoading = false;
   String? _usuarioActual;
   String? _rolCuentaActual;
+  bool _cuentaNoEncontrada = false;
+  String? _errorCargaInfo;
   
   // Variable para controlar el estado activo/inactivo del empleado
   bool _isEmpleadoActivo = true;
@@ -61,85 +62,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     // Si hay un empleado existente, obtener su información de cuenta
     if (widget.empleado != null) {
       _cargarInformacionCuenta();
-    }
-  }
-  
-  Future<void> _cargarInformacionCuenta() async {
-    if (widget.empleado == null) return;
-    
-    setState(() => _isLoading = true);
-    
-    try {
-      // Verificar si el empleado ya tiene una cuenta asociada
-      if (widget.empleado!.cuentaEmpleadoId != null) {
-        final cuentaId = widget.empleado!.cuentaEmpleadoId!;
-        final cuentaIdInt = int.tryParse(cuentaId);
-        
-        if (cuentaIdInt != null) {
-          // Obtener información de la cuenta usando la nueva API
-          final cuentaInfo = await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
-          
-          if (cuentaInfo != null) {
-            setState(() {
-              _usuarioActual = cuentaInfo['usuario']?.toString();
-              
-              // Obtener información del rol si está disponible
-              final rolId = cuentaInfo['rolCuentaEmpleadoId'];
-              if (rolId != null) {
-                _obtenerNombreRol(rolId);
-              }
-            });
-          }
-        }
-      } else {
-        // Intentar obtener la cuenta por ID de empleado
-        final cuentaInfo = await api.cuentasEmpleados.getCuentaByEmpleadoId(widget.empleado!.id);
-        
-        if (cuentaInfo != null) {
-          setState(() {
-            _usuarioActual = cuentaInfo['usuario']?.toString();
-            
-            // Obtener información del rol si está disponible
-            final rolId = cuentaInfo['rolCuentaEmpleadoId'];
-            if (rolId != null) {
-              _obtenerNombreRol(rolId);
-            }
-          });
-        }
-      }
-    } catch (e) {
-      // Manejar específicamente errores de autenticación
-      if (e.toString().contains('401') || 
-          e.toString().contains('Sesión expirada') || 
-          e.toString().contains('No autorizado')) {
-        debugPrint('Error de autenticación al cargar información de cuenta: $e');
-        // No mostrar error en la UI para este componente
-      } else {
-        debugPrint('Error al cargar información de cuenta: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-  
-  Future<void> _obtenerNombreRol(int rolId) async {
-    try {
-      final roles = await api.cuentasEmpleados.getRolesCuentas();
-      final rol = roles.firstWhere(
-        (r) => r['id'] == rolId,
-        orElse: () => <String, dynamic>{},
-      );
-      
-      if (mounted) {
-        setState(() {
-          _rolCuentaActual = rol['nombre'] ?? rol['codigo'] ?? 'Rol #$rolId';
-        });
-      }
-    } catch (e) {
-      // No actualizar el estado si hay error
-      debugPrint('Error al obtener nombre de rol: $e');
     }
   }
   
@@ -165,25 +87,31 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       _sueldoController.text = widget.empleado!.sueldo?.toString() ?? '';
       _celularController.text = widget.empleado!.celular ?? '';
       
-      // Inicializar horarios
-      _inicializarHorarios(
-        widget.empleado!.horaInicioJornada, 
-        widget.empleado!.horaFinJornada
+      // Inicializar horarios utilizando la función de utilidad
+      EmpleadosUtils.inicializarHorarios(
+        horaInicioHoraController: _horaInicioHoraController,
+        horaInicioMinutoController: _horaInicioMinutoController,
+        horaFinHoraController: _horaFinHoraController,
+        horaFinMinutoController: _horaFinMinutoController,
+        horaInicio: widget.empleado!.horaInicioJornada,
+        horaFin: widget.empleado!.horaFinJornada
       );
       
       _selectedSucursalId = widget.empleado!.sucursalId;
-      _selectedRol = _obtenerRolDeEmpleado(widget.empleado!);
+      _selectedRol = EmpleadosUtils.obtenerRolDeEmpleado(widget.empleado!);
       
       // Inicializar el estado del empleado
       _isEmpleadoActivo = widget.empleado!.activo;
     } else {
       _selectedRol = widget.roles.isNotEmpty ? widget.roles.first : null;
       
-      // Valores por defecto para horario (8:00 - 17:00)
-      _horaInicioHoraController.text = '08';
-      _horaInicioMinutoController.text = '00';
-      _horaFinHoraController.text = '17';
-      _horaFinMinutoController.text = '00';
+      // Valores por defecto para horario (8:00 - 17:00) usando la función de utilidad
+      EmpleadosUtils.inicializarHorarios(
+        horaInicioHoraController: _horaInicioHoraController,
+        horaInicioMinutoController: _horaInicioMinutoController,
+        horaFinHoraController: _horaFinHoraController,
+        horaFinMinutoController: _horaFinMinutoController
+      );
       
       // Por defecto, un nuevo empleado está activo
       _isEmpleadoActivo = true;
@@ -193,35 +121,39 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     _actualizarEsSucursalCentral();
   }
   
-  void _inicializarHorarios(String? horaInicio, String? horaFin) {
-    // Inicializar hora de inicio
-    if (horaInicio != null && horaInicio.isNotEmpty) {
-      final partes = horaInicio.split(':');
-      if (partes.length >= 2) {
-        _horaInicioHoraController.text = partes[0].padLeft(2, '0');
-        _horaInicioMinutoController.text = partes[1].padLeft(2, '0');
-      } else {
-        _horaInicioHoraController.text = '08';
-        _horaInicioMinutoController.text = '00';
-      }
-    } else {
-      _horaInicioHoraController.text = '08';
-      _horaInicioMinutoController.text = '00';
-    }
+  Future<void> _cargarInformacionCuenta() async {
+    if (widget.empleado == null) return;
     
-    // Inicializar hora de fin
-    if (horaFin != null && horaFin.isNotEmpty) {
-      final partes = horaFin.split(':');
-      if (partes.length >= 2) {
-        _horaFinHoraController.text = partes[0].padLeft(2, '0');
-        _horaFinMinutoController.text = partes[1].padLeft(2, '0');
-      } else {
-        _horaFinHoraController.text = '17';
-        _horaFinMinutoController.text = '00';
+    setState(() {
+      _isLoading = true;
+      _cuentaNoEncontrada = false;
+      _errorCargaInfo = null;
+    });
+    
+    try {
+      // Usar la función de utilidad para cargar la información de la cuenta
+      final resultado = await EmpleadosUtils.cargarInformacionCuenta(widget.empleado!);
+      
+      if (mounted) {
+        setState(() {
+          _usuarioActual = resultado['usuarioActual'] as String?;
+          _rolCuentaActual = resultado['rolCuentaActual'] as String?;
+          _cuentaNoEncontrada = resultado['cuentaNoEncontrada'] as bool;
+          _errorCargaInfo = resultado['errorCargaInfo'] as String?;
+        });
       }
-    } else {
-      _horaFinHoraController.text = '17';
-      _horaFinMinutoController.text = '00';
+    } catch (e) {
+      // Para errores en el flujo principal
+      debugPrint('Error general al cargar información de cuenta: $e');
+      if (mounted) {
+        setState(() {
+          _errorCargaInfo = 'Error al cargar información: ${e.toString().replaceAll('Exception: ', '')}';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
   
@@ -238,54 +170,10 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     }
   }
   
-  String _obtenerRolDeEmpleado(Empleado empleado) {
-    // Lógica para determinar el rol del empleado
-    // Esta es una implementación simplificada
-    if (empleado.id == "13") {
-      return "Administrador";
-    }
-    
-    if (empleado.sucursalId == "7") {
-      return "Administrador";
-    }
-    
-    final idNum = int.tryParse(empleado.id) ?? 0;
-    if (idNum % 2 == 0) {
-      return "Vendedor";
-    } else {
-      return "Computadora";
-    }
-  }
-  
-  void _guardar() {
-    if (!_formKey.currentState!.validate()) return;
-    
-    // Formatear horarios en formato hh:mm:ss
-    final horaInicio = '${_horaInicioHoraController.text.padLeft(2, '0')}:${_horaInicioMinutoController.text.padLeft(2, '0')}:00';
-    final horaFin = '${_horaFinHoraController.text.padLeft(2, '0')}:${_horaFinMinutoController.text.padLeft(2, '0')}:00';
-    
-    // Construir datos del empleado
-    final empleadoData = {
-      'nombre': _nombreController.text,
-      'apellidos': _apellidosController.text,
-      'dni': _dniController.text,
-      'sueldo': _sueldoController.text.isNotEmpty ? double.parse(_sueldoController.text) : null,
-      'sucursalId': _selectedSucursalId,
-      'rol': _selectedRol,
-      'horaInicioJornada': horaInicio,
-      'horaFinJornada': horaFin,
-      'celular': _celularController.text.isNotEmpty ? _celularController.text : null,
-      'activo': _isEmpleadoActivo, // Añadir estado activo/inactivo
-    };
-    
-    // Remover valores nulos
-    empleadoData.removeWhere((key, value) => value == null || (value is String && value.isEmpty));
-    
-    widget.onSave(empleadoData);
-  }
-  
   @override
   Widget build(BuildContext context) {
+    final isSaving = _isLoading && (_errorCargaInfo == null);
+    
     return Dialog(
       backgroundColor: const Color(0xFF1A1A1A),
       shape: RoundedRectangleBorder(
@@ -322,93 +210,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                 const SizedBox(height: 24),
                 
                 // Información de cuenta (si existe)
-                if (_isLoading) ...[
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
-                      ),
-                    ),
-                  ),
-                ] else if (_usuarioActual != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2D2D2D),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: const Color(0xFFE31E24).withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const FaIcon(
-                              FontAwesomeIcons.userGear,
-                              color: Color(0xFFE31E24),
-                              size: 14,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'INFORMACIÓN DE CUENTA',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFE31E24),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildInfoItem('Usuario', _usuarioActual!),
-                            ),
-                            if (_rolCuentaActual != null)
-                              Expanded(
-                                child: _buildInfoItem('Rol de cuenta', _rolCuentaActual!),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton.icon(
-                              icon: const FaIcon(
-                                FontAwesomeIcons.key,
-                                size: 12,
-                                color: Colors.white70,
-                              ),
-                              label: const Text(
-                                'Gestionar cuenta',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              onPressed: () => _gestionarCuenta(context),
-                              style: TextButton.styleFrom(
-                                backgroundColor: const Color(0xFF3D3D3D),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+                _buildInfoCuentaBlock(),
                 
                 // Información personal
                 const Text(
@@ -525,7 +327,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                 TextFormField(
                   controller: _sueldoController,
                   style: const TextStyle(color: Colors.white),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                   ],
@@ -1074,8 +876,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                   ],
                 ),
                 
-                const SizedBox(height: 24),
-                
                 // Botones de acción
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -1110,28 +910,141 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     );
   }
   
-  Widget _buildInfoItem(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.white.withOpacity(0.6),
-          ),
+  Widget _buildInfoCuentaBlock() {
+    // Si estamos cargando información
+    if (_isLoading) {
+      return EmpleadosUtils.buildInfoCuentaContainer(
+        isLoading: true
+      );
+    }
+    
+    // Si hay un error al cargar la información
+    if (_errorCargaInfo != null) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.red.withOpacity(0.5)),
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.error_outline,
+              color: Colors.red,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _errorCargaInfo!,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
         ),
-      ],
-    );
+      );
+    }
+    
+    // Si no se encontró una cuenta y hay un empleado existente
+    if (_cuentaNoEncontrada && widget.empleado != null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.amber.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.amber.withOpacity(0.5)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const FaIcon(
+                  FontAwesomeIcons.triangleExclamation,
+                  color: Colors.amber,
+                  size: 18,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Este colaborador no tiene una cuenta para acceder al sistema',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Para permitir que este colaborador inicie sesión en el sistema, necesita crear una cuenta de usuario con un rol asignado.',
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: () => _gestionarCuenta(context),
+                icon: const FaIcon(
+                  FontAwesomeIcons.userPlus,
+                  size: 16,
+                ),
+                label: const Text('Crear Cuenta de Usuario'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  foregroundColor: Colors.black87,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Si hay una cuenta existente
+    if (_usuarioActual != null) {
+      return EmpleadosUtils.buildInfoCuentaContainer(
+        isLoading: false,
+        usuarioActual: _usuarioActual,
+        rolCuentaActual: _rolCuentaActual,
+        onGestionarCuenta: () => _gestionarCuenta(context),
+      );
+    }
+    
+    // Si no hay ninguna condición anterior, no mostrar nada
+    return const SizedBox();
+  }
+  
+  void _guardar() {
+    if (!_formKey.currentState!.validate()) return;
+    
+    // Formatear horarios en formato hh:mm:ss
+    final horaInicio = '${_horaInicioHoraController.text.padLeft(2, '0')}:${_horaInicioMinutoController.text.padLeft(2, '0')}:00';
+    final horaFin = '${_horaFinHoraController.text.padLeft(2, '0')}:${_horaFinMinutoController.text.padLeft(2, '0')}:00';
+    
+    // Construir datos del empleado
+    final empleadoData = {
+      'nombre': _nombreController.text,
+      'apellidos': _apellidosController.text,
+      'dni': _dniController.text,
+      'sueldo': _sueldoController.text.isNotEmpty ? double.parse(_sueldoController.text) : null,
+      'sucursalId': _selectedSucursalId,
+      'rol': _selectedRol,
+      'horaInicioJornada': horaInicio,
+      'horaFinJornada': horaFin,
+      'celular': _celularController.text.isNotEmpty ? _celularController.text : null,
+      'activo': _isEmpleadoActivo, // Añadir estado activo/inactivo
+    };
+    
+    // Remover valores nulos
+    empleadoData.removeWhere((key, value) => value == null || (value is String && value.isEmpty));
+    
+    widget.onSave(empleadoData);
   }
   
   Future<void> _gestionarCuenta(BuildContext context) async {
@@ -1140,119 +1053,41 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     setState(() => _isLoading = true);
     
     try {
-      // Obtener roles disponibles
-      final roles = await api.cuentasEmpleados.getRolesCuentas();
+      // Usar la función de utilidad para gestionar la cuenta
+      final cuentaActualizada = await EmpleadosUtils.gestionarCuenta(context, widget.empleado!);
       
-      // Obtener información de la cuenta (si existe)
-      Map<String, dynamic>? cuentaInfo;
-      String? cuentaId;
-      String? usuarioActual;
-      int? rolActualId;
-      
-      // Verificar si el empleado ya tiene una cuenta asociada
-      if (EmpleadosUtils.tieneCuentaAsociada(widget.empleado!)) {
-        cuentaId = widget.empleado!.cuentaEmpleadoId;
-        
-        // Si ya tenemos el usuario actual cargado, usarlo
-        if (_usuarioActual != null) {
-          usuarioActual = _usuarioActual;
+      if (cuentaActualizada) {
+        if (mounted) {
+          EmpleadosUtils.mostrarMensaje(
+            context,
+            mensaje: 'Cuenta actualizada correctamente'
+          );
           
-          // Buscar el ID del rol basado en el nombre
-          if (_rolCuentaActual != null) {
-            final rolInfo = roles.firstWhere(
-              (r) => r['nombre'] == _rolCuentaActual || r['codigo'] == _rolCuentaActual,
-              orElse: () => <String, dynamic>{},
-            );
-            
-            if (rolInfo.isNotEmpty) {
-              rolActualId = rolInfo['id'];
-            }
-          }
+          // Recargar información de cuenta
+          _cargarInformacionCuenta();
+          
+          // Resetear estado
+          setState(() {
+            _cuentaNoEncontrada = false;
+          });
         }
-        
-        // Si no tenemos toda la información, cargarla
-        if (usuarioActual == null || rolActualId == null) {
-          if (cuentaId != null) {
-            final cuentaIdInt = int.tryParse(cuentaId);
-            if (cuentaIdInt != null) {
-              cuentaInfo = await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
-              if (cuentaInfo != null) {
-                usuarioActual ??= cuentaInfo['usuario']?.toString();
-                rolActualId ??= cuentaInfo['rolCuentaEmpleadoId'];
-              }
-            }
-          }
-        }
-      } else {
-        // Si no hay cuenta asociada, intentar buscarla por ID de empleado
-        cuentaInfo = await api.cuentasEmpleados.getCuentaByEmpleadoId(widget.empleado!.id);
-        if (cuentaInfo != null) {
-          cuentaId = cuentaInfo['id']?.toString();
-          usuarioActual = cuentaInfo['usuario']?.toString();
-          rolActualId = cuentaInfo['rolCuentaEmpleadoId'];
-        }
-      }
-      
-      setState(() => _isLoading = false);
-      
-      if (!mounted) return;
-      
-      // Mostrar diálogo de gestión de cuenta
-      final result = await showDialog<bool>(
-        context: context,
-        builder: (context) => Dialog(
-          child: EmpleadoCuentaDialog(
-            empleadoId: widget.empleado!.id,
-            empleadoNombre: '${widget.empleado!.nombre} ${widget.empleado!.apellidos}',
-            cuentaId: cuentaId,
-            usuarioActual: usuarioActual,
-            rolActualId: rolActualId,
-            roles: roles,
-          ),
-        ),
-      );
-      
-      // Si se realizó algún cambio, actualizar la información
-      if (result == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cuenta actualizada correctamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // Recargar información de cuenta
-        _cargarInformacionCuenta();
       }
     } catch (e) {
-      setState(() => _isLoading = false);
-      
-      if (!mounted) return;
-      
-      // Determinar el tipo de error para mostrar un mensaje apropiado
-      String errorMessage;
-      if (e.toString().contains('401') || 
-          e.toString().contains('Sesión expirada') || 
-          e.toString().contains('No autorizado')) {
-        errorMessage = 'Sesión expirada. Por favor, inicie sesión nuevamente.';
-      } else {
-        errorMessage = 'Error al gestionar cuenta: $e';
+      if (mounted) {
+        setState(() => _isLoading = false);
+        
+        // Simplificado: mostrar siempre un mensaje de error genérico
+        String errorMsg = e.toString().replaceAll('Exception: ', '');
+        EmpleadosUtils.mostrarMensaje(
+          context,
+          mensaje: 'Error al gestionar cuenta: $errorMsg',
+          esError: true
+        );
       }
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-          action: e.toString().contains('401') ? SnackBarAction(
-            label: 'Iniciar sesión',
-            textColor: Colors.white,
-            onPressed: () {
-              // TODO: Implementar navegación a la pantalla de login
-              // Navigator.of(context).pushReplacementNamed('/login');
-            },
-          ) : null,
-        ),
-      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 }

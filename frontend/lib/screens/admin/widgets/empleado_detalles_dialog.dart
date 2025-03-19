@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../api/protected/empleados.api.dart';
-import '../../../main.dart' show api;
-import '../../../api/main.api.dart' show ApiException;
+import '../../../models/empleado.model.dart';
 import 'empleado_horario_dialog.dart';
-import 'empleado_cuenta_dialog.dart';
 import 'empleados_utils.dart';
 
 class EmpleadoDetallesDialog extends StatefulWidget {
@@ -29,95 +26,71 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
   bool _isLoadingCuenta = false;
   String? _usuarioEmpleado;
   String? _rolCuentaEmpleado;
+  bool _cuentaNoEncontrada = false;
   
   @override
   void initState() {
     super.initState();
     
-    // Verificar si ya tenemos información de la cuenta directamente en el objeto Empleado
-    if (widget.empleado.cuentaEmpleadoId != null) {
-      // Ya tenemos referencia a una cuenta, cargar sus detalles
-      _cargarInformacionCuenta();
-    } else {
-      // Intentar obtener la información de cuenta por ID de empleado
-      _cargarInformacionCuenta();
-    }
+    // Cargar información de cuenta del empleado al iniciar
+    _cargarInformacionCuenta();
   }
   
   Future<void> _cargarInformacionCuenta() async {
-    setState(() => _isLoadingCuenta = true);
+    setState(() {
+      _isLoadingCuenta = true;
+      _cuentaNoEncontrada = false;
+    });
     
     try {
-      // Verificar si el empleado ya tiene una cuenta asociada
-      if (EmpleadosUtils.tieneCuentaAsociada(widget.empleado)) {
-        final cuentaId = widget.empleado.cuentaEmpleadoId!;
-        final cuentaIdInt = int.tryParse(cuentaId);
+      // Usar la función de utilidad para cargar la información de la cuenta
+      final resultado = await EmpleadosUtils.cargarInformacionCuenta(widget.empleado);
+      
+      if (mounted) {
+        setState(() {
+          _usuarioEmpleado = resultado['usuarioActual'] as String?;
+          _rolCuentaEmpleado = resultado['rolCuentaActual'] as String?;
+          _cuentaNoEncontrada = resultado['cuentaNoEncontrada'] as bool;
+        });
         
-        if (cuentaIdInt != null) {
-          // Obtener información de la cuenta usando la nueva API
-          final cuentaInfo = await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
-          
-          if (cuentaInfo != null && mounted) {
-            setState(() {
-              _usuarioEmpleado = cuentaInfo['usuario']?.toString();
-              
-              // Obtener información del rol si está disponible
-              final rolId = cuentaInfo['rolCuentaEmpleadoId'];
-              if (rolId != null) {
-                _obtenerNombreRol(rolId);
-              }
-            });
-          }
-        }
-      } else {
-        // Intentar obtener la cuenta por ID de empleado
-        final cuentaInfo = await api.cuentasEmpleados.getCuentaByEmpleadoId(widget.empleado.id);
-        
-        if (cuentaInfo != null && mounted) {
-          setState(() {
-            _usuarioEmpleado = cuentaInfo['usuario']?.toString();
-            
-            // Obtener información del rol si está disponible
-            final rolId = cuentaInfo['rolCuentaEmpleadoId'];
-            if (rolId != null) {
-              _obtenerNombreRol(rolId);
-            }
-          });
+        // Agregar mensaje de depuración si no se encontró cuenta
+        if (_cuentaNoEncontrada) {
+          debugPrint('EmpleadoDetallesDialog: Empleado ${widget.empleado.id} no tiene cuenta asociada (detectado en resultado)');
         }
       }
     } catch (e) {
-      // Manejar específicamente errores de autenticación
-      if (e.toString().contains('401') || 
+      // Si hay un error, verificar si es por ausencia de cuenta
+      if (e.toString().contains('404') || 
+          e.toString().contains('not found') || 
+          e.toString().contains('no se encontró') || 
+          e.toString().contains('no existe') ||
+          e.toString().contains('no tiene cuenta') ||
+          e.toString().contains('cuentasempleados/empleado')) {
+        // Este es un caso esperado cuando el empleado no tiene cuenta
+        if (mounted) {
+          setState(() {
+            _cuentaNoEncontrada = true;
+            _usuarioEmpleado = null;
+            _rolCuentaEmpleado = null;
+          });
+        }
+        debugPrint('EmpleadoDetallesDialog: El empleado no tiene cuenta asociada (error capturado)');
+      }
+      // Manejar específicamente errores de autenticación genuinos (sesión expirada)
+      else if (e.toString().contains('401') && (
           e.toString().contains('Sesión expirada') || 
-          e.toString().contains('No autorizado')) {
+          e.toString().contains('No autorizado') || 
+          e.toString().contains('token'))) {
         debugPrint('Error de autenticación al cargar información de cuenta: $e');
         // No mostrar error en la UI para este componente
       } else {
+        // Otros errores inesperados
         debugPrint('Error al cargar información de cuenta: $e');
       }
     } finally {
       if (mounted) {
         setState(() => _isLoadingCuenta = false);
       }
-    }
-  }
-  
-  Future<void> _obtenerNombreRol(int rolId) async {
-    try {
-      final roles = await api.cuentasEmpleados.getRolesCuentas();
-      final rol = roles.firstWhere(
-        (r) => r['id'] == rolId,
-        orElse: () => <String, dynamic>{},
-      );
-      
-      if (mounted) {
-        setState(() {
-          _rolCuentaEmpleado = rol['nombre'] ?? rol['codigo'] ?? 'Rol #$rolId';
-        });
-      }
-    } catch (e) {
-      // No actualizar el estado si hay error
-      debugPrint('Error al obtener nombre de rol: $e');
     }
   }
 
@@ -127,6 +100,7 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
     final esCentral = EmpleadosUtils.esSucursalCentralEmpleado(widget.empleado, widget.nombresSucursales);
     final nombreSucursal = EmpleadosUtils.getNombreSucursalEmpleado(widget.empleado, widget.nombresSucursales);
     final rol = widget.obtenerRolDeEmpleado(widget.empleado);
+    final nombreCompleto = EmpleadosUtils.getNombreCompleto(widget.empleado);
     
     return Dialog(
       backgroundColor: const Color(0xFF1A1A1A),
@@ -182,7 +156,7 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${widget.empleado.nombre} ${widget.empleado.apellidos}',
+                          nombreCompleto,
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -269,9 +243,9 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildInfoItem('DNI', widget.empleado.dni ?? 'No especificado'),
+                        EmpleadosUtils.buildInfoItem('DNI', widget.empleado.dni ?? 'No especificado'),
                         const SizedBox(height: 12),
-                        _buildInfoItem('Celular', widget.empleado.celular ?? 'No especificado'),
+                        EmpleadosUtils.buildInfoItem('Celular', widget.empleado.celular ?? 'No especificado'),
                       ],
                     ),
                   ),
@@ -281,9 +255,9 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildInfoItem('Estado', widget.empleado.activo ? 'Activo' : 'Inactivo'),
+                        EmpleadosUtils.buildInfoItem('Estado', widget.empleado.activo ? 'Activo' : 'Inactivo'),
                         const SizedBox(height: 12),
-                        _buildInfoItem('Fecha Registro', widget.empleado.fechaRegistro ?? 'No especificada'),
+                        EmpleadosUtils.buildInfoItem('Fecha Registro', EmpleadosUtils.formatearFecha(widget.empleado.fechaRegistro)),
                       ],
                     ),
                   ),
@@ -365,7 +339,7 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
                           Padding(
                             padding: const EdgeInsets.only(top: 4.0),
                             child: Text(
-                              'Fecha Contratación: ${widget.empleado.fechaContratacion ?? 'No especificada'}',
+                              'Fecha Contratación: ${EmpleadosUtils.formatearFecha(widget.empleado.fechaContratacion)}',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.7),
                                 fontSize: 14,
@@ -450,30 +424,13 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
               const SizedBox(height: 12),
               
               // Información de cuenta (si existe)
-              if (_isLoadingCuenta) ...[
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8.0),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
-                      ),
-                    ),
-                  ),
-                ),
-              ] else if (_usuarioEmpleado != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
+              _cuentaNoEncontrada 
+              ? Container(
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2D2D2D),
+                    color: Colors.amber.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: const Color(0xFFE31E24).withOpacity(0.2),
-                      width: 1,
-                    ),
+                    border: Border.all(color: Colors.amber.withOpacity(0.5)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -481,51 +438,67 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
                       Row(
                         children: [
                           const FaIcon(
-                            FontAwesomeIcons.userShield,
-                            color: Color(0xFFE31E24),
-                            size: 14,
+                            FontAwesomeIcons.triangleExclamation,
+                            color: Colors.amber,
+                            size: 18,
                           ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'INFORMACIÓN DE CUENTA',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFE31E24),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Este colaborador no tiene una cuenta para acceder al sistema',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildInfoItem('Usuario', '@$_usuarioEmpleado'),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Para permitir que este colaborador inicie sesión en el sistema, necesita crear una cuenta de usuario con un rol asignado.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _gestionarCuentaEmpleado(context),
+                          icon: const FaIcon(
+                            FontAwesomeIcons.userPlus,
+                            size: 16,
                           ),
-                          if (_rolCuentaEmpleado != null)
-                            Expanded(
-                              child: _buildInfoItem('Rol de cuenta', _rolCuentaEmpleado!),
+                          label: const Text('Crear Cuenta de Usuario'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber,
+                            foregroundColor: Colors.black87,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
                             ),
-                        ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
+                )
+              : EmpleadosUtils.buildInfoCuentaContainer(
+                  isLoading: _isLoadingCuenta,
+                  usuarioActual: _usuarioEmpleado,
+                  rolCuentaActual: _rolCuentaEmpleado,
+                  onGestionarCuenta: () => _gestionarCuentaEmpleado(context),
                 ),
-                const SizedBox(height: 12),
-              ],
               
+              const SizedBox(height: 12),
+              
+              // Información de sueldo
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Columna izquierda
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildInfoItem('Sueldo', widget.empleado.sueldo != null 
-                          ? 'S/ ${widget.empleado.sueldo!.toStringAsFixed(2)}' 
-                          : 'No especificado'),
-                      ],
+                    child: EmpleadosUtils.buildInfoItem(
+                      'Sueldo', 
+                      EmpleadosUtils.formatearSueldo(widget.empleado.sueldo)
                     ),
                   ),
                 ],
@@ -581,143 +554,51 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
   }
 
   void _mostrarHorarioEmpleado(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => EmpleadoHorarioDialog(empleado: widget.empleado),
-    );
+    EmpleadosUtils.mostrarHorarioEmpleado(context, widget.empleado);
   }
 
   Future<void> _gestionarCuentaEmpleado(BuildContext context) async {
-    // Obtener información de la cuenta del empleado
     try {
-      // Mostrar indicador de carga
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Dialog(
-          backgroundColor: Color(0xFF1A1A1A),
-          child: Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text(
-                  'Cargando información de cuenta...',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
-      // Obtener roles disponibles
-      final roles = await api.cuentasEmpleados.getRolesCuentas();
-      
-      // Obtener información de la cuenta (si existe)
-      Map<String, dynamic>? cuentaInfo;
-      String? cuentaId;
-      String? usuarioActual;
-      int? rolActualId;
-
-      // Verificar si el empleado ya tiene asociada una cuenta directamente desde su modelo
-      if (EmpleadosUtils.tieneCuentaAsociada(widget.empleado)) {
-        cuentaId = widget.empleado.cuentaEmpleadoId;
+      // Si ya sabemos que el empleado no tiene cuenta, no mostrar diálogo de carga
+      // y pasar directamente a mostrar el formulario de creación
+      if (_cuentaNoEncontrada) {
+        final cuentaCreada = await EmpleadosUtils.gestionarCuenta(
+          context, 
+          widget.empleado,
+        );
         
-        try {
-          // Obtener detalles de la cuenta usando el ID de cuenta del empleado
-          if (cuentaId != null) {
-            final cuentaIdInt = int.tryParse(cuentaId);
-            if (cuentaIdInt != null) {
-              cuentaInfo = await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
-              if (cuentaInfo != null) {
-                usuarioActual = cuentaInfo['usuario']?.toString();
-                rolActualId = cuentaInfo['rolCuentaEmpleadoId'];
-              }
-            }
-          }
-        } catch (e) {
-          // Manejar específicamente errores de autenticación
-          if (e.toString().contains('401') || 
-              e.toString().contains('Sesión expirada') || 
-              e.toString().contains('No autorizado')) {
-            debugPrint('Error de autenticación al obtener detalles de cuenta: $e');
-          } else {
-            debugPrint('Error al obtener detalles de cuenta: $e');
-          }
-        }
-        
-      } else {
-        // Si no tiene cuenta asociada en el modelo, intentar buscarla por ID de empleado
-        try {
-          cuentaInfo = await api.cuentasEmpleados.getCuentaByEmpleadoId(widget.empleado.id);
-          if (cuentaInfo != null) {
-            cuentaId = cuentaInfo['id']?.toString();
-            usuarioActual = cuentaInfo['usuario']?.toString();
-            rolActualId = cuentaInfo['rolCuentaEmpleadoId'];
-          }
-        } catch (e) {
-          // Manejar específicamente errores de autenticación
-          if (e.toString().contains('401') || 
-              e.toString().contains('Sesión expirada') || 
-              e.toString().contains('No autorizado')) {
-            debugPrint('Error de autenticación al obtener cuenta por empleado: $e');
-          } else {
-            debugPrint('Error al obtener cuenta por empleado: $e');
-          }
-          // Si hay un error que no sea 404, propagar para manejo general
-          if (!(e is ApiException && e.statusCode == 404)) {
-            rethrow;
-          }
-        }
-      }
-      
-      // Si ya tenemos información del usuario y rol en el estado, usarla
-      if (_usuarioEmpleado != null && cuentaId != null && usuarioActual == null) {
-        usuarioActual = _usuarioEmpleado;
-        
-        if (_rolCuentaEmpleado != null && rolActualId == null) {
-          // Buscar el ID del rol basado en el nombre
-          final rolInfo = roles.firstWhere(
-            (r) => r['nombre'] == _rolCuentaEmpleado || r['codigo'] == _rolCuentaEmpleado,
-            orElse: () => <String, dynamic>{},
+        if (cuentaCreada && context.mounted) {
+          EmpleadosUtils.mostrarMensaje(
+            context,
+            mensaje: 'Cuenta creada correctamente'
           );
           
-          if (rolInfo.isNotEmpty) {
-            rolActualId = rolInfo['id'];
-          }
+          // Recargar información de cuenta
+          _cargarInformacionCuenta();
         }
+        return;
       }
       
-      debugPrint('Cuenta encontrada: ID=$cuentaId, Usuario=$usuarioActual, RolID=$rolActualId');
-      
-      if (!context.mounted) return;
-      
-      // Cerrar diálogo de carga
-      Navigator.pop(context);
-      
-      // Mostrar diálogo de gestión de cuenta
-      final result = await showDialog<bool>(
-        context: context,
-        builder: (context) => EmpleadoCuentaDialog(
-          empleadoId: widget.empleado.id,
-          empleadoNombre: '${widget.empleado.nombre} ${widget.empleado.apellidos}',
-          cuentaId: cuentaId,
-          usuarioActual: usuarioActual,
-          rolActualId: rolActualId,
-          roles: roles,
-        ),
+      // Para otros casos, mostrar indicador de carga como antes
+      await EmpleadosUtils.mostrarDialogoCarga(
+        context, 
+        mensaje: 'Cargando información de cuenta...',
+        barrierDismissible: true // Permitir cancelar el diálogo si tarda demasiado
       );
+
+      // Usar la función de utilidad para gestionar la cuenta
+      final cuentaActualizada = await EmpleadosUtils.gestionarCuenta(context, widget.empleado);
+      
+      // Cerrar diálogo de carga (si sigue abierto)
+      if (context.mounted && Navigator.of(context).canPop()) {
+        Navigator.pop(context);
+      }
       
       // Si se realizó algún cambio, actualizar la información
-      if (result == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cuenta actualizada correctamente'),
-            backgroundColor: Colors.green,
-          ),
+      if (cuentaActualizada && context.mounted) {
+        EmpleadosUtils.mostrarMensaje(
+          context,
+          mensaje: 'Cuenta actualizada correctamente'
         );
         
         // Recargar información de cuenta
@@ -732,52 +613,59 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
       }
       
       // Determinar el tipo de error para mostrar un mensaje apropiado
-      String errorMessage;
-      if (e.toString().contains('401') || 
-          e.toString().contains('Sesión expirada') || 
-          e.toString().contains('No autorizado')) {
-        errorMessage = 'Sesión expirada. Por favor, inicie sesión nuevamente.';
-      } else {
-        errorMessage = 'Error al gestionar cuenta: $e';
+      // Si es un error "no encontrado", mostrar el formulario de creación de cuenta
+      final bool esErrorNotFound = e.toString().contains('404') || 
+          e.toString().contains('not found') || 
+          e.toString().contains('no encontrado') ||
+          e.toString().contains('no existe') ||
+          e.toString().contains('no tiene cuenta');
+          
+      final bool esErrorAutenticacion = e.toString().contains('401') && 
+          (e.toString().contains('No autorizado') || 
+           e.toString().contains('Sesión expirada') ||
+           e.toString().contains('token inválido'));
+      
+      if (esErrorNotFound) {
+        // Si es un error de "no encontrado", simplemente establecer que no hay cuenta
+        // y mostrar el formulario de creación de cuenta
+        setState(() {
+          _cuentaNoEncontrada = true;
+          _usuarioEmpleado = null;
+          _rolCuentaEmpleado = null;
+          _isLoadingCuenta = false; // Asegurar que no se quede en estado de carga
+        });
+        
+        // Mostrar el diálogo para crear cuenta inmediatamente
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (context.mounted) {
+          final cuentaCreada = await EmpleadosUtils.gestionarCuenta(context, widget.empleado);
+          if (cuentaCreada && context.mounted) {
+            EmpleadosUtils.mostrarMensaje(
+              context,
+              mensaje: 'Cuenta creada correctamente'
+            );
+            
+            // Recargar información de cuenta
+            _cargarInformacionCuenta();
+          }
+        }
+        return;
       }
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-          action: e.toString().contains('401') ? SnackBarAction(
-            label: 'Iniciar sesión',
-            textColor: Colors.white,
-            onPressed: () {
-              // TODO: Implementar navegación a la pantalla de login
-              // Navigator.of(context).pushReplacementNamed('/login');
-            },
-          ) : null,
-        ),
+      final String errorMessage = esErrorAutenticacion
+          ? 'Sesión expirada. Por favor, inicie sesión nuevamente.'
+          : 'Error al gestionar cuenta: $e';
+      
+      EmpleadosUtils.mostrarMensaje(
+        context,
+        mensaje: errorMessage,
+        esError: true,
+        accion: esErrorAutenticacion ? () {
+          // TODO: Implementar navegación a la pantalla de login
+          // Navigator.of(context).pushReplacementNamed('/login');
+        } : null,
+        textoAccion: esErrorAutenticacion ? 'Iniciar sesión' : null,
       );
     }
-  }
-
-  Widget _buildInfoItem(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.white.withOpacity(0.6),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 15,
-            color: Colors.white,
-          ),
-        ),
-      ],
-    );
   }
 } 

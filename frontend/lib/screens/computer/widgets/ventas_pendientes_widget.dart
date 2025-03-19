@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'ventas_pendientes_utils.dart';
 
 class PendingSalesWidget extends StatefulWidget {
   final Function(Map<String, dynamic>) onSaleSelected;
   final List<Map<String, dynamic>> ventasPendientes;
+  final VoidCallback? onReload;
 
   const PendingSalesWidget({
     super.key,
     required this.onSaleSelected,
     required this.ventasPendientes,
+    this.onReload,
   });
 
   @override
@@ -17,18 +20,28 @@ class PendingSalesWidget extends StatefulWidget {
 
 class _PendingSalesWidgetState extends State<PendingSalesWidget> {
   bool _isLoading = false;
-
+  String _searchText = '';
+  final TextEditingController _searchController = TextEditingController();
+  
   @override
   void initState() {
     super.initState();
     _cargarVentasPendientes();
   }
+  
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   Future<void> _cargarVentasPendientes() async {
     setState(() => _isLoading = true);
     try {
-      // Usar los datos de prueba proporcionados
-      setState(() {});
+      // Llamar al callback externo si existe
+      if (widget.onReload != null) {
+        widget.onReload!();
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -42,6 +55,35 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
         setState(() => _isLoading = false);
       }
     }
+  }
+  
+  // Filtrar ventas pendientes por el texto de búsqueda
+  List<Map<String, dynamic>> get ventasFiltradas {
+    if (_searchText.isEmpty) {
+      return widget.ventasPendientes;
+    }
+    
+    return widget.ventasPendientes.where((venta) {
+      // Buscar en nombre de cliente
+      final nombreCliente = venta['cliente']['nombre'].toString().toLowerCase();
+      if (nombreCliente.contains(_searchText.toLowerCase())) return true;
+      
+      // Buscar en documento de cliente
+      final documento = venta['cliente']['documento'].toString().toLowerCase();
+      if (documento.contains(_searchText.toLowerCase())) return true;
+      
+      // Buscar en ID de venta
+      final id = venta['id'].toString().toLowerCase();
+      if (id.contains(_searchText.toLowerCase())) return true;
+      
+      // Buscar en productos
+      final tieneProductoCoincidente = (venta['productos'] as List<dynamic>).any((producto) {
+        final nombreProducto = producto['nombre'].toString().toLowerCase();
+        return nombreProducto.contains(_searchText.toLowerCase());
+      });
+      
+      return tieneProductoCoincidente;
+    }).toList();
   }
 
   @override
@@ -89,11 +131,38 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
             ),
           ),
           
+          // Campo de búsqueda
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                isDense: true,
+                filled: true,
+                fillColor: const Color(0xFF1A1A1A),
+                hintText: 'Buscar por cliente, documento o producto...',
+                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                prefixIcon: Icon(Icons.search, color: Colors.grey[400], size: 20),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchText = value;
+                });
+              },
+            ),
+          ),
+          
           // Lista de ventas pendientes
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : widget.ventasPendientes.isEmpty
+                : ventasFiltradas.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -123,9 +192,11 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
-                        itemCount: widget.ventasPendientes.length,
+                        itemCount: ventasFiltradas.length,
                         itemBuilder: (context, index) {
-                          final venta = widget.ventasPendientes[index];
+                          final venta = ventasFiltradas[index];
+                          final esProforma = VentasPendientesUtils.esProforma(venta['id'].toString());
+                          
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
                             color: const Color(0xFF1A1A1A),
@@ -145,12 +216,18 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
                                         Container(
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFE31E24).withOpacity(0.1),
+                                            color: esProforma
+                                                ? const Color(0xFF2196F3).withOpacity(0.1)
+                                                : const Color(0xFFE31E24).withOpacity(0.1),
                                             borderRadius: BorderRadius.circular(8),
                                           ),
-                                          child: const FaIcon(
-                                            FontAwesomeIcons.user,
-                                            color: Color(0xFFE31E24),
+                                          child: FaIcon(
+                                            esProforma
+                                                ? FontAwesomeIcons.fileInvoiceDollar
+                                                : FontAwesomeIcons.user,
+                                            color: esProforma
+                                                ? const Color(0xFF2196F3)
+                                                : const Color(0xFFE31E24),
                                             size: 16,
                                           ),
                                         ),
@@ -182,13 +259,17 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
                                             vertical: 6,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFE31E24).withOpacity(0.1),
+                                            color: esProforma
+                                                ? const Color(0xFF2196F3).withOpacity(0.1)
+                                                : const Color(0xFFE31E24).withOpacity(0.1),
                                             borderRadius: BorderRadius.circular(20),
                                           ),
                                           child: Text(
                                             'S/ ${venta['total'].toStringAsFixed(2)}',
-                                            style: const TextStyle(
-                                              color: Color(0xFFE31E24),
+                                            style: TextStyle(
+                                              color: esProforma
+                                                  ? const Color(0xFF2196F3)
+                                                  : const Color(0xFFE31E24),
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -197,13 +278,37 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
                                     ),
                                     const SizedBox(height: 12),
                                     const Divider(color: Colors.white24),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      '${venta['productos'].length} productos',
-                                      style: TextStyle(
-                                        color: Colors.grey[400],
-                                        fontSize: 12,
-                                      ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          '${venta['productos'].length} productos',
+                                          style: TextStyle(
+                                            color: Colors.grey[400],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        if (esProforma)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF2196F3).withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'PROFORMA',
+                                              style: TextStyle(
+                                                color: Color(0xFF2196F3),
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                     const SizedBox(height: 4),
                                     Text(

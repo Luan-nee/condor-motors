@@ -3,7 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'widgets/stock_list.dart';
 import 'widgets/stock_utils.dart';
 import '../../api/protected/stocks.api.dart';
-import '../../api/main.api.dart';
+import '../../main.dart' show api;
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -25,10 +25,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   @override
   void initState() {
     super.initState();
-    // Inicializar API con la URL correcta del backend
-    // TODO: Actualizar con la URL correcta cuando esté en producción
-    final apiClient = ApiClient(baseUrl: 'http://localhost:3000/api');
-    _stocksApi = StocksApi(apiClient);
+    // Usar la instancia global de API en lugar de crear una nueva
+    _stocksApi = api.stocks;
     
     // Cargar datos de sucursales
     _cargarDatos();

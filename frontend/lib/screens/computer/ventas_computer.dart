@@ -3,7 +3,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../api/index.dart';
 import '../../main.dart' show api;
 import 'widgets/ventas_pendientes_widget.dart';
-import 'widgets/form_sales_computer.dart' show NumericKeypad, ProcessingDialog, DebugPrint;
+import 'widgets/ventas_pendientes_utils.dart';
+import 'widgets/form_sales_computer.dart' show NumericKeypad, ProcessingDialog, DebugPrint, ProformaSaleDialog;
 
 /// Clase utilitaria para operaciones con ventas y formateo de montos
 /// 
@@ -133,62 +134,14 @@ class SalesComputerScreen extends StatefulWidget {
 
 class _SalesComputerScreenState extends State<SalesComputerScreen> {
   late final VentasApi _ventasApi;
+  late final ProformaVentaApi _proformasApi;
   bool _isLoading = false;
   List<Venta> _ventas = [];
+  List<ProformaVenta> _proformasObj = [];
+  List<Map<String, dynamic>> _proformasFormateadas = [];
   
-  // Datos de prueba para productos
-
-  // Datos de prueba para clientes
-
-  // Datos de prueba para ventas pendientes
-  final List<Map<String, dynamic>> _ventasPendientes = [
-    {
-      'id': 'V001',
-      'cliente': {
-        'id': 1,
-        'nombre': 'Juan Pérez',
-        'documento': '12345678',
-        'telefono': '987654321',
-      },
-      'productos': [
-        {
-          'id': 1,
-          'nombre': 'Casco MT Thunder 3',
-          'precio': 299.99,
-          'cantidad': 1,
-        },
-        {
-          'id': 2,
-          'nombre': 'Aceite Motul 5100 4T',
-          'precio': 89.99,
-          'cantidad': 2,
-        },
-      ],
-      'total': 479.97,
-      'fecha': DateTime.now().subtract(const Duration(minutes: 15)).toIso8601String(),
-      'estado': 'PENDIENTE',
-    },
-    {
-      'id': 'V002',
-      'cliente': {
-        'id': 2,
-        'nombre': 'María García',
-        'documento': '87654321',
-        'telefono': '123456789',
-      },
-      'productos': [
-        {
-          'id': 3,
-          'nombre': 'Kit de Frenos Brembo',
-          'precio': 850.00,
-          'cantidad': 1,
-        },
-      ],
-      'total': 850.00,
-      'fecha': DateTime.now().subtract(const Duration(minutes: 30)).toIso8601String(),
-      'estado': 'PENDIENTE',
-    },
-  ];
+  // Datos de prueba para ventas pendientes - Será reemplazado con proformas reales
+  final List<Map<String, dynamic>> _ventasPendientes = [];
 
   // Variables para el procesamiento de ventas pendientes
   Map<String, dynamic>? _ventaSeleccionada;
@@ -202,7 +155,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   void initState() {
     super.initState();
     _ventasApi = api.ventas;
+    _proformasApi = api.proformas;
     _cargarVentas();
+    _cargarProformas();
   }
 
   @override
@@ -250,8 +205,17 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   Future<void> _cargarVentas() async {
     setState(() => _isLoading = true);
     try {
+      // Obtener sucursalId de forma asíncrona si es necesario
+      String? sucursalIdParam;
+      if (widget.sucursalId != null) {
+        sucursalIdParam = widget.sucursalId?.toString();
+      } else {
+        final sucId = await VentasPendientesUtils.obtenerSucursalId();
+        sucursalIdParam = sucId?.toString();
+      }
+      
       final ventasResponse = await _ventasApi.getVentas(
-        sucursalId: widget.sucursalId?.toString(),
+        sucursalId: sucursalIdParam,
       );
       
       if (!mounted) return;
@@ -310,41 +274,53 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   
   // Método para seleccionar una venta pendiente para procesar
   void _seleccionarVenta(Map<String, dynamic> venta) {
-    // Crear una copia profunda para evitar referencias compartidas
-    final ventaCopia = _crearCopiaVenta(venta);
+    DebugPrint.log('Venta seleccionada: ${venta['id']}');
     
-    // Guardar el total original para mostrar si hay cambios
-    ventaCopia['total_original'] = ventaCopia['total'];
+    // Verificar si es una proforma
+    final esProforma = VentasPendientesUtils.esProforma(venta['id'].toString());
     
+    if (esProforma) {
+      // Buscar la proforma en la lista de objetos
+      final proformaId = VentasPendientesUtils.extraerIdProforma(venta['id'].toString());
+      if (proformaId != null) {
+        final proformaObj = _proformasObj.firstWhere(
+          (p) => p.id == proformaId,
+          orElse: () => throw Exception('Proforma no encontrada: $proformaId'),
+        );
+        
+        // Mostrar diálogo especializado para proformas
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => ProformaSaleDialog(
+            proforma: proformaObj,
+            onConfirm: (ventaData) {
+              Navigator.of(context).pop();
+              setState(() {
+                _ventaSeleccionada = ventaData;
+                _montoIngresado = _ventaSeleccionada!['total'].toString();
+                _nombreCliente = _ventaSeleccionada!['cliente']['nombre'];
+              });
+              _procesarPago();
+            },
+            onCancel: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        );
+        return;
+      }
+    }
+    
+    // Comportamiento normal para ventas que no son proformas
     setState(() {
-      _ventaSeleccionada = ventaCopia;
-      _montoIngresado = '';
-      _nombreCliente = ventaCopia['cliente']['nombre'];
-      _tipoDocumento = 'Boleta'; // Por defecto
+      _ventaSeleccionada = venta;
+      _montoIngresado = _ventaSeleccionada!['total'].toString();
+      _nombreCliente = _ventaSeleccionada!['cliente']['nombre'];
     });
-    
-    // Mostrar el formulario como popup
-    _mostrarFormularioVenta(ventaCopia);
   }
   
   // Método para crear una copia profunda de una venta
-  Map<String, dynamic> _crearCopiaVenta(Map<String, dynamic> original) {
-    final copia = Map<String, dynamic>.from(original);
-    
-    // Copiar profundamente los productos
-    if (copia.containsKey('productos') && copia['productos'] is List) {
-      copia['productos'] = (copia['productos'] as List).map((producto) {
-        return Map<String, dynamic>.from(producto);
-      }).toList();
-    }
-    
-    // Copiar profundamente el cliente
-    if (copia.containsKey('cliente') && copia['cliente'] is Map) {
-      copia['cliente'] = Map<String, dynamic>.from(copia['cliente']);
-    }
-    
-    return copia;
-  }
   
   // Método para mostrar el formulario de ventas como un popup
   void _mostrarFormularioVenta(Map<String, dynamic> venta) {
@@ -723,35 +699,42 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     setState(() => _procesandoPago = true);
     
     try {
-      // Primero actualizamos las cantidades de productos si hubo cambios
-      await _actualizarProductosVenta();
+      // Determinar si es una proforma que debemos convertir
+      final esProforma = VentasPendientesUtils.esProforma(_ventaSeleccionada!['id'].toString());
       
-      // Mostrar dialog de procesamiento
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => ProcessingDialog(documentType: _tipoDocumento),
-        );
-      }
-      
-      // Simular procesamiento (aquí harías la llamada a la API)
-      await Future.delayed(const Duration(seconds: 2));
-      
-      DebugPrint.log('Pago procesado exitosamente');
-      DebugPrint.log('Marcando venta como procesada');
-      
-      // Cerrar dialog de procesamiento
-      if (mounted) {
-        Navigator.of(context).pop();
+      if (esProforma) {
+        await _convertirProformaAVenta(_ventaSeleccionada!);
+      } else {
+        // Proceso original para ventas normales
+        await _actualizarProductosVenta();
         
-        // Mostrar mensaje de éxito
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Pago procesado exitosamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        // Mostrar dialog de procesamiento
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => ProcessingDialog(documentType: _tipoDocumento),
+          );
+        }
+        
+        // Simular procesamiento (aquí harías la llamada a la API)
+        await Future.delayed(const Duration(seconds: 2));
+        
+        DebugPrint.log('Pago procesado exitosamente');
+        DebugPrint.log('Marcando venta como procesada');
+        
+        // Cerrar dialog de procesamiento
+        if (mounted) {
+          Navigator.of(context).pop();
+          
+          // Mostrar mensaje de éxito
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Pago procesado exitosamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       }
       
       // Reiniciar estado
@@ -763,8 +746,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         _procesandoPago = false;
       });
       
-      // Recargar ventas
+      // Recargar ventas y proformas
       await _cargarVentas();
+      await _cargarProformas();
     } catch (e) {
       DebugPrint.log('Error al procesar pago: $e');
       
@@ -876,9 +860,6 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     }
   }
   // Modificar la referencia a _formatearMonto para usar la clase utilitaria
-  double _formatearMonto(double monto) {
-    return VentasUtils.formatearMonto(monto);
-  }
 
   // Widget para botones de cantidad
   Widget _buildQuantityButton({
@@ -904,108 +885,140 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     );
   }
 
-  Future<void> _mostrarDialogoImpresion() async {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF2D2D2D),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const FaIcon(
-                FontAwesomeIcons.print,
-                color: Color(0xFF4CAF50),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Imprimir Comprobante',
-              style: TextStyle(color: Colors.white),
-            ),
-          ],
+
+
+  // Método para cargar proformas desde la API
+  Future<void> _cargarProformas() async {
+    setState(() => _isLoading = true);
+    try {
+      // Usar el ID de sucursal del widget, o obtenerlo de las utilidades de forma asíncrona
+      int? sucursalId;
+      if (widget.sucursalId != null) {
+        sucursalId = widget.sucursalId;
+      } else {
+        sucursalId = await VentasPendientesUtils.obtenerSucursalId();
+      }
+      
+      if (sucursalId == null) {
+        throw Exception('No se pudo determinar el ID de sucursal');
+      }
+      
+      final proformasResponse = await _proformasApi.getProformasVenta(
+        sucursalId: sucursalId,
+      );
+      
+      if (!mounted) return;
+      
+      // Obtener lista de objetos ProformaVenta
+      final proformas = _proformasApi.parseProformasVenta(proformasResponse['data']);
+      
+      // Convertir a formato compatible con PendingSalesWidget
+      final proformasFormateadas = VentasPendientesUtils.convertirProformasAVentasPendientes(proformas);
+      
+      setState(() {
+        _proformasObj = proformas;
+        _proformasFormateadas = proformasFormateadas;
+      });
+      
+      DebugPrint.log('Proformas cargadas: ${_proformasObj.length}');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar proformas: $e'),
+          backgroundColor: Colors.red,
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              '¿Desea imprimir el comprobante de venta?',
-              style: TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _imprimirComprobante();
-                  },
-                  icon: const FaIcon(FontAwesomeIcons.print),
-                  label: const Text('Imprimir'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const FaIcon(FontAwesomeIcons.xmark),
-                  label: const Text('Cancelar'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE31E24),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
-
-  Future<void> _imprimirComprobante() async {
-    // Simular generación de PDF
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        backgroundColor: Color(0xFF2D2D2D),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Generando comprobante...',
-              style: TextStyle(color: Colors.white),
-            ),
-          ],
+  
+  // Método para convertir una proforma en venta
+  Future<void> _convertirProformaAVenta(Map<String, dynamic> proforma) async {
+    setState(() => _procesandoPago = true);
+    
+    try {
+      // Extraer ID numérico de la proforma
+      final proformaId = VentasPendientesUtils.extraerIdProforma(proforma['id']);
+      
+      if (proformaId == null) {
+        throw Exception('ID de proforma inválido: ${proforma['id']}');
+      }
+      
+      // Usar el ID de sucursal del widget, o obtenerlo de las utilidades de forma asíncrona
+      int? sucursalId;
+      if (widget.sucursalId != null) {
+        sucursalId = widget.sucursalId;
+      } else {
+        sucursalId = await VentasPendientesUtils.obtenerSucursalId();
+      }
+      
+      if (sucursalId == null) {
+        throw Exception('No se pudo determinar el ID de sucursal');
+      }
+      
+      // Preparar datos de venta
+      final datosVenta = {
+        'cliente': proforma['cliente'],
+        'productos': proforma['productos'],
+        'total': proforma['total'],
+        'metodoPago': 'EFECTIVO', // Por defecto
+        'tipoDocumento': _tipoDocumento,
+      };
+      
+      // Mostrar dialog de procesamiento
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => ProcessingDialog(documentType: _tipoDocumento),
+        );
+      }
+      
+      // Llamar a la API para convertir la proforma en venta
+      await _proformasApi.convertirProformaAVenta(
+        sucursalId: sucursalId,
+        proformaId: proformaId,
+        datosVenta: datosVenta,
+      );
+      
+      if (!mounted) return;
+      
+      // Cerrar dialog de procesamiento
+      Navigator.of(context).pop();
+      
+      // Mostrar mensaje de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Proforma convertida a venta exitosamente'),
+          backgroundColor: Colors.green,
         ),
-      ),
-    );
-
-    // Simular tiempo de generación
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-
-    // Cerrar diálogo de carga
-    Navigator.pop(context);
-
-    // Mostrar mensaje de éxito
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Comprobante generado exitosamente'),
-        backgroundColor: Colors.green,
-      ),
-    );
+      );
+      
+      // Recargar proformas y ventas
+      await _cargarProformas();
+      await _cargarVentas();
+      
+    } catch (e) {
+      if (!mounted) return;
+      
+      // Cerrar dialog si está abierto
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al convertir proforma a venta: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _procesandoPago = false);
+    }
   }
 
   @override
@@ -1043,20 +1056,27 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Recargar ventas',
             onPressed: _cargarVentas,
+          ),
+          IconButton(
+            icon: const FaIcon(FontAwesomeIcons.fileInvoiceDollar, size: 20),
+            tooltip: 'Recargar proformas',
+            onPressed: _cargarProformas,
           ),
         ],
       ),
       body: Row(
         children: [
-          // Panel izquierdo: Ventas pendientes
+          // Panel izquierdo: Ventas pendientes y proformas
           Expanded(
             flex: 3,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: PendingSalesWidget(
                 onSaleSelected: _seleccionarVenta,
-                ventasPendientes: _ventasPendientes,
+                ventasPendientes: [..._ventasPendientes, ..._proformasFormateadas],
+                onReload: _cargarProformas,
               ),
             ),
           ),

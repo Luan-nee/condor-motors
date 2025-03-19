@@ -3,15 +3,58 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'routes/routes.dart';
 import 'api/index.dart';
+import 'services/token_service.dart';
+import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'widgets/connection_status.dart';
 
 // Configuración global de API
 late CondorMotorsApi api;
+
+// Lista de servidores posibles para intentar conectarse
+final List<String> _serverUrls = [
+  'http://192.168.1.100:3000/api', // IP principal
+  'http://localhost:3000/api',      // Servidor local
+  'http://127.0.0.1:3000/api',      // Localhost alternativo
+];
+
+// Función para inicializar la API global
+void initializeApi(CondorMotorsApi instance) {
+  api = instance;
+}
 
 // Clave global para el navegador
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 // Definir fuentes una sola vez para reutilizarlas
 final interFontFamily = GoogleFonts.inter().fontFamily;
+
+// Comprobar conectividad con un servidor
+Future<bool> _checkServerConnectivity(String url) async {
+  try {
+    debugPrint('Comprobando conectividad con: $url');
+    final uri = Uri.parse(url.replaceAll('/api', ''));
+    final socket = await Socket.connect(uri.host, uri.port, timeout: Duration(seconds: 3));
+    socket.destroy();
+    debugPrint('Conexión exitosa con: $url');
+    return true;
+  } catch (e) {
+    debugPrint('No se pudo conectar a: $url - Error: $e');
+    return false;
+  }
+}
+
+// Guardar la URL del servidor en preferencias
+Future<void> _saveServerUrl(String url) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('server_url', url);
+}
+
+// Obtener la última URL del servidor usada
+Future<String?> _getLastServerUrl() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('server_url');
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,230 +72,204 @@ void main() async {
     ),
   );
 
-  // Inicializar API con la URL base
+  // Inicializar API
   debugPrint('Inicializando API...');
-  String apiBaseUrl = 'http://localhost:3000/api';
   
-  // En un entorno de producción, podrías cargar la URL desde un archivo de configuración
-  debugPrint('URL base de la API: $apiBaseUrl');
+  // Obtener la última URL usada
+  final lastUrl = await _getLastServerUrl();
+  if (lastUrl != null) {
+    _serverUrls.insert(0, lastUrl); // Priorizar la última URL usada
+  }
   
-  api = CondorMotorsApi(baseUrl: apiBaseUrl);
-  await api.initAuthService();
+  // Verificar conectividad con los servidores en orden
+  String? workingUrl;
+  for (final url in _serverUrls) {
+    if (await _checkServerConnectivity(url)) {
+      workingUrl = url;
+      break;
+    }
+  }
+  
+  // Si no se encuentra ningún servidor disponible, usar el primero de la lista
+  final baseUrl = workingUrl ?? _serverUrls.first;
+  debugPrint('URL base de la API: $baseUrl');
+  
+  // Guardar la URL seleccionada para futuras sesiones
+  if (workingUrl != null) {
+    await _saveServerUrl(workingUrl);
+  }
+  
+  final tokenService = TokenService.instance;
+  
+  // Configurar la URL base en TokenService
+  tokenService.setBaseUrl(baseUrl);
+  
+  final apiInstance = CondorMotorsApi(baseUrl: baseUrl, tokenService: tokenService);
+  
+  // Inicializar la API global
+  initializeApi(apiInstance);
   debugPrint('API inicializada correctamente');
-
-  // Verificar si el usuario ya está autenticado
+  
+  // Verificar autenticación del usuario
+  debugPrint('Verificando autenticación del usuario...');
+  final isAuthenticated = await tokenService.loadTokens();
   String initialRoute = Routes.login;
   Map<String, dynamic>? userData;
   
-  try {
-    debugPrint('Verificando autenticación del usuario...');
-    final isAuthenticated = await api.authService.loadTokens();
-    
-    if (isAuthenticated) {
-      debugPrint('Token encontrado, obteniendo datos del usuario');
-      userData = api.authService.getUserData();
+  if (isAuthenticated) {
+    // Verificar si el token es realmente válido intentando hacer una petición sencilla
+    try {
+      debugPrint('Validando token con el servidor...');
+      // En lugar de solo hacer ping, verificamos si el token es válido
+      // usando el endpoint específico para ello
+      final isTokenValid = await apiInstance.auth.verificarToken();
       
-      if (userData != null) {
-        final rol = userData['rol']?.toString().toUpperCase();
-        debugPrint('Usuario autenticado con rol: $rol');
+      if (!isTokenValid) {
+        debugPrint('Token no validado por el servidor, redirigiendo a login');
+        // Limpiar token inválido
+        await tokenService.clearTokens();
+        initialRoute = Routes.login;
+      } else {
+        debugPrint('Token validado correctamente con el servidor');
+      }
+    } catch (e) {
+      debugPrint('Error al validar token: $e');
+      // Si hay un error, considerar que no está autenticado
+      initialRoute = Routes.login;
+      // Limpiar token inválido
+      await tokenService.clearTokens();
+    }
+
+    if (initialRoute != Routes.login) {
+      // Obtener datos del usuario guardados de forma segura
+      userData = await api.authService.getUserData();
+      
+      if (userData != null && userData['rol'] != null) {
+        // Normalizar el rol para asegurarnos de que es válido
+        String rol = userData['rol'] as String;
         
-        // Verificar que el token sea válido haciendo una petición de prueba
-        try {
-          debugPrint('Verificando validez del token...');
-          // Intentar hacer una petición simple para verificar el token
-          await api.sucursales.getSucursales();
-          debugPrint('Token válido, continuando...');
-          
-          if (rol != null && Routes.roles.containsKey(rol)) {
-            initialRoute = Routes.getInitialRoute(rol);
-            debugPrint('Ruta inicial determinada: $initialRoute');
-          } else {
-            debugPrint('Rol no válido o no reconocido: $rol');
-            // Si el rol no es válido, redirigir al login
-            initialRoute = Routes.login;
-            userData = null;
-            await api.authService.logout(); // Limpiar datos de sesión inválidos
+        // Verificar si necesitamos normalizar el rol
+        if (!Routes.roles.containsKey(rol)) {
+          // Intentar con versión en mayúsculas
+          final rolUpper = rol.toUpperCase();
+          if (Routes.roles.containsKey(rolUpper)) {
+            userData['rol'] = rolUpper;
+            debugPrint('Rol normalizado a mayúsculas: ${userData['rol']}');
+          } 
+          // Verificar casos específicos conocidos
+          else if (rol == 'adminstrador' || rolUpper == 'ADMINSTRADOR') {
+            userData['rol'] = 'ADMINISTRADOR';
+            debugPrint('Rol normalizado manualmente de "$rol" a "ADMINISTRADOR"');
           }
-        } catch (e) {
-          debugPrint('Error al verificar token: $e');
-          
-          // Intentar refrescar el token antes de rendirse
-          try {
-            debugPrint('Intentando refrescar el token...');
-            final newToken = await api.auth.refreshToken();
-            if (newToken.isNotEmpty) {
-              debugPrint('Token refrescado correctamente, verificando nuevamente...');
-              // Intentar nuevamente con el token refrescado
-              await api.sucursales.getSucursales();
-              debugPrint('Token refrescado válido, continuando...');
-              
-              if (rol != null && Routes.roles.containsKey(rol)) {
-                initialRoute = Routes.getInitialRoute(rol);
-                debugPrint('Ruta inicial determinada: $initialRoute');
-                // Actualizar el token en userData
-                userData!['token'] = newToken;
-              } else {
-                throw Exception('Rol no válido después de refrescar token');
-              }
-            } else {
-              throw Exception('No se pudo obtener un nuevo token');
-            }
-          } catch (refreshError) {
-            debugPrint('Error al refrescar token: $refreshError');
-            // Si hay un error en la petición, el token probablemente es inválido
-            initialRoute = Routes.login;
+          else if (rol == 'computadora' || rolUpper == 'COMPUTADORA') {
+            userData['rol'] = 'COMPUTADORA';
+            debugPrint('Rol normalizado manualmente de "$rol" a "COMPUTADORA"');
+          }
+          else if (rol == 'vendedor' || rolUpper == 'VENDEDOR') {
+            userData['rol'] = 'VENDEDOR';
+            debugPrint('Rol normalizado manualmente de "$rol" a "VENDEDOR"');
+          }
+          else {
+            // Si el rol no es reconocido, forzar logout
+            debugPrint('Rol no reconocido: $rol, forzando logout');
+            await api.authService.logout();
             userData = null;
-            await api.authService.logout(); // Limpiar token inválido
           }
         }
+        
+        // Si tenemos un rol normalizado válido, obtener la ruta inicial
+        if (userData != null) {
+          initialRoute = Routes.getInitialRoute(userData['rol'] as String);
+          debugPrint('Usuario autenticado con rol: ${userData['rol']}, redirigiendo a $initialRoute');
+        }
       } else {
-        debugPrint('No se pudieron recuperar los datos del usuario');
-        initialRoute = Routes.login;
-        await api.authService.logout(); // Limpiar datos de sesión incompletos
+        debugPrint('No se encontró un token válido, redirigiendo a login');
       }
     } else {
-      debugPrint('Usuario no autenticado, redirigiendo a login');
+      debugPrint('No se encontró un token válido, redirigiendo a login');
     }
-  } catch (e) {
-    debugPrint('Error al verificar autenticación: $e');
-    // En caso de error, redirigir al login
-    initialRoute = Routes.login;
-    // Intentar limpiar cualquier dato de sesión que pueda estar causando problemas
-    try {
-      await api.authService.logout();
-    } catch (e) {
-      debugPrint('Error al limpiar datos de sesión: $e');
-    }
+  } else {
+    debugPrint('No se encontró un token válido, redirigiendo a login');
   }
-
-  runApp(MyApp(
+  
+  runApp(CondorMotorsApp(
     initialRoute: initialRoute,
     userData: userData,
   ));
 }
 
-class MyApp extends StatelessWidget {
+class CondorMotorsApp extends StatelessWidget {
   final String initialRoute;
   final Map<String, dynamic>? userData;
-  
-  const MyApp({
-    Key? key, 
+
+  const CondorMotorsApp({
+    super.key,
     required this.initialRoute,
     this.userData,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Condors Motors',
+    // Crear la aplicación base
+    final app = MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
+      title: 'Condor Motors',
       theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        primaryColor: const Color(0xFFE31E24),
-        scaffoldBackgroundColor: const Color(0xFF1A1A1A),
         colorScheme: ColorScheme.fromSeed(
-          brightness: Brightness.dark,
           seedColor: const Color(0xFFE31E24),
-          primary: const Color(0xFFE31E24),
-          secondary: const Color(0xFF1E88E5),
+          brightness: Brightness.dark,
         ),
-        textTheme: TextTheme(
-          // Títulos
-          displayLarge: TextStyle(
-            fontFamily: interFontFamily,
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
-            height: 1.2,
-          ),
-          displayMedium: TextStyle(
-            fontFamily: interFontFamily,
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
-            height: 1.2,
-          ),
-          // Texto del cuerpo
-          bodyLarge: TextStyle(
-            fontFamily: interFontFamily,
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            letterSpacing: 0.5,
-            height: 1.5,
-          ),
-          bodyMedium: TextStyle(
-            fontFamily: interFontFamily,
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            letterSpacing: 0.25,
-            height: 1.5,
-          ),
-        ).apply(
-          displayColor: Colors.white,
-          bodyColor: Colors.white,
+        fontFamily: interFontFamily,
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        
+        // Configuración de AppBar
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1E1E1E),
+          foregroundColor: Colors.white,
+          elevation: 0,
         ),
-        platform: TargetPlatform.windows,
-        typography: Typography.material2021(
-          platform: TargetPlatform.windows,
-          black: Typography.blackMountainView.copyWith(
-            bodyLarge: TextStyle(fontFamily: interFontFamily, fontSize: 16, height: 1.5),
-            bodyMedium: TextStyle(fontFamily: interFontFamily, fontSize: 14, height: 1.5),
-          ),
-          white: Typography.whiteMountainView.copyWith(
-            bodyLarge: TextStyle(fontFamily: interFontFamily, fontSize: 16, height: 1.5),
-            bodyMedium: TextStyle(fontFamily: interFontFamily, fontSize: 14, height: 1.5),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.white.withOpacity(0.1),
-          border: OutlineInputBorder(
+        
+        // Configuración de diálogos
+        dialogTheme: DialogTheme(
+          backgroundColor: const Color(0xFF1E1E1E),
+          elevation: 5,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE31E24), width: 2),
           ),
         ),
+        
+        // Configuración de botones
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFE31E24),
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            elevation: 3,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            textStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
             ),
           ),
         ),
       ),
-      navigatorKey: navigatorKey,
-      initialRoute: initialRoute,
       onGenerateRoute: (settings) {
-        // Si tenemos datos de usuario y no estamos en la pantalla de login,
-        // pasarlos como argumentos a la ruta
-        if (userData != null && settings.name != Routes.login) {
-          debugPrint('Pasando datos de usuario a la ruta ${settings.name}');
-          return Routes.generateRoute(
-            RouteSettings(
-              name: settings.name,
-              arguments: userData,
-            ),
-          );
-        }
-        return Routes.generateRoute(settings);
+        return Routes.generateRoute(
+          settings,
+          initialRoute: initialRoute,
+          userData: userData,
+        );
       },
-      navigatorObservers: [
-        HeroController(),
-      ],
-      builder: (context, child) {
-        return child ?? const SizedBox.shrink();
-      },
+      initialRoute: initialRoute,
+    );
+    
+    // Envolver la aplicación con el widget de estado de conexión
+    // Esto mostrará una barra de estado cuando haya problemas de conectividad
+    return ConnectionStatusWidget(
+      child: app,
     );
   }
 }

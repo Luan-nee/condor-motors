@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';  // Importar para KeyboardListener
-import '../routes/routes.dart';
 import '../widgets/background.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../api/main.api.dart';
 import '../main.dart' show api;
 import '../api/index.dart' show CondorMotorsApi;
+import '../services/token_service.dart'; // Importar TokenService
+import '../utils/role_utils.dart'; // Importar utilidad de roles
 import 'dart:async';
 
 // Clase para manejar el ciclo de vida de la aplicación
@@ -111,8 +112,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Future<void> _updateApiBaseUrl(String serverIp) async {
     debugPrint('Actualizando URL base de la API a: http://$serverIp:3000/api');
     try {
+      // Obtener la instancia de TokenService
+      final tokenService = TokenService.instance;
+      
       // Reinicializar la API global con la nueva URL base
-      api = CondorMotorsApi(baseUrl: 'http://$serverIp:3000/api');
+      api = CondorMotorsApi(
+        baseUrl: 'http://$serverIp:3000/api',
+        tokenService: tokenService,
+      );
+      
       // Inicializar el servicio de autenticación
       await api.initAuthService();
       debugPrint('API inicializada correctamente con nueva URL base');
@@ -140,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Configuración del Servidor'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -170,33 +178,39 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
             onPressed: () async {
               final newIp = ipController.text.trim();
               if (newIp.isNotEmpty) {
-                Navigator.pop(context);
+                // Cerrar el diálogo usando el contexto de ese diálogo
+                Navigator.pop(dialogContext);
+                
                 // Mostrar indicador de carga mientras se actualiza la URL
+                if (!mounted) return;
+                
                 setState(() {
                   _isLoading = true;
                 });
+                
                 await _saveServerIp(newIp);
-                if (mounted) {
-                  setState(() {
-                    _isLoading = false;
-                  });
-                  // Mostrar mensaje de confirmación
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Servidor actualizado a: $newIp'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                }
+                
+                // Verificar si el widget sigue montado después de la operación asíncrona
+                if (!mounted) return;
+                
+                setState(() {
+                  _isLoading = false;
+                });
+                
+                // Mostrar mensaje de confirmación (verificando nuevamente mounted)
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Servidor actualizado a: $newIp'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
               }
             },
             child: const Text('Guardar'),
@@ -288,6 +302,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         await _saveCredentials();
       }
 
+      // Comprobación de seguridad: si el widget ya no está montado, no hacer nada más
       if (!mounted) return;
 
       // Navegar a la ruta correspondiente según el rol del usuario
@@ -296,24 +311,28 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       
       debugPrint('Rol del usuario (código original): $rolCodigo');
       
-      // Convertir el código de rol a un rol válido
-      final rol = _getRoleFromCodigo(rolCodigo);
-      debugPrint('Rol convertido para la aplicación: $rol');
+      // Normalizar el rol utilizando nuestra utilidad centralizada
+      final rolNormalizado = RoleUtils.normalizeRole(rolCodigo);
       
-      // Verificar que el rol sea válido
-      if (!Routes.roles.containsKey(rol)) {
+      // Verificar si el rol no pudo ser normalizado
+      if (rolNormalizado == 'DESCONOCIDO') {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Rol no válido: $rol. Contacte al administrador.';
+          _errorMessage = 'Rol no válido: $rolCodigo. Contacte al administrador.';
         });
         return;
       }
       
-      final initialRoute = Routes.getInitialRoute(rol);
+      // Actualizar el rol en los datos de usuario
+      userData['rol'] = rolNormalizado;
+      debugPrint('Rol normalizado a: $rolNormalizado');
+      
+      // Determinar la ruta inicial basada en el rol normalizado
+      final initialRoute = RoleUtils.getInitialRoute(rolNormalizado);
       debugPrint('Ruta inicial determinada: $initialRoute');
       
-      // Actualizar el rol en userData para que coincida con los roles de la aplicación
-      userData['rol'] = rol;
+      // Navigación segura después de operaciones asíncronas
+      if (!mounted) return;
       
       Navigator.pushReplacementNamed(
         context,
@@ -348,38 +367,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         _isLoading = false;
         _errorMessage = errorMsg;
       });
-    }
-  }
-  
-  // Método para convertir código de rol a un rol válido
-  String _getRoleFromCodigo(String codigo) {
-    // Normalizar el código a mayúsculas para comparación
-    final codigoUpper = codigo.toUpperCase();
-    
-    switch (codigoUpper) {
-      case 'ADM':
-      case 'ADMIN':
-      case 'ADMINISTRADOR':
-      case 'ADMINSTRADOR': // Corregir error tipográfico del servidor
-        return 'ADMINISTRADOR';
-      case 'VEN':
-      case 'VENDEDOR':
-        return 'VENDEDOR';
-      case 'COMP':
-      case 'COMPUTER':
-      case 'COMPUTADORA':
-        return 'COMPUTADORA';
-      case 'GER':
-      case 'GERENTE':
-        return 'ADMINISTRADOR'; // Los gerentes tienen acceso de administrador
-      case 'SUP':
-      case 'SUPERVISOR':
-        return 'ADMINISTRADOR'; // Los supervisores tienen acceso de administrador
-      default:
-        debugPrint('Rol desconocido: $codigo, intentando usar como está');
-        // Si no coincide con ninguno conocido, devolver el código en mayúsculas
-        // para intentar que coincida con alguno de los roles definidos
-        return codigoUpper;
     }
   }
 

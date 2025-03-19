@@ -9,18 +9,13 @@ class CategoriasApi {
   
   /// Obtiene todas las categorías
   /// 
-  /// [page] Número de página para paginación
-  /// [pageSize] Tamaño de página para paginación
-  Future<List<dynamic>> getCategorias({
-    int page = 1,
-    int pageSize = 50,
-  }) async {
+  /// Ordenadas alfabéticamente por nombre
+  Future<List<dynamic>> getCategorias() async {
     try {
       debugPrint('CategoriasApi: Obteniendo categorías');
       
       final queryParams = <String, String>{
-        'page': page.toString(),
-        'page_size': pageSize.toString(),
+        'sort_by': 'nombre',
       };
       
       final response = await _api.authenticatedRequest(

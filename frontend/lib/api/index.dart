@@ -2,18 +2,10 @@ export 'main.api.dart';
 export 'auth.api.dart';
 export 'protected/index.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
 import 'main.api.dart';
 import 'auth.api.dart';
-import 'protected/sucursales.api.dart';
-import 'protected/empleados.api.dart';
-import 'protected/marcas.api.dart';
-import 'protected/sucursal.admin.api.dart';
-import 'protected/ventas.api.dart';
-import 'protected/movimientos.api.dart';
-import 'protected/productos.api.dart';
-import 'protected/stocks.api.dart';
-import 'protected/categorias.api.dart';
+import 'protected/index.dart';
+import '../services/token_service.dart';
 
 /// Clase principal para acceder a todas las APIs
 class CondorMotorsApi {
@@ -30,10 +22,18 @@ class CondorMotorsApi {
   late final StocksApi stocks;
   late final CategoriasApi categorias;
   late final CuentasEmpleadosApi cuentasEmpleados;
+  late final ProformaVentaApi proformas;
+  late final TokenService tokenService;
   
   /// Inicializa todas las APIs con la URL base
-  CondorMotorsApi({required String baseUrl}) {
-    _apiClient = ApiClient(baseUrl: baseUrl);
+  CondorMotorsApi({required String baseUrl, required this.tokenService}) {
+    // Crear el cliente API con el servicio de tokens
+    _apiClient = ApiClient(
+      baseUrl: baseUrl,
+      tokenService: tokenService,
+    );
+    
+    // Inicializar todas las APIs
     auth = AuthApi(_apiClient);
     empleados = EmpleadosApi(_apiClient);
     sucursales = SucursalesApi(_apiClient);
@@ -45,14 +45,15 @@ class CondorMotorsApi {
     stocks = StocksApi(_apiClient);
     categorias = CategoriasApi(_apiClient);
     cuentasEmpleados = CuentasEmpleadosApi(_apiClient);
+    proformas = ProformaVentaApi(_apiClient);
+    
+    // Inicializar el AuthService con las nuevas dependencias
+    authService = AuthService(tokenService);
   }
   
-  /// Inicializa el servicio de autenticación
+  /// Inicializa el servicio de autenticación y de tokens
   Future<void> initAuthService() async {
-    final prefs = await SharedPreferences.getInstance();
-    authService = AuthService(_apiClient, prefs);
-    
-    // Cargar tokens almacenados
-    await authService.loadTokens();
+    // No es necesario inicializar TokenService, ya que se pasa como parámetro
+    // Mantenemos este método para compatibilidad con el código existente
   }
 } 

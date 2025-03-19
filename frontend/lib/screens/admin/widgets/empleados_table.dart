@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../../api/protected/empleados.api.dart';
+import '../../../models/empleado.model.dart';
 import 'empleado_list_item.dart';
 import 'empleados_utils.dart';
 
-class EmpleadosTable extends StatelessWidget {
+class EmpleadosTable extends StatefulWidget {
   final List<Empleado> empleados;
   final Map<String, String> nombresSucursales;
   final String Function(Empleado) obtenerRolDeEmpleado;
   final Function(Empleado) onEdit;
   final Function(Empleado) onDelete;
   final Function(Empleado) onViewDetails;
-  final Function(Empleado, bool) onChangeStatus;
   final bool isLoading;
   final bool hasMorePages;
   final VoidCallback onLoadMore;
@@ -25,7 +24,6 @@ class EmpleadosTable extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onViewDetails,
-    required this.onChangeStatus,
     required this.isLoading,
     required this.hasMorePages,
     required this.onLoadMore,
@@ -34,9 +32,17 @@ class EmpleadosTable extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<EmpleadosTable> createState() => _EmpleadosTableState();
+}
+
+class _EmpleadosTableState extends State<EmpleadosTable> {
+  // Estado para controlar si la sección de inactivos está expandida
+  bool _isInactiveSectionExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
     // Agrupar empleados por estado
-    final gruposEmpleados = EmpleadosUtils.agruparEmpleadosPorEstado(empleados);
+    final gruposEmpleados = EmpleadosUtils.agruparEmpleadosPorEstado(widget.empleados);
     final empleadosActivos = gruposEmpleados['activos'] ?? [];
     final empleadosInactivos = gruposEmpleados['inactivos'] ?? [];
     
@@ -51,15 +57,15 @@ class EmpleadosTable extends StatelessWidget {
           color: Colors.white.withOpacity(0.1),
         ),
       ),
-      child: isLoading && empleados.isEmpty
+      child: widget.isLoading && widget.empleados.isEmpty
         ? const Center(child: CircularProgressIndicator())
-        : errorMessage.isNotEmpty
+        : widget.errorMessage.isNotEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    errorMessage,
+                    widget.errorMessage,
                     style: const TextStyle(color: Colors.red),
                   ),
                   const SizedBox(height: 16),
@@ -68,13 +74,13 @@ class EmpleadosTable extends StatelessWidget {
                       backgroundColor: const Color(0xFFE31E24),
                       foregroundColor: Colors.white,
                     ),
-                    onPressed: onRetry,
+                    onPressed: widget.onRetry,
                     child: const Text('Reintentar'),
                   ),
                 ],
               ),
             )
-          : empleados.isEmpty
+          : widget.empleados.isEmpty
             ? const Center(
                 child: Text(
                   'No hay colaboradores para mostrar',
@@ -124,9 +130,9 @@ class EmpleadosTable extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Local (30% del ancho - aumentado del 20% al 30%)
+                          // Local (25% del ancho)
                           Expanded(
-                            flex: 30,
+                            flex: 25,
                             child: Text(
                               'Local',
                               style: TextStyle(
@@ -135,9 +141,9 @@ class EmpleadosTable extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Acciones (10% del ancho)
+                          // Acciones (15% del ancho)
                           Expanded(
-                            flex: 10,
+                            flex: 15,
                             child: Text(
                               'Acciones',
                               textAlign: TextAlign.center,
@@ -155,53 +161,69 @@ class EmpleadosTable extends StatelessWidget {
                     if (empleadosActivos.isNotEmpty) ...[
                       ...empleadosActivos.map((empleado) => EmpleadoListItem(
                         empleado: empleado,
-                        nombresSucursales: nombresSucursales,
-                        onEdit: onEdit,
-                        onDelete: onDelete,
-                        onViewDetails: onViewDetails,
-                        onChangeStatus: onChangeStatus,
-                        obtenerRolDeEmpleado: obtenerRolDeEmpleado,
+                        nombresSucursales: widget.nombresSucursales,
+                        onEdit: widget.onEdit,
+                        onDelete: widget.onDelete,
+                        onViewDetails: widget.onViewDetails,
+                        obtenerRolDeEmpleado: widget.obtenerRolDeEmpleado,
                       )),
                     ],
                     
-                    // Sección de colaboradores inactivos
+                    // Sección desplegable de colaboradores inactivos
                     if (hayEmpleadosInactivos) ...[
                       const SizedBox(height: 16),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                        child: EmpleadosUtils.getEtiquetaGrupoEmpleados('inactivos', empleadosInactivos.length),
-                      ),
-                      const SizedBox(height: 8),
                       
-                      // Contenedor con fondo especial para empleados inactivos
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E1E1E),
-                          border: Border.all(
-                            color: const Color(0xFFE31E24).withOpacity(0.1),
+                      // Encabezado desplegable para inactivos
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            _isInactiveSectionExpanded = !_isInactiveSectionExpanded;
+                          });
+                        },
+                        child: Container(
+                          color: const Color(0xFF2D2D2D),
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _isInactiveSectionExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Colaboradores Inactivos (${empleadosInactivos.length})',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Spacer(),
+                            ],
                           ),
                         ),
-                        child: Column(
+                      ),
+                      
+                      // Contenido expandible
+                      if (_isInactiveSectionExpanded)
+                        Column(
                           children: empleadosInactivos.map((empleado) => EmpleadoListItem(
                             empleado: empleado,
-                            nombresSucursales: nombresSucursales,
-                            onEdit: onEdit,
-                            onDelete: onDelete,
-                            onViewDetails: onViewDetails,
-                            onChangeStatus: onChangeStatus,
-                            obtenerRolDeEmpleado: obtenerRolDeEmpleado,
+                            nombresSucursales: widget.nombresSucursales,
+                            onEdit: widget.onEdit,
+                            onDelete: widget.onDelete,
+                            onViewDetails: widget.onViewDetails,
+                            obtenerRolDeEmpleado: widget.obtenerRolDeEmpleado,
                           )).toList(),
                         ),
-                      ),
                     ],
                     
                     // Botón para cargar más
-                    if (hasMorePages && !isLoading)
+                    if (widget.hasMorePages && !widget.isLoading)
                       Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Center(
                           child: ElevatedButton(
-                            onPressed: onLoadMore,
+                            onPressed: widget.onLoadMore,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF2D2D2D),
                               foregroundColor: Colors.white,
@@ -212,7 +234,7 @@ class EmpleadosTable extends StatelessWidget {
                       ),
                       
                     // Indicador de carga para paginación
-                    if (isLoading && empleados.isNotEmpty)
+                    if (widget.isLoading && widget.empleados.isNotEmpty)
                       const Padding(
                         padding: EdgeInsets.all(16.0),
                         child: Center(

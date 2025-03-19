@@ -1,7 +1,10 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:math';
 import 'main.api.dart';
+import '../services/token_service.dart';
+import '../utils/role_utils.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math' as math;
 
 // Clase para representar los datos del usuario autenticado
 class UsuarioAutenticado {
@@ -32,25 +35,7 @@ class UsuarioAutenticado {
   // Convertir a Map para almacenamiento o navegación
   Map<String, dynamic> toMap() {
     // Convertir el código de rol a un formato reconocido por la aplicación
-    String rolNormalizado = rolCuentaEmpleadoCodigo.toUpperCase();
-    
-    // Mapeo de roles específicos
-    switch (rolNormalizado) {
-      case 'ADM':
-      case 'ADMIN':
-      case 'ADMINSTRADOR':
-        rolNormalizado = 'ADMINISTRADOR';
-        break;
-      case 'VEN':
-        rolNormalizado = 'VENDEDOR';
-        break;
-      case 'COMP':
-      case 'COMPUTER':
-      case 'COMPUTADORA':
-        rolNormalizado = 'COMPUTADORA';
-        break;
-      // Mantener el rol como está si no coincide con ninguno de los anteriores
-    }
+    String rolNormalizado = RoleUtils.normalizeRole(rolCuentaEmpleadoCodigo);
     
     debugPrint('Convirtiendo rol de "$rolCuentaEmpleadoCodigo" a "$rolNormalizado" para toMap');
     
@@ -122,6 +107,8 @@ class AuthApi {
   Future<UsuarioAutenticado> login(String usuario, String clave) async {
     debugPrint('Intentando login para usuario: $usuario');
     try {
+      // La solicitud a /auth/login configura automáticamente los tokens en TokenService
+      // gracias a nuestro método _processTokenFromResponse modificado
       final response = await _api.request(
         endpoint: '/auth/login',
         method: 'POST',
@@ -150,12 +137,13 @@ class AuthApi {
         );
       }
       
-      // Obtener el token guardado en SharedPreferences (ya debería estar guardado desde el request)
-      final prefs = await SharedPreferences.getInstance();
-      String? tokenFromPrefs = prefs.getString('access_token');
+      final userData = response['data'] as Map<String, dynamic>;
       
-      if (tokenFromPrefs == null || tokenFromPrefs.isEmpty) {
-        debugPrint('ADVERTENCIA: No se encontró token en SharedPreferences después del login');
+      // Obtener el token ya procesado por ApiClient
+      final token = TokenService.instance.accessToken;
+      
+      if (token == null || token.isEmpty) {
+        debugPrint('ADVERTENCIA: No se encontró token después del login');
         throw ApiException(
           statusCode: 401,
           message: 'Error: No se pudo obtener el token de autenticación',
@@ -163,10 +151,18 @@ class AuthApi {
         );
       }
       
-      debugPrint('Token encontrado en SharedPreferences: ${tokenFromPrefs.substring(0, min(10, tokenFromPrefs.length))}...');
+      // Guardar credenciales para futuros reintentos
+      try {
+        // Guardar credenciales en el TokenService para login automático
+        await TokenService.instance.saveCredentials(usuario, clave);
+        debugPrint('Credenciales guardadas en TokenService para futuros reintentos de autenticación');
+      } catch (e) {
+        // No interrumpir el flujo si hay error al guardar credenciales
+        debugPrint('ADVERTENCIA: No se pudieron guardar credenciales: $e');
+      }
       
       // Crear y retornar el objeto de usuario autenticado
-      final usuarioAutenticado = UsuarioAutenticado.fromJson(response['data'], tokenFromPrefs);
+      final usuarioAutenticado = UsuarioAutenticado.fromJson(userData, token);
       
       debugPrint('Usuario autenticado creado: $usuarioAutenticado');
       return usuarioAutenticado;
@@ -191,14 +187,17 @@ class AuthApi {
       
       debugPrint('Respuesta de registro recibida: ${response.toString()}');
       
-      // Extraer el token de autenticación
-      final String token = response['token'] ?? '';
-      if (token.isEmpty) {
-        debugPrint('ADVERTENCIA: Token vacío en la respuesta de registro');
-      }
+      // El token se configuró automáticamente en TokenService
+      final token = TokenService.instance.accessToken;
       
-      // Configurar el token en el cliente API
-      _api.setTokens(token: token, refreshToken: null);
+      if (token == null || token.isEmpty) {
+        debugPrint('ADVERTENCIA: Token vacío después del registro');
+        throw ApiException(
+          statusCode: 401,
+          message: 'Error: No se pudo obtener el token de autenticación',
+          errorCode: ApiException.errorUnauthorized,
+        );
+      }
       
       // Crear y retornar el objeto de usuario autenticado
       final usuarioAutenticado = UsuarioAutenticado.fromJson(response['data'], token);
@@ -216,19 +215,23 @@ class AuthApi {
   Future<String> refreshToken() async {
     debugPrint('Intentando refrescar token');
     try {
+      // La solicitud a /auth/refresh guarda automáticamente el nuevo token
       final response = await _api.request(
         endpoint: '/auth/refresh',
         method: 'POST',
+        requiresAuth: false, // No requiere token de acceso
+        refreshOnFailure: false, // Evitar ciclos infinitos
       );
       
-      debugPrint('Respuesta de refresh token recibida: ${response.toString()}');
+      // Esperar brevemente para asegurar que los tokens se han procesado
+      // Esto puede ayudar a evitar condiciones de carrera
+      await Future.delayed(const Duration(milliseconds: 100));
       
-      // El token ya debería estar almacenado en SharedPreferences desde la extracción en _api.request
-      final prefs = await SharedPreferences.getInstance();
-      String? tokenFromPrefs = prefs.getString('access_token');
+      // Obtener el nuevo token
+      final token = TokenService.instance.accessToken;
       
-      if (tokenFromPrefs == null || tokenFromPrefs.isEmpty) {
-        debugPrint('ADVERTENCIA: No se encontró token en SharedPreferences después del refresh');
+      if (token == null || token.isEmpty) {
+        debugPrint('ADVERTENCIA: No se encontró token después del refresh');
         throw ApiException(
           statusCode: 401,
           message: 'No se pudo obtener un token válido al refrescar',
@@ -236,49 +239,182 @@ class AuthApi {
         );
       }
       
-      debugPrint('Token refrescado correctamente: ${tokenFromPrefs.substring(0, min(10, tokenFromPrefs.length))}...');
-      return tokenFromPrefs;
+      debugPrint('Token refrescado correctamente: ${token.substring(0, 20)}...');
+      return token;
     } catch (e) {
       debugPrint('ERROR durante refresh token: $e');
+      
+      // Si el error indica que el refresh token es inválido, eliminar todos los tokens
+      if (e is ApiException && 
+          (e.statusCode == 401 || e.message.contains('refresh token'))) {
+        debugPrint('Eliminando tokens debido a refresh token inválido');
+        await TokenService.instance.clearTokens();
+      }
+      
       rethrow;
+    }
+  }
+
+  /// Método simple para verificar la conectividad con el servidor
+  /// 
+  /// Útil para detectar si el servidor está disponible
+  Future<bool> ping() async {
+    try {
+      // Intentamos hacer una petición simple a la raíz del servidor
+      // Este endpoint debería ser público y no requerir autenticación
+      final serverUrl = _api.baseUrl.replaceAll('/api', '');
+      debugPrint('AuthApi: Haciendo ping a $serverUrl');
+      
+      final response = await http.get(
+        Uri.parse(serverUrl),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 5));
+      
+      // Si la respuesta tiene código 200-299, el servidor está disponible
+      final bool isSuccess = response.statusCode >= 200 && response.statusCode < 300;
+      
+      debugPrint('AuthApi: Ping al servidor - Status: ${response.statusCode}, Éxito: $isSuccess');
+      return isSuccess;
+    } catch (e) {
+      debugPrint('AuthApi: Error al hacer ping al servidor: $e');
+      return false;
+    }
+  }
+  
+  /// Verifica si el token actual es válido o intenta renovarlo
+  ///
+  /// Este método verifica si el token está expirado y lo renueva si es necesario
+  Future<bool> verificarToken() async {
+    try {
+      // Si no hay token, fallar inmediatamente
+      final token = TokenService.instance.accessToken;
+      if (token == null) {
+        debugPrint('AuthApi: No hay token para verificar');
+        return false;
+      }
+      
+      // Verificar si el token está expirado según la fecha almacenada
+      if (TokenService.instance.isTokenExpired) {
+        debugPrint('AuthApi: Token expirado según fecha local: ${TokenService.instance.expiryTime}');
+        
+        // Si tenemos refresh token, intentar renovar
+        if (TokenService.instance.hasRefreshToken) {
+          debugPrint('AuthApi: Intentando renovar token expirado...');
+          try {
+            // Usar el método authenticatedRequest del TokenService
+            await TokenService.instance.authenticatedRequest(
+              endpoint: '/auth/refresh',
+              method: 'POST',
+            );
+            
+            debugPrint('AuthApi: Token renovado exitosamente');
+            return true;
+          } catch (e) {
+            debugPrint('AuthApi: Error al renovar token expirado: $e');
+            await TokenService.instance.clearTokens();
+            return false;
+          }
+        } else {
+          debugPrint('AuthApi: No hay refresh token para renovar token expirado');
+          await TokenService.instance.clearTokens();
+          return false;
+        }
+      }
+      
+      debugPrint('AuthApi: Verificando token con el servidor...');
+      debugPrint('AuthApi: Token actual (primeros 20 caracteres): ${token.substring(0, math.min(20, token.length))}...');
+      
+      // En lugar de usar /auth/status que no existe, verificamos la validez del token
+      // intentando obtener información desde el token mismo
+      try {
+        // Intentar decodificar el token para verificar si es válido
+        final tokenInfo = TokenService.instance.extractUserInfoFromToken();
+        if (tokenInfo.isEmpty) {
+          debugPrint('AuthApi: Token no contiene información válida');
+          return false;
+        }
+        
+        debugPrint('AuthApi: Token contiene información válida: ${tokenInfo['usuario']}, Rol: ${tokenInfo['rol']}');
+        
+        // Como verificación adicional, podemos hacer una petición a un endpoint que sabemos que existe
+        // Por ejemplo, podemos usar /cuentasempleados que requiere autenticación
+        try {
+          await TokenService.instance.authenticatedRequest(
+            endpoint: '/cuentasempleados',
+            method: 'GET',
+          );
+          debugPrint('AuthApi: Token verificado correctamente con petición a /cuentasempleados');
+          return true;
+        } catch (e) {
+          // Si hay un error 401, intentar refrescar el token
+          if (e.toString().contains('401')) {
+            debugPrint('AuthApi: Token rechazado por el servidor (401)');
+            
+            // Verificar si tenemos un refresh token para intentar renovar
+            if (TokenService.instance.hasRefreshToken) {
+              try {
+                debugPrint('AuthApi: Intentando renovar token rechazado...');
+                
+                // Usar el método authenticatedRequest del TokenService
+                await TokenService.instance.authenticatedRequest(
+                  endpoint: '/auth/refresh',
+                  method: 'POST',
+                );
+                
+                debugPrint('AuthApi: Token renovado exitosamente después de rechazo');
+                return true;
+              } catch (refreshError) {
+                debugPrint('AuthApi: Error al renovar token rechazado: $refreshError');
+                await TokenService.instance.clearTokens();
+                return false;
+              }
+            } else {
+              debugPrint('AuthApi: No hay refresh token disponible para renovar token rechazado');
+              await TokenService.instance.clearTokens();
+              return false;
+            }
+          }
+          
+          // Para otros errores que no sean 401, podríamos tener problemas de red
+          // pero el token todavía podría ser válido
+          debugPrint('AuthApi: Error al verificar token con el servidor (no 401): $e');
+          return !TokenService.instance.isTokenExpired;
+        }
+      } catch (e) {
+        debugPrint('AuthApi: Error al extraer información del token: $e');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('AuthApi: Error al verificar token: $e');
+      return false;
     }
   }
 }
 
 class AuthService {
-  final ApiClient _api;
-  final SharedPreferences _prefs;
+  final TokenService _tokenService;
   
-  AuthService(this._api, this._prefs);
+  // Claves para almacenamiento de datos de usuario
+  static const String _userIdKey = 'user_id';
+  static const String _usernameKey = 'username';
+  static const String _userRoleKey = 'user_role';
+  static const String _userSucursalKey = 'user_sucursal';
+  static const String _userSucursalIdKey = 'user_sucursal_id';
   
-  // Guardar tokens después del login
-  Future<void> saveTokens(String accessToken, String? refreshToken) async {
-    debugPrint('Guardando tokens - accessToken: ${accessToken.isNotEmpty ? 'presente' : 'vacío'}');
-    try {
-      await _prefs.setString('access_token', accessToken);
-      if (refreshToken != null) {
-        await _prefs.setString('refresh_token', refreshToken);
-      }
-      _api.setTokens(token: accessToken, refreshToken: refreshToken);
-    } catch (e) {
-      debugPrint('ERROR al guardar tokens: $e');
-      rethrow;
-    }
-  }
+  AuthService(this._tokenService);
   
   // Guardar datos del usuario
   Future<void> saveUserData(UsuarioAutenticado usuario) async {
     debugPrint('Guardando datos de usuario: $usuario');
     try {
-      usuario.toMap();
-      await _prefs.setString('user_id', usuario.id);
-      await _prefs.setString('username', usuario.usuario);
-      await _prefs.setString('user_role', usuario.rolCuentaEmpleadoCodigo);
-      await _prefs.setString('user_sucursal', usuario.sucursal);
-      await _prefs.setInt('user_sucursal_id', usuario.sucursalId);
+      final prefs = await SharedPreferences.getInstance();
       
-      // Guardar el token
-      await saveTokens(usuario.token, null);
+      await prefs.setString(_userIdKey, usuario.id);
+      await prefs.setString(_usernameKey, usuario.usuario);
+      await prefs.setString(_userRoleKey, usuario.rolCuentaEmpleadoCodigo);
+      await prefs.setString(_userSucursalKey, usuario.sucursal);
+      await prefs.setString(_userSucursalIdKey, usuario.sucursalId.toString());
+      
       debugPrint('Datos de usuario guardados correctamente');
     } catch (e) {
       debugPrint('ERROR al guardar datos de usuario: $e');
@@ -288,54 +424,23 @@ class AuthService {
   
   // Cargar tokens al iniciar la app
   Future<bool> loadTokens() async {
-    debugPrint('Cargando tokens guardados');
-    try {
-      final accessToken = _prefs.getString('access_token');
-      final refreshToken = _prefs.getString('refresh_token');
-      
-      if (accessToken != null) {
-        debugPrint('Token encontrado, configurando en API');
-        _api.setTokens(token: accessToken, refreshToken: refreshToken);
-        return true;
-      }
-      debugPrint('No se encontró token guardado');
-      return false;
-    } catch (e) {
-      debugPrint('ERROR al cargar tokens: $e');
-      return false;
-    }
+    return await _tokenService.loadTokens();
   }
   
   // Obtener datos del usuario guardados
-  Map<String, dynamic>? getUserData() {
+  Future<Map<String, dynamic>?> getUserData() async {
     debugPrint('Obteniendo datos de usuario guardados');
     try {
-      final userId = _prefs.getString('user_id');
-      final username = _prefs.getString('username');
-      final userRole = _prefs.getString('user_role');
-      final token = _prefs.getString('access_token');
+      final prefs = await SharedPreferences.getInstance();
+      
+      final userId = prefs.getString(_userIdKey);
+      final username = prefs.getString(_usernameKey);
+      final userRole = prefs.getString(_userRoleKey);
+      final token = _tokenService.accessToken;
       
       if (userId != null && username != null && userRole != null && token != null) {
         // Normalizar el rol para que coincida con los roles de la aplicación
-        String rolNormalizado = userRole.toUpperCase();
-        
-        // Mapeo de roles específicos
-        switch (rolNormalizado) {
-          case 'ADM':
-          case 'ADMIN':
-          case 'ADMINSTRADOR':
-            rolNormalizado = 'ADMINISTRADOR';
-            break;
-          case 'VEN':
-            rolNormalizado = 'VENDEDOR';
-            break;
-          case 'COMP':
-          case 'COMPUTER':
-          case 'COMPUTADORA':
-            rolNormalizado = 'COMPUTADORA';
-            break;
-          // Mantener el rol como está si no coincide con ninguno de los anteriores
-        }
+        String rolNormalizado = RoleUtils.normalizeRole(userRole);
         
         debugPrint('Rol normalizado de "$userRole" a "$rolNormalizado" en getUserData');
         
@@ -344,8 +449,8 @@ class AuthService {
           'usuario': username,
           'rol': rolNormalizado,
           'token': token,
-          'sucursal': _prefs.getString('user_sucursal') ?? '',
-          'sucursalId': _prefs.getInt('user_sucursal_id') ?? 0,
+          'sucursal': prefs.getString(_userSucursalKey) ?? '',
+          'sucursalId': int.tryParse(prefs.getString(_userSucursalIdKey) ?? '0') ?? 0,
         };
         debugPrint('Datos de usuario recuperados: $userData');
         return userData;
@@ -363,15 +468,16 @@ class AuthService {
   Future<void> logout() async {
     debugPrint('Cerrando sesión, limpiando datos');
     try {
-      await _prefs.remove('access_token');
-      await _prefs.remove('refresh_token');
-      await _prefs.remove('user_id');
-      await _prefs.remove('username');
-      await _prefs.remove('user_role');
-      await _prefs.remove('user_sucursal');
-      await _prefs.remove('user_sucursal_id');
-      _api.setTokens(token: null, refreshToken: null);
-      debugPrint('Sesión cerrada correctamente');
+      final prefs = await SharedPreferences.getInstance();
+      
+      await prefs.remove(_userIdKey);
+      await prefs.remove(_usernameKey);
+      await prefs.remove(_userRoleKey);
+      await prefs.remove(_userSucursalKey);
+      await prefs.remove(_userSucursalIdKey);
+      await _tokenService.clearTokens();
+      
+      debugPrint('Sesión cerrada correctamente, todos los datos eliminados');
     } catch (e) {
       debugPrint('ERROR al cerrar sesión: $e');
       rethrow;
@@ -395,9 +501,10 @@ class CuentasEmpleadosApi {
     try {
       debugPrint('CuentasEmpleadosApi: Obteniendo lista de cuentas de empleados');
       
-      final response = await _api.authenticatedRequest(
+      final response = await _api.request(
         endpoint: '/cuentasempleados',
         method: 'GET',
+        requiresAuth: true,
       );
       
       // Procesar la respuesta
@@ -425,9 +532,10 @@ class CuentasEmpleadosApi {
     try {
       debugPrint('CuentasEmpleadosApi: Obteniendo cuenta de empleado con ID $id');
       
-      final response = await _api.authenticatedRequest(
+      final response = await _api.request(
         endpoint: '/cuentasempleados/$id',
         method: 'GET',
+        requiresAuth: true,
       );
       
       if (response['data'] is Map<String, dynamic>) {
@@ -473,10 +581,11 @@ class CuentasEmpleadosApi {
       if (clave != null) body['clave'] = clave;
       if (rolCuentaEmpleadoId != null) body['rolCuentaEmpleadoId'] = rolCuentaEmpleadoId;
       
-      final response = await _api.authenticatedRequest(
+      final response = await _api.request(
         endpoint: '/cuentasempleados/$id',
         method: 'PATCH',
         body: body,
+        requiresAuth: true,
       );
       
       if (response['data'] is Map<String, dynamic>) {
@@ -500,9 +609,10 @@ class CuentasEmpleadosApi {
     try {
       debugPrint('CuentasEmpleadosApi: Eliminando cuenta de empleado con ID $id');
       
-      await _api.authenticatedRequest(
+      await _api.request(
         endpoint: '/cuentasempleados/$id',
         method: 'DELETE',
+        requiresAuth: true,
       );
       
       debugPrint('CuentasEmpleadosApi: Cuenta de empleado eliminada correctamente');
@@ -520,9 +630,10 @@ class CuentasEmpleadosApi {
     try {
       debugPrint('CuentasEmpleadosApi: Obteniendo cuenta para empleado con ID $empleadoId');
       
-      final response = await _api.authenticatedRequest(
+      final response = await _api.request(
         endpoint: '/cuentasempleados/empleado/$empleadoId',
         method: 'GET',
+        requiresAuth: true,
       );
       
       if (response['data'] is Map<String, dynamic>) {
@@ -531,9 +642,10 @@ class CuentasEmpleadosApi {
       
       return null;
     } catch (e) {
-      // Si el error es 404, simplemente retornar null (el empleado no tiene cuenta)
-      if (e is ApiException && e.statusCode == 404) {
-        debugPrint('CuentasEmpleadosApi: El empleado $empleadoId no tiene cuenta asociada');
+      // Si el error es 404 o 401, simplemente retornar null (el empleado no tiene cuenta)
+      // El backend a veces devuelve 401 en lugar de 404 para este caso específico
+      if (e is ApiException && (e.statusCode == 404 || e.statusCode == 401)) {
+        debugPrint('CuentasEmpleadosApi: El empleado $empleadoId no tiene cuenta asociada (${e.statusCode})');
         return null;
       }
       
@@ -549,9 +661,10 @@ class CuentasEmpleadosApi {
     try {
       debugPrint('CuentasEmpleadosApi: Obteniendo roles para cuentas');
       
-      final response = await _api.authenticatedRequest(
+      final response = await _api.request(
         endpoint: '/rolescuentas',
         method: 'GET',
+        requiresAuth: true,
       );
       
       if (response['data'] is List) {
@@ -567,9 +680,9 @@ class CuentasEmpleadosApi {
     }
   }
   
-  /// Registra una cuenta para un empleado
+  /// Registra una nueva cuenta para un empleado
   /// 
-  /// Crea una nueva cuenta de usuario asociada a un empleado existente
+  /// Crea una cuenta de usuario asociada a un empleado existente
   Future<Map<String, dynamic>> registerEmpleadoAccount({
     required String empleadoId,
     required String usuario,
@@ -577,29 +690,34 @@ class CuentasEmpleadosApi {
     required int rolCuentaEmpleadoId,
   }) async {
     try {
-      debugPrint('CuentasEmpleadosApi: Registrando cuenta para empleado $empleadoId');
+      debugPrint('CuentasEmpleadosApi: Registrando cuenta para empleado con ID $empleadoId');
       
-      final response = await _api.authenticatedRequest(
-        endpoint: '/auth/register',
+      // Preparar datos para la petición
+      final Map<String, dynamic> body = {
+        'empleadoId': empleadoId,
+        'usuario': usuario,
+        'clave': clave,
+        'rolCuentaEmpleadoId': rolCuentaEmpleadoId,
+      };
+      
+      // Hacer la petición al endpoint adecuado
+      final response = await _api.request(
+        endpoint: '/cuentasempleados',
         method: 'POST',
-        body: {
-          'empleadoId': empleadoId,
-          'usuario': usuario,
-          'clave': clave,
-          'rolCuentaEmpleadoId': rolCuentaEmpleadoId,
-        },
+        body: body,
+        requiresAuth: true,
       );
       
-      // Procesar la respuesta
+      // Verificar y devolver la respuesta
       if (response['data'] is Map<String, dynamic>) {
-        return response['data'] as Map<String, dynamic>;
-      } else {
-        throw ApiException(
-          statusCode: 500,
-          message: 'Formato de respuesta inesperado al registrar cuenta',
-        );
+        debugPrint('CuentasEmpleadosApi: Cuenta registrada exitosamente');
+        return response['data'];
       }
       
+      throw ApiException(
+        statusCode: 500,
+        message: 'Formato de respuesta inesperado al registrar cuenta',
+      );
     } catch (e) {
       debugPrint('CuentasEmpleadosApi: ERROR al registrar cuenta de empleado: $e');
       rethrow;

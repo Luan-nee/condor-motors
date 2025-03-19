@@ -1,138 +1,14 @@
 import '../main.api.dart';
 import 'package:flutter/foundation.dart';
-
-/// Modelo para representar un empleado
-class Empleado {
-  final String id;
-  final String nombre;
-  final String apellidos;
-  final String? ubicacionFoto;
-  final String? dni;
-  final String? horaInicioJornada;
-  final String? horaFinJornada;
-  final String? fechaContratacion;
-  final double? sueldo;
-  final String? fechaRegistro;
-  final String? sucursalId;
-  final String? sucursalNombre;
-  final bool sucursalCentral;
-  final bool activo;
-  final String? celular;
-  final String? cuentaEmpleadoId;
-
-  Empleado({
-    required this.id,
-    required this.nombre,
-    required this.apellidos,
-    this.ubicacionFoto,
-    this.dni,
-    this.horaInicioJornada,
-    this.horaFinJornada,
-    this.fechaContratacion,
-    this.sueldo,
-    this.fechaRegistro,
-    this.sucursalId,
-    this.sucursalNombre,
-    this.sucursalCentral = false,
-    this.activo = true,
-    this.celular,
-    this.cuentaEmpleadoId,
-  });
-
-  factory Empleado.fromJson(Map<String, dynamic> json) {
-    // Extraer información de sucursal si está disponible
-    String? sucursalId;
-    String? sucursalNombre;
-    bool sucursalCentral = false;
-    
-    if (json['sucursal'] is Map<String, dynamic>) {
-      final sucursal = json['sucursal'] as Map<String, dynamic>;
-      sucursalId = sucursal['id']?.toString();
-      sucursalNombre = sucursal['nombre']?.toString();
-      sucursalCentral = sucursal['sucursalCentral'] == true;
-    } else {
-      // Mantener compatibilidad con el formato anterior
-      sucursalId = json['sucursalId']?.toString();
-    }
-    
-    // Extraer ID de cuenta de empleado si está disponible
-    String? cuentaEmpleadoId;
-    if (json['cuentaEmpleado'] is Map<String, dynamic>) {
-      final cuenta = json['cuentaEmpleado'] as Map<String, dynamic>;
-      cuentaEmpleadoId = cuenta['id']?.toString();
-    }
-
-    return Empleado(
-      id: json['id']?.toString() ?? '',
-      nombre: json['nombre'] ?? '',
-      apellidos: json['apellidos'] ?? '',
-      ubicacionFoto: json['ubicacionFoto'] ?? json['pathFoto'],
-      dni: json['dni'],
-      horaInicioJornada: json['horaInicioJornada'],
-      horaFinJornada: json['horaFinJornada'],
-      fechaContratacion: json['fechaContratacion'],
-      sueldo: json['sueldo'] != null ? double.parse(json['sueldo'].toString()) : null,
-      fechaRegistro: json['fechaRegistro'],
-      sucursalId: sucursalId,
-      sucursalNombre: sucursalNombre,
-      sucursalCentral: sucursalCentral,
-      activo: json['activo'] ?? true,
-      celular: json['celular'],
-      cuentaEmpleadoId: cuentaEmpleadoId,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'nombre': nombre,
-      'apellidos': apellidos,
-      'ubicacionFoto': ubicacionFoto,
-      'dni': dni,
-      'horaInicioJornada': horaInicioJornada,
-      'horaFinJornada': horaFinJornada,
-      'fechaContratacion': fechaContratacion,
-      'sueldo': sueldo,
-      'sucursalId': sucursalId,
-      'activo': activo,
-      'celular': celular,
-    };
-  }
-  
-  @override
-  String toString() {
-    return 'Empleado{id: $id, nombre: $nombre $apellidos, activo: $activo}';
-  }
-}
-
-/// Modelo para la respuesta paginada
-class EmpleadosPaginados {
-  final List<Empleado> empleados;
-  final Map<String, dynamic> paginacion;
-
-  EmpleadosPaginados({
-    required this.empleados,
-    required this.paginacion,
-  });
-}
+import '../../models/empleado.model.dart';
 
 class EmpleadosApi {
   final ApiClient _api;
 
   EmpleadosApi(this._api);
-
-  /// Obtiene todos los empleados con soporte para paginación y ordenación
-  /// 
-  /// Parámetros:
-  /// - page: Número de página (comienza en 1)
-  /// - pageSize: Número de registros por página
-  /// - sortBy: Campo para ordenar (ej: 'nombre', 'fechaRegistro')
-  /// - order: Dirección de ordenación ('asc' o 'desc')
-  /// - search: Término de búsqueda
-  /// - filter: Campo para filtrar (ej: 'sucursalId')
-  /// - filterValue: Valor del filtro
-  Future<List<dynamic>> getEmpleados({
-    int page = 1,
-    int pageSize = 10,
+  Future<List<Empleado>> getEmpleados({
+    int? page,
+    int? pageSize,
     String? sortBy,
     String order = 'asc',
     String? search,
@@ -145,11 +21,12 @@ class EmpleadosApi {
       // Construir parámetros de consulta
       final Map<String, String> queryParams = {};
       
-      if (page > 0) {
+      // Solo agregar parámetros de paginación si se proporcionan explícitamente
+      if (page != null && page > 0) {
         queryParams['page'] = page.toString();
       }
       
-      if (pageSize > 0) {
+      if (pageSize != null && pageSize > 0) {
         queryParams['page_size'] = pageSize.toString();
       }
       
@@ -167,6 +44,7 @@ class EmpleadosApi {
         queryParams['filter_value'] = filterValue;
       }
       
+      // Usar authenticatedRequest en lugar de request para manejar automáticamente tokens
       final response = await _api.authenticatedRequest(
         endpoint: '/empleados',
         method: 'GET',
@@ -188,8 +66,13 @@ class EmpleadosApi {
         }
       }
       
-      debugPrint('EmpleadosApi: Total de empleados encontrados: ${items.length}');
-      return items;
+      // Convertir a lista de Empleado
+      final empleados = items
+          .map((item) => Empleado.fromJson(item as Map<String, dynamic>))
+          .toList();
+      
+      debugPrint('EmpleadosApi: Total de empleados encontrados: ${empleados.length}');
+      return empleados;
     } catch (e) {
       debugPrint('EmpleadosApi: ERROR al obtener empleados: $e');
       rethrow;
@@ -199,7 +82,7 @@ class EmpleadosApi {
   /// Obtiene un empleado por su ID
   /// 
   /// El ID debe ser un string, aunque represente un número
-  Future<Map<String, dynamic>> getEmpleado(String empleadoId) async {
+  Future<Empleado> getEmpleado(String empleadoId) async {
     try {
       // Validar que empleadoId no sea nulo o vacío
       if (empleadoId.isEmpty) {
@@ -225,14 +108,7 @@ class EmpleadosApi {
         data = response['data'] as Map<String, dynamic>;
       }
       
-      if (data == null) {
-        throw ApiException(
-          statusCode: 404,
-          message: 'Empleado no encontrado',
-        );
-      }
-      
-      return data;
+      return Empleado.fromJson(data);
     } catch (e) {
       debugPrint('EmpleadosApi: ERROR al obtener empleado #$empleadoId: $e');
       rethrow;
@@ -240,7 +116,7 @@ class EmpleadosApi {
   }
   
   /// Crea un nuevo empleado
-  Future<Map<String, dynamic>> createEmpleado(Map<String, dynamic> empleadoData) async {
+  Future<Empleado> createEmpleado(Map<String, dynamic> empleadoData) async {
     try {
       // Validar datos mínimos requeridos
       if (!empleadoData.containsKey('nombre') || !empleadoData.containsKey('apellidos')) {
@@ -287,7 +163,7 @@ class EmpleadosApi {
         );
       }
       
-      return data;
+      return Empleado.fromJson(data);
     } catch (e) {
       debugPrint('EmpleadosApi: ERROR al crear empleado: $e');
       rethrow;
@@ -297,7 +173,7 @@ class EmpleadosApi {
   /// Actualiza un empleado existente
   /// 
   /// El ID debe ser un string, aunque represente un número
-  Future<Map<String, dynamic>> updateEmpleado(String empleadoId, Map<String, dynamic> empleadoData) async {
+  Future<Empleado> updateEmpleado(String empleadoId, Map<String, dynamic> empleadoData) async {
     try {
       // Validar que empleadoId no sea nulo o vacío
       if (empleadoId.isEmpty) {
@@ -330,7 +206,8 @@ class EmpleadosApi {
       );
       
       debugPrint('EmpleadosApi: Respuesta de updateEmpleado recibida');
-      return _processResponse(response);
+      final data = _processResponse(response);
+      return Empleado.fromJson(data);
     } catch (e) {
       debugPrint('EmpleadosApi: ERROR al actualizar empleado #$empleadoId: $e');
       rethrow;
@@ -419,7 +296,7 @@ class EmpleadosApi {
   }
   
   /// Obtiene empleados filtrados por sucursal
-  Future<List<dynamic>> getEmpleadosPorSucursal(String sucursalId, {
+  Future<List<Empleado>> getEmpleadosPorSucursal(String sucursalId, {
     int page = 1,
     int pageSize = 10,
     String order = 'asc',
@@ -434,7 +311,7 @@ class EmpleadosApi {
   }
   
   /// Obtiene empleados activos
-  Future<List<dynamic>> getEmpleadosActivos({
+  Future<List<Empleado>> getEmpleadosActivos({
     int page = 1, 
     int pageSize = 10,
     String order = 'asc',
@@ -508,7 +385,7 @@ class EmpleadosApi {
     if (clave != null) data['clave'] = clave;
 
     final response = await _api.authenticatedRequest(
-      endpoint: '/cuentas-empleados/$cuentaId',
+      endpoint: '/cuentasempleados/$cuentaId',
       method: 'PATCH',
       body: data,
     );
@@ -531,7 +408,7 @@ class EmpleadosApi {
       debugPrint('EmpleadosApi: Obteniendo información de cuenta $cuentaId');
       
       final response = await _api.authenticatedRequest(
-        endpoint: '/cuentas-empleados/$cuentaId',
+        endpoint: '/cuentasempleados/$cuentaId',
         method: 'GET',
       );
       
@@ -551,7 +428,7 @@ class EmpleadosApi {
       debugPrint('EmpleadosApi: Obteniendo lista de cuentas de empleados');
       
       final response = await _api.authenticatedRequest(
-        endpoint: '/cuentas-empleados',
+        endpoint: '/cuentasempleados',
         method: 'GET',
       );
       
@@ -581,7 +458,7 @@ class EmpleadosApi {
       debugPrint('EmpleadosApi: Eliminando cuenta de empleado $cuentaId');
       
       await _api.authenticatedRequest(
-        endpoint: '/cuentas-empleados/$cuentaId',
+        endpoint: '/cuentasempleados/$cuentaId',
         method: 'DELETE',
       );
       
@@ -617,9 +494,12 @@ class EmpleadosApi {
   /// Obtiene la cuenta de un empleado por su ID
   Future<Map<String, dynamic>?> getCuentaByEmpleadoId(String empleadoId) async {
     try {
+      // Añadir headers especiales para evitar que el token sea renovado automáticamente
+      // si es un 401 específico de "no encontrado"
       final response = await _api.authenticatedRequest(
-        endpoint: '/cuentas-empleados/empleado/$empleadoId',
+        endpoint: '/cuentasempleados/empleado/$empleadoId',
         method: 'GET',
+        headers: {'x-no-retry-on-401': 'true'}, // Header especial para evitar renovación automática
       );
       
       if (response['data'] is Map<String, dynamic>) {
@@ -628,12 +508,23 @@ class EmpleadosApi {
       
       return null;
     } catch (e) {
-      // Si el error es 404, significa que el empleado no tiene cuenta
-      if (e is ApiException && e.statusCode == 404) {
-        return null;
-      }
+      // Si el error es 404, o el mensaje contiene indicaciones de "no encontrado"
+      // independientemente del código, manejarlo como "cuenta no encontrada"
+      if (e is ApiException && (e.statusCode == 404 || 
+          (e.message.toLowerCase().contains('not found') || 
+           e.message.toLowerCase().contains('no encontrado') ||
+           e.message.toLowerCase().contains('no existe')))) {
+        debugPrint('EmpleadosApi: El empleado $empleadoId no tiene cuenta asociada (${e.statusCode})');
+        // En lugar de devolver null, lanzamos una excepción específica para este caso
+        throw ApiException(
+          statusCode: 404, // Usar 404 para representar "no encontrado"
+          message: 'El empleado no tiene cuenta asociada',
+          errorCode: ApiException.errorNotFound,
+        );
+      } 
       
       // Para otros errores, propagar la excepción
+      debugPrint('EmpleadosApi: ERROR al obtener cuenta por empleado: $e');
       rethrow;
     }
   }

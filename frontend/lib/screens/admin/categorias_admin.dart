@@ -113,7 +113,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
       if (categoriaExistente == null) {
         // Crear nueva categoría
         debugPrint('Creando nueva categoría: $nombre');
-        final nuevaCategoria = await api.categorias.createCategoria(
+        await api.categorias.createCategoria(
           nombre: nombre,
           descripcion: descripcion.isNotEmpty ? descripcion : null,
         );
@@ -132,7 +132,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
       } else {
         // Actualizar categoría existente
         debugPrint('Actualizando categoría: ${categoriaExistente['id']}');
-        final categoriaActualizada = await api.categorias.updateCategoria(
+        await api.categorias.updateCategoria(
           id: categoriaExistente['id'].toString(),
           nombre: nombre,
           descripcion: descripcion.isNotEmpty ? descripcion : null,

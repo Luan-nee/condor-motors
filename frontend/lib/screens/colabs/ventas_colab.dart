@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../services/ventas_transfer_service.dart';
 import '../../api/index.dart';
 import '../../main.dart' show api;
 import 'barcode_colab.dart';
@@ -16,7 +15,9 @@ class VentasColabScreen extends StatefulWidget {
 class _VentasColabScreenState extends State<VentasColabScreen> {
   bool _isLoading = false;
   late final StocksApi _stocksApi;
-  late String _sucursalId; // Será obtenido del usuario autenticado
+  late final ProformaVentaApi _proformasApi;
+  String _sucursalId = '9'; // Valor por defecto, se actualizará al inicializar
+  int _empleadoId = 1; // Valor por defecto, se actualizará al inicializar
   List<Map<String, dynamic>> _productos = []; // Lista de productos obtenidos de la API
   bool _productosLoaded = false; // Flag para controlar si ya se cargaron los productos
   
@@ -40,19 +41,36 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
   void initState() {
     super.initState();
     _stocksApi = api.stocks;
+    _proformasApi = api.proformas;
     
-    // Obtener el ID de sucursal del usuario autenticado
-    final userData = api.authService.getUserData();
-    if (userData != null && userData['sucursalId'] != null) {
-      _sucursalId = userData['sucursalId'].toString();
-      debugPrint('Usando sucursal del usuario autenticado: $_sucursalId');
-    } else {
-      // Fallback por si no se puede obtener el ID de sucursal
-      _sucursalId = '9'; // Usamos la sucursal 9 como fallback según los logs
-      debugPrint('No se pudo obtener la sucursal del usuario, usando fallback: $_sucursalId');
+    // Configurar los datos iniciales y cargar productos
+    _configurarDatosIniciales();
+  }
+
+  // Método para configurar los datos iniciales de manera asíncrona
+  Future<void> _configurarDatosIniciales() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      // Obtener el ID de sucursal del usuario autenticado usando await
+      final userData = await api.authService.getUserData();
+      if (userData != null && userData['sucursalId'] != null) {
+        _sucursalId = userData['sucursalId'].toString();
+        debugPrint('Usando sucursal del usuario autenticado: $_sucursalId');
+        
+        // Obtener ID del empleado
+        _empleadoId = int.tryParse(userData['id']?.toString() ?? '0') ?? 0;
+        debugPrint('ID del empleado: $_empleadoId');
+      } else {
+        // Fallback por si no se puede obtener el ID de sucursal
+        debugPrint('No se pudo obtener la sucursal del usuario, usando fallback: $_sucursalId');
+      }
+    } catch (e) {
+      debugPrint('Error al obtener datos del usuario: $e');
+    } finally {
+      // Cargar productos después de configurar la sucursal
+      await _cargarProductos();
     }
-    
-    _cargarProductos();
   }
   
   @override
@@ -330,7 +348,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
     }
   }
   
-  // Finalizar venta
+  // Método para finalizar venta
   void _finalizarVenta() {
     if (_productosVenta.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -352,85 +370,89 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       return;
     }
     
-    // Enviar la venta a la computadora
-    _enviarVentaAComputadora();
+    // Crear proforma en lugar de enviar directamente
+    _crearProformaVenta();
   }
   
-  // Método para enviar la venta a la computadora
-  Future<void> _enviarVentaAComputadora() async {
+  // Método para crear proforma de venta
+  Future<void> _crearProformaVenta() async {
     setState(() => _isLoading = true);
     
     try {
-      // Preparar los datos de la venta
-      final ventaData = {
-        'cliente': _clienteSeleccionado,
-        'productos': _productosVenta,
-        'total': _totalVenta,
-        'fecha': DateTime.now().toIso8601String(),
-      };
+      // Convertir los productos de la venta al formato esperado por la API
+      final List<Map<String, dynamic>> detalles = _productosVenta.map((producto) {
+        return {
+          'productoId': int.parse(producto['id'].toString()),
+          'nombre': producto['nombre'],
+          'cantidad': producto['cantidad'],
+          'subtotal': producto['precio'] * producto['cantidad'],
+        };
+      }).toList();
       
-      // Utilizar el servicio para enviar la venta a la computadora
-      final ventasTransferService = VentasTransferService();
-      final resultado = await ventasTransferService.enviarVentaAComputadora(ventaData);
+      // Llamar a la API para crear la proforma
+      final respuesta = await _proformasApi.createProformaVenta(
+        sucursalId: int.parse(_sucursalId),
+        nombre: 'Proforma ${_clienteSeleccionado!['nombre']}',
+        total: _totalVenta,
+        detalles: detalles,
+        empleadoId: _empleadoId,
+      );
       
       if (!mounted) return;
       
-      if (resultado) {
-        // Mostrar diálogo de confirmación
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Venta Enviada a Caja'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.send_to_mobile,
-                  color: Color(0xFF4CAF50),
-                  size: 64,
+      // Convertir la respuesta a un objeto ProformaVenta estructurado
+      final proformaCreada = _proformasApi.parseProformaVenta(respuesta);
+      
+      // Mostrar diálogo de confirmación
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Proforma Creada Exitosamente'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const FaIcon(
+                FontAwesomeIcons.fileInvoiceDollar,
+                color: Color(0xFF4CAF50),
+                size: 64,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Total: S/ ${_totalVenta.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Total: S/ ${_totalVenta.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              ),
+              const SizedBox(height: 8),
+              Text('Cliente: ${_clienteSeleccionado!['nombre']}'),
+              if (proformaCreada != null) ...[
                 const SizedBox(height: 8),
-                Text('Cliente: ${_clienteSeleccionado!['nombre']}'),
-                const SizedBox(height: 16),
-                const Text(
-                  'La venta ha sido enviada a la caja para su procesamiento.',
-                  textAlign: TextAlign.center,
-                ),
+                Text('Proforma ID: ${proformaCreada.id}'),
               ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _limpiarVenta();
-                },
-                child: const Text('Aceptar'),
+              const SizedBox(height: 16),
+              const Text(
+                'La proforma ha sido creada y podrá ser procesada en caja.',
+                textAlign: TextAlign.center,
               ),
             ],
           ),
-        );
-      } else {
-        // Mostrar mensaje de error
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error al enviar la venta a la caja'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _limpiarVenta();
+              },
+              child: const Text('Aceptar'),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $e'),
+          content: Text('Error al crear la proforma: $e'),
           backgroundColor: Colors.red,
         ),
       );

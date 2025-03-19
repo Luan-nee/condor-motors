@@ -14,6 +14,7 @@ class EmpleadoCuentaDialog extends StatefulWidget {
   final String? usuarioActual;
   final int? rolActualId;
   final List<Map<String, dynamic>> roles;
+  final bool? esNuevaCuenta; // Permite forzar el modo de creación
   
   const EmpleadoCuentaDialog({
     super.key,
@@ -23,6 +24,7 @@ class EmpleadoCuentaDialog extends StatefulWidget {
     this.usuarioActual,
     this.rolActualId,
     required this.roles,
+    this.esNuevaCuenta,
   });
 
   @override
@@ -42,7 +44,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
   int? _selectedRolId;
   String? _rolActualNombre;
   
-  bool get _esNuevaCuenta => widget.cuentaId == null;
+  // Usar esNuevaCuenta forzado si se proporciona, o determinar automáticamente
+  bool get _esNuevaCuenta => widget.esNuevaCuenta ?? widget.cuentaId == null;
   
   @override
   void initState() {
@@ -132,8 +135,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         // Actualizar cuenta existente - usar la nueva API
         final Map<String, dynamic> updateData = {};
         
-        // Solo incluir usuario si ha cambiado y si se puede editar
-        if (_usuarioController.text != widget.usuarioActual) {
+        // Incluir usuario siempre que se haya proporcionado uno
+        if (_usuarioController.text.isNotEmpty) {
           updateData['usuario'] = _usuarioController.text;
         }
         
@@ -287,7 +290,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Container(
-        width: 450,
+        width: 500, // Aumentado ligeramente para mejor visualización
         padding: const EdgeInsets.all(24),
         child: _isLoading
             ? const Center(
@@ -306,19 +309,46 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Título y subtítulo
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleLarge,
+                    // Cabecera - título y subtítulo con iconos
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: _esNuevaCuenta ? Colors.green.withOpacity(0.1) : Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            _esNuevaCuenta ? Icons.person_add : Icons.manage_accounts,
+                            color: _esNuevaCuenta ? Colors.green : Colors.blue,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: _esNuevaCuenta ? Colors.green[800] : Colors.blue[800],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                subtitle,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                    const Divider(height: 32),
                     
                     // Mensaje de error (si existe)
                     if (_errorMessage != null) ...[
@@ -345,181 +375,354 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
                       const SizedBox(height: 16),
                     ],
                     
-                    // Información de cuenta actual (si existe)
-                    if (!_esNuevaCuenta) ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[50],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue[300]!),
+                    // Instrucciones para el usuario
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _esNuevaCuenta ? Colors.green[50] : Colors.blue[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _esNuevaCuenta ? Colors.green[300]! : Colors.blue[300]!,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Información de cuenta actual',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue[800],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_esNuevaCuenta) ...[
                             Row(
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    'Usuario: ${widget.usuarioActual}',
-                                    style: TextStyle(color: Colors.blue[700]),
+                                Icon(Icons.info_outline, color: Colors.green[700]),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Creando cuenta para acceso al sistema',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green[800],
                                   ),
                                 ),
-                                if (_rolActualNombre != null)
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'El colaborador "${widget.empleadoNombre}" podrá acceder al sistema con las credenciales que defina aquí. Seleccione un rol apropiado según sus funciones.',
+                              style: TextStyle(color: Colors.green[700]),
+                            ),
+                          ] else ...[
+                            if (_rolActualNombre != null) ...[
+                              Row(
+                                children: [
+                                  Icon(Icons.info_outline, color: Colors.blue[700]),
+                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      'Rol: $_rolActualNombre',
-                                      style: TextStyle(color: Colors.blue[700]),
+                                      'Información de cuenta actual',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue[800],
+                                      ),
                                     ),
                                   ),
-                              ],
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: RichText(
+                                      text: TextSpan(
+                                        style: TextStyle(color: Colors.blue[700]),
+                                        children: [
+                                          const TextSpan(
+                                            text: 'Usuario: ',
+                                            style: TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                          TextSpan(text: widget.usuarioActual),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  if (_rolActualNombre != null)
+                                    Expanded(
+                                      child: RichText(
+                                        text: TextSpan(
+                                          style: TextStyle(color: Colors.blue[700]),
+                                          children: [
+                                            const TextSpan(
+                                              text: 'Rol: ',
+                                              style: TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                            TextSpan(text: _rolActualNombre),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Puede modificar el nombre de usuario y/o la contraseña. Si no desea cambiar la contraseña, deje esos campos vacíos.',
+                                style: TextStyle(color: Colors.blue[700]),
+                              ),
+                            ],
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Campos del formulario
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Campo de usuario
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4, bottom: 8),
+                              child: Text(
+                                'Nombre de usuario',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: _esNuevaCuenta ? Colors.green[700] : Colors.blue[700],
+                                ),
+                              ),
+                            ),
+                            TextFormField(
+                              controller: _usuarioController,
+                              decoration: InputDecoration(
+                                hintText: 'Ingrese un nombre de usuario',
+                                prefixIcon: const Icon(Icons.person),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                helperText: _esNuevaCuenta 
+                                  ? 'Este será el nombre para iniciar sesión'
+                                  : 'Nuevo nombre de usuario',
+                                helperStyle: TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                  color: _esNuevaCuenta ? Colors.green[700] : Colors.blue[700],
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color: _esNuevaCuenta ? Colors.green : Colors.blue,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Por favor ingrese un nombre de usuario';
+                                }
+                                if (value.length < 4) {
+                                  return 'El usuario debe tener al menos 4 caracteres';
+                                }
+                                if (value.length > 20) {
+                                  return 'El usuario debe tener máximo 20 caracteres';
+                                }
+                                if (!RegExp(r'^[a-zA-Z0-9\-_]+$').hasMatch(value)) {
+                                  return 'El usuario solo puede contener letras, números, guiones y guiones bajos';
+                                }
+                                return null;
+                              },
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    
-                    // Campo de usuario (deshabilitado si es una cuenta existente)
-                    TextFormField(
-                      controller: _usuarioController,
-                      enabled: _esNuevaCuenta, // Solo permitir edición si es nueva cuenta
-                      decoration: InputDecoration(
-                        labelText: 'Nombre de usuario',
-                        hintText: _esNuevaCuenta 
-                            ? 'Ingrese un nombre de usuario' 
-                            : 'No se puede modificar el usuario',
-                        prefixIcon: const Icon(Icons.person),
-                        helperText: !_esNuevaCuenta 
-                            ? 'El nombre de usuario no se puede modificar' 
-                            : null,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese un nombre de usuario';
-                        }
-                        if (value.length < 4) {
-                          return 'El usuario debe tener al menos 4 caracteres';
-                        }
-                        if (value.length > 20) {
-                          return 'El usuario debe tener máximo 20 caracteres';
-                        }
-                        if (!RegExp(r'^[a-zA-Z0-9\-_]+$').hasMatch(value)) {
-                          return 'El usuario solo puede contener letras, números, guiones y guiones bajos';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Campo de contraseña (requerido para nuevas cuentas, opcional para actualizar)
-                    TextFormField(
-                      controller: _claveController,
-                      obscureText: _ocultarClave,
-                      decoration: InputDecoration(
-                        labelText: 'Contraseña',
-                        hintText: _esNuevaCuenta 
-                            ? 'Ingrese una contraseña' 
-                            : 'Ingrese nueva contraseña para cambiarla',
-                        prefixIcon: const Icon(Icons.lock),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _ocultarClave ? Icons.visibility : Icons.visibility_off,
+                        const SizedBox(height: 16),
+                        
+                        // Selector de rol (solo para nuevas cuentas)
+                        if (_esNuevaCuenta && widget.roles.isNotEmpty) ...[
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4, bottom: 8),
+                                child: Text(
+                                  'Rol del usuario',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green[700],
+                                  ),
+                                ),
+                              ),
+                              DropdownButtonFormField<int>(
+                                value: _selectedRolId,
+                                decoration: InputDecoration(
+                                  hintText: 'Seleccione un rol',
+                                  prefixIcon: const Icon(Icons.badge),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  helperText: 'Determina qué acciones podrá realizar en el sistema',
+                                  helperStyle: TextStyle(
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.green[700],
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: Colors.green,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                                items: widget.roles.map((rol) {
+                                  return DropdownMenuItem<int>(
+                                    value: rol['id'],
+                                    child: Text(rol['nombre'] ?? rol['codigo'] ?? 'Rol sin nombre'),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedRolId = value;
+                                  });
+                                },
+                                validator: (value) {
+                                  if (value == null) {
+                                    return 'Por favor seleccione un rol';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _ocultarClave = !_ocultarClave;
-                            });
-                          },
+                          const SizedBox(height: 16),
+                        ],
+                        
+                        // Sección de Contraseña
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4, bottom: 8),
+                              child: Text(
+                                'Contraseña',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: _esNuevaCuenta ? Colors.green[700] : Colors.blue[700],
+                                ),
+                              ),
+                            ),
+                            TextFormField(
+                              controller: _claveController,
+                              obscureText: _ocultarClave,
+                              decoration: InputDecoration(
+                                hintText: _esNuevaCuenta 
+                                    ? 'Ingrese una contraseña segura' 
+                                    : 'Nueva contraseña (opcional)',
+                                prefixIcon: const Icon(Icons.lock),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _ocultarClave ? Icons.visibility : Icons.visibility_off,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _ocultarClave = !_ocultarClave;
+                                    });
+                                  },
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                helperText: _esNuevaCuenta 
+                                  ? 'Mínimo 6 caracteres con al menos un número'
+                                  : 'Dejar vacío si no desea cambiarla',
+                                helperStyle: TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                  color: _esNuevaCuenta ? Colors.green[700] : Colors.blue[700],
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color: _esNuevaCuenta ? Colors.green : Colors.blue,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (_esNuevaCuenta && (value == null || value.isEmpty)) {
+                                  return 'Por favor ingrese una contraseña';
+                                }
+                                if (value != null && value.isNotEmpty) {
+                                  if (value.length < 6) {
+                                    return 'La contraseña debe tener al menos 6 caracteres';
+                                  }
+                                  if (value.length > 20) {
+                                    return 'La contraseña debe tener máximo 20 caracteres';
+                                  }
+                                  if (!RegExp(r'\d').hasMatch(value)) {
+                                    return 'La contraseña debe contener al menos un número';
+                                  }
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
                         ),
-                      ),
-                      validator: (value) {
-                        if (_esNuevaCuenta && (value == null || value.isEmpty)) {
-                          return 'Por favor ingrese una contraseña';
-                        }
-                        if (value != null && value.isNotEmpty) {
-                          if (value.length < 6) {
-                            return 'La contraseña debe tener al menos 6 caracteres';
-                          }
-                          if (value.length > 20) {
-                            return 'La contraseña debe tener máximo 20 caracteres';
-                          }
-                          if (!RegExp(r'\d').hasMatch(value)) {
-                            return 'La contraseña debe contener al menos un número';
-                          }
-                        }
-                        return null;
-                      },
+                        const SizedBox(height: 16),
+                        
+                        // Campo para confirmar contraseña
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4, bottom: 8),
+                              child: Text(
+                                'Confirmación de contraseña',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: _esNuevaCuenta ? Colors.green[700] : Colors.blue[700],
+                                ),
+                              ),
+                            ),
+                            TextFormField(
+                              controller: _confirmarClaveController,
+                              obscureText: _ocultarConfirmarClave,
+                              decoration: InputDecoration(
+                                hintText: _esNuevaCuenta 
+                                    ? 'Confirme la contraseña' 
+                                    : 'Confirme la nueva contraseña',
+                                prefixIcon: const Icon(Icons.lock_outline),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _ocultarConfirmarClave ? Icons.visibility : Icons.visibility_off,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _ocultarConfirmarClave = !_ocultarConfirmarClave;
+                                    });
+                                  },
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                helperText: 'Debe coincidir con la contraseña ingresada',
+                                helperStyle: TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                  color: _esNuevaCuenta ? Colors.green[700] : Colors.blue[700],
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color: _esNuevaCuenta ? Colors.green : Colors.blue,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (_claveController.text.isNotEmpty && value != _claveController.text) {
+                                  return 'Las contraseñas no coinciden';
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
                     
-                    // Campo para confirmar contraseña
-                    TextFormField(
-                      controller: _confirmarClaveController,
-                      obscureText: _ocultarConfirmarClave,
-                      decoration: InputDecoration(
-                        labelText: 'Confirmar contraseña',
-                        hintText: _esNuevaCuenta 
-                            ? 'Confirme la contraseña' 
-                            : 'Confirme la nueva contraseña',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _ocultarConfirmarClave ? Icons.visibility : Icons.visibility_off,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _ocultarConfirmarClave = !_ocultarConfirmarClave;
-                            });
-                          },
-                        ),
-                      ),
-                      validator: (value) {
-                        if (_claveController.text.isNotEmpty && value != _claveController.text) {
-                          return 'Las contraseñas no coinciden';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Selector de rol (solo para nuevas cuentas)
-                    if (_esNuevaCuenta && widget.roles.isNotEmpty) ...[
-                      DropdownButtonFormField<int>(
-                        value: _selectedRolId,
-                        decoration: const InputDecoration(
-                          labelText: 'Rol',
-                          hintText: 'Seleccione un rol',
-                          prefixIcon: Icon(Icons.badge),
-                        ),
-                        items: widget.roles.map((rol) {
-                          return DropdownMenuItem<int>(
-                            value: rol['id'],
-                            child: Text(rol['nombre'] ?? rol['codigo'] ?? 'Rol sin nombre'),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedRolId = value;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Por favor seleccione un rol';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+                    const SizedBox(height: 24),
                     
                     // Botones de acción
                     Row(
@@ -534,10 +737,17 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
                               color: Colors.red,
                             ),
                             label: const Text(
-                              'Eliminar',
+                              'Eliminar cuenta',
                               style: TextStyle(color: Colors.red),
                             ),
                             onPressed: _eliminarCuenta,
+                            style: TextButton.styleFrom(
+                              backgroundColor: Colors.red.withOpacity(0.1),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
                           )
                         else
                           const SizedBox.shrink(),
@@ -545,20 +755,32 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
                         Row(
                           children: [
                             // Botón para cancelar
-                            TextButton(
+                            TextButton.icon(
+                              icon: const Icon(Icons.cancel_outlined),
+                              label: const Text('Cancelar'),
                               onPressed: () => Navigator.of(context).pop(false),
-                              child: const Text('Cancelar'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.grey[700],
+                              ),
                             ),
                             const SizedBox(width: 16),
                             
                             // Botón para guardar
-                            ElevatedButton(
-                              onPressed: _guardarCuenta,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).primaryColor,
-                                foregroundColor: Colors.white,
+                            ElevatedButton.icon(
+                              icon: FaIcon(
+                                _esNuevaCuenta ? FontAwesomeIcons.userPlus : FontAwesomeIcons.floppyDisk,
+                                size: 16,
                               ),
-                              child: Text(_esNuevaCuenta ? 'Crear Cuenta' : 'Guardar Cambios'),
+                              label: Text(_esNuevaCuenta ? 'Crear Cuenta' : 'Guardar Cambios'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _esNuevaCuenta ? Colors.green : Colors.blue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                              ),
+                              onPressed: _guardarCuenta,
                             ),
                           ],
                         ),

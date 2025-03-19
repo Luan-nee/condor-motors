@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../ventas_computer.dart' show VentasUtils;
+import '../../../api/protected/proforma.api.dart';
+import 'ventas_pendientes_utils.dart';
 
 // Clase para depurar eventos
 class DebugPrint {
@@ -100,7 +102,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
   final _focusNode = FocusNode();
   final _customerNameController = TextEditingController();
   final _changeController = TextEditingController();
-  bool _isManualChange = false;
+  final bool _isManualChange = false;
   String _enteredAmount = '';
 
   @override
@@ -559,26 +561,8 @@ class _NumericKeypadState extends State<NumericKeypad> {
     );
   }
 
-  void _handleChangeClick() {
-    DebugPrint.log('Click en cambio manual');
-    setState(() {
-      _isManualChange = true;
-      _changeController.text = VentasUtils.formatearMonto(change).toStringAsFixed(2);
-    });
-  }
 
-  void _handleChangeChanged(String value) {
-    setState(() {
-      _changeController.text = value;
-    });
-  }
 
-  void _handleChangeFocusLost() {
-    setState(() {
-      _isManualChange = false;
-      _changeController.clear();
-    });
-  }
 
   Widget _buildNumberKeyButton(String number) {
     return Expanded(
@@ -685,12 +669,221 @@ class _NumericKeypadState extends State<NumericKeypad> {
     return montoIngresado >= widget.minAmount;
   }
   
-  /// Convierte el texto ingresado a un valor double para operaciones matemáticas
-  /// 
-  /// Maneja el caso de string vacío retornando 0 y aplica tryParse con fallback.
-  /// 
-  /// Retorna el monto como double.
-  double _obtenerMontoIngresado() {
-    return double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
+}
+
+class ProformaSaleDialog extends StatelessWidget {
+  final ProformaVenta proforma;
+  final Function(Map<String, dynamic>) onConfirm;
+  final VoidCallback onCancel;
+
+  const ProformaSaleDialog({
+    super.key,
+    required this.proforma,
+    required this.onConfirm,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: const Color(0xFF2D2D2D),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.5,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const FaIcon(
+                    FontAwesomeIcons.fileInvoiceDollar,
+                    size: 20,
+                    color: Color(0xFF4CAF50),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Convertir Proforma a Venta',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white54),
+                  onPressed: onCancel,
+                ),
+              ],
+            ),
+            const Divider(color: Colors.white24),
+            const SizedBox(height: 16),
+            
+            // Detalles de la proforma
+            Text(
+              'Proforma: ${proforma.id}',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Cliente: ${proforma.cliente?['nombre'] ?? 'Sin nombre'}',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white70,
+              ),
+            ),
+            Text(
+              'Fecha: ${VentasPendientesUtils.formatearFecha(proforma.createdAt)}',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white70,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Lista de productos
+            const Text(
+              'Productos:',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  for (var detalle in proforma.detalles)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 5,
+                            child: Text(
+                              detalle.nombre,
+                              style: const TextStyle(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 1,
+                            child: Text(
+                              '${detalle.cantidad}x',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                              ),
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              VentasUtils.formatearMontoTexto(detalle.precioUnitario),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                              ),
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              VentasUtils.formatearMontoTexto(detalle.subtotal),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const Divider(color: Colors.white24),
+                  Row(
+                    children: [
+                      const Spacer(),
+                      const Text(
+                        'Total:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        VentasUtils.formatearMontoTexto(proforma.total),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4CAF50),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                OutlinedButton(
+                  onPressed: onCancel,
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.white54),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Convertir proforma a formato para procesar venta
+                    final ventaData = VentasPendientesUtils.convertirProformaAVentaPendiente(proforma);
+                    onConfirm(ventaData);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4CAF50),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  icon: const Icon(Icons.check),
+                  label: const Text('Convertir a Venta'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
