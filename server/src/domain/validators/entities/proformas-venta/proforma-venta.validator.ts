@@ -9,3 +9,11 @@ const createProformaVentaSchema = z.object({
 
 export const createProformaVentaValidator = (object: unknown) =>
   createProformaVentaSchema.safeParse(object)
+
+const updateProformaVentaSchema = z.object({
+  nombre: proformaVentaSchema.nombre,
+  detalles: proformaVentaSchema.detalles
+})
+
+export const updateProformaVentaValidator = (object: unknown) =>
+  updateProformaVentaSchema.partial().safeParse(object)
