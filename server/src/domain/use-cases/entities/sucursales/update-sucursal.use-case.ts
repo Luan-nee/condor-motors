@@ -2,7 +2,6 @@ import { CustomError } from '@/core/errors/custom.error'
 import { sucursalesTable } from '@/db/schema'
 import type { UpdateSucursalDto } from '@/domain/dtos/entities/sucursales/update-sucursal.dto'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
-import { SucursalEntityMapper } from '@/domain/mappers/sucursal-entity.mapper'
 import { db } from '@db/connection'
 import { eq, ilike } from 'drizzle-orm'
 
@@ -56,8 +55,6 @@ export class UpdateSucursal {
 
     const [sucursal] = updatedSucursalResult
 
-    const mappedSucursal = SucursalEntityMapper.fromObject(sucursal)
-
-    return mappedSucursal
+    return sucursal
   }
 }

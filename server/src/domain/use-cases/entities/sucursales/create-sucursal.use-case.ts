@@ -3,7 +3,6 @@ import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { sucursalesTable } from '@/db/schema'
 import type { CreateSucursalDto } from '@/domain/dtos/entities/sucursales/create-sucursal.dto'
-import { SucursalEntityMapper } from '@/domain/mappers/sucursal-entity.mapper'
 import { db } from '@db/connection'
 import { ilike } from 'drizzle-orm'
 
@@ -34,9 +33,9 @@ export class CreateSucursal {
         direccion: createSucursalDto.direccion,
         sucursalCentral: createSucursalDto.sucursalCentral
       })
-      .returning()
+      .returning({ id: sucursalesTable.id })
 
-    if (insertedSucursalResult.length <= 0) {
+    if (insertedSucursalResult.length < 1) {
       throw CustomError.internalServer(
         'Ha ocurrido un error al intentar crear la sucursal'
       )
@@ -67,8 +66,6 @@ export class CreateSucursal {
 
     const sucursal = await this.createSucursal(createSucursalDto)
 
-    const mappedSucursal = SucursalEntityMapper.fromObject(sucursal)
-
-    return mappedSucursal
+    return sucursal
   }
 }
