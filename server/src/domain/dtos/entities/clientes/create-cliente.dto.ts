@@ -2,9 +2,9 @@ import { createClienteValidator } from '@/domain/validators/entities/clientes/cl
 
 export class CreateClienteDto {
   public nombresApellidos?: string
-  public dni?: string
+  public dni: string
   public razonSocial?: string
-  public ruc?: string
+  public ruc: string
   public telefono?: string
   public correo: string
   public tipoPersonaId: number

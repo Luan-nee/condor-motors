@@ -23,8 +23,7 @@ export const ClienteSchema = {
     .max(9, { message: 'El DNI no puede contener 9 caracteres' })
     .refine((valor) => Validator.isValidDni(valor), {
       message: 'El texto ingresado no es apto para un DNI'
-    })
-    .optional(),
+    }),
   razonSocial: z
     .string()
     .trim()
@@ -41,8 +40,7 @@ export const ClienteSchema = {
     .max(12, { message: 'El ruc no puede ser mas de 12 caracteres' })
     .refine((valor) => Validator.isValidRuc(valor), {
       message: 'El ruc Ingresado no tiene caractes validos'
-    })
-    .optional(),
+    }),
   telefono: z
     .string()
     .trim()

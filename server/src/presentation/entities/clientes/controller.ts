@@ -1,10 +1,12 @@
+import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
 import { CreateClienteDto } from '@/domain/dtos/entities/clientes/create-cliente.dto'
+import { CreateCliente } from '@/domain/use-cases/entities/clientes/create-cliente.use-case'
 import type { Request, Response } from 'express'
 
 export class ClientesController {
   validarDatos = (num1: number, num2: number, num3: number, num4: number) => {
-    if ((num1 === 1 || num2 === 1) && (num3 === 1 || num4 === 1)) {
+    if ((num1 === 2 && num2 === 2) || (num3 === 2 && num4 === 2)) {
       return true
     }
     return false
@@ -22,17 +24,25 @@ export class ClientesController {
     }
 
     const valid1 = createClienteDto.nombresApellidos === undefined ? 1 : 2
-    const valid2 = createClienteDto.dni === undefined ? 1 : 2
     const valid11 = createClienteDto.razonSocial === undefined ? 1 : 2
-    const valid22 = createClienteDto.ruc === undefined ? 1 : 2
 
-    if (!this.validarDatos(valid1, valid2, valid11, valid22)) {
+    if (valid1 === 1 && valid11 === 1) {
       CustomResponse.badRequest({
         res,
-        error: 'Nombre y DNI  o  Razon social y ruc deben estar disponibles '
+        error: 'Nombre o  Razon social  deben estar disponibles '
       })
-      // return;
     }
     // const {authPayload} = req;
+
+    const createCliente = new CreateCliente()
+
+    createCliente
+      .execute(createClienteDto)
+      .then((cliente) => {
+        CustomResponse.success({ res, data: cliente })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 }

@@ -2,27 +2,26 @@ import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import { clientesTable } from '@/db/schema'
 import type { CreateClienteDto } from '@/domain/dtos/entities/clientes/create-cliente.dto'
-import { count, ilike } from 'drizzle-orm'
+import { count, eq, or } from 'drizzle-orm'
 
 export class CreateCliente {
   private async createCliente(createClienteDto: CreateClienteDto) {
-    const whereCondition =
-      createClienteDto.dni === undefined
-        ? createClienteDto.ruc === undefined
-          ? undefined
-          : ilike(clientesTable.ruc, createClienteDto.ruc)
-        : ilike(clientesTable.dni, createClienteDto.dni)
-
     const clienteDni = await db
       .select({ count: count(clientesTable.id) })
       .from(clientesTable)
-      .where(whereCondition)
+      .where(
+        or(
+          eq(clientesTable.dni, createClienteDto.dni),
+          eq(clientesTable.ruc, createClienteDto.ruc)
+        )
+      )
 
-    if (Number(clienteDni[0]) <= 0) {
+    if (clienteDni[0].count > 0) {
       throw CustomError.badRequest(
         `El dni o ruc ya estan registrados para este usuario : ${createClienteDto.ruc} - ${createClienteDto.dni}`
       )
     }
+
     const InsertValuesCliente = await db
       .insert(clientesTable)
       .values({
