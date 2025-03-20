@@ -49,7 +49,8 @@ export const seedConfig: SeedConfig = {
   sucursalesCount: 3,
   empleadosCount: 9,
   productosCount: 30,
-  proformasVentaCount: 16
+  proformasVentaCount: 16,
+  notificacionesCount: 5
 }
 
 export const adminPermissions = transformPermissionCodes(permissionCodes)

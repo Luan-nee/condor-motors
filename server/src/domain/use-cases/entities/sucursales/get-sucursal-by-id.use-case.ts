@@ -8,7 +8,6 @@ import {
   sucursalesTable
 } from '@/db/schema'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
-import { SucursalEntityMapper } from '@/domain/mappers/sucursal-entity.mapper'
 import { and, eq } from 'drizzle-orm'
 
 export class GetSucursalById {
@@ -20,6 +19,10 @@ export class GetSucursalById {
     nombre: sucursalesTable.nombre,
     direccion: sucursalesTable.direccion,
     sucursalCentral: sucursalesTable.sucursalCentral,
+    serieFacturaSucursal: sucursalesTable.serieFacturaSucursal,
+    serieBoletaSucursal: sucursalesTable.serieBoletaSucursal,
+    codigoEstablecimiento: sucursalesTable.codigoEstablecimiento,
+    tieneNotificaciones: sucursalesTable.tieneNotificaciones,
     fechaCreacion: sucursalesTable.fechaCreacion,
     fechaActualizacion: sucursalesTable.fechaActualizacion
   }
@@ -63,7 +66,7 @@ export class GetSucursalById {
       ? await this.getAnySucursal(numericIdDto)
       : await this.getRelatedSucursal(numericIdDto)
 
-    if (sucursales.length <= 0) {
+    if (sucursales.length < 1) {
       if (!hasPermissionGetAny) {
         throw CustomError.forbidden()
       }
@@ -108,8 +111,6 @@ export class GetSucursalById {
       hasPermissionGetAny
     )
 
-    const mappedSucursal = SucursalEntityMapper.fromObject(sucursal)
-
-    return mappedSucursal
+    return sucursal
   }
 }

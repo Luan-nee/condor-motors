@@ -87,13 +87,6 @@ const estadosTransferenciasInventariosValues =
     codigo: formatCode(estado)
   }))
 
-const tiposPersonasValues = seedConfig.tiposPersonasDefault.map(
-  (tipoPersona) => ({
-    nombre: tipoPersona,
-    codigo: formatCode(tipoPersona)
-  })
-)
-
 const { cuentas } = seedConfig
 const {
   admin: adminAccount,
@@ -299,8 +292,6 @@ const seedDatabase = async () => {
     .insert(schema.estadosTransferenciasInventarios)
     .values(estadosTransferenciasInventariosValues)
 
-  await db.insert(schema.tiposPersonasTable).values(tiposPersonasValues)
-
   const generateDetalles = (length: number, sucursalId: number) =>
     getRandomUniqueElementsFromArray(productos, length).map((producto) => {
       const detallesProducto = detallesProductosValues.find(
@@ -344,6 +335,18 @@ const seedDatabase = async () => {
   })
 
   await db.insert(schema.proformasVentaTable).values(proformasVentaValues)
+
+  const notificacionesValues = Array.from({
+    length: seedConfig.notificacionesCount
+  }).flatMap(() =>
+    sucursales.flatMap((sucursal) => ({
+      titulo: faker.company.name(),
+      descripcion: faker.lorem.words(20),
+      sucursalId: sucursal.id
+    }))
+  )
+
+  await db.insert(schema.notificacionesTable).values(notificacionesValues)
 }
 
 const { NODE_ENV: nodeEnv } = envs

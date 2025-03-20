@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { sql } from 'drizzle-orm'
 import {
   uniqueIndex,
@@ -34,6 +35,10 @@ export const sucursalesTable = pgTable('sucursales', {
   nombre: text('nombre').notNull().unique(),
   direccion: text('direccion'),
   sucursalCentral: boolean('sucursal_central').notNull(),
+  serieFacturaSucursal: text('serie_factura_sucursal').unique(),
+  serieBoletaSucursal: text('serie_boleta_sucursal').unique(),
+  codigoEstablecimiento: text('codigo_establecimiento').unique(),
+  tieneNotificaciones: boolean('tiene_notificaciones').notNull().default(false),
   ...timestampsColumns
 })
 
@@ -63,7 +68,7 @@ export const productosTable = pgTable(
     sku: text('sku')
       .notNull()
       .unique()
-      .generatedAlwaysAs(sql`LPAD(id::TEXT, 7, '0')`),
+      .generatedAlwaysAs(sql`RPAD(id::TEXT, 7, '0')`),
     nombre: text('nombre').notNull(),
     descripcion: text('descripcion'),
     maxDiasSinReabastecer: integer('max_dias_sin_reabastecer'),
@@ -100,6 +105,7 @@ export const detallesProductoTable = pgTable(
       precision: 7,
       scale: 2
     }).notNull(),
+    porcentajeGanancia: text('porcentaje_ganancia'),
     precioVenta: numeric('precio_venta', { precision: 7, scale: 2 }).notNull(),
     precioOferta: numeric('precio_oferta', { precision: 7, scale: 2 }),
     stock: integer('stock').notNull().default(0),
@@ -226,23 +232,24 @@ export const empleadosTable = pgTable('empleados', {
   ...timestampsColumns
 })
 
-export const tiposPersonasTable = pgTable('tipos_personas', {
+// ['6', '1', '4', '7', 'A', '0']
+export const tiposDocumentoClienteTable = pgTable('tipos_documento_cliente', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  codigo: text('codigo').notNull().unique(),
-  nombre: text('nombre').notNull().unique()
+  nombre: text('nombre').notNull().unique(),
+  codigo: text('codigo').notNull().unique()
 })
 
 export const clientesTable = pgTable('clientes', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombresApellidos: text('nombres_apellidos'),
-  dni: text('dni'),
-  razonSocial: text('razon_social'),
-  ruc: text('ruc'),
-  telefono: text('telefono'),
-  correo: text('correo'),
-  tipoPersonaId: integer('tipo_persona_id')
+  tipoDocumentoId: integer('tipo_documento_id')
     .notNull()
-    .references(() => tiposPersonasTable.id),
+    .references(() => tiposDocumentoClienteTable.id),
+  numeroDocumento: text('numero_documento').notNull(),
+  denominacion: text('denominacion').notNull(),
+  codigoPais: text('codigo_pais').notNull().default('PE'),
+  direccion: text('direccion'),
+  correo: text('correo'),
+  telefono: text('telefono'),
   ...timestampsColumns
 })
 
@@ -289,20 +296,9 @@ export const rolesPermisosTable = pgTable(
 
 // Ventas
 
-export const metodosPagoTable = pgTable('metodos_pago', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull().unique(),
-  codigo: text('codigo').notNull().unique(),
-  activado: boolean('activado').notNull()
-})
-
 export const ventasTable = pgTable('ventas', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   total: numeric('total', { precision: 8, scale: 2 }).notNull(),
-  observaciones: text('observaciones'),
-  metodoPagoId: integer('metodo_pago_id')
-    .notNull()
-    .references(() => metodosPagoTable.id),
   clienteId: integer('cliente_id')
     .notNull()
     .references(() => clientesTable.id),
@@ -315,13 +311,107 @@ export const ventasTable = pgTable('ventas', {
   ...timestampsColumns
 })
 
-export const detallesTable = pgTable('detalles', {
+// ['10', '20']
+export const tiposTaxTable = pgTable('tipos_impuesto', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  nombre: text('nombre').notNull().unique(),
+  codigo: text('codigo').notNull().unique()
+})
+
+export const detallesVentaTable = pgTable('detalles_venta', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  tipoUnidad: text('tipo_unidad').notNull().default('NIU'),
+  sku: text('sku').notNull(),
+  nombre: text('nombre').notNull(),
   cantidad: integer('cantidad').notNull().default(1),
-  subtotal: numeric('subtotal', { precision: 7, scale: 2 }).notNull(),
-  productoId: integer('producto_id')
+  precioSinIgv: numeric('precio_sin_igv', { precision: 7, scale: 2 }).notNull(),
+  precioConIgv: numeric('precio_con_igv', { precision: 7, scale: 2 }).notNull(),
+  tipoTax: integer('tipo_tax')
     .notNull()
-    .references(() => productosTable.id),
+    .references(() => tiposTaxTable.id),
+  totalBaseTax: numeric('total_base_tax', { precision: 7, scale: 2 }).notNull(),
+  totalTax: numeric('total_tax', { precision: 7, scale: 2 }).notNull(),
+  total: numeric('total', { precision: 7, scale: 2 }).notNull(),
+  ventaId: integer('venta_id')
+    .notNull()
+    .references(() => ventasTable.id)
+})
+
+export const totalesVentaTable = pgTable('totales_venta', {
+  totalGravadas: numeric('total_gravadas', {
+    precision: 7,
+    scale: 2
+  }).notNull(),
+  totalExoneradas: numeric('total_exoneradas', {
+    precision: 7,
+    scale: 2
+  }).notNull(),
+  totalGratuitas: numeric('total_gratuitas', {
+    precision: 7,
+    scale: 2
+  })
+    .notNull()
+    .default('0.00'),
+  totalTax: numeric('total_tax', {
+    precision: 7,
+    scale: 2
+  }).notNull(),
+  totalVenta: numeric('total_venta', {
+    precision: 7,
+    scale: 2
+  }).notNull()
+})
+
+// ['01', '03']
+export const tiposDocumentoFacturacionTable = pgTable(
+  'tipos_documento_facturacion',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    nombre: text('nombre').notNull().unique(),
+    codigo: text('codigo').notNull().unique()
+  }
+)
+
+// ['0101']
+export const tiposOperacionesTable = pgTable('tipos_operaciones', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  nombre: text('nombre').notNull().unique(),
+  codigo: text('codigo').notNull().unique()
+})
+
+// ['PEN']
+export const monedasFacturacionTable = pgTable('monedas_facturacion', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  nombre: text('nombre').notNull().unique(),
+  codigo: text('codigo').notNull().unique()
+})
+
+export const metodosPagoTable = pgTable('metodos_pago', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  nombre: text('nombre').notNull().unique(),
+  codigo: text('codigo').notNull().unique(),
+  activado: boolean('activado').notNull()
+})
+
+export const documentosTable = pgTable('documentos_table', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  tipoDocumento: integer('tipo_documento')
+    .notNull()
+    .references(() => tiposDocumentoFacturacionTable.id),
+  numeroDocumento: text('numero_venta')
+    .notNull()
+    .unique()
+    .generatedAlwaysAs(sql`LPAD(id::TEXT, 8, '0')`),
+  tipoOperacion: text('tipo_operacion').notNull(),
+  monedaId: integer('moneda_id')
+    .notNull()
+    .references(() => monedasFacturacionTable.id),
+  porcentajeVenta: integer('porcentaje_venta').notNull(),
+  enviarCliente: boolean('enviar_cliente').notNull().default(true),
+  metodoPagoId: integer('metodo_pago_id')
+    .notNull()
+    .references(() => metodosPagoTable.id),
+  observaciones: text('observaciones'),
   ventaId: integer('venta_id')
     .notNull()
     .references(() => ventasTable.id)
@@ -371,6 +461,54 @@ export const proformasVentaTable = pgTable('proformas_venta', {
 })
 
 export const reservasProductosTable = pgTable('reservas_productos', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  descripcion: text('descripcion'),
+  detallesReserva: jsonb('detalles_reserva').notNull().$type<{
+    nombreProducto: number
+    precioCompra: number
+    precioVenta: number
+    cantidad: number
+    total: number
+  }>(),
+  montoAdelantado: numeric('monto_adelantado', {
+    precision: 7,
+    scale: 2
+  }).notNull(),
+  fechaContratacion: date('fecha_contratacion', {
+    mode: 'string'
+  }),
+  clienteId: integer('cliente_id')
+    .notNull()
+    .references(() => clientesTable.id),
+  sucursalId: integer('sucursal_id').references(() => sucursalesTable.id),
+  ...timestampsColumns
+})
+
+export const reservasProductosTable2 = pgTable('reservas_productos', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  descripcion: text('descripcion'),
+  detallesReserva: jsonb('detalles_reserva').notNull().$type<{
+    nombreProducto: number
+    precioCompra: number
+    precioVenta: number
+    cantidad: number
+    total: number
+  }>(),
+  montoAdelantado: numeric('monto_adelantado', {
+    precision: 7,
+    scale: 2
+  }).notNull(),
+  fechaContratacion: date('fecha_contratacion', {
+    mode: 'string'
+  }),
+  clienteId: integer('cliente_id')
+    .notNull()
+    .references(() => clientesTable.id),
+  sucursalId: integer('sucursal_id').references(() => sucursalesTable.id),
+  ...timestampsColumns
+})
+
+export const reservasProductosTable3 = pgTable('reservas_productos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   descripcion: text('descripcion'),
   detallesReserva: jsonb('detalles_reserva').notNull().$type<{

@@ -8,7 +8,6 @@ import {
   sucursalesTable
 } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
-import { SucursalEntityMapper } from '@/domain/mappers/sucursal-entity.mapper'
 import { and, asc, desc, eq, ilike, or, type SQL } from 'drizzle-orm'
 
 export class GetSucursales {
@@ -20,6 +19,10 @@ export class GetSucursales {
     nombre: sucursalesTable.nombre,
     direccion: sucursalesTable.direccion,
     sucursalCentral: sucursalesTable.sucursalCentral,
+    serieFacturaSucursal: sucursalesTable.serieFacturaSucursal,
+    serieBoletaSucursal: sucursalesTable.serieBoletaSucursal,
+    codigoEstablecimiento: sucursalesTable.codigoEstablecimiento,
+    tieneNotificaciones: sucursalesTable.tieneNotificaciones,
     fechaCreacion: sucursalesTable.fechaCreacion,
     fechaActualizacion: sucursalesTable.fechaActualizacion
   }
@@ -147,10 +150,6 @@ export class GetSucursales {
 
     const sucursales = await this.getSucursales(queriesDto, hasPermissionGetAny)
 
-    const mappedSucursales = sucursales.map((sucursal) =>
-      SucursalEntityMapper.fromObject(sucursal)
-    )
-
-    return mappedSucursales
+    return sucursales
   }
 }
