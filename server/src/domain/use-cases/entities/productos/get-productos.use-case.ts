@@ -12,7 +12,7 @@ import {
 } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm'
+import { and, asc, count, desc, eq, gt, ilike, lt, or } from 'drizzle-orm'
 
 export class GetProductos {
   private readonly authPayload: AuthPayload
@@ -50,12 +50,11 @@ export class GetProductos {
   } as const
 
   private readonly validFilter = {
-    nombre: productosTable.nombre,
     precioCompra: detallesProductoTable.precioCompra,
     precioVenta: detallesProductoTable.precioVenta,
-    precioOferta: detallesProductoTable.precioOferta,
-    stock: detallesProductoTable.stock,
-    fechaCreacion: productosTable.fechaCreacion
+    precioOferta: detallesProductoTable.precioOferta
+    // stock: detallesProductoTable.stock
+    // fechaCreacion: productosTable.fechaCreacion
   } as const
 
   constructor(authPayload: AuthPayload) {
@@ -69,14 +68,25 @@ export class GetProductos {
   }
 
   private getSortByColumn(sortBy: string) {
-    if (
-      Object.keys(this.validSortBy).includes(sortBy) &&
-      this.isValidSortBy(sortBy)
-    ) {
+    if (this.isValidSortBy(sortBy)) {
       return this.validSortBy[sortBy]
     }
 
     return this.validSortBy.fechaCreacion
+  }
+
+  private isValidFilter(
+    filter: string
+  ): filter is keyof typeof this.validFilter {
+    return Object.keys(this.validFilter).includes(filter)
+  }
+
+  private getFilterColumn(filter: string) {
+    if (this.isValidFilter(filter)) {
+      return this.validFilter[filter]
+    }
+
+    return undefined
   }
 
   private async getProductos(
@@ -90,7 +100,7 @@ export class GetProductos {
         ? asc(sortByColumn)
         : desc(sortByColumn)
 
-    const whereCondition =
+    const searchCondition =
       queriesDto.search.length > 0
         ? or(
             ilike(productosTable.nombre, `%${queriesDto.search}%`),
@@ -99,6 +109,10 @@ export class GetProductos {
             ilike(marcasTable.nombre, `%${queriesDto.search}%`)
           )
         : undefined
+
+    const filterCondition = this.getFilterCondition(queriesDto)
+
+    const whereCondition = and(searchCondition, filterCondition)
 
     const productos = await db
       .select(this.selectFields)
@@ -132,11 +146,34 @@ export class GetProductos {
     }
   }
 
+  private getFilterCondition(queriesDto: QueriesDto) {
+    const filterColumn = this.getFilterColumn(queriesDto.filter)
+    const filterValueNumber = parseFloat(queriesDto.filter_value)
+
+    if (filterColumn === undefined || isNaN(filterValueNumber)) {
+      return
+    }
+
+    const filterValueString = filterValueNumber.toFixed(2)
+
+    if (queriesDto.filter_type === 'eq') {
+      return eq(filterColumn, filterValueString)
+    }
+
+    if (queriesDto.filter_type === 'gt') {
+      return gt(filterColumn, filterValueString)
+    }
+
+    if (queriesDto.filter_type === 'lt') {
+      return lt(filterColumn, filterValueString)
+    }
+  }
+
   private async getPagination(
     queriesDto: QueriesDto,
     sucursalId: SucursalIdType
   ) {
-    const whereCondition =
+    const searchCondition =
       queriesDto.search.length > 0
         ? or(
             ilike(productosTable.nombre, `%${queriesDto.search}%`),
@@ -145,6 +182,10 @@ export class GetProductos {
             ilike(marcasTable.nombre, `%${queriesDto.search}%`)
           )
         : undefined
+
+    const filterCondition = this.getFilterCondition(queriesDto)
+
+    const whereCondition = and(searchCondition, filterCondition)
 
     const results = await db
       .select({ count: count(productosTable.id) })
@@ -172,11 +213,11 @@ export class GetProductos {
     const hasPrev = queriesDto.page > 1 && queriesDto.page <= totalPages
 
     return {
-      total_items: totalItems.count,
-      total_pages: totalPages,
-      current_page: queriesDto.page,
-      has_next: hasNext,
-      has_prev: hasPrev
+      totalItems: totalItems.count,
+      totalPages,
+      currentPage: queriesDto.page,
+      hasNext,
+      hasPrev
     }
   }
 
@@ -214,7 +255,10 @@ export class GetProductos {
     const metadata = this.getMetadata()
     const pagination = await this.getPagination(queriesDto, sucursalId)
 
-    const isValidPage = pagination.has_prev || pagination.has_next
+    const isValidPage =
+      (pagination.currentPage <= pagination.totalPages ||
+        pagination.currentPage >= 1) &&
+      pagination.totalItems > 0
 
     const results = isValidPage
       ? await this.getProductos(queriesDto, sucursalId)
