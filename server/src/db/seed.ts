@@ -344,6 +344,18 @@ const seedDatabase = async () => {
   })
 
   await db.insert(schema.proformasVentaTable).values(proformasVentaValues)
+
+  const notificacionesValues = Array.from({
+    length: seedConfig.notificacionesCount
+  }).flatMap(() =>
+    sucursales.flatMap((sucursal) => ({
+      titulo: faker.company.name(),
+      descripcion: faker.lorem.words(20),
+      sucursalId: sucursal.id
+    }))
+  )
+
+  await db.insert(schema.notificacionesTable).values(notificacionesValues)
 }
 
 const { NODE_ENV: nodeEnv } = envs
