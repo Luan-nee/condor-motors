@@ -9,6 +9,8 @@ export class ClientesRoutes {
 
     router.post('/', clientesController.create)
 
+    router.get('/:id', clientesController.getById)
+
     return router
   }
 }

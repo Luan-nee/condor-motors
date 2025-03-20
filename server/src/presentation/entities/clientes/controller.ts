@@ -1,7 +1,9 @@
 import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
 import { CreateClienteDto } from '@/domain/dtos/entities/clientes/create-cliente.dto'
+import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { CreateCliente } from '@/domain/use-cases/entities/clientes/create-cliente.use-case'
+import { GetClienteById } from '@/domain/use-cases/entities/clientes/get-cliente-by-id.use-case'
 import type { Request, Response } from 'express'
 
 export class ClientesController {
@@ -38,6 +40,30 @@ export class ClientesController {
 
     createCliente
       .execute(createClienteDto)
+      .then((cliente) => {
+        CustomResponse.success({ res, data: cliente })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
+
+  getById = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [error, numericIdDto] = NumericIdDto.create(req.params)
+    if (error !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: 'Id Invalido' })
+      return
+    }
+
+    const getClienteById = new GetClienteById()
+
+    getClienteById
+      .execute(numericIdDto)
       .then((cliente) => {
         CustomResponse.success({ res, data: cliente })
       })
