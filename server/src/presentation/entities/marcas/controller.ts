@@ -16,53 +16,54 @@ interface MarcaResponse {
 }
 
 export class MarcasController {
-  getAll = async (req: Request, res: Response) => {
+  getAll = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
       CustomResponse.unauthorized({ res, error: 'Invalid access token' })
       return
     }
 
-    try {
-      // Obtener parámetros de paginación de la query con validación de tipo
-      let page = 1
-      let pageSize = 10
+    // Obtener parámetros de paginación de la query con validación de tipo
+    let page = 1
+    let pageSize = 10
 
-      // Validar y convertir page
-      if (req.query.page !== undefined) {
-        const pageParam = Number(req.query.page)
-        if (!Number.isNaN(pageParam)) {
-          page = pageParam
-        }
+    // Validar y convertir page
+    if (req.query.page !== undefined) {
+      const pageParam = Number(req.query.page)
+      if (!Number.isNaN(pageParam)) {
+        page = pageParam
       }
-
-      // Validar y convertir pageSize
-      if (req.query.pageSize !== undefined) {
-        const pageSizeParam = Number(req.query.pageSize)
-        if (!Number.isNaN(pageSizeParam)) {
-          pageSize = pageSizeParam
-        }
-      }
-
-      // Validar que los parámetros sean positivos
-      if (page < 1 || pageSize < 1) {
-        CustomResponse.badRequest({
-          res,
-          error: 'Los parámetros de paginación deben ser números positivos'
-        })
-        return
-      }
-
-      // Usar el caso de uso para obtener las marcas paginadas
-      const getAllMarcas = new GetAllMarcas()
-      const result = await getAllMarcas.execute(page, pageSize)
-
-      CustomResponse.success({ res, data: result })
-    } catch (error) {
-      handleError(error, res)
     }
+
+    // Validar y convertir pageSize
+    if (req.query.pageSize !== undefined) {
+      const pageSizeParam = Number(req.query.pageSize)
+      if (!Number.isNaN(pageSizeParam)) {
+        pageSize = pageSizeParam
+      }
+    }
+
+    // Validar que los parámetros sean positivos
+    if (page < 1 || pageSize < 1) {
+      CustomResponse.badRequest({
+        res,
+        error: 'Los parámetros de paginación deben ser números positivos'
+      })
+      return
+    }
+
+    // Usar el caso de uso para obtener las marcas paginadas
+    const getAllMarcas = new GetAllMarcas()
+    getAllMarcas
+      .execute(page, pageSize)
+      .then((result) => {
+        CustomResponse.success({ res, data: result })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
-  getById = async (req: Request, res: Response) => {
+  getById = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
       CustomResponse.unauthorized({ res, error: 'Invalid access token' })
       return
@@ -74,23 +75,23 @@ export class MarcasController {
       return
     }
 
-    try {
-      // Usar el caso de uso para obtener la marca por ID
-      const getMarcaById = new GetMarcaById()
-      const marca = await getMarcaById.execute(id)
-
-      if (marca === null) {
-        res.status(404).json({
-          ok: false,
-          error: 'Marca no encontrada'
-        })
-        return
-      }
-
-      CustomResponse.success({ res, data: marca })
-    } catch (error) {
-      handleError(error, res)
-    }
+    // Usar el caso de uso para obtener la marca por ID
+    const getMarcaById = new GetMarcaById()
+    getMarcaById
+      .execute(id)
+      .then((marca) => {
+        if (marca === null) {
+          res.status(404).json({
+            ok: false,
+            error: 'Marca no encontrada'
+          })
+          return
+        }
+        CustomResponse.success({ res, data: marca })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
   create = (req: Request, res: Response) => {
@@ -106,7 +107,6 @@ export class MarcasController {
     }
 
     const createMarcas = new CreateMarcas()
-
     createMarcas
       .execute(createMarcasDto)
       .then((marcas: MarcaResponse) => {
@@ -132,7 +132,6 @@ export class MarcasController {
     }
 
     const updateMarcas = new UpdateMarcas()
-
     updateMarcas
       .execute(updateMarcasDto)
       .then((marcas: MarcaResponse | null) => {
@@ -163,7 +162,6 @@ export class MarcasController {
     }
 
     const deleteMarcas = new DeleteMarcas()
-
     deleteMarcas
       .execute(id)
       .then((marcas: MarcaResponse | null) => {
