@@ -5,7 +5,6 @@ import { Router } from 'express'
 import { SoloSucursalRoutes } from '@/presentation/entities/solo-sucursal/routes'
 import { EntitiesMiddleware } from '@/presentation/middlewares/entities.middleware'
 import { CategoriasRoutes } from '@/presentation/entities/categorias/routes'
-import { TiposPersonasRoutes } from '@/presentation/entities/tipos-personas/routes'
 import { RolesCuentasRoutes } from '@/presentation/entities/roles-cuentas/routes'
 import { CuentasEmpleadosRoutes } from '@/presentation/entities/cuentas-empleados/routes'
 import { ColoresRoutes } from '@/presentation/entities/colores/routes'
@@ -19,7 +18,6 @@ export class EntitiesRoutes {
     router.use('/empleados', EmpleadosRoutes.routes)
     router.use('/marcas', MarcasRoutes.routes)
     router.use('/categorias', CategoriasRoutes.routes)
-    router.use('/tipospersonas', TiposPersonasRoutes.routes)
     router.use('/rolescuentas', RolesCuentasRoutes.routes)
     router.use('/clientes', ClientesRoutes.routes)
     router.use('/cuentasempleados', CuentasEmpleadosRoutes.routes)

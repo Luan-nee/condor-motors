@@ -87,13 +87,6 @@ const estadosTransferenciasInventariosValues =
     codigo: formatCode(estado)
   }))
 
-const tiposPersonasValues = seedConfig.tiposPersonasDefault.map(
-  (tipoPersona) => ({
-    nombre: tipoPersona,
-    codigo: formatCode(tipoPersona)
-  })
-)
-
 const { cuentas } = seedConfig
 const {
   admin: adminAccount,
@@ -298,8 +291,6 @@ const seedDatabase = async () => {
   await db
     .insert(schema.estadosTransferenciasInventarios)
     .values(estadosTransferenciasInventariosValues)
-
-  await db.insert(schema.tiposPersonasTable).values(tiposPersonasValues)
 
   const generateDetalles = (length: number, sucursalId: number) =>
     getRandomUniqueElementsFromArray(productos, length).map((producto) => {
