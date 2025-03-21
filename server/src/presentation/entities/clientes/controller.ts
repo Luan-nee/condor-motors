@@ -3,9 +3,11 @@ import { CustomResponse } from '@/core/responses/custom.response'
 import { CreateClienteDto } from '@/domain/dtos/entities/clientes/create-cliente.dto'
 import { NumericDocDto } from '@/domain/dtos/query-params/numeric-doc.dto'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
+import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { CreateCliente } from '@/domain/use-cases/entities/clientes/create-cliente.use-case'
 import { GetClienteByDoc } from '@/domain/use-cases/entities/clientes/get-cliente-by-doc.use-case'
 import { GetClienteById } from '@/domain/use-cases/entities/clientes/get-cliente-by-id.use-case'
+import { GetClientes } from '@/domain/use-cases/entities/clientes/get-clientes.use-case'
 import type { Request, Response } from 'express'
 
 export class ClientesController {
@@ -79,7 +81,30 @@ export class ClientesController {
       .catch((error: unknown) => {
         handleError(error, res)
       })
+  }
 
-    // CustomResponse.success({ res, data: numericDocDto })
+  getAll = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [error, queriesDto] = QueriesDto.create(req.query)
+
+    if (error !== undefined || queriesDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const getClientes = new GetClientes()
+
+    getClientes
+      .execute(queriesDto)
+      .then((cliente) => {
+        CustomResponse.success({ res, data: cliente })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 }

@@ -13,6 +13,8 @@ export class ClientesRoutes {
 
     router.get('/doc/:doc', clientesController.getByDoc)
 
+    router.get('/', clientesController.getAll)
+
     return router
   }
 }
