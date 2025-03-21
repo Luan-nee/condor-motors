@@ -78,7 +78,8 @@ const marcasValues = seedConfig.marcasDefault.map((marca) => ({
 }))
 
 const coloresValues = seedConfig.coloresDefault.map((color) => ({
-  nombre: color
+  nombre: color.nombre,
+  hex: color.hex
 }))
 
 const estadosTransferenciasInventariosValues =

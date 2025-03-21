@@ -31,13 +31,13 @@ export const seedConfig: SeedConfig = {
   ],
   marcasDefault: ['Sin marca', 'Genérico', 'Honda', 'Suzuki', 'Bajaj'],
   coloresDefault: [
-    'No definido',
-    'Negro',
-    'Amarillo',
-    'Rojo',
-    'Verde',
-    'Naranja',
-    'Morado'
+    { nombre: 'No definido', hex: '#FFFFFF' },
+    { nombre: 'Negro', hex: '#000000' },
+    { nombre: 'Amarillo', hex: '#FFFF00' },
+    { nombre: 'Rojo', hex: '#FF0000' },
+    { nombre: 'Verde', hex: '#008000' },
+    { nombre: 'Naranja', hex: '#FFA500' },
+    { nombre: 'Morado', hex: '#800080' }
   ],
   estadosTransferenciasInventariosDefault: [
     'Pendiente',

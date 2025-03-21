@@ -46,7 +46,10 @@ interface SeedConfig {
   rolesDefault: string[]
   categoriasDefault: string[]
   marcasDefault: string[]
-  coloresDefault: string[]
+  coloresDefault: Array<{
+    nombre: string
+    hex: string
+  }>
   estadosTransferenciasInventariosDefault: string[]
   tiposPersonasDefault: string[]
   sucursalesCount: number

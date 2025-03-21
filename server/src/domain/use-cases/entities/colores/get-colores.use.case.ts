@@ -5,7 +5,8 @@ import { asc } from 'drizzle-orm'
 export class GetColores {
   private readonly SelectFields = {
     id: coloresTable.id,
-    nombre: coloresTable.nombre
+    nombre: coloresTable.nombre,
+    hex: coloresTable.hex
   }
 
   async execute() {

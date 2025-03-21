@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { sql } from 'drizzle-orm'
 import {
   uniqueIndex,
@@ -58,7 +57,8 @@ export const marcasTable = pgTable('marcas', {
 
 export const coloresTable = pgTable('colores', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull().unique()
+  nombre: text('nombre').notNull().unique(),
+  hex: text('hex')
 })
 
 export const productosTable = pgTable(
@@ -400,7 +400,6 @@ export const documentosTable = pgTable('documentos_table', {
     .references(() => tiposDocumentoFacturacionTable.id),
   numeroDocumento: text('numero_venta')
     .notNull()
-    .unique()
     .generatedAlwaysAs(sql`LPAD(id::TEXT, 8, '0')`),
   tipoOperacion: text('tipo_operacion').notNull(),
   monedaId: integer('moneda_id')
@@ -461,54 +460,6 @@ export const proformasVentaTable = pgTable('proformas_venta', {
 })
 
 export const reservasProductosTable = pgTable('reservas_productos', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  descripcion: text('descripcion'),
-  detallesReserva: jsonb('detalles_reserva').notNull().$type<{
-    nombreProducto: number
-    precioCompra: number
-    precioVenta: number
-    cantidad: number
-    total: number
-  }>(),
-  montoAdelantado: numeric('monto_adelantado', {
-    precision: 7,
-    scale: 2
-  }).notNull(),
-  fechaContratacion: date('fecha_contratacion', {
-    mode: 'string'
-  }),
-  clienteId: integer('cliente_id')
-    .notNull()
-    .references(() => clientesTable.id),
-  sucursalId: integer('sucursal_id').references(() => sucursalesTable.id),
-  ...timestampsColumns
-})
-
-export const reservasProductosTable2 = pgTable('reservas_productos', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  descripcion: text('descripcion'),
-  detallesReserva: jsonb('detalles_reserva').notNull().$type<{
-    nombreProducto: number
-    precioCompra: number
-    precioVenta: number
-    cantidad: number
-    total: number
-  }>(),
-  montoAdelantado: numeric('monto_adelantado', {
-    precision: 7,
-    scale: 2
-  }).notNull(),
-  fechaContratacion: date('fecha_contratacion', {
-    mode: 'string'
-  }),
-  clienteId: integer('cliente_id')
-    .notNull()
-    .references(() => clientesTable.id),
-  sucursalId: integer('sucursal_id').references(() => sucursalesTable.id),
-  ...timestampsColumns
-})
-
-export const reservasProductosTable3 = pgTable('reservas_productos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   descripcion: text('descripcion'),
   detallesReserva: jsonb('detalles_reserva').notNull().$type<{
