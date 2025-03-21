@@ -80,6 +80,6 @@ export class ClientesController {
         handleError(error, res)
       })
 
-    CustomResponse.success({ res, data: numericDocDto })
+    // CustomResponse.success({ res, data: numericDocDto })
   }
 }
