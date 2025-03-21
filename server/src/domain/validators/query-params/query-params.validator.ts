@@ -25,6 +25,13 @@ const ParamsSucursalIdSchema = z.object({
 export const paramsSucursalIdValidator = (object: unknown) =>
   ParamsSucursalIdSchema.safeParse(object)
 
+const ParamsDocSchema = z.object({
+  doc: paramsBaseSchema.doc
+})
+
+export const paramsDocValidator = (object: unknown) =>
+  ParamsDocSchema.safeParse(object)
+
 export const QueriesSchema = z.object({
   sort_by: queriesBaseSchema.sort_by,
   order: queriesBaseSchema.order,

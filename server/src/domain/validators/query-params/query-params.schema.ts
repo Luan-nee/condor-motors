@@ -2,10 +2,17 @@
 import { defaultQueries, filterTypeValues, orderValues } from '@/consts'
 import z from 'zod'
 import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
+import { Validator } from '@/domain/validators/validator'
 
 export const paramsBaseSchema = {
   numericId: idTypeBaseSchema.numericId,
-  uuid: idTypeBaseSchema.uuid
+  uuid: idTypeBaseSchema.uuid,
+  doc: z.coerce
+    .string()
+    .trim()
+    .min(8)
+    .max(15)
+    .refine((val) => Validator.isOnlyNumbers(val))
 }
 
 export const queriesBaseSchema = {

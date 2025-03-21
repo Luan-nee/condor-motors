@@ -1,6 +1,7 @@
 import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
 import { CreateClienteDto } from '@/domain/dtos/entities/clientes/create-cliente.dto'
+import { NumericDocDto } from '@/domain/dtos/query-params/numeric-doc.dto'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { CreateCliente } from '@/domain/use-cases/entities/clientes/create-cliente.use-case'
 import { GetClienteById } from '@/domain/use-cases/entities/clientes/get-cliente-by-id.use-case'
@@ -53,5 +54,31 @@ export class ClientesController {
       .catch((error: unknown) => {
         handleError(error, res)
       })
+  }
+
+  getByDoc = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [error, numericDocDto] = NumericDocDto.create(req.params)
+    if (error !== undefined || numericDocDto === undefined) {
+      CustomResponse.badRequest({ res, error: 'Numero de documento inválido' })
+      return
+    }
+
+    // const getClienteById = new GetClienteById()
+
+    // getClienteById
+    //   .execute(numericDocDto)
+    //   .then((cliente) => {
+    //     CustomResponse.success({ res, data: cliente })
+    //   })
+    //   .catch((error: unknown) => {
+    //     handleError(error, res)
+    //   })
+
+    CustomResponse.success({ res, data: numericDocDto })
   }
 }
