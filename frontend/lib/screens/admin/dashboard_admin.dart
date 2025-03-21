@@ -54,8 +54,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   List<Sucursal> _centrales = [];
   List<Producto> _productos = [];
   Map<int, int> _stockPorProducto = {};
-  final double _totalVentas = 0;
-  final double _totalGanancias = 0;
+  double _totalVentas = 0;
+  double _totalGanancias = 0;
   
   @override
   void initState() {
@@ -283,7 +283,7 @@ class _DashboardContent extends StatelessWidget {
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
-                    headingRowColor: WidgetStateProperty.all(
+                    headingRowColor: MaterialStateProperty.all(
                       const Color(0xFF2D2D2D),
                     ),
                     columns: const [

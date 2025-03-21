@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../models/empleado.model.dart';
+import '../../models/sucursal.model.dart';
 import '../../main.dart' show api;
 import '../../api/main.api.dart' show ApiException;
 import 'widgets/empleado_form.dart';

@@ -171,7 +171,7 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
                     Row(
                       children: [
                         Tooltip(
-                          message: '${widget.sucursales.length} sucursales',
+                          message: widget.sucursales.length.toString() + ' sucursales',
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(

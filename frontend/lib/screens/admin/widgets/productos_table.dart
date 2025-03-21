@@ -26,8 +26,8 @@ class ProductosTable extends StatefulWidget {
 }
 
 class _ProductosTableState extends State<ProductosTable> with SingleTickerProviderStateMixin {
-  final bool _expandirAgotados = false;
-  final bool _expandirStockBajo = false;
+  bool _expandirAgotados = false;
+  bool _expandirStockBajo = false;
   late TabController _tabController;
   Map<String, List<Producto>> _productosAgrupados = {};
   
@@ -275,10 +275,10 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
 
   Widget _buildDataTable(BuildContext context, List<Producto> productosLista) {
     return DataTable(
-      headingRowColor: WidgetStateProperty.all(const Color(0xFF1A1A1A)),
-      dataRowColor: WidgetStateProperty.resolveWith<Color>(
-        (Set<WidgetState> states) {
-          if (states.contains(WidgetState.selected)) {
+      headingRowColor: MaterialStateProperty.all(const Color(0xFF1A1A1A)),
+      dataRowColor: MaterialStateProperty.resolveWith<Color>(
+        (Set<MaterialState> states) {
+          if (states.contains(MaterialState.selected)) {
             return const Color(0xFFE31E24).withOpacity(0.1);
           }
           return const Color(0xFF222222);
