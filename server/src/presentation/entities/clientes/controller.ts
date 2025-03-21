@@ -4,6 +4,7 @@ import { CreateClienteDto } from '@/domain/dtos/entities/clientes/create-cliente
 import { NumericDocDto } from '@/domain/dtos/query-params/numeric-doc.dto'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { CreateCliente } from '@/domain/use-cases/entities/clientes/create-cliente.use-case'
+import { GetClienteByDoc } from '@/domain/use-cases/entities/clientes/get-cliente-by-doc.use-case'
 import { GetClienteById } from '@/domain/use-cases/entities/clientes/get-cliente-by-id.use-case'
 import type { Request, Response } from 'express'
 
@@ -68,16 +69,16 @@ export class ClientesController {
       return
     }
 
-    // const getClienteById = new GetClienteById()
+    const getClienteByDoc = new GetClienteByDoc()
 
-    // getClienteById
-    //   .execute(numericDocDto)
-    //   .then((cliente) => {
-    //     CustomResponse.success({ res, data: cliente })
-    //   })
-    //   .catch((error: unknown) => {
-    //     handleError(error, res)
-    //   })
+    getClienteByDoc
+      .execute(numericDocDto)
+      .then((cliente) => {
+        CustomResponse.success({ res, data: cliente })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
 
     CustomResponse.success({ res, data: numericDocDto })
   }
