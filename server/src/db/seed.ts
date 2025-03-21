@@ -234,18 +234,30 @@ const seedDatabase = async () => {
     .returning({ id: schema.coloresTable.id })
 
   const productosValues = Array.from({ length: seedConfig.productosCount }).map(
-    (_, i) => ({
-      nombre: faker.commerce.productName() + i.toString(),
-      descripcion: faker.commerce.productDescription(),
-      maxDiasSinReabastecer: faker.number.int({ min: 20, max: 90 }),
-      stockMinimo: faker.number.int({ min: 20, max: 30 }),
-      cantidadMinimaDescuento: faker.number.int({ min: 2, max: 5 }),
-      cantidadGratisDescuento: faker.number.int({ min: 1, max: 2 }),
-      porcentajeDescuento: faker.number.int({ min: 10, max: 20 }),
-      colorId: getRandomValueFromArray(colores).id,
-      categoriaId: getRandomValueFromArray(categorias).id,
-      marcaId: getRandomValueFromArray(marcas).id
-    })
+    (_, i) => {
+      const descuentoProdGratis = faker.datatype.boolean()
+
+      const cantidadGratisDescuento = descuentoProdGratis
+        ? faker.number.int({ min: 1, max: 2 })
+        : undefined
+
+      const porcentajeDescuento = !descuentoProdGratis
+        ? faker.number.int({ min: 10, max: 20 })
+        : undefined
+
+      return {
+        nombre: faker.commerce.productName() + i.toString(),
+        descripcion: faker.commerce.productDescription(),
+        maxDiasSinReabastecer: faker.number.int({ min: 20, max: 90 }),
+        stockMinimo: faker.number.int({ min: 20, max: 30 }),
+        cantidadMinimaDescuento: faker.number.int({ min: 2, max: 5 }),
+        cantidadGratisDescuento,
+        porcentajeDescuento,
+        colorId: getRandomValueFromArray(colores).id,
+        categoriaId: getRandomValueFromArray(categorias).id,
+        marcaId: getRandomValueFromArray(marcas).id
+      }
+    }
   )
 
   const productos = await insertInBatches(
@@ -268,9 +280,9 @@ const seedDatabase = async () => {
     sucursales.flatMap((sucursal) => {
       const stock = faker.number.int({ min: 10, max: 200 })
       return {
-        precioCompra: faker.commerce.price({ min: 160, max: 200 }),
-        precioVenta: faker.commerce.price({ min: 150, max: 180 }),
-        precioOferta: faker.commerce.price({ min: 155, max: 180 }),
+        precioCompra: faker.commerce.price({ min: 100, max: 150 }),
+        precioVenta: faker.commerce.price({ min: 160, max: 180 }),
+        precioOferta: faker.commerce.price({ min: 140, max: 160 }),
         stock,
         stockBajo:
           producto.stockMinimo !== null ? stock < producto.stockMinimo : false,
