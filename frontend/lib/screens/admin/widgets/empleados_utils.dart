@@ -2,7 +2,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import '../../../models/empleado.model.dart';
 import '../../../main.dart' show api;
-import '../../../api/main.api.dart' show ApiException;
 import 'empleado_cuenta_dialog.dart';
 import 'empleado_horario_dialog.dart';
 
@@ -431,8 +430,6 @@ class EmpleadosUtils {
   /// 
   /// Muestra un diálogo para gestionar la cuenta y maneja todas las interacciones con la API
   static Future<bool> gestionarCuenta(BuildContext context, Empleado empleado) async {
-    bool isLoading = true;
-    
     try {
       // Obtener roles disponibles
       final roles = await api.cuentasEmpleados.getRolesCuentas();
@@ -537,7 +534,6 @@ class EmpleadosUtils {
         }
       }
       
-      isLoading = false;
       
       // Preparar título para el diálogo
       final nombreEmpleado = '${empleado.nombre} ${empleado.apellidos}';
@@ -565,7 +561,6 @@ class EmpleadosUtils {
       return dialogResult == true;
     } catch (e) {
       debugPrint('Error al gestionar cuenta: $e');
-      isLoading = false;
       
       // Verificar si es un error que indica que no se encontró la cuenta
       final bool esErrorNotFound = e.toString().contains('404') || 

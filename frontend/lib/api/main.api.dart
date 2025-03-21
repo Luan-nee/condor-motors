@@ -167,7 +167,7 @@ class ApiClient {
       debugPrint('ApiClient: Enviando solicitud de renovación de token con refresh token');
       
       // Hacer la solicitud de renovación
-      final fullUrl = '${baseUrl}/auth/refresh';
+      final fullUrl = '$baseUrl/auth/refresh';
       
       final request = http.Request('POST', Uri.parse(fullUrl));
       request.headers['Content-Type'] = 'application/json';

@@ -30,93 +30,192 @@ class ReglaDescuento {
 
 class Producto {
   final int id;
+  final String sku;
   final String nombre;
-  final String codigo;
-  final double precio;
-  final double precioCompra;
-  final int existencias;
-  final String descripcion;
+  final String? descripcion;
+  final int? maxDiasSinReabastecer;
+  final int? stockMinimo;
+  final int? cantidadMinimaDescuento;
+  final int? cantidadGratisDescuento;
+  final int? porcentajeDescuento;
+  final String? color;
   final String categoria;
   final String marca;
-  final bool esLiquidacion;
-  final String local;
-  final List<ReglaDescuento> reglasDescuento;
   final DateTime fechaCreacion;
-  final DateTime fechaActualizacion;
-  final bool? tieneDescuentoTiempo;
-  final int? diasSinVenta;
-  final double? porcentajeDescuentoTiempo;
-  final String? urlImagen;
-  final bool tieneDescuento;
+  final int? detalleProductoId;
+  final double precioCompra;
+  final double precioVenta;
+  final double? precioOferta;
+  final int stock;
+  final bool stockBajo;
 
   Producto({
     required this.id,
+    required this.sku,
     required this.nombre,
-    required this.codigo,
-    required this.precio,
-    required this.precioCompra,
-    required this.existencias,
-    required this.descripcion,
+    this.descripcion,
+    this.maxDiasSinReabastecer,
+    this.stockMinimo,
+    this.cantidadMinimaDescuento,
+    this.cantidadGratisDescuento,
+    this.porcentajeDescuento,
+    this.color,
     required this.categoria,
     required this.marca,
-    required this.esLiquidacion,
-    required this.local,
-    required this.reglasDescuento,
     required this.fechaCreacion,
-    required this.fechaActualizacion,
-    this.tieneDescuentoTiempo,
-    this.diasSinVenta,
-    this.porcentajeDescuentoTiempo,
-    this.urlImagen,
-    this.tieneDescuento = false,
+    this.detalleProductoId,
+    required this.precioCompra,
+    required this.precioVenta,
+    this.precioOferta,
+    required this.stock,
+    this.stockBajo = false,
   });
 
   factory Producto.fromJson(Map<String, dynamic> json) {
     return Producto(
       id: json['id'] as int,
+      sku: json['sku'] as String,
       nombre: json['nombre'] as String,
-      codigo: json['codigo'] as String,
-      precio: (json['precio'] as num).toDouble(),
-      precioCompra: (json['precio_compra'] as num).toDouble(),
-      existencias: json['existencias'] as int,
-      descripcion: json['descripcion'] as String,
+      descripcion: json['descripcion'] as String?,
+      maxDiasSinReabastecer: json['maxDiasSinReabastecer'] as int?,
+      stockMinimo: json['stockMinimo'] as int?,
+      cantidadMinimaDescuento: json['cantidadMinimaDescuento'] as int?,
+      cantidadGratisDescuento: json['cantidadGratisDescuento'] as int?,
+      porcentajeDescuento: json['porcentajeDescuento'] as int?,
+      color: json['color'] as String?,
       categoria: json['categoria'] as String,
       marca: json['marca'] as String,
-      esLiquidacion: json['es_liquidacion'] as bool,
-      local: json['local'] as String,
-      reglasDescuento: (json['reglas_descuento'] as List<dynamic>)
-          .map((e) => ReglaDescuento.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      fechaCreacion: DateTime.parse(json['fecha_creacion'] as String),
-      fechaActualizacion: DateTime.parse(json['fecha_actualizacion'] as String),
-      tieneDescuentoTiempo: json['tiene_descuento_tiempo'] as bool?,
-      diasSinVenta: json['dias_sin_venta'] as int?,
-      porcentajeDescuentoTiempo: (json['porcentaje_descuento_tiempo'] as num?)?.toDouble(),
-      urlImagen: json['url_imagen'] as String?,
-      tieneDescuento: json['tiene_descuento'] as bool,
+      fechaCreacion: DateTime.parse(json['fechaCreacion'] as String),
+      detalleProductoId: json['detalleProductoId'] as int?,
+      precioCompra: _parseDouble(json['precioCompra']),
+      precioVenta: _parseDouble(json['precioVenta']),
+      precioOferta: json['precioOferta'] != null ? _parseDouble(json['precioOferta']) : null,
+      stock: json['stock'] as int,
+      stockBajo: json['stockBajo'] as bool? ?? false,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'sku': sku,
     'nombre': nombre,
-    'codigo': codigo,
-    'precio': precio,
-    'precio_compra': precioCompra,
-    'existencias': existencias,
-    'descripcion': descripcion,
+    if (descripcion != null) 'descripcion': descripcion,
+    if (maxDiasSinReabastecer != null) 'maxDiasSinReabastecer': maxDiasSinReabastecer,
+    if (stockMinimo != null) 'stockMinimo': stockMinimo,
+    if (cantidadMinimaDescuento != null) 'cantidadMinimaDescuento': cantidadMinimaDescuento,
+    if (cantidadGratisDescuento != null) 'cantidadGratisDescuento': cantidadGratisDescuento,
+    if (porcentajeDescuento != null) 'porcentajeDescuento': porcentajeDescuento,
+    if (color != null) 'color': color,
     'categoria': categoria,
     'marca': marca,
-    'es_liquidacion': esLiquidacion,
-    'local': local,
-    'reglas_descuento': reglasDescuento.map((e) => e.toJson()).toList(),
-    'fecha_creacion': fechaCreacion.toIso8601String(),
-    'fecha_actualizacion': fechaActualizacion.toIso8601String(),
-    if (tieneDescuentoTiempo != null) 'tiene_descuento_tiempo': tieneDescuentoTiempo,
-    if (diasSinVenta != null) 'dias_sin_venta': diasSinVenta,
-    if (porcentajeDescuentoTiempo != null) 'porcentaje_descuento_tiempo': porcentajeDescuentoTiempo,
-    if (urlImagen != null) 'url_imagen': urlImagen,
-    'tiene_descuento': tieneDescuento,
+    'fechaCreacion': fechaCreacion.toIso8601String(),
+    if (detalleProductoId != null) 'detalleProductoId': detalleProductoId,
+    'precioCompra': precioCompra,
+    'precioVenta': precioVenta,
+    if (precioOferta != null) 'precioOferta': precioOferta,
+    'stock': stock,
+    'stockBajo': stockBajo,
   };
+  
+  /// Helper para convertir valores numéricos a double
+  static double _parseDouble(dynamic value) {
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.parse(value);
+    return 0.0;
+  }
+  
+  /// Formatea el precio de venta a soles peruanos
+  String getPrecioVentaFormateado() {
+    return 'S/ ${precioVenta.toStringAsFixed(2)}';
+  }
+
+  /// Formatea el precio de compra a soles peruanos
+  String getPrecioCompraFormateado() {
+    return 'S/ ${precioCompra.toStringAsFixed(2)}';
+  }
+
+  /// Formatea el precio de oferta a soles peruanos
+  String? getPrecioOfertaFormateado() {
+    return precioOferta != null ? 'S/ ${precioOferta!.toStringAsFixed(2)}' : null;
+  }
+
+  /// Calcula la ganancia
+  double getGanancia() {
+    return precioVenta - precioCompra;
+  }
+
+  /// Calcula el margen de ganancia en porcentaje
+  double getMargenPorcentaje() {
+    if (precioCompra <= 0) return 0;
+    return (getGanancia() / precioCompra) * 100;
+  }
+
+  /// Verifica si el producto tiene stock bajo
+  bool tieneStockBajo() {
+    return stockBajo || (stockMinimo != null && stock <= stockMinimo!);
+  }
+
+  /// Verifica si el producto está en oferta
+  bool estaEnOferta() {
+    return precioOferta != null && precioOferta! < precioVenta;
+  }
+
+  /// Calcula el porcentaje de descuento de la oferta
+  double? getPorcentajeDescuentoOferta() {
+    if (!estaEnOferta()) return null;
+    return ((precioVenta - precioOferta!) / precioVenta) * 100;
+  }
+
+  /// Formatea el porcentaje de descuento de la oferta
+  String? getPorcentajeDescuentoOfertaFormateado() {
+    final porcentaje = getPorcentajeDescuentoOferta();
+    return porcentaje != null ? '${porcentaje.toStringAsFixed(0)}%' : null;
+  }
+
+  /// Create a new instance with updated fields
+  Producto copyWith({
+    int? id,
+    String? sku,
+    String? nombre,
+    String? descripcion,
+    int? maxDiasSinReabastecer,
+    int? stockMinimo,
+    int? cantidadMinimaDescuento,
+    int? cantidadGratisDescuento,
+    int? porcentajeDescuento,
+    String? color,
+    String? categoria,
+    String? marca,
+    DateTime? fechaCreacion,
+    int? detalleProductoId,
+    double? precioCompra,
+    double? precioVenta,
+    double? precioOferta,
+    int? stock,
+    bool? stockBajo,
+  }) {
+    return Producto(
+      id: id ?? this.id,
+      sku: sku ?? this.sku,
+      nombre: nombre ?? this.nombre,
+      descripcion: descripcion ?? this.descripcion,
+      maxDiasSinReabastecer: maxDiasSinReabastecer ?? this.maxDiasSinReabastecer,
+      stockMinimo: stockMinimo ?? this.stockMinimo,
+      cantidadMinimaDescuento: cantidadMinimaDescuento ?? this.cantidadMinimaDescuento,
+      cantidadGratisDescuento: cantidadGratisDescuento ?? this.cantidadGratisDescuento,
+      porcentajeDescuento: porcentajeDescuento ?? this.porcentajeDescuento,
+      color: color ?? this.color,
+      categoria: categoria ?? this.categoria,
+      marca: marca ?? this.marca,
+      fechaCreacion: fechaCreacion ?? this.fechaCreacion,
+      detalleProductoId: detalleProductoId ?? this.detalleProductoId,
+      precioCompra: precioCompra ?? this.precioCompra,
+      precioVenta: precioVenta ?? this.precioVenta,
+      precioOferta: precioOferta ?? this.precioOferta,
+      stock: stock ?? this.stock,
+      stockBajo: stockBajo ?? this.stockBajo,
+    );
+  }
 } 
 

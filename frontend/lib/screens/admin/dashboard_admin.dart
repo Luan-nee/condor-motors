@@ -2,35 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../api/index.dart';
 import '../../main.dart' show api;
+import '../../models/producto.model.dart';
+import '../../models/sucursal.model.dart';
 
-// Definición de la clase Producto para manejar los datos
-class Producto {
-  final int id;
-  final String nombre;
-  final double precio;
-  final String? descripcion;
-  final String? imagen;
-  final String? categoria;
-
-  Producto({
-    required this.id,
-    required this.nombre,
-    required this.precio,
-    this.descripcion,
-    this.imagen,
-    this.categoria,
+// Un modelo básico para el widget de estadísticas del Dashboard
+class DashboardItemInfo {
+  final IconData icon;
+  final String title;
+  final String value;
+  final Color color;
+  
+  DashboardItemInfo({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.color,
   });
-
-  factory Producto.fromJson(Map<String, dynamic> json) {
-    return Producto(
-      id: json['id'] ?? 0,
-      nombre: json['nombre'] ?? '',
-      precio: (json['precio'] ?? 0.0).toDouble(),
-      descripcion: json['descripcion'],
-      imagen: json['imagen'],
-      categoria: json['categoria'],
-    );
-  }
 }
 
 // Definición de la clase Stock para manejar los datos
@@ -51,38 +38,6 @@ class Stock {
   }
 }
 
-// Definición de la clase Sucursal para manejar los datos
-class Sucursal {
-  final int id;
-  final String nombre;
-  final String direccion;
-  final bool sucursalCentral;
-  final bool activo;
-  final DateTime? fechaCreacion;
-
-  Sucursal({
-    required this.id,
-    required this.nombre,
-    required this.direccion,
-    required this.sucursalCentral,
-    required this.activo,
-    this.fechaCreacion,
-  });
-
-  factory Sucursal.fromJson(Map<String, dynamic> json) {
-    return Sucursal(
-      id: json['id'] ?? 0,
-      nombre: json['nombre'] ?? '',
-      direccion: json['direccion'] ?? '',
-      sucursalCentral: json['sucursal_central'] ?? false,
-      activo: json['activo'] ?? true,
-      fechaCreacion: json['fecha_creacion'] != null 
-          ? DateTime.parse(json['fecha_creacion']) 
-          : null,
-    );
-  }
-}
-
 class DashboardAdminScreen extends StatefulWidget {
   const DashboardAdminScreen({super.key});
 
@@ -91,572 +46,445 @@ class DashboardAdminScreen extends StatefulWidget {
 }
 
 class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
-  late final ProductosApi _productosApi;
-  late final SucursalesApi _sucursalesApi;
-  List<Producto> _productos = [];
+  bool _isLoading = true;
+  String _sucursalSeleccionadaId = "";
+
+  // Datos para mostrar en el dashboard
   List<Sucursal> _sucursales = [];
   List<Sucursal> _centrales = [];
-  Map<int, int> _existencias = {};
-  bool _isLoading = false;
-  double _totalVentas = 0;
-  double _totalGanancias = 0;
-  bool _mostrarCentrales = true;
-
+  List<Producto> _productos = [];
+  Map<int, int> _stockPorProducto = {};
+  final double _totalVentas = 0;
+  final double _totalGanancias = 0;
+  
   @override
   void initState() {
     super.initState();
-    _productosApi = api.productos;
-    _sucursalesApi = api.sucursales;
-    _loadInitialData();
+    _loadData();
   }
-
-  Future<void> _loadInitialData() async {
-    if (!mounted) return;
-    setState(() => _isLoading = true);
-    
+  
+  Future<void> _loadData() async {
     try {
-      // Cargar productos
-      final productosResponse = await _productosApi.getProductos();
-      final List<Producto> productosList = [];
-      for (var item in productosResponse) {
-        productosList.add(Producto.fromJson(item));
+      // Cargar sucursales primero
+      final sucursalesResponse = await api.sucursales.getSucursales();
+      
+      List<Sucursal> sucursalesList = [];
+      List<Sucursal> centralesList = [];
+      
+      for (var sucursal in sucursalesResponse) {
+        sucursalesList.add(sucursal);
+        if (sucursal.sucursalCentral) {
+          centralesList.add(sucursal);
+        }
       }
       
-      // Simular datos de ventas (esto debería venir de una API real)
-      final ventasData = {
-        'total': 15000.0,
-        'ganancia': 3500.0
-      };
-      
-      // Simular datos de stock (esto debería venir de una API real)
-      final existencias = <int, int>{};
-      for (var producto in productosList) {
-        existencias[producto.id] = (producto.id % 20); // Simulación de stock
+      // Establecer la sucursal seleccionada: central si existe, o la primera disponible
+      String sucursalId = "";
+      if (centralesList.isNotEmpty) {
+        sucursalId = centralesList.first.id.toString();
+      } else if (sucursalesList.isNotEmpty) {
+        sucursalId = sucursalesList.first.id.toString();
       }
       
-      // Cargar sucursales
-      final sucursalesResponse = await _sucursalesApi.getSucursales();
-      final List<Sucursal> sucursalesList = [];
-      for (var item in sucursalesResponse) {
-        sucursalesList.add(Sucursal.fromJson(item));
+      if (sucursalId.isNotEmpty) {
+        _sucursalSeleccionadaId = sucursalId;
+        await _loadProductos();
       }
       
-      final centrales = sucursalesList.where((s) => s.sucursalCentral).toList();
-      final sucursalesNoCentrales = sucursalesList.where((s) => !s.sucursalCentral).toList();
-      
-      if (!mounted) return;
-      setState(() {
-        _productos = productosList;
-        _existencias = existencias;
-        _totalVentas = ventasData['total'] ?? 0.0;
-        _totalGanancias = ventasData['ganancia'] ?? 0.0;
-        _sucursales = sucursalesNoCentrales;
-        _centrales = centrales;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _sucursales = sucursalesList;
+          _centrales = centralesList;
+        });
+      }
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cargar datos: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      print('Error cargando datos iniciales: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
-    if (!mounted) return;
-    setState(() => _isLoading = false);
   }
 
-  void _toggleMostrarCentrales(bool mostrarCentrales) {
-    setState(() {
-      _mostrarCentrales = mostrarCentrales;
-    });
+  Future<void> _loadProductos() async {
+    try {
+      // Usar la nueva API de productos
+      final productos = await api.productos.getProductos(
+        sucursalId: _sucursalSeleccionadaId,
+      );
+      
+      Map<int, int> newExistencias = {};
+      
+      // Procesar los datos de productos
+      for (var producto in productos) {
+        newExistencias[producto.id] = producto.stock;
+      }
+      
+      if (mounted) {
+        setState(() {
+          _productos = productos;
+          _stockPorProducto = newExistencias;
+        });
+      }
+    } catch (e) {
+      print('Error cargando productos: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return _DashboardContent(
-      productosList: _productos,
-      totalVentas: _totalVentas,
-      totalGanancias: _totalGanancias,
-      existencias: _existencias,
-      sucursales: _sucursales,
-      centrales: _centrales,
-      mostrarCentrales: _mostrarCentrales,
-      onToggleMostrarCentrales: _toggleMostrarCentrales,
-      onRefresh: _loadInitialData,
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Dashboard de Administración',
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () async {
+              setState(() {
+                _isLoading = true;
+              });
+              await _loadData();
+            },
+            tooltip: 'Recargar datos',
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _DashboardContent(
+              productos: _productos,
+              totalVentas: _totalVentas,
+              totalGanancias: _totalGanancias,
+              existencias: _stockPorProducto,
+              sucursales: _sucursales,
+              centrales: _centrales,
+            ),
     );
   }
 }
 
 class _DashboardContent extends StatelessWidget {
-  final List<Producto> productosList;
+  final List<Producto> productos;
   final double totalVentas;
   final double totalGanancias;
   final Map<int, int> existencias;
   final List<Sucursal> sucursales;
   final List<Sucursal> centrales;
-  final bool mostrarCentrales;
-  final Function(bool) onToggleMostrarCentrales;
-  final VoidCallback onRefresh;
 
   const _DashboardContent({
-    required this.productosList,
+    required this.productos,
     required this.totalVentas,
     required this.totalGanancias,
     required this.existencias,
     required this.sucursales,
     required this.centrales,
-    required this.mostrarCentrales,
-    required this.onToggleMostrarCentrales,
-    required this.onRefresh,
   });
-
-  int getExistencias(Producto producto) {
-    return existencias[producto.id] ?? 0;
-  }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        // Panel principal (ocupa el 75% del ancho)
-        Expanded(
-          flex: 75,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header con nombre del local
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                    ),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+    
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: ListView(
+        children: [
+          // Encabezado con tarjetas de resumen
+          if (!isMobile)
+            Row(
+              children: [
+                Expanded(child: _buildSummaryCard(
+                  title: 'Productos',
+                  value: productos.length.toString(),
+                  icon: FontAwesomeIcons.boxes,
+                  color: Colors.blue,
+                )),
+                const SizedBox(width: 16),
+                Expanded(child: _buildSummaryCard(
+                  title: 'Ventas',
+                  value: 'S/ ${totalVentas.toStringAsFixed(2)}',
+                  icon: FontAwesomeIcons.moneyBillWave,
+                  color: Colors.green,
+                )),
+                const SizedBox(width: 16),
+                Expanded(child: _buildSummaryCard(
+                  title: 'Ganancias',
+                  value: 'S/ ${totalGanancias.toStringAsFixed(2)}',
+                  icon: FontAwesomeIcons.chartLine,
+                  color: Colors.purple,
+                )),
+                const SizedBox(width: 16),
+                Expanded(child: _buildSummaryCard(
+                  title: 'Sucursales',
+                  value: sucursales.length.toString(),
+                  icon: FontAwesomeIcons.store,
+                  color: Colors.orange,
+                )),
+              ],
+            )
+          else
+            Column(
+              children: [
+                _buildSummaryCard(
+                  title: 'Productos',
+                  value: productos.length.toString(),
+                  icon: FontAwesomeIcons.boxes,
+                  color: Colors.blue,
+                ),
+                const SizedBox(height: 16),
+                _buildSummaryCard(
+                  title: 'Ventas',
+                  value: 'S/ ${totalVentas.toStringAsFixed(2)}',
+                  icon: FontAwesomeIcons.moneyBillWave,
+                  color: Colors.green,
+                ),
+                const SizedBox(height: 16),
+                _buildSummaryCard(
+                  title: 'Ganancias',
+                  value: 'S/ ${totalGanancias.toStringAsFixed(2)}',
+                  icon: FontAwesomeIcons.chartLine,
+                  color: Colors.purple,
+                ),
+                const SizedBox(height: 16),
+                _buildSummaryCard(
+                  title: 'Sucursales',
+                  value: sucursales.length.toString(),
+                  icon: FontAwesomeIcons.store,
+                  color: Colors.orange,
+                ),
+              ],
+            ),
+          const SizedBox(height: 32),
+          
+          // Sección de productos con bajo stock
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Productos con stock bajo',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFE31E24),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    const Text(
-                      'INVENTARIO',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                const SizedBox(height: 16),
+                // Tabla de productos con stock bajo
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    headingRowColor: WidgetStateProperty.all(
+                      const Color(0xFF2D2D2D),
                     ),
-                    const Text(
-                      ' / ',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.white54,
-                      ),
-                    ),
-                    Text(
-                      'Central Principal',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Sección de productos con bajo stock
-              Container(
-                padding: const EdgeInsets.all(16),
-                color: const Color(0xFF1A1A1A),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Productos con bajo stock',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFE31E24),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Tabla de productos
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          headingRowColor: WidgetStateProperty.all(
-                            const Color(0xFF2D2D2D),
-                          ),
-                          columns: const [
-                            DataColumn(
-                              label: Text(
-                                'Foto',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                'Producto',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                'Stock',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                'Cantidad máxima',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                'Cantidad mínima',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ],
-                          rows: productosList
-                              .where((producto) =>
-                                  getExistencias(producto) < 10) // Ejemplo de umbral
-                              .map(
-                                (producto) => DataRow(
-                                  cells: [
-                                    DataCell(
-                                      Container(
-                                        width: 50,
-                                        height: 50,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF2D2D2D),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: const FaIcon(
-                                          FontAwesomeIcons.motorcycle,
-                                          color: Colors.white54,
-                                          size: 24,
-                                        ),
-                                      ),
-                                    ),
-                                    DataCell(Text(
-                                      producto.nombre,
-                                      style: const TextStyle(color: Colors.white),
-                                    )),
-                                    DataCell(Text(
-                                      getExistencias(producto).toString(),
-                                      style: TextStyle(
-                                        color: getExistencias(producto) < 5
-                                            ? const Color(0xFFE31E24)
-                                            : Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    )),
-                                    const DataCell(Text(
-                                      '50', // Ejemplo de cantidad máxima
-                                      style: TextStyle(color: Colors.white),
-                                    )),
-                                    const DataCell(Text(
-                                      '10', // Ejemplo de cantidad mínima
-                                      style: TextStyle(color: Colors.white),
-                                    )),
-                                  ],
-                                ),
-                              )
-                              .toList(),
+                    columns: const [
+                      DataColumn(
+                        label: Text(
+                          'Producto',
+                          style: TextStyle(color: Colors.white),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Panel lateral derecho (ocupa el 25% del ancho)
-        Container(
-          width: MediaQuery.of(context).size.width * 0.25,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
-            border: Border(
-              left: BorderSide(
-                color: Colors.white.withOpacity(0.1),
-              ),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Título del panel
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Administrar Locales',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                      DataColumn(
+                        label: Text(
+                          'SKU',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
-                    ),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const FaIcon(
-                            FontAwesomeIcons.arrowsRotate,
-                            color: Colors.white70,
-                            size: 16,
-                          ),
-                          onPressed: onRefresh,
-                          tooltip: 'Actualizar',
+                      DataColumn(
+                        label: Text(
+                          'Stock Actual',
+                          style: TextStyle(color: Colors.white),
                         ),
-                        IconButton(
-                          icon: const FaIcon(
-                            FontAwesomeIcons.circlePlus,
-                            color: Color(0xFFE31E24),
-                          ),
-                          onPressed: () {
-                            // TODO: Implementar agregar local
-                          },
-                          tooltip: 'Agregar local',
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Tabs de Centrales y Sucursales
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    _buildTab(mostrarCentrales, 'Centrales', () => onToggleMostrarCentrales(true)),
-                    const SizedBox(width: 8),
-                    _buildTab(!mostrarCentrales, 'Sucursales', () => onToggleMostrarCentrales(false)),
-                  ],
-                ),
-              ),
-
-              // Lista de locales
-              Expanded(
-                child: mostrarCentrales
-                    ? _buildLocalesList(centrales)
-                    : _buildLocalesList(sucursales),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLocalesList(List<Sucursal> locales) {
-    if (locales.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const FaIcon(
-              FontAwesomeIcons.store,
-              color: Colors.white24,
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              mostrarCentrales
-                  ? 'No hay centrales registradas'
-                  : 'No hay sucursales registradas',
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: locales.length,
-      itemBuilder: (context, index) {
-        final local = locales[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2D2D2D),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        const FaIcon(
-                          FontAwesomeIcons.store,
-                          color: Color(0xFFE31E24),
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            local.nombre,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const FaIcon(
-                          FontAwesomeIcons.penToSquare,
-                          color: Colors.white70,
-                          size: 14,
-                        ),
-                        onPressed: () {
-                          // TODO: Implementar editar local
-                        },
-                        tooltip: 'Editar',
-                        constraints: const BoxConstraints(
-                          minWidth: 24,
-                          minHeight: 24,
-                        ),
-                        padding: EdgeInsets.zero,
-                        iconSize: 14,
                       ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const FaIcon(
-                          FontAwesomeIcons.trash,
-                          color: Colors.red,
-                          size: 14,
+                      DataColumn(
+                        label: Text(
+                          'Stock Mínimo',
+                          style: TextStyle(color: Colors.white),
                         ),
-                        onPressed: () {
-                          // TODO: Implementar eliminar local
-                        },
-                        tooltip: 'Eliminar',
-                        constraints: const BoxConstraints(
-                          minWidth: 24,
-                          minHeight: 24,
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Precio',
+                          style: TextStyle(color: Colors.white),
                         ),
-                        padding: EdgeInsets.zero,
-                        iconSize: 14,
                       ),
                     ],
+                    rows: productos
+                        .where((producto) => producto.stockBajo)
+                        .map(
+                          (producto) => DataRow(
+                            cells: [
+                              DataCell(Text(
+                                producto.nombre,
+                                style: const TextStyle(color: Colors.white),
+                              )),
+                              DataCell(Text(
+                                producto.sku,
+                                style: const TextStyle(color: Colors.white70),
+                              )),
+                              DataCell(Text(
+                                producto.stock.toString(),
+                                style: TextStyle(
+                                  color: producto.stock < (producto.stockMinimo ?? 5)
+                                      ? const Color(0xFFE31E24)
+                                      : Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )),
+                              DataCell(Text(
+                                producto.stockMinimo?.toString() ?? 'N/A',
+                                style: const TextStyle(color: Colors.white),
+                              )),
+                              DataCell(Text(
+                                'S/ ${producto.precioVenta.toStringAsFixed(2)}',
+                                style: const TextStyle(color: Colors.white),
+                              )),
+                            ],
+                          ),
+                        )
+                        .toList(),
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                local.direccion.isNotEmpty
-                    ? local.direccion
-                    : 'Sin dirección registrada',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 12,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: local.activo
-                          ? Colors.green.withOpacity(0.2)
-                          : Colors.red.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      local.activo ? 'Activo' : 'Inactivo',
-                      style: TextStyle(
-                        color: local.activo ? Colors.green : Colors.red,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  if (local.fechaCreacion != null) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      'Creado: ${_formatDate(local.fechaCreacion!)}',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
-        );
-      },
+          
+          const SizedBox(height: 32),
+          
+          // Sección de sucursales
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Sucursales',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: isMobile ? 1 : 3,
+                    childAspectRatio: 2.5,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: sucursales.length,
+                  itemBuilder: (context, index) {
+                    final sucursal = sucursales[index];
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2D2D2D),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                sucursal.sucursalCentral ? Icons.star : Icons.store,
+                                color: sucursal.sucursalCentral ? Colors.amber : Colors.blue,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  sucursal.nombre,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            sucursal.direccion,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
-
-  Widget _buildTab(bool isSelected, String text, VoidCallback onTap) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: isSelected
-                    ? const Color(0xFFE31E24)
-                    : Colors.white.withOpacity(0.1),
-                width: 2,
+  Widget _buildSummaryCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Card(
+      elevation: 0,
+      color: const Color(0xFF1A1A1A),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-          ),
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-          ),
+            const SizedBox(height: 8),
+            Icon(
+              icon,
+              color: color,
+              size: 48,
+            ),
+          ],
         ),
       ),
     );
   }
 }
+

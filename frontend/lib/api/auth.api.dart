@@ -215,16 +215,6 @@ class AuthApi {
   Future<String> refreshToken() async {
     debugPrint('Intentando refrescar token');
     try {
-      // La solicitud a /auth/refresh guarda automáticamente el nuevo token
-      final response = await _api.request(
-        endpoint: '/auth/refresh',
-        method: 'POST',
-        requiresAuth: false, // No requiere token de acceso
-        refreshOnFailure: false, // Evitar ciclos infinitos
-      );
-      
-      // Esperar brevemente para asegurar que los tokens se han procesado
-      // Esto puede ayudar a evitar condiciones de carrera
       await Future.delayed(const Duration(milliseconds: 100));
       
       // Obtener el nuevo token

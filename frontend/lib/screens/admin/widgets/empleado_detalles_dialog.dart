@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../models/empleado.model.dart';
-import 'empleado_horario_dialog.dart';
 import 'empleados_utils.dart';
 
 class EmpleadoDetallesDialog extends StatefulWidget {

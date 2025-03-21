@@ -1,77 +1,32 @@
 import '../main.api.dart';
 import 'package:flutter/foundation.dart';
-
-/// Modelo para representar una sucursal
-class Sucursal {
-  final String id;
-  final String nombre;
-  final String? direccion;
-  final String? telefono;
-  final String? email;
-  final String? ciudad;
-  final String? provincia;
-  final String? codigoPostal;
-  final String? pais;
-  final String? fechaRegistro;
-  final bool activo;
-
-  Sucursal({
-    required this.id,
-    required this.nombre,
-    this.direccion,
-    this.telefono,
-    this.email,
-    this.ciudad,
-    this.provincia,
-    this.codigoPostal,
-    this.pais,
-    this.fechaRegistro,
-    this.activo = true,
-  });
-
-  factory Sucursal.fromJson(Map<String, dynamic> json) {
-    return Sucursal(
-      id: json['id']?.toString() ?? '',
-      nombre: json['nombre'] ?? '',
-      direccion: json['direccion'],
-      telefono: json['telefono'],
-      email: json['email'],
-      ciudad: json['ciudad'],
-      provincia: json['provincia'],
-      codigoPostal: json['codigoPostal'],
-      pais: json['pais'],
-      fechaRegistro: json['fechaRegistro'],
-      activo: json['activo'] ?? true,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'nombre': nombre,
-      'direccion': direccion,
-      'telefono': telefono,
-      'email': email,
-      'ciudad': ciudad,
-      'provincia': provincia,
-      'codigoPostal': codigoPostal,
-      'pais': pais,
-      'activo': activo,
-    };
-  }
-  
-  @override
-  String toString() {
-    return 'Sucursal{id: $id, nombre: $nombre, activo: $activo}';
-  }
-}
+import '../../models/sucursal.model.dart';
 
 class SucursalesApi {
   final ApiClient _api;
   
   SucursalesApi(this._api);
   
+  /// Obtiene los datos específicos de una sucursal
+  /// 
+  /// Este método obtiene información general sobre una sucursal específica
+  Future<Sucursal> getSucursalData(String sucursalId) async {
+    try {
+      debugPrint('SucursalesApi: Obteniendo datos de sucursal con ID: $sucursalId');
+      final response = await _api.authenticatedRequest(
+        endpoint: '/sucursales/$sucursalId',
+        method: 'GET',
+      );
+      
+      return Sucursal.fromJson(response['data']);
+    } catch (e) {
+      debugPrint('SucursalesApi: ERROR al obtener datos de sucursal #$sucursalId: $e');
+      rethrow;
+    }
+  }
+  
   /// Obtiene todas las sucursales
-  Future<List<dynamic>> getSucursales() async {
+  Future<List<Sucursal>> getSucursales() async {
     try {
       debugPrint('SucursalesApi: Obteniendo lista de sucursales');
       final response = await _api.authenticatedRequest(
@@ -81,79 +36,133 @@ class SucursalesApi {
       
       debugPrint('SucursalesApi: Respuesta de getSucursales recibida');
       
-      // Manejar estructura anidada: response.data.data
+      // Manejar la respuesta y convertir los datos a objetos Sucursal
+      final List<dynamic> rawData;
+      
+      // Manejar estructura anidada si es necesario
       if (response['data'] is Map && response['data'].containsKey('data')) {
-        debugPrint('SucursalesApi: Encontrada estructura anidada en la respuesta');
-        final items = response['data']['data'] ?? [];
-        debugPrint('SucursalesApi: Total de sucursales encontradas: ${items.length}');
-        return items;
+        rawData = response['data']['data'] ?? [];
+      } else {
+        rawData = response['data'] ?? [];
       }
       
-      // Si la estructura cambia en el futuro y ya no está anidada
-      debugPrint('SucursalesApi: Usando estructura directa de respuesta');
-      final items = response['data'] ?? [];
-      debugPrint('SucursalesApi: Total de sucursales encontradas: ${items.length}');
-      return items;
+      // Convertir cada elemento en un objeto Sucursal
+      return rawData.map((item) => Sucursal.fromJson(item)).toList();
     } catch (e) {
       debugPrint('SucursalesApi: ERROR al obtener sucursales: $e');
       rethrow;
     }
   }
   
-  /// Obtiene una sucursal por su ID
-  /// 
-  /// El ID debe ser un string, aunque represente un número
-  Future<Map<String, dynamic>> getSucursal(String sucursalId) async {
+  // PROFORMAS DE VENTA
+  
+  /// Obtiene todas las proformas de venta de la sucursal
+  Future<List<dynamic>> getProformasVenta(String sucursalId) async {
     try {
-      // Validar que sucursalId no sea nulo o vacío
-      if (sucursalId.isEmpty) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'ID de sucursal no puede estar vacío',
-        );
-      }
-      
-      debugPrint('SucursalesApi: Obteniendo sucursal con ID: $sucursalId');
       final response = await _api.authenticatedRequest(
-        endpoint: '/sucursales/$sucursalId',
+        endpoint: '/$sucursalId/proformasventa',
         method: 'GET',
       );
       
-      debugPrint('SucursalesApi: Respuesta de getSucursal recibida');
-      
-      // Manejar estructura anidada
-      Map<String, dynamic>? data;
-      if (response['data'] is Map && response['data'].containsKey('data')) {
-        data = response['data']['data'];
-      } else {
-        data = response['data'];
-      }
-      
-      if (data == null) {
-        throw ApiException(
-          statusCode: 404,
-          message: 'Sucursal no encontrada',
-        );
-      }
-      
-      return data;
+      return response['data'] ?? [];
     } catch (e) {
-      debugPrint('SucursalesApi: ERROR al obtener sucursal #$sucursalId: $e');
+      rethrow;
+    }
+  }
+  
+  /// Crea una nueva proforma de venta
+  Future<Map<String, dynamic>> createProformaVenta(String sucursalId, Map<String, dynamic> proformaData) async {
+    try {
+      final response = await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/proformasventa',
+        method: 'POST',
+        body: proformaData,
+      );
+      
+      return response['data'];
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  /// Actualiza una proforma de venta existente
+  Future<Map<String, dynamic>> updateProformaVenta(String sucursalId, String proformaId, Map<String, dynamic> proformaData) async {
+    try {
+      final response = await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/proformasventa/$proformaId',
+        method: 'PATCH',
+        body: proformaData,
+      );
+      
+      return response['data'];
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  /// Elimina una proforma de venta
+  Future<void> deleteProformaVenta(String sucursalId, String proformaId) async {
+    try {
+      await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/proformasventa/$proformaId',
+        method: 'DELETE',
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  // NOTIFICACIONES
+  
+  /// Obtiene todas las notificaciones de la sucursal
+  Future<List<dynamic>> getNotificaciones(String sucursalId) async {
+    try {
+      final response = await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/notificaciones',
+        method: 'GET',
+      );
+      
+      return response['data'] ?? [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  /// Elimina una notificación
+  Future<void> deleteNotificacion(String sucursalId, String notificacionId) async {
+    try {
+      await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/notificaciones/$notificacionId',
+        method: 'DELETE',
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  // SUCURSALES (operaciones generales)
+  
+  /// Obtiene todas las sucursales
+  Future<List<Sucursal>> getAllSucursales() async {
+    try {
+      debugPrint('SucursalesApi: Obteniendo todas las sucursales');
+      final response = await _api.authenticatedRequest(
+        endpoint: '/sucursales',
+        method: 'GET',
+      );
+      
+      // Convertir la respuesta en una lista de objetos Sucursal
+      final List<dynamic> rawData = response['data'] ?? [];
+      return rawData.map((item) => Sucursal.fromJson(item)).toList();
+    } catch (e) {
+      debugPrint('SucursalesApi: ERROR al obtener todas las sucursales: $e');
       rethrow;
     }
   }
   
   /// Crea una nueva sucursal
-  Future<Map<String, dynamic>> createSucursal(Map<String, dynamic> sucursalData) async {
+  Future<Sucursal> createSucursal(Map<String, dynamic> sucursalData) async {
     try {
-      // Validar datos mínimos requeridos
-      if (!sucursalData.containsKey('nombre')) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'Nombre es requerido para crear sucursal',
-        );
-      }
-      
       debugPrint('SucursalesApi: Creando nueva sucursal: ${sucursalData['nombre']}');
       final response = await _api.authenticatedRequest(
         endpoint: '/sucursales',
@@ -163,22 +172,8 @@ class SucursalesApi {
       
       debugPrint('SucursalesApi: Respuesta de createSucursal recibida');
       
-      // Manejar estructura anidada
-      Map<String, dynamic>? data;
-      if (response['data'] is Map && response['data'].containsKey('data')) {
-        data = response['data']['data'];
-      } else {
-        data = response['data'];
-      }
-      
-      if (data == null) {
-        throw ApiException(
-          statusCode: 500,
-          message: 'Error al crear sucursal',
-        );
-      }
-      
-      return data;
+      // Convertir la respuesta en un objeto Sucursal
+      return Sucursal.fromJson(response['data']);
     } catch (e) {
       debugPrint('SucursalesApi: ERROR al crear sucursal: $e');
       rethrow;
@@ -186,18 +181,8 @@ class SucursalesApi {
   }
   
   /// Actualiza una sucursal existente
-  /// 
-  /// El ID debe ser un string, aunque represente un número
-  Future<Map<String, dynamic>> updateSucursal(String sucursalId, Map<String, dynamic> sucursalData) async {
+  Future<Sucursal> updateSucursal(String sucursalId, Map<String, dynamic> sucursalData) async {
     try {
-      // Validar que sucursalId no sea nulo o vacío
-      if (sucursalId.isEmpty) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'ID de sucursal no puede estar vacío',
-        );
-      }
-      
       debugPrint('SucursalesApi: Actualizando sucursal con ID: $sucursalId');
       final response = await _api.authenticatedRequest(
         endpoint: '/sucursales/$sucursalId',
@@ -207,87 +192,27 @@ class SucursalesApi {
       
       debugPrint('SucursalesApi: Respuesta de updateSucursal recibida');
       
-      // Manejar estructura anidada
-      Map<String, dynamic>? data;
-      if (response['data'] is Map && response['data'].containsKey('data')) {
-        data = response['data']['data'];
-      } else {
-        data = response['data'];
-      }
-      
-      if (data == null) {
-        throw ApiException(
-          statusCode: 500,
-          message: 'Error al actualizar sucursal',
-        );
-      }
-      
-      return data;
+      // Convertir la respuesta en un objeto Sucursal
+      return Sucursal.fromJson(response['data']);
     } catch (e) {
       debugPrint('SucursalesApi: ERROR al actualizar sucursal #$sucursalId: $e');
       rethrow;
     }
   }
-  
+
   /// Elimina una sucursal
-  /// 
-  /// El ID debe ser un string, aunque represente un número
-  /// NOTA: Este endpoint está comentado en el servidor actualmente
   Future<void> deleteSucursal(String sucursalId) async {
     try {
-      // Validar que sucursalId no sea nulo o vacío
-      if (sucursalId.isEmpty) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'ID de sucursal no puede estar vacío',
-        );
-      }
-      
       debugPrint('SucursalesApi: Eliminando sucursal con ID: $sucursalId');
-      
-      // Como el endpoint DELETE está comentado en el servidor,
-      // usamos PATCH para desactivar la sucursal en su lugar
       await _api.authenticatedRequest(
         endpoint: '/sucursales/$sucursalId',
-        method: 'PATCH',
-        body: {'activo': false},
+        method: 'DELETE',
       );
       
-      debugPrint('SucursalesApi: Sucursal desactivada correctamente');
+      debugPrint('SucursalesApi: Sucursal eliminada correctamente');
     } catch (e) {
       debugPrint('SucursalesApi: ERROR al eliminar sucursal #$sucursalId: $e');
       rethrow;
     }
   }
-  
-  /// Obtiene sucursales activas
-  Future<List<dynamic>> getSucursalesActivas() async {
-    try {
-      debugPrint('SucursalesApi: Obteniendo sucursales activas');
-      final response = await _api.authenticatedRequest(
-        endpoint: '/sucursales',
-        method: 'GET',
-        queryParams: {'filter': 'activo', 'filter_value': 'true'},
-      );
-      
-      debugPrint('SucursalesApi: Respuesta de getSucursalesActivas recibida');
-      
-      // Manejar estructura anidada
-      if (response['data'] is Map && response['data'].containsKey('data')) {
-        final items = response['data']['data'] ?? [];
-        return items;
-      }
-      
-      final items = response['data'] ?? [];
-      return items;
-    } catch (e) {
-      debugPrint('SucursalesApi: ERROR al obtener sucursales activas: $e');
-      rethrow;
-    }
-  }
-  
-  /// Alias de getSucursales para mantener compatibilidad con SucursalAdminApi
-  Future<List<dynamic>> getAllSucursales() async {
-    return getSucursales();
-  }
-}
+} 

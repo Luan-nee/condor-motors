@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'routes/routes.dart';
 import 'api/index.dart';
 import 'services/token_service.dart';
@@ -26,8 +25,8 @@ void initializeApi(CondorMotorsApi instance) {
 // Clave global para el navegador
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-// Definir fuentes una sola vez para reutilizarlas
-final interFontFamily = GoogleFonts.inter().fontFamily;
+// Nombre de la fuente principal
+const String kFontFamily = 'SourceSans3';
 
 // Comprobar conectividad con un servidor
 Future<bool> _checkServerConnectivity(String url) async {
@@ -58,9 +57,6 @@ Future<String?> _getLastServerUrl() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Precarga de fuentes para evitar parpadeo
-  GoogleFonts.config.allowRuntimeFetching = false;
   
   // Configurar UI del sistema
   SystemChrome.setSystemUIOverlayStyle(
@@ -220,7 +216,7 @@ class CondorMotorsApp extends StatelessWidget {
           seedColor: const Color(0xFFE31E24),
           brightness: Brightness.dark,
         ),
-        fontFamily: interFontFamily,
+        fontFamily: kFontFamily,
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFF121212),
         
@@ -229,6 +225,12 @@ class CondorMotorsApp extends StatelessWidget {
           backgroundColor: Color(0xFF1E1E1E),
           foregroundColor: Colors.white,
           elevation: 0,
+          titleTextStyle: TextStyle(
+            fontFamily: kFontFamily,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         
         // Configuración de diálogos
@@ -237,6 +239,17 @@ class CondorMotorsApp extends StatelessWidget {
           elevation: 5,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
+          ),
+          titleTextStyle: const TextStyle(
+            fontFamily: kFontFamily,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          contentTextStyle: const TextStyle(
+            fontFamily: kFontFamily,
+            fontSize: 14,
+            color: Colors.white70,
           ),
         ),
         
@@ -250,9 +263,40 @@ class CondorMotorsApp extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             textStyle: const TextStyle(
+              fontFamily: kFontFamily,
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
+          ),
+        ),
+        textTheme: const TextTheme(
+          titleLarge: TextStyle(
+            fontFamily: kFontFamily,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          titleMedium: TextStyle(
+            fontFamily: kFontFamily,
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+          bodyLarge: TextStyle(
+            fontFamily: kFontFamily,
+            fontSize: 16,
+            color: Colors.white70,
+          ),
+          bodyMedium: TextStyle(
+            fontFamily: kFontFamily,
+            fontSize: 14,
+            color: Colors.white70,
+          ),
+          labelLarge: TextStyle(
+            fontFamily: kFontFamily,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
           ),
         ),
       ),

@@ -20,7 +20,6 @@ class ConnectionStatusWidget extends StatefulWidget {
 class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
   bool _isConnected = true;
   bool _isRetrying = false;
-  String _errorMessage = '';
   Timer? _retryTimer;
   int _retryCount = 0;
   final int _maxRetries = 5;
@@ -58,12 +57,10 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
           _isConnected = true;
           _isRetrying = false;
           _retryCount = 0;
-          _errorMessage = '';
         });
       } else if (_isConnected && !isConnected && mounted) {
         setState(() {
           _isConnected = false;
-          _errorMessage = 'El servidor respondió con código ${response.statusCode}';
           
           // Si no estamos ya reintentando, iniciar el temporizador de reintento
           if (!_isRetrying) {
@@ -75,7 +72,6 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
       if (mounted) {
         setState(() {
           _isConnected = false;
-          _errorMessage = e.toString();
           
           // Si no estamos ya reintentando, iniciar el temporizador de reintento
           if (!_isRetrying) {

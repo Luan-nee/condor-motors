@@ -100,10 +100,10 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       final sucursalesData = await api.sucursales.getSucursales();
       final Map<String, String> sucursales = {};
       
-      for (var item in sucursalesData) {
-        final id = item['id']?.toString() ?? '';
-        String nombre = item['nombre']?.toString() ?? 'Sucursal sin nombre';
-        final bool esCentral = item['sucursalCentral'] == true;
+      for (var sucursal in sucursalesData) {
+        final id = sucursal.id.toString();
+        String nombre = sucursal.nombre;
+        final bool esCentral = sucursal.sucursalCentral;
         
         // Agregar indicador de Central al nombre si corresponde
         if (esCentral) {

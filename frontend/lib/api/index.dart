@@ -15,7 +15,6 @@ class CondorMotorsApi {
   late final SucursalesApi sucursales;
   late final EmpleadosApi empleados;
   late final MarcasApi marcas;
-  late final SucursalAdminApi sucursalAdmin;
   late final VentasApi ventas;
   late final MovimientosApi movimientos;
   late final ProductosApi productos;
@@ -38,7 +37,6 @@ class CondorMotorsApi {
     empleados = EmpleadosApi(_apiClient);
     sucursales = SucursalesApi(_apiClient);
     marcas = MarcasApi(_apiClient);
-    sucursalAdmin = SucursalAdminApi(_apiClient);
     ventas = VentasApi(_apiClient);
     movimientos = MovimientosApi(_apiClient);
     productos = ProductosApi(_apiClient);

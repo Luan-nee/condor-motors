@@ -1,40 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../main.dart' show api;
+import '../../models/sucursal.model.dart';
 
-// Definición de la clase Sucursal para manejar los datos
-class Sucursal {
-  final String id;
-  final String nombre;
-  final String direccion;
-  final bool sucursalCentral;
-  final DateTime? fechaCreacion;
-  final DateTime? fechaActualizacion;
-
-  Sucursal({
-    required this.id,
-    required this.nombre,
-    required this.direccion,
-    required this.sucursalCentral,
-    this.fechaCreacion,
-    this.fechaActualizacion,
-  });
-
-  factory Sucursal.fromJson(Map<String, dynamic> json) {
-    return Sucursal(
-      id: json['id']?.toString() ?? '',
-      nombre: json['nombre'] ?? '',
-      direccion: json['direccion'] ?? '',
-      sucursalCentral: json['sucursalCentral'] ?? false,
-      fechaCreacion: json['fechaCreacion'] != null 
-          ? DateTime.parse(json['fechaCreacion']) 
-          : null,
-      fechaActualizacion: json['fechaActualizacion'] != null 
-          ? DateTime.parse(json['fechaActualizacion']) 
-          : null,
-    );
-  }
-}
+// La clase Sucursal ha sido reemplazada por la importación de '../../models/sucursal.model.dart'
 
 // Clase para la solicitud de creación/actualización de sucursal
 class SucursalRequest {
@@ -84,12 +53,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
     });
     
     try {
-      final response = await api.sucursales.getSucursales();
-      
-      final List<Sucursal> sucursales = [];
-      for (var item in response) {
-        sucursales.add(Sucursal.fromJson(item));
-      }
+      final sucursales = await api.sucursales.getSucursales();
       
       if (!mounted) return;
       setState(() {
@@ -241,9 +205,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
+            child: TextField(
                     decoration: InputDecoration(
-                      labelText: 'Buscar sucursal',
+                labelText: 'Buscar sucursal',
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -255,7 +219,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                       labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
                     ),
                     style: const TextStyle(color: Colors.white),
-                    onChanged: (value) {
+              onChanged: (value) {
                       setState(() {
                         _terminoBusqueda = value;
                         _aplicarFiltroBusqueda();
@@ -394,7 +358,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                                   color: const Color(0xFF2D2D2D),
                                   padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                                   child: const Row(
-                                    children: [
+                            children: [
                                       Expanded(
                                         flex: 30,
                                         child: Text(
@@ -431,9 +395,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                                         child: Text(
                                           'Acciones',
                                           textAlign: TextAlign.center,
-                                          style: TextStyle(
+                                  style: TextStyle(
                                             color: Colors.white,
-                                            fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ),
@@ -531,10 +495,10 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
           style: TextStyle(
             color: Colors.white.withOpacity(0.7),
           ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -556,44 +520,44 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            IconButton(
+                              IconButton(
               icon: const FaIcon(
                 FontAwesomeIcons.penToSquare,
                 color: Colors.white70,
                 size: 18,
               ),
               tooltip: 'Editar sucursal',
-              onPressed: () => _showSucursalDialog(sucursal),
-            ),
-            IconButton(
+                                onPressed: () => _showSucursalDialog(sucursal),
+                              ),
+                              IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
               tooltip: 'Eliminar sucursal',
-              onPressed: () async {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Confirmar eliminación'),
+                                onPressed: () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Confirmar eliminación'),
                     content: Text('¿Está seguro de eliminar la sucursal "${sucursal.nombre}"?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancelar'),
-                      ),
-                      TextButton(
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, false),
+                                          child: const Text('Cancelar'),
+                                        ),
+                                        TextButton(
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.red,
                         ),
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Eliminar'),
-                      ),
-                    ],
-                  ),
-                );
+                                          onPressed: () => Navigator.pop(context, true),
+                                          child: const Text('Eliminar'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
 
-                if (confirm == true) {
+                                  if (confirm == true) {
                   try {
-                    await api.sucursales.deleteSucursal(sucursal.id);
-                    _cargarSucursales();
+                                    await api.sucursales.deleteSucursal(sucursal.id.toString());
+                                    _cargarSucursales();
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -610,11 +574,11 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                       ),
                     );
                   }
-                }
-              },
-            ),
-          ],
-        ),
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
       ),
     );
   }
