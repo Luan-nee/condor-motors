@@ -304,8 +304,45 @@ export const rolesPermisosTable = pgTable(
  * Ventas
  */
 
+// ['01', '03']
+export const tiposDocumentoFacturacionTable = pgTable(
+  'tipos_documento_facturacion',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    nombre: text('nombre').notNull().unique(),
+    codigo: text('codigo').notNull().unique()
+  }
+)
+
+// ['PEN']
+export const monedasFacturacionTable = pgTable('monedas_facturacion', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  nombre: text('nombre').notNull().unique(),
+  codigo: text('codigo').notNull().unique()
+})
+
+export const metodosPagoTable = pgTable('metodos_pago', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  nombre: text('nombre').notNull().unique(),
+  codigo: text('codigo').notNull().unique(),
+  activado: boolean('activado').notNull()
+})
+
 export const ventasTable = pgTable('ventas', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  observaciones: text('observaciones'),
+  tipoDocumentoId: integer('tipo_documento_id')
+    .notNull()
+    .references(() => tiposDocumentoFacturacionTable.id),
+  numeroDocumento: text('numero_venta')
+    .notNull()
+    .generatedAlwaysAs(sql`LPAD(id::TEXT, 8, '0')`),
+  monedaId: integer('moneda_id')
+    .notNull()
+    .references(() => monedasFacturacionTable.id),
+  metodoPagoId: integer('metodo_pago_id')
+    .notNull()
+    .references(() => metodosPagoTable.id),
   clienteId: integer('cliente_id')
     .notNull()
     .references(() => clientesTable.id),
@@ -333,7 +370,7 @@ export const detallesVentaTable = pgTable('detalles_venta', {
   cantidad: integer('cantidad').notNull().default(1),
   precioSinIgv: numeric('precio_sin_igv', { precision: 7, scale: 2 }).notNull(),
   precioConIgv: numeric('precio_con_igv', { precision: 7, scale: 2 }).notNull(),
-  tipoTax: integer('tipo_tax')
+  tipoTaxId: integer('tipo_tax_id')
     .notNull()
     .references(() => tiposTaxTable.id),
   totalBaseTax: numeric('total_base_tax', { precision: 7, scale: 2 }).notNull(),
@@ -369,6 +406,10 @@ export const totalesVentaTable = pgTable('totales_venta', {
     .notNull()
     .references(() => ventasTable.id)
 })
+
+/*
+ * Extra ventas
+ */
 
 export const proformasVentaTable = pgTable('proformas_venta', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
@@ -406,7 +447,7 @@ export const reservasProductosTable = pgTable('reservas_productos', {
     precision: 7,
     scale: 2
   }).notNull(),
-  fechaContratacion: date('fecha_contratacion', {
+  fechaRecojo: date('fecha_recojo', {
     mode: 'string'
   }),
   clienteId: integer('cliente_id')
@@ -432,57 +473,11 @@ export const devolucionesTable = pgTable('devoluciones', {
  * Facturación
  */
 
-// ['01', '03']
-export const tiposDocumentoFacturacionTable = pgTable(
-  'tipos_documento_facturacion',
-  {
-    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-    nombre: text('nombre').notNull().unique(),
-    codigo: text('codigo').notNull().unique()
-  }
-)
-
-// ['0101']
-export const tiposOperacionesTable = pgTable('tipos_operaciones', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull().unique(),
-  codigo: text('codigo').notNull().unique()
-})
-
-// ['PEN']
-export const monedasFacturacionTable = pgTable('monedas_facturacion', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull().unique(),
-  codigo: text('codigo').notNull().unique()
-})
-
-export const metodosPagoTable = pgTable('metodos_pago', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull().unique(),
-  codigo: text('codigo').notNull().unique(),
-  activado: boolean('activado').notNull()
-})
-
 export const documentosTable = pgTable('documentos_table', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  tipoDocumento: integer('tipo_documento')
-    .notNull()
-    .references(() => tiposDocumentoFacturacionTable.id),
-  numeroDocumento: text('numero_venta')
-    .notNull()
-    .generatedAlwaysAs(sql`LPAD(id::TEXT, 8, '0')`),
-  tipoOperacion: integer('tipo_operacion')
-    .notNull()
-    .references(() => monedasFacturacionTable.id),
-  monedaId: integer('moneda_id')
-    .notNull()
-    .references(() => monedasFacturacionTable.id),
-  porcentajeVenta: integer('porcentaje_venta').notNull(),
+  tipoOperacion: text('tipo_operacion').notNull().default('0101'),
+  porcentajeVenta: integer('porcentaje_venta').notNull().default(18),
   enviarCliente: boolean('enviar_cliente').notNull().default(true),
-  metodoPagoId: integer('metodo_pago_id')
-    .notNull()
-    .references(() => metodosPagoTable.id),
-  observaciones: text('observaciones'),
   ventaId: integer('venta_id')
     .notNull()
     .references(() => ventasTable.id)
