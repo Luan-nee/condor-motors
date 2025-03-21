@@ -51,7 +51,24 @@ interface SeedConfig {
     hex: string
   }>
   estadosTransferenciasInventariosDefault: string[]
-  tiposPersonasDefault: string[]
+  tiposDocumentoFacturacionDefault: Array<{
+    nombre: string
+    codigo: string
+  }>
+  monedasFacturacionDefault: Array<{
+    nombre: string
+    codigo: string
+  }>
+  metodosPagoDefault: Array<{
+    nombre: string
+    tipo: string
+    codigo: string
+    activado: boolean
+  }>
+  tiposTaxDefault: Array<{
+    nombre: string
+    codigo: string
+  }>
   sucursalesCount: number
   empleadosCount: number
   productosCount: number

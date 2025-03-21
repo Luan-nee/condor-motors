@@ -45,7 +45,29 @@ export const seedConfig: SeedConfig = {
     'Rechazado',
     'Completado'
   ],
-  tiposPersonasDefault: ['Persona Natural', 'Persona Juridica'],
+  tiposDocumentoFacturacionDefault: [
+    { nombre: 'Factura electrónica', codigo: '01' },
+    { nombre: 'Boleta de venta electrónica', codigo: '03' }
+  ],
+  monedasFacturacionDefault: [{ nombre: 'Soles', codigo: 'PEN' }],
+  metodosPagoDefault: [
+    {
+      nombre: 'Contado',
+      codigo: 'Contado',
+      tipo: '0',
+      activado: true
+    },
+    {
+      nombre: 'Crédito',
+      codigo: 'Crédito',
+      tipo: '1',
+      activado: false
+    }
+  ],
+  tiposTaxDefault: [
+    { nombre: 'Pagar impuestos', codigo: '10' },
+    { nombre: 'Evadir impuestos 💵🤑💸', codigo: '20' }
+  ],
   sucursalesCount: 3,
   empleadosCount: 9,
   productosCount: 30,
