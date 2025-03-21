@@ -38,9 +38,18 @@ export class CustomResponse {
       res.header('Authorization', authorization)
     }
 
-    try {
-      response.error = JSON.parse(error)
-    } catch (error) {}
+    if (typeof response.data === 'string') {
+      try {
+        response.data = JSON.parse(data)
+      } catch (error) {}
+    }
+
+    if (typeof response.error === 'string') {
+      try {
+        response.error = JSON.parse(error)
+      } catch (error) {}
+    }
+
     res.status(statusCode).json(response)
   }
 
