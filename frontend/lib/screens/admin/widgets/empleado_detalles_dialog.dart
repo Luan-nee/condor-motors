@@ -11,12 +11,12 @@ class EmpleadoDetallesDialog extends StatefulWidget {
   final Function(Empleado) onEdit;
 
   const EmpleadoDetallesDialog({
-    Key? key,
+    super.key,
     required this.empleado,
     required this.nombresSucursales,
     required this.obtenerRolDeEmpleado,
     required this.onEdit,
-  }) : super(key: key);
+  });
 
   @override
   State<EmpleadoDetallesDialog> createState() => _EmpleadoDetallesDialogState();
@@ -660,11 +660,6 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
         context,
         mensaje: errorMessage,
         esError: true,
-        accion: esErrorAutenticacion ? () {
-          // TODO: Implementar navegación a la pantalla de login
-          // Navigator.of(context).pushReplacementNamed('/login');
-        } : null,
-        textoAccion: esErrorAutenticacion ? 'Iniciar sesión' : null,
       );
     }
   }

@@ -7,9 +7,9 @@ class EmpleadoHorarioDialog extends StatelessWidget {
   final Empleado empleado;
 
   const EmpleadoHorarioDialog({
-    Key? key,
+    super.key,
     required this.empleado,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

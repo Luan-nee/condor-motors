@@ -13,14 +13,14 @@ class EmpleadoListItem extends StatefulWidget {
   final Function(Empleado) onViewDetails;
 
   const EmpleadoListItem({
-    Key? key,
+    super.key,
     required this.empleado,
     required this.nombresSucursales,
     required this.obtenerRolDeEmpleado,
     required this.onEdit,
     required this.onDelete,
     required this.onViewDetails,
-  }) : super(key: key);
+  });
 
   @override
   State<EmpleadoListItem> createState() => _EmpleadoListItemState();

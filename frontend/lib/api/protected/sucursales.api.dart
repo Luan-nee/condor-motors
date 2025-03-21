@@ -285,4 +285,9 @@ class SucursalesApi {
       rethrow;
     }
   }
+  
+  /// Alias de getSucursales para mantener compatibilidad con SucursalAdminApi
+  Future<List<dynamic>> getAllSucursales() async {
+    return getSucursales();
+  }
 }

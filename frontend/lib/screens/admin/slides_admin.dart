@@ -10,6 +10,7 @@ import 'marcas_admin.dart';
 import 'colaboradores_admin.dart';
 import 'settings_admin.dart';
 import 'productos_admin.dart';
+import 'sucursal_admin.dart';
 
 class SlidesAdminScreen extends StatefulWidget {
   const SlidesAdminScreen({super.key});
@@ -19,6 +20,8 @@ class SlidesAdminScreen extends StatefulWidget {
 }
 
 class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
+  // Índices para las secciones principales y subsecciones
+  // 0: Dashboard, 1: Ventas, 2: Inventario, 3: Colaboradores, 4: Sucursales, 5: Configuración
   int _selectedIndex = 0;
   int _selectedSubIndex = 0;
 
@@ -160,12 +163,14 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                     _selectedSubIndex = 0;
                   }),
                 ),
+                // Sección de Sucursales
                 _buildMenuItem(
-                  icon: FontAwesomeIcons.fileInvoiceDollar,
-                  text: 'Locales',
+                  icon: FontAwesomeIcons.building,
+                  text: 'Sucursales',
                   isSelected: _selectedIndex == 4,
                   onTap: () => setState(() {
-                    // definir la interfaz que se abrirá al pulsa el apartado "Locales"
+                    _selectedIndex = 4;
+                    _selectedSubIndex = 0;
                   }),
                 ),
 
@@ -219,6 +224,8 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                   ],
                 ),
                 const ColaboradoresAdminScreen(),
+                // Sección de Sucursales
+                const SucursalAdminScreen(),
                 const SettingsAdminScreen(),
               ],
             ),

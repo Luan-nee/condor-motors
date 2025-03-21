@@ -388,7 +388,7 @@ class EmpleadosUtils {
         } else if (esErrorAutenticacion) {
           // Si es un error de autenticación, propagarlo para que se maneje a nivel superior
           debugPrint('EmpleadosUtils: Error de autenticación: ${e.toString()}');
-          throw e;
+          rethrow;
         } else {
           // Para otros errores, mostrar mensaje genérico
           debugPrint('Error al cargar información de cuenta: $e');
@@ -418,7 +418,7 @@ class EmpleadosUtils {
           (e.toString().contains('No autorizado') || 
           e.toString().contains('Sesión expirada') ||
           e.toString().contains('token inválido'))) {
-        throw e;
+        rethrow;
       }
       
       resultado['errorCargaInfo'] = 'Error al cargar información: ${e.toString().replaceAll('Exception: ', '')}';

@@ -360,7 +360,7 @@ class TableProducts extends StatelessWidget {
                       ],
                     ),
                   );
-                }).toList(),
+                }),
               ],
             ),
           );

@@ -459,7 +459,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                             ),
                           ],
                         ),
-                      )).toList(),
+                      )),
                     ],
                   ),
                 ),

@@ -748,7 +748,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                       ),
                                     ],
                                   ),
-                                )).toList(),
+                                )),
                               ],
                             ),
                           ),

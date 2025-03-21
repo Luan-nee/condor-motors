@@ -14,13 +14,13 @@ class EmpleadoForm extends StatefulWidget {
   final VoidCallback onCancel;
 
   const EmpleadoForm({
-    Key? key,
+    super.key,
     this.empleado,
     required this.sucursales,
     required this.roles,
     required this.onSave,
     required this.onCancel,
-  }) : super(key: key);
+  });
 
   @override
   State<EmpleadoForm> createState() => _EmpleadoFormState();

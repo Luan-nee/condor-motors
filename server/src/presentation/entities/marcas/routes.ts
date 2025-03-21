@@ -28,7 +28,7 @@ export class MarcasRoutes {
     router.post('/', controller.create)
 
     // Ruta para actualizar una marca existente
-    router.put('/:id', controller.update)
+    router.patch('/:id', controller.update)
 
     // Ruta para eliminar una marca
     router.delete('/:id', controller.delete)

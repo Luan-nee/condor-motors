@@ -6,10 +6,12 @@ class SucursalAdminApi {
   SucursalAdminApi(this._api);
   
   /// Obtiene los datos específicos de una sucursal
+  /// 
+  /// Este método obtiene información general sobre una sucursal específica
   Future<Map<String, dynamic>> getSucursalData(String sucursalId) async {
     try {
       final response = await _api.authenticatedRequest(
-        endpoint: '/$sucursalId',
+        endpoint: '/sucursales/$sucursalId',
         method: 'GET',
       );
       
@@ -19,11 +21,13 @@ class SucursalAdminApi {
     }
   }
   
-  /// Obtiene los vehículos de una sucursal específica
-  Future<List<dynamic>> getVehiculos(String sucursalId) async {
+  // PRODUCTOS
+  
+  /// Obtiene todos los productos de una sucursal
+  Future<List<dynamic>> getProductos(String sucursalId) async {
     try {
       final response = await _api.authenticatedRequest(
-        endpoint: '/$sucursalId/vehiculos',
+        endpoint: '/$sucursalId/productos',
         method: 'GET',
       );
       
@@ -33,11 +37,11 @@ class SucursalAdminApi {
     }
   }
   
-  /// Obtiene un vehículo específico de una sucursal
-  Future<Map<String, dynamic>> getVehiculo(String sucursalId, String vehiculoId) async {
+  /// Obtiene un producto específico por ID
+  Future<Map<String, dynamic>> getProductoById(String sucursalId, String productoId) async {
     try {
       final response = await _api.authenticatedRequest(
-        endpoint: '/$sucursalId/vehiculos/$vehiculoId',
+        endpoint: '/$sucursalId/productos/$productoId',
         method: 'GET',
       );
       
@@ -47,13 +51,13 @@ class SucursalAdminApi {
     }
   }
   
-  /// Crea un nuevo vehículo en una sucursal
-  Future<Map<String, dynamic>> createVehiculo(String sucursalId, Map<String, dynamic> vehiculoData) async {
+  /// Crea un nuevo producto en la sucursal
+  Future<Map<String, dynamic>> createProducto(String sucursalId, Map<String, dynamic> productoData) async {
     try {
       final response = await _api.authenticatedRequest(
-        endpoint: '/$sucursalId/vehiculos',
+        endpoint: '/$sucursalId/productos',
         method: 'POST',
-        body: vehiculoData,
+        body: productoData,
       );
       
       return response['data'];
@@ -62,13 +66,13 @@ class SucursalAdminApi {
     }
   }
   
-  /// Actualiza un vehículo existente en una sucursal
-  Future<Map<String, dynamic>> updateVehiculo(String sucursalId, String vehiculoId, Map<String, dynamic> vehiculoData) async {
+  /// Añade existencias a un producto existente
+  Future<Map<String, dynamic>> addExistenciasProducto(String sucursalId, String productoId, Map<String, dynamic> data) async {
     try {
       final response = await _api.authenticatedRequest(
-        endpoint: '/$sucursalId/vehiculos/$vehiculoId',
-        method: 'PATCH',
-        body: vehiculoData,
+        endpoint: '/$sucursalId/productos/$productoId',
+        method: 'POST',
+        body: data,
       );
       
       return response['data'];
@@ -77,11 +81,89 @@ class SucursalAdminApi {
     }
   }
   
-  /// Elimina un vehículo de una sucursal
-  Future<void> deleteVehiculo(String sucursalId, String vehiculoId) async {
+  /// Actualiza un producto existente
+  Future<Map<String, dynamic>> updateProducto(String sucursalId, String productoId, Map<String, dynamic> productoData) async {
+    try {
+      final response = await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/productos/$productoId',
+        method: 'PATCH',
+        body: productoData,
+      );
+      
+      return response['data'];
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  // INVENTARIOS
+  
+  /// Registra entradas de inventario en la sucursal
+  Future<Map<String, dynamic>> registrarEntradasInventario(String sucursalId, Map<String, dynamic> data) async {
+    try {
+      final response = await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/inventarios/entradas',
+        method: 'POST',
+        body: data,
+      );
+      
+      return response['data'];
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  // PROFORMAS DE VENTA
+  
+  /// Obtiene todas las proformas de venta de la sucursal
+  Future<List<dynamic>> getProformasVenta(String sucursalId) async {
+    try {
+      final response = await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/proformasventa',
+        method: 'GET',
+      );
+      
+      return response['data'] ?? [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  /// Crea una nueva proforma de venta
+  Future<Map<String, dynamic>> createProformaVenta(String sucursalId, Map<String, dynamic> proformaData) async {
+    try {
+      final response = await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/proformasventa',
+        method: 'POST',
+        body: proformaData,
+      );
+      
+      return response['data'];
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  /// Actualiza una proforma de venta existente
+  Future<Map<String, dynamic>> updateProformaVenta(String sucursalId, String proformaId, Map<String, dynamic> proformaData) async {
+    try {
+      final response = await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/proformasventa/$proformaId',
+        method: 'PATCH',
+        body: proformaData,
+      );
+      
+      return response['data'];
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  /// Elimina una proforma de venta
+  Future<void> deleteProformaVenta(String sucursalId, String proformaId) async {
     try {
       await _api.authenticatedRequest(
-        endpoint: '/$sucursalId/vehiculos/$vehiculoId',
+        endpoint: '/$sucursalId/proformasventa/$proformaId',
         method: 'DELETE',
       );
     } catch (e) {
@@ -89,11 +171,13 @@ class SucursalAdminApi {
     }
   }
   
-  /// Obtiene los clientes de una sucursal específica
-  Future<List<dynamic>> getClientes(String sucursalId) async {
+  // NOTIFICACIONES
+  
+  /// Obtiene todas las notificaciones de la sucursal
+  Future<List<dynamic>> getNotificaciones(String sucursalId) async {
     try {
       final response = await _api.authenticatedRequest(
-        endpoint: '/$sucursalId/clientes',
+        endpoint: '/$sucursalId/notificaciones',
         method: 'GET',
       );
       
@@ -103,27 +187,41 @@ class SucursalAdminApi {
     }
   }
   
-  /// Obtiene un cliente específico de una sucursal
-  Future<Map<String, dynamic>> getCliente(String sucursalId, String clienteId) async {
+  /// Elimina una notificación
+  Future<void> deleteNotificacion(String sucursalId, String notificacionId) async {
+    try {
+      await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/notificaciones/$notificacionId',
+        method: 'DELETE',
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  // SUCURSALES (operaciones generales)
+  
+  /// Obtiene todas las sucursales
+  Future<List<dynamic>> getAllSucursales() async {
     try {
       final response = await _api.authenticatedRequest(
-        endpoint: '/$sucursalId/clientes/$clienteId',
+        endpoint: '/sucursales',
         method: 'GET',
       );
       
-      return response['data'];
+      return response['data'] ?? [];
     } catch (e) {
       rethrow;
     }
   }
   
-  /// Crea un nuevo cliente en una sucursal
-  Future<Map<String, dynamic>> createCliente(String sucursalId, Map<String, dynamic> clienteData) async {
+  /// Crea una nueva sucursal
+  Future<Map<String, dynamic>> createSucursal(Map<String, dynamic> sucursalData) async {
     try {
       final response = await _api.authenticatedRequest(
-        endpoint: '/$sucursalId/clientes',
+        endpoint: '/sucursales',
         method: 'POST',
-        body: clienteData,
+        body: sucursalData,
       );
       
       return response['data'];
@@ -132,13 +230,13 @@ class SucursalAdminApi {
     }
   }
   
-  /// Actualiza un cliente existente en una sucursal
-  Future<Map<String, dynamic>> updateCliente(String sucursalId, String clienteId, Map<String, dynamic> clienteData) async {
+  /// Actualiza una sucursal existente
+  Future<Map<String, dynamic>> updateSucursal(String sucursalId, Map<String, dynamic> sucursalData) async {
     try {
       final response = await _api.authenticatedRequest(
-        endpoint: '/$sucursalId/clientes/$clienteId',
+        endpoint: '/sucursales/$sucursalId',
         method: 'PATCH',
-        body: clienteData,
+        body: sucursalData,
       );
       
       return response['data'];
@@ -146,12 +244,12 @@ class SucursalAdminApi {
       rethrow;
     }
   }
-  
-  /// Elimina un cliente de una sucursal
-  Future<void> deleteCliente(String sucursalId, String clienteId) async {
+
+  /// Elimina una sucursal
+  Future<void> deleteSucursal(String sucursalId) async {
     try {
       await _api.authenticatedRequest(
-        endpoint: '/$sucursalId/clientes/$clienteId',
+        endpoint: '/sucursales/$sucursalId',
         method: 'DELETE',
       );
     } catch (e) {

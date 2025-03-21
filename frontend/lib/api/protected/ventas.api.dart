@@ -205,10 +205,6 @@ class VentasApi {
         queryParams: queryParams,
       );
       
-      if (response == null) {
-        return {};
-      }
-      
       return response;
     } catch (e) {
       debugPrint('Error al obtener estadísticas: $e');

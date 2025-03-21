@@ -162,12 +162,12 @@ class ApiClient {
 
     try {
       // Asegurar que el cliente tenga el refresh token establecido
-      (_httpClient as PersistentCookieClient).setRefreshToken(refreshToken);
+      (_httpClient).setRefreshToken(refreshToken);
           
       debugPrint('ApiClient: Enviando solicitud de renovación de token con refresh token');
       
       // Hacer la solicitud de renovación
-      final fullUrl = '${this.baseUrl}/auth/refresh';
+      final fullUrl = '${baseUrl}/auth/refresh';
       
       final request = http.Request('POST', Uri.parse(fullUrl));
       request.headers['Content-Type'] = 'application/json';
@@ -255,7 +255,7 @@ class ApiClient {
     // Si no hay token en el cuerpo, buscar en las cookies
     if (accessToken == null || accessToken.isEmpty) {
       // Buscar tokens en las cookies
-      final cookies = (_httpClient as PersistentCookieClient).cookies;
+      final cookies = (_httpClient).cookies;
       debugPrint('ApiClient: Cookies disponibles: ${cookies.keys.join(', ')}');
       
       // Buscar el token de acceso en las cookies (nombres comunes)
@@ -279,7 +279,7 @@ class ApiClient {
     
     // Verificar si hay refresh token en las cookies
     if ((refreshToken == null || refreshToken.isEmpty)) {
-      final cookies = (_httpClient as PersistentCookieClient).cookies;
+      final cookies = (_httpClient).cookies;
       if (cookies.containsKey('refresh_token')) {
         refreshToken = cookies['refresh_token'];
         debugPrint('ApiClient: Refresh token encontrado en cookie "refresh_token"');

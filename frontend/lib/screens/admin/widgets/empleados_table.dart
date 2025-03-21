@@ -17,7 +17,7 @@ class EmpleadosTable extends StatefulWidget {
   final VoidCallback onRetry;
 
   const EmpleadosTable({
-    Key? key,
+    super.key,
     required this.empleados,
     required this.nombresSucursales,
     required this.obtenerRolDeEmpleado,
@@ -29,7 +29,7 @@ class EmpleadosTable extends StatefulWidget {
     required this.onLoadMore,
     this.errorMessage = '',
     required this.onRetry,
-  }) : super(key: key);
+  });
 
   @override
   State<EmpleadosTable> createState() => _EmpleadosTableState();
