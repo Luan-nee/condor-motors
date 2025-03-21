@@ -294,12 +294,12 @@ const seedDatabase = async () => {
 
   await insertInBatches(detallesProductosValues, schema.detallesProductoTable)
 
-  const fotosProductosValues = productos.map((producto) => ({
+  const fotosProductoValues = productos.map((producto) => ({
     path: `static/img/${faker.string.alphanumeric(10)}/${faker.string.alphanumeric(5)}.jpg`,
     productoId: producto.id
   }))
 
-  await db.insert(schema.fotosProductosTable).values(fotosProductosValues)
+  await db.insert(schema.fotosProductoTable).values(fotosProductoValues)
 
   await db
     .insert(schema.estadosTransferenciasInventarios)
