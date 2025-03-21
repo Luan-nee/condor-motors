@@ -13,22 +13,14 @@ export const ClienteSchema = {
       message:
         'El numero de documento Ingresado no puede contener otro tipo de caracteres a parte de los numeros'
     }),
-  razonSocial: z
-    .string()
-    .trim()
-    .min(5)
-    .refine((valor) => Validator.isValidFullName(valor), {
-      message:
-        'el nombre de la razon social no puede contener caracteres especiales'
-    }),
   denominacion: z.string().trim(),
   codigoPais: z
     .string()
     .trim()
-    .min(5)
+    .min(2)
     .max(7)
     .refine((valor) => Validator.isOnlyNumbers(valor)),
-  direccion: z.string().trim().min(3).max(6),
+  direccion: z.string().trim().min(3),
   correo: z
     .string()
     .trim()

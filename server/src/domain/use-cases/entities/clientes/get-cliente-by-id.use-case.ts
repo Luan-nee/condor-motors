@@ -1,30 +1,31 @@
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import { clientesTable, tiposPersonasTable } from '@/db/schema'
+import { clientesTable, tiposDocumentoClienteTable } from '@/db/schema'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { eq } from 'drizzle-orm'
 
 export class GetClienteById {
   private readonly selectFields = {
     id: clientesTable.id,
-    nombreApellidos: clientesTable.nombresApellidos,
-    dni: clientesTable.dni,
-    razonSocial: clientesTable.razonSocial,
-    ruc: clientesTable.ruc,
-    telefono: clientesTable.telefono,
+    tipoDocumentoId: clientesTable.tipoDocumentoId,
+    nombre: tiposDocumentoClienteTable.nombre,
+    numeroDocumento: clientesTable.numeroDocumento,
+    denominacion: clientesTable.denominacion,
+    codigoPais: clientesTable.codigoPais,
+    direccion: clientesTable.direccion,
     correo: clientesTable.correo,
-    tipoPersonaId: clientesTable.tipoPersonaId,
-    nombre: tiposPersonasTable.nombre
+    telefono: clientesTable.telefono
   }
   private async getRelatedCliente(numericIdDto: NumericIdDto) {
+    const dato = String(numericIdDto.id)
     return await db
       .select(this.selectFields)
       .from(clientesTable)
       .innerJoin(
-        tiposPersonasTable,
-        eq(tiposPersonasTable.id, clientesTable.tipoPersonaId)
+        tiposDocumentoClienteTable,
+        eq(tiposDocumentoClienteTable.id, clientesTable.tipoDocumentoId)
       )
-      .where(eq(clientesTable.id, numericIdDto.id))
+      .where(eq(clientesTable.numeroDocumento, dato))
   }
 
   private async getClienteById(numericIdDto: NumericIdDto) {
