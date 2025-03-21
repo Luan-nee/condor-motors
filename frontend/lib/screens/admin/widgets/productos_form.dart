@@ -19,7 +19,8 @@ class ProductosFormDialogAdmin extends StatefulWidget {
   });
 
   @override
-  State<ProductosFormDialogAdmin> createState() => _ProductosFormDialogAdminState();
+  State<ProductosFormDialogAdmin> createState() =>
+      _ProductosFormDialogAdminState();
 }
 
 class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
@@ -36,7 +37,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   late TextEditingController _precioOfertaController;
   late TextEditingController _cantidadMinimaDescuentoController;
   late TextEditingController _porcentajeDescuentoController;
-  
+
   String _categoriaSeleccionada = '';
   Sucursal? _sucursalSeleccionada;
   bool _isLoadingCategorias = false;
@@ -78,35 +79,36 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     _porcentajeDescuentoController = TextEditingController(
       text: producto?.porcentajeDescuento?.toString() ?? '',
     );
-    
+
     // Inicializar la sucursal seleccionada
-    _sucursalSeleccionada = widget.sucursalSeleccionada ?? 
+    _sucursalSeleccionada = widget.sucursalSeleccionada ??
         (widget.sucursales.isNotEmpty ? widget.sucursales.first : null);
-    
+
     // Cargar categorías y marcas
     _cargarCategorias();
     _cargarMarcas();
-    
+
     // Si estamos editando un producto existente, cargar la disponibilidad en otras sucursales
     if (producto != null) {
       _cargarSucursalesCompartidas(producto.id);
     }
   }
-  
+
   // Método para cargar las categorías desde la API
   Future<void> _cargarCategorias() async {
     setState(() => _isLoadingCategorias = true);
-    
+
     try {
       final categorias = await ProductosUtils.obtenerCategorias();
-      
+
       if (mounted) {
         setState(() {
           _categorias = categorias;
           _isLoadingCategorias = false;
-          
+
           // Establecer la categoría seleccionada
-          if (widget.producto != null && categorias.contains(widget.producto!.categoria)) {
+          if (widget.producto != null &&
+              categorias.contains(widget.producto!.categoria)) {
             _categoriaSeleccionada = widget.producto!.categoria;
           } else if (categorias.isNotEmpty) {
             _categoriaSeleccionada = categorias.first;
@@ -115,27 +117,27 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       }
     } catch (e) {
       debugPrint('Error al cargar categorías: $e');
-      
+
       if (mounted) {
         setState(() => _isLoadingCategorias = false);
       }
     }
   }
-  
+
   // Método para cargar las marcas desde la API
   Future<void> _cargarMarcas() async {
     setState(() => _isLoadingMarcas = true);
-    
+
     try {
       final marcas = await ProductosUtils.obtenerMarcas();
-      
+
       if (mounted) {
         setState(() {
           _marcas = marcas;
           _isLoadingMarcas = false;
-          
+
           // Si la marca actual no está en la lista y hay una marca seleccionada
-          if (widget.producto != null && 
+          if (widget.producto != null &&
               !marcas.contains(widget.producto!.marca) &&
               _marcaController.text.isNotEmpty) {
             // Añadir la marca actual a la lista para evitar problemas
@@ -146,23 +148,24 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       }
     } catch (e) {
       debugPrint('Error al cargar marcas: $e');
-      
+
       if (mounted) {
         setState(() => _isLoadingMarcas = false);
       }
     }
   }
-  
+
   // Método para cargar las sucursales que comparten el producto
   Future<void> _cargarSucursalesCompartidas(int productoId) async {
     setState(() => _isLoadingSucursalesCompartidas = true);
-    
+
     try {
-      final sucursalesCompartidas = await ProductosUtils.obtenerProductoEnSucursales(
+      final sucursalesCompartidas =
+          await ProductosUtils.obtenerProductoEnSucursales(
         productoId: productoId,
         sucursales: widget.sucursales,
       );
-      
+
       if (mounted) {
         setState(() {
           _sucursalesCompartidas = sucursalesCompartidas;
@@ -171,7 +174,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       }
     } catch (e) {
       debugPrint('Error al cargar sucursales compartidas: $e');
-      
+
       if (mounted) {
         setState(() => _isLoadingSucursalesCompartidas = false);
       }
@@ -201,9 +204,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         width: isWideScreen ? screenSize.width * 0.8 : screenSize.width,
         constraints: BoxConstraints(
           maxWidth: 1200,
-          maxHeight: isHorizontal 
-              ? screenSize.height * 0.9
-              : screenSize.height * 0.8,
+          maxHeight:
+              isHorizontal ? screenSize.height * 0.9 : screenSize.height * 0.8,
         ),
         child: Column(
           children: [
@@ -232,7 +234,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    widget.producto == null ? 'NUEVO PRODUCTO' : 'EDITAR PRODUCTO',
+                    widget.producto == null
+                        ? 'NUEVO PRODUCTO'
+                        : 'EDITAR PRODUCTO',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -316,7 +320,6 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         const SizedBox(height: 32),
         _buildDiscountSection(),
         const SizedBox(height: 32),
-        _buildLocationSection(),
         // Mostrar sección de sucursales compartidas solo si estamos editando un producto existente
         if (widget.producto != null) ...[
           const SizedBox(height: 32),
@@ -354,7 +357,6 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               const SizedBox(height: 32),
               _buildDiscountSection(),
               const SizedBox(height: 32),
-              _buildLocationSection(),
             ],
           ),
         ),
@@ -446,7 +448,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         const SizedBox(height: 16),
         TextFormField(
           controller: _precioCompraController,
-          decoration: _getInputDecoration('Precio de Compra', prefixText: 'S/ '),
+          decoration:
+              _getInputDecoration('Precio de Compra', prefixText: 'S/ '),
           style: const TextStyle(color: Colors.white),
           keyboardType: TextInputType.number,
           validator: (value) =>
@@ -471,7 +474,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         const SizedBox(height: 16),
         TextFormField(
           controller: _precioOfertaController,
-          decoration: _getInputDecoration('Precio de Oferta (opcional)', prefixText: 'S/ '),
+          decoration:
+              _getInputDecoration('Precio de liquidación', prefixText: 'S/ '),
           style: const TextStyle(color: Colors.white),
           keyboardType: TextInputType.number,
         ),
@@ -496,42 +500,44 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           valueListenable: _precioVentaController,
           builder: (context, precioVentaText, child) {
             return ValueListenableBuilder(
-              valueListenable: _precioCompraController,
-              builder: (context, precioCompraText, _) {
-                final venta = double.tryParse(precioVentaText.text) ?? 0;
-                final compra = double.tryParse(precioCompraText.text) ?? 0;
-                final ganancia = venta - compra;
-                final porcentaje = compra > 0 ? (ganancia / compra) * 100 : 0;
-                
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2D2D2D),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
+                valueListenable: _precioCompraController,
+                builder: (context, precioCompraText, _) {
+                  final venta = double.tryParse(precioVentaText.text) ?? 0;
+                  final compra = double.tryParse(precioCompraText.text) ?? 0;
+                  final ganancia = venta - compra;
+                  final porcentaje = compra > 0 ? (ganancia / compra) * 100 : 0;
+
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2D2D2D),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.1),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.max, // Asegurar que use todo el ancho disponible
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Ganancia:',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      Text(
-                        'S/ ${ganancia.toStringAsFixed(2)} (${porcentaje.toStringAsFixed(1)}%)',
-                        style: TextStyle(
-                          color: ganancia > 0 ? Colors.green[400] : const Color(0xFFE31E24),
-                          fontWeight: FontWeight.bold,
+                    child: Row(
+                      mainAxisSize: MainAxisSize
+                          .max, // Asegurar que use todo el ancho disponible
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Ganancia:',
+                          style: TextStyle(color: Colors.white),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-            );
+                        Text(
+                          'S/ ${ganancia.toStringAsFixed(2)} (${porcentaje.toStringAsFixed(1)}%)',
+                          style: TextStyle(
+                            color: ganancia > 0
+                                ? Colors.green[400]
+                                : const Color(0xFFE31E24),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                });
           },
         ),
       ],
@@ -558,7 +564,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         else
           _marcas.isNotEmpty
               ? DropdownButtonFormField<String>(
-                  value: _marcaController.text.isEmpty || !_marcas.contains(_marcaController.text)
+                  value: _marcaController.text.isEmpty ||
+                          !_marcas.contains(_marcaController.text)
                       ? _marcas.first
                       : _marcaController.text,
                   decoration: _getInputDecoration('Marca'),
@@ -607,7 +614,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         else
           _categorias.isNotEmpty
               ? DropdownButtonFormField<String>(
-                  value: _categoriaSeleccionada.isEmpty || !_categorias.contains(_categoriaSeleccionada)
+                  value: _categoriaSeleccionada.isEmpty ||
+                          !_categorias.contains(_categoriaSeleccionada)
                       ? _categorias.first
                       : _categoriaSeleccionada,
                   decoration: _getInputDecoration('Categoría'),
@@ -631,8 +639,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       });
                     }
                   },
-                  validator: (value) =>
-                      value?.isEmpty ?? true ? 'Seleccione una categoría' : null,
+                  validator: (value) => value?.isEmpty ?? true
+                      ? 'Seleccione una categoría'
+                      : null,
                 )
               : Container(
                   padding: const EdgeInsets.all(16),
@@ -689,75 +698,18 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         const SizedBox(height: 16),
         TextFormField(
           controller: _cantidadMinimaDescuentoController,
-          decoration: _getInputDecoration('Cantidad mínima para descuento (opcional)'),
+          decoration:
+              _getInputDecoration('Cantidad mínima para descuento (opcional)'),
           style: const TextStyle(color: Colors.white),
           keyboardType: TextInputType.number,
         ),
         const SizedBox(height: 16),
         TextFormField(
           controller: _porcentajeDescuentoController,
-          decoration: _getInputDecoration('Porcentaje de descuento (%) (opcional)'),
+          decoration:
+              _getInputDecoration('Porcentaje de descuento (%) (opcional)'),
           style: const TextStyle(color: Colors.white),
           keyboardType: TextInputType.number,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLocationSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Ubicación del Producto', FontAwesomeIcons.locationDot),
-        const SizedBox(height: 16),
-        
-        DropdownButtonFormField<Sucursal>(
-          value: _sucursalSeleccionada,
-          decoration: _getInputDecoration('Sucursal'),
-          dropdownColor: const Color(0xFF2D2D2D),
-          style: const TextStyle(color: Colors.white),
-          items: widget.sucursales.map((sucursal) {
-            return DropdownMenuItem(
-              value: sucursal,
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 300),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      sucursal.sucursalCentral ? Icons.star : Icons.store,
-                      color: sucursal.sucursalCentral ? Colors.amber : Colors.white54,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        sucursal.nombre,
-                        style: const TextStyle(color: Colors.white),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        sucursal.direccion ?? 'Sin dirección',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 12,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              _sucursalSeleccionada = value;
-            });
-          },
         ),
       ],
     );
@@ -767,9 +719,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('Sucursales que Comparten este Producto', FontAwesomeIcons.sitemap),
+        _buildSectionTitle(
+            'Sucursales que Comparten este Producto', FontAwesomeIcons.sitemap),
         const SizedBox(height: 16),
-        
         if (_isLoadingSucursalesCompartidas)
           const Center(
             child: Padding(
@@ -835,26 +787,37 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       ),
                       _buildCounter(
                         'Con Stock',
-                        _sucursalesCompartidas.where((s) => s.disponible && s.producto.stock > 0).length.toString(),
+                        _sucursalesCompartidas
+                            .where((s) => s.disponible && s.producto.stock > 0)
+                            .length
+                            .toString(),
                         FontAwesomeIcons.boxOpen,
                         Colors.green,
                       ),
                       _buildCounter(
                         'Stock Bajo',
-                        _sucursalesCompartidas.where((s) => s.disponible && s.producto.tieneStockBajo()).length.toString(),
+                        _sucursalesCompartidas
+                            .where((s) =>
+                                s.disponible && s.producto.tieneStockBajo())
+                            .length
+                            .toString(),
                         FontAwesomeIcons.exclamationTriangle,
                         const Color(0xFFE31E24),
                       ),
                       _buildCounter(
                         'Agotados',
-                        _sucursalesCompartidas.where((s) => !s.disponible || s.producto.stock <= 0).length.toString(),
+                        _sucursalesCompartidas
+                            .where(
+                                (s) => !s.disponible || s.producto.stock <= 0)
+                            .length
+                            .toString(),
                         FontAwesomeIcons.ban,
                         Colors.red.shade800,
                       ),
                     ],
                   ),
                 ),
-                
+
                 // Lista de sucursales
                 ListView.builder(
                   shrinkWrap: true,
@@ -871,7 +834,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       ],
     );
   }
-  
+
   Widget _buildCounter(String label, String count, IconData icon, Color color) {
     return Column(
       children: [
@@ -908,16 +871,16 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       ],
     );
   }
-  
+
   Widget _buildSucursalItem(ProductoEnSucursal item) {
     final bool isCurrentBranch = _sucursalSeleccionada?.id == item.sucursal.id;
     final bool isAvailable = item.disponible && item.producto.stock > 0;
     final bool isLowStock = item.disponible && item.producto.tieneStockBajo();
-    
+
     Color statusColor = Colors.green;
     String statusText = 'Disponible';
     IconData statusIcon = FontAwesomeIcons.check;
-    
+
     if (!item.disponible) {
       statusColor = Colors.red.shade800;
       statusText = 'No disponible';
@@ -931,17 +894,17 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       statusText = 'Stock bajo';
       statusIcon = FontAwesomeIcons.exclamationTriangle;
     }
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: isCurrentBranch 
-            ? const Color(0xFFE31E24).withOpacity(0.1) 
+        color: isCurrentBranch
+            ? const Color(0xFFE31E24).withOpacity(0.1)
             : const Color(0xFF222222),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isCurrentBranch 
-              ? const Color(0xFFE31E24) 
+          color: isCurrentBranch
+              ? const Color(0xFFE31E24)
               : Colors.white.withOpacity(0.1),
           width: isCurrentBranch ? 2 : 1,
         ),
@@ -1002,21 +965,36 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           ],
         ),
         children: [
-          if (item.disponible) 
+          if (item.disponible)
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _buildProductInfoRow('Stock', '${item.producto.stock} unidades', FontAwesomeIcons.boxOpen),
+                  _buildProductInfoRow(
+                      'Stock',
+                      '${item.producto.stock} unidades',
+                      FontAwesomeIcons.boxOpen),
                   const SizedBox(height: 8),
-                  _buildProductInfoRow('Stock mínimo', '${item.producto.stockMinimo ?? 0} unidades', FontAwesomeIcons.arrowDown),
+                  _buildProductInfoRow(
+                      'Stock mínimo',
+                      '${item.producto.stockMinimo ?? 0} unidades',
+                      FontAwesomeIcons.arrowDown),
                   const SizedBox(height: 8),
-                  _buildProductInfoRow('Precio compra', item.producto.getPrecioCompraFormateado(), FontAwesomeIcons.tag),
+                  _buildProductInfoRow(
+                      'Precio compra',
+                      item.producto.getPrecioCompraFormateado(),
+                      FontAwesomeIcons.tag),
                   const SizedBox(height: 8),
-                  _buildProductInfoRow('Precio venta', item.producto.getPrecioVentaFormateado(), FontAwesomeIcons.tag),
+                  _buildProductInfoRow(
+                      'Precio venta',
+                      item.producto.getPrecioVentaFormateado(),
+                      FontAwesomeIcons.tag),
                   if (item.producto.estaEnOferta()) ...[
                     const SizedBox(height: 8),
-                    _buildProductInfoRow('Precio oferta', item.producto.getPrecioOfertaFormateado() ?? '', FontAwesomeIcons.percentage),
+                    _buildProductInfoRow(
+                        'Precio de liquidación',
+                        item.producto.getPrecioOfertaFormateado() ?? '',
+                        FontAwesomeIcons.percentage),
                   ],
                 ],
               ),
@@ -1055,7 +1033,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       ),
     );
   }
-  
+
   Widget _buildProductInfoRow(String label, String value, IconData icon) {
     return Row(
       children: [
@@ -1107,14 +1085,14 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         'precioVenta': double.parse(_precioVentaController.text),
         'precioCompra': double.parse(_precioCompraController.text),
         'stock': int.parse(_stockController.text),
-        if (_colorController.text.isNotEmpty)
-          'color': _colorController.text,
+        if (_colorController.text.isNotEmpty) 'color': _colorController.text,
         if (_precioOfertaController.text.isNotEmpty)
           'precioOferta': double.parse(_precioOfertaController.text),
         if (_stockMinimoController.text.isNotEmpty)
           'stockMinimo': int.parse(_stockMinimoController.text),
         if (_cantidadMinimaDescuentoController.text.isNotEmpty)
-          'cantidadMinimaDescuento': int.parse(_cantidadMinimaDescuentoController.text),
+          'cantidadMinimaDescuento':
+              int.parse(_cantidadMinimaDescuentoController.text),
         if (_porcentajeDescuentoController.text.isNotEmpty)
           'porcentajeDescuento': int.parse(_porcentajeDescuentoController.text),
       };
@@ -1140,4 +1118,4 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     _porcentajeDescuentoController.dispose();
     super.dispose();
   }
-} 
+}

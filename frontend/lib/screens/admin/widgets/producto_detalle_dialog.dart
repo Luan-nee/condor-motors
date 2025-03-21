@@ -7,7 +7,7 @@ import 'productos_utils.dart';
 class ProductoDetalleDialog extends StatefulWidget {
   final Producto producto;
   final List<Sucursal> sucursales;
-  
+
   const ProductoDetalleDialog({
     super.key,
     required this.producto,
@@ -25,7 +25,8 @@ class ProductoDetalleDialog extends StatefulWidget {
       builder: (BuildContext context) {
         return Dialog(
           insetPadding: const EdgeInsets.all(24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           backgroundColor: const Color(0xFF222222),
           child: ProductoDetalleDialog(
             producto: producto,
@@ -40,12 +41,14 @@ class ProductoDetalleDialog extends StatefulWidget {
   State<ProductoDetalleDialog> createState() => _ProductoDetalleDialogState();
 }
 
-class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with TickerProviderStateMixin {
+class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
+    with TickerProviderStateMixin {
   bool _isLoading = true;
   List<ProductoEnSucursal> _sucursalesCompartidas = [];
-  String _filtro = 'todas'; // 'todas', 'disponibles', 'stockBajo', 'agotadas', 'noDisponible'
+  String _filtro =
+      'todas'; // 'todas', 'disponibles', 'stockBajo', 'agotadas', 'noDisponible'
   String _error = '';
-  
+
   // Controlador para pestañas
   late TabController _atributosTabController;
 
@@ -53,11 +56,11 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
   void initState() {
     super.initState();
     _cargarDetallesProducto();
-    
+
     // Inicializar controlador de pestañas
     _atributosTabController = TabController(length: 3, vsync: this);
   }
-  
+
   @override
   void dispose() {
     _atributosTabController.dispose();
@@ -71,7 +74,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
     });
 
     try {
-      final List<ProductoEnSucursal> sucursales = await ProductosUtils.obtenerProductoEnSucursales(
+      final List<ProductoEnSucursal> sucursales =
+          await ProductosUtils.obtenerProductoEnSucursales(
         productoId: widget.producto.id,
         sucursales: widget.sucursales,
       );
@@ -94,7 +98,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
     final screenWidth = MediaQuery.of(context).size.width;
     // Determinar si es pantalla pequeña (< 800px)
     final isPantallaReducida = screenWidth < 800;
-    
+
     return ConstrainedBox(
       constraints: BoxConstraints(
         maxWidth: 900,
@@ -195,19 +199,22 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        _buildTag('SKU: ${widget.producto.sku}', fontFamily: 'monospace'),
+                        _buildTag('SKU: ${widget.producto.sku}',
+                            fontFamily: 'monospace'),
                         const SizedBox(width: 8),
                         _buildTag(widget.producto.categoria),
                         const SizedBox(width: 8),
                         _buildTag(widget.producto.marca),
-                        if (widget.producto.color != null && widget.producto.color!.isNotEmpty) ...[
+                        if (widget.producto.color != null &&
+                            widget.producto.color!.isNotEmpty) ...[
                           const SizedBox(width: 8),
                           _buildTag('Color: ${widget.producto.color}'),
                         ],
                       ],
                     ),
                   ),
-                  if (widget.producto.descripcion != null && widget.producto.descripcion!.isNotEmpty) ...[
+                  if (widget.producto.descripcion != null &&
+                      widget.producto.descripcion!.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(
                       widget.producto.descripcion!,
@@ -253,21 +260,27 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                 ),
                 _buildCompactEstadistica(
                   'Con stock',
-                  _isLoading ? '...' : '${_sucursalesCompartidas.where((s) => s.disponible && s.producto.stock > 0).length}',
+                  _isLoading
+                      ? '...'
+                      : '${_sucursalesCompartidas.where((s) => s.disponible && s.producto.stock > 0).length}',
                   icon: FontAwesomeIcons.boxOpen,
                   color: Colors.green,
                   isSmall: isPantallaReducida,
                 ),
                 _buildCompactEstadistica(
                   'Stock bajo',
-                  _isLoading ? '...' : '${_sucursalesCompartidas.where((s) => s.disponible && s.producto.tieneStockBajo()).length}',
+                  _isLoading
+                      ? '...'
+                      : '${_sucursalesCompartidas.where((s) => s.disponible && s.producto.tieneStockBajo()).length}',
                   icon: FontAwesomeIcons.exclamationTriangle,
                   color: const Color(0xFFE31E24),
                   isSmall: isPantallaReducida,
                 ),
                 _buildCompactEstadistica(
                   'Agotado',
-                  _isLoading ? '...' : '${_sucursalesCompartidas.where((s) => s.disponible && s.producto.stock <= 0).length}',
+                  _isLoading
+                      ? '...'
+                      : '${_sucursalesCompartidas.where((s) => s.disponible && s.producto.stock <= 0).length}',
                   icon: FontAwesomeIcons.ban,
                   color: Colors.red.shade800,
                   isSmall: isPantallaReducida,
@@ -275,7 +288,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
               ],
             ),
           ),
-          
+
           // Contenedor para todas las pestañas
           Expanded(
             child: Padding(
@@ -303,20 +316,22 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                             indicatorSize: TabBarIndicatorSize.label,
                             labelColor: Colors.white,
                             unselectedLabelColor: Colors.white70,
-                            padding: EdgeInsets.symmetric(horizontal: isPantallaReducida ? 4 : 8),
-                            labelPadding: EdgeInsets.symmetric(horizontal: isPantallaReducida ? 8 : 12),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: isPantallaReducida ? 4 : 8),
+                            labelPadding: EdgeInsets.symmetric(
+                                horizontal: isPantallaReducida ? 8 : 12),
                             tabs: [
                               Tab(
                                 height: isPantallaReducida ? 34 : 40,
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    FaIcon(FontAwesomeIcons.moneyBillWave, 
-                                      size: isPantallaReducida ? 14 : 16, 
-                                      color: Colors.green.shade700
-                                    ),
+                                    FaIcon(FontAwesomeIcons.moneyBillWave,
+                                        size: isPantallaReducida ? 14 : 16,
+                                        color: Colors.green.shade700),
                                     SizedBox(width: isPantallaReducida ? 4 : 8),
-                                    const Text('Precios', style: TextStyle(fontSize: 15)),
+                                    const Text('Precios',
+                                        style: TextStyle(fontSize: 15)),
                                   ],
                                 ),
                               ),
@@ -325,12 +340,12 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    FaIcon(FontAwesomeIcons.boxOpen, 
-                                      size: isPantallaReducida ? 14 : 16, 
-                                      color: const Color(0xFFE31E24)
-                                    ),
+                                    FaIcon(FontAwesomeIcons.boxOpen,
+                                        size: isPantallaReducida ? 14 : 16,
+                                        color: const Color(0xFFE31E24)),
                                     SizedBox(width: isPantallaReducida ? 4 : 8),
-                                    const Text('Stock', style: TextStyle(fontSize: 15)),
+                                    const Text('Stock',
+                                        style: TextStyle(fontSize: 15)),
                                   ],
                                 ),
                               ),
@@ -339,12 +354,12 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    FaIcon(FontAwesomeIcons.circleInfo, 
-                                      size: isPantallaReducida ? 14 : 16, 
-                                      color: Colors.blue
-                                    ),
+                                    FaIcon(FontAwesomeIcons.circleInfo,
+                                        size: isPantallaReducida ? 14 : 16,
+                                        color: Colors.blue),
                                     SizedBox(width: isPantallaReducida ? 4 : 8),
-                                    const Text('Detalles', style: TextStyle(fontSize: 15)),
+                                    const Text('Detalles',
+                                        style: TextStyle(fontSize: 15)),
                                   ],
                                 ),
                               ),
@@ -354,7 +369,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                       ),
                     ],
                   ),
-                  
+
                   // Área para mostrar el contenido combinado de las pestañas
                   Expanded(
                     child: Padding(
@@ -362,13 +377,15 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                       child: Card(
                         margin: EdgeInsets.zero,
                         color: const Color(0xFF1A1A1A),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
                         child: TabBarView(
                           controller: _atributosTabController,
                           children: [
                             // Pestaña de Precios (ahora con descuentos integrados)
                             Padding(
-                              padding: EdgeInsets.all(isPantallaReducida ? 12.0 : 16.0),
+                              padding: EdgeInsets.all(
+                                  isPantallaReducida ? 12.0 : 16.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -380,28 +397,32 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Información de Precios',
                                           style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.white.withOpacity(0.9),
+                                            color:
+                                                Colors.white.withOpacity(0.9),
                                           ),
                                         ),
                                         const SizedBox(height: 12),
                                         isPantallaReducida
-                                          ? _buildPreciosWrap()
-                                          : _buildPreciosRow(),
+                                            ? _buildPreciosWrap()
+                                            : _buildPreciosRow(),
                                       ],
                                     ),
                                   ),
-                                  
+
                                   // Sección de descuentos (si aplica)
-                                  if (widget.producto.cantidadMinimaDescuento != null || 
-                                      widget.producto.cantidadGratisDescuento != null || 
-                                      widget.producto.porcentajeDescuento != null ||
+                                  if (widget.producto.cantidadMinimaDescuento != null ||
+                                      widget.producto.cantidadGratisDescuento !=
+                                          null ||
+                                      widget.producto.porcentajeDescuento !=
+                                          null ||
                                       widget.producto.estaEnOferta()) ...[
                                     const SizedBox(height: 16),
                                     Container(
@@ -409,10 +430,14 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                                       decoration: BoxDecoration(
                                         color: Colors.amber.withOpacity(0.05),
                                         borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.amber.withOpacity(0.3), width: 1),
+                                        border: Border.all(
+                                            color:
+                                                Colors.amber.withOpacity(0.3),
+                                            width: 1),
                                       ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [
@@ -434,8 +459,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                                           ),
                                           const SizedBox(height: 12),
                                           isPantallaReducida
-                                            ? _buildDescuentosWrap()
-                                            : _buildDescuentosRow(),
+                                              ? _buildDescuentosWrap()
+                                              : _buildDescuentosRow(),
                                         ],
                                       ),
                                     ),
@@ -443,13 +468,14 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                                 ],
                               ),
                             ),
-                            
+
                             // Pestaña de Stock (con lista de sucursales integrada)
                             _buildStockConSucursales(isPantallaReducida),
-                            
+
                             // Pestaña de Información Adicional
                             Padding(
-                              padding: EdgeInsets.all(isPantallaReducida ? 12.0 : 16.0),
+                              padding: EdgeInsets.all(
+                                  isPantallaReducida ? 12.0 : 16.0),
                               child: isPantallaReducida
                                   ? _buildInfoAdicionalWrap()
                                   : _buildInfoAdicionalRow(),
@@ -469,7 +495,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
   }
 
   // Estadística en formato compacto
-  Widget _buildCompactEstadistica(String label, String valor, {required IconData icon, required Color color, bool isSmall = false}) {
+  Widget _buildCompactEstadistica(String label, String valor,
+      {required IconData icon, required Color color, bool isSmall = false}) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isSmall ? 8 : 12, vertical: 4),
       decoration: BoxDecoration(
@@ -526,12 +553,25 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
   Widget _buildPreciosRow() {
     return Row(
       children: [
-        Expanded(child: _buildAtributo('Precio compra', widget.producto.getPrecioCompraFormateado())),
-        Expanded(child: _buildAtributo('Precio venta', widget.producto.getPrecioVentaFormateado())),
+        Expanded(
+            child: _buildAtributo(
+                'Precio compra', widget.producto.getPrecioCompraFormateado())),
+        Expanded(
+            child: _buildAtributo(
+                'Precio venta', widget.producto.getPrecioVentaFormateado())),
         if (widget.producto.estaEnOferta())
-          Expanded(child: _buildAtributo('Precio oferta', widget.producto.getPrecioOfertaFormateado() ?? '', color: Colors.amber)),
-        Expanded(child: _buildAtributo('Ganancia', ProductosUtils.formatearPrecio(widget.producto.getGanancia()))),
-        Expanded(child: _buildAtributo('Margen', ProductosUtils.formatearPorcentaje(widget.producto.getMargenPorcentaje()))),
+          Expanded(
+              child: _buildAtributo('Precio de liquidación',
+                  widget.producto.getPrecioOfertaFormateado() ?? '',
+                  color: Colors.amber)),
+        Expanded(
+            child: _buildAtributo('Ganancia',
+                ProductosUtils.formatearPrecio(widget.producto.getGanancia()))),
+        Expanded(
+            child: _buildAtributo(
+                'Margen',
+                ProductosUtils.formatearPorcentaje(
+                    widget.producto.getMargenPorcentaje()))),
       ],
     );
   }
@@ -542,12 +582,32 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
         spacing: 16,
         runSpacing: 12,
         children: [
-          SizedBox(width: 150, child: _buildAtributo('Precio compra', widget.producto.getPrecioCompraFormateado())),
-          SizedBox(width: 150, child: _buildAtributo('Precio venta', widget.producto.getPrecioVentaFormateado())),
+          SizedBox(
+              width: 150,
+              child: _buildAtributo('Precio compra',
+                  widget.producto.getPrecioCompraFormateado())),
+          SizedBox(
+              width: 150,
+              child: _buildAtributo(
+                  'Precio venta', widget.producto.getPrecioVentaFormateado())),
           if (widget.producto.estaEnOferta())
-            SizedBox(width: 150, child: _buildAtributo('Precio oferta', widget.producto.getPrecioOfertaFormateado() ?? '', color: Colors.amber)),
-          SizedBox(width: 150, child: _buildAtributo('Ganancia', ProductosUtils.formatearPrecio(widget.producto.getGanancia()))),
-          SizedBox(width: 150, child: _buildAtributo('Margen', ProductosUtils.formatearPorcentaje(widget.producto.getMargenPorcentaje()))),
+            SizedBox(
+                width: 150,
+                child: _buildAtributo('Precio oferta',
+                    widget.producto.getPrecioOfertaFormateado() ?? '',
+                    color: Colors.amber)),
+          SizedBox(
+              width: 150,
+              child: _buildAtributo(
+                  'Ganancia',
+                  ProductosUtils.formatearPrecio(
+                      widget.producto.getGanancia()))),
+          SizedBox(
+              width: 150,
+              child: _buildAtributo(
+                  'Margen',
+                  ProductosUtils.formatearPorcentaje(
+                      widget.producto.getMargenPorcentaje()))),
         ],
       ),
     );
@@ -558,23 +618,28 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
     return Row(
       children: [
         Expanded(
-          child: _buildAtributo('Stock actual', '${widget.producto.stock}', 
-            color: widget.producto.tieneStockBajo() ? const Color(0xFFE31E24) : null
-          )
-        ),
-        Expanded(child: _buildAtributo('Stock mínimo', '${widget.producto.stockMinimo ?? "No definido"}')),
+            child: _buildAtributo('Stock actual', '${widget.producto.stock}',
+                color: widget.producto.tieneStockBajo()
+                    ? const Color(0xFFE31E24)
+                    : null)),
         Expanded(
-          child: _buildAtributo('Estado', 
-            widget.producto.tieneStockBajo() 
-              ? 'Stock bajo' 
-              : (widget.producto.stock <= 0 ? 'Agotado' : 'Disponible'),
-            color: widget.producto.tieneStockBajo() 
-              ? const Color(0xFFE31E24) 
-              : (widget.producto.stock <= 0 ? Colors.red : Colors.green)
-          )
-        ),
+            child: _buildAtributo('Stock mínimo',
+                '${widget.producto.stockMinimo ?? "No definido"}')),
+        Expanded(
+            child: _buildAtributo(
+                'Estado',
+                widget.producto.tieneStockBajo()
+                    ? 'Stock bajo'
+                    : (widget.producto.stock <= 0 ? 'Agotado' : 'Disponible'),
+                color: widget.producto.tieneStockBajo()
+                    ? const Color(0xFFE31E24)
+                    : (widget.producto.stock <= 0
+                        ? Colors.red
+                        : Colors.green))),
         if (widget.producto.maxDiasSinReabastecer != null)
-          Expanded(child: _buildAtributo('Días sin reabastecer', '${widget.producto.maxDiasSinReabastecer}')),
+          Expanded(
+              child: _buildAtributo('Días sin reabastecer',
+                  '${widget.producto.maxDiasSinReabastecer}')),
       ],
     );
   }
@@ -586,25 +651,32 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
         runSpacing: 12,
         children: [
           SizedBox(
-            width: 150, 
-            child: _buildAtributo('Stock actual', '${widget.producto.stock}', 
-              color: widget.producto.tieneStockBajo() ? const Color(0xFFE31E24) : null
-            )
-          ),
-          SizedBox(width: 150, child: _buildAtributo('Stock mínimo', '${widget.producto.stockMinimo ?? "No definido"}')),
+              width: 150,
+              child: _buildAtributo('Stock actual', '${widget.producto.stock}',
+                  color: widget.producto.tieneStockBajo()
+                      ? const Color(0xFFE31E24)
+                      : null)),
           SizedBox(
-            width: 150, 
-            child: _buildAtributo('Estado', 
-              widget.producto.tieneStockBajo() 
-                ? 'Stock bajo' 
-                : (widget.producto.stock <= 0 ? 'Agotado' : 'Disponible'),
-              color: widget.producto.tieneStockBajo() 
-                ? const Color(0xFFE31E24) 
-                : (widget.producto.stock <= 0 ? Colors.red : Colors.green)
-            )
-          ),
+              width: 150,
+              child: _buildAtributo('Stock mínimo',
+                  '${widget.producto.stockMinimo ?? "No definido"}')),
+          SizedBox(
+              width: 150,
+              child: _buildAtributo(
+                  'Estado',
+                  widget.producto.tieneStockBajo()
+                      ? 'Stock bajo'
+                      : (widget.producto.stock <= 0 ? 'Agotado' : 'Disponible'),
+                  color: widget.producto.tieneStockBajo()
+                      ? const Color(0xFFE31E24)
+                      : (widget.producto.stock <= 0
+                          ? Colors.red
+                          : Colors.green))),
           if (widget.producto.maxDiasSinReabastecer != null)
-            SizedBox(width: 150, child: _buildAtributo('Días sin reabastecer', '${widget.producto.maxDiasSinReabastecer}')),
+            SizedBox(
+                width: 150,
+                child: _buildAtributo('Días sin reabastecer',
+                    '${widget.producto.maxDiasSinReabastecer}')),
         ],
       ),
     );
@@ -615,23 +687,30 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
     return Row(
       children: [
         if (widget.producto.cantidadMinimaDescuento != null)
-          Expanded(child: _buildAtributo('Cant. mín. descuento', '${widget.producto.cantidadMinimaDescuento}')),
+          Expanded(
+              child: _buildAtributo('Cant. mín. descuento',
+                  '${widget.producto.cantidadMinimaDescuento}')),
         if (widget.producto.cantidadGratisDescuento != null)
-          Expanded(child: _buildAtributo('Cant. gratis', '${widget.producto.cantidadGratisDescuento}')),
+          Expanded(
+              child: _buildAtributo('Cant. gratis',
+                  '${widget.producto.cantidadGratisDescuento}')),
         if (widget.producto.porcentajeDescuento != null)
-          Expanded(child: _buildAtributo('% descuento', '${widget.producto.porcentajeDescuento}%')),
+          Expanded(
+              child: _buildAtributo(
+                  '% descuento', '${widget.producto.porcentajeDescuento}%')),
         if (widget.producto.estaEnOferta())
           Expanded(
-            child: _buildAtributo('Descuento oferta', 
-              widget.producto.getPorcentajeDescuentoOfertaFormateado() ?? '',
-              color: Colors.amber
-            )
-          ),
+              child: _buildAtributo(
+                  'Descuento oferta',
+                  widget.producto.getPorcentajeDescuentoOfertaFormateado() ??
+                      '',
+                  color: Colors.amber)),
         // Expandir para llenar espacio si hay pocos elementos
         if ((widget.producto.cantidadMinimaDescuento != null ? 1 : 0) +
-            (widget.producto.cantidadGratisDescuento != null ? 1 : 0) +
-            (widget.producto.porcentajeDescuento != null ? 1 : 0) +
-            (widget.producto.estaEnOferta() ? 1 : 0) < 4)
+                (widget.producto.cantidadGratisDescuento != null ? 1 : 0) +
+                (widget.producto.porcentajeDescuento != null ? 1 : 0) +
+                (widget.producto.estaEnOferta() ? 1 : 0) <
+            4)
           Expanded(child: Container()),
       ],
     );
@@ -644,19 +723,28 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
         runSpacing: 12,
         children: [
           if (widget.producto.cantidadMinimaDescuento != null)
-            SizedBox(width: 150, child: _buildAtributo('Cant. mín. descuento', '${widget.producto.cantidadMinimaDescuento}')),
+            SizedBox(
+                width: 150,
+                child: _buildAtributo('Cant. mín. descuento',
+                    '${widget.producto.cantidadMinimaDescuento}')),
           if (widget.producto.cantidadGratisDescuento != null)
-            SizedBox(width: 150, child: _buildAtributo('Cant. gratis', '${widget.producto.cantidadGratisDescuento}')),
+            SizedBox(
+                width: 150,
+                child: _buildAtributo('Cant. gratis',
+                    '${widget.producto.cantidadGratisDescuento}')),
           if (widget.producto.porcentajeDescuento != null)
-            SizedBox(width: 150, child: _buildAtributo('% descuento', '${widget.producto.porcentajeDescuento}%')),
+            SizedBox(
+                width: 150,
+                child: _buildAtributo(
+                    '% descuento', '${widget.producto.porcentajeDescuento}%')),
           if (widget.producto.estaEnOferta())
             SizedBox(
-              width: 150,
-              child: _buildAtributo('Descuento oferta', 
-                widget.producto.getPorcentajeDescuentoOfertaFormateado() ?? '',
-                color: Colors.amber
-              )
-            ),
+                width: 150,
+                child: _buildAtributo(
+                    'Descuento oferta',
+                    widget.producto.getPorcentajeDescuentoOfertaFormateado() ??
+                        '',
+                    color: Colors.amber)),
         ],
       ),
     );
@@ -668,12 +756,12 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
       children: [
         Expanded(child: _buildAtributo('ID', '${widget.producto.id}')),
         if (widget.producto.detalleProductoId != null)
-          Expanded(child: _buildAtributo('ID Detalle', '${widget.producto.detalleProductoId}')),
+          Expanded(
+              child: _buildAtributo(
+                  'ID Detalle', '${widget.producto.detalleProductoId}')),
         Expanded(
-          child: _buildAtributo('Fecha creación', 
-            '${widget.producto.fechaCreacion.day}/${widget.producto.fechaCreacion.month}/${widget.producto.fechaCreacion.year}'
-          )
-        ),
+            child: _buildAtributo('Fecha creación',
+                '${widget.producto.fechaCreacion.day}/${widget.producto.fechaCreacion.month}/${widget.producto.fechaCreacion.year}')),
         // Expandir para llenar espacio
         Expanded(child: Container()),
       ],
@@ -686,15 +774,17 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
         spacing: 16,
         runSpacing: 12,
         children: [
-          SizedBox(width: 150, child: _buildAtributo('ID', '${widget.producto.id}')),
-          if (widget.producto.detalleProductoId != null)
-            SizedBox(width: 150, child: _buildAtributo('ID Detalle', '${widget.producto.detalleProductoId}')),
           SizedBox(
-            width: 150, 
-            child: _buildAtributo('Fecha creación', 
-              '${widget.producto.fechaCreacion.day}/${widget.producto.fechaCreacion.month}/${widget.producto.fechaCreacion.year}'
-            )
-          ),
+              width: 150, child: _buildAtributo('ID', '${widget.producto.id}')),
+          if (widget.producto.detalleProductoId != null)
+            SizedBox(
+                width: 150,
+                child: _buildAtributo(
+                    'ID Detalle', '${widget.producto.detalleProductoId}')),
+          SizedBox(
+              width: 150,
+              child: _buildAtributo('Fecha creación',
+                  '${widget.producto.fechaCreacion.day}/${widget.producto.fechaCreacion.month}/${widget.producto.fechaCreacion.year}')),
         ],
       ),
     );
@@ -756,7 +846,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
     );
   }
 
-  Widget _buildEstadisticaTile(String label, String value, {IconData? icon, Color? color}) {
+  Widget _buildEstadisticaTile(String label, String value,
+      {IconData? icon, Color? color}) {
     return Expanded(
       child: Column(
         children: [
@@ -815,17 +906,15 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                   ),
                 ),
                 const SizedBox(height: 12),
-                isPantallaReducida
-                    ? _buildStockWrap()
-                    : _buildStockRow(),
+                isPantallaReducida ? _buildStockWrap() : _buildStockRow(),
               ],
             ),
           ),
         ),
-        
+
         // Divisor
         const Divider(color: Colors.white24, height: 1),
-        
+
         // Título de sección
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -840,7 +929,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                   color: Colors.white,
                 ),
               ),
-              
+
               // Selector de filtros (desplegable)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -852,7 +941,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _filtro,
-                    icon: const Icon(Icons.filter_list, color: Colors.white54, size: 16),
+                    icon: const Icon(Icons.filter_list,
+                        color: Colors.white54, size: 16),
                     dropdownColor: const Color(0xFF2D2D2D),
                     isDense: true,
                     style: const TextStyle(
@@ -872,7 +962,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const FaIcon(FontAwesomeIcons.layerGroup, size: 12, color: Colors.white),
+                            const FaIcon(FontAwesomeIcons.layerGroup,
+                                size: 12, color: Colors.white),
                             const SizedBox(width: 6),
                             Text('Todas (${_sucursalesCompartidas.length})'),
                           ],
@@ -883,9 +974,11 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const FaIcon(FontAwesomeIcons.boxOpen, size: 12, color: Colors.green),
+                            const FaIcon(FontAwesomeIcons.boxOpen,
+                                size: 12, color: Colors.green),
                             const SizedBox(width: 6),
-                            Text('Disponibles (${_sucursalesCompartidas.where((s) => s.disponible && s.producto.stock > 0).length})'),
+                            Text(
+                                'Disponibles (${_sucursalesCompartidas.where((s) => s.disponible && s.producto.stock > 0).length})'),
                           ],
                         ),
                       ),
@@ -894,9 +987,11 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const FaIcon(FontAwesomeIcons.exclamationTriangle, size: 12, color: Color(0xFFE31E24)),
+                            const FaIcon(FontAwesomeIcons.exclamationTriangle,
+                                size: 12, color: Color(0xFFE31E24)),
                             const SizedBox(width: 6),
-                            Text('Stock Bajo (${_sucursalesCompartidas.where((s) => s.disponible && s.producto.tieneStockBajo()).length})'),
+                            Text(
+                                'Stock Bajo (${_sucursalesCompartidas.where((s) => s.disponible && s.producto.tieneStockBajo()).length})'),
                           ],
                         ),
                       ),
@@ -905,9 +1000,11 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            FaIcon(FontAwesomeIcons.ban, size: 12, color: Colors.red.shade800),
+                            FaIcon(FontAwesomeIcons.ban,
+                                size: 12, color: Colors.red.shade800),
                             const SizedBox(width: 6),
-                            Text('Agotadas (${_sucursalesCompartidas.where((s) => s.disponible && s.producto.stock <= 0).length})'),
+                            Text(
+                                'Agotadas (${_sucursalesCompartidas.where((s) => s.disponible && s.producto.stock <= 0).length})'),
                           ],
                         ),
                       ),
@@ -916,9 +1013,11 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const FaIcon(FontAwesomeIcons.ghost, size: 12, color: Colors.grey),
+                            const FaIcon(FontAwesomeIcons.ghost,
+                                size: 12, color: Colors.grey),
                             const SizedBox(width: 6),
-                            Text('No Disponible (${_sucursalesCompartidas.where((s) => !s.disponible).length})'),
+                            Text(
+                                'No Disponible (${_sucursalesCompartidas.where((s) => !s.disponible).length})'),
                           ],
                         ),
                       ),
@@ -929,7 +1028,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
             ],
           ),
         ),
-        
+
         // Lista de sucursales filtradas
         Expanded(
           child: Padding(
@@ -940,7 +1039,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
       ],
     );
   }
-  
+
   Widget _buildSucursalesLista() {
     if (_isLoading) {
       return const Center(
@@ -984,20 +1083,27 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
 
     // Aplicar el filtro directo en lugar de utilizar _sucursalesFiltradas
     List<ProductoEnSucursal> sucursalesFiltradas;
-    
+
     // Aplicar el filtro específico
     switch (_filtro) {
       case 'disponibles':
-        sucursalesFiltradas = _sucursalesCompartidas.where((s) => s.disponible && s.producto.stock > 0).toList();
+        sucursalesFiltradas = _sucursalesCompartidas
+            .where((s) => s.disponible && s.producto.stock > 0)
+            .toList();
         break;
       case 'stockBajo':
-        sucursalesFiltradas = _sucursalesCompartidas.where((s) => s.disponible && s.producto.tieneStockBajo()).toList();
+        sucursalesFiltradas = _sucursalesCompartidas
+            .where((s) => s.disponible && s.producto.tieneStockBajo())
+            .toList();
         break;
       case 'agotadas':
-        sucursalesFiltradas = _sucursalesCompartidas.where((s) => s.disponible && s.producto.stock <= 0).toList();
+        sucursalesFiltradas = _sucursalesCompartidas
+            .where((s) => s.disponible && s.producto.stock <= 0)
+            .toList();
         break;
       case 'noDisponible':
-        sucursalesFiltradas = _sucursalesCompartidas.where((s) => !s.disponible).toList();
+        sucursalesFiltradas =
+            _sucursalesCompartidas.where((s) => !s.disponible).toList();
         break;
       default: // 'todas'
         sucursalesFiltradas = _sucursalesCompartidas;
@@ -1005,11 +1111,13 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
     }
 
     if (sucursalesFiltradas.isEmpty) {
-      String mensaje = 'No hay sucursales que coincidan con el filtro seleccionado.';
+      String mensaje =
+          'No hay sucursales que coincidan con el filtro seleccionado.';
       if (_filtro == 'todas' && _sucursalesCompartidas.isEmpty) {
         mensaje = 'Este producto no está disponible en ninguna sucursal.';
       } else if (_filtro == 'disponibles') {
-        mensaje = 'Este producto no está disponible en ninguna sucursal con stock.';
+        mensaje =
+            'Este producto no está disponible en ninguna sucursal con stock.';
       } else if (_filtro == 'stockBajo') {
         mensaje = 'No hay sucursales con stock bajo para este producto.';
       } else if (_filtro == 'agotadas') {
@@ -1061,15 +1169,15 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
     final disponible = sucursalInfo.disponible;
     final producto = sucursalInfo.producto;
     final sucursal = sucursalInfo.sucursal;
-    
+
     final stockBajo = disponible && producto.tieneStockBajo();
     final agotado = disponible && producto.stock <= 0;
     final esCentral = sucursal.sucursalCentral;
-    
+
     Color indicadorColor = Colors.green;
     IconData statusIcon = FontAwesomeIcons.check;
     String statusText = 'Disponible';
-    
+
     if (!disponible) {
       indicadorColor = Colors.grey;
       statusIcon = FontAwesomeIcons.ban;
@@ -1100,7 +1208,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Información principal
           Expanded(
             child: Column(
@@ -1124,7 +1232,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                     if (esCentral)
                       Container(
                         margin: const EdgeInsets.only(left: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 1),
                         decoration: BoxDecoration(
                           color: Colors.blue.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(2),
@@ -1145,7 +1254,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                   ],
                 ),
                 const SizedBox(height: 2),
-                
+
                 // Dirección en formato compacto
                 Text(
                   sucursal.direccion ?? 'Sin dirección',
@@ -1156,15 +1265,16 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                
+
                 const SizedBox(height: 4),
-                
+
                 // Etiquetas de información en una sola fila
                 Row(
                   children: [
                     // Estado (Disponible, Stock bajo, etc.)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: indicadorColor.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(10),
@@ -1193,13 +1303,14 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                         ],
                       ),
                     ),
-                    
+
                     if (disponible) ...[
                       const SizedBox(width: 8),
-                      
+
                       // Stock
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.black26,
                           borderRadius: BorderRadius.circular(10),
@@ -1233,12 +1344,13 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(width: 8),
-                      
+
                       // Precio
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.black26,
                           borderRadius: BorderRadius.circular(10),
@@ -1263,7 +1375,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
               ],
             ),
           ),
-          
+
           // Flecha de navegación
           if (disponible)
             const Icon(
@@ -1275,4 +1387,4 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog> with Tick
       ),
     );
   }
-} 
+}
