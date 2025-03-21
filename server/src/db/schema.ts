@@ -325,6 +325,7 @@ export const metodosPagoTable = pgTable('metodos_pago', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
   codigo: text('codigo').notNull().unique(),
+  tipo: text('tipo').notNull().unique(),
   activado: boolean('activado').notNull()
 })
 
