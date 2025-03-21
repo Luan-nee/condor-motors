@@ -1,30 +1,30 @@
 import { createClienteValidator } from '@/domain/validators/entities/clientes/cliente.validator'
 
 export class CreateClienteDto {
-  public nombresApellidos?: string
-  public dni: string
-  public razonSocial?: string
-  public ruc: string
-  public telefono?: string
+  public tipoDocumentoId: number
+  public numeroDocumento: string
+  public denominacion: string
+  public codigoPais: string
+  public direccion: string
   public correo: string
-  public tipoPersonaId: number
+  public telefono: string
 
   private constructor({
-    nombresApellidos,
-    dni,
-    razonSocial,
-    ruc,
-    telefono,
+    tipoDocumentoId,
+    numeroDocumento,
+    denominacion,
+    codigoPais,
+    direccion,
     correo,
-    tipoPersonaId
+    telefono
   }: CreateClienteDto) {
-    this.nombresApellidos = nombresApellidos
-    this.dni = dni
-    this.razonSocial = razonSocial
-    this.ruc = ruc
-    this.telefono = telefono
+    this.tipoDocumentoId = tipoDocumentoId
+    this.numeroDocumento = numeroDocumento
+    this.denominacion = denominacion
+    this.codigoPais = codigoPais
+    this.direccion = direccion
     this.correo = correo
-    this.tipoPersonaId = tipoPersonaId
+    this.telefono = telefono
   }
 
   static create(input: any): [string?, CreateClienteDto?] {

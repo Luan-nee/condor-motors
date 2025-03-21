@@ -2,7 +2,7 @@ import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import { clientesTable } from '@/db/schema'
 import type { CreateClienteDto } from '@/domain/dtos/entities/clientes/create-cliente.dto'
-import { count, eq, or } from 'drizzle-orm'
+import { count, eq } from 'drizzle-orm'
 
 export class CreateCliente {
   private async createCliente(createClienteDto: CreateClienteDto) {
@@ -10,28 +10,25 @@ export class CreateCliente {
       .select({ count: count(clientesTable.id) })
       .from(clientesTable)
       .where(
-        or(
-          eq(clientesTable.dni, createClienteDto.dni),
-          eq(clientesTable.ruc, createClienteDto.ruc)
-        )
+        eq(clientesTable.numeroDocumento, createClienteDto.numeroDocumento)
       )
 
     if (clienteDni[0].count > 0) {
       throw CustomError.badRequest(
-        `El dni o ruc ya estan registrados para este usuario : ${createClienteDto.ruc} - ${createClienteDto.dni}`
+        `El numero de documento ingresado ya esta en uso : ${createClienteDto.numeroDocumento} `
       )
     }
 
     const InsertValuesCliente = await db
       .insert(clientesTable)
       .values({
-        nombresApellidos: createClienteDto.nombresApellidos,
-        dni: createClienteDto.dni,
-        razonSocial: createClienteDto.razonSocial,
-        ruc: createClienteDto.ruc,
-        telefono: createClienteDto.telefono,
+        tipoDocumentoId: createClienteDto.tipoDocumentoId,
+        numeroDocumento: createClienteDto.numeroDocumento,
+        denominacion: createClienteDto.denominacion,
+        codigoPais: createClienteDto.codigoPais,
+        direccion: createClienteDto.direccion,
         correo: createClienteDto.correo,
-        tipoPersonaId: createClienteDto.tipoPersonaId
+        telefono: createClienteDto.telefono
       })
       .returning()
 

@@ -7,12 +7,6 @@ import { GetClienteById } from '@/domain/use-cases/entities/clientes/get-cliente
 import type { Request, Response } from 'express'
 
 export class ClientesController {
-  validarDatos = (num1: number, num2: number, num3: number, num4: number) => {
-    if ((num1 === 2 && num2 === 2) || (num3 === 2 && num4 === 2)) {
-      return true
-    }
-    return false
-  }
   create = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
       CustomResponse.unauthorized({ res })
@@ -24,17 +18,6 @@ export class ClientesController {
       CustomResponse.badRequest({ res, error })
       return
     }
-
-    const valid1 = createClienteDto.nombresApellidos === undefined ? 1 : 2
-    const valid11 = createClienteDto.razonSocial === undefined ? 1 : 2
-
-    if (valid1 === 1 && valid11 === 1) {
-      CustomResponse.badRequest({
-        res,
-        error: 'Nombre o  Razon social  deben estar disponibles '
-      })
-    }
-    // const {authPayload} = req;
 
     const createCliente = new CreateCliente()
 

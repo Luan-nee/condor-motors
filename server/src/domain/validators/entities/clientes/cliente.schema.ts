@@ -3,26 +3,15 @@ import { Validator } from '../../validator'
 
 // tipoPersonaId
 export const ClienteSchema = {
-  nombresApellidos: z
-    .string()
-    .trim()
-    .min(2)
-    .max(250, {
-      message:
-        'El Nombre y apellido esta excediendo el limite para ser un considreado un nombre'
-    })
-    .refine((val) => Validator.isValidFullName(val), {
-      message:
-        'El texto ingresado no cumple con los requisitos para ser un nombre y apellido'
-    })
-    .optional(),
-  dni: z
+  tipoDocumentoId: z.number(),
+  numeroDocumento: z
     .string()
     .trim()
     .min(6)
-    .max(9, { message: 'El DNI no puede contener 9 caracteres' })
-    .refine((valor) => Validator.isValidDni(valor), {
-      message: 'El texto ingresado no es apto para un DNI'
+    .max(13, { message: 'El Numero de documento ingresado no es valido' })
+    .refine((valor) => Validator.isOnlyNumbers(valor), {
+      message:
+        'El numero de documento Ingresado no puede contener otro tipo de caracteres a parte de los numeros'
     }),
   razonSocial: z
     .string()
@@ -31,27 +20,23 @@ export const ClienteSchema = {
     .refine((valor) => Validator.isValidFullName(valor), {
       message:
         'el nombre de la razon social no puede contener caracteres especiales'
-    })
-    .optional(),
-  ruc: z
-    .string()
-    .trim()
-    .min(10)
-    .max(12, { message: 'El ruc no puede ser mas de 12 caracteres' })
-    .refine((valor) => Validator.isValidRuc(valor), {
-      message: 'El ruc Ingresado no tiene caractes validos'
     }),
-  telefono: z
+  denominacion: z.string().trim(),
+  codigoPais: z
     .string()
     .trim()
     .min(5)
     .max(7)
-    .max(10)
-    .refine((valor) => Validator.isOnlyNumbers(valor))
-    .optional(),
+    .refine((valor) => Validator.isOnlyNumbers(valor)),
+  direccion: z.string().trim().min(3).max(6),
   correo: z
     .string()
     .trim()
     .email({ message: 'El texto ingresado no es un correo' }),
-  tipoPersonaId: z.number()
+  telefono: z
+    .string()
+    .trim()
+    .refine((valor) => Validator.isOnlyNumbers(valor), {
+      message: 'El telefono no contiene caracteres especiales'
+    })
 }
