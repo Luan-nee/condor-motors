@@ -45,6 +45,32 @@ export const seedConfig: SeedConfig = {
     'Rechazado',
     'Completado'
   ],
+  tiposDocumentoClienteDefault: [
+    {
+      nombre: 'RUC',
+      codigo: '6'
+    },
+    {
+      nombre: 'DNI',
+      codigo: '1'
+    },
+    {
+      nombre: 'CARNET DE EXTRANJERÍA',
+      codigo: '4'
+    },
+    {
+      nombre: 'PASAPORTE',
+      codigo: '7'
+    },
+    {
+      nombre: 'CÉDULA DIPLOMÁTICA DE IDENTIDAD',
+      codigo: 'A'
+    },
+    {
+      nombre: 'NO DOMICILIADO, SIN RUC',
+      codigo: '0'
+    }
+  ],
   tiposDocumentoFacturacionDefault: [
     { nombre: 'Factura electrónica', codigo: '01' },
     { nombre: 'Boleta de venta electrónica', codigo: '03' }
@@ -59,7 +85,7 @@ export const seedConfig: SeedConfig = {
     },
     {
       nombre: 'Crédito',
-      codigo: 'Crédito',
+      codigo: 'Credito',
       tipo: '1',
       activado: false
     }

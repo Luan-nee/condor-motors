@@ -51,6 +51,10 @@ interface SeedConfig {
     hex: string
   }>
   estadosTransferenciasInventariosDefault: string[]
+  tiposDocumentoClienteDefault: Array<{
+    nombre: string
+    codigo: string
+  }>
   tiposDocumentoFacturacionDefault: Array<{
     nombre: string
     codigo: string

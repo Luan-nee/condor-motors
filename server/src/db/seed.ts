@@ -360,6 +360,18 @@ const seedDatabase = async () => {
   )
 
   await db.insert(schema.notificacionesTable).values(notificacionesValues)
+
+  await db
+    .insert(schema.tiposDocumentoClienteTable)
+    .values(seedConfig.tiposDocumentoClienteDefault)
+  await db
+    .insert(schema.tiposDocumentoFacturacionTable)
+    .values(seedConfig.tiposDocumentoFacturacionDefault)
+  await db
+    .insert(schema.monedasFacturacionTable)
+    .values(seedConfig.monedasFacturacionDefault)
+  await db.insert(schema.metodosPagoTable).values(seedConfig.metodosPagoDefault)
+  await db.insert(schema.tiposTaxTable).values(seedConfig.tiposTaxDefault)
 }
 
 const { NODE_ENV: nodeEnv } = envs
