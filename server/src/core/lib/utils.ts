@@ -47,3 +47,42 @@ export const getRandomUniqueElementsFromArray = <T>(
   }
   return fisherYatesShuffle(array).slice(0, amount)
 }
+
+export const formatOffset = (offsetHours: number, offsetMinutes = 0) => {
+  if (
+    offsetHours < -12 ||
+    offsetHours > 14 ||
+    offsetMinutes < 0 ||
+    offsetMinutes >= 60
+  ) {
+    return undefined
+  }
+
+  const sign = offsetHours >= 0 ? '+' : '-'
+  const absHours = Math.abs(offsetHours)
+  const absMinutes = Math.abs(offsetMinutes)
+
+  return `${sign}${String(absHours).padStart(2, '0')}:${String(absMinutes).padStart(2, '0')}`
+}
+
+export const getOffsetDateTime = (
+  dateTime: Date,
+  offsetHours: number,
+  offsetMinutes = 0
+) => {
+  if (
+    !(dateTime instanceof Date) ||
+    offsetHours < -12 ||
+    offsetHours > 14 ||
+    offsetMinutes < 0 ||
+    offsetMinutes >= 60
+  ) {
+    return undefined
+  }
+
+  const offsetMillis = (offsetHours * 3600 + offsetMinutes * 60) * 1000
+  const utcTime = dateTime.getTime() + offsetMillis
+  const offsetDateTime = new Date(utcTime)
+
+  return offsetDateTime
+}
