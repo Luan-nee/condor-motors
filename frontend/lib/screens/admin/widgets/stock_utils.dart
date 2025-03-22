@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../api/protected/stocks.api.dart';
+import '../../../models/producto.model.dart';
 
 /// Clase de utilidades para funciones comunes relacionadas con stock e inventario
 class StockUtils {
   /// Determina el color del indicador de stock basado en la cantidad actual vs mínima
   static Color getStockStatusColor(int stockActual, int stockMinimo) {
     if (stockActual <= 0) {
-      return Colors.red; // Sin stock
+      return Colors.red.shade800; // Sin stock
     } else if (stockActual < stockMinimo) {
-      return Colors.orange; // Stock bajo
+      return const Color(0xFFE31E24); // Stock bajo
     } else {
       return Colors.green; // Stock normal
     }
@@ -18,11 +19,11 @@ class StockUtils {
   /// Determina el icono para el estado del stock
   static IconData getStockStatusIcon(int stockActual, int stockMinimo) {
     if (stockActual <= 0) {
-      return FontAwesomeIcons.circleXmark; // Sin stock
+      return FontAwesomeIcons.ban; // Sin stock
     } else if (stockActual < stockMinimo) {
       return FontAwesomeIcons.triangleExclamation; // Stock bajo
     } else {
-      return FontAwesomeIcons.circleCheck; // Stock normal
+      return FontAwesomeIcons.check; // Stock normal
     }
   }
   
@@ -59,14 +60,26 @@ class StockUtils {
     return stockActual <= 0;
   }
   
+  /// Verifica si un producto tiene stock bajo utilizando el modelo Producto
+  static bool tieneStockBajoFromProducto(Producto producto) {
+    final stockActual = producto.stock;
+    final stockMinimo = producto.stockMinimo ?? 0;
+    return stockActual < stockMinimo && stockActual > 0;
+  }
+  
+  /// Verifica si un producto está sin stock utilizando el modelo Producto
+  static bool sinStockFromProducto(Producto producto) {
+    return producto.stock <= 0;
+  }
+  
   /// Obtiene el estado del stock como texto
   static String getStockStatusText(int stockActual, int stockMinimo) {
     if (stockActual <= 0) {
-      return 'Sin stock';
+      return 'Agotado';
     } else if (stockActual < stockMinimo) {
       return 'Stock bajo';
     } else {
-      return 'Normal';
+      return 'Disponible';
     }
   }
   

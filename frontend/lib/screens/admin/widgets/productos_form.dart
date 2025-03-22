@@ -429,13 +429,57 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           maxLines: 3,
         ),
         const SizedBox(height: 16),
-        TextFormField(
-          controller: _skuController,
-          decoration: _getInputDecoration('SKU'),
-          style: const TextStyle(color: Colors.white),
-          validator: (value) =>
-              value?.isEmpty ?? true ? 'Campo requerido' : null,
-        ),
+        // Cuando es un producto existente, el SKU es de solo lectura
+        // Cuando es un producto nuevo, el campo no aparece (el backend lo generará)
+        widget.producto != null 
+          ? TextFormField(
+              controller: _skuController,
+              decoration: _getInputDecoration('SKU (no editable)').copyWith(
+                filled: true,
+                fillColor: const Color(0xFF222222),
+                prefixIcon: const Icon(Icons.lock_outline, color: Colors.white54, size: 20),
+              ),
+              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+              enabled: false, // Campo deshabilitado para edición
+              readOnly: true, // Solo lectura
+            )
+          : Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'SKU generado automáticamente',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'El código SKU será asignado por el sistema automáticamente al guardar el producto.',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
       ],
     );
   }
@@ -1078,7 +1122,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       final productoData = <String, dynamic>{
         if (widget.producto != null) 'id': widget.producto!.id,
         'nombre': _nombreController.text,
-        'sku': _skuController.text,
+        // El SKU sólo se envía si estamos creando un nuevo producto
+        // (aunque ahora se maneja automáticamente en el backend)
         'descripcion': _descripcionController.text,
         'marca': _marcaController.text,
         'categoria': _categoriaSeleccionada,

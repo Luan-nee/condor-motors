@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:intl/intl.dart';
 import '../../../models/producto.model.dart';
 import '../../../models/sucursal.model.dart';
 import 'productos_utils.dart';
@@ -26,8 +25,6 @@ class ProductosTable extends StatefulWidget {
 }
 
 class _ProductosTableState extends State<ProductosTable> with SingleTickerProviderStateMixin {
-  bool _expandirAgotados = false;
-  bool _expandirStockBajo = false;
   late TabController _tabController;
   Map<String, List<Producto>> _productosAgrupados = {};
   
@@ -92,36 +89,6 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'Total: ${widget.productos.length} productos',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  _buildCounter('Disponibles', _productosAgrupados['disponibles']?.length ?? 0, Colors.green),
-                  const SizedBox(width: 16),
-                  _buildCounter('Stock Bajo', _productosAgrupados['stockBajo']?.length ?? 0, const Color(0xFFE31E24)),
-                  const SizedBox(width: 16),
-                  _buildCounter('Agotados', _productosAgrupados['agotados']?.length ?? 0, Colors.red.shade800),
-                ],
-              ),
-              Row(
-                children: [
-                  // Aquí podrían ir otros controles como ordenar, filtros avanzados, etc.
-                ],
-              ),
-            ],
-          ),
-        ),
         TabBar(
           controller: _tabController,
           labelColor: Colors.white,
@@ -157,7 +124,7 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const FaIcon(FontAwesomeIcons.exclamationTriangle, size: 16, color: Color(0xFFE31E24)),
+                  const FaIcon(FontAwesomeIcons.triangleExclamation, size: 16, color: Color(0xFFE31E24)),
                   const SizedBox(width: 8),
                   const Text('Stock Bajo'),
                   const SizedBox(width: 4),
@@ -473,16 +440,16 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                 children: [
                   IconButton(
                     icon: const Icon(
-                      Icons.visibility,
+                      FontAwesomeIcons.eye,
                       color: Colors.blue,
                       size: 20,
                     ),
-                    tooltip: 'Ver detalles en sucursales',
+                    tooltip: 'Ver detalles',
                     onPressed: () => widget.onViewDetails(producto),
                   ),
                   IconButton(
                     icon: const Icon(
-                      Icons.edit,
+                      FontAwesomeIcons.penToSquare,
                       color: Colors.white70,
                       size: 20,
                     ),
