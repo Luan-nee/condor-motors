@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../models/empleado.model.dart';
 import '../utils/empleados_utils.dart';
+import 'empleado_horario_dialog.dart';
 
 class EmpleadoForm extends StatefulWidget {
   final Empleado? empleado;
@@ -80,44 +81,57 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   
   void _inicializarFormulario() {
     if (widget.empleado != null) {
-      _nombreController.text = widget.empleado!.nombre;
-      _apellidosController.text = widget.empleado!.apellidos;
-      _dniController.text = widget.empleado!.dni ?? '';
-      _sueldoController.text = widget.empleado!.sueldo?.toString() ?? '';
-      _celularController.text = widget.empleado!.celular ?? '';
-      
-      // Inicializar horarios utilizando la función de utilidad
-      EmpleadosUtils.inicializarHorarios(
-        horaInicioHoraController: _horaInicioHoraController,
-        horaInicioMinutoController: _horaInicioMinutoController,
-        horaFinHoraController: _horaFinHoraController,
-        horaFinMinutoController: _horaFinMinutoController,
-        horaInicio: widget.empleado!.horaInicioJornada,
-        horaFin: widget.empleado!.horaFinJornada
-      );
-      
-      _selectedSucursalId = widget.empleado!.sucursalId;
-      _selectedRol = EmpleadosUtils.obtenerRolDeEmpleado(widget.empleado!);
-      
-      // Inicializar el estado del empleado
-      _isEmpleadoActivo = widget.empleado!.activo;
+      _inicializarFormularioEmpleadoExistente();
     } else {
-      _selectedRol = widget.roles.isNotEmpty ? widget.roles.first : null;
-      
-      // Valores por defecto para horario (8:00 - 17:00) usando la función de utilidad
-      EmpleadosUtils.inicializarHorarios(
-        horaInicioHoraController: _horaInicioHoraController,
-        horaInicioMinutoController: _horaInicioMinutoController,
-        horaFinHoraController: _horaFinHoraController,
-        horaFinMinutoController: _horaFinMinutoController
-      );
-      
-      // Por defecto, un nuevo empleado está activo
-      _isEmpleadoActivo = true;
+      _inicializarFormularioNuevoEmpleado();
     }
     
     // Verificar si la sucursal seleccionada es central
     _actualizarEsSucursalCentral();
+  }
+  
+  void _inicializarFormularioEmpleadoExistente() {
+    final empleado = widget.empleado!;
+    
+    // Datos personales
+    _nombreController.text = empleado.nombre;
+    _apellidosController.text = empleado.apellidos;
+    _dniController.text = empleado.dni ?? '';
+    _sueldoController.text = empleado.sueldo?.toString() ?? '';
+    _celularController.text = empleado.celular ?? '';
+    
+    // Inicializar horarios utilizando la función de utilidad
+    EmpleadosUtils.inicializarHorarios(
+      horaInicioHoraController: _horaInicioHoraController,
+      horaInicioMinutoController: _horaInicioMinutoController,
+      horaFinHoraController: _horaFinHoraController,
+      horaFinMinutoController: _horaFinMinutoController,
+      horaInicio: empleado.horaInicioJornada,
+      horaFin: empleado.horaFinJornada
+    );
+    
+    // Datos laborales
+    _selectedSucursalId = empleado.sucursalId;
+    _selectedRol = EmpleadosUtils.obtenerRolDeEmpleado(empleado);
+    
+    // Estado del empleado
+    _isEmpleadoActivo = empleado.activo;
+  }
+  
+  void _inicializarFormularioNuevoEmpleado() {
+    // Valores por defecto para nuevo empleado
+    _selectedRol = widget.roles.isNotEmpty ? widget.roles.first : null;
+    
+    // Valores por defecto para horario (8:00 - 17:00)
+    EmpleadosUtils.inicializarHorarios(
+      horaInicioHoraController: _horaInicioHoraController,
+      horaInicioMinutoController: _horaInicioMinutoController,
+      horaFinHoraController: _horaFinHoraController,
+      horaFinMinutoController: _horaFinMinutoController
+    );
+    
+    // Por defecto, un nuevo empleado está activo
+    _isEmpleadoActivo = true;
   }
   
   Future<void> _cargarInformacionCuenta() async {
@@ -178,6 +192,10 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       ),
       child: Container(
         width: 600,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+        ),
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
@@ -594,283 +612,124 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Horario de inicio
-                Row(
-                  children: [
-                    // Etiqueta
-                    SizedBox(
-                      width: 120,
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.access_time,
-                            color: Colors.white54,
-                            size: 20,
+                // Si es un empleado existente, mostrar el widget de horario
+                // Si es un nuevo empleado, mostrar campos de entrada de tiempo
+                if (widget.empleado != null) 
+                  // Usar EmpleadoHorarioViewer para un empleado existente
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      EmpleadoHorarioViewer(
+                        empleado: widget.empleado!,
+                        showTitle: false,
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          icon: const FaIcon(
+                            FontAwesomeIcons.penToSquare,
+                            size: 14,
+                            color: Colors.white70,
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Hora inicio:',
+                          label: const Text(
+                            'Editar horario',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 14,
+                              color: Colors.white70,
+                              fontSize: 12,
                             ),
                           ),
-                        ],
+                          onPressed: _editarHorario,
+                          style: TextButton.styleFrom(
+                            backgroundColor: const Color(0xFF3D3D3D),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    
-                    // Campo de hora
-                    Expanded(
-                      child: Row(
+                    ],
+                  )
+                else
+                  // Campos de entrada de tiempo para un nuevo empleado
+                  Column(
+                    children: [
+                      // Horario de inicio
+                      Row(
                         children: [
-                          // Horas
-                          Expanded(
-                            child: TextFormField(
-                              controller: _horaInicioHoraController,
-                              style: const TextStyle(color: Colors.white),
-                              textAlign: TextAlign.center,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: 'HH',
-                                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                          // Etiqueta
+                          SizedBox(
+                            width: 120,
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.access_time,
+                                  color: Colors.white54,
+                                  size: 20,
                                 ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Requerido';
-                                }
-                                final hora = int.tryParse(value);
-                                if (hora == null || hora < 0 || hora > 23) {
-                                  return 'Inválido';
-                                }
-                                return null;
-                              },
-                              onChanged: (value) {
-                                // Formatear a 2 dígitos
-                                if (value.length > 2) {
-                                  _horaInicioHoraController.text = value.substring(0, 2);
-                                  _horaInicioHoraController.selection = TextSelection.fromPosition(
-                                    const TextPosition(offset: 2),
-                                  );
-                                }
-                                
-                                // Validar rango
-                                final hora = int.tryParse(value);
-                                if (hora != null && (hora < 0 || hora > 23)) {
-                                  _horaInicioHoraController.text = '00';
-                                }
-                                
-                                // Avanzar al siguiente campo si se ingresaron 2 dígitos
-                                if (value.length == 2) {
-                                  FocusScope.of(context).nextFocus();
-                                }
-                              },
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Hora inicio:',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           
-                          // Separador
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text(
-                              ':',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          
-                          // Minutos
+                          // Campo de hora
                           Expanded(
-                            child: TextFormField(
-                              controller: _horaInicioMinutoController,
-                              style: const TextStyle(color: Colors.white),
-                              textAlign: TextAlign.center,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: 'MM',
-                                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Requerido';
-                                }
-                                final minuto = int.tryParse(value);
-                                if (minuto == null || minuto < 0 || minuto > 59) {
-                                  return 'Inválido';
-                                }
-                                return null;
-                              },
-                              onChanged: (value) {
-                                // Formatear a 2 dígitos
-                                if (value.length > 2) {
-                                  _horaInicioMinutoController.text = value.substring(0, 2);
-                                  _horaInicioMinutoController.selection = TextSelection.fromPosition(
-                                    const TextPosition(offset: 2),
-                                  );
-                                }
-                                
-                                // Validar rango
-                                final minuto = int.tryParse(value);
-                                if (minuto != null && (minuto < 0 || minuto > 59)) {
-                                  _horaInicioMinutoController.text = '00';
-                                }
-                              },
+                            child: _buildTimeInputRow(
+                              horaController: _horaInicioHoraController,
+                              minutoController: _horaInicioMinutoController,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Horario de fin
+                      Row(
+                        children: [
+                          // Etiqueta
+                          SizedBox(
+                            width: 120,
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.access_time_filled,
+                                  color: Colors.white54,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Hora fin:',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          // Campo de hora
+                          Expanded(
+                            child: _buildTimeInputRow(
+                              horaController: _horaFinHoraController,
+                              minutoController: _horaFinMinutoController,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 
-                const SizedBox(height: 16),
-                
-                // Horario de fin
-                Row(
-                  children: [
-                    // Etiqueta
-                    SizedBox(
-                      width: 120,
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.access_time_filled,
-                            color: Colors.white54,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Hora fin:',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    // Campo de hora
-                    Expanded(
-                      child: Row(
-                        children: [
-                          // Horas
-                          Expanded(
-                            child: TextFormField(
-                              controller: _horaFinHoraController,
-                              style: const TextStyle(color: Colors.white),
-                              textAlign: TextAlign.center,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: 'HH',
-                                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Requerido';
-                                }
-                                final hora = int.tryParse(value);
-                                if (hora == null || hora < 0 || hora > 23) {
-                                  return 'Inválido';
-                                }
-                                return null;
-                              },
-                              onChanged: (value) {
-                                // Formatear a 2 dígitos
-                                if (value.length > 2) {
-                                  _horaFinHoraController.text = value.substring(0, 2);
-                                  _horaFinHoraController.selection = TextSelection.fromPosition(
-                                    const TextPosition(offset: 2),
-                                  );
-                                }
-                                
-                                // Validar rango
-                                final hora = int.tryParse(value);
-                                if (hora != null && (hora < 0 || hora > 23)) {
-                                  _horaFinHoraController.text = '00';
-                                }
-                                
-                                // Avanzar al siguiente campo si se ingresaron 2 dígitos
-                                if (value.length == 2) {
-                                  FocusScope.of(context).nextFocus();
-                                }
-                              },
-                            ),
-                          ),
-                          
-                          // Separador
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text(
-                              ':',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          
-                          // Minutos
-                          Expanded(
-                            child: TextFormField(
-                              controller: _horaFinMinutoController,
-                              style: const TextStyle(color: Colors.white),
-                              textAlign: TextAlign.center,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: 'MM',
-                                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Requerido';
-                                }
-                                final minuto = int.tryParse(value);
-                                if (minuto == null || minuto < 0 || minuto > 59) {
-                                  return 'Inválido';
-                                }
-                                return null;
-                              },
-                              onChanged: (value) {
-                                // Formatear a 2 dígitos
-                                if (value.length > 2) {
-                                  _horaFinMinutoController.text = value.substring(0, 2);
-                                  _horaFinMinutoController.selection = TextSelection.fromPosition(
-                                    const TextPosition(offset: 2),
-                                  );
-                                }
-                                
-                                // Validar rango
-                                final minuto = int.tryParse(value);
-                                if (minuto != null && (minuto < 0 || minuto > 59)) {
-                                  _horaFinMinutoController.text = '00';
-                                }
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 24),
                 
                 // Botones de acción
                 Row(
@@ -916,90 +775,12 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     
     // Si hay un error al cargar la información
     if (_errorCargaInfo != null) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.red.withOpacity(0.5)),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.error_outline,
-              color: Colors.red,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _errorCargaInfo!,
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-      );
+      return _buildErrorContainer(_errorCargaInfo!);
     }
     
     // Si no se encontró una cuenta y hay un empleado existente
     if (_cuentaNoEncontrada && widget.empleado != null) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.amber.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.amber.withOpacity(0.5)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const FaIcon(
-                  FontAwesomeIcons.triangleExclamation,
-                  color: Colors.amber,
-                  size: 18,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Este colaborador no tiene una cuenta para acceder al sistema',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Para permitir que este colaborador inicie sesión en el sistema, necesita crear una cuenta de usuario con un rol asignado.',
-              style: TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: () => _gestionarCuenta(context),
-                icon: const FaIcon(
-                  FontAwesomeIcons.userPlus,
-                  size: 16,
-                ),
-                label: const Text('Crear Cuenta de Usuario'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber,
-                  foregroundColor: Colors.black87,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
+      return _buildCrearCuentaContainer();
     }
     
     // Si hay una cuenta existente
@@ -1014,6 +795,92 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     
     // Si no hay ninguna condición anterior, no mostrar nada
     return const SizedBox();
+  }
+  
+  Widget _buildErrorContainer(String errorMessage) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red.withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.error_outline,
+            color: Colors.red,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              errorMessage,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildCrearCuentaContainer() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.amber.withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const FaIcon(
+                FontAwesomeIcons.triangleExclamation,
+                color: Colors.amber,
+                size: 18,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Este colaborador no tiene una cuenta para acceder al sistema',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Para permitir que este colaborador inicie sesión en el sistema, necesita crear una cuenta de usuario con un rol asignado.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: () => _gestionarCuenta(context),
+              icon: const FaIcon(
+                FontAwesomeIcons.userPlus,
+                size: 16,
+              ),
+              label: const Text('Crear Cuenta de Usuario'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.black87,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
   
   void _guardar() {
@@ -1044,7 +911,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   }
   
   Future<void> _gestionarCuenta(BuildContext context) async {
-    if (widget.empleado == null) return;
+    if (widget.empleado == null || !mounted) return;
     
     setState(() => _isLoading = true);
     
@@ -1052,36 +919,31 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       // Usar la función de utilidad para gestionar la cuenta
       final cuentaActualizada = await EmpleadosUtils.gestionarCuenta(context, widget.empleado!);
       
-      // Verificar primero si el widget sigue montado antes de usar setState
+      // Si el widget ya no está montado, salir temprano
       if (!mounted) return;
       
-      // Verificar ahora si el contexto sigue montado antes de usarlo
-      if (!context.mounted) return;
-      
-      if (cuentaActualizada) {
+      if (cuentaActualizada && context.mounted) {
         EmpleadosUtils.mostrarMensaje(
           context,
           mensaje: 'Cuenta actualizada correctamente'
         );
         
         // Recargar información de cuenta
-        _cargarInformacionCuenta();
+        await _cargarInformacionCuenta();
         
-        // Resetear estado
-        setState(() {
-          _cuentaNoEncontrada = false;
-        });
+        if (mounted) {
+          setState(() => _cuentaNoEncontrada = false);
+        }
       }
     } catch (e) {
-      // Verificar primero si el widget sigue montado antes de usar setState
       if (!mounted) return;
       
+      // Actualizar estado de carga
       setState(() => _isLoading = false);
       
-      // Verificar ahora si el contexto sigue montado antes de usarlo
       if (!context.mounted) return;
       
-      // Simplificado: mostrar siempre un mensaje de error genérico
+      // Mostrar mensaje de error
       final String errorMsg = e.toString().replaceAll('Exception: ', '');
       EmpleadosUtils.mostrarMensaje(
         context,
@@ -1089,9 +951,314 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
         esError: true
       );
     } finally {
+      // Asegurarse de actualizar el estado solo si el widget sigue montado
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
+  }
+  
+  // Método para construir campos de entrada de hora/minuto
+  Widget _buildTimeInputRow({
+    required TextEditingController horaController,
+    required TextEditingController minutoController,
+  }) {
+    return Row(
+      children: [
+        // Horas
+        Expanded(
+          child: TextFormField(
+            controller: horaController,
+            style: const TextStyle(color: Colors.white),
+            textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: 'HH',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+              contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Requerido';
+              }
+              final hora = int.tryParse(value);
+              if (hora == null || hora < 0 || hora > 23) {
+                return 'Inválido';
+              }
+              return null;
+            },
+            onChanged: (value) {
+              // Formatear a 2 dígitos
+              if (value.length > 2) {
+                horaController.text = value.substring(0, 2);
+                horaController.selection = TextSelection.fromPosition(
+                  const TextPosition(offset: 2),
+                );
+              }
+              
+              // Validar rango
+              final hora = int.tryParse(value);
+              if (hora != null && (hora < 0 || hora > 23)) {
+                horaController.text = '00';
+              }
+              
+              // Avanzar al siguiente campo si se ingresaron 2 dígitos
+              if (value.length == 2) {
+                FocusScope.of(context).nextFocus();
+              }
+            },
+          ),
+        ),
+        
+        // Separador
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            ':',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        
+        // Minutos
+        Expanded(
+          child: TextFormField(
+            controller: minutoController,
+            style: const TextStyle(color: Colors.white),
+            textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: 'MM',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+              contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Requerido';
+              }
+              final minuto = int.tryParse(value);
+              if (minuto == null || minuto < 0 || minuto > 59) {
+                return 'Inválido';
+              }
+              return null;
+            },
+            onChanged: (value) {
+              // Formatear a 2 dígitos
+              if (value.length > 2) {
+                minutoController.text = value.substring(0, 2);
+                minutoController.selection = TextSelection.fromPosition(
+                  const TextPosition(offset: 2),
+                );
+              }
+              
+              // Validar rango
+              final minuto = int.tryParse(value);
+              if (minuto != null && (minuto < 0 || minuto > 59)) {
+                minutoController.text = '00';
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _editarHorario() {
+    // Guardar los valores actuales por si el usuario cancela
+    final horaInicioHoraOriginal = _horaInicioHoraController.text;
+    final horaInicioMinutoOriginal = _horaInicioMinutoController.text;
+    final horaFinHoraOriginal = _horaFinHoraController.text;
+    final horaFinMinutoOriginal = _horaFinMinutoController.text;
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Container(
+          width: 500,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const FaIcon(
+                    FontAwesomeIcons.clock,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Editar Horario',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              
+              // Horario de inicio
+              Row(
+                children: [
+                  // Etiqueta
+                  SizedBox(
+                    width: 120,
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.access_time,
+                          color: Colors.white54,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Hora inicio:',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Campo de hora
+                  Expanded(
+                    child: _buildTimeInputRow(
+                      horaController: _horaInicioHoraController,
+                      minutoController: _horaInicioMinutoController,
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Horario de fin
+              Row(
+                children: [
+                  // Etiqueta
+                  SizedBox(
+                    width: 120,
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.access_time_filled,
+                          color: Colors.white54,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Hora fin:',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Campo de hora
+                  Expanded(
+                    child: _buildTimeInputRow(
+                      horaController: _horaFinHoraController,
+                      minutoController: _horaFinMinutoController,
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Botones de acción
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      // Restaurar valores originales si cancela
+                      _horaInicioHoraController.text = horaInicioHoraOriginal;
+                      _horaInicioMinutoController.text = horaInicioMinutoOriginal;
+                      _horaFinHoraController.text = horaFinHoraOriginal;
+                      _horaFinMinutoController.text = horaFinMinutoOriginal;
+                      Navigator.pop(context);
+                    },
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(color: Colors.white54),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE31E24),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                    onPressed: () {
+                      // Validar campos de hora
+                      final horaInicio = int.tryParse(_horaInicioHoraController.text);
+                      final minutoInicio = int.tryParse(_horaInicioMinutoController.text);
+                      final horaFin = int.tryParse(_horaFinHoraController.text);
+                      final minutoFin = int.tryParse(_horaFinMinutoController.text);
+                      
+                      if (horaInicio == null || horaInicio < 0 || horaInicio > 23 ||
+                          minutoInicio == null || minutoInicio < 0 || minutoInicio > 59 ||
+                          horaFin == null || horaFin < 0 || horaFin > 23 ||
+                          minutoFin == null || minutoFin < 0 || minutoFin > 59) {
+                        // Mostrar mensaje de error
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Por favor, ingrese horas válidas'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                      
+                      // Todo válido, actualizar localmente
+                      setState(() {
+                        // Se guardará al confirmar el formulario
+                      });
+                      
+                      Navigator.pop(context);
+                      
+                      // Mostrar mensaje de confirmación
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Horario actualizado'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
+                    child: const Text('Guardar'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

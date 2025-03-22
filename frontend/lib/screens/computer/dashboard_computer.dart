@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../api/index.dart';
+import '../../api/index.api.dart';
 import '../../main.dart' show api;
 
 // Definición de la clase Venta para manejar los datos

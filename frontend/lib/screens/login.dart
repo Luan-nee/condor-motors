@@ -3,13 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';  // Importar para KeyboardListener
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Importamos SharedPreferences
 
-import '../api/index.dart' show CondorMotorsApi;
+import '../api/index.api.dart' show CondorMotorsApi;
 import '../api/main.api.dart';
 import '../main.dart' show api;
 import '../services/token_service.dart'; // Importar TokenService
 import '../utils/role_utils.dart' as role_utils; // Importar utilidad de roles con alias
 import '../widgets/background.dart';
+
 
 // Clase para manejar el ciclo de vida de la aplicación
 class LifecycleObserver extends WidgetsBindingObserver {
@@ -49,11 +51,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   bool _capsLockOn = false;
   bool _obscurePassword = true;
   bool _rememberMe = false;
-  bool _stayLoggedIn = false; // Nueva variable para "Permanecer conectado"
+  bool _stayLoggedIn = false; // Variable para "Permanecer conectado"
   late final AnimationController _animationController;
   String _errorMessage = '';
   String _serverIp = 'localhost'; // IP local para el servidor
   late final LifecycleObserver _lifecycleObserver;
+  bool _isCheckingAutoLogin = true; // Flag para controlar el auto-login
 
   @override
   void initState() {
@@ -65,8 +68,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     )..repeat();
     
     _loadServerIp();
-    _loadSavedCredentials();
-    _loadStayLoggedInPreference(); // Cargar preferencia de "Permanecer conectado"
+    
+    // Intentamos auto-login antes de cargar las credenciales normales
+    _tryAutoLogin().then((_) {
+      // Si no hubo auto-login exitoso, cargamos las credenciales guardadas
+      if (mounted && !_isCheckingAutoLogin) {
+        _loadSavedCredentials();
+        _loadStayLoggedInPreference();
+      }
+    });
     
     // Reducir la velocidad de la animación cuando la app está en segundo plano
     _lifecycleObserver = LifecycleObserver(
@@ -109,6 +119,92 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       });
       // Actualizar la URL base de la API global
       await _updateApiBaseUrl('localhost');
+    }
+  }
+
+  // Método para intentar iniciar sesión automáticamente
+  Future<void> _tryAutoLogin() async {
+    setState(() {
+      _isCheckingAutoLogin = true;
+      _isLoading = true;
+    });
+    
+    try {
+      // Obtenemos las SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Verificamos si "Permanecer conectado" está activado
+      final stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
+      debugPrint('Auto-login: Permanecer conectado está ${stayLoggedIn ? 'activado' : 'desactivado'}');
+      
+      if (!stayLoggedIn) {
+        debugPrint('Auto-login: No está activado "Permanecer conectado"');
+        setState(() {
+          _isCheckingAutoLogin = false;
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      // Obtenemos las credenciales guardadas
+      final username = prefs.getString('username_auto');
+      final password = prefs.getString('password_auto');
+      
+      if (username == null || password == null || username.isEmpty || password.isEmpty) {
+        debugPrint('Auto-login: No hay credenciales guardadas');
+        setState(() {
+          _isCheckingAutoLogin = false;
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      debugPrint('Auto-login: Intentando iniciar sesión automáticamente con usuario: $username');
+      
+      // Intentamos el login
+      final usuarioAutenticado = await api.auth.login(
+        username,
+        password,
+      );
+      
+      debugPrint('Auto-login: Login exitoso, usuario autenticado: $usuarioAutenticado');
+      
+      // Guardar los datos del usuario en el servicio global de autenticación
+      try {
+        await api.authService.saveUserData(usuarioAutenticado);
+        debugPrint('Auto-login: Datos de usuario guardados correctamente en el servicio global');
+      } catch (e) {
+        debugPrint('Auto-login: Error al guardar datos en el servicio global: $e');
+      }
+      
+      // Si llegamos hasta aquí, el login fue exitoso, navegamos a la pantalla correspondiente
+      if (!mounted) return;
+      
+      // Determinamos la ruta inicial basada en el rol normalizado
+      final rolCodigo = usuarioAutenticado.rolCuentaEmpleadoCodigo;
+      final rolNormalizado = role_utils.normalizeRole(rolCodigo);
+      final initialRoute = role_utils.getInitialRoute(rolNormalizado);
+      
+      debugPrint('Auto-login: Navegando a la ruta inicial: $initialRoute');
+      
+      // Navegamos a la pantalla correspondiente
+      if (!mounted) return;
+      
+      await Navigator.pushReplacementNamed(
+        context,
+        initialRoute,
+        arguments: usuarioAutenticado.toMap(),
+      );
+      
+    } catch (e) {
+      // Si hay un error en el auto-login, simplemente mostramos la pantalla de login normal
+      debugPrint('Auto-login: Error durante el inicio de sesión automático: $e');
+      if (mounted) {
+        setState(() {
+          _isCheckingAutoLogin = false;
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -249,9 +345,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   // Método para cargar la preferencia de "Permanecer conectado"
   Future<void> _loadStayLoggedInPreference() async {
     try {
-      final stayLoggedIn = await _storage.read(key: 'stay_logged_in');
+      // Cambiamos a SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
       setState(() {
-        _stayLoggedIn = stayLoggedIn == 'true';
+        _stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
       });
       debugPrint('Cargada preferencia de permanencia de sesión: $_stayLoggedIn');
     } catch (e) {
@@ -261,6 +358,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   Future<void> _loadSavedCredentials() async {
     try {
+      // Mantenemos FlutterSecureStorage para las credenciales "Recordar" normal
+      // ya que son menos sensibles que el auto-login
       final username = await _storage.read(key: 'username');
       final password = await _storage.read(key: 'password');
       final shouldRemember = await _storage.read(key: 'remember_me');
@@ -274,10 +373,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       }
     } catch (e) {
       // Ignorar errores al cargar credenciales
+      debugPrint('Error al cargar credenciales: $e');
     }
   }
 
   Future<void> _saveCredentials() async {
+    // Guardar credenciales normales (recordar credenciales)
     if (_rememberMe) {
       await _storage.write(key: 'username', value: _usernameController.text);
       await _storage.write(key: 'password', value: _passwordController.text);
@@ -289,8 +390,23 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       await _storage.delete(key: 'remember_me');
     }
     
-    // Guardar preferencia de "Permanecer conectado"
-    await _storage.write(key: 'stay_logged_in', value: _stayLoggedIn.toString());
+    // Guardar preferencia y credenciales para auto-login
+    // Usamos SharedPreferences para "Permanecer conectado"
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('stay_logged_in', _stayLoggedIn);
+    
+    // Si permanecer conectado está activo, guardamos las credenciales
+    if (_stayLoggedIn) {
+      await prefs.setString('username_auto', _usernameController.text);
+      await prefs.setString('password_auto', _passwordController.text);
+      debugPrint('Credenciales para auto-login guardadas correctamente');
+    } else {
+      // Si se desactiva, eliminamos las credenciales
+      await prefs.remove('username_auto');
+      await prefs.remove('password_auto');
+      debugPrint('Credenciales para auto-login eliminadas');
+    }
+    
     debugPrint('Guardada preferencia de permanencia de sesión: $_stayLoggedIn');
   }
 
@@ -324,20 +440,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       
       // Guardar credenciales y preferencias
       await _saveCredentials();
-      
-      // Si "Permanecer conectado" está activado, guardamos credenciales en TokenService
-      // para permitir login automático en el futuro
-      if (_stayLoggedIn) {
-        try {
-          await TokenService.instance.saveCredentials(
-            _usernameController.text,
-            _passwordController.text
-          );
-          debugPrint('Credenciales guardadas para auto-login en el TokenService');
-        } catch (e) {
-          debugPrint('Error al guardar credenciales para auto-login: $e');
-        }
-      }
 
       // Comprobación de seguridad: si el widget ya no está montado, no hacer nada más
       if (!mounted) return;
@@ -409,6 +511,47 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    // Si estamos verificando el auto-login, mostrar pantalla de carga
+    if (_isCheckingAutoLogin) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF1A1A1A),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo
+              Container(
+                width: 120,
+                height: 120,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.1),
+                ),
+                child: Image.asset(
+                  'assets/images/condor-motors-logo.webp',
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: 32),
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Iniciando sesión automáticamente...',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // Pantalla normal de login
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       body: Stack(

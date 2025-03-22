@@ -28,7 +28,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   List<Producto> _productosFiltrados = [];
   List<Sucursal> _sucursales = [];
   Sucursal? _sucursalSeleccionada;
-  
+
   // Parámetros de paginación y filtrado
   String _searchQuery = '';
   String _selectedCategory = 'Todos';
@@ -51,7 +51,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     _cargarSucursales();
     _cargarCategorias();
   }
-  
+
   @override
   void dispose() {
     _productosKey.dispose();
@@ -295,7 +295,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
 
   void _showProductDialog(Producto? producto) {
     final bool esNuevo = producto == null;
-    
+
     if (!mounted) return;
     showDialog(
       context: context,
@@ -367,15 +367,15 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
           // Panel principal (75% del ancho)
           Expanded(
             flex: 75,
-            child: Column(
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+                children: [
                 // Header con nombre y acciones
                 _buildHeader(),
                 // Barra de búsqueda y filtros
                 _buildSearchBar(),
                 // Tabla de productos
-                Expanded(
+                      Expanded(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     child: _sucursalSeleccionada == null
@@ -402,15 +402,15 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                       'Cargando productos...',
                                       style: TextStyle(
                                         color: Colors.white.withOpacity(0.7),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                        ),
+                      ),
+                    ],
+                  ),
                               )
                             : Column(
-                                children: [
+                    children: [
                                   // Tabla de productos
-                                  Expanded(
+                      Expanded(
                                     child: ValueListenableBuilder<String>(
                                       valueListenable: _productosKey,
                                       builder: (context, key, child) {
@@ -425,9 +425,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                           sortBy: _sortBy,
                                           sortOrder: _order,
                                         );
-                                      },
-                                    ),
-                                  ),
+                          },
+                        ),
+                      ),
                                   
                                   // Paginador
                                   if (_paginatedProductos != null && _paginatedProductos!.paginacion.totalPages > 0)
@@ -454,7 +454,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                           // Selector de tamaño de página
                                           Row(
                                             mainAxisSize: MainAxisSize.min,
-                                            children: [
+                    children: [
                                               Text(
                                                 'Mostrar:',
                                                 style: TextStyle(
@@ -467,14 +467,14 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                             ],
                                           ),
                                         ],
-                                      ),
-                                    ),
-                                ],
-                              ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
+                  ),
+                      ),
+                    ],
+                  ),
           ),
           
           // Panel lateral de sucursales
@@ -668,15 +668,15 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       opacity: _sucursalSeleccionada == null ? 0.5 : 1.0,
       duration: const Duration(milliseconds: 300),
       child: Container(
-        padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
         color: const Color(0xFF222222),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
                 enabled: _sucursalSeleccionada != null,
                 decoration: InputDecoration(
-                  labelText: 'Buscar productos',
+                            labelText: 'Buscar productos',
                   labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
                   prefixIcon: const Icon(Icons.search, color: Colors.white54),
                   border: OutlineInputBorder(
@@ -695,9 +695,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                   fillColor: const Color(0xFF2D2D2D),
                 ),
                 style: const TextStyle(color: Colors.white),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
+                          onChanged: (value) {
+                            setState(() {
+                              _searchQuery = value;
                     
                     // Si la búsqueda es mayor a 3 caracteres, hacemos una nueva solicitud al servidor
                     if (value.length >= 3 || value.isEmpty) {
@@ -705,13 +705,13 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                       _cargarProductos();
                     } else {
                       // Para búsquedas cortas, filtramos localmente
-                      _filtrarProductos();
+                              _filtrarProductos();
                     }
-                  });
-                },
-              ),
-            ),
-            const SizedBox(width: 16),
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
@@ -750,21 +750,21 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                         onChanged: _sucursalSeleccionada == null
                             ? null
                             : (value) {
-                                if (value != null) {
-                                  setState(() {
-                                    _selectedCategory = value;
-                                    _filtrarProductos();
-                                  });
-                                }
-                              },
+                          if (value != null) {
+                            setState(() {
+                              _selectedCategory = value;
+                              _filtrarProductos();
+                            });
+                          }
+                        },
                         dropdownColor: const Color(0xFF2D2D2D),
                         icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
                         style: const TextStyle(color: Colors.white),
                       ),
-                    ),
+                        ),
+                ),
+              ],
             ),
-          ],
-        ),
       ),
     );
   }

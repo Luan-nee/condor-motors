@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../api/index.dart';
+import '../../api/index.api.dart';
 import '../../main.dart' show api;
 import 'barcode_colab.dart';
 import 'historial_ventas_colab.dart';
@@ -404,7 +404,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       final proformaCreada = _proformasApi.parseProformaVenta(respuesta);
       
       // Mostrar diálogo de confirmación
-      showDialog(
+      await showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Proforma Creada Exitosamente'),

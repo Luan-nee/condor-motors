@@ -3,12 +3,21 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../models/empleado.model.dart';
 import '../utils/empleados_utils.dart';
 
-class EmpleadoHorarioDialog extends StatelessWidget {
+/// Widget para mostrar información del horario del empleado
+/// 
+/// Puede ser usado como un componente dentro de otros widgets o como un diálogo
+class EmpleadoHorarioViewer extends StatelessWidget {
   final Empleado empleado;
+  final bool showTitle;
+  final Color? backgroundColor;
+  final double width;
 
-  const EmpleadoHorarioDialog({
+  const EmpleadoHorarioViewer({
     super.key,
     required this.empleado,
+    this.showTitle = true,
+    this.backgroundColor,
+    this.width = double.infinity,
   });
 
   @override
@@ -17,84 +26,62 @@ class EmpleadoHorarioDialog extends StatelessWidget {
     final horaInicio = EmpleadosUtils.formatearHora(empleado.horaInicioJornada);
     final horaFin = EmpleadosUtils.formatearHora(empleado.horaFinJornada);
     
-    return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: backgroundColor ?? const Color(0xFF2D2D2D),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: const Color(0xFFE31E24).withOpacity(0.2),
+        ),
       ),
-      child: Container(
-        width: 400,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (showTitle) ...[
             Row(
               children: [
                 const FaIcon(
                   FontAwesomeIcons.clock,
-                  color: Colors.white,
-                  size: 20,
+                  color: Color(0xFFE31E24),
+                  size: 16,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Text(
-                  'Horario de ${empleado.nombre}',
-                  style: const TextStyle(
-                    fontSize: 18,
+                  'HORARIO LABORAL',
+                  style: TextStyle(
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: const Color(0xFFE31E24),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            
-            // Horario
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2D2D2D),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                children: [
-                  _buildHorarioItem(
-                    'Hora de inicio',
-                    horaInicio,
-                    FontAwesomeIcons.solidClock,
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Divider(color: Colors.white24),
-                  ),
-                  _buildHorarioItem(
-                    'Hora de fin',
-                    horaFin,
-                    FontAwesomeIcons.solidClock,
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Botón para cerrar
-            Center(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2D2D2D),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                ),
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cerrar'),
-              ),
-            ),
+            const SizedBox(height: 16),
           ],
-        ),
+          
+          // Horario
+          Column(
+            children: [
+              _buildHorarioItem(
+                'Hora de inicio',
+                horaInicio,
+                FontAwesomeIcons.solidClock,
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(color: Colors.white24),
+              ),
+              _buildHorarioItem(
+                'Hora de fin',
+                horaFin,
+                FontAwesomeIcons.solidClock,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -143,6 +130,79 @@ class EmpleadoHorarioDialog extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Diálogo para mostrar el horario de un empleado
+class EmpleadoHorarioDialog extends StatelessWidget {
+  final Empleado empleado;
+
+  const EmpleadoHorarioDialog({
+    super.key,
+    required this.empleado,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Container(
+        width: 400,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const FaIcon(
+                  FontAwesomeIcons.clock,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Horario de ${empleado.nombre}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            
+            // Reutilizamos el widget EmpleadoHorarioViewer
+            EmpleadoHorarioViewer(
+              empleado: empleado,
+              showTitle: false,
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Botón para cerrar
+            Center(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2D2D2D),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cerrar'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 } 

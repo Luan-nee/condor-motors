@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../services/token_service.dart';
 import '../../utils/role_utils.dart' as role_utils;
 import 'categorias_admin.dart';
 import 'colaboradores_admin.dart';
@@ -179,8 +181,19 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: TextButton.icon(
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, role_utils.login);
+                    onPressed: () async {
+                      // 1. Limpiar tokens almacenados
+                      await TokenService.instance.clearTokens();
+                      
+                      // 2. Desactivar la opción "Permanecer conectado"
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('stay_logged_in', false);
+                      await prefs.remove('username_auto');
+                      await prefs.remove('password_auto');
+                      
+                      // 3. Navegar a la pantalla de login
+                      if (!context.mounted) return;
+                      await Navigator.pushReplacementNamed(context, role_utils.login);
                     },
                     icon: const FaIcon(
                       FontAwesomeIcons.rightFromBracket,

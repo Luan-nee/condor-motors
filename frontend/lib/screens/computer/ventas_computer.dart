@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-import '../../api/index.dart';
+import '../../api/index.api.dart';
 import '../../main.dart' show api;
 import 'widgets/form_sales_computer.dart' show NumericKeypad, ProcessingDialog, DebugPrint, ProformaSaleDialog;
 import 'widgets/ventas_pendientes_utils.dart';
@@ -711,7 +711,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         
         // Mostrar dialog de procesamiento
         if (mounted) {
-          showDialog(
+          await showDialog(
             context: context,
             barrierDismissible: false,
             builder: (context) => ProcessingDialog(documentType: _tipoDocumento),
@@ -972,7 +972,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       
       // Mostrar dialog de procesamiento
       if (mounted) {
-        showDialog(
+        await showDialog(
           context: context,
           barrierDismissible: false,
           builder: (context) => ProcessingDialog(documentType: _tipoDocumento),

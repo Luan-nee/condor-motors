@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../api/protected/stocks.api.dart';
 import '../../../models/producto.model.dart';
 
 /// Clase de utilidades para funciones comunes relacionadas con stock e inventario
@@ -80,34 +79,6 @@ class StockUtils {
       return 'Stock bajo';
     } else {
       return 'Disponible';
-    }
-  }
-  
-  /// Prepara los datos para usar con la API real
-  static Future<List<Map<String, dynamic>>> getStockData(StocksApi stocksApi, String sucursalId) async {
-    try {
-      if (sucursalId.isEmpty) {
-        return [];
-      }
-      
-      // TODO: Implementar llamada real a la API cuando esté listo
-      // Por ahora devolvemos datos de ejemplo
-      return [
-        {
-          'nombre': 'Producto de ejemplo',
-          'stock_actual': 10,
-          'stock_minimo': 5,
-          'stock_maximo': 100,
-          'sucursalId': sucursalId
-        }
-      ];
-      
-      // Implementación futura:
-      // final stockData = await stocksApi.getStockBySucursal(sucursalId: sucursalId);
-      // return stockData.map((item) => item as Map<String, dynamic>).toList();
-    } catch (e) {
-      debugPrint('Error al obtener datos de stock: $e');
-      return [];
     }
   }
 } 

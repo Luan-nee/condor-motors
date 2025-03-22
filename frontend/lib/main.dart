@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'api/index.dart';
+import 'api/index.api.dart';
 import 'routes/routes.dart' as routes;
 import 'services/token_service.dart';
+import 'theme/apptheme.dart';
 import 'utils/role_utils.dart' as role_utils;
 import 'widgets/connection_status.dart';
 
@@ -27,9 +28,6 @@ void initializeApi(CondorMotorsApi instance) {
 
 // Clave global para el navegador
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
-// Nombre de la fuente principal
-const String kFontFamily = 'SourceSans3';
 
 // Comprobar conectividad con un servidor
 Future<bool> _checkServerConnectivity(String url) async {
@@ -214,95 +212,7 @@ class CondorMotorsApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Condor Motors',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFE31E24),
-          brightness: Brightness.dark,
-        ),
-        fontFamily: kFontFamily,
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        
-        // Configuración de AppBar
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E1E1E),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          titleTextStyle: TextStyle(
-            fontFamily: kFontFamily,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        
-        // Configuración de diálogos
-        dialogTheme: DialogTheme(
-          backgroundColor: const Color(0xFF1E1E1E),
-          elevation: 5,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          titleTextStyle: const TextStyle(
-            fontFamily: kFontFamily,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-          contentTextStyle: const TextStyle(
-            fontFamily: kFontFamily,
-            fontSize: 14,
-            color: Colors.white70,
-          ),
-        ),
-        
-        // Configuración de botones
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFE31E24),
-            foregroundColor: Colors.white,
-            elevation: 3,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            textStyle: const TextStyle(
-              fontFamily: kFontFamily,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ),
-        textTheme: const TextTheme(
-          titleLarge: TextStyle(
-            fontFamily: kFontFamily,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-          titleMedium: TextStyle(
-            fontFamily: kFontFamily,
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
-          bodyLarge: TextStyle(
-            fontFamily: kFontFamily,
-            fontSize: 16,
-            color: Colors.white70,
-          ),
-          bodyMedium: TextStyle(
-            fontFamily: kFontFamily,
-            fontSize: 14,
-            color: Colors.white70,
-          ),
-          labelLarge: TextStyle(
-            fontFamily: kFontFamily,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
-        ),
-      ),
+      theme: AppTheme.theme,
       onGenerateRoute: (settings) {
         return routes.generateRoute(
           settings,

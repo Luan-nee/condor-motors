@@ -1,11 +1,11 @@
 import '../services/token_service.dart';
 import 'auth.api.dart';
 import 'main.api.dart';
-import 'protected/index.dart';
+import 'protected/index.protected.dart';
 
 export 'auth.api.dart';
 export 'main.api.dart';
-export 'protected/index.dart';
+export 'protected/index.protected.dart';
 
 /// Clase principal para acceder a todas las APIs
 class CondorMotorsApi {

@@ -22,10 +22,6 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
   List<Empleado> _empleados = [];
   Map<String, String> _nombresSucursales = {};
   
-  // Ya no necesitamos estos parámetros de paginación
-  // int _currentPage = 1;
-  // final int _pageSize = 10;
-  
   // Lista de roles disponibles
   final List<String> _roles = ['Administrador', 'Vendedor', 'Computadora'];
 
@@ -42,17 +38,19 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
     });
     
     try {
-      // Cargar sucursales primero para mostrar nombres en lugar de IDs
-      // Esta llamada todavía es necesaria para el formulario de creación/edición
-      await _cargarSucursales();
+      // Cargar sucursales y empleados en paralelo para optimizar
+      final futureSucursales = _cargarSucursales();
+      final futureEmpleados = api.empleados.getEmpleados();
       
-      // Cargar todos los empleados de una vez, sin paginación
-      final empleadosData = await api.empleados.getEmpleados();
+      // Esperar a que ambas solicitudes se completen
+      final results = await Future.wait([futureSucursales, futureEmpleados]);
+      
+      // Las sucursales ya fueron procesadas en _cargarSucursales
+      final empleadosData = results[1] as List<dynamic>;
       
       final List<Empleado> empleados = [];
       for (var item in empleadosData) {
         try {
-          // Los datos ya vienen como objetos Empleado, no necesitamos convertirlos
           final empleado = item;
           
           // Si el empleado tiene información de sucursal, actualizamos el mapa de nombres
@@ -65,11 +63,9 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
           
           empleados.add(empleado);
         } catch (e) {
-          debugPrint('Error al convertir empleado: $e');
+          debugPrint('Error al procesar empleado: $e');
         }
       }
-      
-      // Ya no necesitamos verificar si hay más páginas
       
       if (!mounted) return;
       setState(() {
@@ -78,25 +74,37 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      
+      String mensajeError = 'Error al cargar datos';
+      
+      if (e is ApiException) {
+        if (e.statusCode == 401) {
+          mensajeError = 'Sesión expirada. Por favor, inicie sesión nuevamente.';
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(mensajeError),
+              backgroundColor: Colors.red,
+            ),
+          );
+          
+          await Navigator.of(context).pushReplacementNamed('/login');
+          return;
+        } else {
+          mensajeError = e.message;
+        }
+      } else {
+        mensajeError = e.toString();
+      }
+      
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Error al cargar datos: $e';
+        _errorMessage = mensajeError;
       });
-      
-      // Manejar errores de autenticación
-      if (e is ApiException && e.statusCode == 401) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sesión expirada. Por favor, inicie sesión nuevamente.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        await Navigator.of(context).pushReplacementNamed('/login');
-      }
     }
   }
   
-  Future<void> _cargarSucursales() async {
+  Future<Map<String, String>> _cargarSucursales() async {
     try {
       final sucursalesData = await api.sucursales.getSucursales();
       final Map<String, String> sucursales = {};
@@ -116,11 +124,17 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
         }
       }
       
-      setState(() {
-        _nombresSucursales = sucursales;
-      });
+      // Actualizar el estado si estamos montados
+      if (mounted) {
+        setState(() {
+          _nombresSucursales = sucursales;
+        });
+      }
+      
+      return sucursales;
     } catch (e) {
       debugPrint('Error al cargar sucursales: $e');
+      return {}; // Devolver mapa vacío en caso de error
     }
   }
 
@@ -178,9 +192,17 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      
+      String mensajeError = 'Error al eliminar colaborador';
+      if (e is ApiException) {
+        mensajeError = '$mensajeError: ${e.message}';
+      } else {
+        mensajeError = '$mensajeError: $e';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al eliminar colaborador: $e'),
+          content: Text(mensajeError),
           backgroundColor: Colors.red,
         ),
       );
@@ -206,23 +228,17 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       if (empleadoExistente != null) {
         // Actualizar empleado existente
         await api.empleados.updateEmpleado(empleadoExistente.id, empleadoData);
+        
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Colaborador actualizado correctamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        
+        _mostrarMensajeExito('Colaborador actualizado correctamente');
       } else {
         // Crear nuevo empleado
         await api.empleados.createEmpleado(empleadoData);
+        
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Colaborador creado correctamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        
+        _mostrarMensajeExito('Colaborador creado correctamente');
       }
       
       // Cerrar el diálogo y recargar datos
@@ -231,13 +247,30 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       await _cargarDatos();
     } catch (e) {
       if (!mounted) return;
+      
+      String mensajeError = 'Error al guardar colaborador';
+      if (e is ApiException) {
+        mensajeError = '$mensajeError: ${e.message}';
+      } else {
+        mensajeError = '$mensajeError: $e';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al guardar colaborador: $e'),
+          content: Text(mensajeError),
           backgroundColor: Colors.red,
         ),
       );
     }
+  }
+  
+  void _mostrarMensajeExito(String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensaje),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
   
   void _mostrarDetallesEmpleado(Empleado empleado) {
@@ -311,7 +344,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
             ),
             const SizedBox(height: 24),
             
-            // Tabla de empleados - modificada para no usar paginación
+            // Tabla de empleados
             Expanded(
               child: EmpleadosTable(
                 empleados: _empleados,
@@ -321,8 +354,8 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                 onDelete: _eliminarEmpleado,
                 onViewDetails: _mostrarDetallesEmpleado,
                 isLoading: _isLoading,
-                hasMorePages: false, // Siempre false ya que cargamos todo de una vez
-                onLoadMore: () {}, // Función vacía, nunca se ejecutará porque hasMorePages es false
+                hasMorePages: false,
+                onLoadMore: () {}, 
                 errorMessage: _errorMessage,
                 onRetry: _cargarDatos,
               ),

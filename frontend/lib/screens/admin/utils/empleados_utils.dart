@@ -7,7 +7,7 @@ import '../widgets/empleado_cuenta_dialog.dart';
 import '../widgets/empleado_horario_dialog.dart';
 
 /// Clase de utilidades para funciones comunes relacionadas con empleados
-///
+/// 
 /// Este archivo centraliza funciones reutilizables relacionadas con empleados, sus cuentas,
 /// roles, sucursales y presentación en la interfaz de usuario. Al mantener estas funciones
 /// en una clase de utilidad, se logra:
@@ -21,6 +21,15 @@ import '../widgets/empleado_horario_dialog.dart';
 /// Las funciones incluidas manejan la carga de información de cuentas, la gestión de cuentas,
 /// la inicialización de campos de formulario, y la presentación visual de datos de empleados.
 class EmpleadosUtils {
+  // Constantes para manejar errores comunes
+  static const _errorNotFoundResponses = [
+    '404', 'not found', 'no encontrado', 'no existe', 'empleado no tiene cuenta'
+  ];
+  
+  static const _errorAuthResponses = [
+    '401', 'no autorizado', 'sesión expirada', 'token inválido'
+  ];
+  
   /// Obtiene el icono correspondiente al rol del empleado
   static IconData getRolIcon(String rol) {
     switch (rol.toLowerCase()) {
@@ -285,6 +294,18 @@ class EmpleadosUtils {
     }
   }
   
+  /// Determina si un error es debido a recurso no encontrado
+  static bool _esErrorNotFound(String errorMessage) {
+    final msgLower = errorMessage.toLowerCase();
+    return _errorNotFoundResponses.any((term) => msgLower.contains(term));
+  }
+  
+  /// Determina si un error es debido a problemas de autenticación
+  static bool _esErrorAutenticacion(String errorMessage) {
+    final msgLower = errorMessage.toLowerCase();
+    return _errorAuthResponses.any((term) => msgLower.contains(term));
+  }
+  
   /// Carga información de la cuenta de un empleado
   /// 
   /// Retorna un Future con un Map que contiene la información de la cuenta
@@ -297,130 +318,78 @@ class EmpleadosUtils {
     };
     
     try {
-      // Verificar si el empleado ya tiene una cuenta asociada
+      // Intentar obtener la cuenta - primero por ID de cuenta si está disponible
       if (empleado.cuentaEmpleadoId != null) {
-        final cuentaId = empleado.cuentaEmpleadoId!;
-        final cuentaIdInt = int.tryParse(cuentaId);
-        
-        if (cuentaIdInt != null) {
-          try {
-            // Obtener información de la cuenta usando la API
+        try {
+          final cuentaIdInt = int.tryParse(empleado.cuentaEmpleadoId!);
+          if (cuentaIdInt != null) {
             final cuentaInfo = await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
-            
             if (cuentaInfo != null) {
-              resultado['usuarioActual'] = cuentaInfo['usuario']?.toString();
-              
-              // Obtener información del rol si está disponible
-              final rolId = cuentaInfo['rolCuentaEmpleadoId'];
-              if (rolId != null) {
-                resultado['rolCuentaActual'] = await obtenerNombreRol(rolId);
-              }
-              return resultado; // Encontramos la cuenta, devolver resultado exitoso
-            } else {
-              // La cuenta no fue encontrada a pesar de tener un ID registrado
-              resultado['cuentaNoEncontrada'] = true;
-              resultado['errorCargaInfo'] = 'Cuenta no encontrada. El ID registrado parece ser inválido.';
-              return resultado; // Devolver resultado con cuenta no encontrada
+              // Cuenta encontrada por ID
+              return await _procesarInfoCuenta(cuentaInfo, resultado);
             }
-          } catch (e) {
-            // Si el error indica que no se encontró la cuenta, marcar como cuenta no encontrada
-            if (e.toString().contains('404') || 
-                e.toString().contains('not found') ||
-                e.toString().contains('no encontrado') ||
-                e.toString().contains('no existe')) {
-              debugPrint('EmpleadosUtils: Cuenta no encontrada por ID: ${e.toString()}');
-              resultado['cuentaNoEncontrada'] = true;
-              return resultado; // Devolver resultado con cuenta no encontrada
-            }
-            
-            // Determinar si es un error de autenticación genuino
-            final esErrorAutenticacion = e.toString().contains('401') && 
-                (e.toString().contains('No autorizado') || 
-                e.toString().contains('Sesión expirada') ||
-                e.toString().contains('token inválido'));
-            
-            if (esErrorAutenticacion) {
-              debugPrint('EmpleadosUtils: Error de autenticación al obtener cuenta por ID: $e');
-              rethrow; // Propagar error de autenticación
-            }
-            
-            // Otro tipo de error, continuar intentando con el empleadoId
-            debugPrint('EmpleadosUtils: Error al obtener cuenta por ID: $e');
           }
+        } catch (e) {
+          final errorStr = e.toString();
+          // Si es error de "no encontrado", solo continuamos al siguiente método
+          // Si es error de autenticación, lo propagamos
+          if (_esErrorAutenticacion(errorStr)) rethrow;
+          // Para otros errores, continuamos con el siguiente método
         }
       }
       
-      // Si llegamos aquí, intentar obtener la cuenta por ID de empleado
+      // Si llegamos aquí, intentamos encontrar la cuenta por ID de empleado
       try {
-        // Usar headers especiales para evitar reintentos de token
         final cuentaInfo = await api.cuentasEmpleados.getCuentaByEmpleadoId(empleado.id);
-        
         if (cuentaInfo != null) {
-          resultado['usuarioActual'] = cuentaInfo['usuario']?.toString();
-          
-          // Obtener información del rol si está disponible
-          final rolId = cuentaInfo['rolCuentaEmpleadoId'];
-          if (rolId != null) {
-            resultado['rolCuentaActual'] = await obtenerNombreRol(rolId);
-          }
+          // Cuenta encontrada por ID de empleado
+          return await _procesarInfoCuenta(cuentaInfo, resultado);
         } else {
-          // No se encontró una cuenta - indicar que no hay cuenta
+          // API devolvió null - no hay cuenta
           resultado['cuentaNoEncontrada'] = true;
+          return resultado;
         }
       } catch (e) {
-        // Identificar el tipo de error
-        final bool esErrorNotFound = e.toString().contains('404') || 
-            e.toString().toLowerCase().contains('not found') ||
-            e.toString().toLowerCase().contains('no encontrado') ||
-            e.toString().toLowerCase().contains('no existe') ||
-            e.toString().toLowerCase().contains('empleado no tiene cuenta');
+        final errorStr = e.toString();
         
-        final bool esErrorAutenticacion = e.toString().contains('401') && 
-            (e.toString().contains('No autorizado') || 
-            e.toString().contains('Sesión expirada') ||
-            e.toString().contains('token inválido'));
-        
-        if (esErrorNotFound) {
-          // Si el error indica que no se encontró la cuenta, marcar como cuenta no encontrada
-          debugPrint('EmpleadosUtils: Empleado sin cuenta: ${e.toString()}');
+        if (_esErrorNotFound(errorStr)) {
           resultado['cuentaNoEncontrada'] = true;
-        } else if (esErrorAutenticacion) {
-          // Si es un error de autenticación, propagarlo para que se maneje a nivel superior
-          debugPrint('EmpleadosUtils: Error de autenticación: ${e.toString()}');
-          rethrow;
-        } else {
-          // Para otros errores, mostrar mensaje genérico
-          debugPrint('Error al cargar información de cuenta: $e');
-          resultado['errorCargaInfo'] = 'Error al cargar información: ${e.toString().replaceAll('Exception: ', '')}';
+          return resultado;
         }
+        
+        if (_esErrorAutenticacion(errorStr)) rethrow;
+        
+        // Cualquier otro error
+        resultado['errorCargaInfo'] = 'Error: ${errorStr.replaceAll('Exception: ', '')}';
+        return resultado;
       }
     } catch (e) {
-      // Para errores en el flujo principal (incluyendo errores de autenticación propagados)
-      debugPrint('Error general al cargar información de cuenta: $e');
+      // Error general - propagar errores de autenticación, manejar otros errores
+      final errorStr = e.toString();
       
-      // Verificar si es un error relacionado con "cuenta no encontrada"
-      final bool esErrorNotFound = e.toString().contains('404') || 
-          e.toString().toLowerCase().contains('not found') ||
-          e.toString().toLowerCase().contains('no encontrado') ||
-          e.toString().toLowerCase().contains('no existe') ||
-          e.toString().toLowerCase().contains('empleado no tiene cuenta');
-      
-      if (esErrorNotFound) {
-        // Si el error indica que no se encontró la cuenta, marcar como cuenta no encontrada
-        debugPrint('EmpleadosUtils: Empleado sin cuenta (error general): ${e.toString()}');
+      if (_esErrorNotFound(errorStr)) {
         resultado['cuentaNoEncontrada'] = true;
         return resultado;
       }
       
-      // Si es un error de autenticación, propagarlo
-      if (e.toString().contains('401') && 
-          (e.toString().contains('No autorizado') || 
-          e.toString().contains('Sesión expirada') ||
-          e.toString().contains('token inválido'))) {
-        rethrow;
-      }
+      if (_esErrorAutenticacion(errorStr)) rethrow;
       
-      resultado['errorCargaInfo'] = 'Error al cargar información: ${e.toString().replaceAll('Exception: ', '')}';
+      resultado['errorCargaInfo'] = 'Error: ${errorStr.replaceAll('Exception: ', '')}';
+      return resultado;
+    }
+  }
+  
+  /// Procesa la información de la cuenta obtenida y la formatea para el resultado
+  static Future<Map<String, dynamic>> _procesarInfoCuenta(
+    Map<String, dynamic> cuentaInfo, 
+    Map<String, dynamic> resultado
+  ) async {
+    resultado['usuarioActual'] = cuentaInfo['usuario']?.toString();
+    
+    // Obtener información del rol si está disponible
+    final rolId = cuentaInfo['rolCuentaEmpleadoId'];
+    if (rolId != null) {
+      resultado['rolCuentaActual'] = await obtenerNombreRol(rolId);
     }
     
     return resultado;
@@ -430,215 +399,189 @@ class EmpleadosUtils {
   /// 
   /// Muestra un diálogo para gestionar la cuenta y maneja todas las interacciones con la API
   static Future<bool> gestionarCuenta(BuildContext context, Empleado empleado) async {
+    if (!context.mounted) return false;
+    
     try {
-      // Verificar si el contexto es seguro de usar
-      final contextMounted = context.mounted;
-      if (!contextMounted) return false;
-      
       // Obtener roles disponibles
-      final roles = await api.cuentasEmpleados.getRolesCuentas();
+      final roles = await _obtenerRolesDisponibles();
       
-      // Verificar nuevamente si el contexto sigue montado después de la operación async
       if (!context.mounted) return false;
       
-      // Obtener información de la cuenta (si existe)
-      Map<String, dynamic>? cuentaInfo;
-      String? cuentaId;
-      String? usuarioActual;
-      int? rolActualId;
-      bool cuentaEncontrada = false;
-      bool esCreacionDeCuenta = false;
+      // Obtener información de cuenta
+      final cuentaInfo = await _obtenerInfoCuenta(empleado);
       
-      // Verificar si el empleado ya tiene una cuenta asociada
-      if (tieneCuentaAsociada(empleado)) {
-        cuentaId = empleado.cuentaEmpleadoId;
-        
-        // Intentar obtener la cuenta por ID
-        if (cuentaId != null) {
-          final cuentaIdInt = int.tryParse(cuentaId);
-          if (cuentaIdInt != null) {
-            try {
-              cuentaInfo = await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
-              
-              // Verificar si el contexto sigue montado después de operación async
-              if (!context.mounted) return false;
-              
-              if (cuentaInfo != null) {
-                cuentaEncontrada = true;
-                usuarioActual = cuentaInfo['usuario']?.toString();
-                rolActualId = cuentaInfo['rolCuentaEmpleadoId'];
-              }
-            } catch (e) {
-              // Verificar si el contexto sigue montado después de operación async
-              if (!context.mounted) return false;
-              
-              // Determinar si es un error de autenticación genuino
-              final esErrorAutenticacion = e.toString().contains('401') && 
-                  (e.toString().contains('No autorizado') || 
-                   e.toString().contains('Sesión expirada') ||
-                   e.toString().contains('token inválido'));
-              
-              if (esErrorAutenticacion) {
-                debugPrint('EmpleadosUtils: Error de autenticación al obtener cuenta: $e');
-                rethrow; // Propagar error de autenticación para manejarlo a nivel superior
-              }
-              
-              // Verificar si el error indica que no se encontró la cuenta
-              final esErrorNotFound = e.toString().contains('404') || 
-                  e.toString().toLowerCase().contains('not found') ||
-                  e.toString().toLowerCase().contains('no encontrado') ||
-                  e.toString().toLowerCase().contains('no existe') ||
-                  e.toString().toLowerCase().contains('empleado no tiene cuenta');
-                  
-              if (esErrorNotFound) {
-                // Si el error indica que no se encontró la cuenta, continuar como cuenta no encontrada
-                debugPrint('EmpleadosUtils: Cuenta no encontrada por ID: ${e.toString()}');
-                esCreacionDeCuenta = true;
-              } else {
-                debugPrint('Error al obtener cuenta por ID: $e');
-              }
-              // Continuar para intentar buscar por ID de empleado
-            }
-          }
-        }
-      }
-      
-      // Si no se encontró la cuenta por ID directo, intentar por ID de empleado
-      if (!cuentaEncontrada) {
-        try {
-          cuentaInfo = await api.cuentasEmpleados.getCuentaByEmpleadoId(empleado.id);
-          
-          // Verificar si el contexto sigue montado después de operación async
-          if (!context.mounted) return false;
-          
-          if (cuentaInfo != null) {
-            cuentaEncontrada = true;
-            cuentaId = cuentaInfo['id']?.toString();
-            usuarioActual = cuentaInfo['usuario']?.toString();
-            rolActualId = cuentaInfo['rolCuentaEmpleadoId'];
-          } else {
-            // No se encontró una cuenta (respuesta exitosa pero sin datos)
-            debugPrint('EmpleadosUtils: No se encontró cuenta para empleado ${empleado.id}');
-            esCreacionDeCuenta = true;
-            debugPrint('EmpleadosUtils: Estableciendo esCreacionDeCuenta = true por respuesta exitosa sin datos');
-          }
-        } catch (e) {
-          // Verificar si el contexto sigue montado después de operación async
-          if (!context.mounted) return false;
-          
-          // Identificar el tipo de error
-          final bool esErrorNotFound = e.toString().contains('404') || 
-              e.toString().toLowerCase().contains('not found') ||
-              e.toString().toLowerCase().contains('no encontrado') ||
-              e.toString().toLowerCase().contains('no existe') ||
-              e.toString().toLowerCase().contains('empleado no tiene cuenta');
-          
-          final bool esErrorAutenticacion = e.toString().contains('401') && 
-              (e.toString().contains('No autorizado') || 
-               e.toString().contains('Sesión expirada') ||
-               e.toString().contains('token inválido'));
-          
-          if (esErrorNotFound) {
-            // Es un error "no encontrado", tratar como creación de cuenta nueva
-            debugPrint('EmpleadosUtils: Empleado sin cuenta confirmado: ${e.toString()}');
-            esCreacionDeCuenta = true;
-            debugPrint('EmpleadosUtils: Estableciendo esCreacionDeCuenta = true por error 404/not found');
-          } else if (esErrorAutenticacion) {
-            // Es un error genuino de autenticación, propagarlo
-            debugPrint('EmpleadosUtils: Error de autenticación al buscar cuenta: $e');
-            rethrow;
-          } else {
-            // Para otros errores, propagar para que se manejen externamente
-            debugPrint('EmpleadosUtils: Error al buscar cuenta: $e');
-            rethrow;
-          }
-        }
-      }
-      
-      // Verificar si el contexto sigue montado antes de mostrar el diálogo
       if (!context.mounted) return false;
       
-      // Preparar título para el diálogo
+      // Preparar nombre del empleado para mostrar
       final nombreEmpleado = '${empleado.nombre} ${empleado.apellidos}';
       
-      // Mostrar diálogo para gestionar la cuenta
-      final dialogResult = await showDialog<bool>(
-        context: context,
-        builder: (context) => Dialog(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: EmpleadoCuentaDialog(
-              empleadoId: empleado.id,
-              empleadoNombre: nombreEmpleado,
-              cuentaId: cuentaId,
-              usuarioActual: usuarioActual,
-              rolActualId: rolActualId,
-              roles: roles,
-              // Indicar explícitamente si debe mostrarse como creación de cuenta
-              esNuevaCuenta: esCreacionDeCuenta,
-            ),
-          ),
-        ),
+      // Mostrar diálogo
+      return await _mostrarDialogoCuenta(
+        context, 
+        empleado, 
+        nombreEmpleado, 
+        cuentaInfo, 
+        roles
       );
       
-      return dialogResult == true;
     } catch (e) {
-      debugPrint('Error al gestionar cuenta: $e');
-      
-      // Verificar si el contexto sigue montado después de operación async en el bloque catch
       if (!context.mounted) return false;
       
-      // Verificar si es un error que indica que no se encontró la cuenta
-      final bool esErrorNotFound = e.toString().contains('404') || 
-          e.toString().toLowerCase().contains('not found') ||
-          e.toString().toLowerCase().contains('no encontrado') ||
-          e.toString().toLowerCase().contains('no existe') ||
-          e.toString().toLowerCase().contains('empleado no tiene cuenta');
-          
-      if (esErrorNotFound) {
-        // Si es un error "no encontrado", mostrar diálogo de creación de cuenta
-        debugPrint('EmpleadosUtils: Mostrando formulario de creación de cuenta tras error 404/not found');
-        
-        // Preparar título para el diálogo
-        final nombreEmpleado = '${empleado.nombre} ${empleado.apellidos}';
-        
-        // Obtener roles disponibles (reintento)
-        List<Map<String, dynamic>> roles = [];
-        try {
-          roles = await api.cuentasEmpleados.getRolesCuentas();
-          
-          // Verificar si el contexto sigue montado después de operación async
-          if (!context.mounted) return false;
-          
-        } catch (rolesError) {
-          // Verificar si el contexto sigue montado después de operación async
-          if (!context.mounted) return false;
-          
-          debugPrint('EmpleadosUtils: Error al obtener roles: $rolesError');
-          // Continuar con lista vacía
-        }
-        
-        // Mostrar diálogo de creación de cuenta
-        final dialogResult = await showDialog<bool>(
-          context: context,
-          builder: (context) => Dialog(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: EmpleadoCuentaDialog(
-                empleadoId: empleado.id,
-                empleadoNombre: nombreEmpleado,
-                roles: roles,
-                esNuevaCuenta: true, // Forzar modo de creación de cuenta
-              ),
-            ),
-          ),
-        );
-        
-        return dialogResult == true;
+      final errorStr = e.toString();
+      // Si es error de "no encontrado", mostramos formulario de creación
+      if (_esErrorNotFound(errorStr)) {
+        return await _mostrarDialogoCreacionCuenta(context, empleado);
       }
       
+      // Propagar otros errores
       rethrow;
     }
+  }
+  
+  /// Obtiene los roles disponibles para cuentas de usuario
+  static Future<List<Map<String, dynamic>>> _obtenerRolesDisponibles() async {
+    try {
+      return await api.cuentasEmpleados.getRolesCuentas();
+    } catch (e) {
+      debugPrint('Error al obtener roles: $e');
+      return []; // Devolver lista vacía en caso de error
+    }
+  }
+  
+  /// Obtiene la información de la cuenta de un empleado
+  static Future<Map<String, dynamic>> _obtenerInfoCuenta(Empleado empleado) async {
+    // Preparar valores por defecto
+    String? cuentaId;
+    String? usuarioActual;
+    int? rolActualId;
+    bool esCreacionDeCuenta = false;
+    
+    // Verificar si el empleado ya tiene una cuenta asociada
+    if (tieneCuentaAsociada(empleado)) {
+      cuentaId = empleado.cuentaEmpleadoId;
+      
+      // Intentar obtener la cuenta por ID
+      if (cuentaId != null) {
+        final cuentaIdInt = int.tryParse(cuentaId);
+        if (cuentaIdInt != null) {
+          try {
+            final cuentaInfo = await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
+            
+            if (cuentaInfo != null) {
+              usuarioActual = cuentaInfo['usuario']?.toString();
+              rolActualId = cuentaInfo['rolCuentaEmpleadoId'];
+              return {
+                'cuentaId': cuentaId,
+                'usuarioActual': usuarioActual,
+                'rolActualId': rolActualId,
+                'esCreacionDeCuenta': false
+              };
+            }
+          } catch (e) {
+            final errorStr = e.toString();
+            
+            if (_esErrorAutenticacion(errorStr)) rethrow;
+            
+            if (_esErrorNotFound(errorStr)) {
+              esCreacionDeCuenta = true;
+            }
+            // Continuar para intentar buscar por ID de empleado
+          }
+        }
+      }
+    }
+    
+    // Si no se encontró por ID directo, intentar por ID de empleado
+    try {
+      final cuentaInfo = await api.cuentasEmpleados.getCuentaByEmpleadoId(empleado.id);
+      
+      if (cuentaInfo != null) {
+        cuentaId = cuentaInfo['id']?.toString();
+        usuarioActual = cuentaInfo['usuario']?.toString();
+        rolActualId = cuentaInfo['rolCuentaEmpleadoId'];
+        return {
+          'cuentaId': cuentaId,
+          'usuarioActual': usuarioActual,
+          'rolActualId': rolActualId,
+          'esCreacionDeCuenta': false
+        };
+      } else {
+        // No hay cuenta
+        esCreacionDeCuenta = true;
+      }
+    } catch (e) {
+      final errorStr = e.toString();
+      
+      if (_esErrorNotFound(errorStr)) {
+        esCreacionDeCuenta = true;
+      } else if (_esErrorAutenticacion(errorStr)) {
+        rethrow;
+      } else {
+        // Propagar otros errores
+        rethrow;
+      }
+    }
+    
+    return {
+      'cuentaId': cuentaId,
+      'usuarioActual': usuarioActual,
+      'rolActualId': rolActualId,
+      'esCreacionDeCuenta': esCreacionDeCuenta
+    };
+  }
+  
+  /// Muestra el diálogo de gestión de cuenta con la información adecuada
+  static Future<bool> _mostrarDialogoCuenta(
+    BuildContext context,
+    Empleado empleado, 
+    String nombreEmpleado,
+    Map<String, dynamic> cuentaInfo,
+    List<Map<String, dynamic>> roles
+  ) async {
+    if (!context.mounted) return false;
+    
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: EmpleadoCuentaDialog(
+            empleadoId: empleado.id,
+            empleadoNombre: nombreEmpleado,
+            cuentaId: cuentaInfo['cuentaId'],
+            usuarioActual: cuentaInfo['usuarioActual'],
+            rolActualId: cuentaInfo['rolActualId'],
+            roles: roles,
+            esNuevaCuenta: cuentaInfo['esCreacionDeCuenta'],
+          ),
+        ),
+      ),
+    ) ?? false;
+  }
+  
+  /// Muestra un diálogo para crear una nueva cuenta
+  static Future<bool> _mostrarDialogoCreacionCuenta(BuildContext context, Empleado empleado) async {
+    if (!context.mounted) return false;
+    
+    final nombreEmpleado = '${empleado.nombre} ${empleado.apellidos}';
+    final roles = await _obtenerRolesDisponibles();
+    
+    if (!context.mounted) return false;
+    
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: EmpleadoCuentaDialog(
+            empleadoId: empleado.id,
+            empleadoNombre: nombreEmpleado,
+            roles: roles,
+            esNuevaCuenta: true,
+          ),
+        ),
+      ),
+    ) ?? false;
   }
   
   /// Crea un widget para mostrar información de cuenta en forma de filas de información

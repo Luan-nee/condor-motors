@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../main.dart' show api;
 import '../../utils/role_utils.dart' as role_utils;
@@ -237,9 +238,18 @@ class SelectorColabScreen extends StatelessWidget {
       // Limpiar tokens de autenticación
       await api.authService.logout();
       
+      // Limpiar tokens almacenados en TokenService
+      await api.tokenService.clearTokens();
+      
+      // Desactivar la opción "Permanecer conectado" y eliminar credenciales auto-login
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('stay_logged_in', false);
+      await prefs.remove('username_auto');
+      await prefs.remove('password_auto');
+      
       // Navegar a la pantalla de login
       if (context.mounted) {
-        Navigator.pushNamedAndRemoveUntil(
+        await Navigator.pushNamedAndRemoveUntil(
           context, 
           role_utils.login, 
           (route) => false

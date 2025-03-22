@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../main.dart' show api;
+import '../../services/token_service.dart';
 import '../../utils/role_utils.dart' as role_utils;
 import 'dashboard_computer.dart';
 import 'ventas_computer.dart';
@@ -263,8 +266,27 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: TextButton.icon(
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, role_utils.login);
+                    onPressed: () async {
+                      // 1. Limpiar tokens almacenados
+                      await TokenService.instance.clearTokens();
+                      
+                      // 2. Limpiar tokens a través de la API si está disponible
+                      try {
+                        await api.authService.logout();
+                      } catch (e) {
+                        debugPrint('Error al cerrar sesión en API: $e');
+                        // Continuamos aunque falle esta parte
+                      }
+                      
+                      // 3. Desactivar la opción "Permanecer conectado"
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('stay_logged_in', false);
+                      await prefs.remove('username_auto');
+                      await prefs.remove('password_auto');
+                      
+                      // 4. Navegar a la pantalla de login
+                      if (!context.mounted) return;
+                      await Navigator.pushReplacementNamed(context, role_utils.login);
                     },
                     icon: const FaIcon(
                       FontAwesomeIcons.rightFromBracket,

@@ -47,13 +47,19 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     setState(() {
       _isLoadingSucursales = true;
     });
-
+    
     try {
       final sucursales = await api.sucursales.getSucursales();
       setState(() {
         _sucursales = sucursales;
         _isLoadingSucursales = false;
       });
+      
+      // Seleccionar automáticamente la primera sucursal si hay sucursales disponibles
+      if (sucursales.isNotEmpty && _selectedSucursalId.isEmpty) {
+        _onSucursalSeleccionada(sucursales.first);
+      }
+      
     } catch (e) {
       setState(() {
         _isLoadingSucursales = false;
@@ -100,7 +106,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       });
     }
   }
-
+  
   // Método para cambiar de página
   void _cambiarPagina(int pagina) {
     if (_currentPage != pagina) {
@@ -188,9 +194,13 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       appBar: AppBar(
         title: const Text('Inventario'),
         backgroundColor: const Color(0xFF1E1E1E),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 18),
             onPressed: () {
               _cargarSucursales();
               if (_selectedSucursalId.isNotEmpty) {
@@ -205,11 +215,11 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+              children: [
             // Área principal (75% del ancho)
-            Expanded(
-              flex: 75,
-              child: Column(
+                Expanded(
+                  flex: 75,
+                  child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Título y estadísticas
@@ -220,30 +230,42 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              _selectedSucursalId.isEmpty
-                                  ? 'Inventario General'
-                                  : 'Inventario de $_selectedSucursalNombre',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Row(
+                              children: [
+                                const FaIcon(
+                                  FontAwesomeIcons.warehouse,
+                                  size: 18,
+                                  color: Color(0xFFE31E24),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  _selectedSucursalId.isEmpty
+                                      ? 'Inventario General'
+                                      : 'Inventario de $_selectedSucursalNombre',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _selectedSucursalId.isEmpty
-                                  ? 'Seleccione una sucursal para ver su inventario'
-                                  : 'Gestión de stock y productos',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
-                                fontSize: 14,
+                            Padding(
+                              padding: const EdgeInsets.only(left: 28),
+                              child: Text(
+                                _selectedSucursalId.isEmpty
+                                    ? 'Seleccione una sucursal para ver su inventario'
+                                    : 'Gestión de stock y productos',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      
+
                       // Barra de búsqueda
                       if (_selectedSucursalId.isNotEmpty)
                         SizedBox(
@@ -252,11 +274,15 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                             decoration: InputDecoration(
                               hintText: 'Buscar productos...',
                               hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-                              prefixIcon: const Icon(Icons.search, color: Colors.white38),
+                              prefixIcon: const FaIcon(
+                                FontAwesomeIcons.magnifyingGlass,
+                                color: Colors.white38,
+                                size: 16,
+                              ),
                               filled: true,
                               fillColor: const Color(0xFF232323),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide.none,
                               ),
                               contentPadding: const EdgeInsets.symmetric(),
@@ -277,27 +303,6 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                         ),
                       
                       const SizedBox(width: 16),
-                      
-                      // Botón de agregar producto
-                      ElevatedButton.icon(
-                        onPressed: _selectedSucursalId.isEmpty ? null : () {
-                        },
-                        icon: const FaIcon(
-                          FontAwesomeIcons.plus,
-                          size: 14,
-                        ),
-                        label: const Text('Nuevo Producto'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE31E24),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          disabledBackgroundColor: const Color(0xFF3D3D3D),
-                          disabledForegroundColor: Colors.white38,
-                        ),
-                      ),
                     ],
                   ),
                   
@@ -313,8 +318,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                   // Tabla de productos
                   const SizedBox(height: 16),
                   Expanded(
-                    child: Column(
-                      children: [
+                  child: Column(
+                    children: [
                         Expanded(
                           child: TableProducts(
                             selectedSucursalId: _selectedSucursalId,
@@ -337,16 +342,26 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                         if (_paginatedProductos != null && _paginatedProductos!.paginacion.totalPages > 0)
                           Padding(
                             padding: const EdgeInsets.only(top: 16.0),
-                            child: Row(
+                        child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 // Info de cantidad
-                                Text(
-                                  'Mostrando ${_productosFiltrados.length} de ${_paginatedProductos!.paginacion.totalItems} productos',
+                                Row(
+                          children: [
+                                    const FaIcon(
+                                      FontAwesomeIcons.layerGroup,
+                                      size: 14,
+                                      color: Colors.white54,
+                                    ),
+                            const SizedBox(width: 8),
+                                    Text(
+                                      'Mostrando ${_productosFiltrados.length} de ${_paginatedProductos!.paginacion.totalItems} productos',
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.7),
-                                    fontSize: 14,
-                                  ),
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 
                                 // Paginador
@@ -358,23 +373,29 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                 // Selector de tamaño de página
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
+                                            children: [
+                                    const FaIcon(
+                                      FontAwesomeIcons.tableList,
+                                      size: 14,
+                                      color: Colors.white54,
+                                              ),
+                                              const SizedBox(width: 8),
+                                          Text(
                                       'Mostrar:',
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.7),
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacity(0.7),
                                         fontSize: 14,
                                       ),
                                     ),
                                     const SizedBox(width: 8),
                                     _buildPageSizeDropdown(),
                                   ],
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
                   ),
                 ],
               ),
@@ -428,7 +449,11 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
               _cambiarTamanioPagina(value);
             }
           },
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+          icon: const FaIcon(
+            FontAwesomeIcons.chevronDown,
+            color: Colors.white,
+            size: 14,
+          ),
           style: const TextStyle(color: Colors.white),
           dropdownColor: const Color(0xFF2D2D2D),
         ),
