@@ -8,12 +8,12 @@ class ProductosList extends StatelessWidget {
   final VoidCallback onRecargarSucursales;
 
   const ProductosList({
-    Key? key,
+    super.key,
     required this.sucursales,
     required this.sucursalSeleccionada,
     required this.onSucursalSelected,
     required this.onRecargarSucursales,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

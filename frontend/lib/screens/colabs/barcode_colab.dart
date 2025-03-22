@@ -304,7 +304,6 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
                       fontSize: 16,
                       shadows: [
                         Shadow(
-                          color: Colors.black,
                           blurRadius: 4,
                         ),
                       ],

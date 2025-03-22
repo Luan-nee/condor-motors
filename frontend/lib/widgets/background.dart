@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
 
 // Clase para dibujar el fondo
 class BackgroundPainter extends CustomPainter {

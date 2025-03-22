@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../../main.dart' show api;
+import '../../../models/color.model.dart';
 import '../../../models/producto.model.dart';
 import '../../../models/sucursal.model.dart';
-import 'productos_utils.dart';
+import '../utils/productos_utils.dart';
 
 class ProductoDetalleDialog extends StatefulWidget {
   final Producto producto;
@@ -21,7 +23,6 @@ class ProductoDetalleDialog extends StatefulWidget {
   }) async {
     await showDialog(
       context: context,
-      barrierDismissible: true,
       builder: (BuildContext context) {
         return Dialog(
           insetPadding: const EdgeInsets.all(24),
@@ -45,6 +46,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     with TickerProviderStateMixin {
   bool _isLoading = true;
   List<ProductoEnSucursal> _sucursalesCompartidas = [];
+  List<ColorApp> _colores = [];
+  ColorApp? _colorProducto;
   String _error = '';
 
   // Controlador para pestañas
@@ -54,6 +57,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   void initState() {
     super.initState();
     _cargarDetallesProducto();
+    _cargarColores();
 
     // Inicializar controlador de pestañas
     _atributosTabController = TabController(length: 3, vsync: this);
@@ -87,6 +91,36 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         _error = 'No se pudieron cargar los detalles del producto: $e';
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _cargarColores() async {
+
+    try {
+      final colores = await api.colores.getColores();
+
+      if (mounted) {
+        setState(() {
+          _colores = colores;
+
+          // Si el producto tiene color, buscar la coincidencia en la lista
+          if (widget.producto.color != null && widget.producto.color!.isNotEmpty) {
+            try {
+              _colorProducto = _colores.firstWhere(
+                (color) => color.nombre.toLowerCase() == widget.producto.color!.toLowerCase(),
+              );
+            } catch (e) {
+              // No se encontró coincidencia, _colorProducto queda como null
+              _colorProducto = null;
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al cargar colores: $e');
+
+      if (mounted) {
+      }
     }
   }
 
@@ -206,7 +240,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         if (widget.producto.color != null &&
                             widget.producto.color!.isNotEmpty) ...[
                           const SizedBox(width: 8),
-                          _buildTag('Color: ${widget.producto.color}'),
+                          _buildColorTag(widget.producto.color!, _colorProducto),
                         ],
                       ],
                     ),
@@ -305,7 +339,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                           decoration: BoxDecoration(
                             color: const Color(0xFF1A1A1A),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.white10, width: 1),
+                            border: Border.all(color: Colors.white10),
                           ),
                           child: TabBar(
                             controller: _atributosTabController,
@@ -434,7 +468,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -525,7 +559,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   color: Colors.amber.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                      color: Colors.amber.withOpacity(0.3), width: 1),
+                      color: Colors.amber.withOpacity(0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -566,7 +600,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   color: Colors.blue.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(8),
                   border:
-                      Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
+                      Border.all(color: Colors.blue.withOpacity(0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -945,7 +979,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Indicador de estado (barra vertical)
           Container(
@@ -988,7 +1021,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                           borderRadius: BorderRadius.circular(2),
                           border: Border.all(
                             color: Colors.blue,
-                            width: 1,
                           ),
                         ),
                         child: const Text(
@@ -1029,7 +1061,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: indicadorColor.withOpacity(0.3),
-                          width: 1,
                         ),
                       ),
                       child: Row(
@@ -1390,6 +1421,63 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           fontFamily: fontFamily,
           color: Colors.white70,
         ),
+      ),
+    );
+  }
+
+  // Widget para crear una etiqueta de color con muestra visual
+  Widget _buildColorTag(String colorNombre, ColorApp? colorApp) {
+    // Determinar el color a mostrar
+    Color colorVisual = Colors.grey;
+    
+    if (colorApp != null) {
+      // Si tenemos el objeto de color, usar su método toColor()
+      colorVisual = colorApp.toColor();
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Muestra visual del color
+          Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              color: colorVisual,
+              borderRadius: BorderRadius.circular(3),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          // Nombre del color
+          Text(
+            colorNombre,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.white70,
+            ),
+          ),
+          // Código hexadecimal (si está disponible)
+          if (colorApp?.hex != null && colorApp!.hex!.isNotEmpty) ...[
+            const SizedBox(width: 4),
+            Text(
+              colorApp.hex!.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 11,
+                fontFamily: 'monospace',
+                color: Colors.white54,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../models/producto.model.dart';
-import 'stock_utils.dart';
+
 import '../../../main.dart' show api; // Importamos el API global
+import '../../../models/producto.model.dart';
+import '../utils/stock_utils.dart';
 
 /// Diálogo para mostrar los detalles de stock de un producto
 class StockDetallesDialog extends StatefulWidget {
@@ -22,7 +23,6 @@ class StockDetallesDialog extends StatefulWidget {
 }
 
 class _StockDetallesDialogState extends State<StockDetallesDialog> {
-  bool _isLoading = true;
   bool _isUpdating = false;
   String? _error;
   late int _stockActual;
@@ -41,20 +41,13 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
     _stockActual = widget.producto.stock;
     _stockMinimo = widget.producto.stockMinimo ?? 0;
     _stockNuevo = _stockActual;
-    _stockController = TextEditingController(text: "0");
-    _inicializarDatos();
+    _stockController = TextEditingController(text: '0');
   }
 
   @override
   void dispose() {
     _stockController.dispose();
     super.dispose();
-  }
-
-  void _inicializarDatos() {
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   Future<void> _actualizarStock() async {
@@ -89,6 +82,8 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         cantidad: cantidadAAgregar,
       );
 
+      if (!mounted) return;
+
       setState(() {
         _stockActual = _stockNuevo;
         _isUpdating = false;
@@ -101,6 +96,8 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
+      
       setState(() {
         _error = 'Error al actualizar stock: ${e.toString()}';
         _isUpdating = false;
@@ -117,9 +114,6 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final bool stockBajo =
-        StockUtils.tieneStockBajoFromProducto(widget.producto);
-    final bool agotado = StockUtils.sinStockFromProducto(widget.producto);
     final statusColor =
         StockUtils.getStockStatusColor(_stockActual, _stockMinimo);
     final statusIcon =
@@ -564,7 +558,6 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               // Botón para cancelar
               if (_stockNuevo != _stockActual)
                 Expanded(
-                  flex: 1,
                   child: Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: ElevatedButton(

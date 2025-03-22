@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'widgets/stock_list.dart';
-import 'widgets/stock_utils.dart';
-import 'widgets/slide_sucursal.dart';
-import 'widgets/stock_detalles_dialog.dart';
-import 'widgets/stock_detalle_sucursal.dart';
+
+import '../../main.dart' show api; // API global
+import '../../models/paginacion.model.dart';
 import '../../models/producto.model.dart';
 import '../../models/sucursal.model.dart';
-import '../../main.dart' show api; // API global
-import 'widgets/productos_utils.dart';
+import '../../widgets/paginador.dart';
+import 'widgets/slide_sucursal.dart';
+import 'widgets/stock_detalle_sucursal.dart';
+import 'widgets/stock_detalles_dialog.dart';
+import 'widgets/stock_list.dart';
 
 class InventarioAdminScreen extends StatefulWidget {
   const InventarioAdminScreen({super.key});
@@ -23,11 +24,18 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   String _selectedSucursalNombre = '';
   List<Sucursal> _sucursales = [];
   Sucursal? _selectedSucursal;
-  List<Producto>? _productos;
+  PaginatedResponse<Producto>? _paginatedProductos;
+  List<Producto> _productosFiltrados = [];
   bool _isLoadingSucursales = true;
   bool _isLoadingProductos = false;
-  String? _errorSucursales;
   String? _errorProductos;
+  
+  // Parámetros de paginación y filtrado
+  String _searchQuery = '';
+  int _currentPage = 1;
+  int _pageSize = 10;
+  String _sortBy = '';
+  String _order = 'desc';
 
   @override
   void initState() {
@@ -38,7 +46,6 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   Future<void> _cargarSucursales() async {
     setState(() {
       _isLoadingSucursales = true;
-      _errorSucursales = null;
     });
 
     try {
@@ -49,7 +56,6 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       });
     } catch (e) {
       setState(() {
-        _errorSucursales = e.toString();
         _isLoadingSucursales = false;
       });
     }
@@ -58,7 +64,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   Future<void> _cargarProductos(String sucursalId) async {
     if (sucursalId.isEmpty) {
       setState(() {
-        _productos = null;
+        _paginatedProductos = null;
+        _productosFiltrados = [];
       });
       return;
     }
@@ -69,9 +76,21 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     });
 
     try {
-      final productos = await api.productos.getProductos(sucursalId: sucursalId);
+      // Aplicar la búsqueda del servidor sólo si la búsqueda es mayor a 3 caracteres
+      final searchQuery = _searchQuery.length >= 3 ? _searchQuery : null;
+      
+      final paginatedProductos = await api.productos.getProductos(
+        sucursalId: sucursalId,
+        search: searchQuery,
+        page: _currentPage,
+        pageSize: _pageSize,
+        sortBy: _sortBy.isNotEmpty ? _sortBy : null,
+        order: _order,
+      );
+      
       setState(() {
-        _productos = productos;
+        _paginatedProductos = paginatedProductos;
+        _productosFiltrados = paginatedProductos.items;
         _isLoadingProductos = false;
       });
     } catch (e) {
@@ -82,11 +101,48 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     }
   }
 
+  // Método para cambiar de página
+  void _cambiarPagina(int pagina) {
+    if (_currentPage != pagina) {
+      setState(() {
+        _currentPage = pagina;
+      });
+      _cargarProductos(_selectedSucursalId);
+    }
+  }
+
+  // Método para cambiar tamaño de página
+  void _cambiarTamanioPagina(int tamanio) {
+    if (_pageSize != tamanio) {
+      setState(() {
+        _pageSize = tamanio;
+        _currentPage = 1; // Volvemos a la primera página al cambiar el tamaño
+      });
+      _cargarProductos(_selectedSucursalId);
+    }
+  }
+
+  // Método para ordenar por un campo
+  void _ordenarPor(String campo) {
+    setState(() {
+      if (_sortBy == campo) {
+        // Si ya estamos ordenando por este campo, cambiamos la dirección
+        _order = _order == 'asc' ? 'desc' : 'asc';
+      } else {
+        _sortBy = campo;
+        _order = 'desc'; // Por defecto ordenamos descendente
+      }
+      _currentPage = 1; // Volvemos a la primera página al cambiar el orden
+    });
+    _cargarProductos(_selectedSucursalId);
+  }
+
   void _onSucursalSeleccionada(Sucursal sucursal) {
     setState(() {
       _selectedSucursalId = sucursal.id;
       _selectedSucursalNombre = sucursal.nombre;
       _selectedSucursal = sucursal;
+      _currentPage = 1; // Volver a la primera página al cambiar de sucursal
     });
     _cargarProductos(sucursal.id);
   }
@@ -106,7 +162,6 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   }
 
   void _editarProducto(Producto producto) {
-    // TODO: Implementar edición de producto
     debugPrint('Editar producto: ${producto.nombre}');
   }
   
@@ -189,10 +244,43 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                         ),
                       ),
                       
+                      // Barra de búsqueda
+                      if (_selectedSucursalId.isNotEmpty)
+                        SizedBox(
+                          width: 300,
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: 'Buscar productos...',
+                              hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+                              prefixIcon: const Icon(Icons.search, color: Colors.white38),
+                              filled: true,
+                              fillColor: const Color(0xFF232323),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(),
+                            ),
+                            style: const TextStyle(color: Colors.white),
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value;
+                                
+                                // Si la búsqueda es mayor a 3 caracteres o está vacía, hacer solicitud al servidor
+                                if (value.length >= 3 || value.isEmpty) {
+                                  _currentPage = 1; // Reiniciar a la primera página
+                                  _cargarProductos(_selectedSucursalId);
+                                }
+                              });
+                            },
+                          ),
+                        ),
+                      
+                      const SizedBox(width: 16),
+                      
                       // Botón de agregar producto
                       ElevatedButton.icon(
-                        onPressed: () {
-                          // TODO: Implementar agregar producto
+                        onPressed: _selectedSucursalId.isEmpty ? null : () {
                         },
                         icon: const FaIcon(
                           FontAwesomeIcons.plus,
@@ -206,16 +294,18 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                             horizontal: 16,
                             vertical: 12,
                           ),
+                          disabledBackgroundColor: const Color(0xFF3D3D3D),
+                          disabledForegroundColor: Colors.white38,
                         ),
                       ),
                     ],
                   ),
                   
                   // Resumen del inventario (si hay sucursal seleccionada)
-                  if (_selectedSucursalId.isNotEmpty && _productos != null) ...[
+                  if (_selectedSucursalId.isNotEmpty && _productosFiltrados.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     InventarioResumen(
-                      productos: _productos!,
+                      productos: _productosFiltrados,
                       sucursalNombre: _selectedSucursalNombre,
                     ),
                   ],
@@ -223,17 +313,67 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                   // Tabla de productos
                   const SizedBox(height: 16),
                   Expanded(
-                    child: TableProducts(
-                      selectedSucursalId: _selectedSucursalId,
-                      productos: _productos,
-                      isLoading: _isLoadingProductos,
-                      error: _errorProductos,
-                      onRetry: _selectedSucursalId.isNotEmpty
-                          ? () => _cargarProductos(_selectedSucursalId)
-                          : null,
-                      onEditProducto: _editarProducto,
-                      onVerDetalles: _verDetallesProducto,
-                      onVerStockDetalles: _verStockDetalles,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: TableProducts(
+                            selectedSucursalId: _selectedSucursalId,
+                            productos: _productosFiltrados,
+                            isLoading: _isLoadingProductos,
+                            error: _errorProductos,
+                            onRetry: _selectedSucursalId.isNotEmpty
+                                ? () => _cargarProductos(_selectedSucursalId)
+                                : null,
+                            onEditProducto: _editarProducto,
+                            onVerDetalles: _verDetallesProducto,
+                            onVerStockDetalles: _verStockDetalles,
+                            onSort: _ordenarPor,
+                            sortBy: _sortBy,
+                            sortOrder: _order,
+                          ),
+                        ),
+                        
+                        // Paginador
+                        if (_paginatedProductos != null && _paginatedProductos!.paginacion.totalPages > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Info de cantidad
+                                Text(
+                                  'Mostrando ${_productosFiltrados.length} de ${_paginatedProductos!.paginacion.totalItems} productos',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                
+                                // Paginador
+                                Paginador(
+                                  paginacion: _paginatedProductos!.paginacion,
+                                  onPageChanged: _cambiarPagina,
+                                ),
+                                
+                                // Selector de tamaño de página
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Mostrar:',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.7),
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildPageSizeDropdown(),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -254,6 +394,43 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPageSizeDropdown() {
+    final options = [10, 20, 50, 100];
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2D2D2D),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: _pageSize,
+          items: options.map((size) {
+            return DropdownMenuItem<int>(
+              value: size,
+              child: Text(
+                size.toString(),
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value != null) {
+              _cambiarTamanioPagina(value);
+            }
+          },
+          icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+          style: const TextStyle(color: Colors.white),
+          dropdownColor: const Color(0xFF2D2D2D),
         ),
       ),
     );

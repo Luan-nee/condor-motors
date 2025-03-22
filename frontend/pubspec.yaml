@@ -47,8 +47,8 @@ flutter_icons:
 # Configuración para el instalador MSIX de Windows
 msix_config:
   display_name: Condor Motors
-  publisher_display_name: Tu Empresa
-  identity_name: com.tuempresa.condorsmotors
+  publisher_display_name: Condor Motors
+  identity_name: com.condorsmotors.condorsmotors
   msix_version: 1.0.0.0
   logo_path: assets/images/condor-motors-logo.webp
   capabilities: internetClient

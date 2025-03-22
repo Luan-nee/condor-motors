@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
 import '../../main.dart' show api;
+import '../../models/paginacion.model.dart';
 import '../../models/producto.model.dart';
 import '../../models/sucursal.model.dart';
 import '../../widgets/dialogs/confirm_dialog.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../widgets/paginador.dart';
+import 'utils/productos_utils.dart';
+import 'widgets/producto_detalle_dialog.dart';
 import 'widgets/productos_form.dart';
 import 'widgets/productos_table.dart';
-import 'widgets/productos_utils.dart';
 import 'widgets/slide_sucursal.dart';
-import 'widgets/producto_detalle_dialog.dart';
 
 class ProductosAdminScreen extends StatefulWidget {
   const ProductosAdminScreen({super.key});
@@ -21,14 +24,19 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   bool _isLoadingSucursales = false;
   bool _isLoadingProductos = false;
   bool _isLoadingCategorias = false;
-  List<Producto> _productos = [];
+  PaginatedResponse<Producto>? _paginatedProductos;
   List<Producto> _productosFiltrados = [];
   List<Sucursal> _sucursales = [];
-  List<String> _categorias = [];
   Sucursal? _sucursalSeleccionada;
   
+  // Parámetros de paginación y filtrado
   String _searchQuery = '';
   String _selectedCategory = 'Todos';
+  int _currentPage = 1;
+  int _pageSize = 10;
+  String _sortBy = '';
+  String _order = 'desc';
+  
   bool _drawerOpen = true;
   
   // Controlador para la tabla de productos (permite refrescar sin reconstruir toda la pantalla)
@@ -51,9 +59,16 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   }
 
   void _filtrarProductos() {
+    if (_paginatedProductos == null) {
+      setState(() {
+        _productosFiltrados = [];
+      });
+      return;
+    }
+    
     setState(() {
       _productosFiltrados = ProductosUtils.filtrarProductos(
-        productos: _productos,
+        productos: _paginatedProductos!.items,
         searchQuery: _searchQuery,
         selectedCategory: _selectedCategory,
       );
@@ -68,7 +83,6 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       
       if (mounted) {
         setState(() {
-          _categorias = categorias;
           // Actualizar la lista de categorías para el filtro, manteniendo 'Todos' al inicio
           _categories.clear();
           _categories.add('Todos');
@@ -118,15 +132,32 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     setState(() => _isLoadingProductos = true);
     try {
       final sucursalId = _sucursalSeleccionada!.id.toString();
-      final productos = await api.productos.getProductos(
+      
+      // Aplicar la búsqueda del servidor sólo si la búsqueda es mayor a 3 caracteres
+      final searchQuery = _searchQuery.length >= 3 ? _searchQuery : null;
+      
+      final paginatedProductos = await api.productos.getProductos(
         sucursalId: sucursalId,
+        search: searchQuery,
+        page: _currentPage,
+        pageSize: _pageSize,
+        sortBy: _sortBy.isNotEmpty ? _sortBy : null,
+        order: _order,
+        // TODO: Implementar filtros adicionales si se necesitan
       );
       
       if (!mounted) return;
       setState(() {
-        _productos = productos;
-        _filtrarProductos();
+        _paginatedProductos = paginatedProductos;
+        _productosFiltrados = paginatedProductos.items;
+        
+        // Si hay una búsqueda local (menos de 3 caracteres) o filtro por categoría, se aplica
+        if (_searchQuery.isNotEmpty && _searchQuery.length < 3 || _selectedCategory != 'Todos') {
+          _filtrarProductos();
+        }
+        
         _isLoadingProductos = false;
+        
         // Actualizar la key para forzar el redibujado solo de la tabla
         _productosKey.value = 'productos_${_sucursalSeleccionada!.id}_${DateTime.now().millisecondsSinceEpoch}';
       });
@@ -140,6 +171,42 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       );
       setState(() => _isLoadingProductos = false);
     }
+  }
+
+  // Método para cambiar de página
+  void _cambiarPagina(int pagina) {
+    if (_currentPage != pagina) {
+      setState(() {
+        _currentPage = pagina;
+      });
+      _cargarProductos();
+    }
+  }
+
+  // Método para cambiar tamaño de página
+  void _cambiarTamanioPagina(int tamanio) {
+    if (_pageSize != tamanio) {
+      setState(() {
+        _pageSize = tamanio;
+        _currentPage = 1; // Volvemos a la primera página al cambiar el tamaño
+      });
+      _cargarProductos();
+    }
+  }
+
+  // Método para ordenar por un campo
+  void _ordenarPor(String campo) {
+    setState(() {
+      if (_sortBy == campo) {
+        // Si ya estamos ordenando por este campo, cambiamos la dirección
+        _order = _order == 'asc' ? 'desc' : 'asc';
+      } else {
+        _sortBy = campo;
+        _order = 'desc'; // Por defecto ordenamos descendente
+      }
+      _currentPage = 1; // Volvemos a la primera página al cambiar el orden
+    });
+    _cargarProductos();
   }
 
   Future<void> _guardarProducto(Map<String, dynamic> productoData, bool esNuevo) async {
@@ -254,6 +321,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     if (_sucursalSeleccionada?.id != sucursal.id) {
       setState(() {
         _sucursalSeleccionada = sucursal;
+        _currentPage = 1; // Volver a la primera página al cambiar de sucursal
       });
       _cargarProductos();
     }
@@ -339,18 +407,69 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                   ],
                                 ),
                               )
-                            : ValueListenableBuilder<String>(
-                                valueListenable: _productosKey,
-                                builder: (context, key, child) {
-                                  return ProductosTable(
-                                    key: ValueKey<String>(key),
-                                    productos: _productosFiltrados,
-                                    sucursales: _sucursales,
-                                    onEdit: _showProductDialog,
-                                    onDelete: _eliminarProducto,
-                                    onViewDetails: _showProductoDetalleDialog,
-                                  );
-                                },
+                            : Column(
+                                children: [
+                                  // Tabla de productos
+                                  Expanded(
+                                    child: ValueListenableBuilder<String>(
+                                      valueListenable: _productosKey,
+                                      builder: (context, key, child) {
+                                        return ProductosTable(
+                                          key: ValueKey<String>(key),
+                                          productos: _productosFiltrados,
+                                          sucursales: _sucursales,
+                                          onEdit: _showProductDialog,
+                                          onDelete: _eliminarProducto,
+                                          onViewDetails: _showProductoDetalleDialog,
+                                          onSort: _ordenarPor,
+                                          sortBy: _sortBy,
+                                          sortOrder: _order,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  
+                                  // Paginador
+                                  if (_paginatedProductos != null && _paginatedProductos!.paginacion.totalPages > 0)
+                                    Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          // Info de cantidad
+                                          Text(
+                                            'Mostrando ${_productosFiltrados.length} de ${_paginatedProductos!.paginacion.totalItems} productos',
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacity(0.7),
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          
+                                          // Paginador
+                                          Paginador(
+                                            paginacion: _paginatedProductos!.paginacion,
+                                            onPageChanged: _cambiarPagina,
+                                          ),
+                                          
+                                          // Selector de tamaño de página
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                'Mostrar:',
+                                                style: TextStyle(
+                                                  color: Colors.white.withOpacity(0.7),
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              _buildPageSizeDropdown(),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
                               ),
                   ),
                 ),
@@ -388,6 +507,43 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                 : null,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPageSizeDropdown() {
+    final options = [10, 20, 50, 100];
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2D2D2D),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: _pageSize,
+          items: options.map((size) {
+            return DropdownMenuItem<int>(
+              value: size,
+              child: Text(
+                size.toString(),
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value != null) {
+              _cambiarTamanioPagina(value);
+            }
+          },
+          icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+          style: const TextStyle(color: Colors.white),
+          dropdownColor: const Color(0xFF2D2D2D),
+        ),
       ),
     );
   }
@@ -542,7 +698,15 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value;
-                    _filtrarProductos();
+                    
+                    // Si la búsqueda es mayor a 3 caracteres, hacemos una nueva solicitud al servidor
+                    if (value.length >= 3 || value.isEmpty) {
+                      _currentPage = 1; // Reiniciar a la primera página
+                      _cargarProductos();
+                    } else {
+                      // Para búsquedas cortas, filtramos localmente
+                      _filtrarProductos();
+                    }
                   });
                 },
               ),

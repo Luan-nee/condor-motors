@@ -1,5 +1,6 @@
-import '../main.api.dart';
 import 'package:flutter/foundation.dart';
+
+import '../main.api.dart';
 
 /// Modelo para las marcas
 class Marca {

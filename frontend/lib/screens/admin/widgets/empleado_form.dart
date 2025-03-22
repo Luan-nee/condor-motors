@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../models/empleado.model.dart';
-import 'empleados_utils.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+import '../../../models/empleado.model.dart';
+import '../utils/empleados_utils.dart';
 
 class EmpleadoForm extends StatefulWidget {
   final Empleado? empleado;
@@ -170,8 +171,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   
   @override
   Widget build(BuildContext context) {
-    final isSaving = _isLoading && (_errorCargaInfo == null);
-    
     return Dialog(
       backgroundColor: const Color(0xFF1A1A1A),
       shape: RoundedRectangleBorder(
@@ -514,7 +513,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                       color: _isEmpleadoActivo
                         ? const Color(0xFF4CAF50).withOpacity(0.5)
                         : const Color(0xFFE31E24).withOpacity(0.5),
-                      width: 1,
                     ),
                   ),
                   child: Row(
@@ -1054,34 +1052,42 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       // Usar la función de utilidad para gestionar la cuenta
       final cuentaActualizada = await EmpleadosUtils.gestionarCuenta(context, widget.empleado!);
       
+      // Verificar primero si el widget sigue montado antes de usar setState
+      if (!mounted) return;
+      
+      // Verificar ahora si el contexto sigue montado antes de usarlo
+      if (!context.mounted) return;
+      
       if (cuentaActualizada) {
-        if (mounted) {
-          EmpleadosUtils.mostrarMensaje(
-            context,
-            mensaje: 'Cuenta actualizada correctamente'
-          );
-          
-          // Recargar información de cuenta
-          _cargarInformacionCuenta();
-          
-          // Resetear estado
-          setState(() {
-            _cuentaNoEncontrada = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        
-        // Simplificado: mostrar siempre un mensaje de error genérico
-        String errorMsg = e.toString().replaceAll('Exception: ', '');
         EmpleadosUtils.mostrarMensaje(
           context,
-          mensaje: 'Error al gestionar cuenta: $errorMsg',
-          esError: true
+          mensaje: 'Cuenta actualizada correctamente'
         );
+        
+        // Recargar información de cuenta
+        _cargarInformacionCuenta();
+        
+        // Resetear estado
+        setState(() {
+          _cuentaNoEncontrada = false;
+        });
       }
+    } catch (e) {
+      // Verificar primero si el widget sigue montado antes de usar setState
+      if (!mounted) return;
+      
+      setState(() => _isLoading = false);
+      
+      // Verificar ahora si el contexto sigue montado antes de usarlo
+      if (!context.mounted) return;
+      
+      // Simplificado: mostrar siempre un mensaje de error genérico
+      final String errorMsg = e.toString().replaceAll('Exception: ', '');
+      EmpleadosUtils.mostrarMensaje(
+        context,
+        mensaje: 'Error al gestionar cuenta: $errorMsg',
+        esError: true
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

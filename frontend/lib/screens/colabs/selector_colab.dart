@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../routes/routes.dart';
-import '../../main.dart' show api;
 
-import 'productos_colab.dart';
-import 'ventas_colab.dart';
+import '../../main.dart' show api;
+import '../../utils/role_utils.dart' as role_utils;
 import 'historial_ventas_colab.dart';
 import 'movimiento_colab.dart';
+import 'productos_colab.dart';
+import 'ventas_colab.dart';
 
 class SelectorColabScreen extends StatelessWidget {
   final Map<String, dynamic>? empleadoData;
@@ -103,7 +103,6 @@ class SelectorColabScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: Colors.red.withOpacity(0.3),
-                            width: 1,
                           ),
                         ),
                         child: Row(
@@ -242,7 +241,7 @@ class SelectorColabScreen extends StatelessWidget {
       if (context.mounted) {
         Navigator.pushNamedAndRemoveUntil(
           context, 
-          Routes.login, 
+          role_utils.login, 
           (route) => false
         );
       }

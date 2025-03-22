@@ -1,10 +1,10 @@
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
-import 'main.api.dart';
-import '../services/token_service.dart';
-import '../utils/role_utils.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:math' as math;
+import '../services/token_service.dart';
+import '../utils/role_utils.dart' as role_utils;
+import 'main.api.dart';
 
 // Clase para representar los datos del usuario autenticado
 class UsuarioAutenticado {
@@ -35,7 +35,7 @@ class UsuarioAutenticado {
   // Convertir a Map para almacenamiento o navegación
   Map<String, dynamic> toMap() {
     // Convertir el código de rol a un formato reconocido por la aplicación
-    String rolNormalizado = RoleUtils.normalizeRole(rolCuentaEmpleadoCodigo);
+    final String rolNormalizado = role_utils.normalizeRole(rolCuentaEmpleadoCodigo);
     
     debugPrint('Convirtiendo rol de "$rolCuentaEmpleadoCodigo" a "$rolNormalizado" para toMap');
     
@@ -430,7 +430,7 @@ class AuthService {
       
       if (userId != null && username != null && userRole != null && token != null) {
         // Normalizar el rol para que coincida con los roles de la aplicación
-        String rolNormalizado = RoleUtils.normalizeRole(userRole);
+        final String rolNormalizado = role_utils.normalizeRole(userRole);
         
         debugPrint('Rol normalizado de "$userRole" a "$rolNormalizado" en getUserData');
         

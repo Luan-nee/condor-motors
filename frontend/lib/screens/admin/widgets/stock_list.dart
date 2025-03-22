@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'stock_utils.dart';
-import 'stock_detalle_sucursal.dart';
-import '../../../api/protected/stocks.api.dart';
-import '../../../api/protected/productos.api.dart';
+
 import '../../../models/producto.model.dart';
-import '../../../models/sucursal.model.dart';
-import 'productos_utils.dart';
+import '../utils/productos_utils.dart';
+import '../utils/stock_utils.dart';
+import 'stock_detalle_sucursal.dart';
 
 class TableProducts extends StatelessWidget {
   final String selectedSucursalId;
@@ -17,6 +15,9 @@ class TableProducts extends StatelessWidget {
   final Function(Producto)? onEditProducto;
   final Function(Producto)? onVerDetalles;
   final Function(Producto)? onVerStockDetalles;
+  final Function(String)? onSort;
+  final String? sortBy;
+  final String? sortOrder;
   
   const TableProducts({
     super.key, 
@@ -28,6 +29,9 @@ class TableProducts extends StatelessWidget {
     this.onEditProducto,
     this.onVerDetalles,
     this.onVerStockDetalles,
+    this.onSort,
+    this.sortBy,
+    this.sortOrder,
   });
 
   final List<String> _columnHeaders = const [
@@ -228,9 +232,6 @@ class TableProducts extends StatelessWidget {
                 final stockActual = producto.stock;
                 final stockMinimo = producto.stockMinimo ?? 0;
                 
-                final bool stockBajo = StockUtils.tieneStockBajoFromProducto(producto);
-                final bool agotado = StockUtils.sinStockFromProducto(producto);
-                
                 // Determinar color e icono según el estado
                 final statusColor = StockUtils.getStockStatusColor(stockActual, stockMinimo);
                 final statusIcon = StockUtils.getStockStatusIcon(stockActual, stockMinimo);
@@ -241,7 +242,6 @@ class TableProducts extends StatelessWidget {
                     border: Border(
                       bottom: BorderSide(
                         color: Colors.white.withOpacity(0.1),
-                        width: 1,
                       ),
                     ),
                   ),

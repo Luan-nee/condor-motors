@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+import '../../api/main.api.dart' show ApiException;
 import '../../api/protected/marcas.api.dart';
 import '../../main.dart' show api;
-import '../../api/main.api.dart' show ApiException;
 
 class MarcasAdminScreen extends StatefulWidget {
   const MarcasAdminScreen({super.key});
@@ -69,7 +70,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
             backgroundColor: Colors.red,
           ),
         );
-        Navigator.of(context).pushReplacementNamed('/login');
+        await Navigator.of(context).pushReplacementNamed('/login');
       }
     }
   }
@@ -101,7 +102,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      _cargarMarcas(); // Recargar la lista
+      await _cargarMarcas(); // Recargar la lista
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -130,7 +131,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      _cargarMarcas(); // Recargar la lista
+      await _cargarMarcas(); // Recargar la lista
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -474,7 +475,6 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                             border: Border(
                                               bottom: BorderSide(
                                                 color: Colors.white.withOpacity(0.1),
-                                                width: 1,
                                               ),
                                             ),
                                           ),

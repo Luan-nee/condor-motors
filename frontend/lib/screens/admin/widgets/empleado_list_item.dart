@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../models/empleado.model.dart';
+
 import '../../../main.dart' show api;
-import 'empleados_utils.dart';
+import '../../../models/empleado.model.dart';
+import '../utils/empleados_utils.dart';
 
 class EmpleadoListItem extends StatefulWidget {
   final Empleado empleado;
@@ -98,7 +99,6 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
               color: esInactivo 
                 ? Colors.grey.withOpacity(0.2)
                 : Colors.white.withOpacity(0.1),
-              width: 1,
             ),
           ),
         ),
@@ -120,7 +120,6 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                         borderRadius: BorderRadius.circular(8),
                         border: esInactivo ? Border.all(
                           color: Colors.grey.withOpacity(0.4),
-                          width: 1,
                         ) : null,
                       ),
                       child: Center(
@@ -403,7 +402,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
     // Primero intentar usar el nombre de sucursal que viene directamente del empleado
     if (widget.empleado.sucursalNombre != null) {
       if (widget.empleado.sucursalCentral) {
-        return "${widget.empleado.sucursalNombre!} (Central)";
+        return '${widget.empleado.sucursalNombre!} (Central)';
       }
       return widget.empleado.sucursalNombre!;
     }

@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../routes/routes.dart';
-import 'dashboard_admin.dart';
-import 'ventas_admin.dart';
-import 'inventario_admin.dart';
+
+import '../../utils/role_utils.dart' as role_utils;
 import 'categorias_admin.dart';
-import 'movimientos_admin.dart';
-import 'marcas_admin.dart';
 import 'colaboradores_admin.dart';
-import 'settings_admin.dart';
+import 'dashboard_admin.dart';
+import 'inventario_admin.dart';
+import 'marcas_admin.dart';
+import 'movimientos_admin.dart';
 import 'productos_admin.dart';
+import 'settings_admin.dart';
 import 'sucursal_admin.dart';
+import 'ventas_admin.dart';
 
 class SlidesAdminScreen extends StatefulWidget {
   const SlidesAdminScreen({super.key});
@@ -38,7 +39,6 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
               border: Border(
                 right: BorderSide(
                   color: Colors.white.withOpacity(0.1),
-                  width: 1,
                 ),
               ),
               boxShadow: [
@@ -180,7 +180,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: TextButton.icon(
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, Routes.login);
+                      Navigator.pushReplacementNamed(context, role_utils.login);
                     },
                     icon: const FaIcon(
                       FontAwesomeIcons.rightFromBracket,

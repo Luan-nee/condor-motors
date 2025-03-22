@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+import '../../../main.dart' show api;
+import '../../../models/color.model.dart';
 import '../../../models/producto.model.dart';
 import '../../../models/sucursal.model.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'productos_utils.dart';
+import '../utils/productos_utils.dart';
 
 class ProductosFormDialogAdmin extends StatefulWidget {
   final Producto? producto;
@@ -40,14 +43,17 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
   String _categoriaSeleccionada = '';
   Sucursal? _sucursalSeleccionada;
+  ColorApp? _colorSeleccionado;
   bool _isLoadingCategorias = false;
   bool _isLoadingMarcas = false;
+  bool _isLoadingColores = false;
   bool _isLoadingSucursalesCompartidas = false;
   List<ProductoEnSucursal> _sucursalesCompartidas = [];
 
-  // Listas para categorías y marcas
+  // Listas para categorías, marcas y colores
   List<String> _categorias = [];
   List<String> _marcas = [];
+  List<ColorApp> _colores = [];
 
   @override
   void initState() {
@@ -84,9 +90,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     _sucursalSeleccionada = widget.sucursalSeleccionada ??
         (widget.sucursales.isNotEmpty ? widget.sucursales.first : null);
 
-    // Cargar categorías y marcas
+    // Cargar categorías, marcas y colores
     _cargarCategorias();
     _cargarMarcas();
+    _cargarColores();
 
     // Si estamos editando un producto existente, cargar la disponibilidad en otras sucursales
     if (producto != null) {
@@ -151,6 +158,44 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
       if (mounted) {
         setState(() => _isLoadingMarcas = false);
+      }
+    }
+  }
+
+  // Método para cargar los colores desde la API
+  Future<void> _cargarColores() async {
+    setState(() => _isLoadingColores = true);
+
+    try {
+      final colores = await api.colores.getColores();
+
+      if (mounted) {
+        setState(() {
+          _colores = colores;
+          _isLoadingColores = false;
+
+          // Si estamos editando un producto con color, seleccionarlo
+          if (widget.producto?.color != null && widget.producto!.color!.isNotEmpty) {
+            // Buscar el color por nombre
+            try {
+              _colorSeleccionado = _colores.firstWhere(
+                (color) => color.nombre.toLowerCase() == widget.producto!.color!.toLowerCase(),
+              );
+            } catch (e) {
+              // Si no encuentra coincidencia, usar el primer color disponible
+              _colorSeleccionado = _colores.isNotEmpty ? _colores.first : null;
+            }
+          } else if (_colores.isNotEmpty) {
+            // Seleccionar el primer color por defecto
+            _colorSeleccionado = _colores.first;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al cargar colores: $e');
+
+      if (mounted) {
+        setState(() => _isLoadingColores = false);
       }
     }
   }
@@ -561,8 +606,6 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       ),
                     ),
                     child: Row(
-                      mainAxisSize: MainAxisSize
-                          .max, // Asegurar que use todo el ancho disponible
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
@@ -725,11 +768,103 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   ),
                 ),
         const SizedBox(height: 16),
-        TextFormField(
-          controller: _colorController,
-          decoration: _getInputDecoration('Color (opcional)'),
-          style: const TextStyle(color: Colors.white),
-        ),
+        // Dropdown de Color (reemplazando el campo de texto)
+        if (_isLoadingColores)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: CircularProgressIndicator(
+                color: Color(0xFFE31E24),
+                strokeWidth: 3,
+              ),
+            ),
+          )
+        else if (_colores.isNotEmpty)
+          DropdownButtonFormField<ColorApp>(
+            value: _colorSeleccionado,
+            decoration: _getInputDecoration('Color'),
+            dropdownColor: const Color(0xFF2D2D2D),
+            style: const TextStyle(color: Colors.white),
+            isExpanded: true,
+            items: _colores.map((color) {
+              return DropdownMenuItem(
+                value: color,
+                child: Row(
+                  children: [
+                    // Muestra una vista previa del color
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: color.toColor(),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Nombre del color
+                    Expanded(
+                      child: Text(
+                        color.nombre,
+                        style: const TextStyle(color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+            onChanged: (ColorApp? value) {
+              setState(() {
+                _colorSeleccionado = value;
+                if (value != null) {
+                  _colorController.text = value.nombre;
+                } else {
+                  _colorController.text = '';
+                }
+              });
+            },
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Colors.orange.withOpacity(0.5),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.warning_amber_outlined,
+                  color: Colors.orange,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'No se pudieron cargar los colores. Se usará el valor manual.',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _cargarColores,
+                  child: const Text(
+                    'Reintentar',
+                    style: TextStyle(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -845,7 +980,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                                 s.disponible && s.producto.tieneStockBajo())
                             .length
                             .toString(),
-                        FontAwesomeIcons.exclamationTriangle,
+                        FontAwesomeIcons.triangleExclamation,
                         const Color(0xFFE31E24),
                       ),
                       _buildCounter(
@@ -918,7 +1053,6 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
   Widget _buildSucursalItem(ProductoEnSucursal item) {
     final bool isCurrentBranch = _sucursalSeleccionada?.id == item.sucursal.id;
-    final bool isAvailable = item.disponible && item.producto.stock > 0;
     final bool isLowStock = item.disponible && item.producto.tieneStockBajo();
 
     Color statusColor = Colors.green;
@@ -936,9 +1070,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     } else if (isLowStock) {
       statusColor = const Color(0xFFE31E24);
       statusText = 'Stock bajo';
-      statusIcon = FontAwesomeIcons.exclamationTriangle;
+      statusIcon = FontAwesomeIcons.triangleExclamation;
     }
 
+    // Versión compacta del tile
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -966,7 +1101,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           ),
         ),
         subtitle: Text(
-          item.sucursal.direccion ?? 'Sin dirección',
+          item.sucursal.direccion,
           style: TextStyle(
             color: Colors.white.withOpacity(0.5),
             fontSize: 12,
@@ -1021,7 +1156,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   const SizedBox(height: 8),
                   _buildProductInfoRow(
                       'Stock mínimo',
-                      '${item.producto.stockMinimo ?? 0} unidades',
+                      '${item.producto.stockMinimo} unidades',
                       FontAwesomeIcons.arrowDown),
                   const SizedBox(height: 8),
                   _buildProductInfoRow(
@@ -1038,7 +1173,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     _buildProductInfoRow(
                         'Precio de liquidación',
                         item.producto.getPrecioOfertaFormateado() ?? '',
-                        FontAwesomeIcons.percentage),
+                        FontAwesomeIcons.percent),
                   ],
                 ],
               ),
@@ -1130,7 +1265,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         'precioVenta': double.parse(_precioVentaController.text),
         'precioCompra': double.parse(_precioCompraController.text),
         'stock': int.parse(_stockController.text),
-        if (_colorController.text.isNotEmpty) 'color': _colorController.text,
+        'color': _colorSeleccionado?.nombre ?? _colorController.text,
         if (_precioOfertaController.text.isNotEmpty)
           'precioOferta': double.parse(_precioOfertaController.text),
         if (_stockMinimoController.text.isNotEmpty)

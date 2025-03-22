@@ -392,7 +392,6 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
                                           borderRadius: BorderRadius.circular(8),
                                           border: Border.all(
                                             color: const Color(0xFF4CAF50),
-                                            width: 1,
                                           ),
                                         ),
                                         child: Row(

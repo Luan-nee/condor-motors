@@ -1,6 +1,7 @@
-import '../main.api.dart';
 import 'package:flutter/foundation.dart';
+
 import '../../models/sucursal.model.dart';
+import '../main.api.dart';
 
 class SucursalesApi {
   final ApiClient _api;

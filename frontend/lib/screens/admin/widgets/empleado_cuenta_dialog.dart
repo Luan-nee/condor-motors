@@ -155,7 +155,6 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
             usuario: updateData['usuario'],
             // Si hay una clave nueva, se enviará para actualización
             clave: _claveController.text.isNotEmpty ? _claveController.text : null,
-            rolCuentaEmpleadoId: null, // No modificamos el rol en la actualización
           );
           
           if (!mounted) return;

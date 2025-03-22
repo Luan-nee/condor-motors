@@ -1,5 +1,6 @@
-import '../main.api.dart';
 import 'package:flutter/foundation.dart';
+
+import '../main.api.dart';
 
 /// Modelo para los detalles de una proforma de venta
 class DetalleProforma {

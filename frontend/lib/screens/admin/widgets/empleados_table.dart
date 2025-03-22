@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../../../models/empleado.model.dart';
+import '../utils/empleados_utils.dart';
 import 'empleado_list_item.dart';
-import 'empleados_utils.dart';
 
 class EmpleadosTable extends StatefulWidget {
   final List<Empleado> empleados;

@@ -1,8 +1,10 @@
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
-import 'package:http/http.dart' as http;
+
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+
 import '../services/token_service.dart';
 
 class ApiException implements Exception {
@@ -63,8 +65,6 @@ class ApiException implements Exception {
 
 // Constantes para tiempos de espera y reintentos
 const int _defaultTimeoutSeconds = 15;
-const int _maxRetries = 3;
-const Duration _retryDelay = Duration(seconds: 2);
 
 class ApiClient {
   final String baseUrl;
@@ -144,106 +144,6 @@ class ApiClient {
     }
   }
   
-  /// Método para renovar el token usando el refresh token
-  Future<void> _refreshToken() async {
-    debugPrint('ApiClient: Intentando renovar token usando refresh token');
-    
-    // Verificar que existe un refresh token
-    final refreshToken = _tokenService.refreshToken;
-    if (refreshToken == null || refreshToken.isEmpty) {
-      debugPrint('ApiClient: No hay refresh token disponible para renovar');
-      await _tokenService.clearTokens();
-      throw ApiException(
-        statusCode: 401,
-        message: 'No se pudo renovar el token: refresh token no disponible',
-        errorCode: ApiException.errorUnauthorized,
-      );
-    }
-
-    try {
-      // Asegurar que el cliente tenga el refresh token establecido
-      (_httpClient).setRefreshToken(refreshToken);
-          
-      debugPrint('ApiClient: Enviando solicitud de renovación de token con refresh token');
-      
-      // Hacer la solicitud de renovación
-      final fullUrl = '$baseUrl/auth/refresh';
-      
-      final request = http.Request('POST', Uri.parse(fullUrl));
-      request.headers['Content-Type'] = 'application/json';
-      request.headers['Accept'] = 'application/json';
-      
-      // La cookie de refresh token se envía automáticamente gracias a PersistentCookieClient
-      
-      final streamedResponse = await _httpClient.send(request);
-      final response = await http.Response.fromStream(streamedResponse);
-      
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        debugPrint('ApiClient: Respuesta exitosa al renovar token: ${response.statusCode}');
-        
-        try {
-          // Intentar decodificar el cuerpo de la respuesta
-          final responseJson = json.decode(response.body);
-          
-          // Procesar tokens de la respuesta
-          await _processTokenFromResponse(response, responseJson);
-          
-          // Verificar que tenemos un nuevo access token
-          if (_tokenService.accessToken == null) {
-            throw Exception('No se encontró token de acceso en la respuesta');
-          }
-          
-          debugPrint('ApiClient: Token renovado exitosamente: ${_tokenService.accessToken!.substring(0, math.min(20, _tokenService.accessToken!.length))}...');
-          return;
-        } catch (e) {
-          // Error al procesar la respuesta
-          debugPrint('ApiClient: Error al procesar respuesta de renovación: $e');
-          throw ApiException(
-            statusCode: 500,
-            message: 'Error al procesar la respuesta de renovación: $e',
-            errorCode: ApiException.errorUnknown,
-          );
-        }
-      } else {
-        // Error de la API al renovar
-        debugPrint('ApiClient: Error del servidor al renovar token: ${response.statusCode}');
-        debugPrint('ApiClient: Cuerpo de la respuesta: ${response.body}');
-        
-        // Limpiar tokens ya que el refresh token no es válido
-        await _tokenService.clearTokens();
-        
-        throw ApiException.fromStatusCode(
-          response.statusCode,
-          'Error al renovar token: ${_getErrorMessage(response)}',
-        );
-      }
-    } catch (e) {
-      // Si no es ya una ApiException, convertirla
-      if (e is! ApiException) {
-        debugPrint('ApiClient: Error inesperado al renovar token: $e');
-        throw ApiException(
-          statusCode: 0,
-          message: 'Error inesperado al renovar token: $e',
-          errorCode: ApiException.errorUnknown,
-        );
-      }
-      
-      // Propagar la excepción original
-      rethrow;
-    }
-  }
-
-  // Extraer un token de una cookie
-  String? _extractTokenFromCookie(String cookies, String cookieName) {
-    // Buscar patrón cookieName=valor; o cookieName=valor$
-    final RegExp regex = RegExp('$cookieName=([^;]+)');
-    final match = regex.firstMatch(cookies);
-    if (match != null && match.groupCount >= 1) {
-      return match.group(1);
-    }
-    return null;
-  }
-
   /// Procesa los tokens de la respuesta y los guarda en el TokenService
   Future<void> _processTokenFromResponse(http.Response response, Map<String, dynamic> responseJson) async {
     // Primero intentar extraer token del cuerpo de la respuesta
@@ -272,6 +172,7 @@ class ApiClient {
     if (responseJson.containsKey('refreshToken')) {
       refreshToken = responseJson['refreshToken']?.toString();
     } else if (responseJson.containsKey('data') && 
+               responseJson.containsKey('data') &&
                responseJson['data'] is Map<String, dynamic> &&
                responseJson['data'].containsKey('refreshToken')) {
       refreshToken = responseJson['data']['refreshToken']?.toString();
@@ -511,14 +412,13 @@ class ApiClient {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       // Procesar posible token en encabezados
       if (response.headers['authorization'] != null) {
-        String? authHeader = response.headers['authorization'];
+        final String? authHeader = response.headers['authorization'];
         if (authHeader != null && authHeader.startsWith('Bearer ')) {
           final token = authHeader.substring(7); // Extraer token sin "Bearer "
           debugPrint('ApiClient: Token encontrado en encabezado de respuesta');
           
           await _tokenService.saveTokens(
             accessToken: token,
-            expiryInSeconds: 3600, // 1 hora por defecto
           );
         }
       }
@@ -640,7 +540,7 @@ class PersistentCookieClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     // Añadir las cookies almacenadas a la solicitud
     if (_cookies.isNotEmpty) {
-      String cookieString = _cookies.entries
+      final String cookieString = _cookies.entries
           .map((e) => '${e.key}=${e.value}')
           .join('; ');
       

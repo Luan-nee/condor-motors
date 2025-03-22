@@ -171,7 +171,7 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
                     Row(
                       children: [
                         Tooltip(
-                          message: widget.sucursales.length.toString() + ' sucursales',
+                          message: '${widget.sucursales.length} sucursales',
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
@@ -368,7 +368,7 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          sucursal.direccion ?? 'Sin dirección',
+                          sucursal.direccion,
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.white.withOpacity(0.5),

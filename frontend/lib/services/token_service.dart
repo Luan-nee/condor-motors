@@ -1,7 +1,8 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Servicio para gestionar tokens de autenticación
 /// 
@@ -13,11 +14,11 @@ class TokenService {
   static TokenService get instance => _instance;
   
   // Claves para almacenamiento en SharedPreferences
-  static const String _accessTokenKey = "access_token";
-  static const String _refreshTokenKey = "refresh_token";
-  static const String _expiryTimeKey = "expiry_time";
-  static const String _lastUsernameKey = "last_username";
-  static const String _lastPasswordKey = "last_password";
+  static const String _accessTokenKey = 'access_token';
+  static const String _refreshTokenKey = 'refresh_token';
+  static const String _expiryTimeKey = 'expiry_time';
+  static const String _lastUsernameKey = 'last_username';
+  static const String _lastPasswordKey = 'last_password';
   
   // URL base del API (será configurada por la aplicación)
   String _baseUrl = '';
@@ -322,7 +323,7 @@ class TokenService {
     if (decodedToken == null) return {};
     
     // Normalizar el rol
-    String? rolOriginal = decodedToken['rolCuentaEmpleadoCodigo'];
+    final String? rolOriginal = decodedToken['rolCuentaEmpleadoCodigo'];
     String rolNormalizado = 'DESCONOCIDO';
     
     if (rolOriginal != null) {
@@ -500,7 +501,7 @@ class TokenService {
       } else if (statusCode == 401 && _accessToken != null && _requestRetryCount < _maxRetryCount) {
         // Token rechazado, verificar si debemos intentar refrescar el token
         // Si se ha especificado que no se debe reintentar con el header x-no-retry-on-401, respetarlo
-        bool noRetryOn401 = headers != null && headers.containsKey('x-no-retry-on-401') && headers['x-no-retry-on-401'] == 'true';
+        final bool noRetryOn401 = headers != null && headers.containsKey('x-no-retry-on-401') && headers['x-no-retry-on-401'] == 'true';
         
         if (noRetryOn401) {
           debugPrint('TokenService: Token rechazado (401), pero no se reintentará debido al header x-no-retry-on-401');

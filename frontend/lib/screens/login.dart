@@ -1,13 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';  // Importar para KeyboardListener
-import '../widgets/background.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import '../api/index.dart' show CondorMotorsApi;
 import '../api/main.api.dart';
 import '../main.dart' show api;
-import '../api/index.dart' show CondorMotorsApi;
 import '../services/token_service.dart'; // Importar TokenService
-import '../utils/role_utils.dart'; // Importar utilidad de roles
-import 'dart:async';
+import '../utils/role_utils.dart' as role_utils; // Importar utilidad de roles con alias
+import '../widgets/background.dart';
 
 // Clase para manejar el ciclo de vida de la aplicación
 class LifecycleObserver extends WidgetsBindingObserver {
@@ -47,6 +49,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   bool _capsLockOn = false;
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  bool _stayLoggedIn = false; // Nueva variable para "Permanecer conectado"
   late final AnimationController _animationController;
   String _errorMessage = '';
   String _serverIp = 'localhost'; // IP local para el servidor
@@ -63,6 +66,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     
     _loadServerIp();
     _loadSavedCredentials();
+    _loadStayLoggedInPreference(); // Cargar preferencia de "Permanecer conectado"
     
     // Reducir la velocidad de la animación cuando la app está en segundo plano
     _lifecycleObserver = LifecycleObserver(
@@ -242,6 +246,19 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return false;
   }
 
+  // Método para cargar la preferencia de "Permanecer conectado"
+  Future<void> _loadStayLoggedInPreference() async {
+    try {
+      final stayLoggedIn = await _storage.read(key: 'stay_logged_in');
+      setState(() {
+        _stayLoggedIn = stayLoggedIn == 'true';
+      });
+      debugPrint('Cargada preferencia de permanencia de sesión: $_stayLoggedIn');
+    } catch (e) {
+      debugPrint('Error al cargar preferencia de permanencia de sesión: $e');
+    }
+  }
+
   Future<void> _loadSavedCredentials() async {
     try {
       final username = await _storage.read(key: 'username');
@@ -266,8 +283,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       await _storage.write(key: 'password', value: _passwordController.text);
       await _storage.write(key: 'remember_me', value: 'true');
     } else {
-      await _storage.deleteAll();
+      // Solo eliminar las credenciales guardadas si "Recordar credenciales" está desactivado
+      await _storage.delete(key: 'username');
+      await _storage.delete(key: 'password');
+      await _storage.delete(key: 'remember_me');
     }
+    
+    // Guardar preferencia de "Permanecer conectado"
+    await _storage.write(key: 'stay_logged_in', value: _stayLoggedIn.toString());
+    debugPrint('Guardada preferencia de permanencia de sesión: $_stayLoggedIn');
   }
 
   Future<void> _handleLogin() async {
@@ -298,8 +322,21 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         // Continuamos aunque haya error, ya que el token ya está configurado en el cliente API
       }
       
-      if (_rememberMe) {
-        await _saveCredentials();
+      // Guardar credenciales y preferencias
+      await _saveCredentials();
+      
+      // Si "Permanecer conectado" está activado, guardamos credenciales en TokenService
+      // para permitir login automático en el futuro
+      if (_stayLoggedIn) {
+        try {
+          await TokenService.instance.saveCredentials(
+            _usernameController.text,
+            _passwordController.text
+          );
+          debugPrint('Credenciales guardadas para auto-login en el TokenService');
+        } catch (e) {
+          debugPrint('Error al guardar credenciales para auto-login: $e');
+        }
       }
 
       // Comprobación de seguridad: si el widget ya no está montado, no hacer nada más
@@ -312,7 +349,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       debugPrint('Rol del usuario (código original): $rolCodigo');
       
       // Normalizar el rol utilizando nuestra utilidad centralizada
-      final rolNormalizado = RoleUtils.normalizeRole(rolCodigo);
+      final rolNormalizado = role_utils.normalizeRole(rolCodigo);
       
       // Verificar si el rol no pudo ser normalizado
       if (rolNormalizado == 'DESCONOCIDO') {
@@ -328,13 +365,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       debugPrint('Rol normalizado a: $rolNormalizado');
       
       // Determinar la ruta inicial basada en el rol normalizado
-      final initialRoute = RoleUtils.getInitialRoute(rolNormalizado);
+      final initialRoute = role_utils.getInitialRoute(rolNormalizado);
       debugPrint('Ruta inicial determinada: $initialRoute');
       
       // Navigación segura después de operaciones asíncronas
       if (!mounted) return;
       
-      Navigator.pushReplacementNamed(
+      await Navigator.pushReplacementNamed(
         context,
         initialRoute,
         arguments: userData,
@@ -411,7 +448,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: Colors.white.withOpacity(0.1),
-                      width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -556,31 +592,74 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             ),
                           ),
 
-                        // Remember me checkbox
-                        Row(
+                        // Opciones de login
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Checkbox(
-                              value: _rememberMe,
-                              onChanged: (value) {
-                                setState(() {
-                                  _rememberMe = value ?? false;
-                                });
-                              },
-                              fillColor: WidgetStateProperty.resolveWith<Color>(
-                                (Set<WidgetState> states) {
-                                  if (states.contains(WidgetState.selected)) {
-                                    return const Color(0xFFE31E24);
-                                  }
-                                  return Colors.white54;
-                                },
-                              ),
+                            // Recordar credenciales checkbox
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: _rememberMe,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _rememberMe = value ?? false;
+                                    });
+                                  },
+                                  fillColor: WidgetStateProperty.resolveWith<Color>(
+                                    (Set<WidgetState> states) {
+                                      if (states.contains(WidgetState.selected)) {
+                                        return const Color(0xFFE31E24);
+                                      }
+                                      return Colors.white54;
+                                    },
+                                  ),
+                                ),
+                                const Text(
+                                  'Recordar credenciales',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const Text(
-                              'Recordar credenciales',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
+                            
+                            // Permanecer conectado checkbox
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: _stayLoggedIn,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _stayLoggedIn = value ?? false;
+                                    });
+                                  },
+                                  fillColor: WidgetStateProperty.resolveWith<Color>(
+                                    (Set<WidgetState> states) {
+                                      if (states.contains(WidgetState.selected)) {
+                                        return const Color(0xFFE31E24);
+                                      }
+                                      return Colors.white54;
+                                    },
+                                  ),
+                                ),
+                                const Text(
+                                  'Permanecer conectado',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Tooltip(
+                                  message: 'Iniciar sesión automáticamente al abrir la aplicación',
+                                  child: Icon(
+                                    Icons.info_outline,
+                                    size: 16,
+                                    color: Colors.white.withOpacity(0.5),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

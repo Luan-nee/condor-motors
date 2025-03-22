@@ -643,7 +643,6 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                     border: Border(
                                       bottom: BorderSide(
                                         color: Colors.white.withOpacity(0.1),
-                                        width: 1,
                                       ),
                                     ),
                                   ),

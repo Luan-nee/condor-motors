@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../routes/routes.dart';
-import 'ventas_computer.dart';
+
+import '../../utils/role_utils.dart' as role_utils;
 import 'dashboard_computer.dart';
+import 'ventas_computer.dart';
 
 class SlidesComputerScreen extends StatefulWidget {
   const SlidesComputerScreen({super.key});
@@ -53,7 +54,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
       
       if (args != null) {
         // Manejar el caso donde sucursal puede ser un String o un Map
-        dynamic sucursalData = args['sucursal'];
+        final dynamic sucursalData = args['sucursal'];
         Map<String, dynamic>? sucursalInfo;
         
         if (sucursalData is Map<String, dynamic>) {
@@ -69,7 +70,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
         }
         
         // Obtener sucursalId de manera segura
-        dynamic sucursalIdData = args['sucursalId'];
+        final dynamic sucursalIdData = args['sucursalId'];
         int? sucursalId;
         
         if (sucursalIdData is int) {
@@ -143,7 +144,6 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
               border: Border(
                 right: BorderSide(
                   color: Colors.white.withOpacity(0.1),
-                  width: 1,
                 ),
               ),
               boxShadow: [
@@ -264,7 +264,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: TextButton.icon(
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, Routes.login);
+                      Navigator.pushReplacementNamed(context, role_utils.login);
                     },
                     icon: const FaIcon(
                       FontAwesomeIcons.rightFromBracket,

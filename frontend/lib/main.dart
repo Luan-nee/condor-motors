@@ -1,10 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'routes/routes.dart';
-import 'api/index.dart';
-import 'services/token_service.dart';
-import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'api/index.dart';
+import 'routes/routes.dart' as routes;
+import 'services/token_service.dart';
+import 'utils/role_utils.dart' as role_utils;
 import 'widgets/connection_status.dart';
 
 // Configuración global de API
@@ -109,7 +112,7 @@ void main() async {
   // Verificar autenticación del usuario
   debugPrint('Verificando autenticación del usuario...');
   final isAuthenticated = await tokenService.loadTokens();
-  String initialRoute = Routes.login;
+  String initialRoute = role_utils.login;
   Map<String, dynamic>? userData;
   
   if (isAuthenticated) {
@@ -124,31 +127,31 @@ void main() async {
         debugPrint('Token no validado por el servidor, redirigiendo a login');
         // Limpiar token inválido
         await tokenService.clearTokens();
-        initialRoute = Routes.login;
+        initialRoute = role_utils.login;
       } else {
         debugPrint('Token validado correctamente con el servidor');
       }
     } catch (e) {
       debugPrint('Error al validar token: $e');
       // Si hay un error, considerar que no está autenticado
-      initialRoute = Routes.login;
+      initialRoute = role_utils.login;
       // Limpiar token inválido
       await tokenService.clearTokens();
     }
 
-    if (initialRoute != Routes.login) {
+    if (initialRoute != role_utils.login) {
       // Obtener datos del usuario guardados de forma segura
       userData = await api.authService.getUserData();
       
       if (userData != null && userData['rol'] != null) {
         // Normalizar el rol para asegurarnos de que es válido
-        String rol = userData['rol'] as String;
+        final String rol = userData['rol'] as String;
         
         // Verificar si necesitamos normalizar el rol
-        if (!Routes.roles.containsKey(rol)) {
+        if (!role_utils.roles.containsKey(rol)) {
           // Intentar con versión en mayúsculas
           final rolUpper = rol.toUpperCase();
-          if (Routes.roles.containsKey(rolUpper)) {
+          if (role_utils.roles.containsKey(rolUpper)) {
             userData['rol'] = rolUpper;
             debugPrint('Rol normalizado a mayúsculas: ${userData['rol']}');
           } 
@@ -175,7 +178,7 @@ void main() async {
         
         // Si tenemos un rol normalizado válido, obtener la ruta inicial
         if (userData != null) {
-          initialRoute = Routes.getInitialRoute(userData['rol'] as String);
+          initialRoute = role_utils.getInitialRoute(userData['rol'] as String);
           debugPrint('Usuario autenticado con rol: ${userData['rol']}, redirigiendo a $initialRoute');
         }
       } else {
@@ -301,7 +304,7 @@ class CondorMotorsApp extends StatelessWidget {
         ),
       ),
       onGenerateRoute: (settings) {
-        return Routes.generateRoute(
+        return routes.generateRoute(
           settings,
           initialRoute: initialRoute,
           userData: userData,

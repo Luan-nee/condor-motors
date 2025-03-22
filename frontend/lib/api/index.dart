@@ -1,11 +1,11 @@
-export 'main.api.dart';
-export 'auth.api.dart';
-export 'protected/index.dart';
-
-import 'main.api.dart';
-import 'auth.api.dart';
-import 'protected/index.dart';
 import '../services/token_service.dart';
+import 'auth.api.dart';
+import 'main.api.dart';
+import 'protected/index.dart';
+
+export 'auth.api.dart';
+export 'main.api.dart';
+export 'protected/index.dart';
 
 /// Clase principal para acceder a todas las APIs
 class CondorMotorsApi {
@@ -22,6 +22,7 @@ class CondorMotorsApi {
   late final CategoriasApi categorias;
   late final CuentasEmpleadosApi cuentasEmpleados;
   late final ProformaVentaApi proformas;
+  late final ColoresApi colores;
   late final TokenService tokenService;
   
   /// Inicializa todas las APIs con la URL base
@@ -44,6 +45,7 @@ class CondorMotorsApi {
     categorias = CategoriasApi(_apiClient);
     cuentasEmpleados = CuentasEmpleadosApi(_apiClient);
     proformas = ProformaVentaApi(_apiClient);
+    colores = ColoresApi(apiClient: _apiClient);
     
     // Inicializar el AuthService con las nuevas dependencias
     authService = AuthService(tokenService);

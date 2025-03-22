@@ -41,7 +41,7 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
     try {
       // Obtener la URL del servidor desde preferencias
       final prefs = await SharedPreferences.getInstance();
-      String serverUrl = prefs.getString('server_url') ?? 'http://localhost:3000';
+      final String serverUrl = prefs.getString('server_url') ?? 'http://localhost:3000';
       
       // Hacer un ping simple al servidor
       final response = await http.get(

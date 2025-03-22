@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
-import '../main.api.dart';
+
+import '../../models/paginacion.model.dart';
 import '../../models/producto.model.dart';
+import '../main.api.dart';
 
 class ProductosApi {
   final ApiClient _api;
@@ -11,19 +13,23 @@ class ProductosApi {
   /// 
   /// [sucursalId] ID de la sucursal
   /// [search] Término de búsqueda para filtrar productos (opcional)
-  /// [categoriaId] ID de la categoría para filtrar (opcional)
-  /// [marcaId] ID de la marca para filtrar (opcional)
-  /// [colorId] ID del color para filtrar (opcional)
   /// [page] Número de página para paginación (opcional)
-  /// [limit] Límite de resultados por página (opcional)
-  Future<List<Producto>> getProductos({
+  /// [pageSize] Número de elementos por página (opcional)
+  /// [sortBy] Campo por el cual ordenar (opcional)
+  /// [order] Orden ascendente o descendente (opcional)
+  /// [filter] Campo por el cual filtrar (opcional)
+  /// [filterValue] Valor para el filtro (opcional)
+  /// [filterType] Tipo de filtro a aplicar (opcional)
+  Future<PaginatedResponse<Producto>> getProductos({
     required String sucursalId,
     String? search,
-    int? categoriaId,
-    int? marcaId,
-    int? colorId,
     int? page,
-    int? limit,
+    int? pageSize,
+    String? sortBy,
+    String? order,
+    String? filter,
+    String? filterValue,
+    String? filterType,
   }) async {
     try {
       final queryParams = <String, String>{};
@@ -32,27 +38,35 @@ class ProductosApi {
         queryParams['search'] = search;
       }
       
-      if (categoriaId != null) {
-        queryParams['categoriaId'] = categoriaId.toString();
-      }
-      
-      if (marcaId != null) {
-        queryParams['marcaId'] = marcaId.toString();
-      }
-      
-      if (colorId != null) {
-        queryParams['colorId'] = colorId.toString();
-      }
-      
       if (page != null) {
         queryParams['page'] = page.toString();
       }
       
-      if (limit != null) {
-        queryParams['limit'] = limit.toString();
+      if (pageSize != null) {
+        queryParams['page_size'] = pageSize.toString();
       }
       
-      debugPrint('Obteniendo productos para sucursal $sucursalId');
+      if (sortBy != null && sortBy.isNotEmpty) {
+        queryParams['sort_by'] = sortBy;
+      }
+      
+      if (order != null && order.isNotEmpty) {
+        queryParams['order'] = order;
+      }
+      
+      if (filter != null && filter.isNotEmpty) {
+        queryParams['filter'] = filter;
+      }
+      
+      if (filterValue != null) {
+        queryParams['filter_value'] = filterValue;
+      }
+      
+      if (filterType != null && filterType.isNotEmpty) {
+        queryParams['filter_type'] = filterType;
+      }
+      
+      debugPrint('Obteniendo productos para sucursal $sucursalId con parámetros: $queryParams');
       
       final response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos',
@@ -60,8 +74,28 @@ class ProductosApi {
         queryParams: queryParams,
       );
       
+      // Extraer los datos de productos
       final List<dynamic> rawData = response['data'] ?? [];
-      return rawData.map((item) => Producto.fromJson(item)).toList();
+      final productos = rawData.map((item) => Producto.fromJson(item)).toList();
+      
+      // Extraer información de paginación
+      Map<String, dynamic> paginacionData = {};
+      if (response.containsKey('pagination') && response['pagination'] != null) {
+        paginacionData = response['pagination'] as Map<String, dynamic>;
+      }
+      
+      // Extraer metadata si está disponible
+      Map<String, dynamic>? metadata;
+      if (response.containsKey('metadata') && response['metadata'] != null) {
+        metadata = response['metadata'] as Map<String, dynamic>;
+      }
+      
+      // Crear la respuesta paginada
+      return PaginatedResponse<Producto>(
+        items: productos,
+        paginacion: Paginacion.fromJson(paginacionData),
+        metadata: metadata,
+      );
     } catch (e) {
       debugPrint('Error al obtener productos: $e');
       rethrow;

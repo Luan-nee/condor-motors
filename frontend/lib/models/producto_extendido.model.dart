@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
 import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+
+import '../screens/admin/utils/productos_utils.dart';
 import 'producto.model.dart';
 import 'sucursal.model.dart';
-import '../screens/admin/widgets/productos_utils.dart';
 
 /// Modelo extendido de producto que incluye disponibilidad en sucursales
 class ProductoExtendido {

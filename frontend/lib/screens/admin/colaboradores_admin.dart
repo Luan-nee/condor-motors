@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
 import '../../../models/empleado.model.dart';
-import '../../models/sucursal.model.dart';
-import '../../main.dart' show api;
 import '../../api/main.api.dart' show ApiException;
-import 'widgets/empleado_form.dart';
+import '../../main.dart' show api;
+import 'utils/empleados_utils.dart';
 import 'widgets/empleado_detalles_dialog.dart';
+import 'widgets/empleado_form.dart';
 import 'widgets/empleados_table.dart';
-import 'widgets/empleados_utils.dart';
 
 class ColaboradoresAdminScreen extends StatefulWidget {
   const ColaboradoresAdminScreen({super.key});
@@ -59,7 +59,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
           if (empleado.sucursalId != null && empleado.sucursalNombre != null) {
             _nombresSucursales[empleado.sucursalId!] = empleado.sucursalNombre!;
             if (empleado.sucursalCentral) {
-              _nombresSucursales[empleado.sucursalId!] = "${empleado.sucursalNombre!} (Central)";
+              _nombresSucursales[empleado.sucursalId!] = '${empleado.sucursalNombre!} (Central)';
             }
           }
           
@@ -91,7 +91,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
             backgroundColor: Colors.red,
           ),
         );
-        Navigator.of(context).pushReplacementNamed('/login');
+        await Navigator.of(context).pushReplacementNamed('/login');
       }
     }
   }
@@ -108,7 +108,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
         
         // Agregar indicador de Central al nombre si corresponde
         if (esCentral) {
-          nombre = "$nombre (Central)";
+          nombre = '$nombre (Central)';
         }
         
         if (id.isNotEmpty) {
@@ -228,7 +228,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       // Cerrar el diálogo y recargar datos
       if (!mounted) return;
       Navigator.pop(context);
-      _cargarDatos();
+      await _cargarDatos();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

@@ -567,7 +567,6 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: Colors.grey[700]!,
-                          width: 1,
                         ),
                       ),
                       child: Row(

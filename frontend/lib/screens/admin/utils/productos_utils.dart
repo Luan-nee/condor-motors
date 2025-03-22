@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+
+import '../../../main.dart' show api;
 import '../../../models/producto.model.dart';
 import '../../../models/sucursal.model.dart';
-import '../../../main.dart' show api;
 
 /// Clase para representar el stock de un producto en una sucursal
 class ProductoEnSucursal {
@@ -77,7 +78,7 @@ class ProductosUtils {
       return [];
     }
 
-    String query = searchQuery.toLowerCase().trim();
+    final String query = searchQuery.toLowerCase().trim();
     
     return productos.where((producto) {
       // Filtro por categoría (si no es 'Todos')
@@ -164,7 +165,6 @@ class ProductosUtils {
           return ProductoEnSucursal(
             sucursal: sucursal,
             producto: producto,
-            disponible: true,
           );
         } catch (e) {
           // Si hay un error, asumimos que el producto no está disponible

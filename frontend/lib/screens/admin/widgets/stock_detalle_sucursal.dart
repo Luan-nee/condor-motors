@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+import '../../../main.dart' show api;
 import '../../../models/producto.model.dart';
 import '../../../models/sucursal.model.dart';
-import 'stock_utils.dart';
+import '../utils/stock_utils.dart';
 import 'stock_detalles_dialog.dart';
-import '../../../main.dart' show api;
 
 /// Diálogo que muestra el stock de un producto en todas las sucursales
 class StockDetalleSucursalDialog extends StatefulWidget {
@@ -24,6 +25,8 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
   String? _error;
   List<Sucursal> _sucursales = [];
   Map<String, int> _stockPorSucursal = {};
+  Map<String, bool> _productoDisponibleEnSucursal = {};
+  bool _dataLoaded = false;
   
   @override
   void initState() {
@@ -43,27 +46,58 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
       
       // Para cada sucursal, cargar el stock del producto
       final Map<String, int> stockMap = {};
+      final Map<String, bool> disponibilidadMap = {};
       
-      // En un escenario real, haríamos una llamada API para obtener el stock por sucursal
-      // Aquí simulamos que tenemos la información con un valor predeterminado del producto
+      // Utilizamos Future.wait para cargar todos los datos en paralelo
+      final futures = <Future>[];
+      
       for (final sucursal in sucursales) {
-        // En un caso real, obtendrías el stock de cada sucursal con una API
-        // stockMap[sucursal.id] = await api.productos.getStockEnSucursal(widget.producto.id, sucursal.id);
-        
-        // Por ahora, usamos el mismo stock para todas (simulación)
-        stockMap[sucursal.id] = widget.producto.stock;
+        // Añadir un Future para cada sucursal
+        futures.add(_cargarStockPorSucursal(sucursal.id, stockMap, disponibilidadMap));
       }
       
-      setState(() {
-        _sucursales = sucursales;
-        _stockPorSucursal = stockMap;
-        _isLoading = false;
-      });
+      // Esperar a que todas las cargas se completen
+      await Future.wait(futures);
+      
+      if (mounted) {
+        setState(() {
+          _sucursales = sucursales;
+          _stockPorSucursal = stockMap;
+          _productoDisponibleEnSucursal = disponibilidadMap;
+          _isLoading = false;
+          _dataLoaded = true;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = 'Error al cargar sucursales: ${e.toString()}';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Error al cargar sucursales: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+  
+  Future<void> _cargarStockPorSucursal(
+    String sucursalId, 
+    Map<String, int> stockMap, 
+    Map<String, bool> disponibilidadMap
+  ) async {
+    try {
+      // Obtener el stock específico para esta sucursal
+      final response = await api.productos.getProducto(
+        productoId: widget.producto.id,
+        sucursalId: sucursalId,
+      );
+      
+      // Si la respuesta existe, almacenar el stock
+      stockMap[sucursalId] = response.stock;
+      disponibilidadMap[sucursalId] = true;
+        } catch (e) {
+      // En caso de error, marcamos el producto como no disponible
+      debugPrint('Error obteniendo stock para sucursal $sucursalId: $e');
+      stockMap[sucursalId] = 0;
+      disponibilidadMap[sucursalId] = false;
     }
   }
   
@@ -97,7 +131,7 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
     
     // Si hubo cambios en el stock, recargar las sucursales para actualizar la información
     if (result == true) {
-      _cargarSucursales();
+      await _cargarSucursales();
     }
   }
   
@@ -148,15 +182,15 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
             const SizedBox(height: 16),
             
             // Título para la lista de sucursales
-            const Row(
+            Row(
               children: [
-                FaIcon(
+                const FaIcon(
                   FontAwesomeIcons.store,
                   size: 16,
                   color: Color(0xFFE31E24),
                 ),
-                SizedBox(width: 8),
-                Text(
+                const SizedBox(width: 8),
+                const Text(
                   'Disponibilidad en Sucursales',
                   style: TextStyle(
                     color: Colors.white,
@@ -164,6 +198,16 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                     fontSize: 16,
                   ),
                 ),
+                const Spacer(),
+                if (_dataLoaded) ...[
+                  _buildLeyenda('Óptimo', Colors.green),
+                  const SizedBox(width: 12),
+                  _buildLeyenda('Bajo', Colors.orange),
+                  const SizedBox(width: 12),
+                  _buildLeyenda('Crítico', const Color(0xFFE31E24)),
+                  const SizedBox(width: 12),
+                  _buildLeyenda('No disponible', Colors.grey),
+                ],
               ],
             ),
             
@@ -174,8 +218,18 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
               const Center(
                 child: Padding(
                   padding: EdgeInsets.all(24.0),
-                  child: CircularProgressIndicator(
-                    color: Color(0xFFE31E24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        color: Color(0xFFE31E24),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Consultando stock en todas las sucursales...',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ],
                   ),
                 ),
               )
@@ -227,10 +281,17 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                     final sucursal = _sucursales[index];
                     final stockEnSucursal = _stockPorSucursal[sucursal.id] ?? 0;
                     final stockMinimo = widget.producto.stockMinimo ?? 0;
+                    final disponible = _productoDisponibleEnSucursal[sucursal.id] ?? false;
                     
-                    final statusColor = StockUtils.getStockStatusColor(stockEnSucursal, stockMinimo);
-                    final statusIcon = StockUtils.getStockStatusIcon(stockEnSucursal, stockMinimo);
-                    final statusText = StockUtils.getStockStatusText(stockEnSucursal, stockMinimo);
+                    final statusColor = disponible 
+                        ? StockUtils.getStockStatusColor(stockEnSucursal, stockMinimo)
+                        : Colors.grey;
+                    final statusIcon = disponible
+                        ? StockUtils.getStockStatusIcon(stockEnSucursal, stockMinimo)
+                        : FontAwesomeIcons.ban;
+                    final statusText = disponible
+                        ? StockUtils.getStockStatusText(stockEnSucursal, stockMinimo)
+                        : 'No disponible';
                     
                     return Card(
                       margin: const EdgeInsets.only(bottom: 8),
@@ -238,8 +299,9 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                         side: BorderSide(
-                          color: Colors.white.withOpacity(0.1),
-                          width: 1,
+                          color: disponible 
+                              ? statusColor.withOpacity(0.5) 
+                              : Colors.white.withOpacity(0.1),
                         ),
                       ),
                       child: InkWell(
@@ -259,10 +321,14 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                                   children: [
                                     Row(
                                       children: [
-                                        const FaIcon(
-                                          FontAwesomeIcons.store,
+                                        FaIcon(
+                                          sucursal.sucursalCentral 
+                                              ? FontAwesomeIcons.buildingFlag 
+                                              : FontAwesomeIcons.store,
                                           size: 14,
-                                          color: Color(0xFFE31E24),
+                                          color: sucursal.sucursalCentral
+                                              ? Colors.amber
+                                              : const Color(0xFFE31E24),
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
@@ -273,11 +339,32 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                                             fontSize: 16,
                                           ),
                                         ),
+                                        if (sucursal.sucursalCentral) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.amber.withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'CENTRAL',
+                                              style: TextStyle(
+                                                color: Colors.amber,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      sucursal.direccion ?? 'Sin dirección',
+                                      sucursal.direccion,
                                       style: TextStyle(
                                         color: Colors.white.withOpacity(0.7),
                                         fontSize: 14,
@@ -326,7 +413,6 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                               Expanded(
                                 flex: 2,
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     const Text(
                                       'Stock Actual',
@@ -336,14 +422,23 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    Text(
-                                      stockEnSucursal.toString(),
-                                      style: TextStyle(
-                                        color: statusColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18,
-                                      ),
-                                    ),
+                                    disponible
+                                      ? Text(
+                                          stockEnSucursal.toString(),
+                                          style: TextStyle(
+                                            color: statusColor,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                          ),
+                                        )
+                                      : const Text(
+                                          '—',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                          ),
+                                        ),
                                   ],
                                 ),
                               ),
@@ -353,14 +448,18 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                                 flex: 2,
                                 child: Center(
                                   child: ElevatedButton.icon(
-                                    icon: const FaIcon(
-                                      FontAwesomeIcons.chartLine,
+                                    icon: FaIcon(
+                                      disponible
+                                          ? FontAwesomeIcons.chartLine
+                                          : FontAwesomeIcons.plus,
                                       size: 14,
                                     ),
-                                    label: const Text('Gestionar'),
+                                    label: Text(disponible ? 'Gestionar' : 'Añadir'),
                                     onPressed: () => _verStockDetalle(sucursal),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF3E3E3E),
+                                      backgroundColor: disponible
+                                          ? const Color(0xFF3E3E3E)
+                                          : const Color(0xFF1E631E), // Verde para añadir
                                       foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                     ),
@@ -378,6 +477,30 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
           ],
         ),
       ),
+    );
+  }
+  
+  Widget _buildLeyenda(String texto, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          texto,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 11,
+          ),
+        ),
+      ],
     );
   }
   

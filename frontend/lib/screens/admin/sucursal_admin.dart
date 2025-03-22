@@ -98,7 +98,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
       }
       
       if (!mounted) return;
-      _cargarSucursales();
+      await _cargarSucursales();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Sucursal guardada exitosamente'),
@@ -557,7 +557,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                                   if (confirm == true) {
                   try {
                                     await api.sucursales.deleteSucursal(sucursal.id.toString());
-                                    _cargarSucursales();
+                                    await _cargarSucursales();
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(

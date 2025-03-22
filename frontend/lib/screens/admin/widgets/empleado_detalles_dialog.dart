@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../models/empleado.model.dart';
-import 'empleados_utils.dart';
+import '../utils/empleados_utils.dart';
 
 class EmpleadoDetallesDialog extends StatefulWidget {
   final Empleado empleado;
@@ -173,7 +173,6 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: const Color(0xFFE31E24).withOpacity(0.3),
-                              width: 1,
                             ),
                           ),
                           child: Row(
@@ -285,7 +284,6 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
                     color: esCentral 
                         ? const Color.fromARGB(255, 95, 208, 243) 
                         : Colors.white.withOpacity(0.1),
-                    width: 1,
                   ),
                 ),
                 child: Row(
@@ -566,7 +564,11 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
           widget.empleado,
         );
         
-        if (cuentaCreada && context.mounted) {
+        // Verificar si el widget y el contexto siguen montados después de la operación asíncrona
+        if (!mounted) return;
+        if (!context.mounted) return;
+        
+        if (cuentaCreada) {
           EmpleadosUtils.mostrarMensaje(
             context,
             mensaje: 'Cuenta creada correctamente'
@@ -579,22 +581,30 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
       }
       
       // Para otros casos, mostrar indicador de carga como antes
+      if (!context.mounted) return;
       await EmpleadosUtils.mostrarDialogoCarga(
         context, 
         mensaje: 'Cargando información de cuenta...',
         barrierDismissible: true // Permitir cancelar el diálogo si tarda demasiado
       );
 
+      // Verificar si el contexto sigue montado después del diálogo de carga
+      if (!context.mounted) return;
+
       // Usar la función de utilidad para gestionar la cuenta
       final cuentaActualizada = await EmpleadosUtils.gestionarCuenta(context, widget.empleado);
       
+      // Verificar si el widget y el contexto siguen montados después de la operación asíncrona
+      if (!mounted) return;
+      if (!context.mounted) return;
+      
       // Cerrar diálogo de carga (si sigue abierto)
-      if (context.mounted && Navigator.of(context).canPop()) {
+      if (Navigator.of(context).canPop()) {
         Navigator.pop(context);
       }
       
       // Si se realizó algún cambio, actualizar la información
-      if (cuentaActualizada && context.mounted) {
+      if (cuentaActualizada) {
         EmpleadosUtils.mostrarMensaje(
           context,
           mensaje: 'Cuenta actualizada correctamente'
@@ -604,6 +614,8 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
         _cargarInformacionCuenta();
       }
     } catch (e) {
+      // Verificar si el widget y el contexto siguen montados después de la operación asíncrona
+      if (!mounted) return;
       if (!context.mounted) return;
       
       // Cerrar diálogo de carga si está abierto
@@ -636,17 +648,25 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
         
         // Mostrar el diálogo para crear cuenta inmediatamente
         await Future.delayed(const Duration(milliseconds: 100));
-        if (context.mounted) {
-          final cuentaCreada = await EmpleadosUtils.gestionarCuenta(context, widget.empleado);
-          if (cuentaCreada && context.mounted) {
-            EmpleadosUtils.mostrarMensaje(
-              context,
-              mensaje: 'Cuenta creada correctamente'
-            );
-            
-            // Recargar información de cuenta
-            _cargarInformacionCuenta();
-          }
+        
+        // Verificar nuevamente si el contexto sigue montado después del delay
+        if (!mounted) return;
+        if (!context.mounted) return;
+        
+        final cuentaCreada = await EmpleadosUtils.gestionarCuenta(context, widget.empleado);
+        
+        // Verificar nuevamente después de esta operación asíncrona
+        if (!mounted) return;
+        if (!context.mounted) return;
+        
+        if (cuentaCreada) {
+          EmpleadosUtils.mostrarMensaje(
+            context,
+            mensaje: 'Cuenta creada correctamente'
+          );
+          
+          // Recargar información de cuenta
+          _cargarInformacionCuenta();
         }
         return;
       }

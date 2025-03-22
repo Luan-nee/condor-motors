@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../ventas_computer.dart' show VentasUtils;
+
 import '../../../api/protected/proforma.api.dart';
+import '../ventas_computer.dart' show VentasUtils;
 import 'ventas_pendientes_utils.dart';
 
 // Clase para depurar eventos
@@ -37,7 +38,6 @@ class ProcessingDialog extends StatelessWidget {
               height: 48,
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
-                strokeWidth: 4,
               ),
             ),
             const SizedBox(height: 24),
@@ -790,7 +790,6 @@ class ProformaSaleDialog extends StatelessWidget {
                             ),
                           ),
                           Expanded(
-                            flex: 1,
                             child: Text(
                               '${detalle.cantidad}x',
                               style: const TextStyle(

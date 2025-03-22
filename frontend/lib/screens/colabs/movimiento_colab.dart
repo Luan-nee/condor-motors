@@ -295,7 +295,6 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                             color: _getEstadoColor(
                               _selectedFilter.toUpperCase().replaceAll('ES', '')
                             ),
-                        width: 1,
                       ),
                     ),
                         child: Row(

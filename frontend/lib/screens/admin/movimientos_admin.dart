@@ -329,7 +329,6 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                           border: Border(
                             bottom: BorderSide(
                               color: Colors.white.withOpacity(0.1),
-                              width: 1,
                             ),
                           ),
                         ),
@@ -520,7 +519,6 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: textColor.withOpacity(0.3),
-              width: 1,
             ),
           ),
           child: Row(
