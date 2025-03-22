@@ -6,6 +6,25 @@ import { count, eq } from 'drizzle-orm'
 
 export class CreateCliente {
   private async createCliente(createClienteDto: CreateClienteDto) {
+    // const tiposDocumentos = await db
+    //     .select({
+    //       id: tiposDocumentoClienteTable.id,
+    //       nombre: tiposDocumentoClienteTable.nombre
+    //     })
+    //     .from(tiposDocumentoClienteTable)
+    //     .limit(7)
+
+    //   const valor = tiposDocumentos.some(
+    //     (documento) => documento.id === Number(createClienteDto.tipoDocumentoId)
+    //   )
+
+    //   if (!valor) {
+    //     throw CustomError.internalServer(
+    //       'El Numero de documento ingresado es incorrecto : ',
+    //       tiposDocumentos
+    //     )
+    //   }
+
     const clienteDni = await db
       .select({ count: count(clientesTable.id) })
       .from(clientesTable)

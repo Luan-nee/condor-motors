@@ -41,8 +41,8 @@ export class CustomError extends Error {
     return new CustomError(429, message, responseStatus.error)
   }
 
-  static internalServer(message = 'Unexpected error') {
-    return new CustomError(500, message, responseStatus.error)
+  static internalServer(message = 'Unexpected error', data?: any) {
+    return new CustomError(500, message, responseStatus.error, data)
   }
 
   static notImplemented(message = 'Not implemented') {
