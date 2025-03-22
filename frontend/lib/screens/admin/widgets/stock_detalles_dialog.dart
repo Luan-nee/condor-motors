@@ -9,7 +9,7 @@ class StockDetallesDialog extends StatefulWidget {
   final Producto producto;
   final String sucursalId;
   final String sucursalNombre;
-  
+
   const StockDetallesDialog({
     super.key,
     required this.producto,
@@ -30,11 +30,11 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   late int _stockNuevo;
   late TextEditingController _stockController;
   bool _mostrarAdvertencia = false;
-  
+
   // Variables para controlar la aparición de botones rápidos
   int _contadorClicsAumentar = 0;
   bool _mostrarBotonesRapidos = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -44,26 +44,27 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
     _stockController = TextEditingController(text: "0");
     _inicializarDatos();
   }
-  
+
   @override
   void dispose() {
     _stockController.dispose();
     super.dispose();
   }
-  
+
   void _inicializarDatos() {
     setState(() {
       _isLoading = false;
     });
   }
-  
+
   Future<void> _actualizarStock() async {
     if (_stockNuevo == _stockActual) return;
-    
+
     if (_stockNuevo < _stockActual) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por seguridad, solo se permite agregar stock mediante entradas, no reducirlo'),
+          content: Text(
+              'Por seguridad, solo se permite agregar stock mediante entradas, no reducirlo'),
           backgroundColor: Colors.red,
         ),
       );
@@ -72,14 +73,14 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       });
       return;
     }
-    
+
     final int cantidadAAgregar = _stockNuevo - _stockActual;
-    
+
     setState(() {
       _isUpdating = true;
       _error = null;
     });
-    
+
     try {
       // Usar la API real para agregar stock
       await api.productos.agregarStock(
@@ -87,12 +88,12 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         productoId: widget.producto.id,
         cantidad: cantidadAAgregar,
       );
-      
+
       setState(() {
         _stockActual = _stockNuevo;
         _isUpdating = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Stock actualizado correctamente'),
@@ -104,7 +105,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         _error = 'Error al actualizar stock: ${e.toString()}';
         _isUpdating = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_error!),
@@ -113,15 +114,19 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       );
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
-    final bool stockBajo = StockUtils.tieneStockBajoFromProducto(widget.producto);
+    final bool stockBajo =
+        StockUtils.tieneStockBajoFromProducto(widget.producto);
     final bool agotado = StockUtils.sinStockFromProducto(widget.producto);
-    final statusColor = StockUtils.getStockStatusColor(_stockActual, _stockMinimo);
-    final statusIcon = StockUtils.getStockStatusIcon(_stockActual, _stockMinimo);
-    final statusText = StockUtils.getStockStatusText(_stockActual, _stockMinimo);
-    
+    final statusColor =
+        StockUtils.getStockStatusColor(_stockActual, _stockMinimo);
+    final statusIcon =
+        StockUtils.getStockStatusIcon(_stockActual, _stockMinimo);
+    final statusText =
+        StockUtils.getStockStatusText(_stockActual, _stockMinimo);
+
     return Dialog(
       backgroundColor: const Color(0xFF1A1A1A),
       shape: RoundedRectangleBorder(
@@ -154,13 +159,13 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             Divider(color: Colors.white.withOpacity(0.2)),
-            
+
             const SizedBox(height: 16),
-            
+
             // Contenido principal con ScrollView
             Expanded(
               child: SingleChildScrollView(
@@ -182,33 +187,39 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                                 FontAwesomeIcons.box,
                                 [
                                   _buildInfoRow('SKU', widget.producto.sku),
-                                  _buildInfoRow('Categoría', widget.producto.categoria),
+                                  _buildInfoRow(
+                                      'Categoría', widget.producto.categoria),
                                   _buildInfoRow('Marca', widget.producto.marca),
-                                  _buildInfoRow('Sucursal', widget.sucursalNombre),
+                                  _buildInfoRow(
+                                      'Sucursal', widget.sucursalNombre),
                                   if (widget.producto.descripcion != null)
-                                    _buildInfoRow('Descripción', widget.producto.descripcion!),
+                                    _buildInfoRow('Descripción',
+                                        widget.producto.descripcion!),
                                 ],
                               ),
-                              
+
                               const SizedBox(height: 16),
-                              
+
                               // Información de stock
                               _buildInfoSection(
                                 'Información de Stock',
                                 FontAwesomeIcons.chartLine,
                                 [
-                                  _buildInfoRow('Stock Actual', _stockActual.toString(), color: statusColor),
-                                  _buildInfoRow('Stock Mínimo', _stockMinimo.toString()),
-                                  _buildInfoRow('Estado', statusText, icon: statusIcon, color: statusColor),
-                                  _buildInfoRow('Última Actualización', 'Hace 2 días'),
+                                  _buildInfoRow(
+                                      'Stock Actual', _stockActual.toString(),
+                                      color: statusColor),
+                                  _buildInfoRow(
+                                      'Stock Mínimo', _stockMinimo.toString()),
+                                  _buildInfoRow('Estado', statusText,
+                                      icon: statusIcon, color: statusColor),
                                 ],
                               ),
                             ],
                           ),
                         ),
-                        
+
                         const SizedBox(width: 24),
-                        
+
                         // Ajuste de stock
                         Expanded(
                           flex: 4,
@@ -216,7 +227,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 8),
                   ],
                 ),
@@ -227,7 +238,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       ),
     );
   }
-  
+
   // Sección de información con título y lista de filas
   Widget _buildInfoSection(String title, IconData icon, List<Widget> children) {
     return Column(
@@ -256,9 +267,10 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       ],
     );
   }
-  
+
   // Fila de información con etiqueta y valor
-  Widget _buildInfoRow(String label, String value, {IconData? icon, Color? color}) {
+  Widget _buildInfoRow(String label, String value,
+      {IconData? icon, Color? color}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -295,7 +307,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       ),
     );
   }
-  
+
   // Widget para ajustar el stock
   Widget _buildAjusteStock() {
     return Container(
@@ -319,7 +331,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Valor actual y nuevo
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -363,7 +375,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                   Text(
                     _stockNuevo.toString(),
                     style: TextStyle(
-                      color: _stockNuevo != _stockActual ? const Color(0xFFE31E24) : Colors.white,
+                      color: _stockNuevo != _stockActual
+                          ? const Color(0xFFE31E24)
+                          : Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
                     ),
@@ -372,9 +386,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Campo para ingresar manualmente la cantidad
           TextField(
             controller: _stockController,
@@ -388,7 +402,8 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               fillColor: const Color(0xFF1A1A1A),
               labelStyle: const TextStyle(color: Colors.white70),
               hintStyle: const TextStyle(color: Colors.white30),
-              errorText: _mostrarAdvertencia ? 'Valor muy alto, ¿está seguro?' : null,
+              errorText:
+                  _mostrarAdvertencia ? 'Valor muy alto, ¿está seguro?' : null,
             ),
             onChanged: (value) {
               // Validar que sea un número
@@ -399,7 +414,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                 });
                 return;
               }
-              
+
               final cantidad = int.tryParse(value);
               if (cantidad != null) {
                 final nuevoStock = _stockActual + cantidad;
@@ -410,23 +425,26 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               }
             },
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Controles para ajustar
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Botón para reducir la cantidad a agregar
               IconButton(
-                icon: const FaIcon(FontAwesomeIcons.circleMinus, color: Colors.white),
+                icon: const FaIcon(FontAwesomeIcons.circleMinus,
+                    color: Colors.white),
                 onPressed: _isUpdating || (_stockNuevo <= _stockActual)
-                    ? null 
+                    ? null
                     : () {
                         setState(() {
                           _stockNuevo--;
-                          _stockController.text = (_stockNuevo - _stockActual).toString();
-                          _mostrarAdvertencia = (_stockNuevo - _stockActual) > 100;
+                          _stockController.text =
+                              (_stockNuevo - _stockActual).toString();
+                          _mostrarAdvertencia =
+                              (_stockNuevo - _stockActual) > 100;
                           // Reiniciar contador de clics cuando reducimos
                           _contadorClicsAumentar = 0;
                           _mostrarBotonesRapidos = false;
@@ -437,20 +455,24 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               const SizedBox(width: 16),
               // Botón para aumentar la cantidad a agregar
               IconButton(
-                icon: const FaIcon(FontAwesomeIcons.circlePlus, color: Colors.white),
-                onPressed: _isUpdating 
-                    ? null 
+                icon: const FaIcon(FontAwesomeIcons.circlePlus,
+                    color: Colors.white),
+                onPressed: _isUpdating
+                    ? null
                     : () {
                         setState(() {
                           _stockNuevo++;
-                          _stockController.text = (_stockNuevo - _stockActual).toString();
-                          _mostrarAdvertencia = (_stockNuevo - _stockActual) > 100;
-                          
+                          _stockController.text =
+                              (_stockNuevo - _stockActual).toString();
+                          _mostrarAdvertencia =
+                              (_stockNuevo - _stockActual) > 100;
+
                           // Incrementar contador de clics para mostrar botones rápidos
                           _contadorClicsAumentar++;
-                          
+
                           // Después de 4 clics, mostrar botones rápidos
-                          if (_contadorClicsAumentar >= 5 && !_mostrarBotonesRapidos) {
+                          if (_contadorClicsAumentar >= 5 &&
+                              !_mostrarBotonesRapidos) {
                             _mostrarBotonesRapidos = true;
                           }
                         });
@@ -459,7 +481,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               ),
             ],
           ),
-          
+
           // Botones de incremento rápido (aparecen después de 4 clics)
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
@@ -468,62 +490,74 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
             child: AnimatedOpacity(
               opacity: _mostrarBotonesRapidos ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 300),
-              child: _mostrarBotonesRapidos 
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Botón +5
-                        ElevatedButton.icon(
-                          icon: const FaIcon(
-                            FontAwesomeIcons.plus, 
-                            size: 12,
+              child: _mostrarBotonesRapidos
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Botón +5
+                          ElevatedButton.icon(
+                            icon: const FaIcon(
+                              FontAwesomeIcons.plus,
+                              size: 12,
+                            ),
+                            label: const Text('+5'),
+                            onPressed: _isUpdating
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _stockNuevo += 5;
+                                      _stockController.text =
+                                          (_stockNuevo - _stockActual)
+                                              .toString();
+                                      _mostrarAdvertencia =
+                                          (_stockNuevo - _stockActual) > 100;
+                                    });
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF3E3E3E),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                            ),
                           ),
-                          label: const Text('+5'),
-                          onPressed: _isUpdating ? null : () {
-                            setState(() {
-                              _stockNuevo += 5;
-                              _stockController.text = (_stockNuevo - _stockActual).toString();
-                              _mostrarAdvertencia = (_stockNuevo - _stockActual) > 100;
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF3E3E3E),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          const SizedBox(width: 12),
+                          // Botón +10
+                          ElevatedButton.icon(
+                            icon: const FaIcon(
+                              FontAwesomeIcons.plus,
+                              size: 12,
+                            ),
+                            label: const Text('+10'),
+                            onPressed: _isUpdating
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _stockNuevo += 10;
+                                      _stockController.text =
+                                          (_stockNuevo - _stockActual)
+                                              .toString();
+                                      _mostrarAdvertencia =
+                                          (_stockNuevo - _stockActual) > 100;
+                                    });
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF3E3E3E),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        // Botón +10
-                        ElevatedButton.icon(
-                          icon: const FaIcon(
-                            FontAwesomeIcons.plus, 
-                            size: 12,
-                          ),
-                          label: const Text('+10'),
-                          onPressed: _isUpdating ? null : () {
-                            setState(() {
-                              _stockNuevo += 10;
-                              _stockController.text = (_stockNuevo - _stockActual).toString();
-                              _mostrarAdvertencia = (_stockNuevo - _stockActual) > 100;
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF3E3E3E),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : const SizedBox.shrink(),
+                        ],
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Botón para guardar cambios
           Row(
             children: [
@@ -534,13 +568,15 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                   child: Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: ElevatedButton(
-                      onPressed: _isUpdating ? null : () {
-                        setState(() {
-                          _stockNuevo = _stockActual;
-                          _stockController.text = '0';
-                          _mostrarAdvertencia = false;
-                        });
-                      },
+                      onPressed: _isUpdating
+                          ? null
+                          : () {
+                              setState(() {
+                                _stockNuevo = _stockActual;
+                                _stockController.text = '0';
+                                _mostrarAdvertencia = false;
+                              });
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey.shade800,
                         foregroundColor: Colors.white,
@@ -550,7 +586,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                     ),
                   ),
                 ),
-              
+
               // Botón para guardar
               Expanded(
                 flex: _stockNuevo != _stockActual ? 2 : 1,
@@ -579,7 +615,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               ),
             ],
           ),
-          
+
           // Mensaje de advertencia para valores grandes
           if (_mostrarAdvertencia)
             Padding(
