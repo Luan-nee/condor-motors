@@ -30,17 +30,18 @@ class ProductosTable extends StatefulWidget {
   State<ProductosTable> createState() => _ProductosTableState();
 }
 
-class _ProductosTableState extends State<ProductosTable> with SingleTickerProviderStateMixin {
+class _ProductosTableState extends State<ProductosTable>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   Map<String, List<Producto>> _productosAgrupados = {};
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _agruparProductos();
   }
-  
+
   @override
   void didUpdateWidget(ProductosTable oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -48,11 +49,12 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
       _agruparProductos();
     }
   }
-  
+
   void _agruparProductos() {
-    _productosAgrupados = ProductosUtils.agruparProductosPorDisponibilidad(widget.productos);
+    _productosAgrupados =
+        ProductosUtils.agruparProductosPorDisponibilidad(widget.productos);
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -112,7 +114,8 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                   const Text('Todos'),
                   const SizedBox(width: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: const Color(0xFF2D2D2D),
                       borderRadius: BorderRadius.circular(12),
@@ -130,12 +133,14 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const FaIcon(FontAwesomeIcons.triangleExclamation, size: 16, color: Color(0xFFE31E24)),
+                  const FaIcon(FontAwesomeIcons.triangleExclamation,
+                      size: 16, color: Color(0xFFE31E24)),
                   const SizedBox(width: 8),
                   const Text('Stock Bajo'),
                   const SizedBox(width: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: const Color(0xFF2D2D2D),
                       borderRadius: BorderRadius.circular(12),
@@ -153,12 +158,14 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  FaIcon(FontAwesomeIcons.ban, size: 16, color: Colors.red.shade800),
+                  FaIcon(FontAwesomeIcons.ban,
+                      size: 16, color: Colors.red.shade800),
                   const SizedBox(width: 8),
                   const Text('Agotados'),
                   const SizedBox(width: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: const Color(0xFF2D2D2D),
                       borderRadius: BorderRadius.circular(12),
@@ -179,10 +186,10 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
             children: [
               // Todos los productos
               _buildProductosTabla(widget.productos),
-              
+
               // Productos con stock bajo
               _buildProductosTabla(_productosAgrupados['stockBajo'] ?? []),
-              
+
               // Productos agotados
               _buildProductosTabla(_productosAgrupados['agotados'] ?? []),
             ],
@@ -191,7 +198,7 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
       ],
     );
   }
-  
+
   Widget _buildProductosTabla(List<Producto> productosLista) {
     return SingleChildScrollView(
       child: Padding(
@@ -273,7 +280,7 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
       ],
       rows: productosLista.map((producto) {
         final bool stockBajo = producto.tieneStockBajo();
-        
+
         return DataRow(
           cells: [
             // Nombre
@@ -284,8 +291,8 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                     width: 8,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: stockBajo 
-                          ? const Color(0xFFE31E24) 
+                      color: stockBajo
+                          ? const Color(0xFFE31E24)
                           : const Color(0xFF4CAF50),
                       borderRadius: BorderRadius.circular(4),
                     ),
@@ -298,37 +305,16 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
-                        decoration: stockBajo 
-                            ? TextDecoration.none 
+                        decoration: stockBajo
+                            ? TextDecoration.none
                             : TextDecoration.none,
                       ),
                     ),
                   ),
-                  if (producto.estaEnOferta()) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: Colors.amber,
-                        ),
-                      ),
-                      child: Text(
-                        producto.getPorcentajeDescuentoOfertaFormateado() ?? '',
-                        style: const TextStyle(
-                          color: Colors.amber,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
-            
+
             // SKU
             DataCell(
               Text(
@@ -339,7 +325,7 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                 ),
               ),
             ),
-            
+
             // Categoría
             DataCell(
               Container(
@@ -360,7 +346,7 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                 ),
               ),
             ),
-            
+
             // Stock
             DataCell(
               Row(
@@ -371,13 +357,15 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                     '${producto.stock}',
                     style: TextStyle(
                       color: stockBajo ? const Color(0xFFE31E24) : Colors.white,
-                      fontWeight: stockBajo ? FontWeight.bold : FontWeight.normal,
+                      fontWeight:
+                          stockBajo ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                   if (stockBajo) ...[
                     const SizedBox(width: 4),
                     Tooltip(
-                      message: 'Stock bajo: Mínimo ${producto.stockMinimo ?? 0}',
+                      message:
+                          'Stock bajo: Mínimo ${producto.stockMinimo ?? 0}',
                       child: const Icon(
                         Icons.warning_amber_rounded,
                         color: Color(0xFFE31E24),
@@ -388,7 +376,7 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                 ],
               ),
             ),
-            
+
             // Precio
             DataCell(
               Column(
@@ -413,7 +401,7 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                 ],
               ),
             ),
-            
+
             // Acciones
             DataCell(
               Row(
@@ -458,7 +446,7 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
   Widget _buildTableHeader() {
     // Verificar si el ordenamiento está habilitado
     final canSort = widget.onSort != null;
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -473,19 +461,23 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
         children: [
           _buildHeaderCell('ID', field: 'id', canSort: canSort),
           _buildHeaderCell('Imagen'),
-          _buildHeaderCell('Producto', flex: 3, field: 'nombre', canSort: canSort),
+          _buildHeaderCell('Producto',
+              flex: 3, field: 'nombre', canSort: canSort),
           _buildHeaderCell('SKU', flex: 2, field: 'sku', canSort: canSort),
-          _buildHeaderCell('Categoría', flex: 2, field: 'categoria', canSort: canSort),
+          _buildHeaderCell('Categoría',
+              flex: 2, field: 'categoria', canSort: canSort),
           _buildHeaderCell('Marca', flex: 2, field: 'marca', canSort: canSort),
-          _buildHeaderCell('Precio Compra', flex: 2, field: 'precioCompra', canSort: canSort),
-          _buildHeaderCell('Precio Venta', flex: 2, field: 'precioVenta', canSort: canSort),
+          _buildHeaderCell('Precio Compra',
+              flex: 2, field: 'precioCompra', canSort: canSort),
+          _buildHeaderCell('Precio Venta',
+              flex: 2, field: 'precioVenta', canSort: canSort),
           _buildHeaderCell('Stock', field: 'stock', canSort: canSort),
           _buildHeaderCell('Acciones', flex: 2, alignment: Alignment.center),
         ],
       ),
     );
   }
-  
+
   Widget _buildHeaderCell(
     String text, {
     int flex = 1,
@@ -494,7 +486,7 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
     Alignment alignment = Alignment.centerLeft,
   }) {
     final isCurrentSortField = field != null && widget.sortBy == field;
-    
+
     return Expanded(
       flex: flex,
       child: canSort && field != null
@@ -508,8 +500,8 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                     Text(
                       text,
                       style: TextStyle(
-                        color: isCurrentSortField 
-                            ? const Color(0xFFE31E24) 
+                        color: isCurrentSortField
+                            ? const Color(0xFFE31E24)
                             : Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
@@ -532,8 +524,8 @@ class _ProductosTableState extends State<ProductosTable> with SingleTickerProvid
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
-              textAlign: alignment == Alignment.center 
-                  ? TextAlign.center 
+              textAlign: alignment == Alignment.center
+                  ? TextAlign.center
                   : TextAlign.left,
             ),
     );
