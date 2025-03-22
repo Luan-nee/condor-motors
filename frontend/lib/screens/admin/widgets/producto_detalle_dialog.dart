@@ -382,13 +382,14 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                           children: [
                             // Pestaña de Precios (ahora con descuentos y precios por sucursal)
                             _buildPreciosTab(isPantallaReducida),
-                            
+
                             // Pestaña de Stock (con lista de sucursales integrada)
                             _buildStockConSucursales(isPantallaReducida),
 
                             // Pestaña de Información Adicional
                             Container(
-                              padding: EdgeInsets.all(isPantallaReducida ? 12.0 : 16.0),
+                              padding: EdgeInsets.all(
+                                  isPantallaReducida ? 12.0 : 16.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -555,7 +556,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                 ),
               ),
             ],
-            
+
             // Nueva sección: Precios por sucursal
             if (_sucursalesCompartidas.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -564,8 +565,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                 decoration: BoxDecoration(
                   color: Colors.blue.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: Colors.blue.withOpacity(0.3), width: 1),
+                  border:
+                      Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -579,7 +580,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Precios por Sucursal',
+                          'Precios por local',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -602,10 +603,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
 
   // Nuevo widget para mostrar precios por sucursal
   Widget _buildPreciosPorSucursal() {
-    final sucursalesDisponibles = _sucursalesCompartidas
-        .where((s) => s.disponible)
-        .toList();
-    
+    final sucursalesDisponibles =
+        _sucursalesCompartidas.where((s) => s.disponible).toList();
+
     if (sucursalesDisponibles.isEmpty) {
       return Center(
         child: Padding(
@@ -631,7 +631,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               Expanded(
                 flex: 3,
                 child: Text(
-                  'Sucursal',
+                  'Local',
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -642,7 +642,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               Expanded(
                 flex: 2,
                 child: Text(
-                  'Precio',
+                  'Precio de venta',
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -654,7 +654,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               Expanded(
                 flex: 2,
                 child: Text(
-                  'Oferta',
+                  'Precio de liquidación',
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -666,10 +666,10 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             ],
           ),
         ),
-        
+
         // Divisor
         Divider(color: Colors.white24, height: 1),
-        
+
         // Lista de sucursales con precios
         ListView.builder(
           shrinkWrap: true,
@@ -721,7 +721,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         ),
                       ],
                     ),
-                  ),                  
+                  ),
                   // Precio de venta
                   Expanded(
                     flex: 2,
@@ -735,7 +735,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  
+
                   // Precio de oferta
                   Expanded(
                     flex: 2,
@@ -871,9 +871,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     }
 
     // Ya no usamos filtrado, mostramos todas las sucursales disponibles
-    final sucursalesDisponibles = _sucursalesCompartidas
-        .where((s) => s.disponible)
-        .toList();
+    final sucursalesDisponibles =
+        _sucursalesCompartidas.where((s) => s.disponible).toList();
 
     if (sucursalesDisponibles.isEmpty) {
       return Center(
@@ -1202,7 +1201,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         : Colors.green))),
         if (widget.producto.maxDiasSinReabastecer != null)
           Expanded(
-              child: _buildAtributo('Días sin reabastecer',
+              child: _buildAtributo('Días Antes de Liquidación',
                   '${widget.producto.maxDiasSinReabastecer}')),
         // Si no hay "Días sin reabastecer", añadir un contenedor vacío
         if (widget.producto.maxDiasSinReabastecer == null)
@@ -1304,14 +1303,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                 width: 150,
                 child: _buildAtributo(
                     '% descuento', '${widget.producto.porcentajeDescuento}%')),
-          if (widget.producto.estaEnOferta())
-            SizedBox(
-                width: 150,
-                child: _buildAtributo(
-                    'Descuento oferta',
-                    widget.producto.getPorcentajeDescuentoOfertaFormateado() ??
-                        '',
-                    color: Colors.amber)),
         ],
       ),
     );
@@ -1342,7 +1333,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         runSpacing: 12,
         children: [
           SizedBox(
-              width: 150, child: _buildAtributo('ID', '${widget.producto.id}')),
+              width: 150,
+              child:
+                  _buildAtributo('ID del producto', '${widget.producto.id}')),
           if (widget.producto.detalleProductoId != null)
             SizedBox(
                 width: 150,
