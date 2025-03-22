@@ -216,4 +216,41 @@ class ProductosApi {
       rethrow;
     }
   }
+  
+  /// Agrega stock a un producto mediante el endpoint de entradas de inventario
+  /// 
+  /// [sucursalId] ID de la sucursal
+  /// [productoId] ID del producto
+  /// [cantidad] Cantidad a agregar (debe ser positiva)
+  /// [motivo] Motivo de la entrada de inventario (opcional)
+  Future<bool> agregarStock({
+    required String sucursalId,
+    required int productoId,
+    required int cantidad,
+    String? motivo,
+  }) async {
+    try {
+      if (cantidad <= 0) {
+        throw Exception('La cantidad a agregar debe ser mayor a 0');
+      }
+      
+      debugPrint('Agregando $cantidad unidades al producto $productoId en sucursal $sucursalId');
+      
+      final body = {
+        'productoId': productoId,
+        'cantidad': cantidad,
+      };
+      
+      await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/inventarios/entradas',
+        method: 'POST',
+        body: body,
+      );
+      
+      return true;
+    } catch (e) {
+      debugPrint('Error al agregar stock: $e');
+      rethrow;
+    }
+  }
 }

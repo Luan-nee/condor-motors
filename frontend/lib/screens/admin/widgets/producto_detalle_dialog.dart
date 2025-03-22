@@ -45,8 +45,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     with TickerProviderStateMixin {
   bool _isLoading = true;
   List<ProductoEnSucursal> _sucursalesCompartidas = [];
-  String _filtro =
-      'todas'; // 'todas', 'disponibles', 'stockBajo', 'agotadas', 'noDisponible'
   String _error = '';
 
   // Controlador para pestañas
@@ -272,7 +270,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   _isLoading
                       ? '...'
                       : '${_sucursalesCompartidas.where((s) => s.disponible && s.producto.tieneStockBajo()).length}',
-                  icon: FontAwesomeIcons.exclamationTriangle,
+                  icon: FontAwesomeIcons.triangleExclamation,
                   color: const Color(0xFFE31E24),
                   isSmall: isPantallaReducida,
                 ),
@@ -382,103 +380,36 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         child: TabBarView(
                           controller: _atributosTabController,
                           children: [
-                            // Pestaña de Precios (ahora con descuentos integrados)
-                            Padding(
-                              padding: EdgeInsets.all(
-                                  isPantallaReducida ? 12.0 : 16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Sección de precios
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black12,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Información de Precios',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color:
-                                                Colors.white.withOpacity(0.9),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        isPantallaReducida
-                                            ? _buildPreciosWrap()
-                                            : _buildPreciosRow(),
-                                      ],
-                                    ),
-                                  ),
-
-                                  // Sección de descuentos (si aplica)
-                                  if (widget.producto.cantidadMinimaDescuento != null ||
-                                      widget.producto.cantidadGratisDescuento !=
-                                          null ||
-                                      widget.producto.porcentajeDescuento !=
-                                          null ||
-                                      widget.producto.estaEnOferta()) ...[
-                                    const SizedBox(height: 16),
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: Colors.amber.withOpacity(0.05),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                            color:
-                                                Colors.amber.withOpacity(0.3),
-                                            width: 1),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              FaIcon(
-                                                FontAwesomeIcons.tags,
-                                                size: 16,
-                                                color: Colors.amber,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                'Descuentos y Promociones',
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.amber,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 12),
-                                          isPantallaReducida
-                                              ? _buildDescuentosWrap()
-                                              : _buildDescuentosRow(),
-                                        ],
-                                      ),
-                                    ),
-                                  ]
-                                ],
-                              ),
-                            ),
-
+                            // Pestaña de Precios (ahora con descuentos y precios por sucursal)
+                            _buildPreciosTab(isPantallaReducida),
+                            
                             // Pestaña de Stock (con lista de sucursales integrada)
                             _buildStockConSucursales(isPantallaReducida),
 
                             // Pestaña de Información Adicional
-                            Padding(
-                              padding: EdgeInsets.all(
-                                  isPantallaReducida ? 12.0 : 16.0),
-                              child: isPantallaReducida
-                                  ? _buildInfoAdicionalWrap()
-                                  : _buildInfoAdicionalRow(),
+                            Container(
+                              padding: EdgeInsets.all(isPantallaReducida ? 12.0 : 16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Información Adicional',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Expanded(
+                                    child: SingleChildScrollView(
+                                      child: isPantallaReducida
+                                          ? _buildInfoAdicionalWrap()
+                                          : _buildInfoAdicionalRow(),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -546,6 +477,639 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           onPressed: () => Navigator.of(context).pop(),
         ),
       ],
+    );
+  }
+
+  // Pestaña de Precios (ahora con descuentos integrados)
+  Widget _buildPreciosTab(bool isPantallaReducida) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.all(isPantallaReducida ? 12.0 : 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Sección de precios
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Información de Precios',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  isPantallaReducida ? _buildPreciosWrap() : _buildPreciosRow(),
+                ],
+              ),
+            ),
+
+            // Sección de descuentos (si aplica)
+            if (widget.producto.cantidadMinimaDescuento != null ||
+                widget.producto.cantidadGratisDescuento != null ||
+                widget.producto.porcentajeDescuento != null ||
+                widget.producto.estaEnOferta()) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: Colors.amber.withOpacity(0.3), width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        FaIcon(
+                          FontAwesomeIcons.tags,
+                          size: 16,
+                          color: Colors.amber,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Descuentos y Promociones',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amber,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    isPantallaReducida
+                        ? _buildDescuentosWrap()
+                        : _buildDescuentosRow(),
+                  ],
+                ),
+              ),
+            ],
+            
+            // Nueva sección: Precios por sucursal
+            if (_sucursalesCompartidas.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: Colors.blue.withOpacity(0.3), width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        FaIcon(
+                          FontAwesomeIcons.store,
+                          size: 16,
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Precios por Sucursal',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPreciosPorSucursal(),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Nuevo widget para mostrar precios por sucursal
+  Widget _buildPreciosPorSucursal() {
+    final sucursalesDisponibles = _sucursalesCompartidas
+        .where((s) => s.disponible)
+        .toList();
+    
+    if (sucursalesDisponibles.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            'No hay información de precios disponible en sucursales',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Encabezado
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'Sucursal',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'Precio',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'Oferta',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Divisor
+        Divider(color: Colors.white24, height: 1),
+        
+        // Lista de sucursales con precios
+        ListView.builder(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          itemCount: sucursalesDisponibles.length,
+          itemBuilder: (context, index) {
+            final item = sucursalesDisponibles[index];
+            return Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white10,
+                    width: 0.5,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Nombre de la sucursal
+                  Expanded(
+                    flex: 3,
+                    child: Row(
+                      children: [
+                        FaIcon(
+                          item.sucursal.sucursalCentral
+                              ? FontAwesomeIcons.building
+                              : FontAwesomeIcons.store,
+                          size: 12,
+                          color: item.sucursal.sucursalCentral
+                              ? Colors.blue
+                              : Colors.white54,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            item.sucursal.nombre,
+                            style: TextStyle(
+                              color: item.sucursal.sucursalCentral
+                                  ? Colors.blue
+                                  : Colors.white,
+                              fontSize: 14,
+                              fontWeight: item.sucursal.sucursalCentral
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),                  
+                  // Precio de venta
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      item.producto.getPrecioVentaFormateado(),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  
+                  // Precio de oferta
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      item.producto.estaEnOferta()
+                          ? item.producto.getPrecioOfertaFormateado() ?? '-'
+                          : '-',
+                      style: TextStyle(
+                        color: item.producto.estaEnOferta()
+                            ? Colors.amber
+                            : Colors.white54,
+                        fontSize: 14,
+                        fontWeight: item.producto.estaEnOferta()
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // Método para mostrar la pestaña de Stock con sucursales
+  Widget _buildStockConSucursales(bool isPantallaReducida) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Información básica de stock del producto
+          Padding(
+            padding: EdgeInsets.all(isPantallaReducida ? 12.0 : 16.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Información de Stock',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Cambiamos a formato similar a precios (en 4 columnas o wrap)
+                  isPantallaReducida ? _buildStockWrap() : _buildStockRow(),
+                ],
+              ),
+            ),
+          ),
+
+          // Divisor
+          const Divider(color: Colors.white24, height: 1),
+
+          // Título de sección con filtros
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Stock por Sucursal',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Lista de sucursales filtradas (sin Expanded para permitir scroll)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: _buildSucursalesLista(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSucursalesLista() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_error.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              color: Color(0xFFE31E24),
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _error,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reintentar', style: TextStyle(fontSize: 15)),
+              onPressed: _cargarDetallesProducto,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE31E24),
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Ya no usamos filtrado, mostramos todas las sucursales disponibles
+    final sucursalesDisponibles = _sucursalesCompartidas
+        .where((s) => s.disponible)
+        .toList();
+
+    if (sucursalesDisponibles.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const FaIcon(
+              FontAwesomeIcons.store,
+              size: 48,
+              color: Colors.white24,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Este producto no está disponible en ninguna sucursal.',
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      itemCount: sucursalesDisponibles.length,
+      separatorBuilder: (context, index) => const Divider(
+        color: Colors.white10,
+        height: 1,
+      ),
+      itemBuilder: (context, index) {
+        final sucursalInfo = sucursalesDisponibles[index];
+        return _buildCompactSucursalTile(sucursalInfo);
+      },
+    );
+  }
+
+  // Versión compacta del tile de sucursal
+  Widget _buildCompactSucursalTile(ProductoEnSucursal sucursalInfo) {
+    final disponible = sucursalInfo.disponible;
+    final producto = sucursalInfo.producto;
+    final sucursal = sucursalInfo.sucursal;
+
+    final stockBajo = disponible && producto.tieneStockBajo();
+    final agotado = disponible && producto.stock <= 0;
+    final esCentral = sucursal.sucursalCentral;
+
+    Color indicadorColor = Colors.green;
+    IconData statusIcon = FontAwesomeIcons.check;
+    String statusText = 'Disponible';
+
+    if (!disponible) {
+      indicadorColor = Colors.grey;
+      statusIcon = FontAwesomeIcons.ban;
+      statusText = 'No disponible';
+    } else if (agotado) {
+      indicadorColor = Colors.red.shade800;
+      statusIcon = FontAwesomeIcons.ban;
+      statusText = 'Agotado';
+    } else if (stockBajo) {
+      indicadorColor = const Color(0xFFE31E24);
+      statusIcon = FontAwesomeIcons.triangleExclamation;
+      statusText = 'Stock bajo';
+    }
+
+    // Versión compacta del tile
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Indicador de estado (barra vertical)
+          Container(
+            width: 4,
+            height: 40,
+            decoration: BoxDecoration(
+              color: indicadorColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Información principal
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Nombre de sucursal y etiqueta central
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        sucursal.nombre,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (esCentral)
+                      Container(
+                        margin: const EdgeInsets.only(left: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(2),
+                          border: Border.all(
+                            color: Colors.blue,
+                            width: 1,
+                          ),
+                        ),
+                        child: const Text(
+                          'CENTRAL',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+
+                // Dirección en formato compacto
+                Text(
+                  sucursal.direccion,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.white60,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+                const SizedBox(height: 4),
+
+                // Etiquetas de información en una sola fila
+                Row(
+                  children: [
+                    // Estado (Disponible, Stock bajo, etc.)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: indicadorColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: indicadorColor.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FaIcon(
+                            statusIcon,
+                            size: 10,
+                            color: indicadorColor,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            statusText,
+                            style: TextStyle(
+                              color: indicadorColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    if (disponible) ...[
+                      const SizedBox(width: 8),
+
+                      // Stock
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.black26,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Stock: ',
+                              style: TextStyle(
+                                color: Colors.white60,
+                                fontSize: 12,
+                              ),
+                            ),
+                            Text(
+                              '${producto.stock}',
+                              style: TextStyle(
+                                color: indicadorColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (producto.stockMinimo != null)
+                              Text(
+                                '/${producto.stockMinimo}',
+                                style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Flecha de navegación
+          if (disponible)
+            const Icon(
+              Icons.chevron_right,
+              color: Colors.white38,
+              size: 18,
+            ),
+        ],
+      ),
     );
   }
 
@@ -640,6 +1204,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           Expanded(
               child: _buildAtributo('Días sin reabastecer',
                   '${widget.producto.maxDiasSinReabastecer}')),
+        // Si no hay "Días sin reabastecer", añadir un contenedor vacío
+        if (widget.producto.maxDiasSinReabastecer == null)
+          Expanded(child: Container()),
       ],
     );
   }
@@ -815,18 +1382,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     );
   }
 
-  // Widget para crear un título de sección
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: Colors.white.withOpacity(0.9),
-      ),
-    );
-  }
-
   // Widget para crear una etiqueta/tag
   Widget _buildTag(String text, {String? fontFamily}) {
     return Container(
@@ -842,548 +1397,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           fontFamily: fontFamily,
           color: Colors.white70,
         ),
-      ),
-    );
-  }
-
-  Widget _buildEstadisticaTile(String label, String value,
-      {IconData? icon, Color? color}) {
-    return Expanded(
-      child: Column(
-        children: [
-          if (icon != null) ...[
-            FaIcon(
-              icon,
-              size: 16,
-              color: color ?? Colors.white70,
-            ),
-            const SizedBox(height: 4),
-          ],
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: color ?? Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Método para combinar la información de stock del producto con el listado de sucursales
-  Widget _buildStockConSucursales(bool isPantallaReducida) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Información básica de stock del producto
-        Padding(
-          padding: EdgeInsets.all(isPantallaReducida ? 12.0 : 16.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.black12,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Información de Stock',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                isPantallaReducida ? _buildStockWrap() : _buildStockRow(),
-              ],
-            ),
-          ),
-        ),
-
-        // Divisor
-        const Divider(color: Colors.white24, height: 1),
-
-        // Título de sección
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Stock por Sucursal',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-
-              // Selector de filtros (desplegable)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white10),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _filtro,
-                    icon: const Icon(Icons.filter_list,
-                        color: Colors.white54, size: 16),
-                    dropdownColor: const Color(0xFF2D2D2D),
-                    isDense: true,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                    ),
-                    onChanged: (String? newValue) {
-                      if (newValue != null) {
-                        setState(() {
-                          _filtro = newValue;
-                        });
-                      }
-                    },
-                    items: [
-                      DropdownMenuItem(
-                        value: 'todas',
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const FaIcon(FontAwesomeIcons.layerGroup,
-                                size: 12, color: Colors.white),
-                            const SizedBox(width: 6),
-                            Text('Todas (${_sucursalesCompartidas.length})'),
-                          ],
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'disponibles',
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const FaIcon(FontAwesomeIcons.boxOpen,
-                                size: 12, color: Colors.green),
-                            const SizedBox(width: 6),
-                            Text(
-                                'Disponibles (${_sucursalesCompartidas.where((s) => s.disponible && s.producto.stock > 0).length})'),
-                          ],
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'stockBajo',
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const FaIcon(FontAwesomeIcons.exclamationTriangle,
-                                size: 12, color: Color(0xFFE31E24)),
-                            const SizedBox(width: 6),
-                            Text(
-                                'Stock Bajo (${_sucursalesCompartidas.where((s) => s.disponible && s.producto.tieneStockBajo()).length})'),
-                          ],
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'agotadas',
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            FaIcon(FontAwesomeIcons.ban,
-                                size: 12, color: Colors.red.shade800),
-                            const SizedBox(width: 6),
-                            Text(
-                                'Agotadas (${_sucursalesCompartidas.where((s) => s.disponible && s.producto.stock <= 0).length})'),
-                          ],
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'noDisponible',
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const FaIcon(FontAwesomeIcons.ghost,
-                                size: 12, color: Colors.grey),
-                            const SizedBox(width: 6),
-                            Text(
-                                'No Disponible (${_sucursalesCompartidas.where((s) => !s.disponible).length})'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Lista de sucursales filtradas
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: _buildSucursalesLista(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSucursalesLista() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
-    if (_error.isNotEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              color: Color(0xFFE31E24),
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _error,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 16,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar', style: TextStyle(fontSize: 15)),
-              onPressed: _cargarDetallesProducto,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31E24),
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Aplicar el filtro directo en lugar de utilizar _sucursalesFiltradas
-    List<ProductoEnSucursal> sucursalesFiltradas;
-
-    // Aplicar el filtro específico
-    switch (_filtro) {
-      case 'disponibles':
-        sucursalesFiltradas = _sucursalesCompartidas
-            .where((s) => s.disponible && s.producto.stock > 0)
-            .toList();
-        break;
-      case 'stockBajo':
-        sucursalesFiltradas = _sucursalesCompartidas
-            .where((s) => s.disponible && s.producto.tieneStockBajo())
-            .toList();
-        break;
-      case 'agotadas':
-        sucursalesFiltradas = _sucursalesCompartidas
-            .where((s) => s.disponible && s.producto.stock <= 0)
-            .toList();
-        break;
-      case 'noDisponible':
-        sucursalesFiltradas =
-            _sucursalesCompartidas.where((s) => !s.disponible).toList();
-        break;
-      default: // 'todas'
-        sucursalesFiltradas = _sucursalesCompartidas;
-        break;
-    }
-
-    if (sucursalesFiltradas.isEmpty) {
-      String mensaje =
-          'No hay sucursales que coincidan con el filtro seleccionado.';
-      if (_filtro == 'todas' && _sucursalesCompartidas.isEmpty) {
-        mensaje = 'Este producto no está disponible en ninguna sucursal.';
-      } else if (_filtro == 'disponibles') {
-        mensaje =
-            'Este producto no está disponible en ninguna sucursal con stock.';
-      } else if (_filtro == 'stockBajo') {
-        mensaje = 'No hay sucursales con stock bajo para este producto.';
-      } else if (_filtro == 'agotadas') {
-        mensaje = 'No hay sucursales con stock agotado para este producto.';
-      } else if (_filtro == 'noDisponible') {
-        mensaje = 'Este producto está disponible en todas las sucursales.';
-      }
-
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const FaIcon(
-              FontAwesomeIcons.store,
-              size: 48,
-              color: Colors.white24,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              mensaje,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 16,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.separated(
-      shrinkWrap: true,
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      itemCount: sucursalesFiltradas.length,
-      separatorBuilder: (context, index) => const Divider(
-        color: Colors.white10,
-        height: 1,
-      ),
-      itemBuilder: (context, index) {
-        final sucursalInfo = sucursalesFiltradas[index];
-        return _buildCompactSucursalTile(sucursalInfo);
-      },
-    );
-  }
-
-  // Versión compacta del tile de sucursal
-  Widget _buildCompactSucursalTile(ProductoEnSucursal sucursalInfo) {
-    final disponible = sucursalInfo.disponible;
-    final producto = sucursalInfo.producto;
-    final sucursal = sucursalInfo.sucursal;
-
-    final stockBajo = disponible && producto.tieneStockBajo();
-    final agotado = disponible && producto.stock <= 0;
-    final esCentral = sucursal.sucursalCentral;
-
-    Color indicadorColor = Colors.green;
-    IconData statusIcon = FontAwesomeIcons.check;
-    String statusText = 'Disponible';
-
-    if (!disponible) {
-      indicadorColor = Colors.grey;
-      statusIcon = FontAwesomeIcons.ban;
-      statusText = 'No disponible';
-    } else if (agotado) {
-      indicadorColor = Colors.red.shade800;
-      statusIcon = FontAwesomeIcons.ban;
-      statusText = 'Agotado';
-    } else if (stockBajo) {
-      indicadorColor = const Color(0xFFE31E24);
-      statusIcon = FontAwesomeIcons.exclamationTriangle;
-      statusText = 'Stock bajo';
-    }
-
-    // Versión compacta del tile
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Indicador de estado (barra vertical)
-          Container(
-            width: 4,
-            height: 40,
-            decoration: BoxDecoration(
-              color: indicadorColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Información principal
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Nombre de sucursal y etiqueta central
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        sucursal.nombre,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (esCentral)
-                      Container(
-                        margin: const EdgeInsets.only(left: 4),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(2),
-                          border: Border.all(
-                            color: Colors.blue,
-                            width: 1,
-                          ),
-                        ),
-                        child: const Text(
-                          'CENTRAL',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-
-                // Dirección en formato compacto
-                Text(
-                  sucursal.direccion ?? 'Sin dirección',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.white60,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                const SizedBox(height: 4),
-
-                // Etiquetas de información en una sola fila
-                Row(
-                  children: [
-                    // Estado (Disponible, Stock bajo, etc.)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: indicadorColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: indicadorColor.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          FaIcon(
-                            statusIcon,
-                            size: 10,
-                            color: indicadorColor,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            statusText,
-                            style: TextStyle(
-                              color: indicadorColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    if (disponible) ...[
-                      const SizedBox(width: 8),
-
-                      // Stock
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Stock: ',
-                              style: TextStyle(
-                                color: Colors.white60,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              '${producto.stock}',
-                              style: TextStyle(
-                                color: indicadorColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            if (producto.stockMinimo != null)
-                              Text(
-                                '/${producto.stockMinimo}',
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 12,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      // Precio
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              producto.getPrecioVentaFormateado(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Flecha de navegación
-          if (disponible)
-            const Icon(
-              Icons.chevron_right,
-              color: Colors.white38,
-              size: 18,
-            ),
-        ],
       ),
     );
   }

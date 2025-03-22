@@ -1,488 +1,521 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
 import 'stock_utils.dart';
+import 'stock_detalle_sucursal.dart';
 import '../../../api/protected/stocks.api.dart';
-
-Future<List<Map<String, dynamic>>> loadJsonData() async {
-  try {
-    String jsonString = await rootBundle
-        .loadString('assets/json/inventario_admin/stockProducts.json');
-    List<dynamic> jsonData = json.decode(jsonString);
-    return jsonData.map((e) => e as Map<String, dynamic>).toList();
-  } catch (e) {
-    debugPrint('Error cargando datos JSON: $e');
-    // Devolver una lista vacía en caso de error
-    return [];
-  }
-}
+import '../../../api/protected/productos.api.dart';
+import '../../../models/producto.model.dart';
+import '../../../models/sucursal.model.dart';
+import 'productos_utils.dart';
 
 class TableProducts extends StatelessWidget {
   final String selectedSucursalId;
-  final StocksApi? stocksApi;
+  final List<Producto>? productos;
+  final bool isLoading;
+  final String? error;
+  final VoidCallback? onRetry;
+  final Function(Producto)? onEditProducto;
+  final Function(Producto)? onVerDetalles;
+  final Function(Producto)? onVerStockDetalles;
   
-  TableProducts({
+  const TableProducts({
     super.key, 
     required this.selectedSucursalId,
-    this.stocksApi,
+    this.productos,
+    this.isLoading = false,
+    this.error,
+    this.onRetry,
+    this.onEditProducto,
+    this.onVerDetalles,
+    this.onVerStockDetalles,
   });
 
-  final List<String> _columnHeaders = [
-    'nombre de producto',
-    'stock actual',
-    'stock mínimo',
-    'stock máximo',
-    'estado',
-    'acciones',
+  final List<String> _columnHeaders = const [
+    'Producto',
+    'Categoría',
+    'Marca',
+    'Stock',
+    'Mínimo',
+    'Estado',
+    'Acciones',
   ];
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: loadJsonData(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(
+    // Mostrar indicador de carga
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFFE31E24),
+        ),
+      );
+    }
+    
+    // Mostrar mensaje de error si ocurrió alguno
+    if (error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
               color: Color(0xFFE31E24),
+              size: 48,
             ),
-          );
-        } else if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  color: Color(0xFFE31E24),
-                  size: 48,
+            const SizedBox(height: 16),
+            Text(
+              'Error al cargar datos: $error',
+              style: const TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reintentar'),
+                onPressed: onRetry,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE31E24),
+                  foregroundColor: Colors.white,
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Error al cargar datos: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.white),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+    
+    // Si no hay sucursal seleccionada, mostrar mensaje
+    if (selectedSucursalId.isEmpty) {
+      return const Center(
+        child: Text(
+          'Seleccione una sucursal para ver su inventario',
+          style: TextStyle(color: Colors.white, fontSize: 16),
+        ),
+      );
+    }
+    
+    // Si no hay productos para esta sucursal
+    if (productos == null || productos!.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              FontAwesomeIcons.boxOpen,
+              color: Colors.white54,
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No hay productos en esta sucursal',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Encabezado de la tabla
+          Container(
+            color: const Color(0xFF2D2D2D),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            child: Row(
+              children: [
+                // Nombre del producto (30%)
+                Expanded(
+                  flex: 30,
+                  child: Text(
+                    _columnHeaders[0],
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                // Categoría (15%)
+                Expanded(
+                  flex: 15,
+                  child: Text(
+                    _columnHeaders[1],
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                // Marca (15%)
+                Expanded(
+                  flex: 15,
+                  child: Text(
+                    _columnHeaders[2],
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                // Stock actual (10%)
+                Expanded(
+                  flex: 10,
+                  child: Text(
+                    _columnHeaders[3],
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                // Stock mínimo (10%)
+                Expanded(
+                  flex: 10,
+                  child: Text(
+                    _columnHeaders[4],
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                // Estado (15%)
+                Expanded(
+                  flex: 15,
+                  child: Text(
+                    _columnHeaders[5],
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                // Acciones (15%)
+                Expanded(
+                  flex: 15,
+                  child: Text(
+                    _columnHeaders[6],
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
-          );
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(
-            child: Text(
-              'No hay datos disponibles',
-              style: TextStyle(color: Colors.white),
-            ),
-          );
-        } else {
-          // Obtener todos los productos
-          List<Map<String, dynamic>> allProducts = [];
+          ),
           
-          // Si no hay sucursal seleccionada, mostrar mensaje
-          if (selectedSucursalId.isEmpty) {
-            return const Center(
-              child: Text(
-                'Seleccione una sucursal para ver su inventario',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-            );
-          }
-          
-          // Extraer productos de la sucursal seleccionada
-          for (var sucursal in snapshot.data!) {
-            if (sucursal["id"] == selectedSucursalId) {
-              final productos = (sucursal["productos"] as List<dynamic>).map((producto) {
-                return producto as Map<String, dynamic>;
-              }).toList();
-              
-              allProducts.addAll(productos);
-              break;
-            }
-          }
-          
-          // Si no hay productos para esta sucursal
-          if (allProducts.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    FontAwesomeIcons.boxOpen,
-                    color: Colors.white54,
-                    size: 48,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No hay productos en esta sucursal',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 16,
+          // Filas de productos
+          Expanded(
+            child: ListView.builder(
+              itemCount: productos!.length,
+              itemBuilder: (context, index) {
+                final producto = productos![index];
+                final stockActual = producto.stock;
+                final stockMinimo = producto.stockMinimo ?? 0;
+                
+                final bool stockBajo = StockUtils.tieneStockBajoFromProducto(producto);
+                final bool agotado = StockUtils.sinStockFromProducto(producto);
+                
+                // Determinar color e icono según el estado
+                final statusColor = StockUtils.getStockStatusColor(stockActual, stockMinimo);
+                final statusIcon = StockUtils.getStockStatusIcon(stockActual, stockMinimo);
+                final statusText = StockUtils.getStockStatusText(stockActual, stockMinimo);
+                
+                return Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.white.withOpacity(0.1),
+                        width: 1,
+                      ),
                     ),
                   ),
-                ],
-              ),
-            );
-          }
-
-          return Container(
-            width: MediaQuery.of(context).size.width * 0.7,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Encabezado de la tabla
-                Container(
-                  color: const Color(0xFF2D2D2D),
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   child: Row(
                     children: [
-                      // Nombre de producto (35% del ancho)
+                      // Nombre del producto (30%)
                       Expanded(
-                        flex: 35,
-                        child: Text(
-                          _columnHeaders[0],
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        flex: 30,
+                        child: Row(
+                          children: [
+                            FaIcon(
+                              FontAwesomeIcons.box,
+                              size: 14,
+                              color: statusColor.withOpacity(0.8),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    producto.nombre,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (producto.descripcion != null && producto.descripcion!.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      producto.descripcion!,
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.7),
+                                        fontSize: 12,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      // Stock actual (12% del ancho)
-                      Expanded(
-                        flex: 12,
-                        child: Text(
-                          _columnHeaders[1],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      // Stock mínimo (12% del ancho)
-                      Expanded(
-                        flex: 12,
-                        child: Text(
-                          _columnHeaders[2],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      // Stock máximo (12% del ancho)
-                      Expanded(
-                        flex: 12,
-                        child: Text(
-                          _columnHeaders[3],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      // Estado (14% del ancho)
-                      Expanded(
-                        flex: 14,
-                        child: Text(
-                          _columnHeaders[4],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      // Acciones (15% del ancho)
+                      // Categoría (15%)
                       Expanded(
                         flex: 15,
                         child: Text(
-                          _columnHeaders[5],
+                          producto.categoria,
+                          style: const TextStyle(color: Colors.white),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // Marca (15%)
+                      Expanded(
+                        flex: 15,
+                        child: Text(
+                          producto.marca,
+                          style: const TextStyle(color: Colors.white),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // Stock actual (10%)
+                      Expanded(
+                        flex: 10,
+                        child: Text(
+                          stockActual.toString(),
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: statusColor,
                             fontWeight: FontWeight.bold,
                           ),
+                        ),
+                      ),
+                      // Stock mínimo (10%)
+                      Expanded(
+                        flex: 10,
+                        child: Text(
+                          stockMinimo > 0 ? stockMinimo.toString() : '-',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      // Estado (15%)
+                      Expanded(
+                        flex: 15,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: statusColor.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  FaIcon(
+                                    statusIcon,
+                                    color: statusColor,
+                                    size: 12,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    statusText,
+                                    style: TextStyle(
+                                      color: statusColor,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Acciones (15%)
+                      Expanded(
+                        flex: 15,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              icon: const FaIcon(
+                                FontAwesomeIcons.chartLine,
+                                color: Colors.teal,
+                                size: 16,
+                              ),
+                              onPressed: () {
+                                if (onVerStockDetalles != null) {
+                                  onVerStockDetalles!(producto);
+                                }
+                              },
+                              constraints: const BoxConstraints(
+                                minWidth: 30,
+                                minHeight: 30,
+                              ),
+                              padding: EdgeInsets.zero,
+                              tooltip: 'Ver stock',
+                              splashRadius: 20,
+                            ),
+                            IconButton(
+                              icon: const FaIcon(
+                                FontAwesomeIcons.eye,
+                                color: Colors.white70,
+                                size: 16,
+                              ),
+                              onPressed: () {
+                                if (onVerDetalles != null) {
+                                  onVerDetalles!(producto);
+                                } else {
+                                  // Si no hay un manejador personalizado, mostrar nuestro diálogo
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return StockDetalleSucursalDialog(
+                                        producto: producto,
+                                      );
+                                    },
+                                  );
+                                }
+                              },
+                              constraints: const BoxConstraints(
+                                minWidth: 30,
+                                minHeight: 30,
+                              ),
+                              padding: EdgeInsets.zero,
+                              tooltip: 'Ver stock por sucursal',
+                              splashRadius: 20,
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-                
-                // Filas de productos
-                ...allProducts.map((product) {
-                  final stockActual = product["stock_actual"] as int? ?? 0;
-                  final stockMinimo = product["stock_minimo"] as int? ?? 0;
-                  final stockMaximo = product["stock_maximo"] as int? ?? 0;
-                  
-                  final statusColor = StockUtils.getStockStatusColor(stockActual, stockMinimo);
-                  final statusIcon = StockUtils.getStockStatusIcon(stockActual, stockMinimo);
-                  final statusText = StockUtils.getStockStatusText(stockActual, stockMinimo);
-                  
-                  return Container(
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Colors.white.withOpacity(0.1),
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    child: Row(
-                      children: [
-                        // Nombre del producto
-                        Expanded(
-                          flex: 35,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                product["nombre"].toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (product["descripcion"] != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  product["descripcion"].toString(),
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
-                                    fontSize: 12,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        // Stock actual
-                        Expanded(
-                          flex: 12,
-                          child: Text(
-                            stockActual.toString(),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        // Stock mínimo
-                        Expanded(
-                          flex: 12,
-                          child: Text(
-                            stockMinimo.toString(),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        // Stock máximo
-                        Expanded(
-                          flex: 12,
-                          child: Text(
-                            stockMaximo.toString(),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        // Estado
-                        Expanded(
-                          flex: 14,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              FaIcon(
-                                statusIcon,
-                                color: statusColor,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                statusText,
-                                style: TextStyle(
-                                  color: statusColor,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Acciones
-                        Expanded(
-                          flex: 15,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              IconButton(
-                                icon: const FaIcon(
-                                  FontAwesomeIcons.penToSquare,
-                                  color: Colors.white54,
-                                  size: 16,
-                                ),
-                                onPressed: () {
-                                  // TODO: Implementar edición de producto
-                                },
-                                constraints: const BoxConstraints(
-                                  minWidth: 30,
-                                  minHeight: 30,
-                                ),
-                                padding: EdgeInsets.zero,
-                                tooltip: 'Editar producto',
-                              ),
-                              IconButton(
-                                icon: const FaIcon(
-                                  FontAwesomeIcons.rightLeft,
-                                  color: Color(0xFFE31E24),
-                                  size: 16,
-                                ),
-                                onPressed: () {
-                                  // TODO: Implementar transferencia de stock
-                                },
-                                constraints: const BoxConstraints(
-                                  minWidth: 30,
-                                  minHeight: 30,
-                                ),
-                                padding: EdgeInsets.zero,
-                                tooltip: 'Transferir stock',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
+                );
+              },
             ),
-          );
-        }
-      },
+          ),
+        ],
+      ),
     );
   }
 }
 
 /// Widget para mostrar un resumen del inventario
 class InventarioResumen extends StatelessWidget {
-  final String sucursalId;
-  final String sucursalNombre;
+  final List<Producto> productos;
+  final String? sucursalNombre;
   
   const InventarioResumen({
     super.key,
-    required this.sucursalId,
-    required this.sucursalNombre,
+    required this.productos,
+    this.sucursalNombre,
   });
   
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: loadJsonData(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox.shrink();
-        }
-        
-        // Buscar la sucursal en los datos
-        Map<String, dynamic>? sucursalData;
-        for (var data in snapshot.data!) {
-          if (data['id'] == sucursalId) {
-            sucursalData = data;
-            break;
-          }
-        }
-        
-        if (sucursalData == null) {
-          return const SizedBox.shrink();
-        }
-        
-        final productos = (sucursalData['productos'] as List<dynamic>).map((e) => e as Map<String, dynamic>).toList();
-        
-        // Calcular estadísticas
-        int totalProductos = productos.length;
-        int productosStockBajo = productos.where((p) => StockUtils.tieneStockBajo(p)).length;
-        int productosSinStock = productos.where((p) => StockUtils.sinStock(p)).length;
-        
-        // Calcular valor total del inventario
-        double valorTotal = 0;
-        for (var producto in productos) {
-          final stockActual = producto['stock_actual'] as int? ?? 0;
-          final precioVenta = producto['precio_venta'] as double? ?? 0;
-          valorTotal += stockActual * precioVenta;
-        }
-        
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2D2D2D),
-            borderRadius: BorderRadius.circular(8),
+    if (productos.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    // Agrupar productos por disponibilidad
+    final agrupados = ProductosUtils.agruparProductosPorDisponibilidad(productos);
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2D2D2D),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            sucursalNombre != null ? 'Resumen de $sucursalNombre' : 'Resumen del Inventario',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 16),
+          Row(
             children: [
-              Text(
-                'Resumen de $sucursalNombre',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+              Expanded(
+                child: _buildStatRow(
+                  'Total de productos', 
+                  productos.length.toString(),
+                  FontAwesomeIcons.boxesStacked,
+                  Colors.blue,
                 ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatRow(
-                      'Total de productos', 
-                      totalProductos.toString(),
-                      FontAwesomeIcons.boxesStacked,
-                      Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    child: _buildStatRow(
-                      'Valor del inventario', 
-                      StockUtils.formatCurrency(valorTotal),
-                      FontAwesomeIcons.moneyBill,
-                      Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatRow(
-                      'Productos con stock bajo', 
-                      productosStockBajo.toString(),
-                      FontAwesomeIcons.triangleExclamation,
-                      Colors.orange,
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    child: _buildStatRow(
-                      'Productos sin stock', 
-                      productosSinStock.toString(),
-                      FontAwesomeIcons.circleXmark,
-                      Colors.red,
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 24),
+              Expanded(
+                child: _buildStatRow(
+                  'Productos disponibles', 
+                  agrupados['disponibles']!.length.toString(),
+                  FontAwesomeIcons.check,
+                  Colors.green,
+                ),
               ),
             ],
           ),
-        );
-      },
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatRow(
+                  'Productos con stock bajo', 
+                  agrupados['stockBajo']!.length.toString(),
+                  FontAwesomeIcons.triangleExclamation,
+                  const Color(0xFFE31E24),
+                ),
+              ),
+              const SizedBox(width: 24),
+              Expanded(
+                child: _buildStatRow(
+                  'Productos sin stock', 
+                  agrupados['agotados']!.length.toString(),
+                  FontAwesomeIcons.ban,
+                  Colors.red.shade800,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
   
