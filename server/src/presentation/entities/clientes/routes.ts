@@ -15,6 +15,8 @@ export class ClientesRoutes {
 
     router.get('/', clientesController.getAll)
 
+    router.patch('/:id', clientesController.update)
+
     return router
   }
 }
