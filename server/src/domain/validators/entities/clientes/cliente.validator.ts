@@ -12,3 +12,13 @@ const createClienteSchema = z.object({
 
 export const createClienteValidator = (object: unknown) =>
   createClienteSchema.safeParse(object)
+
+const updateClienteSchema = z.object({
+  denominacion: ClienteSchema.denominacion,
+  direccion: ClienteSchema.direccion,
+  correo: ClienteSchema.correo,
+  telefono: ClienteSchema.telefono
+})
+
+export const updateClienteValidator = (object: unknown) =>
+  updateClienteSchema.partial().safeParse(object)
