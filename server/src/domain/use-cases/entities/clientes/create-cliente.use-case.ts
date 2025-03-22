@@ -1,29 +1,23 @@
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import { clientesTable } from '@/db/schema'
+import { clientesTable, tiposDocumentoClienteTable } from '@/db/schema'
 import type { CreateClienteDto } from '@/domain/dtos/entities/clientes/create-cliente.dto'
 import { count, eq } from 'drizzle-orm'
 
 export class CreateCliente {
   private async createCliente(createClienteDto: CreateClienteDto) {
-    // const tiposDocumentos = await db
-    //     .select({
-    //       id: tiposDocumentoClienteTable.id,
-    //       nombre: tiposDocumentoClienteTable.nombre
-    //     })
-    //     .from(tiposDocumentoClienteTable)
-    //     .limit(7)
+    const tiposDocumentos = await db
+      .select({
+        id: tiposDocumentoClienteTable.id
+      })
+      .from(tiposDocumentoClienteTable)
+      .where(
+        eq(tiposDocumentoClienteTable.id, createClienteDto.tipoDocumentoId)
+      )
 
-    //   const valor = tiposDocumentos.some(
-    //     (documento) => documento.id === Number(createClienteDto.tipoDocumentoId)
-    //   )
-
-    //   if (!valor) {
-    //     throw CustomError.internalServer(
-    //       'El Numero de documento ingresado es incorrecto : ',
-    //       tiposDocumentos
-    //     )
-    //   }
+    if (tiposDocumentos.length < 1) {
+      throw CustomError.badRequest('El tipo de documento enviado no existe')
+    }
 
     const clienteDni = await db
       .select({ count: count(clientesTable.id) })
@@ -44,7 +38,6 @@ export class CreateCliente {
         tipoDocumentoId: createClienteDto.tipoDocumentoId,
         numeroDocumento: createClienteDto.numeroDocumento,
         denominacion: createClienteDto.denominacion,
-        codigoPais: createClienteDto.codigoPais,
         direccion: createClienteDto.direccion,
         correo: createClienteDto.correo,
         telefono: createClienteDto.telefono

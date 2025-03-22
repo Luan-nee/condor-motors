@@ -4,16 +4,14 @@ export class CreateClienteDto {
   public tipoDocumentoId: number
   public numeroDocumento: string
   public denominacion: string
-  public codigoPais: string
-  public direccion: string
-  public correo: string
-  public telefono: string
+  public direccion?: string
+  public correo?: string
+  public telefono?: string
 
   private constructor({
     tipoDocumentoId,
     numeroDocumento,
     denominacion,
-    codigoPais,
     direccion,
     correo,
     telefono
@@ -21,7 +19,6 @@ export class CreateClienteDto {
     this.tipoDocumentoId = tipoDocumentoId
     this.numeroDocumento = numeroDocumento
     this.denominacion = denominacion
-    this.codigoPais = codigoPais
     this.direccion = direccion
     this.correo = correo
     this.telefono = telefono

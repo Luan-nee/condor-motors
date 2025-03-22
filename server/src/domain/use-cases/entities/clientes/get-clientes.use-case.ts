@@ -11,7 +11,6 @@ export class GetClientes {
     nombre: tiposDocumentoClienteTable.nombre,
     numeroDocumento: clientesTable.numeroDocumento,
     denominacion: clientesTable.denominacion,
-    codigoPais: clientesTable.codigoPais,
     direccion: clientesTable.direccion,
     correo: clientesTable.correo,
     telefono: clientesTable.telefono,
@@ -21,8 +20,7 @@ export class GetClientes {
 
   private readonly validSortBy = {
     fechaCreacion: clientesTable.fechaCreacion,
-    fechaActualizacion: clientesTable.fechaActualizacion,
-    codigoPais: clientesTable.codigoPais
+    fechaActualizacion: clientesTable.fechaActualizacion
   } as const
 
   private isValidarSortBy(
@@ -70,7 +68,6 @@ export class GetClientes {
       queriesDto.search.length > 0
         ? or(
             ilike(clientesTable.numeroDocumento, `%${queriesDto.search}%`),
-            ilike(clientesTable.codigoPais, `%${queriesDto.search}%`),
             ilike(clientesTable.denominacion, `%${queriesDto.search}%`),
             ilike(clientesTable.direccion, `%${queriesDto.search}%`),
             ilike(clientesTable.correo, `%${queriesDto.search}%`),
