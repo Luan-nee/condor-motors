@@ -1,4 +1,5 @@
 import type { permissionCodes } from '@/consts'
+import Big from 'big.js'
 
 export const generateSequentialIds = (length: number) =>
   Array.from({ length }).map((_, i) => i + 1)
@@ -86,3 +87,11 @@ export const getOffsetDateTime = (
 
   return offsetDateTime
 }
+
+export const productWithTwoDecimals = (num1: number, num2: number) =>
+  new Big(num1).times(new Big(num2)).round(2).toNumber()
+
+export const roundTwoDecimals = (num: number) =>
+  new Big(num).round(2).toNumber()
+
+export const fixedTwoDecimals = (num: number) => new Big(num).toFixed(2)
