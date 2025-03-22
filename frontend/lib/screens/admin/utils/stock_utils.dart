@@ -71,6 +71,11 @@ class StockUtils {
     return producto.stock <= 0;
   }
   
+  /// Verifica si un producto tiene problemas de stock (agotado o bajo)
+  static bool tieneProblemasStock(Producto producto) {
+    return sinStockFromProducto(producto) || tieneStockBajoFromProducto(producto);
+  }
+  
   /// Obtiene el estado del stock como texto
   static String getStockStatusText(int stockActual, int stockMinimo) {
     if (stockActual <= 0) {
@@ -81,4 +86,80 @@ class StockUtils {
       return 'Disponible';
     }
   }
+  
+  /// Obtiene el estado del stock como enumeración
+  static StockStatus getStockStatus(int stockActual, int stockMinimo) {
+    if (stockActual <= 0) {
+      return StockStatus.agotado;
+    } else if (stockActual < stockMinimo) {
+      return StockStatus.stockBajo;
+    } else {
+      return StockStatus.disponible;
+    }
+  }
+
+  /// Agrupa los productos por estado de stock (agotados, stock bajo, disponibles)
+  static Map<StockStatus, List<Producto>> agruparProductosPorEstadoStock(List<Producto> productos) {
+    final Map<StockStatus, List<Producto>> grupos = {
+      StockStatus.agotado: [],
+      StockStatus.stockBajo: [],
+      StockStatus.disponible: [],
+    };
+    
+    for (final producto in productos) {
+      final status = getStockStatus(producto.stock, producto.stockMinimo ?? 0);
+      grupos[status]!.add(producto);
+    }
+    
+    return grupos;
+  }
+  
+  /// Reorganiza la lista de productos para priorizar los que tienen problemas de stock
+  static List<Producto> reorganizarProductosPorPrioridad(List<Producto> productos) {
+    final grupos = agruparProductosPorEstadoStock(productos);
+    
+    // Unir las listas en el orden de prioridad: agotados primero, luego stock bajo, finalmente disponibles
+    return [
+      ...grupos[StockStatus.agotado]!,
+      ...grupos[StockStatus.stockBajo]!,
+      ...grupos[StockStatus.disponible]!,
+    ];
+  }
+  
+  /// Método para combinar productos con el mismo ID pero de diferentes sucursales
+  /// Útil cuando se consolidan productos de múltiples consultas de paginación
+  static List<Producto> consolidarProductosUnicos(List<Producto> productos) {
+    final Map<int, Producto> productosMap = {};
+    
+    for (final producto in productos) {
+      if (!productosMap.containsKey(producto.id) || 
+          tieneProblemasStock(producto)) {
+        // Priorizamos productos con problemas de stock
+        productosMap[producto.id] = producto;
+      }
+    }
+    
+    return productosMap.values.toList();
+  }
+  
+  /// Filtra productos que tienen problemas de stock (agotados o stock bajo)
+  static List<Producto> filtrarProductosConProblemasStock(List<Producto> productos) {
+    return productos.where((producto) => 
+      sinStockFromProducto(producto) || tieneStockBajoFromProducto(producto)
+    ).toList();
+  }
+  
+  /// Filtra productos por un estado específico de stock
+  static List<Producto> filtrarPorEstadoStock(List<Producto> productos, StockStatus estado) {
+    return productos.where((producto) => 
+      getStockStatus(producto.stock, producto.stockMinimo ?? 0) == estado
+    ).toList();
+  }
+}
+
+/// Enumeración para el estado del stock de un producto
+enum StockStatus {
+  agotado,
+  stockBajo,
+  disponible,
 } 

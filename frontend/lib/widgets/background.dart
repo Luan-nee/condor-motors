@@ -54,7 +54,6 @@ class BackgroundPainter extends CustomPainter {
     final double rawAnimValue = animation.value * speedFactor;
     
     // Usamos 2*pi para ciclos completos que empiezan y terminan en el mismo punto
-    final animValue = (1 - math.cos(rawAnimValue * math.pi * 2)) / 2;
     
     // Función de onda que garantiza un loop suave (mismo valor al inicio y fin)
     final wave = math.sin(rawAnimValue * math.pi * 2) * 20;
