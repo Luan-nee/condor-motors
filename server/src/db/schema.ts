@@ -428,6 +428,7 @@ export const proformasVentaTable = pgTable('proformas_venta', {
       productoId: number
       nombre: string
       precioUnitario: number
+      precioOriginal: number
       cantidadGratis: number | null
       descuento: number | null
       cantidadPagada: number

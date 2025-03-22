@@ -84,8 +84,13 @@ export class CreateProformaVenta {
       const detalleProforma = detallesMap.get(detalle.id)
       const cantidad = detalleProforma?.cantidad ?? 1
 
-      const { precioUnitario, cantidadGratis, descuento, cantidadPagada } =
-        this.calcularPrecioYDescuento(detalle, cantidad)
+      const {
+        precioUnitario,
+        precioOriginal,
+        cantidadGratis,
+        descuento,
+        cantidadPagada
+      } = this.calcularPrecioYDescuento(detalle, cantidad)
 
       const cantidadTotal = cantidadPagada + cantidadGratis
       const subtotal = productWithTwoDecimals(precioUnitario, cantidadPagada)
@@ -99,6 +104,7 @@ export class CreateProformaVenta {
         cantidadPagada,
         cantidadTotal,
         precioUnitario,
+        precioOriginal,
         subtotal
       }
     })
@@ -111,6 +117,7 @@ export class CreateProformaVenta {
     cantidad: number
   ) {
     let precioUnitario = Number(detalle.precioVenta)
+    const precioOriginal = precioUnitario
     const cantidadGratis = 0
     const descuento = 0
     const cantidadPagada = cantidad
@@ -123,12 +130,19 @@ export class CreateProformaVenta {
       detalle.cantidadMinimaDescuento === null ||
       cantidad < detalle.cantidadMinimaDescuento
     ) {
-      return { precioUnitario, cantidadGratis, descuento, cantidadPagada }
+      return {
+        precioUnitario,
+        precioOriginal,
+        cantidadGratis,
+        descuento,
+        cantidadPagada
+      }
     }
 
     if (detalle.cantidadGratisDescuento !== null) {
       return {
         precioUnitario,
+        precioOriginal,
         cantidadGratis: detalle.cantidadGratisDescuento,
         descuento,
         cantidadPagada: cantidad - detalle.cantidadGratisDescuento
@@ -141,13 +155,20 @@ export class CreateProformaVenta {
           precioUnitario * (1 - detalle.porcentajeDescuento / 100),
           1
         ),
+        precioOriginal,
         cantidadGratis,
         descuento: detalle.porcentajeDescuento,
         cantidadPagada
       }
     }
 
-    return { precioUnitario, cantidadGratis, descuento, cantidadPagada }
+    return {
+      precioUnitario,
+      precioOriginal,
+      cantidadGratis,
+      descuento,
+      cantidadPagada
+    }
   }
 
   private async validateSucursalEmpleado(
