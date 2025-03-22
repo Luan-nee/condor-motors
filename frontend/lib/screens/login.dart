@@ -62,10 +62,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   void initState() {
     super.initState();
     HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+    // Configuramos una animación con una curva más suave y una duración más larga
+    // para que el loop sea menos perceptible
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
+      duration: const Duration(seconds: 10), // Aumentamos la duración para un ciclo más largo
+    );
+    
+    // Iniciamos con una curva de animación suave
+    _animationController.repeat();
     
     _loadServerIp();
     
@@ -564,6 +569,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 return CustomPaint(
                   painter: BackgroundPainter(
                     animation: _animationController,
+                    speedFactor: 0.25, // Reducir aún más la velocidad de la animación
                   ),
                 );
               },

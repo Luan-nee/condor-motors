@@ -7,9 +7,14 @@ class BackgroundPainter extends CustomPainter {
   final Animation<double> animation;
   final List<Offset> _particlePositions = [];
   final List<double> _particleSizes = [];
+  // Factor para reducir la velocidad de la animación
+  final double speedFactor;
   
   // Constructor con inicialización de partículas
-  BackgroundPainter({required this.animation}) : super(repaint: animation) {
+  BackgroundPainter({
+    required this.animation, 
+    this.speedFactor = 0.5, // Valor por defecto para reducir la velocidad a la mitad
+  }) : super(repaint: animation) {
     // Inicializar posiciones y tamaños de partículas una sola vez
     // en lugar de recalcularlos en cada frame
     final random = math.Random(42); // Semilla fija para consistencia
@@ -44,10 +49,18 @@ class BackgroundPainter extends CustomPainter {
       Paint()..shader = gradient.createShader(rect),
     );
 
-    // Valores de animación
-    final animValue = animation.value;
-    final wave = math.sin(animValue * math.pi * 2) * 20;
-    final scale = 1 + math.sin(animValue * math.pi) * 0.1;
+    // Aplicamos una transformación a animValue para garantizar un loop perfecto
+    // Usando seno para asegurar que empieza y termina en el mismo valor (efecto cíclico)
+    final double rawAnimValue = animation.value * speedFactor;
+    
+    // Usamos 2*pi para ciclos completos que empiezan y terminan en el mismo punto
+    final animValue = (1 - math.cos(rawAnimValue * math.pi * 2)) / 2;
+    
+    // Función de onda que garantiza un loop suave (mismo valor al inicio y fin)
+    final wave = math.sin(rawAnimValue * math.pi * 2) * 20;
+    
+    // Escala que varía suavemente
+    final scale = 1 + 0.1 * math.sin(rawAnimValue * math.pi * 2);
     
     // Efecto de partículas flotantes
     final particlePaint = Paint()
@@ -58,9 +71,13 @@ class BackgroundPainter extends CustomPainter {
       final position = _particlePositions[i];
       final baseSize = _particleSizes[i];
       
-      // Calcular posición animada
-      final x = size.width * position.dx + wave * math.sin(animValue * math.pi + i);
-      final y = size.height * position.dy + wave * math.cos(animValue * math.pi + i);
+      // Usar múltiplos de 2*pi para garantizar ciclos completos
+      final offsetX = wave * math.sin(rawAnimValue * math.pi * 2 + i);
+      final offsetY = wave * math.cos(rawAnimValue * math.pi * 2 + i);
+      
+      // Calcular posición animada con movimiento cíclico
+      final x = size.width * position.dx + offsetX;
+      final y = size.height * position.dy + offsetY;
       final radius = baseSize * scale;
       
       canvas.drawCircle(
@@ -70,7 +87,7 @@ class BackgroundPainter extends CustomPainter {
       );
     }
 
-    // Líneas onduladas decorativas
+    // Líneas onduladas decorativas con funciones cíclicas
     final wavePaint = Paint()
       ..color = const Color(0xFFE31E24).withOpacity(0.03)
       ..style = PaintingStyle.stroke
@@ -83,7 +100,7 @@ class BackgroundPainter extends CustomPainter {
       for (var x = 0.0; x < size.width; x += 30) {
         final dx = x / size.width;
         final y = size.height * (0.2 + i * 0.3) +
-            math.sin(dx * math.pi * 4 + animValue * math.pi * 2) * 20 * scale;
+            math.sin(dx * math.pi * 4 + rawAnimValue * math.pi * 2) * 20 * scale;
         path.lineTo(x, y);
       }
       
@@ -105,18 +122,18 @@ class BackgroundPainter extends CustomPainter {
     // Esquina superior izquierda
     canvas.drawCircle(
       const Offset(0, 0),
-      size.width * 0.3 * (1 + math.sin(animValue * math.pi) * 0.1),
+      size.width * 0.3 * (1 + math.sin(rawAnimValue * math.pi * 2) * 0.1),
       glowPaint,
     );
 
     // Esquina inferior derecha
     canvas.drawCircle(
       Offset(size.width, size.height),
-      size.width * 0.3 * (1 + math.cos(animValue * math.pi) * 0.1),
+      size.width * 0.3 * (1 + math.cos(rawAnimValue * math.pi * 2) * 0.1),
       glowPaint,
     );
 
-    // Efecto de red geométrica
+    // Efecto de red geométrica con ciclos completos
     final gridPaint = Paint()
       ..color = const Color(0xFFE31E24).withOpacity(0.02)
       ..style = PaintingStyle.stroke
@@ -125,8 +142,8 @@ class BackgroundPainter extends CustomPainter {
     final spacing = size.width / 15;
     for (var i = 0; i < 16; i++) {
       final x = i * spacing;
-      final y1 = wave * math.sin(x / size.width * math.pi + animValue * math.pi);
-      final y2 = size.height + wave * math.sin(x / size.width * math.pi + animValue * math.pi);
+      final y1 = wave * math.sin(x / size.width * math.pi + rawAnimValue * math.pi * 2);
+      final y2 = size.height + wave * math.sin(x / size.width * math.pi + rawAnimValue * math.pi * 2);
       
       canvas.drawLine(
         Offset(x, y1),
@@ -137,8 +154,8 @@ class BackgroundPainter extends CustomPainter {
 
     for (var i = 0; i < 16; i++) {
       final y = i * spacing;
-      final x1 = wave * math.cos(y / size.height * math.pi + animValue * math.pi);
-      final x2 = size.width + wave * math.cos(y / size.height * math.pi + animValue * math.pi);
+      final x1 = wave * math.cos(y / size.height * math.pi + rawAnimValue * math.pi * 2);
+      final x2 = size.width + wave * math.cos(y / size.height * math.pi + rawAnimValue * math.pi * 2);
       
       canvas.drawLine(
         Offset(x1, y),
@@ -147,16 +164,16 @@ class BackgroundPainter extends CustomPainter {
       );
     }
 
-    // Efecto de pulso principal
+    // Efecto de pulso principal con ciclos completos
     final pulsePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
       ..color = const Color(0xFFE31E24).withOpacity(
-        0.12 * (1 + math.cos(animValue * math.pi * 3)) / 2
+        0.12 * (1 + math.cos(rawAnimValue * math.pi * 2 * 3)) / 2
       );
 
     // Pulso principal con doble círculo
-    final pulseRadius = (size.width * 0.25) * (1 + math.sin(animValue * math.pi * 2) * 0.15);
+    final pulseRadius = (size.width * 0.25) * (1 + math.sin(rawAnimValue * math.pi * 2 * 2) * 0.15);
     final pulseCenter = Offset(size.width * 0.85, size.height * 0.3);
     
     // Círculo exterior
@@ -166,10 +183,10 @@ class BackgroundPainter extends CustomPainter {
       pulsePaint,
     );
     
-    // Círculo interior con diferente fase
+    // Círculo interior con diferente fase pero ciclo completo
     canvas.drawCircle(
       pulseCenter,
-      pulseRadius * 0.7 * (1 + math.cos(animValue * math.pi * 2) * 0.2),
+      pulseRadius * 0.7 * (1 + math.cos(rawAnimValue * math.pi * 2 * 2) * 0.2),
       pulsePaint..strokeWidth = 2,
     );
 
@@ -178,7 +195,7 @@ class BackgroundPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
       ..color = const Color(0xFFE31E24).withOpacity(
-        0.08 * (1 + math.sin(animValue * math.pi * 4)) / 2
+        0.08 * (1 + math.sin(rawAnimValue * math.pi * 2 * 4)) / 2
       );
 
     final smallPulseCenter = Offset(size.width * 0.75, size.height * 0.4);
@@ -186,18 +203,20 @@ class BackgroundPainter extends CustomPainter {
     // Círculo pequeño exterior
     canvas.drawCircle(
       smallPulseCenter,
-      (size.width * 0.15) * (1 + math.sin(animValue * math.pi * 3) * 0.25),
+      (size.width * 0.15) * (1 + math.sin(rawAnimValue * math.pi * 2 * 3) * 0.25),
       smallPulsePaint,
     );
     
     // Círculo pequeño interior
     canvas.drawCircle(
       smallPulseCenter,
-      (size.width * 0.1) * (1 + math.cos(animValue * math.pi * 3) * 0.25),
+      (size.width * 0.1) * (1 + math.cos(rawAnimValue * math.pi * 2 * 3) * 0.25),
       smallPulsePaint..strokeWidth = 1.5,
     );
   }
 
   @override
-  bool shouldRepaint(covariant BackgroundPainter oldDelegate) => true;
+  bool shouldRepaint(covariant BackgroundPainter oldDelegate) => 
+    oldDelegate.animation.value != animation.value || 
+    oldDelegate.speedFactor != speedFactor;
 }
