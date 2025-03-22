@@ -88,6 +88,15 @@ export const getOffsetDateTime = (
   return offsetDateTime
 }
 
+export const getDateTimeString = (dateTime: Date) => {
+  const isoString = dateTime.toISOString()
+
+  return {
+    date: isoString.slice(0, 10),
+    time: isoString.slice(11, 16)
+  }
+}
+
 export const productWithTwoDecimals = (num1: number, num2: number) =>
   new Big(num1).times(new Big(num2)).round(2).toNumber()
 
