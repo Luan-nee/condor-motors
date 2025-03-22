@@ -1,7 +1,7 @@
 import { permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
-import { fixedTwoDecimals, roundTwoDecimals } from '@/core/lib/utils'
+import { fixedTwoDecimals, productWithTwoDecimals } from '@/core/lib/utils'
 import { db } from '@/db/connection'
 import {
   detallesProductoTable,
@@ -13,6 +13,19 @@ import {
 import type { CreateProformaVentaDto } from '@/domain/dtos/entities/proformas-venta/create-proforma-venta.dto'
 import type { SucursalIdType } from '@/types/schemas'
 import { and, eq, or } from 'drizzle-orm'
+
+interface DetalleProformaVenta {
+  id: number
+  nombre: string
+  cantidadMinimaDescuento: number | null
+  cantidadGratisDescuento: number | null
+  porcentajeDescuento: number | null
+  precioVenta: string
+  precioOferta: string | null
+  detallesProductoId: number
+  stock: number
+  liquidacion: boolean
+}
 
 export class CreateProformaVenta {
   private readonly authPayload: AuthPayload
@@ -27,16 +40,8 @@ export class CreateProformaVenta {
   private async createProformaVenta(
     createProformaVentaDto: CreateProformaVentaDto,
     sucursalId: SucursalIdType,
-    detallesProformaVenta: Array<{
-      id: number
-      nombre: string
-      precioVenta: string
-      detallesProductoId: number
-      stock: number
-    }>
+    detallesProformaVenta: DetalleProformaVenta[]
   ) {
-    const now = new Date()
-
     const detallesMap = new Map(
       createProformaVentaDto.detalles.map((detalle) => [
         detalle.productoId,
@@ -44,30 +49,19 @@ export class CreateProformaVenta {
       ])
     )
 
-    let total = 0
-    const mappedDetalles = detallesProformaVenta.map((detalle) => {
-      const detalleProforma = detallesMap.get(detalle.id)
-      const cantidad = detalleProforma?.cantidad ?? 1
-      const precio = Number(detalle.precioVenta)
-      const subtotal = roundTwoDecimals(precio * cantidad)
+    const { detallesCalculados, total } = this.calcularDetalles(
+      detallesProformaVenta,
+      detallesMap
+    )
 
-      total += subtotal
-
-      return {
-        productoId: detalle.id,
-        nombre: detalle.nombre,
-        cantidad,
-        precioUnitario: precio,
-        subtotal
-      }
-    })
+    const now = new Date()
 
     const results = await db
       .insert(proformasVentaTable)
       .values({
         nombre: createProformaVentaDto.nombre,
         total: fixedTwoDecimals(total),
-        detalles: mappedDetalles,
+        detalles: detallesCalculados,
         empleadoId: createProformaVentaDto.empleadoId,
         sucursalId,
         fechaCreacion: now,
@@ -78,6 +72,82 @@ export class CreateProformaVenta {
     const [proformaVenta] = results
 
     return proformaVenta
+  }
+
+  private calcularDetalles(
+    detallesProformaVenta: DetalleProformaVenta[],
+    detallesMap: Map<number, { productoId: number; cantidad: number }>
+  ) {
+    let total = 0
+
+    const detallesCalculados = detallesProformaVenta.map((detalle) => {
+      const detalleProforma = detallesMap.get(detalle.id)
+      const cantidad = detalleProforma?.cantidad ?? 1
+
+      const { precioUnitario, cantidadGratis, descuento, cantidadPagada } =
+        this.calcularPrecioYDescuento(detalle, cantidad)
+
+      const cantidadTotal = cantidadPagada + cantidadGratis
+      const subtotal = productWithTwoDecimals(precioUnitario, cantidadPagada)
+      total += subtotal
+
+      return {
+        productoId: detalle.id,
+        nombre: detalle.nombre,
+        cantidadGratis,
+        descuento,
+        cantidadPagada,
+        cantidadTotal,
+        precioUnitario,
+        subtotal
+      }
+    })
+
+    return { detallesCalculados, total }
+  }
+
+  private calcularPrecioYDescuento(
+    detalle: DetalleProformaVenta,
+    cantidad: number
+  ) {
+    let precioUnitario = Number(detalle.precioVenta)
+    const cantidadGratis = 0
+    const descuento = 0
+    const cantidadPagada = cantidad
+
+    if (detalle.precioOferta !== null && detalle.liquidacion) {
+      precioUnitario = Number(detalle.precioOferta)
+    }
+
+    if (
+      detalle.cantidadMinimaDescuento === null ||
+      cantidad < detalle.cantidadMinimaDescuento
+    ) {
+      return { precioUnitario, cantidadGratis, descuento, cantidadPagada }
+    }
+
+    if (detalle.cantidadGratisDescuento !== null) {
+      return {
+        precioUnitario,
+        cantidadGratis: detalle.cantidadGratisDescuento,
+        descuento,
+        cantidadPagada: cantidad - detalle.cantidadGratisDescuento
+      }
+    }
+
+    if (detalle.porcentajeDescuento !== null) {
+      return {
+        precioUnitario: productWithTwoDecimals(
+          precioUnitario * (1 - detalle.porcentajeDescuento / 100),
+          1
+        ),
+        cantidadGratis,
+        descuento: detalle.porcentajeDescuento,
+        cantidadPagada
+      }
+    }
+
+    return { precioUnitario, cantidadGratis, descuento, cantidadPagada }
   }
 
   private async validateSucursalEmpleado(
@@ -142,9 +212,14 @@ export class CreateProformaVenta {
       .select({
         id: productosTable.id,
         nombre: productosTable.nombre,
+        cantidadMinimaDescuento: productosTable.cantidadMinimaDescuento,
+        cantidadGratisDescuento: productosTable.cantidadGratisDescuento,
+        porcentajeDescuento: productosTable.porcentajeDescuento,
         precioVenta: detallesProductoTable.precioVenta,
+        precioOferta: detallesProductoTable.precioOferta,
         detallesProductoId: detallesProductoTable.id,
-        stock: detallesProductoTable.stock
+        stock: detallesProductoTable.stock,
+        liquidacion: detallesProductoTable.liquidacion
       })
       .from(productosTable)
       .innerJoin(

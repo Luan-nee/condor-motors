@@ -112,6 +112,7 @@ export const detallesProductoTable = pgTable(
     precioOferta: numeric('precio_oferta', { precision: 7, scale: 2 }),
     stock: integer('stock').notNull().default(0),
     stockBajo: boolean('stock_bajo').notNull().default(false),
+    liquidacion: boolean('liquidacion').notNull().default(false),
     productoId: integer('producto_id')
       .notNull()
       .references(() => productosTable.id),
@@ -427,7 +428,10 @@ export const proformasVentaTable = pgTable('proformas_venta', {
       productoId: number
       nombre: string
       precioUnitario: number
-      cantidad: number
+      cantidadGratis: number | null
+      descuento: number | null
+      cantidadPagada: number
+      cantidadTotal: number
       subtotal: number
     }>
   >(),
