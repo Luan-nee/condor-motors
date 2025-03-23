@@ -90,10 +90,12 @@ export const getOffsetDateTime = (
 
 export const getDateTimeString = (dateTime: Date) => {
   const isoString = dateTime.toISOString()
+  const date = isoString.substring(0, 10)
+  const time = isoString.substring(11, 19)
 
   return {
-    date: isoString.slice(0, 10),
-    time: isoString.slice(11, 16)
+    date,
+    time
   }
 }
 
