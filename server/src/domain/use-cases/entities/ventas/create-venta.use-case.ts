@@ -25,7 +25,7 @@ import {
 } from '@/db/schema'
 import type { CreateVentaDto } from '@/domain/dtos/entities/ventas/create-venta.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 
 interface DetalleVenta {
   sku: string
@@ -57,6 +57,44 @@ export class CreateVenta {
     const { moneda, metodoPago } = await this.getDefaultMonedaMetodoPago()
 
     const result = await db.transaction(async (tx) => {
+      const productoIds = createVentaDto.detalles.map(
+        (detalle) => detalle.productoId
+      )
+      const tipoTaxIds = createVentaDto.detalles.map(
+        (detalle) => detalle.tipoTaxId
+      )
+
+      const detallesProductos = await tx
+        .select({
+          id: detallesProductoTable.id,
+          stock: detallesProductoTable.stock,
+          precioVenta: detallesProductoTable.precioVenta,
+          productoId: detallesProductoTable.productoId,
+          sku: productosTable.sku,
+          nombre: productosTable.nombre,
+          tipoTaxId: tiposTaxTable.id,
+          porcentajeTax: tiposTaxTable.porcentajeTax
+        })
+        .from(detallesProductoTable)
+        .innerJoin(
+          productosTable,
+          eq(productosTable.id, detallesProductoTable.productoId)
+        )
+        .leftJoin(tiposTaxTable, inArray(tiposTaxTable.id, tipoTaxIds))
+        .where(
+          and(
+            eq(detallesProductoTable.sucursalId, sucursalId),
+            inArray(detallesProductoTable.productoId, productoIds)
+          )
+        )
+
+      const detallesProductoMap = new Map(
+        detallesProductos.map((dp) => [dp.productoId, dp])
+      )
+      const productosMap = new Map(
+        detallesProductos.map((p) => [p.productoId, p])
+      )
+
       const detallesVenta: DetalleVenta[] = []
       let totalGravadas = 0
       let totalGratuitas = 0
@@ -65,51 +103,16 @@ export class CreateVenta {
       let totalVenta = 0
 
       for (const detalleVenta of createVentaDto.detalles) {
-        const detallesProducto = await tx
-          .select({
-            id: detallesProductoTable.id,
-            stock: detallesProductoTable.stock,
-            precioVenta: detallesProductoTable.precioVenta,
-            productoId: detallesProductoTable.productoId
-          })
-          .from(detallesProductoTable)
-          .where(
-            and(
-              eq(detallesProductoTable.productoId, detalleVenta.productoId),
-              eq(detallesProductoTable.sucursalId, sucursalId)
-            )
-          )
-          .for('update')
-          .execute()
+        const detalleProducto = detallesProductoMap.get(detalleVenta.productoId)
+        const producto = productosMap.get(detalleVenta.productoId)
 
-        if (detallesProducto.length < 1) {
+        if (detalleProducto === undefined || producto === undefined) {
           throw CustomError.badRequest(
             `El producto con id ${detalleVenta.productoId} no existe en la sucursal especificada`
           )
         }
 
-        const [detalleProducto] = detallesProducto
         this.validateStock(detalleProducto, detalleVenta.cantidad)
-
-        const productos = await tx
-          .select({
-            sku: productosTable.sku,
-            nombre: productosTable.nombre,
-            tipoTaxId: tiposTaxTable.id,
-            porcentajeTax: tiposTaxTable.porcentajeTax
-          })
-          .from(productosTable)
-          .where(eq(productosTable.id, detalleVenta.productoId))
-          .leftJoin(tiposTaxTable, eq(tiposTaxTable.id, detalleVenta.tipoTaxId))
-          .execute()
-
-        if (productos.length < 1) {
-          throw CustomError.badRequest(
-            'Producto no encontrado ' + detalleVenta.productoId
-          )
-        }
-
-        const [producto] = productos
 
         if (producto.tipoTaxId === null) {
           throw CustomError.badRequest(
@@ -148,7 +151,6 @@ export class CreateVenta {
           .update(detallesProductoTable)
           .set({ stock: detalleProducto.stock - detalleVenta.cantidad })
           .where(eq(detallesProductoTable.id, detalleProducto.id))
-          .execute()
       }
 
       const { date, time } = this.getDateTime()
@@ -173,21 +175,17 @@ export class CreateVenta {
         .values(
           detallesVenta.map((detalle) => ({ ...detalle, ventaId: venta.id }))
         )
-        .execute()
 
       totalVenta = totalGravadas + totalExoneradas + totalTax
 
-      await tx
-        .insert(totalesVentaTable)
-        .values({
-          totalGravadas: fixedTwoDecimals(totalGravadas),
-          totalExoneradas: fixedTwoDecimals(totalExoneradas),
-          totalGratuitas: fixedTwoDecimals(totalGratuitas),
-          totalTax: fixedTwoDecimals(totalTax),
-          totalVenta: fixedTwoDecimals(totalVenta),
-          ventaId: venta.id
-        })
-        .execute()
+      await tx.insert(totalesVentaTable).values({
+        totalGravadas: fixedTwoDecimals(totalGravadas),
+        totalExoneradas: fixedTwoDecimals(totalExoneradas),
+        totalGratuitas: fixedTwoDecimals(totalGratuitas),
+        totalTax: fixedTwoDecimals(totalTax),
+        totalVenta: fixedTwoDecimals(totalVenta),
+        ventaId: venta.id
+      })
 
       return venta
     })
