@@ -94,14 +94,12 @@ export const seedConfig: SeedConfig = {
     {
       nombre: 'Con impuestos... not stonks 📉📉📉',
       codigo: '10',
-      tax: 18,
-      tipo: 'gravado'
+      porcentajeTax: 18
     },
     {
       nombre: 'Sin impuestos STONKS 📈📈📈',
       codigo: '20',
-      tax: 0,
-      tipo: 'exonerado'
+      porcentajeTax: 0
     }
   ],
   sucursalesCount: 3,

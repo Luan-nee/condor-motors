@@ -92,7 +92,7 @@ export class CreateVenta {
             sku: productosTable.sku,
             nombre: productosTable.nombre,
             tipoTaxId: tiposTaxTable.id,
-            tax: tiposTaxTable.tax
+            porcentajeTax: tiposTaxTable.porcentajeTax
           })
           .from(productosTable)
           .where(eq(productosTable.id, detalleVenta.productoId))
@@ -122,7 +122,7 @@ export class CreateVenta {
         } = this.computeDetallesItem(
           detalleProducto.precioVenta,
           detalleVenta.cantidad,
-          producto.tax
+          producto.porcentajeTax
         )
 
         detallesVenta.push({
@@ -216,16 +216,16 @@ export class CreateVenta {
   private computeDetallesItem(
     precioVenta: string,
     cantidad: number,
-    tax: number | null
+    porcentajeTax: number | null
   ) {
-    if (tax === null) {
+    if (porcentajeTax === null) {
       throw CustomError.badRequest(
         'El tipo de impuesto que intentó asignar es inválido'
       )
     }
 
     const valorUnitario = parseFloat(precioVenta)
-    const taxUnitario = valorUnitario * (tax / 100)
+    const taxUnitario = valorUnitario * (porcentajeTax / 100)
     const precioUnitario = roundTwoDecimals(valorUnitario + taxUnitario)
 
     const totalBaseTax = productWithTwoDecimals(valorUnitario, cantidad)

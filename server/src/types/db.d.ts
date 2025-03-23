@@ -72,8 +72,7 @@ interface SeedConfig {
   tiposTaxDefault: Array<{
     nombre: string
     codigo: string
-    tax: number
-    tipo: string
+    porcentajeTax: number
   }>
   sucursalesCount: number
   empleadosCount: number
