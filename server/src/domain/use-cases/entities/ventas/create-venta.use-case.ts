@@ -160,8 +160,8 @@ export class CreateVenta {
         )
 
       await tx.insert(totalesVentaTable).values({
-        totalGravadas: (totalVenta / 1.18).toFixed(2),
-        totalExoneradas: '0',
+        totalGravadas: '0',
+        totalExoneradas: (totalVenta / 1.18).toFixed(2),
         totalGratuitas: '0',
         totalTax: (totalVenta - totalVenta / 1.18).toFixed(2),
         totalVenta: totalVenta.toFixed(2),
