@@ -1,17 +1,32 @@
 import 'package:flutter/foundation.dart';
 import '../main.api.dart';
+import 'cache/fast_cache.dart';
 
 class CategoriasApi {
   final ApiClient _api;
   final String _endpoint = '/categorias';
+  // Fast Cache para las operaciones de categorías
+  final FastCache _cache = FastCache();
   
   CategoriasApi(this._api);
   
   /// Obtiene todas las categorías
   /// 
   /// Ordenadas alfabéticamente por nombre
-  Future<List<dynamic>> getCategorias() async {
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<List<dynamic>> getCategorias({bool useCache = true}) async {
     try {
+      const cacheKey = 'categorias_all';
+      
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final cachedData = _cache.get<List<dynamic>>(cacheKey);
+        if (cachedData != null) {
+          debugPrint('✅ Categorías obtenidas desde caché');
+          return cachedData;
+        }
+      }
+      
       debugPrint('CategoriasApi: Obteniendo categorías');
       
       final queryParams = <String, String>{
@@ -39,6 +54,12 @@ class CategoriasApi {
       
       final categorias = response['data'] as List;
       debugPrint('CategoriasApi: ${categorias.length} categorías encontradas');
+      
+      // Guardar en caché si useCache es true
+      if (useCache) {
+        _cache.set(cacheKey, categorias);
+        debugPrint('✅ Categorías guardadas en caché');
+      }
       
       return categorias;
     } catch (e) {
@@ -80,6 +101,9 @@ class CategoriasApi {
       );
       
       debugPrint('CategoriasApi: Categoría creada con éxito');
+      
+      // Invalidar caché de categorías
+      _invalidateCache();
       
       return response['data'];
     } catch (e) {
@@ -132,6 +156,10 @@ class CategoriasApi {
       
       debugPrint('CategoriasApi: Categoría actualizada con éxito');
       
+      // Invalidar caché
+      _invalidateCache();
+      _cache.invalidate('categoria_$id');
+      
       return response['data'];
     } catch (e) {
       debugPrint('CategoriasApi: Error al actualizar categoría: $e');
@@ -160,6 +188,10 @@ class CategoriasApi {
       
       debugPrint('CategoriasApi: Categoría eliminada con éxito');
       
+      // Invalidar caché
+      _invalidateCache();
+      _cache.invalidate('categoria_$id');
+      
       return true;
     } catch (e) {
       debugPrint('CategoriasApi: Error al eliminar categoría: $e');
@@ -177,8 +209,20 @@ class CategoriasApi {
   /// Obtiene una categoría específica por su ID
   /// 
   /// [id] ID de la categoría a obtener
-  Future<Map<String, dynamic>> getCategoria(String id) async {
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<Map<String, dynamic>> getCategoria(String id, {bool useCache = true}) async {
     try {
+      final cacheKey = 'categoria_$id';
+      
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        if (cachedData != null) {
+          debugPrint('✅ Categoría obtenida desde caché: $cacheKey');
+          return cachedData;
+        }
+      }
+      
       debugPrint('CategoriasApi: Obteniendo categoría con ID: $id');
       
       final response = await _api.authenticatedRequest(
@@ -188,7 +232,15 @@ class CategoriasApi {
       
       debugPrint('CategoriasApi: Categoría obtenida con éxito');
       
-      return response['data'];
+      final categoria = response['data'] as Map<String, dynamic>;
+      
+      // Guardar en caché si useCache es true
+      if (useCache) {
+        _cache.set(cacheKey, categoria);
+        debugPrint('✅ Categoría guardada en caché: $cacheKey');
+      }
+      
+      return categoria;
     } catch (e) {
       debugPrint('CategoriasApi: Error al obtener categoría: $e');
       // Capturar más detalles sobre el error
@@ -199,6 +251,24 @@ class CategoriasApi {
         }
       }
       rethrow;
+    }
+  }
+  
+  /// Invalidar caché de categorías
+  void _invalidateCache() {
+    _cache.invalidate('categorias_all');
+    debugPrint('✅ Caché de categorías invalidada');
+  }
+  
+  /// Método público para forzar refresco de caché
+  void invalidateCache([String? categoriaId]) {
+    if (categoriaId != null) {
+      _cache.invalidate('categoria_$categoriaId');
+      _invalidateCache();
+      debugPrint('✅ Caché invalidada para categoría: $categoriaId');
+    } else {
+      _cache.clear();
+      debugPrint('✅ Caché de categorías completamente invalidada');
     }
   }
 }

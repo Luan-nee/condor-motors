@@ -3,9 +3,12 @@ import 'package:flutter/foundation.dart';
 import '../../models/paginacion.model.dart';
 import '../../models/producto.model.dart';
 import '../main.api.dart';
+import 'cache/fast_cache.dart';
 
 class ProductosApi {
   final ApiClient _api;
+  // Fast Cache para todas las operaciones de productos
+  final FastCache _cache = FastCache();
   
   ProductosApi(this._api);
   
@@ -20,6 +23,7 @@ class ProductosApi {
   /// [filter] Campo por el cual filtrar (opcional)
   /// [filterValue] Valor para el filtro (opcional)
   /// [filterType] Tipo de filtro a aplicar (opcional)
+  /// [useCache] Indica si se debe usar el caché (default: true)
   Future<PaginatedResponse<Producto>> getProductos({
     required String sucursalId,
     String? search,
@@ -30,8 +34,35 @@ class ProductosApi {
     String? filter,
     String? filterValue,
     String? filterType,
+    bool useCache = true,
   }) async {
     try {
+      // Generar clave única para este conjunto de parámetros
+      final cacheKey = _generateCacheKey(
+        'productos_$sucursalId',
+        search: search,
+        page: page,
+        pageSize: pageSize,
+        sortBy: sortBy,
+        order: order,
+        filter: filter,
+        filterValue: filterValue,
+        filterType: filterType,
+      );
+      
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final cachedData = _cache.get<PaginatedResponse<Producto>>(cacheKey);
+        if (cachedData != null) {
+          debugPrint('✅ Datos obtenidos desde caché: $cacheKey');
+          return cachedData;
+        }
+      }
+      
+      // Si no hay caché o useCache es false, obtener desde la API
+      debugPrint('Obteniendo productos para sucursal $sucursalId con parámetros: '
+          '{ search: $search, page: $page, pageSize: $pageSize, sortBy: $sortBy, order: $order, filter: $filter }');
+      
       final queryParams = <String, String>{};
       
       if (search != null && search.isNotEmpty) {
@@ -66,8 +97,6 @@ class ProductosApi {
         queryParams['filter_type'] = filterType;
       }
       
-      debugPrint('Obteniendo productos para sucursal $sucursalId con parámetros: $queryParams');
-      
       final response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos',
         method: 'GET',
@@ -91,11 +120,19 @@ class ProductosApi {
       }
       
       // Crear la respuesta paginada
-      return PaginatedResponse<Producto>(
+      final result = PaginatedResponse<Producto>(
         items: productos,
         paginacion: Paginacion.fromJson(paginacionData),
         metadata: metadata,
       );
+      
+      // Guardar en caché si useCache es true
+      if (useCache) {
+        _cache.set(cacheKey, result);
+        debugPrint('✅ Datos guardados en caché: $cacheKey');
+      }
+      
+      return result;
     } catch (e) {
       debugPrint('Error al obtener productos: $e');
       rethrow;
@@ -106,11 +143,24 @@ class ProductosApi {
   /// 
   /// [sucursalId] ID de la sucursal
   /// [productoId] ID del producto
+  /// [useCache] Indica si se debe usar el caché (default: true)
   Future<Producto> getProducto({
     required String sucursalId,
     required int productoId,
+    bool useCache = true,
   }) async {
     try {
+      final cacheKey = 'producto_${sucursalId}_$productoId';
+      
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final cachedData = _cache.get<Producto>(cacheKey);
+        if (cachedData != null) {
+          debugPrint('✅ Producto obtenido desde caché: $cacheKey');
+          return cachedData;
+        }
+      }
+      
       debugPrint('Obteniendo producto $productoId de sucursal $sucursalId');
       
       final response = await _api.authenticatedRequest(
@@ -118,7 +168,15 @@ class ProductosApi {
         method: 'GET',
       );
       
-      return Producto.fromJson(response['data']);
+      final producto = Producto.fromJson(response['data']);
+      
+      // Guardar en caché si useCache es true
+      if (useCache) {
+        _cache.set(cacheKey, producto);
+        debugPrint('✅ Producto guardado en caché: $cacheKey');
+      }
+      
+      return producto;
     } catch (e) {
       debugPrint('Error al obtener producto: $e');
       rethrow;
@@ -141,6 +199,9 @@ class ProductosApi {
         method: 'POST',
         body: productoData,
       );
+      
+      // Invalidar caché relacionada con esta sucursal
+      _invalidateRelatedCache(sucursalId);
       
       return Producto.fromJson(response['data']);
     } catch (e) {
@@ -194,6 +255,9 @@ class ProductosApi {
         body: productoData,
       );
       
+      // Invalidar caché relacionada
+      _invalidateRelatedCache(sucursalId, productoId);
+      
       return Producto.fromJson(response['data']);
     } catch (e) {
       debugPrint('Error al actualizar producto: $e');
@@ -238,13 +302,17 @@ class ProductosApi {
     try {
       debugPrint('Actualizando stock del producto $productoId a $nuevoStock');
       
-      return await updateProducto(
+      final producto = await updateProducto(
         sucursalId: sucursalId,
         productoId: productoId,
         productoData: {
           'stock': nuevoStock,
         },
       );
+      
+      // La invalidación del caché ya ocurre en updateProducto
+      
+      return producto;
     } catch (e) {
       debugPrint('Error al actualizar stock: $e');
       rethrow;
@@ -281,10 +349,89 @@ class ProductosApi {
         body: body,
       );
       
+      // Invalidar caché relacionada
+      _invalidateRelatedCache(sucursalId, productoId);
+      
       return true;
     } catch (e) {
       debugPrint('Error al agregar stock: $e');
       rethrow;
     }
+  }
+  
+  // Método helper para generar claves de caché consistentes
+  String _generateCacheKey(
+    String base, {
+    String? search,
+    int? page,
+    int? pageSize,
+    String? sortBy,
+    String? order,
+    String? filter,
+    String? filterValue,
+    String? filterType,
+  }) {
+    final List<String> components = [base];
+    
+    if (search != null && search.isNotEmpty) components.add('s:$search');
+    if (page != null) components.add('p:$page');
+    if (pageSize != null) components.add('ps:$pageSize');
+    if (sortBy != null && sortBy.isNotEmpty) components.add('sb:$sortBy');
+    if (order != null && order.isNotEmpty) components.add('o:$order');
+    if (filter != null && filter.isNotEmpty) components.add('f:$filter');
+    if (filterValue != null) components.add('fv:$filterValue');
+    if (filterType != null && filterType.isNotEmpty) components.add('ft:$filterType');
+    
+    return components.join('_');
+  }
+  
+  // Método para invalidar caché relacionada
+  void _invalidateRelatedCache(String sucursalId, [int? productoId]) {
+    if (productoId != null) {
+      // Invalidar caché específica de este producto
+      _cache.invalidate('producto_${sucursalId}_$productoId');
+      debugPrint('✅ Caché invalidada para producto $productoId en sucursal $sucursalId');
+    }
+    
+    // Invalidar listas que podrían contener este producto
+    _cache.invalidateByPattern('productos_$sucursalId');
+    debugPrint('✅ Caché de productos invalidada para sucursal $sucursalId');
+  }
+  
+  // Método público para forzar refresco de caché
+  void invalidateCache([String? sucursalId]) {
+    if (sucursalId != null) {
+      _cache.invalidateByPattern('productos_$sucursalId');
+      debugPrint('✅ Caché de productos invalidada para sucursal $sucursalId');
+    } else {
+      _cache.clear();
+      debugPrint('✅ Caché de productos completamente invalidada');
+    }
+  }
+  
+  // Método para verificar si los datos en caché están obsoletos
+  bool isCacheStale(String sucursalId, {
+    String? search,
+    int? page,
+    int? pageSize,
+    String? sortBy,
+    String? order,
+    String? filter,
+    String? filterValue,
+    String? filterType,
+  }) {
+    final cacheKey = _generateCacheKey(
+      'productos_$sucursalId',
+      search: search,
+      page: page,
+      pageSize: pageSize,
+      sortBy: sortBy,
+      order: order,
+      filter: filter,
+      filterValue: filterValue,
+      filterType: filterType,
+    );
+    
+    return _cache.isStale(cacheKey);
   }
 }

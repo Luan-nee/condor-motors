@@ -2,11 +2,18 @@ import 'package:flutter/foundation.dart';
 
 import '../../models/empleado.model.dart';
 import '../main.api.dart';
+import 'cache/fast_cache.dart';
 
 class EmpleadosApi {
   final ApiClient _api;
+  // Fast Cache para las operaciones de empleados
+  final FastCache _cache = FastCache();
 
   EmpleadosApi(this._api);
+  
+  /// Obtiene la lista de empleados con soporte de caché
+  /// 
+  /// [useCache] Indica si se debe usar el caché (default: true)
   Future<List<Empleado>> getEmpleados({
     int? page,
     int? pageSize,
@@ -15,8 +22,30 @@ class EmpleadosApi {
     String? search,
     String? filter,
     String? filterValue,
+    bool useCache = true,
   }) async {
     try {
+      // Generar clave única para este conjunto de parámetros
+      final cacheKey = _generateCacheKey(
+        'empleados',
+        page: page,
+        pageSize: pageSize,
+        sortBy: sortBy,
+        order: order,
+        search: search,
+        filter: filter,
+        filterValue: filterValue,
+      );
+      
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final cachedData = _cache.get<List<Empleado>>(cacheKey);
+        if (cachedData != null) {
+          debugPrint('✅ Empleados obtenidos desde caché: $cacheKey');
+          return cachedData;
+        }
+      }
+      
       debugPrint('EmpleadosApi: Obteniendo lista de empleados');
       
       // Construir parámetros de consulta
@@ -73,6 +102,13 @@ class EmpleadosApi {
           .toList();
       
       debugPrint('EmpleadosApi: Total de empleados encontrados: ${empleados.length}');
+      
+      // Guardar en caché si useCache es true
+      if (useCache) {
+        _cache.set(cacheKey, empleados);
+        debugPrint('✅ Empleados guardados en caché: $cacheKey');
+      }
+      
       return empleados;
     } catch (e) {
       debugPrint('EmpleadosApi: ERROR al obtener empleados: $e');
@@ -83,7 +119,8 @@ class EmpleadosApi {
   /// Obtiene un empleado por su ID
   /// 
   /// El ID debe ser un string, aunque represente un número
-  Future<Empleado> getEmpleado(String empleadoId) async {
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<Empleado> getEmpleado(String empleadoId, {bool useCache = true}) async {
     try {
       // Validar que empleadoId no sea nulo o vacío
       if (empleadoId.isEmpty) {
@@ -91,6 +128,18 @@ class EmpleadosApi {
           statusCode: 400,
           message: 'ID de empleado no puede estar vacío',
         );
+      }
+      
+      // Clave para caché
+      final cacheKey = 'empleado_$empleadoId';
+      
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final cachedData = _cache.get<Empleado>(cacheKey);
+        if (cachedData != null) {
+          debugPrint('✅ Empleado obtenido desde caché: $cacheKey');
+          return cachedData;
+        }
       }
       
       debugPrint('EmpleadosApi: Obteniendo empleado con ID: $empleadoId');
@@ -109,7 +158,15 @@ class EmpleadosApi {
         data = response['data'] as Map<String, dynamic>;
       }
       
-      return Empleado.fromJson(data);
+      final empleado = Empleado.fromJson(data);
+      
+      // Guardar en caché si useCache es true
+      if (useCache) {
+        _cache.set(cacheKey, empleado);
+        debugPrint('✅ Empleado guardado en caché: $cacheKey');
+      }
+      
+      return empleado;
     } catch (e) {
       debugPrint('EmpleadosApi: ERROR al obtener empleado #$empleadoId: $e');
       rethrow;
@@ -164,6 +221,9 @@ class EmpleadosApi {
         );
       }
       
+      // Invalidar caché de listas de empleados
+      _invalidateListCache();
+      
       return Empleado.fromJson(data);
     } catch (e) {
       debugPrint('EmpleadosApi: ERROR al crear empleado: $e');
@@ -208,6 +268,11 @@ class EmpleadosApi {
       
       debugPrint('EmpleadosApi: Respuesta de updateEmpleado recibida');
       final data = _processResponse(response);
+      
+      // Invalidar caché del empleado específico y listas
+      _cache.invalidate('empleado_$empleadoId');
+      _invalidateListCache();
+      
       return Empleado.fromJson(data);
     } catch (e) {
       debugPrint('EmpleadosApi: ERROR al actualizar empleado #$empleadoId: $e');
@@ -269,6 +334,10 @@ class EmpleadosApi {
         body: {'activo': false},
       );
       
+      // Invalidar caché del empleado específico y listas
+      _cache.invalidate('empleado_$empleadoId');
+      _invalidateListCache();
+      
       debugPrint('EmpleadosApi: Empleado desactivado correctamente');
     } catch (e) {
       debugPrint('EmpleadosApi: ERROR al eliminar empleado #$empleadoId: $e');
@@ -301,6 +370,7 @@ class EmpleadosApi {
     int page = 1,
     int pageSize = 10,
     String order = 'asc',
+    bool useCache = true,
   }) async {
     return getEmpleados(
       page: page,
@@ -308,6 +378,7 @@ class EmpleadosApi {
       order: order,
       filter: 'sucursalId',
       filterValue: sucursalId,
+      useCache: useCache,
     );
   }
   
@@ -316,6 +387,7 @@ class EmpleadosApi {
     int page = 1, 
     int pageSize = 10,
     String order = 'asc',
+    bool useCache = true,
   }) async {
     return getEmpleados(
       page: page,
@@ -323,6 +395,7 @@ class EmpleadosApi {
       order: order,
       filter: 'activo',
       filterValue: 'true',
+      useCache: useCache,
     );
   }
 
@@ -351,6 +424,8 @@ class EmpleadosApi {
       
       // Procesar la respuesta
       if (response['data'] is Map<String, dynamic>) {
+        // Invalidar caché relacionada con cuentas
+        _invalidateCacheByPattern('cuentas');
         return response['data'] as Map<String, dynamic>;
       } else {
         throw ApiException(
@@ -391,6 +466,10 @@ class EmpleadosApi {
       body: data,
     );
 
+    // Invalidar caché relacionada con esta cuenta
+    _cache.invalidate('cuenta_$cuentaId');
+    _invalidateCacheByPattern('cuentas');
+
     if (response['data'] is Map<String, dynamic>) {
       return response['data'];
     }
@@ -404,8 +483,19 @@ class EmpleadosApi {
   /// Obtiene la información de la cuenta de un empleado
   /// 
   /// Retorna los detalles de la cuenta asociada a un empleado
-  Future<Map<String, dynamic>> getCuentaEmpleado(String cuentaId) async {
+  Future<Map<String, dynamic>> getCuentaEmpleado(String cuentaId, {bool useCache = true}) async {
     try {
+      final cacheKey = 'cuenta_$cuentaId';
+      
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        if (cachedData != null) {
+          debugPrint('✅ Cuenta obtenida desde caché: $cacheKey');
+          return cachedData;
+        }
+      }
+      
       debugPrint('EmpleadosApi: Obteniendo información de cuenta $cuentaId');
       
       final response = await _api.authenticatedRequest(
@@ -413,8 +503,16 @@ class EmpleadosApi {
         method: 'GET',
       );
       
+      final cuenta = _processResponse(response);
+      
+      // Guardar en caché si useCache es true
+      if (useCache) {
+        _cache.set(cacheKey, cuenta);
+        debugPrint('✅ Cuenta guardada en caché: $cacheKey');
+      }
+      
       debugPrint('EmpleadosApi: Información de cuenta obtenida correctamente');
-      return _processResponse(response);
+      return cuenta;
     } catch (e) {
       debugPrint('EmpleadosApi: ERROR al obtener información de cuenta: $e');
       rethrow;
@@ -424,8 +522,19 @@ class EmpleadosApi {
   /// Obtiene todas las cuentas de empleados
   /// 
   /// Retorna una lista con todas las cuentas de empleados registradas
-  Future<List<dynamic>> getCuentasEmpleados() async {
+  Future<List<dynamic>> getCuentasEmpleados({bool useCache = true}) async {
     try {
+      final cacheKey = 'cuentas_empleados_todas';
+      
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final cachedData = _cache.get<List<dynamic>>(cacheKey);
+        if (cachedData != null) {
+          debugPrint('✅ Cuentas de empleados obtenidas desde caché: $cacheKey');
+          return cachedData;
+        }
+      }
+      
       debugPrint('EmpleadosApi: Obteniendo lista de cuentas de empleados');
       
       final response = await _api.authenticatedRequest(
@@ -441,6 +550,12 @@ class EmpleadosApi {
         data = response['data']['data'];
       } else {
         data = [];
+      }
+      
+      // Guardar en caché si useCache es true
+      if (useCache) {
+        _cache.set(cacheKey, data);
+        debugPrint('✅ Cuentas de empleados guardadas en caché: $cacheKey');
       }
       
       debugPrint('EmpleadosApi: Total de cuentas encontradas: ${data.length}');
@@ -463,6 +578,10 @@ class EmpleadosApi {
         method: 'DELETE',
       );
       
+      // Invalidar caché relacionada
+      _cache.invalidate('cuenta_$cuentaId');
+      _invalidateCacheByPattern('cuentas');
+      
       debugPrint('EmpleadosApi: Cuenta de empleado eliminada correctamente');
       return true;
     } catch (e) {
@@ -472,20 +591,38 @@ class EmpleadosApi {
   }
 
   /// Obtiene los roles disponibles para cuentas de empleados
-  Future<List<Map<String, dynamic>>> getRolesCuentas() async {
+  Future<List<Map<String, dynamic>>> getRolesCuentas({bool useCache = true}) async {
     try {
+      const cacheKey = 'roles_cuentas';
+      
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
+        if (cachedData != null) {
+          debugPrint('✅ Roles de cuentas obtenidos desde caché: $cacheKey');
+          return cachedData;
+        }
+      }
+      
       final response = await _api.authenticatedRequest(
         endpoint: '/rolescuentas',
         method: 'GET',
       );
       
+      List<Map<String, dynamic>> roles = [];
       if (response['data'] is List) {
-        return (response['data'] as List)
+        roles = (response['data'] as List)
             .map((item) => item as Map<String, dynamic>)
             .toList();
+        
+        // Guardar en caché si useCache es true
+        if (useCache) {
+          _cache.set(cacheKey, roles);
+          debugPrint('✅ Roles de cuentas guardados en caché: $cacheKey');
+        }
       }
       
-      return [];
+      return roles;
     } catch (e) {
       debugPrint('Error al obtener roles de cuentas: $e');
       return [];
@@ -493,8 +630,19 @@ class EmpleadosApi {
   }
 
   /// Obtiene la cuenta de un empleado por su ID
-  Future<Map<String, dynamic>?> getCuentaByEmpleadoId(String empleadoId) async {
+  Future<Map<String, dynamic>?> getCuentaByEmpleadoId(String empleadoId, {bool useCache = true}) async {
     try {
+      final cacheKey = 'cuenta_empleado_$empleadoId';
+      
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        if (cachedData != null) {
+          debugPrint('✅ Cuenta por empleado obtenida desde caché: $cacheKey');
+          return cachedData;
+        }
+      }
+      
       // Añadir headers especiales para evitar que el token sea renovado automáticamente
       // si es un 401 específico de "no encontrado"
       final response = await _api.authenticatedRequest(
@@ -504,7 +652,15 @@ class EmpleadosApi {
       );
       
       if (response['data'] is Map<String, dynamic>) {
-        return response['data'];
+        final cuenta = response['data'] as Map<String, dynamic>;
+        
+        // Guardar en caché si useCache es true
+        if (useCache) {
+          _cache.set(cacheKey, cuenta);
+          debugPrint('✅ Cuenta por empleado guardada en caché: $cacheKey');
+        }
+        
+        return cuenta;
       }
       
       return null;
@@ -528,5 +684,59 @@ class EmpleadosApi {
       debugPrint('EmpleadosApi: ERROR al obtener cuenta por empleado: $e');
       rethrow;
     }
+  }
+  
+  /// Método helper para generar claves de caché consistentes
+  String _generateCacheKey(
+    String base, {
+    int? page,
+    int? pageSize,
+    String? sortBy,
+    String? order,
+    String? search,
+    String? filter,
+    String? filterValue,
+  }) {
+    final List<String> components = [base];
+    
+    if (page != null) components.add('p:$page');
+    if (pageSize != null) components.add('ps:$pageSize');
+    if (sortBy != null && sortBy.isNotEmpty) components.add('sb:$sortBy');
+    if (order != null && order != 'asc') components.add('o:$order');
+    if (search != null && search.isNotEmpty) components.add('s:$search');
+    if (filter != null && filter.isNotEmpty) components.add('f:$filter');
+    if (filterValue != null) components.add('fv:$filterValue');
+    
+    return components.join('_');
+  }
+  
+  /// Invalida las caches relacionadas con listas de empleados
+  void _invalidateListCache() {
+    _invalidateCacheByPattern('empleados');
+  }
+  
+  /// Invalida caché por patrón de clave
+  void _invalidateCacheByPattern(String pattern) {
+    _cache.invalidateByPattern(pattern);
+    debugPrint('✅ Caché invalidada para patrón: $pattern');
+  }
+  
+  /// Método público para forzar refresco de caché
+  void invalidateCache([String? empleadoId]) {
+    if (empleadoId != null) {
+      // Invalidar caché específica para este empleado
+      _cache.invalidate('empleado_$empleadoId');
+      _cache.invalidate('cuenta_empleado_$empleadoId');
+      debugPrint('✅ Caché invalidada para empleado: $empleadoId');
+    } else {
+      // Invalidar toda la caché relacionada con empleados
+      _cache.clear();
+      debugPrint('✅ Caché completamente invalidada');
+    }
+  }
+  
+  /// Método para verificar si los datos en caché están obsoletos
+  bool isCacheStale(String cacheKey) {
+    return _cache.isStale(cacheKey);
   }
 }

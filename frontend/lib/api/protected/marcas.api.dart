@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../main.api.dart';
+import 'cache/fast_cache.dart';
 
 /// Modelo para las marcas
 class Marca {
@@ -55,12 +56,26 @@ class Marca {
 
 class MarcasApi {
   final ApiClient _api;
+  // Fast Cache para las operaciones de marcas
+  final FastCache _cache = FastCache();
   
   MarcasApi(this._api);
   
   /// Obtiene todas las marcas
-  Future<List<dynamic>> getMarcas() async {
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<List<dynamic>> getMarcas({bool useCache = true}) async {
     try {
+      const cacheKey = 'marcas_all';
+      
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final cachedData = _cache.get<List<dynamic>>(cacheKey);
+        if (cachedData != null) {
+          debugPrint('✅ Marcas obtenidas desde caché');
+          return cachedData;
+        }
+      }
+      
       debugPrint('MarcasApi: Obteniendo lista de marcas');
       final response = await _api.authenticatedRequest(
         endpoint: '/marcas',
@@ -70,18 +85,27 @@ class MarcasApi {
       debugPrint('MarcasApi: Respuesta de getMarcas recibida');
       debugPrint('MarcasApi: Estructura de respuesta: ${response.keys.toList()}');
       
+      List<dynamic> items = [];
+      
       // Manejar estructura anidada: response.data.data
       if (response['data'] is Map && response['data'].containsKey('data')) {
         debugPrint('MarcasApi: Encontrada estructura anidada en la respuesta');
-        final items = response['data']['data'] ?? [];
-        debugPrint('MarcasApi: Total de marcas encontradas: ${items.length}');
-        return items;
+        items = response['data']['data'] ?? [];
+      } 
+      // Si la estructura cambia en el futuro y ya no está anidada
+      else {
+        debugPrint('MarcasApi: Usando estructura directa de respuesta');
+        items = response['data'] ?? [];
       }
       
-      // Si la estructura cambia en el futuro y ya no está anidada
-      debugPrint('MarcasApi: Usando estructura directa de respuesta');
-      final items = response['data'] ?? [];
       debugPrint('MarcasApi: Total de marcas encontradas: ${items.length}');
+      
+      // Guardar en caché si useCache es true
+      if (useCache) {
+        _cache.set(cacheKey, items);
+        debugPrint('✅ Marcas guardadas en caché');
+      }
+      
       return items;
     } catch (e) {
       debugPrint('MarcasApi: ERROR al obtener marcas: $e');
@@ -92,7 +116,8 @@ class MarcasApi {
   /// Obtiene una marca por su ID
   /// 
   /// El ID debe ser un string, aunque represente un número
-  Future<Map<String, dynamic>> getMarca(String marcaId) async {
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<Map<String, dynamic>> getMarca(String marcaId, {bool useCache = true}) async {
     try {
       // Validar que marcaId no sea nulo o vacío
       if (marcaId.isEmpty) {
@@ -100,6 +125,17 @@ class MarcasApi {
           statusCode: 400,
           message: 'ID de marca no puede estar vacío',
         );
+      }
+      
+      final cacheKey = 'marca_$marcaId';
+      
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        if (cachedData != null) {
+          debugPrint('✅ Marca obtenida desde caché: $cacheKey');
+          return cachedData;
+        }
       }
       
       debugPrint('MarcasApi: Obteniendo marca con ID: $marcaId');
@@ -123,6 +159,12 @@ class MarcasApi {
           statusCode: 404,
           message: 'Marca no encontrada',
         );
+      }
+      
+      // Guardar en caché si useCache es true
+      if (useCache) {
+        _cache.set(cacheKey, data);
+        debugPrint('✅ Marca guardada en caché: $cacheKey');
       }
       
       return data;
@@ -166,6 +208,9 @@ class MarcasApi {
           message: 'Error al crear marca',
         );
       }
+      
+      // Invalidar caché de marcas
+      _invalidateCache();
       
       return data;
     } catch (e) {
@@ -211,6 +256,10 @@ class MarcasApi {
         );
       }
       
+      // Invalidar caché
+      _invalidateCache();
+      _cache.invalidate('marca_$marcaId');
+      
       return data;
     } catch (e) {
       debugPrint('MarcasApi: ERROR al actualizar marca #$marcaId: $e');
@@ -237,6 +286,10 @@ class MarcasApi {
         method: 'DELETE',
       );
       
+      // Invalidar caché
+      _invalidateCache();
+      _cache.invalidate('marca_$marcaId');
+      
       debugPrint('MarcasApi: Marca eliminada correctamente');
     } catch (e) {
       debugPrint('MarcasApi: ERROR al eliminar marca #$marcaId: $e');
@@ -245,8 +298,20 @@ class MarcasApi {
   }
   
   /// Obtiene solo las marcas activas
-  Future<List<dynamic>> getMarcasActivas() async {
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<List<dynamic>> getMarcasActivas({bool useCache = true}) async {
     try {
+      const cacheKey = 'marcas_activas';
+      
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final cachedData = _cache.get<List<dynamic>>(cacheKey);
+        if (cachedData != null) {
+          debugPrint('✅ Marcas activas obtenidas desde caché');
+          return cachedData;
+        }
+      }
+      
       debugPrint('MarcasApi: Obteniendo marcas activas');
       final response = await _api.authenticatedRequest(
         endpoint: '/marcas/activas',
@@ -255,15 +320,44 @@ class MarcasApi {
       
       debugPrint('MarcasApi: Respuesta de getMarcasActivas recibida');
       
+      List<dynamic> items = [];
+      
       // Manejar estructura anidada
       if (response['data'] is Map && response['data'].containsKey('data')) {
-        return response['data']['data'] ?? [];
+        items = response['data']['data'] ?? [];
+      } else {
+        items = response['data'] ?? [];
       }
       
-      return response['data'] ?? [];
+      // Guardar en caché si useCache es true
+      if (useCache) {
+        _cache.set(cacheKey, items);
+        debugPrint('✅ Marcas activas guardadas en caché');
+      }
+      
+      return items;
     } catch (e) {
       debugPrint('MarcasApi: ERROR al obtener marcas activas: $e');
       rethrow;
+    }
+  }
+  
+  /// Invalidar caché de marcas
+  void _invalidateCache() {
+    _cache.invalidate('marcas_all');
+    _cache.invalidate('marcas_activas');
+    debugPrint('✅ Caché de marcas invalidada');
+  }
+  
+  /// Método público para forzar refresco de caché
+  void invalidateCache([String? marcaId]) {
+    if (marcaId != null) {
+      _cache.invalidate('marca_$marcaId');
+      _invalidateCache();
+      debugPrint('✅ Caché invalidada para marca: $marcaId');
+    } else {
+      _cache.clear();
+      debugPrint('✅ Caché de marcas completamente invalidada');
     }
   }
 }

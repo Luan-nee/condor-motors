@@ -436,7 +436,6 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
           EmpleadoHorarioViewer(
             empleado: widget.empleado,
             showTitle: false,
-            width: double.infinity,
           ),
           
           // Botones de acción al final
@@ -611,7 +610,6 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
                 empleado: widget.empleado,
                 nombresSucursales: widget.nombresSucursales,
                 obtenerRolDeEmpleado: widget.obtenerRolDeEmpleado,
-                onEdit: null, // No mostrar el botón de editar en el viewer
                 onGestionarCuenta: _gestionarCuentaEmpleado,
               ),
             ),
