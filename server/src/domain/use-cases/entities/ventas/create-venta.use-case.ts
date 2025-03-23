@@ -58,6 +58,10 @@ export class CreateVenta {
 
     const result = await db.transaction(async (tx) => {
       const detallesVenta: DetalleVenta[] = []
+      let totalGravadas = 0
+      let totalGratuitas = 0
+      let totalExoneradas = 0
+      let totalTax = 0
       let totalVenta = 0
 
       for (const detalleVenta of createVentaDto.detalles) {
@@ -113,13 +117,7 @@ export class CreateVenta {
           )
         }
 
-        const {
-          valorUnitario,
-          precioUnitario,
-          totalBaseTax,
-          totalTax,
-          totalItem
-        } = this.computeDetallesItem(
+        const detallesItem = this.computeDetallesItem(
           detalleProducto.precioVenta,
           detalleVenta.cantidad,
           producto.porcentajeTax
@@ -129,15 +127,22 @@ export class CreateVenta {
           sku: producto.sku,
           nombre: producto.nombre,
           cantidad: detalleVenta.cantidad,
-          precioSinIgv: fixedTwoDecimals(valorUnitario),
-          precioConIgv: fixedTwoDecimals(precioUnitario),
+          precioSinIgv: fixedTwoDecimals(detallesItem.valorUnitario),
+          precioConIgv: fixedTwoDecimals(detallesItem.precioUnitario),
           tipoTaxId: detalleVenta.tipoTaxId,
-          totalBaseTax: fixedTwoDecimals(totalBaseTax),
-          totalTax: fixedTwoDecimals(totalTax),
-          total: fixedTwoDecimals(totalItem)
+          totalBaseTax: fixedTwoDecimals(detallesItem.totalBaseTax),
+          totalTax: fixedTwoDecimals(detallesItem.totalTax),
+          total: fixedTwoDecimals(detallesItem.totalItem)
         })
 
-        totalVenta += totalItem
+        if (detallesItem.exonerada) {
+          totalExoneradas += detallesItem.totalItem
+        } else {
+          totalGravadas += detallesItem.totalBaseTax
+          totalTax += detallesItem.totalTax
+        }
+
+        totalGratuitas += detallesItem.totalGratuitas
 
         await tx
           .update(detallesProductoTable)
@@ -170,14 +175,16 @@ export class CreateVenta {
         )
         .execute()
 
+      totalVenta = totalGravadas + totalExoneradas + totalTax
+
       await tx
         .insert(totalesVentaTable)
         .values({
-          totalGravadas: '0',
-          totalExoneradas: (totalVenta / 1.18).toFixed(2),
-          totalGratuitas: '0',
-          totalTax: (totalVenta - totalVenta / 1.18).toFixed(2),
-          totalVenta: totalVenta.toFixed(2),
+          totalGravadas: fixedTwoDecimals(totalGravadas),
+          totalExoneradas: fixedTwoDecimals(totalExoneradas),
+          totalGratuitas: fixedTwoDecimals(totalGratuitas),
+          totalTax: fixedTwoDecimals(totalTax),
+          totalVenta: fixedTwoDecimals(totalVenta),
           ventaId: venta.id
         })
         .execute()
@@ -230,15 +237,18 @@ export class CreateVenta {
 
     const totalBaseTax = productWithTwoDecimals(valorUnitario, cantidad)
     const totalTax = productWithTwoDecimals(taxUnitario, cantidad)
-
     const totalItem = roundTwoDecimals(totalBaseTax + totalTax)
+
+    const exonerada = porcentajeTax === 0
 
     return {
       valorUnitario,
       precioUnitario,
       totalBaseTax,
       totalTax,
-      totalItem
+      totalItem,
+      totalGratuitas: 0,
+      exonerada
     }
   }
 

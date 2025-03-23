@@ -100,6 +100,11 @@ export const seedConfig: SeedConfig = {
       nombre: 'Sin impuestos STONKS 📈📈📈',
       codigo: '20',
       porcentajeTax: 0
+    },
+    {
+      nombre: 'Gratis y sin impuestos stonks? 📉📈❔',
+      codigo: '21',
+      porcentajeTax: 0
     }
   ],
   sucursalesCount: 3,
