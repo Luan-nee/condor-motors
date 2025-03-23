@@ -7,7 +7,8 @@ import { formatCode } from '@/core/lib/format-values'
 import {
   getRandomNumber,
   getRandomUniqueElementsFromArray,
-  getRandomValueFromArray
+  getRandomValueFromArray,
+  productWithTwoDecimals
 } from '@/core/lib/utils'
 import { db } from '@db/connection'
 import * as schema from '@db/schema'
@@ -19,6 +20,7 @@ import {
   vendedorPermisssions,
   computadoraPermissions
 } from '@db/config/seed.config'
+import { calcularPrecioYDescuento } from '@/core/lib/seed-utils'
 
 const BATCH_SIZE = 500
 
@@ -266,7 +268,10 @@ const seedDatabase = async () => {
     {
       id: schema.productosTable.id,
       nombre: schema.productosTable.nombre,
-      stockMinimo: schema.productosTable.stockMinimo
+      stockMinimo: schema.productosTable.stockMinimo,
+      cantidadMinimaDescuento: schema.productosTable.cantidadMinimaDescuento,
+      cantidadGratisDescuento: schema.productosTable.cantidadGratisDescuento,
+      porcentajeDescuento: schema.productosTable.porcentajeDescuento
     }
   )
 
@@ -305,25 +310,55 @@ const seedDatabase = async () => {
     .insert(schema.estadosTransferenciasInventarios)
     .values(estadosTransferenciasInventariosValues)
 
+  const detallesProductosMap = new Map(
+    detallesProductosValues.map((detalle) => [
+      `${detalle.productoId}:${detalle.sucursalId}`,
+      detalle
+    ])
+  )
+
   const generateDetalles = (length: number, sucursalId: number) =>
     getRandomUniqueElementsFromArray(productos, length).map((producto) => {
-      const detallesProducto = detallesProductosValues.find(
-        (d) => d.productoId === producto.id && d.sucursalId === sucursalId
+      const detallesProducto = detallesProductosMap.get(
+        `${producto.id}:${sucursalId}`
       )
 
       if (detallesProducto === undefined) {
         throw new Error('Product not found')
       }
 
-      const cantidad = faker.number.int({ min: 2, max: 7 })
-      const precio = parseFloat(detallesProducto.precioVenta)
-      const subtotal = parseFloat((cantidad * precio).toFixed(2))
+      const cantidad = faker.number.int({ min: 1, max: 12 })
+
+      const {
+        precioUnitario,
+        precioOriginal,
+        cantidadGratis,
+        descuento,
+        cantidadPagada
+      } = calcularPrecioYDescuento(
+        {
+          cantidadMinimaDescuento: producto.cantidadMinimaDescuento,
+          cantidadGratisDescuento: producto.cantidadGratisDescuento,
+          porcentajeDescuento: producto.porcentajeDescuento,
+          precioVenta: detallesProducto.precioVenta,
+          precioOferta: detallesProducto.precioOferta,
+          liquidacion: faker.datatype.boolean()
+        },
+        cantidad
+      )
+
+      const cantidadTotal = cantidadPagada + cantidadGratis
+      const subtotal = productWithTwoDecimals(precioUnitario, cantidadPagada)
 
       return {
-        productoId: producto.id,
+        productoId: detallesProducto.productoId,
         nombre: producto.nombre,
-        cantidad,
-        precioUnitario: precio,
+        cantidadGratis,
+        descuento,
+        cantidadPagada,
+        cantidadTotal,
+        precioUnitario,
+        precioOriginal,
         subtotal
       }
     })
@@ -361,9 +396,13 @@ const seedDatabase = async () => {
 
   await db.insert(schema.notificacionesTable).values(notificacionesValues)
 
-  await db
+  const tiposDocumentoCliente = await db
     .insert(schema.tiposDocumentoClienteTable)
     .values(seedConfig.tiposDocumentoClienteDefault)
+    .returning({
+      id: schema.tiposDocumentoClienteTable.id,
+      codigo: schema.tiposDocumentoClienteTable.codigo
+    })
   await db
     .insert(schema.tiposDocumentoFacturacionTable)
     .values(seedConfig.tiposDocumentoFacturacionDefault)
@@ -372,6 +411,32 @@ const seedDatabase = async () => {
     .values(seedConfig.monedasFacturacionDefault)
   await db.insert(schema.metodosPagoTable).values(seedConfig.metodosPagoDefault)
   await db.insert(schema.tiposTaxTable).values(seedConfig.tiposTaxDefault)
+
+  const clientesValues = Array.from({ length: seedConfig.clientesCount }).map(
+    () => {
+      const tipoDocumento = getRandomValueFromArray(tiposDocumentoCliente)
+      const personaNatural = tipoDocumento.codigo === '1'
+      const dni = faker.number.int({ min: 11111111, max: 999999999 }).toString()
+      const numeroDocumento = personaNatural
+        ? dni
+        : getRandomValueFromArray(['10', '20']) + dni + getRandomNumber(1, 9)
+
+      const denominacion = personaNatural
+        ? faker.person.fullName()
+        : faker.company.name()
+
+      return {
+        tipoDocumentoId: tipoDocumento.id,
+        numeroDocumento,
+        denominacion,
+        direccion: faker.location.streetAddress(true),
+        correo: faker.internet.email({ provider: 'mail.fake' }),
+        telefono: faker.phone.number({ style: 'international' })
+      }
+    }
+  )
+
+  await db.insert(schema.clientesTable).values(clientesValues)
 }
 
 const { NODE_ENV: nodeEnv } = envs

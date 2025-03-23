@@ -80,4 +80,5 @@ interface SeedConfig {
   productosCount: number
   proformasVentaCount: number
   notificacionesCount: number
+  clientesCount: number
 }
