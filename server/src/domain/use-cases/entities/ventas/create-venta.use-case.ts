@@ -4,7 +4,9 @@ import { CustomError } from '@/core/errors/custom.error'
 import {
   fixedTwoDecimals,
   getDateTimeString,
-  getOffsetDateTime
+  getOffsetDateTime,
+  productWithTwoDecimals,
+  roundTwoDecimals
 } from '@/core/lib/utils'
 import { db } from '@/db/connection'
 import {
@@ -17,6 +19,7 @@ import {
   productosTable,
   sucursalesTable,
   tiposDocumentoFacturacionTable,
+  tiposTaxTable,
   totalesVentaTable,
   ventasTable
 } from '@/db/schema'
@@ -34,7 +37,6 @@ interface DetalleVenta {
   totalBaseTax: string
   totalTax: string
   total: string
-  // ventaId: number
 }
 
 export class CreateVenta {
@@ -52,15 +54,7 @@ export class CreateVenta {
     createVentaDto: CreateVentaDto,
     sucursalId: SucursalIdType
   ) {
-    const [moneda] = await db
-      .select({ id: monedasFacturacionTable.id })
-      .from(monedasFacturacionTable)
-      .limit(1)
-
-    const [metodoPago] = await db
-      .select({ id: metodosPagoTable.id })
-      .from(metodosPagoTable)
-      .limit(1)
+    const { moneda, metodoPago } = await this.getDefaultMonedaMetodoPago()
 
     const result = await db.transaction(async (tx) => {
       const detallesVenta: DetalleVenta[] = []
@@ -68,7 +62,12 @@ export class CreateVenta {
 
       for (const detalleVenta of createVentaDto.detalles) {
         const detallesProducto = await tx
-          .select()
+          .select({
+            id: detallesProductoTable.id,
+            stock: detallesProductoTable.stock,
+            precioVenta: detallesProductoTable.precioVenta,
+            productoId: detallesProductoTable.productoId
+          })
           .from(detallesProductoTable)
           .where(
             and(
@@ -86,41 +85,59 @@ export class CreateVenta {
         }
 
         const [detalleProducto] = detallesProducto
-        if (detalleProducto.stock < detalleVenta.cantidad) {
-          throw new Error(
-            'Stock insuficiente para el producto ' + detalleVenta.productoId
-          )
-        }
+        this.validateStock(detalleProducto, detalleVenta.cantidad)
 
         const productos = await tx
-          .select()
+          .select({
+            sku: productosTable.sku,
+            nombre: productosTable.nombre,
+            tipoTaxId: tiposTaxTable.id,
+            tax: tiposTaxTable.tax
+          })
           .from(productosTable)
           .where(eq(productosTable.id, detalleVenta.productoId))
+          .leftJoin(tiposTaxTable, eq(tiposTaxTable.id, detalleVenta.tipoTaxId))
           .execute()
 
         if (productos.length < 1) {
-          throw new Error('Producto no encontrado ' + detalleVenta.productoId)
+          throw CustomError.badRequest(
+            'Producto no encontrado ' + detalleVenta.productoId
+          )
         }
 
         const [producto] = productos
 
-        const { precioVenta: precioVentaString } = detalleProducto
-        const precioVenta = parseFloat(precioVentaString)
-        const totalItem = fixedTwoDecimals(precioVenta * detalleVenta.cantidad)
+        if (producto.tipoTaxId === null) {
+          throw CustomError.badRequest(
+            `El tipo de impuesto que intentó asignar al detalle con el producto ${detalleVenta.productoId} no existe`
+          )
+        }
+
+        const {
+          valorUnitario,
+          precioUnitario,
+          totalBaseTax,
+          totalTax,
+          totalItem
+        } = this.computeDetallesItem(
+          detalleProducto.precioVenta,
+          detalleVenta.cantidad,
+          producto.tax
+        )
 
         detallesVenta.push({
           sku: producto.sku,
           nombre: producto.nombre,
           cantidad: detalleVenta.cantidad,
-          precioSinIgv: detalleProducto.precioVenta,
-          precioConIgv: detalleProducto.precioVenta,
+          precioSinIgv: fixedTwoDecimals(valorUnitario),
+          precioConIgv: fixedTwoDecimals(precioUnitario),
           tipoTaxId: detalleVenta.tipoTaxId,
-          totalBaseTax: totalItem,
-          totalTax: '0.00',
-          total: totalItem
+          totalBaseTax: fixedTwoDecimals(totalBaseTax),
+          totalTax: fixedTwoDecimals(totalTax),
+          total: fixedTwoDecimals(totalItem)
         })
 
-        totalVenta += parseFloat(totalItem)
+        totalVenta += totalItem
 
         await tx
           .update(detallesProductoTable)
@@ -129,14 +146,7 @@ export class CreateVenta {
           .execute()
       }
 
-      const now = new Date()
-      const offsetTime = getOffsetDateTime(now, -5)
-
-      if (offsetTime === undefined) {
-        throw CustomError.internalServer()
-      }
-
-      const { date, time } = getDateTimeString(offsetTime)
+      const { date, time } = this.getDateTime()
 
       const [venta] = await tx
         .insert(ventasTable)
@@ -158,20 +168,89 @@ export class CreateVenta {
         .values(
           detallesVenta.map((detalle) => ({ ...detalle, ventaId: venta.id }))
         )
+        .execute()
 
-      await tx.insert(totalesVentaTable).values({
-        totalGravadas: '0',
-        totalExoneradas: (totalVenta / 1.18).toFixed(2),
-        totalGratuitas: '0',
-        totalTax: (totalVenta - totalVenta / 1.18).toFixed(2),
-        totalVenta: totalVenta.toFixed(2),
-        ventaId: venta.id
-      })
+      await tx
+        .insert(totalesVentaTable)
+        .values({
+          totalGravadas: '0',
+          totalExoneradas: (totalVenta / 1.18).toFixed(2),
+          totalGratuitas: '0',
+          totalTax: (totalVenta - totalVenta / 1.18).toFixed(2),
+          totalVenta: totalVenta.toFixed(2),
+          ventaId: venta.id
+        })
+        .execute()
 
       return venta
     })
 
     return result
+  }
+
+  private async getDefaultMonedaMetodoPago() {
+    const [moneda] = await db
+      .select({ id: monedasFacturacionTable.id })
+      .from(monedasFacturacionTable)
+      .limit(1)
+
+    const [metodoPago] = await db
+      .select({ id: metodosPagoTable.id })
+      .from(metodosPagoTable)
+      .limit(1)
+
+    return { moneda, metodoPago }
+  }
+
+  private validateStock(
+    detalleProducto: { productoId: number; stock: number },
+    cantidad: number
+  ) {
+    if (detalleProducto.stock < cantidad) {
+      throw CustomError.badRequest(
+        'Stock insuficiente para el producto ' + detalleProducto.productoId
+      )
+    }
+  }
+
+  private computeDetallesItem(
+    precioVenta: string,
+    cantidad: number,
+    tax: number | null
+  ) {
+    if (tax === null) {
+      throw CustomError.badRequest(
+        'El tipo de impuesto que intentó asignar es inválido'
+      )
+    }
+
+    const valorUnitario = parseFloat(precioVenta)
+    const taxUnitario = valorUnitario * (tax / 100)
+    const precioUnitario = roundTwoDecimals(valorUnitario + taxUnitario)
+
+    const totalBaseTax = productWithTwoDecimals(valorUnitario, cantidad)
+    const totalTax = productWithTwoDecimals(taxUnitario, cantidad)
+
+    const totalItem = roundTwoDecimals(totalBaseTax + totalTax)
+
+    return {
+      valorUnitario,
+      precioUnitario,
+      totalBaseTax,
+      totalTax,
+      totalItem
+    }
+  }
+
+  private getDateTime() {
+    const offsetTime = getOffsetDateTime(new Date(), -5)
+
+    if (offsetTime === undefined) {
+      throw CustomError.internalServer()
+    }
+
+    const { date, time } = getDateTimeString(offsetTime)
+    return { date, time }
   }
 
   private async validateEntities(
@@ -190,14 +269,6 @@ export class CreateVenta {
         tiposDocumentoFacturacionTable,
         eq(tiposDocumentoFacturacionTable.id, createVentaDto.tipoDocumentoId)
       )
-      // .leftJoin(
-      //   monedasFacturacionTable,
-      //   eq(monedasFacturacionTable.id, createVentaDto.monedaId)
-      // )
-      // .leftJoin(
-      //   metodosPagoTable,
-      //   eq(metodosPagoTable.id, createVentaDto.metodoPagoId)
-      // )
       .leftJoin(clientesTable, eq(clientesTable.id, createVentaDto.clienteId))
       .leftJoin(
         empleadosTable,

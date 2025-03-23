@@ -91,9 +91,14 @@ export const seedConfig: SeedConfig = {
     }
   ],
   tiposTaxDefault: [
-    { nombre: 'Pagar impuestos', codigo: '10', tax: 18, tipo: 'gravado' },
     {
-      nombre: 'Evadir impuestos 💵🤑💸',
+      nombre: 'Con impuestos... not stonks 📉📉📉',
+      codigo: '10',
+      tax: 18,
+      tipo: 'gravado'
+    },
+    {
+      nombre: 'Sin impuestos STONKS 📈📈📈',
       codigo: '20',
       tax: 0,
       tipo: 'exonerado'

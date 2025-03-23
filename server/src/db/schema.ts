@@ -366,7 +366,7 @@ export const tiposTaxTable = pgTable('tipos_tax', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
   codigo: text('codigo').notNull().unique(),
-  tax: integer('tax'),
+  tax: integer('tax').notNull(),
   tipo: text('tipo').notNull()
 })
 
