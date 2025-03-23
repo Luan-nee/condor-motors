@@ -1,6 +1,7 @@
 import { permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
+import { fixedTwoDecimals, productWithTwoDecimals } from '@/core/lib/utils'
 import { db } from '@/db/connection'
 import {
   detallesProductoTable,
@@ -12,6 +13,19 @@ import {
 import type { CreateProformaVentaDto } from '@/domain/dtos/entities/proformas-venta/create-proforma-venta.dto'
 import type { SucursalIdType } from '@/types/schemas'
 import { and, eq, or } from 'drizzle-orm'
+
+interface DetalleProformaVenta {
+  id: number
+  nombre: string
+  cantidadMinimaDescuento: number | null
+  cantidadGratisDescuento: number | null
+  porcentajeDescuento: number | null
+  precioVenta: string
+  precioOferta: string | null
+  detallesProductoId: number
+  stock: number
+  liquidacion: boolean
+}
 
 export class CreateProformaVenta {
   private readonly authPayload: AuthPayload
@@ -26,45 +40,28 @@ export class CreateProformaVenta {
   private async createProformaVenta(
     createProformaVentaDto: CreateProformaVentaDto,
     sucursalId: SucursalIdType,
-    detallesProformaVenta: Array<{
-      id: number
-      nombre: string
-      precioVenta: string
-      detallesProductoId: number
-      stock: number
-    }>
+    detallesProformaVenta: DetalleProformaVenta[]
   ) {
-    const mappedDetalles = detallesProformaVenta.map((detalle) => {
-      const detalleProforma = createProformaVentaDto.detalles.find(
-        (item) => item.productoId === detalle.id
-      )
+    const detallesMap = new Map(
+      createProformaVentaDto.detalles.map((detalle) => [
+        detalle.productoId,
+        detalle
+      ])
+    )
 
-      const cantidad = detalleProforma?.cantidad ?? 1
-      const precio = parseFloat(detalle.precioVenta)
-      const subtotal = parseFloat((cantidad * precio).toFixed(2))
-
-      return {
-        productoId: detalle.id,
-        nombre: detalle.nombre,
-        cantidad,
-        precioUnitario: precio,
-        subtotal
-      }
-    })
+    const { detallesCalculados, total } = this.calcularDetalles(
+      detallesProformaVenta,
+      detallesMap
+    )
 
     const now = new Date()
-
-    const total = mappedDetalles.reduce(
-      (prev, current) => current.subtotal + prev,
-      0
-    )
 
     const results = await db
       .insert(proformasVentaTable)
       .values({
         nombre: createProformaVentaDto.nombre,
-        total: total.toFixed(2),
-        detalles: mappedDetalles,
+        total: fixedTwoDecimals(total),
+        detalles: detallesCalculados,
         empleadoId: createProformaVentaDto.empleadoId,
         sucursalId,
         fechaCreacion: now,
@@ -77,23 +74,107 @@ export class CreateProformaVenta {
     return proformaVenta
   }
 
-  private async validateRelated(
+  private calcularDetalles(
+    detallesProformaVenta: DetalleProformaVenta[],
+    detallesMap: Map<number, { productoId: number; cantidad: number }>
+  ) {
+    let total = 0
+
+    const detallesCalculados = detallesProformaVenta.map((detalle) => {
+      const detalleProforma = detallesMap.get(detalle.id)
+      const cantidad = detalleProforma?.cantidad ?? 1
+
+      const {
+        precioUnitario,
+        precioOriginal,
+        cantidadGratis,
+        descuento,
+        cantidadPagada
+      } = this.calcularPrecioYDescuento(detalle, cantidad)
+
+      const cantidadTotal = cantidadPagada + cantidadGratis
+      const subtotal = productWithTwoDecimals(precioUnitario, cantidadPagada)
+      total += subtotal
+
+      return {
+        productoId: detalle.id,
+        nombre: detalle.nombre,
+        cantidadGratis,
+        descuento,
+        cantidadPagada,
+        cantidadTotal,
+        precioUnitario,
+        precioOriginal,
+        subtotal
+      }
+    })
+
+    return { detallesCalculados, total }
+  }
+
+  private calcularPrecioYDescuento(
+    detalle: DetalleProformaVenta,
+    cantidad: number
+  ) {
+    let precioUnitario = Number(detalle.precioVenta)
+    const precioOriginal = precioUnitario
+    const cantidadGratis = 0
+    const descuento = 0
+    const cantidadPagada = cantidad
+
+    if (detalle.precioOferta !== null && detalle.liquidacion) {
+      precioUnitario = Number(detalle.precioOferta)
+    }
+
+    if (
+      detalle.cantidadMinimaDescuento === null ||
+      cantidad < detalle.cantidadMinimaDescuento
+    ) {
+      return {
+        precioUnitario,
+        precioOriginal,
+        cantidadGratis,
+        descuento,
+        cantidadPagada
+      }
+    }
+
+    if (detalle.cantidadGratisDescuento !== null) {
+      return {
+        precioUnitario,
+        precioOriginal,
+        cantidadGratis: detalle.cantidadGratisDescuento,
+        descuento,
+        cantidadPagada: cantidad - detalle.cantidadGratisDescuento
+      }
+    }
+
+    if (detalle.porcentajeDescuento !== null) {
+      return {
+        precioUnitario: productWithTwoDecimals(
+          precioUnitario * (1 - detalle.porcentajeDescuento / 100),
+          1
+        ),
+        precioOriginal,
+        cantidadGratis,
+        descuento: detalle.porcentajeDescuento,
+        cantidadPagada
+      }
+    }
+
+    return {
+      precioUnitario,
+      precioOriginal,
+      cantidadGratis,
+      descuento,
+      cantidadPagada
+    }
+  }
+
+  private async validateSucursalEmpleado(
     createProformaVentaDto: CreateProformaVentaDto,
     sucursalId: SucursalIdType
   ) {
-    const productoIds = createProformaVentaDto.detalles.map(
-      (detalle) => detalle.productoId
-    )
-    const duplicateProductoIds = productoIds.filter(
-      (id, index, self) => self.indexOf(id) !== index
-    )
-
-    if (duplicateProductoIds.length > 0) {
-      throw CustomError.badRequest(
-        `Existen productos duplicados en los detalles: ${[...new Set(duplicateProductoIds)].join(', ')}`
-      )
-    }
-
     const results = await db
       .select({
         sucursalId: sucursalesTable.id,
@@ -115,22 +196,51 @@ export class CreateProformaVenta {
     if (result.empleadoId === null) {
       throw CustomError.badRequest('El empleado que intentó asignar no existe')
     }
+  }
 
-    if (createProformaVentaDto.detalles.length < 1) {
+  private async validateRelated(
+    createProformaVentaDto: CreateProformaVentaDto,
+    sucursalId: SucursalIdType
+  ) {
+    const productoIds = new Set<number>()
+    const duplicateProductoIds = new Set<number>()
+
+    for (const { productoId } of createProformaVentaDto.detalles) {
+      if (productoIds.has(productoId)) {
+        duplicateProductoIds.add(productoId)
+      } else {
+        productoIds.add(productoId)
+      }
+    }
+
+    if (duplicateProductoIds.size > 0) {
+      throw CustomError.badRequest(
+        `Existen productos duplicados en los detalles: ${[...duplicateProductoIds].join(', ')}`
+      )
+    }
+
+    if (productoIds.size < 1) {
       return []
     }
 
-    const productosConditonals = createProformaVentaDto.detalles.map(
-      (detalle) => eq(productosTable.id, detalle.productoId)
+    await this.validateSucursalEmpleado(createProformaVentaDto, sucursalId)
+
+    const productosConditionals = Array.from(productoIds).map((id) =>
+      eq(productosTable.id, id)
     )
 
     const productos = await db
       .select({
         id: productosTable.id,
         nombre: productosTable.nombre,
+        cantidadMinimaDescuento: productosTable.cantidadMinimaDescuento,
+        cantidadGratisDescuento: productosTable.cantidadGratisDescuento,
+        porcentajeDescuento: productosTable.porcentajeDescuento,
         precioVenta: detallesProductoTable.precioVenta,
+        precioOferta: detallesProductoTable.precioOferta,
         detallesProductoId: detallesProductoTable.id,
-        stock: detallesProductoTable.stock
+        stock: detallesProductoTable.stock,
+        liquidacion: detallesProductoTable.liquidacion
       })
       .from(productosTable)
       .innerJoin(
@@ -140,29 +250,32 @@ export class CreateProformaVenta {
           eq(detallesProductoTable.sucursalId, sucursalId)
         )
       )
-      .where(or(...productosConditonals))
+      .where(or(...productosConditionals))
 
-    const invalidProducts = createProformaVentaDto.detalles.filter(
-      (detalleProducto) =>
-        !productos.some(
-          (producto) => detalleProducto.productoId === producto.id
-        )
-    )
+    const productosMap = new Map(productos.map((p) => [p.id, p]))
+
+    const invalidProducts: number[] = []
+    const invalidStock: number[] = []
+
+    for (const detalle of createProformaVentaDto.detalles) {
+      const producto = productosMap.get(detalle.productoId)
+
+      if (producto === undefined) {
+        invalidProducts.push(detalle.productoId)
+      } else if (detalle.cantidad > producto.stock) {
+        invalidStock.push(detalle.productoId)
+      }
+    }
 
     if (invalidProducts.length > 0) {
       throw CustomError.badRequest(
-        `Estos productos no existen en su sucursal: ${invalidProducts.map((prod) => prod.productoId).join(', ')}`
+        `Estos productos no existen en su sucursal: ${invalidProducts.join(', ')}`
       )
     }
 
-    const invalidStock = createProformaVentaDto.detalles.filter(
-      (detalleProducto) =>
-        productos.some((producto) => detalleProducto.cantidad > producto.stock)
-    )
-
     if (invalidStock.length > 0) {
       throw CustomError.badRequest(
-        `Estos productos no tienen el stock suficiente: ${invalidStock.map((prod) => prod.productoId).join(', ')}`
+        `Estos productos no tienen el stock suficiente: ${invalidStock.join(', ')}`
       )
     }
 
@@ -175,26 +288,27 @@ export class CreateProformaVenta {
       [this.permissionAny, this.permissionRelated]
     )
 
-    const hasPermissionAny = validPermissions.some(
-      (permission) => permission.codigoPermiso === this.permissionAny
-    )
+    let hasPermissionAny = false
+    let hasPermissionRelated = false
+    let isSameSucursal = false
 
-    if (
-      !hasPermissionAny &&
-      !validPermissions.some(
-        (permission) => permission.codigoPermiso === this.permissionRelated
-      )
-    ) {
-      throw CustomError.forbidden()
+    for (const permission of validPermissions) {
+      if (permission.codigoPermiso === this.permissionAny) {
+        hasPermissionAny = true
+      }
+      if (permission.codigoPermiso === this.permissionRelated) {
+        hasPermissionRelated = true
+      }
+      if (permission.sucursalId === sucursalId) {
+        isSameSucursal = true
+      }
+
+      if (hasPermissionAny || (hasPermissionRelated && isSameSucursal)) {
+        return
+      }
     }
 
-    const isSameSucursal = validPermissions.some(
-      (permission) => permission.sucursalId === sucursalId
-    )
-
-    if (!hasPermissionAny && !isSameSucursal) {
-      throw CustomError.forbidden()
-    }
+    throw CustomError.forbidden()
   }
 
   async execute(

@@ -1,4 +1,5 @@
 import type { permissionCodes } from '@/consts'
+import Big from 'big.js'
 
 export const generateSequentialIds = (length: number) =>
   Array.from({ length }).map((_, i) => i + 1)
@@ -47,3 +48,59 @@ export const getRandomUniqueElementsFromArray = <T>(
   }
   return fisherYatesShuffle(array).slice(0, amount)
 }
+
+export const formatOffset = (offsetHours: number, offsetMinutes = 0) => {
+  if (
+    offsetHours < -12 ||
+    offsetHours > 14 ||
+    offsetMinutes < 0 ||
+    offsetMinutes >= 60
+  ) {
+    return undefined
+  }
+
+  const sign = offsetHours >= 0 ? '+' : '-'
+  const absHours = Math.abs(offsetHours)
+  const absMinutes = Math.abs(offsetMinutes)
+
+  return `${sign}${String(absHours).padStart(2, '0')}:${String(absMinutes).padStart(2, '0')}`
+}
+
+export const getOffsetDateTime = (
+  dateTime: Date,
+  offsetHours: number,
+  offsetMinutes = 0
+) => {
+  if (
+    !(dateTime instanceof Date) ||
+    offsetHours < -12 ||
+    offsetHours > 14 ||
+    offsetMinutes < 0 ||
+    offsetMinutes >= 60
+  ) {
+    return undefined
+  }
+
+  const offsetMillis = (offsetHours * 3600 + offsetMinutes * 60) * 1000
+  const utcTime = dateTime.getTime() + offsetMillis
+  const offsetDateTime = new Date(utcTime)
+
+  return offsetDateTime
+}
+
+export const getDateTimeString = (dateTime: Date) => {
+  const isoString = dateTime.toISOString()
+
+  return {
+    date: isoString.slice(0, 10),
+    time: isoString.slice(11, 16)
+  }
+}
+
+export const productWithTwoDecimals = (num1: number, num2: number) =>
+  new Big(num1).times(new Big(num2)).round(2).toNumber()
+
+export const roundTwoDecimals = (num: number) =>
+  new Big(num).round(2).toNumber()
+
+export const fixedTwoDecimals = (num: number) => new Big(num).toFixed(2)

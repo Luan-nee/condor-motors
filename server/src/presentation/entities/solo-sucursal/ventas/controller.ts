@@ -1,4 +1,9 @@
+import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
+import { CreateVentaDto } from '@/domain/dtos/entities/ventas/create-venta.dto'
+import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
+import { CreateVenta } from '@/domain/use-cases/entities/ventas/create-venta.use-case'
+import { GetVentaById } from '@/domain/use-cases/entities/ventas/get-venta-by-id.use-case'
 import type { Request, Response } from 'express'
 
 export class VentasController {
@@ -15,7 +20,24 @@ export class VentasController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    const [error, createVentaDto] = CreateVentaDto.validate(req.body)
+    if (error !== undefined || createVentaDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload, sucursalId } = req
+
+    const createVenta = new CreateVenta(authPayload, this.tokenFacturacion)
+
+    createVenta
+      .execute(createVentaDto, sucursalId)
+      .then((venta) => {
+        CustomResponse.success({ res, data: venta })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
   getById = (req: Request, res: Response) => {
@@ -29,7 +51,24 @@ export class VentasController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    const [error, numericIdDto] = NumericIdDto.create(req.params)
+    if (error !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload, sucursalId } = req
+
+    const getVentaById = new GetVentaById(authPayload)
+
+    getVentaById
+      .execute(numericIdDto, sucursalId)
+      .then((venta) => {
+        CustomResponse.success({ res, data: venta })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
   getAll = (req: Request, res: Response) => {

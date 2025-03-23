@@ -91,8 +91,13 @@ export const seedConfig: SeedConfig = {
     }
   ],
   tiposTaxDefault: [
-    { nombre: 'Pagar impuestos', codigo: '10' },
-    { nombre: 'Evadir impuestos 💵🤑💸', codigo: '20' }
+    { nombre: 'Pagar impuestos', codigo: '10', tax: 18, tipo: 'gravado' },
+    {
+      nombre: 'Evadir impuestos 💵🤑💸',
+      codigo: '20',
+      tax: 0,
+      tipo: 'exonerado'
+    }
   ],
   sucursalesCount: 3,
   empleadosCount: 9,

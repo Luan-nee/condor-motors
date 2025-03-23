@@ -38,9 +38,11 @@
     "typescript-transform-paths": "3.5.3"
   },
   "dependencies": {
+    "@types/big.js": "6.2.2",
     "@types/cookie-parser": "1.4.8",
     "@types/cors": "2.8.17",
     "bcryptjs": "^3.0.0",
+    "big.js": "6.2.2",
     "cookie": "1.0.2",
     "cookie-parser": "1.4.7",
     "cors": "2.8.5",

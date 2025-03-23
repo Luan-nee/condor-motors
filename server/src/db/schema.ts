@@ -112,6 +112,7 @@ export const detallesProductoTable = pgTable(
     precioOferta: numeric('precio_oferta', { precision: 7, scale: 2 }),
     stock: integer('stock').notNull().default(0),
     stockBajo: boolean('stock_bajo').notNull().default(false),
+    liquidacion: boolean('liquidacion').notNull().default(false),
     productoId: integer('producto_id')
       .notNull()
       .references(() => productosTable.id),
@@ -353,14 +354,20 @@ export const ventasTable = pgTable('ventas', {
   sucursalId: integer('sucursal_id')
     .notNull()
     .references(() => sucursalesTable.id),
+  fechaEmision: date('fecha_emision', {
+    mode: 'string'
+  }),
+  horaEmision: time('hora_emision'),
   ...timestampsColumns
 })
 
 // ['10', '20']
-export const tiposTaxTable = pgTable('tipos_impuesto', {
+export const tiposTaxTable = pgTable('tipos_tax', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
-  codigo: text('codigo').notNull().unique()
+  codigo: text('codigo').notNull().unique(),
+  tax: integer('tax'),
+  tipo: text('tipo').notNull()
 })
 
 export const detallesVentaTable = pgTable('detalles_venta', {
@@ -421,7 +428,11 @@ export const proformasVentaTable = pgTable('proformas_venta', {
       productoId: number
       nombre: string
       precioUnitario: number
-      cantidad: number
+      precioOriginal: number
+      cantidadGratis: number | null
+      descuento: number | null
+      cantidadPagada: number
+      cantidadTotal: number
       subtotal: number
     }>
   >(),
