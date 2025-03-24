@@ -25,6 +25,8 @@ export class GetVentaById {
   private readonly permissionRelated = permissionCodes.ventas.getRelated
   private readonly ventaSelectFields = {
     id: ventasTable.id,
+    serieDocumento: ventasTable.serieDocumento,
+    numeroDocumento: ventasTable.numeroDocumento,
     observaciones: ventasTable.observaciones,
     tipoDocumento: tiposDocumentoFacturacionTable.nombre,
     fechaEmision: ventasTable.fechaEmision,

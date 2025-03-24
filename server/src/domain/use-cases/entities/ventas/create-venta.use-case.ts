@@ -1,4 +1,4 @@
-import { permissionCodes } from '@/consts'
+import { permissionCodes, tiposDocFacturacionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import {
@@ -50,18 +50,30 @@ export class CreateVenta {
     this.tokenFacturacion = tokenFacturacion
   }
 
-  private async registerVenta(
+  private async createVenta(
     createVentaDto: CreateVentaDto,
-    sucursalId: SucursalIdType
+    sucursalId: SucursalIdType,
+    serieDocumento: string
   ) {
     const { moneda, metodoPago } = await this.getDefaultMonedaMetodoPago()
+
+    const tipoTaxIds = createVentaDto.detalles.map(
+      (detalle) => detalle.tipoTaxId
+    )
+
+    const tiposTax = await db
+      .select({
+        id: tiposTaxTable.id,
+        porcentajeTax: tiposTaxTable.porcentajeTax
+      })
+      .from(tiposTaxTable)
+      .where(inArray(tiposTaxTable.id, tipoTaxIds))
+
+    const tiposTaxMap = new Map(tiposTax.map((t) => [t.id, t]))
 
     const result = await db.transaction(async (tx) => {
       const productoIds = createVentaDto.detalles.map(
         (detalle) => detalle.productoId
-      )
-      const tipoTaxIds = createVentaDto.detalles.map(
-        (detalle) => detalle.tipoTaxId
       )
 
       const detallesProductos = await tx
@@ -71,16 +83,13 @@ export class CreateVenta {
           precioVenta: detallesProductoTable.precioVenta,
           productoId: detallesProductoTable.productoId,
           sku: productosTable.sku,
-          nombre: productosTable.nombre,
-          tipoTaxId: tiposTaxTable.id,
-          porcentajeTax: tiposTaxTable.porcentajeTax
+          nombre: productosTable.nombre
         })
         .from(detallesProductoTable)
         .innerJoin(
           productosTable,
           eq(productosTable.id, detallesProductoTable.productoId)
         )
-        .leftJoin(tiposTaxTable, inArray(tiposTaxTable.id, tipoTaxIds))
         .where(
           and(
             eq(detallesProductoTable.sucursalId, sucursalId),
@@ -88,10 +97,7 @@ export class CreateVenta {
           )
         )
 
-      const detallesProductoMap = new Map(
-        detallesProductos.map((dp) => [dp.productoId, dp])
-      )
-      const productosMap = new Map(
+      const detallesProductosMap = new Map(
         detallesProductos.map((p) => [p.productoId, p])
       )
 
@@ -103,32 +109,33 @@ export class CreateVenta {
       let totalVenta = 0
 
       for (const detalleVenta of createVentaDto.detalles) {
-        const detalleProducto = detallesProductoMap.get(detalleVenta.productoId)
-        const producto = productosMap.get(detalleVenta.productoId)
+        const detalleProducto = detallesProductosMap.get(
+          detalleVenta.productoId
+        )
+        const tipoTaxProducto = tiposTaxMap.get(detalleVenta.tipoTaxId)
 
-        if (detalleProducto === undefined || producto === undefined) {
+        if (detalleProducto === undefined) {
           throw CustomError.badRequest(
             `El producto con id ${detalleVenta.productoId} no existe en la sucursal especificada`
           )
         }
-
-        this.validateStock(detalleProducto, detalleVenta.cantidad)
-
-        if (producto.tipoTaxId === null) {
+        if (tipoTaxProducto === undefined) {
           throw CustomError.badRequest(
             `El tipo de impuesto que intentó asignar al detalle con el producto ${detalleVenta.productoId} no existe`
           )
         }
 
+        this.validateStock(detalleProducto, detalleVenta.cantidad)
+
         const detallesItem = this.computeDetallesItem(
           detalleProducto.precioVenta,
           detalleVenta.cantidad,
-          producto.porcentajeTax
+          tipoTaxProducto.porcentajeTax
         )
 
         detallesVenta.push({
-          sku: producto.sku,
-          nombre: producto.nombre,
+          sku: detalleProducto.sku,
+          nombre: detalleProducto.nombre,
           cantidad: detalleVenta.cantidad,
           precioSinIgv: fixedTwoDecimals(detallesItem.valorUnitario),
           precioConIgv: fixedTwoDecimals(detallesItem.precioUnitario),
@@ -155,9 +162,13 @@ export class CreateVenta {
 
       const { date, time } = this.getDateTime()
 
+      const numeroDocumento = await this.getDocumentNumber(serieDocumento, 8)
+
       const [venta] = await tx
         .insert(ventasTable)
         .values({
+          serieDocumento,
+          numeroDocumento,
           observaciones: createVentaDto.observaciones,
           tipoDocumentoId: createVentaDto.tipoDocumentoId,
           monedaId: moneda.id,
@@ -191,6 +202,22 @@ export class CreateVenta {
     })
 
     return result
+  }
+
+  private async getDocumentNumber(serieDocumento: string, fixedLength: number) {
+    const documents = await db
+      .select({ numeroDocumento: ventasTable.numeroDocumento })
+      .from(ventasTable)
+      .where(eq(ventasTable.serieDocumento, serieDocumento))
+
+    let nextDocumentNumber = 1
+
+    if (documents.length > 0) {
+      const [document] = documents
+      nextDocumentNumber = parseInt(document.numeroDocumento) + 1
+    }
+
+    return nextDocumentNumber.toString().padStart(fixedLength, '0')
   }
 
   private async getDefaultMonedaMetodoPago() {
@@ -232,7 +259,6 @@ export class CreateVenta {
     const valorUnitario = parseFloat(precioVenta)
     const taxUnitario = valorUnitario * (porcentajeTax / 100)
     const precioUnitario = roundTwoDecimals(valorUnitario + taxUnitario)
-
     const totalBaseTax = productWithTwoDecimals(valorUnitario, cantidad)
     const totalTax = productWithTwoDecimals(taxUnitario, cantidad)
     const totalItem = roundTwoDecimals(totalBaseTax + totalTax)
@@ -268,9 +294,13 @@ export class CreateVenta {
     const results = await db
       .select({
         tipoDocumentoId: tiposDocumentoFacturacionTable.id,
+        tipoDocumentoCodigo: tiposDocumentoFacturacionTable.codigoLocal,
         clienteId: clientesTable.id,
+        direccionCliente: clientesTable.direccion,
         empleadoId: empleadosTable.id,
-        sucursalId: sucursalesTable.id
+        sucursalId: sucursalesTable.id,
+        serieFacturaSucursal: sucursalesTable.serieFacturaSucursal,
+        serieBoletaSucursal: sucursalesTable.serieBoletaSucursal
       })
       .from(sucursalesTable)
       .leftJoin(
@@ -301,23 +331,36 @@ export class CreateVenta {
     if (result.empleadoId === null) {
       throw CustomError.badRequest('El empleado que intentó asignar no existe')
     }
+
+    return this.getSerieDocument(result)
   }
 
-  private validateDuplicated(createVentaDto: CreateVentaDto) {
-    const productoIds = new Set<number>()
-    const duplicateProductoIds = new Set<number>()
-
-    for (const { productoId } of createVentaDto.detalles) {
-      if (productoIds.has(productoId)) {
-        duplicateProductoIds.add(productoId)
-      } else {
-        productoIds.add(productoId)
+  private getSerieDocument(data: {
+    tipoDocumentoCodigo: string | null
+    serieFacturaSucursal: string | null
+    serieBoletaSucursal: string | null
+    direccionCliente: string | null
+  }) {
+    if (data.tipoDocumentoCodigo === tiposDocFacturacionCodes.factura) {
+      if (data.serieFacturaSucursal !== null) {
+        return data.serieFacturaSucursal
       }
-    }
-
-    if (duplicateProductoIds.size > 0) {
+      if (data.direccionCliente === null) {
+        throw CustomError.badRequest(
+          'La dirección del cliente es obligatoria para emitir facturas'
+        )
+      }
       throw CustomError.badRequest(
-        `Existen productos duplicados en los detalles: ${[...duplicateProductoIds].join(', ')}`
+        'La sucursal especificada no tiene una serie definida para emitir facturas'
+      )
+    }
+    if (data.tipoDocumentoCodigo === tiposDocFacturacionCodes.boleta) {
+      if (data.serieBoletaSucursal !== null) {
+        return data.serieBoletaSucursal
+      }
+
+      throw CustomError.badRequest(
+        'La sucursal especificada no tiene una serie definida para emitir boletas'
       )
     }
   }
@@ -353,11 +396,23 @@ export class CreateVenta {
 
   async execute(createVentaDto: CreateVentaDto, sucursalId: SucursalIdType) {
     await this.validatePermissions(sucursalId)
-    this.validateDuplicated(createVentaDto)
 
-    await this.validateEntities(createVentaDto, sucursalId)
+    const serieDocumento = await this.validateEntities(
+      createVentaDto,
+      sucursalId
+    )
 
-    const results = await this.registerVenta(createVentaDto, sucursalId)
+    if (serieDocumento === undefined) {
+      throw CustomError.badRequest(
+        'El tipo de documento especificado no se puede emitir en la sucursal especificada (No tiene una serie definida)'
+      )
+    }
+
+    const results = await this.createVenta(
+      createVentaDto,
+      sucursalId,
+      serieDocumento
+    )
 
     return results
   }
