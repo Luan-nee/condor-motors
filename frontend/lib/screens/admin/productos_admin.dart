@@ -136,6 +136,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       // Aplicar la búsqueda del servidor sólo si la búsqueda es mayor a 3 caracteres
       final searchQuery = _searchQuery.length >= 3 ? _searchQuery : null;
       
+      debugPrint('ProductosAdmin: Cargando productos de sucursal $sucursalId (página $_currentPage)');
+      
+      // Forzar actualización desde servidor (sin caché) después de editar un producto
       final paginatedProductos = await api.productos.getProductos(
         sucursalId: sucursalId,
         search: searchQuery,
@@ -143,7 +146,8 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         pageSize: _pageSize,
         sortBy: _sortBy.isNotEmpty ? _sortBy : null,
         order: _order,
-        // TODO: Implementar filtros adicionales si se necesitan
+        // Forzar bypass de caché después de operaciones de escritura
+        useCache: false,
       );
       
       if (!mounted) return;
@@ -160,6 +164,8 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         
         // Actualizar la key para forzar el redibujado solo de la tabla
         _productosKey.value = 'productos_${_sucursalSeleccionada!.id}_${DateTime.now().millisecondsSinceEpoch}';
+        
+        debugPrint('ProductosAdmin: Productos cargados desde servidor: ${_productosFiltrados.length} items');
       });
     } catch (e) {
       if (!mounted) return;
@@ -215,22 +221,56 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     final sucursalId = _sucursalSeleccionada!.id.toString();
     
     try {
+      // Añadir logging para diagnóstico
+      debugPrint('ProductosAdmin: Guardando producto en sucursal $sucursalId');
+      debugPrint('ProductosAdmin: Es nuevo producto: $esNuevo');
+      debugPrint('ProductosAdmin: Datos del producto: $productoData');
+      
       if (esNuevo) {
         await api.productos.createProducto(
           sucursalId: sucursalId,
           productoData: productoData,
         );
       } else {
-        final productoId = productoData['id'] as int;
+        // Manejar correctamente el tipo de ID
+        final dynamic rawId = productoData['id'];
+        if (rawId == null) {
+          throw Exception('ID de producto es null. No se puede actualizar.');
+        }
+        
+        // Convertir ID a entero de forma segura
+        final int productoId = rawId is int 
+                              ? rawId 
+                              : (rawId is String ? int.parse(rawId) : -1);
+        
+        if (productoId <= 0) {
+          throw Exception('ID de producto inválido: $rawId');
+        }
+        
+        debugPrint('ProductosAdmin: Actualizando producto ID $productoId');
+        
         await api.productos.updateProducto(
           sucursalId: sucursalId,
           productoId: productoId,
           productoData: productoData,
         );
+        
+        // Forzar limpieza de caché para este producto específico
+        api.productos.invalidateCache(sucursalId);
       }
       
       if (!mounted) return;
+      
+      // Recargar productos forzando ignorar caché
       await _cargarProductos();
+      
+      // Forzar actualización de la vista después de guardar el producto
+      setState(() {
+        // Esta llamada a setState fuerza la reconstrucción del widget
+        // después de actualizar los datos y asegura que se refleje 
+        // visualmente el cambio
+        _productosKey.value = 'productos_${_sucursalSeleccionada!.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
+      });
       
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -240,6 +280,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         ),
       );
     } catch (e) {
+      debugPrint('ProductosAdmin: ERROR al guardar producto: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

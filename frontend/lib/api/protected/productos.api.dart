@@ -247,16 +247,48 @@ class ProductosApi {
     required Map<String, dynamic> productoData,
   }) async {
     try {
-      debugPrint('Actualizando producto $productoId en sucursal $sucursalId');
+      // Validaciones
+      if (sucursalId.isEmpty) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'ID de sucursal no puede estar vacío',
+        );
+      }
+      
+      if (productoId <= 0) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'ID de producto inválido: $productoId',
+        );
+      }
+      
+      // Eliminar el ID del producto de los datos para evitar conflictos
+      final dataToSend = Map<String, dynamic>.from(productoData);
+      dataToSend.remove('id'); // No enviar el ID en el cuerpo
+      
+      debugPrint('ProductosApi: Actualizando producto $productoId en sucursal $sucursalId');
+      debugPrint('ProductosApi: Endpoint: /$sucursalId/productos/$productoId');
+      debugPrint('ProductosApi: Método: PATCH');
+      debugPrint('ProductosApi: Datos a enviar: $dataToSend');
       
       final response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
         method: 'PATCH',
-        body: productoData,
+        body: dataToSend,
       );
+      
+      debugPrint('ProductosApi: Respuesta recibida para la actualización del producto');
       
       // Invalidar caché relacionada
       _invalidateRelatedCache(sucursalId, productoId);
+      
+      // Verificar estructura de respuesta
+      if (response['data'] == null) {
+        throw ApiException(
+          statusCode: 500,
+          message: 'Respuesta inválida del servidor al actualizar el producto',
+        );
+      }
       
       return Producto.fromJson(response['data']);
     } catch (e) {
@@ -294,6 +326,12 @@ class ProductosApi {
   /// [sucursalId] ID de la sucursal
   /// [productoId] ID del producto
   /// [nuevoStock] Nueva cantidad de stock
+  /// 
+  /// TODO: Este método no debe usarse directamente para actualizar el stock.
+  /// La forma correcta de gestionar el stock es a través del endpoint de inventarios:
+  /// - Para incrementar stock: usar el método agregarStock() que utiliza el endpoint de entradas de inventario.
+  /// - Para decrementar stock: crear un método similar que utilice el endpoint de salidas de inventario.
+  /// El backend no procesa cambios de stock mediante PATCH en /productos, solo a través de las APIs de inventario.
   Future<Producto> updateStock({
     required String sucursalId,
     required int productoId,
@@ -389,8 +427,9 @@ class ProductosApi {
   void _invalidateRelatedCache(String sucursalId, [int? productoId]) {
     if (productoId != null) {
       // Invalidar caché específica de este producto
-      _cache.invalidate('producto_${sucursalId}_$productoId');
-      debugPrint('✅ Caché invalidada para producto $productoId en sucursal $sucursalId');
+      final cacheKey = 'producto_${sucursalId}_$productoId';
+      _cache.invalidate(cacheKey);
+      debugPrint('✅ Caché invalidada para producto $productoId en sucursal $sucursalId: $cacheKey');
     }
     
     // Invalidar listas que podrían contener este producto
@@ -401,12 +440,27 @@ class ProductosApi {
   // Método público para forzar refresco de caché
   void invalidateCache([String? sucursalId]) {
     if (sucursalId != null) {
+      // Invalidar todos los productos de esta sucursal (listas paginadas)
       _cache.invalidateByPattern('productos_$sucursalId');
-      debugPrint('✅ Caché de productos invalidada para sucursal $sucursalId');
+      
+      // También invalidar todos los productos individuales de esta sucursal 
+      // ya que podrían haber cambiado
+      final productKeys = _cache.keys.where((key) => 
+          key.startsWith('producto_$sucursalId')).toList();
+      
+      for (final key in productKeys) {
+        _cache.invalidate(key);
+        debugPrint('✅ Caché invalidada: $key');
+      }
+      
+      debugPrint('✅ Caché de productos completamente invalidada para sucursal $sucursalId');
     } else {
       _cache.clear();
-      debugPrint('✅ Caché de productos completamente invalidada');
+      debugPrint('✅ Caché de productos completamente invalidada para todas las sucursales');
     }
+    
+    // Imprimir estado de caché después de invalidación
+    debugPrint('📊 Estado de caché después de invalidación: ${_cache.size} entradas');
   }
   
   // Método para verificar si los datos en caché están obsoletos

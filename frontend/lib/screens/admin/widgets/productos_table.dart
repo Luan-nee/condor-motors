@@ -45,8 +45,31 @@ class _ProductosTableState extends State<ProductosTable>
   @override
   void didUpdateWidget(ProductosTable oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.productos != widget.productos) {
+    
+    // Verificar si realmente los productos han cambiado (por contenido, no solo por referencia)
+    bool productosHanCambiado = oldWidget.productos.length != widget.productos.length;
+    
+    if (!productosHanCambiado && oldWidget.productos.isNotEmpty) {
+      // Verificar algunos productos para detectar cambios
+      final oldProducto = oldWidget.productos.first;
+      final newProducto = widget.productos.firstWhere(
+        (p) => p.id == oldProducto.id, 
+        orElse: () => oldProducto
+      );
+      
+      // Si algún campo importante cambió, consideramos que los productos cambiaron
+      productosHanCambiado = 
+          oldProducto.nombre != newProducto.nombre ||
+          oldProducto.stock != newProducto.stock ||
+          oldProducto.precioVenta != newProducto.precioVenta;
+    }
+    
+    if (productosHanCambiado || oldWidget.key != widget.key) {
+      debugPrint('ProductosTable: Productos actualizados, reagrupando (${widget.productos.length} items)');
       _agruparProductos();
+      
+      // Forzar reconstrucción del widget
+      setState(() {});
     }
   }
 

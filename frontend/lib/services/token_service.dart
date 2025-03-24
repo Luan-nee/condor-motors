@@ -437,6 +437,15 @@ class TokenService {
     try {
       debugPrint('TokenService: Enviando solicitud $method a $url');
       
+      // Para solicitudes PATCH, añadir más detalles
+      if (method.toUpperCase() == 'PATCH') {
+        debugPrint('TokenService: [PATCH] URL completa: $url');
+        debugPrint('TokenService: [PATCH] Headers: $requestHeaders');
+        if (body != null) {
+          debugPrint('TokenService: [PATCH] Body: ${json.encode(body)}');
+        }
+      }
+      
       switch (method.toUpperCase()) {
         case 'GET':
           response = await http.get(

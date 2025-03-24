@@ -430,7 +430,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     );
   }
 
-  InputDecoration _getInputDecoration(String label, {String? prefixText}) {
+  InputDecoration _getInputDecoration(String label, {String? prefixText, String? helperText, Widget? suffixIcon}) {
     return InputDecoration(
       labelText: label,
       labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
@@ -450,6 +450,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       ),
       filled: true,
       fillColor: const Color(0xFF2D2D2D),
+      helperText: helperText,
+      suffixIcon: suffixIcon,
     );
   }
 
@@ -530,6 +532,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   }
 
   Widget _buildPricingSection() {
+    // Verificar si estamos en modo edición (producto ya existe)
+    final bool esEdicion = widget.producto != null;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -569,14 +574,83 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           keyboardType: TextInputType.number,
         ),
         const SizedBox(height: 16),
+        
+        // Campo de stock con manejo especial para edición
         TextFormField(
           controller: _stockController,
-          decoration: _getInputDecoration('Stock'),
-          style: const TextStyle(color: Colors.white),
+          decoration: _getInputDecoration(
+            'Stock', 
+            helperText: esEdicion 
+                ? 'Para modificar el stock, utilice la gestión de inventario'
+                : null,
+            suffixIcon: esEdicion 
+                ? const Tooltip(
+                    message: 'El stock solo puede ser modificado mediante entradas de inventario',
+                    child: Icon(
+                      FontAwesomeIcons.circleInfo,
+                      size: 16,
+                      color: Colors.amber,
+                    ),
+                  )
+                : null,
+          ),
+          style: TextStyle(
+            color: esEdicion ? Colors.white.withOpacity(0.6) : Colors.white,
+          ),
           keyboardType: TextInputType.number,
+          readOnly: esEdicion, // Deshabilitar edición para productos existentes
+          enabled: !esEdicion, // Solo habilitado para nuevos productos
           validator: (value) =>
               value?.isEmpty ?? true ? 'Campo requerido' : null,
         ),
+
+        // Mensaje informativo sobre gestión de stock
+        if (esEdicion) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Colors.amber.withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                const FaIcon(
+                  FontAwesomeIcons.triangleExclamation,
+                  color: Colors.amber,
+                  size: 16,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Gestión de Stock',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'El stock no puede editarse directamente. Para modificar el stock de este producto, por favor use la "Gestión de Inventario" desde la pantalla de Inventario.',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        
         const SizedBox(height: 16),
         TextFormField(
           controller: _stockMinimoController,
@@ -1254,6 +1328,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         return;
       }
 
+      // Verificar si estamos en modo edición
+      final bool esNuevoProducto = widget.producto == null;
+
       final productoData = <String, dynamic>{
         if (widget.producto != null) 'id': widget.producto!.id,
         'nombre': _nombreController.text,
@@ -1264,7 +1341,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         'categoria': _categoriaSeleccionada,
         'precioVenta': double.parse(_precioVentaController.text),
         'precioCompra': double.parse(_precioCompraController.text),
-        'stock': int.parse(_stockController.text),
+        // Solo incluir stock para productos nuevos
+        if (esNuevoProducto) 'stock': int.parse(_stockController.text),
         'color': _colorSeleccionado?.nombre ?? _colorController.text,
         if (_precioOfertaController.text.isNotEmpty)
           'precioOferta': double.parse(_precioOfertaController.text),
@@ -1277,7 +1355,17 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           'porcentajeDescuento': int.parse(_porcentajeDescuentoController.text),
       };
 
+      // Añadir mensajes de depuración para rastrear los datos
+      debugPrint('ProductosForm: Datos preparados para guardar:');
+      debugPrint('ProductosForm: Sucursal seleccionada: ${_sucursalSeleccionada?.id}');
+      debugPrint('ProductosForm: Producto ID: ${widget.producto?.id}');
+      debugPrint('ProductosForm: Es nuevo producto: $esNuevoProducto');
+      debugPrint('ProductosForm: Datos: $productoData');
+      
+      // Llamar al callback onSave proporcionado por el componente padre
       widget.onSave(productoData);
+      debugPrint('ProductosForm: Callback onSave ejecutado');
+      
       Navigator.pop(context);
     }
   }

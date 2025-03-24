@@ -524,7 +524,7 @@ class EmpleadosApi {
   /// Retorna una lista con todas las cuentas de empleados registradas
   Future<List<dynamic>> getCuentasEmpleados({bool useCache = true}) async {
     try {
-      final cacheKey = 'cuentas_empleados_todas';
+      const cacheKey = 'cuentas_empleados_todas';
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {

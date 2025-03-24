@@ -73,24 +73,24 @@ class Producto {
 
   factory Producto.fromJson(Map<String, dynamic> json) {
     return Producto(
-      id: json['id'] as int,
-      sku: json['sku'] as String,
-      nombre: json['nombre'] as String,
+      id: _parseInt(json['id']),
+      sku: json['sku'] as String? ?? '',
+      nombre: json['nombre'] as String? ?? '',
       descripcion: json['descripcion'] as String?,
-      maxDiasSinReabastecer: json['maxDiasSinReabastecer'] as int?,
-      stockMinimo: json['stockMinimo'] as int?,
-      cantidadMinimaDescuento: json['cantidadMinimaDescuento'] as int?,
-      cantidadGratisDescuento: json['cantidadGratisDescuento'] as int?,
-      porcentajeDescuento: json['porcentajeDescuento'] as int?,
+      maxDiasSinReabastecer: json['maxDiasSinReabastecer'] != null ? _parseInt(json['maxDiasSinReabastecer']) : null,
+      stockMinimo: json['stockMinimo'] != null ? _parseInt(json['stockMinimo']) : null,
+      cantidadMinimaDescuento: json['cantidadMinimaDescuento'] != null ? _parseInt(json['cantidadMinimaDescuento']) : null,
+      cantidadGratisDescuento: json['cantidadGratisDescuento'] != null ? _parseInt(json['cantidadGratisDescuento']) : null,
+      porcentajeDescuento: json['porcentajeDescuento'] != null ? _parseInt(json['porcentajeDescuento']) : null,
       color: json['color'] as String?,
-      categoria: json['categoria'] as String,
-      marca: json['marca'] as String,
-      fechaCreacion: DateTime.parse(json['fechaCreacion'] as String),
-      detalleProductoId: json['detalleProductoId'] as int?,
+      categoria: json['categoria'] as String? ?? '',
+      marca: json['marca'] as String? ?? '',
+      fechaCreacion: DateTime.parse(json['fechaCreacion'] as String? ?? DateTime.now().toIso8601String()),
+      detalleProductoId: json['detalleProductoId'] != null ? _parseInt(json['detalleProductoId']) : null,
       precioCompra: _parseDouble(json['precioCompra']),
       precioVenta: _parseDouble(json['precioVenta']),
       precioOferta: json['precioOferta'] != null ? _parseDouble(json['precioOferta']) : null,
-      stock: json['stock'] as int,
+      stock: _parseInt(json['stock']),
       stockBajo: json['stockBajo'] as bool? ?? false,
     );
   }
@@ -123,6 +123,20 @@ class Producto {
     if (value is int) return value.toDouble();
     if (value is String) return double.parse(value);
     return 0.0;
+  }
+  
+  /// Helper para convertir valores a int de forma segura
+  static int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (_) {
+        return 0;
+      }
+    }
+    return 0;
   }
   
   /// Formatea el precio de venta a soles peruanos
