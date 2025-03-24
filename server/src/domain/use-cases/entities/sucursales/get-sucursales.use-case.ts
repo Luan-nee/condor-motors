@@ -31,7 +31,10 @@ export class GetSucursales {
     fechaCreacion: sucursalesTable.fechaCreacion,
     nombre: sucursalesTable.nombre,
     direccion: sucursalesTable.direccion,
-    sucursalCentral: sucursalesTable.sucursalCentral
+    sucursalCentral: sucursalesTable.sucursalCentral,
+    serieFacturaSucursal: sucursalesTable.serieFacturaSucursal,
+    serieBoletaSucursal: sucursalesTable.serieBoletaSucursal,
+    codigoEstablecimiento: sucursalesTable.codigoEstablecimiento
   } as const
 
   constructor(authPayload: AuthPayload) {

@@ -4,7 +4,10 @@ import { z } from 'zod'
 const createSucursalSchema = z.object({
   nombre: sucursalSchema.nombre,
   direccion: sucursalSchema.direccion,
-  sucursalCentral: sucursalSchema.sucursalCentral
+  sucursalCentral: sucursalSchema.sucursalCentral,
+  serieFacturaSucursal: sucursalSchema.serieFacturaSucursal,
+  serieBoletaSucursal: sucursalSchema.serieBoletaSucursal,
+  codigoEstablecimiento: sucursalSchema.codigoEstablecimiento
 })
 
 export const createSucursalValidator = (object: unknown) =>
@@ -13,7 +16,10 @@ export const createSucursalValidator = (object: unknown) =>
 const updateSucursalSchema = z.object({
   nombre: sucursalSchema.nombre,
   direccion: sucursalSchema.direccion,
-  sucursalCentral: sucursalSchema.sucursalCentral
+  sucursalCentral: sucursalSchema.sucursalCentral,
+  serieFacturaSucursal: sucursalSchema.serieFacturaSucursal,
+  serieBoletaSucursal: sucursalSchema.serieBoletaSucursal,
+  codigoEstablecimiento: sucursalSchema.codigoEstablecimiento
 })
 
 export const updateSucursalValidator = (object: unknown) =>

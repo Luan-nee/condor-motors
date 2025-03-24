@@ -4,15 +4,24 @@ export class UpdateSucursalDto {
   public nombre?: string
   public direccion?: string
   public sucursalCentral?: boolean
+  public serieFacturaSucursal?: string
+  public serieBoletaSucursal?: string
+  public codigoEstablecimiento?: string
 
   private constructor({
     nombre,
     direccion,
-    sucursalCentral
+    sucursalCentral,
+    serieFacturaSucursal,
+    serieBoletaSucursal,
+    codigoEstablecimiento
   }: UpdateSucursalDto) {
     this.nombre = nombre
     this.direccion = direccion
     this.sucursalCentral = sucursalCentral
+    this.serieFacturaSucursal = serieFacturaSucursal
+    this.serieBoletaSucursal = serieBoletaSucursal
+    this.codigoEstablecimiento = codigoEstablecimiento
   }
 
   private static isEmptyUpdate(
