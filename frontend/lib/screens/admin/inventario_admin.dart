@@ -30,22 +30,24 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   bool _isLoadingSucursales = true;
   bool _isLoadingProductos = false;
   String? _errorProductos;
-  
+
   // Nuevo: Productos consolidados de todas las sucursales
-  Map<int, Map<String, int>> _stockPorSucursal = {}; // productoId -> {sucursalId -> stock}
-  List<Producto> _productosBajoStock = []; // Productos con problemas en cualquier sucursal
+  Map<int, Map<String, int>> _stockPorSucursal =
+      {}; // productoId -> {sucursalId -> stock}
+  List<Producto> _productosBajoStock =
+      []; // Productos con problemas en cualquier sucursal
   bool _isLoadingConsolidado = false;
-  
+
   // Parámetros de paginación y filtrado
   String _searchQuery = '';
   int _currentPage = 1;
   int _pageSize = 10;
   String _sortBy = '';
   String _order = 'desc';
-  
+
   // Filtro de estado de stock
   StockStatus? _filtroEstadoStock;
-  
+
   // Flag para mostrar vista consolidada de todas las sucursales
   bool _mostrarVistaConsolidada = false;
 
@@ -59,19 +61,18 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     setState(() {
       _isLoadingSucursales = true;
     });
-    
+
     try {
       final sucursales = await api.sucursales.getSucursales();
       setState(() {
         _sucursales = sucursales;
         _isLoadingSucursales = false;
       });
-      
+
       // Seleccionar automáticamente la primera sucursal si hay sucursales disponibles
       if (sucursales.isNotEmpty && _selectedSucursalId.isEmpty) {
         _onSucursalSeleccionada(sucursales.first);
       }
-      
     } catch (e) {
       setState(() {
         _isLoadingSucursales = false;
@@ -97,7 +98,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     try {
       // Aplicar la búsqueda del servidor sólo si la búsqueda es mayor a 3 caracteres
       final searchQuery = _searchQuery.length >= 3 ? _searchQuery : null;
-      
+
       final paginatedProductos = await api.productos.getProductos(
         sucursalId: sucursalId,
         search: searchQuery,
@@ -106,16 +107,18 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
         sortBy: _sortBy.isNotEmpty ? _sortBy : null,
         order: _order,
       );
-      
+
       // Reorganizar los productos según la prioridad de stock
-      List<Producto> productosReorganizados = StockUtils.reorganizarProductosPorPrioridad(paginatedProductos.items);
-      
+      List<Producto> productosReorganizados =
+          StockUtils.reorganizarProductosPorPrioridad(paginatedProductos.items);
+
       // Aplicar filtro por estado de stock si está seleccionado
       if (_filtroEstadoStock != null) {
-        final grupos = StockUtils.agruparProductosPorEstadoStock(productosReorganizados);
+        final grupos =
+            StockUtils.agruparProductosPorEstadoStock(productosReorganizados);
         productosReorganizados = grupos[_filtroEstadoStock]!;
       }
-      
+
       setState(() {
         _paginatedProductos = paginatedProductos;
         // Actualizamos los productos filtrados con la nueva organización
@@ -129,40 +132,44 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       });
     }
   }
-  
+
   // NUEVO: Método para cargar productos de todas las sucursales y consolidar información
   Future<void> _cargarProductosTodasSucursales() async {
     if (_sucursales.isEmpty) {
       return;
     }
-    
+
     setState(() {
       _isLoadingConsolidado = true;
       _errorProductos = null;
       _stockPorSucursal = {};
       _productosBajoStock = [];
     });
-    
+
     try {
       // Lista para almacenar todos los productos encontrados
       final List<Producto> todosProductos = [];
-      
+
       // Para cada sucursal, cargar todos los productos (todas las páginas)
       final sucursalesFutures = <Future>[];
       for (final sucursal in _sucursales) {
-        sucursalesFutures.add(_cargarTodosProductosSucursal(sucursal, todosProductos));
+        sucursalesFutures
+            .add(_cargarTodosProductosSucursal(sucursal, todosProductos));
       }
-      
+
       // Esperamos a que se completen todas las cargas de sucursales
       await Future.wait(sucursalesFutures);
-      
+
       // Filtrar productos con problemas y eliminar duplicados
-      _productosBajoStock = StockUtils.filtrarProductosConProblemasStock(todosProductos);
-      _productosBajoStock = StockUtils.consolidarProductosUnicos(_productosBajoStock);
-      
+      _productosBajoStock =
+          StockUtils.filtrarProductosConProblemasStock(todosProductos);
+      _productosBajoStock =
+          StockUtils.consolidarProductosUnicos(_productosBajoStock);
+
       // Ordenar por prioridad (agotados primero, luego stock bajo)
-      _productosBajoStock = StockUtils.reorganizarProductosPorPrioridad(_productosBajoStock);
-      
+      _productosBajoStock =
+          StockUtils.reorganizarProductosPorPrioridad(_productosBajoStock);
+
       setState(() {
         _isLoadingConsolidado = false;
       });
@@ -173,80 +180,86 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       });
     }
   }
-  
+
   // Método auxiliar para cargar todos los productos de una sucursal (todas las páginas)
-  Future<void> _cargarTodosProductosSucursal(Sucursal sucursal, List<Producto> todosProductos) async {
+  Future<void> _cargarTodosProductosSucursal(
+      Sucursal sucursal, List<Producto> todosProductos) async {
     try {
       // Primero obtenemos la primera página para saber cuántas páginas hay en total
       final primeraPagina = await api.productos.getProductos(
         sucursalId: sucursal.id,
         page: 1,
-        pageSize: 50, // Usamos un tamaño grande para reducir el número de peticiones
+        pageSize:
+            50, // Usamos un tamaño grande para reducir el número de peticiones
       );
-      
+
       // Procesamos la primera página
       _procesarProductosPorSucursal(primeraPagina.items, sucursal);
-      
+
       // Añadimos los productos a la lista general
       todosProductos.addAll(primeraPagina.items);
-      
+
       // Calculamos cuántas páginas hay en total
       final totalPages = primeraPagina.paginacion.totalPages;
-      
+
       // Si hay más de una página, cargamos el resto
       if (totalPages > 1) {
         final futures = <Future>[];
-        
+
         // Empezamos desde la página 2 ya que la 1 ya la cargamos
         for (int pagina = 2; pagina <= totalPages; pagina++) {
           futures.add(_cargarPaginaSucursal(pagina, sucursal, todosProductos));
         }
-        
+
         // Esperamos a que todas las peticiones terminen
         await Future.wait(futures);
       }
     } catch (e) {
-      debugPrint('Error al cargar productos de sucursal ${sucursal.nombre}: $e');
+      debugPrint(
+          'Error al cargar productos de sucursal ${sucursal.nombre}: $e');
     }
   }
-  
+
   // Método para cargar una página específica de una sucursal
-  Future<void> _cargarPaginaSucursal(int pagina, Sucursal sucursal, List<Producto> todosProductos) async {
+  Future<void> _cargarPaginaSucursal(
+      int pagina, Sucursal sucursal, List<Producto> todosProductos) async {
     try {
       final paginaProductos = await api.productos.getProductos(
         sucursalId: sucursal.id,
         page: pagina,
         pageSize: 50,
       );
-      
+
       _procesarProductosPorSucursal(paginaProductos.items, sucursal);
-      
+
       // Añadimos los productos a la lista general
       todosProductos.addAll(paginaProductos.items);
     } catch (e) {
-      debugPrint('Error al cargar página $pagina de sucursal ${sucursal.nombre}: $e');
+      debugPrint(
+          'Error al cargar página $pagina de sucursal ${sucursal.nombre}: $e');
     }
   }
-  
+
   // Procesar productos por sucursal y almacenar en mapa consolidado
-  void _procesarProductosPorSucursal(List<Producto> productos, Sucursal sucursal) {
+  void _procesarProductosPorSucursal(
+      List<Producto> productos, Sucursal sucursal) {
     for (final producto in productos) {
       // Si es la primera vez que vemos este producto, inicializamos su mapa
       if (!_stockPorSucursal.containsKey(producto.id)) {
         _stockPorSucursal[producto.id] = {};
       }
-      
+
       // Guardamos el stock de este producto en esta sucursal
       _stockPorSucursal[producto.id]![sucursal.id] = producto.stock;
     }
   }
-  
+
   // Método para activar/desactivar la vista consolidada
   void _toggleVistaConsolidada() {
     setState(() {
       _mostrarVistaConsolidada = !_mostrarVistaConsolidada;
     });
-    
+
     if (_mostrarVistaConsolidada) {
       _cargarProductosTodasSucursales();
     } else {
@@ -256,7 +269,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       }
     }
   }
-  
+
   // Método para cambiar de página
   void _cambiarPagina(int pagina) {
     if (_currentPage != pagina) {
@@ -292,7 +305,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     });
     _cargarProductos(_selectedSucursalId);
   }
-  
+
   // Método para filtrar por estado de stock
   void _filtrarPorEstadoStock(StockStatus? estado) {
     setState(() {
@@ -314,7 +327,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       _selectedSucursal = sucursal;
       _currentPage = 1; // Volver a la primera página al cambiar de sucursal
       _filtroEstadoStock = null; // Resetear filtro al cambiar de sucursal
-      _mostrarVistaConsolidada = false; // Desactivar vista consolidada al cambiar de sucursal
+      _mostrarVistaConsolidada =
+          false; // Desactivar vista consolidada al cambiar de sucursal
     });
     _cargarProductos(sucursal.id);
   }
@@ -338,7 +352,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   void _editarProducto(Producto producto) {
     debugPrint('Editar producto: ${producto.nombre}');
   }
-  
+
   void _verStockDetalles(Producto producto) {
     showDialog(
       context: context,
@@ -361,23 +375,24 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   Widget build(BuildContext context) {
     // Organizar productos por estado para el resumen
     Map<StockStatus, List<Producto>> productosAgrupados = {};
-    
+
     // Determinar qué productos usar según la vista activa
-    final List<Producto> productosAMostrar = _mostrarVistaConsolidada 
-        ? _productosBajoStock 
-        : _productosFiltrados;
-    
+    final List<Producto> productosAMostrar =
+        _mostrarVistaConsolidada ? _productosBajoStock : _productosFiltrados;
+
     if (productosAMostrar.isNotEmpty) {
-      productosAgrupados = StockUtils.agruparProductosPorEstadoStock(productosAMostrar);
+      productosAgrupados =
+          StockUtils.agruparProductosPorEstadoStock(productosAMostrar);
     }
-    
+
     // Contar productos por estado
     final agotadosCount = productosAgrupados[StockStatus.agotado]?.length ?? 0;
-    final stockBajoCount = productosAgrupados[StockStatus.stockBajo]?.length ?? 0;
-    
+    final stockBajoCount =
+        productosAgrupados[StockStatus.stockBajo]?.length ?? 0;
+
     // Determinar si hay problemas críticos en el inventario
     final hayProblemasInventario = agotadosCount > 0 || stockBajoCount > 0;
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
@@ -391,17 +406,17 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
           // Botón para alternar entre vista individual y consolidada
           IconButton(
             icon: FaIcon(
-              _mostrarVistaConsolidada 
-                ? FontAwesomeIcons.building 
-                : FontAwesomeIcons.buildingColumns,
+              _mostrarVistaConsolidada
+                  ? FontAwesomeIcons.building
+                  : FontAwesomeIcons.buildingColumns,
               size: 18,
             ),
             onPressed: _toggleVistaConsolidada,
-            tooltip: _mostrarVistaConsolidada 
-                ? 'Ver sucursal individual' 
+            tooltip: _mostrarVistaConsolidada
+                ? 'Ver sucursal individual'
                 : 'Ver todas las sucursales',
           ),
-          
+
           // Mostrar badge si hay problemas de inventario
           if (hayProblemasInventario)
             Stack(
@@ -414,8 +429,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Hay $agotadosCount productos agotados y $stockBajoCount con stock bajo'
-                        ),
+                            'Hay $agotadosCount productos agotados y $stockBajoCount con stock bajo'),
                         backgroundColor: const Color(0xFFE31E24),
                         duration: const Duration(seconds: 5),
                         action: SnackBarAction(
@@ -530,18 +544,15 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                       ),
 
                       // Barra de búsqueda (solo en vista individual)
-                      if (_selectedSucursalId.isNotEmpty && !_mostrarVistaConsolidada)
+                      if (_selectedSucursalId.isNotEmpty &&
+                          !_mostrarVistaConsolidada)
                         SizedBox(
                           width: 300,
                           child: TextField(
                             decoration: InputDecoration(
                               hintText: 'Buscar productos...',
-                              hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-                              prefixIcon: const FaIcon(
-                                FontAwesomeIcons.magnifyingGlass,
-                                color: Colors.white38,
-                                size: 16,
-                              ),
+                              hintStyle: TextStyle(
+                                  color: Colors.white.withOpacity(0.4)),
                               filled: true,
                               fillColor: const Color(0xFF232323),
                               border: OutlineInputBorder(
@@ -554,23 +565,26 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                             onChanged: (value) {
                               setState(() {
                                 _searchQuery = value;
-                                
+
                                 // Si la búsqueda es mayor a 3 caracteres o está vacía, hacer solicitud al servidor
                                 if (value.length >= 3 || value.isEmpty) {
-                                  _currentPage = 1; // Reiniciar a la primera página
+                                  _currentPage =
+                                      1; // Reiniciar a la primera página
                                   _cargarProductos(_selectedSucursalId);
                                 }
                               });
                             },
                           ),
                         ),
-                      
+
                       const SizedBox(width: 16),
                     ],
                   ),
-                  
+
                   // Filtros rápidos para el estado del stock (solo en vista individual)
-                  if (_selectedSucursalId.isNotEmpty && _productosFiltrados.isNotEmpty && !_mostrarVistaConsolidada) ...[
+                  if (_selectedSucursalId.isNotEmpty &&
+                      _productosFiltrados.isNotEmpty &&
+                      !_mostrarVistaConsolidada) ...[
                     const SizedBox(height: 16),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -585,27 +599,28 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                           ),
                           const SizedBox(width: 8),
                           _buildFilterChip(
-                            'Agotados', 
-                            FontAwesomeIcons.ban, 
+                            'Agotados',
+                            FontAwesomeIcons.ban,
                             Colors.red.shade800,
                             _filtroEstadoStock == StockStatus.agotado,
                             () => _filtrarPorEstadoStock(StockStatus.agotado),
                           ),
                           const SizedBox(width: 8),
                           _buildFilterChip(
-                            'Stock bajo', 
-                            FontAwesomeIcons.triangleExclamation, 
+                            'Stock bajo',
+                            FontAwesomeIcons.triangleExclamation,
                             const Color(0xFFE31E24),
                             _filtroEstadoStock == StockStatus.stockBajo,
                             () => _filtrarPorEstadoStock(StockStatus.stockBajo),
                           ),
                           const SizedBox(width: 8),
                           _buildFilterChip(
-                            'Disponibles', 
-                            FontAwesomeIcons.check, 
+                            'Disponibles',
+                            FontAwesomeIcons.check,
                             Colors.green,
                             _filtroEstadoStock == StockStatus.disponible,
-                            () => _filtrarPorEstadoStock(StockStatus.disponible),
+                            () =>
+                                _filtrarPorEstadoStock(StockStatus.disponible),
                           ),
                           const SizedBox(width: 16),
                           if (_filtroEstadoStock != null)
@@ -622,16 +637,18 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                       ),
                     ),
                   ],
-                  
+
                   // Resumen del inventario
                   if (productosAMostrar.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     InventarioResumen(
                       productos: productosAMostrar,
-                      sucursalNombre: _mostrarVistaConsolidada ? 'Todas las Sucursales' : _selectedSucursalNombre,
+                      sucursalNombre: _mostrarVistaConsolidada
+                          ? 'Todas las Sucursales'
+                          : _selectedSucursalNombre,
                     ),
                   ],
-                  
+
                   // Tabla de productos
                   const SizedBox(height: 16),
                   Expanded(
@@ -640,11 +657,13 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                         Expanded(
                           child: _mostrarVistaConsolidada
                               ? TableProducts(
-                                  selectedSucursalId: 'todas', // Valor especial para indicar vista consolidada
+                                  selectedSucursalId:
+                                      'todas', // Valor especial para indicar vista consolidada
                                   productos: _productosBajoStock,
                                   isLoading: _isLoadingConsolidado,
                                   error: _errorProductos,
-                                  onRetry: () => _cargarProductosTodasSucursales(),
+                                  onRetry: () =>
+                                      _cargarProductosTodasSucursales(),
                                   onVerDetalles: _verDetallesProducto,
                                   onVerStockDetalles: _verStockDetalles,
                                   // Datos adicionales para la vista consolidada
@@ -658,7 +677,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                   isLoading: _isLoadingProductos,
                                   error: _errorProductos,
                                   onRetry: _selectedSucursalId.isNotEmpty
-                                      ? () => _cargarProductos(_selectedSucursalId)
+                                      ? () =>
+                                          _cargarProductos(_selectedSucursalId)
                                       : null,
                                   onEditProducto: _editarProducto,
                                   onVerDetalles: _verDetallesProducto,
@@ -668,9 +688,11 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                   sortOrder: _order,
                                 ),
                         ),
-                        
+
                         // Paginador (solo vista individual)
-                        if (!_mostrarVistaConsolidada && _paginatedProductos != null && _paginatedProductos!.paginacion.totalPages > 0)
+                        if (!_mostrarVistaConsolidada &&
+                            _paginatedProductos != null &&
+                            _paginatedProductos!.paginacion.totalPages > 0)
                           Padding(
                             padding: const EdgeInsets.only(top: 16.0),
                             child: Row(
@@ -694,13 +716,13 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                     ),
                                   ],
                                 ),
-                                
+
                                 // Paginador
                                 Paginador(
                                   paginacion: _paginatedProductos!.paginacion,
                                   onPageChanged: _cambiarPagina,
                                 ),
-                                
+
                                 // Selector de tamaño de página
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -731,9 +753,9 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                 ],
               ),
             ),
-            
+
             const SizedBox(width: 16),
-            
+
             // SlideSucursal a la derecha (25% del ancho) - solo en vista individual
             Expanded(
               flex: 25,
@@ -752,7 +774,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       ),
     );
   }
-  
+
   // Widget para mostrar la barra lateral en vista consolidada
   Widget _buildConsolidatedSidebar() {
     return Column(
@@ -878,8 +900,9 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       ],
     );
   }
-  
-  Widget _buildFilterChip(String label, IconData icon, Color color, bool selected, VoidCallback onTap) {
+
+  Widget _buildFilterChip(String label, IconData icon, Color color,
+      bool selected, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -917,7 +940,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
 
   Widget _buildPageSizeDropdown() {
     final options = [10, 20, 50, 100];
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
