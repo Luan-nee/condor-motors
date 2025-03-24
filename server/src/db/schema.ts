@@ -334,6 +334,8 @@ export const metodosPagoTable = pgTable('metodos_pago', {
 export const ventasTable = pgTable('ventas', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   observaciones: text('observaciones'),
+  tipoOperacion: text('tipo_operacion').notNull().default('0101'),
+  porcentajeVenta: integer('porcentaje_venta').notNull().default(18),
   tipoDocumentoId: integer('tipo_documento_id')
     .notNull()
     .references(() => tiposDocumentoFacturacionTable.id),
@@ -356,8 +358,8 @@ export const ventasTable = pgTable('ventas', {
     .references(() => sucursalesTable.id),
   fechaEmision: date('fecha_emision', {
     mode: 'string'
-  }),
-  horaEmision: time('hora_emision'),
+  }).notNull(),
+  horaEmision: time('hora_emision').notNull(),
   declarada: boolean('declarada').notNull().default(false),
   ...timestampsColumns
 })
@@ -493,8 +495,6 @@ export const devolucionesTable = pgTable('devoluciones', {
 
 export const documentosTable = pgTable('documentos_table', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  tipoOperacion: text('tipo_operacion').notNull().default('0101'),
-  porcentajeVenta: integer('porcentaje_venta').notNull().default(18),
   factproDocumentId: text('factpro_document_id'),
   hash: text('hash'),
   qr: text('qr'),

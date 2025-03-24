@@ -11,6 +11,8 @@ export class VentasRoutes {
 
     router.post('/', ventasController.create)
 
+    router.post('/:id/declarar', ventasController.declarar)
+
     router.get('/:id', ventasController.getById)
 
     router.get('/', ventasController.getAll)

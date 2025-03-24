@@ -105,3 +105,6 @@ export const tiposDocFacturacionCodes = {
   factura: 'factura',
   boleta: 'boleta'
 }
+
+export const endpointEmisionDocumentos =
+  'https://dev.factpro.la/api/v2/documentos'
