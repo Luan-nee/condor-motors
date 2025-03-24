@@ -25,7 +25,7 @@ import {
 } from '@/db/schema'
 import type { CreateVentaDto } from '@/domain/dtos/entities/ventas/create-venta.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 
 interface DetalleVenta {
   sku: string
@@ -176,8 +176,8 @@ export class CreateVenta {
           clienteId: createVentaDto.clienteId,
           empleadoId: createVentaDto.empleadoId,
           sucursalId,
-          fechaEmision: createVentaDto.documento?.fechaEmision ?? date,
-          horaEmision: createVentaDto.documento?.horaEmision ?? time
+          fechaEmision: createVentaDto.fechaEmision ?? date,
+          horaEmision: createVentaDto.horaEmision ?? time
         })
         .returning({ id: ventasTable.id })
 
@@ -208,7 +208,9 @@ export class CreateVenta {
     const documents = await db
       .select({ numeroDocumento: ventasTable.numeroDocumento })
       .from(ventasTable)
+      .orderBy(desc(ventasTable.fechaCreacion))
       .where(eq(ventasTable.serieDocumento, serieDocumento))
+      .limit(1)
 
     let nextDocumentNumber = 1
 

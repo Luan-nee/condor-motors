@@ -9,8 +9,16 @@ const createVentaSchema = z.object({
   metodoPagoId: ventaSchema.metodoPagoId,
   clienteId: ventaSchema.clienteId,
   empleadoId: ventaSchema.empleadoId,
-  documento: ventaSchema.documento
+  fechaEmision: ventaSchema.fechaEmision,
+  horaEmision: ventaSchema.horaEmision
 })
 
 export const createVentaValidator = (object: unknown) =>
   createVentaSchema.safeParse(object)
+
+const declareVentaSchema = z.object({
+  enviarCliente: ventaSchema.enviarCliente
+})
+
+export const declareVentaValidator = (object: unknown) =>
+  declareVentaSchema.safeParse(object)

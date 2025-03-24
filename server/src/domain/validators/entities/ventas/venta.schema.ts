@@ -22,19 +22,15 @@ export const ventaSchema = {
   metodoPagoId: idTypeBaseSchema.numericId.optional(),
   clienteId: idTypeBaseSchema.numericId,
   empleadoId: idTypeBaseSchema.numericId,
-  documento: z
-    .object({
-      enviarCliente: z.boolean().default(true),
-      fechaEmision: z
-        .string()
-        .date('El formato esperado es el siguiente: yyyy-mm-dd')
-        .optional(),
-      horaEmision: z
-        .string()
-        .time({
-          message: 'El formato esperado es el siguiente: hh:mm:ss'
-        })
-        .optional()
+  fechaEmision: z
+    .string()
+    .date('El formato esperado es el siguiente: yyyy-mm-dd')
+    .optional(),
+  horaEmision: z
+    .string()
+    .time({
+      message: 'El formato esperado es el siguiente: hh:mm:ss'
     })
-    .optional()
+    .optional(),
+  enviarCliente: z.boolean().default(true)
 }

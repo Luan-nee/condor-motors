@@ -12,11 +12,8 @@ export class CreateVentaDto {
   public metodoPagoId?: number
   public clienteId: number
   public empleadoId: number
-  public documento?: {
-    enviarCliente?: boolean
-    fechaEmision?: string
-    horaEmision?: string
-  }
+  public fechaEmision?: string
+  public horaEmision?: string
 
   constructor({
     observaciones,
@@ -26,7 +23,8 @@ export class CreateVentaDto {
     metodoPagoId,
     clienteId,
     empleadoId,
-    documento
+    fechaEmision,
+    horaEmision
   }: CreateVentaDto) {
     this.observaciones = observaciones
     this.tipoDocumentoId = tipoDocumentoId
@@ -35,7 +33,8 @@ export class CreateVentaDto {
     this.metodoPagoId = metodoPagoId
     this.clienteId = clienteId
     this.empleadoId = empleadoId
-    this.documento = documento
+    this.fechaEmision = fechaEmision
+    this.horaEmision = horaEmision
   }
 
   private static validateDuplicatedProducts(createVentaDto: CreateVentaDto) {
