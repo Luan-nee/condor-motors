@@ -13,7 +13,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nombreController = TextEditingController();
   final _descripcionController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _isCreating = false;
   String _errorMessage = '';
@@ -37,12 +37,12 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
     try {
       debugPrint('Cargando categorías desde la API...');
       final categoriasList = await api.categorias.getCategorias();
-      
+
       if (!mounted) return;
-      
+
       // Convertir la lista de categorías a un formato más manejable
       final List<Map<String, dynamic>> categoriasFormateadas = [];
-      
+
       for (var categoria in categoriasList) {
         categoriasFormateadas.add({
           'id': categoria['id'],
@@ -51,21 +51,21 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
           'cantidadProductos': categoria['cantidadProductos'] ?? 0,
         });
       }
-      
+
       setState(() {
         _categorias = categoriasFormateadas;
         _isLoading = false;
       });
-      
+
       debugPrint('${_categorias.length} categorías cargadas correctamente');
     } catch (e) {
       if (!mounted) return;
-      
+
       debugPrint('Error al cargar categorías: $e');
       setState(() {
         _isLoading = false;
         _errorMessage = 'Error al cargar categorías: $e';
-        
+
         // En caso de error, usar datos de ejemplo para desarrollo
         _categorias = [
           {
@@ -98,17 +98,18 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
   }
 
   // Método para crear o actualizar una categoría
-  Future<void> _guardarCategoria([Map<String, dynamic>? categoriaExistente]) async {
+  Future<void> _guardarCategoria(
+      [Map<String, dynamic>? categoriaExistente]) async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     final nombre = _nombreController.text.trim();
     final descripcion = _descripcionController.text.trim();
-    
+
     setState(() {
       _isCreating = true;
       _errorMessage = '';
     });
-    
+
     try {
       if (categoriaExistente == null) {
         // Crear nueva categoría
@@ -117,16 +118,16 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
           nombre: nombre,
           descripcion: descripcion.isNotEmpty ? descripcion : null,
         );
-        
+
         if (!mounted) return;
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Categoría creada correctamente'),
             backgroundColor: Colors.green,
           ),
         );
-        
+
         // Recargar las categorías para mostrar la nueva
         await _cargarCategorias();
       } else {
@@ -137,22 +138,22 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
           nombre: nombre,
           descripcion: descripcion.isNotEmpty ? descripcion : null,
         );
-        
+
         if (!mounted) return;
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Categoría actualizada correctamente'),
             backgroundColor: Colors.green,
           ),
         );
-        
+
         // Recargar las categorías para mostrar los cambios
         await _cargarCategorias();
       }
     } catch (e) {
       if (!mounted) return;
-      
+
       debugPrint('Error al guardar categoría: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -166,114 +167,6 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
           _isCreating = false;
         });
         Navigator.pop(context);
-      }
-    }
-  }
-
-  // Método para eliminar una categoría
-  Future<void> _eliminarCategoria(Map<String, dynamic> categoria) async {
-    // Mostrar diálogo de confirmación
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text(
-          '¿Eliminar categoría?',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Esta acción eliminará la categoría "${categoria['nombre']}" y no se puede deshacer.',
-              style: const TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 16),
-            if (categoria['cantidadProductos'] > 0)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Esta categoría tiene ${categoria['cantidadProductos']} productos asociados. Al eliminarla, estos productos quedarán sin categoría.',
-                        style: const TextStyle(color: Colors.orange),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.white70)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE31E24),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
-    
-    if (confirmar != true) return;
-    
-    setState(() {
-      _isLoading = true;
-    });
-    
-    try {
-      final result = await api.categorias.deleteCategoria(categoria['id'].toString());
-      
-      if (!mounted) return;
-      
-      if (result) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Categoría eliminada correctamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // Recargar las categorías
-        await _cargarCategorias();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo eliminar la categoría'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      
-      debugPrint('Error al eliminar categoría: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al eliminar categoría: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
       }
     }
   }
@@ -364,7 +257,8 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: _isCreating ? null : () => Navigator.pop(context),
+                      onPressed:
+                          _isCreating ? null : () => Navigator.pop(context),
                       child: const Text(
                         'Cancelar',
                         style: TextStyle(color: Colors.white54),
@@ -380,19 +274,19 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                           vertical: 12,
                         ),
                       ),
-                      onPressed: _isCreating 
-                        ? null 
-                        : () => _guardarCategoria(categoria),
+                      onPressed: _isCreating
+                          ? null
+                          : () => _guardarCategoria(categoria),
                       child: _isCreating
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text('Guardar'),
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Guardar'),
                     ),
                   ],
                 ),
@@ -572,7 +466,8 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                     size: 14,
                                   ),
                                   label: const Text('Crear categoría'),
-                                  onPressed: () => _mostrarFormularioCategoria(),
+                                  onPressed: () =>
+                                      _mostrarFormularioCategoria(),
                                 ),
                               ],
                             ),
@@ -584,7 +479,8 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                 // Encabezado de la tabla
                                 Container(
                                   color: const Color(0xFF2D2D2D),
-                                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16, horizontal: 20),
                                   child: const Row(
                                     children: [
                                       // Categorías (30% del ancho)
@@ -636,118 +532,121 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                     ],
                                   ),
                                 ),
-                                
+
                                 // Filas de categorías
                                 ..._categorias.map((categoria) => Container(
-                                  decoration: BoxDecoration(
-                                    border: Border(
-                                      bottom: BorderSide(
-                                        color: Colors.white.withOpacity(0.1),
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color:
+                                                Colors.white.withOpacity(0.1),
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                                  child: Row(
-                                    children: [
-                                      // Categoría
-                                      Expanded(
-                                        flex: 30,
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              width: 32,
-                                              height: 32,
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF2D2D2D),
-                                                borderRadius: BorderRadius.circular(8),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12, horizontal: 20),
+                                      child: Row(
+                                        children: [
+                                          // Categoría
+                                          Expanded(
+                                            flex: 30,
+                                            child: Row(
+                                              children: [
+                                                Container(
+                                                  width: 32,
+                                                  height: 32,
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        const Color(0xFF2D2D2D),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                  ),
+                                                  child: const Center(
+                                                    child: FaIcon(
+                                                      FontAwesomeIcons.folder,
+                                                      color: Color(0xFFE31E24),
+                                                      size: 14,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Text(
+                                                  categoria['nombre'],
+                                                  style: const TextStyle(
+                                                      color: Colors.white),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          // Descripción
+                                          Expanded(
+                                            flex: 40,
+                                            child: Text(
+                                              categoria['descripcion'],
+                                              style: TextStyle(
+                                                color: Colors.white
+                                                    .withOpacity(0.7),
                                               ),
-                                              child: const Center(
-                                                child: FaIcon(
-                                                  FontAwesomeIcons.folder,
-                                                  color: Color(0xFFE31E24),
-                                                  size: 14,
+                                            ),
+                                          ),
+                                          // Cant. de productos
+                                          Expanded(
+                                            flex: 15,
+                                            child: Center(
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFE31E24)
+                                                      .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 4,
+                                                ),
+                                                child: Text(
+                                                  categoria['cantidadProductos']
+                                                      .toString(),
+                                                  style: const TextStyle(
+                                                    color: Color(0xFFE31E24),
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(width: 12),
-                                            Text(
-                                              categoria['nombre'],
-                                              style: const TextStyle(color: Colors.white),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Descripción
-                                      Expanded(
-                                        flex: 40,
-                                        child: Text(
-                                          categoria['descripcion'],
-                                          style: TextStyle(
-                                            color: Colors.white.withOpacity(0.7),
                                           ),
-                                        ),
-                                      ),
-                                      // Cant. de productos
-                                      Expanded(
-                                        flex: 15,
-                                        child: Center(
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFE31E24).withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 4,
-                                            ),
-                                            child: Text(
-                                              categoria['cantidadProductos'].toString(),
-                                              style: const TextStyle(
-                                                color: Color(0xFFE31E24),
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                          // Acciones
+                                          Expanded(
+                                            flex: 15,
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                IconButton(
+                                                  icon: const FaIcon(
+                                                    FontAwesomeIcons
+                                                        .penToSquare,
+                                                    color: Colors.white54,
+                                                    size: 16,
+                                                  ),
+                                                  onPressed: () =>
+                                                      _mostrarFormularioCategoria(
+                                                          categoria),
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                    minWidth: 30,
+                                                    minHeight: 30,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                )
+                                              ],
                                             ),
                                           ),
-                                        ),
+                                        ],
                                       ),
-                                      // Acciones
-                                      Expanded(
-                                        flex: 15,
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            IconButton(
-                                              icon: const FaIcon(
-                                                FontAwesomeIcons.penToSquare,
-                                                color: Colors.white54,
-                                                size: 16,
-                                              ),
-                                              onPressed: () => _mostrarFormularioCategoria(categoria),
-                                              constraints: const BoxConstraints(
-                                                minWidth: 30,
-                                                minHeight: 30,
-                                              ),
-                                              padding: EdgeInsets.zero,
-                                            ),
-                                            IconButton(
-                                              icon: const FaIcon(
-                                                FontAwesomeIcons.trash,
-                                                color: Color(0xFFE31E24),
-                                                size: 16,
-                                              ),
-                                              onPressed: () => _eliminarCategoria(categoria),
-                                              constraints: const BoxConstraints(
-                                                minWidth: 30,
-                                                minHeight: 30,
-                                              ),
-                                              padding: EdgeInsets.zero,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )),
+                                    )),
                               ],
                             ),
                           ),
