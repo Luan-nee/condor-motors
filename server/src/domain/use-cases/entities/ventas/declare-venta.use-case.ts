@@ -131,7 +131,7 @@ export class DeclareVenta {
       )
       .where(eq(detallesVentaTable.ventaId, numericIdDto.id))
 
-    const items = detalles.map((detalle) => ({
+    const items: Item[] = detalles.map((detalle) => ({
       unidad: detalle.unidad,
       codigo: detalle.codigo,
       descripcion: detalle.descripcion,
@@ -144,7 +144,7 @@ export class DeclareVenta {
       total: parseFloat(detalle.total)
     }))
 
-    const document = {
+    const document: DocumentoFacturacion = {
       tipo_documento: venta.tipo_documento,
       serie: venta.serie,
       numero: venta.numero,
@@ -179,7 +179,7 @@ export class DeclareVenta {
         descripcion: venta.termino_de_pago.descripcion,
         tipo: venta.termino_de_pago.tipo
       },
-      observaciones: venta.observaciones
+      observaciones: venta.observaciones ?? ''
     }
 
     return document
