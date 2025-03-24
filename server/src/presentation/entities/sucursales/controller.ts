@@ -112,7 +112,9 @@ export class SucursalesController {
       return
     }
 
-    const updateSucursal = new UpdateSucursal()
+    const { authPayload } = req
+
+    const updateSucursal = new UpdateSucursal(authPayload)
 
     updateSucursal
       .execute(updateSucursalDto, numericIdDto)
