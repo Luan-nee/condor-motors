@@ -1,12 +1,17 @@
 import z from 'zod'
+import { idTypeBaseSchema } from '../../id-type.schema'
 
 export const ReservasProductoSchema = {
   descripcion: z.string().trim().min(2),
-  detallesReserva: z.string(),
+  detallesReserva: z.object({
+    nombreProducto: z.string(),
+    precioCompra: z.number().positive(),
+    precioVenta: z.number().positive(),
+    cantidad: z.number().positive(),
+    total: z.number().positive()
+  }),
   montoAdelantado: z.number().positive(),
   fechaRecojo: z.string().date(),
-  clienteId: z
-    .number()
-    .positive({ message: 'El numero ingresado no es un ID' }),
-  sucursalId: z.number().positive({ message: 'El Id ingresado no es valido' })
+  clienteId: idTypeBaseSchema.numericId,
+  sucursalId: idTypeBaseSchema.numericId
 }

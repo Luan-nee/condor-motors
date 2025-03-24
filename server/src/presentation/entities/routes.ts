@@ -9,6 +9,7 @@ import { RolesCuentasRoutes } from '@/presentation/entities/roles-cuentas/routes
 import { CuentasEmpleadosRoutes } from '@/presentation/entities/cuentas-empleados/routes'
 import { ColoresRoutes } from '@/presentation/entities/colores/routes'
 import { ClientesRoutes } from './clientes/routes'
+import { ReservasProductoRoutes } from './reservas-producto/routes'
 
 export class EntitiesRoutes {
   static get routes() {
@@ -20,6 +21,7 @@ export class EntitiesRoutes {
     router.use('/categorias', CategoriasRoutes.routes)
     router.use('/rolescuentas', RolesCuentasRoutes.routes)
     router.use('/clientes', ClientesRoutes.routes)
+    router.use('/ReservasProducto', ReservasProductoRoutes.routes)
     router.use('/cuentasempleados', CuentasEmpleadosRoutes.routes)
     router.use('/colores', ColoresRoutes.routes)
     router.use(

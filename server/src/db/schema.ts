@@ -460,7 +460,7 @@ export const reservasProductosTable = pgTable('reservas_productos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   descripcion: text('descripcion'),
   detallesReserva: jsonb('detalles_reserva').notNull().$type<{
-    nombreProducto: number
+    nombreProducto: string
     precioCompra: number
     precioVenta: number
     cantidad: number
