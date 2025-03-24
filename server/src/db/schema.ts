@@ -311,7 +311,8 @@ export const tiposDocumentoFacturacionTable = pgTable(
   {
     id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     nombre: text('nombre').notNull().unique(),
-    codigo: text('codigo').notNull().unique()
+    codigo: text('codigo').notNull().unique(),
+    codigoLocal: text('codigo_local').notNull()
   }
 )
 
@@ -336,9 +337,8 @@ export const ventasTable = pgTable('ventas', {
   tipoDocumentoId: integer('tipo_documento_id')
     .notNull()
     .references(() => tiposDocumentoFacturacionTable.id),
-  numeroDocumento: text('numero_venta')
-    .notNull()
-    .generatedAlwaysAs(sql`LPAD(id::TEXT, 8, '0')`),
+  serieDocumento: text('serie_documento').notNull(),
+  numeroDocumento: text('numero_documento').notNull(),
   monedaId: integer('moneda_id')
     .notNull()
     .references(() => monedasFacturacionTable.id),
@@ -358,6 +358,7 @@ export const ventasTable = pgTable('ventas', {
     mode: 'string'
   }),
   horaEmision: time('hora_emision'),
+  declarada: boolean('declarada').notNull().default(false),
   ...timestampsColumns
 })
 
@@ -418,6 +419,15 @@ export const totalesVentaTable = pgTable('totales_venta', {
  * Extra ventas
  */
 
+// export const ventasCanceladasTable = pgTable('ventas_canceladas', {
+//   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+//   motivo: text('motivo').notNull(),
+//   ventaId: integer('venta_id')
+//     .notNull()
+//     .references(() => ventasTable.id),
+//   ...timestampsColumns
+// })
+
 export const proformasVentaTable = pgTable('proformas_venta', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre'),
@@ -474,9 +484,6 @@ export const devolucionesTable = pgTable('devoluciones', {
   ventaId: integer('venta_id')
     .notNull()
     .references(() => ventasTable.id),
-  sucursalId: integer('sucursal_id')
-    .notNull()
-    .references(() => sucursalesTable.id),
   ...timestampsColumns
 })
 
@@ -488,7 +495,12 @@ export const documentosTable = pgTable('documentos_table', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   tipoOperacion: text('tipo_operacion').notNull().default('0101'),
   porcentajeVenta: integer('porcentaje_venta').notNull().default(18),
-  enviarCliente: boolean('enviar_cliente').notNull().default(true),
+  factproDocumentId: text('factpro_document_id'),
+  hash: text('hash'),
+  qr: text('qr'),
+  linkXml: text('link_xml'),
+  linkPdf: text('link_pdf'),
+  linkCdr: text('link_cdr'),
   ventaId: integer('venta_id')
     .notNull()
     .references(() => ventasTable.id)

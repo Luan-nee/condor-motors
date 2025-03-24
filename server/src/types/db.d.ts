@@ -58,6 +58,7 @@ interface SeedConfig {
   tiposDocumentoFacturacionDefault: Array<{
     nombre: string
     codigo: string
+    codigoLocal: string
   }>
   monedasFacturacionDefault: Array<{
     nombre: string

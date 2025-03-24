@@ -1,5 +1,5 @@
 import { envs } from '@/config/envs'
-import { permissionCodes } from '@/consts'
+import { permissionCodes, tiposDocFacturacionCodes } from '@/consts'
 import {
   transformPermissionsCodesFromArray,
   transformPermissionCodes
@@ -72,8 +72,16 @@ export const seedConfig: SeedConfig = {
     }
   ],
   tiposDocumentoFacturacionDefault: [
-    { nombre: 'Factura electrónica', codigo: '01' },
-    { nombre: 'Boleta de venta electrónica', codigo: '03' }
+    {
+      nombre: 'Factura electrónica',
+      codigo: '01',
+      codigoLocal: tiposDocFacturacionCodes.factura
+    },
+    {
+      nombre: 'Boleta de venta electrónica',
+      codigo: '03',
+      codigoLocal: tiposDocFacturacionCodes.boleta
+    }
   ],
   monedasFacturacionDefault: [{ nombre: 'Soles', codigo: 'PEN' }],
   metodosPagoDefault: [
@@ -82,12 +90,6 @@ export const seedConfig: SeedConfig = {
       codigo: 'Contado',
       tipo: '0',
       activado: true
-    },
-    {
-      nombre: 'Crédito',
-      codigo: 'Credito',
-      tipo: '1',
-      activado: false
     }
   ],
   tiposTaxDefault: [

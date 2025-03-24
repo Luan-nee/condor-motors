@@ -100,3 +100,8 @@ export const permissionCodes = {
     deleteRelated: 'proformas_venta:delete_related'
   }
 } as const
+
+export const tiposDocFacturacionCodes = {
+  factura: 'factura',
+  boleta: 'boleta'
+}
