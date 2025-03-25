@@ -9,6 +9,8 @@ export class ReservasProductoRoutes {
 
     router.post('/', ReservasProducto.create)
 
+    router.get('/:id', ReservasProducto.getById)
+
     return router
   }
 }
