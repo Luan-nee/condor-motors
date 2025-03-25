@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { sql } from 'drizzle-orm'
 import {
   uniqueIndex,
@@ -165,7 +166,6 @@ export const empleadosTable = pgTable('empleados', {
   ...timestampsColumns
 })
 
-// ['6', '1', '4', '7', 'A', '0']
 export const tiposDocumentoClienteTable = pgTable('tipos_documento_cliente', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
@@ -305,7 +305,6 @@ export const rolesPermisosTable = pgTable(
  * Ventas
  */
 
-// ['01', '03']
 export const tiposDocumentoFacturacionTable = pgTable(
   'tipos_documento_facturacion',
   {
@@ -316,7 +315,6 @@ export const tiposDocumentoFacturacionTable = pgTable(
   }
 )
 
-// ['PEN']
 export const monedasFacturacionTable = pgTable('monedas_facturacion', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
@@ -364,7 +362,6 @@ export const ventasTable = pgTable('ventas', {
   ...timestampsColumns
 })
 
-// ['10', '20']
 export const tiposTaxTable = pgTable('tipos_tax', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
@@ -421,15 +418,6 @@ export const totalesVentaTable = pgTable('totales_venta', {
 /*
  * Extra ventas
  */
-
-// export const ventasCanceladasTable = pgTable('ventas_canceladas', {
-//   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-//   motivo: text('motivo').notNull(),
-//   ventaId: integer('venta_id')
-//     .notNull()
-//     .references(() => ventasTable.id),
-//   ...timestampsColumns
-// })
 
 export const proformasVentaTable = pgTable('proformas_venta', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
@@ -494,15 +482,30 @@ export const devolucionesTable = pgTable('devoluciones', {
  * Facturación
  */
 
-export const documentosTable = pgTable('documentos_table', {
+export const estadosDocumentoFacturacion = pgTable(
+  'estados_documento_facturacion',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    nombre: text('nombre').notNull().unique(),
+    codigo: text('codigo').notNull().unique(),
+    codigoLocal: text('codigo_local').notNull()
+  }
+)
+
+export const documentosFacturacionTable = pgTable('documentos_facturacion', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  factproFilename: text('factpro_filename'),
   factproDocumentId: text('factpro_document_id'),
   hash: text('hash'),
   qr: text('qr'),
   linkXml: text('link_xml'),
   linkPdf: text('link_pdf'),
   linkCdr: text('link_cdr'),
-  apiRawResponse: text('api_raw_response'),
+  estadoRawId: text('estado_raw_id'),
+  informacionSunat: jsonb('informacion_sunat'),
+  estadoId: integer('estado_id').references(
+    () => estadosDocumentoFacturacion.id
+  ),
   ventaId: integer('venta_id')
     .notNull()
     .references(() => ventasTable.id)

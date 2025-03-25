@@ -5,7 +5,7 @@ import { db } from '@/db/connection'
 import {
   clientesTable,
   detallesVentaTable,
-  documentosTable,
+  documentosFacturacionTable,
   empleadosTable,
   metodosPagoTable,
   monedasFacturacionTable,
@@ -59,12 +59,12 @@ export class GetVentaById {
       totalVenta: totalesVentaTable.totalVenta
     },
     documentoFacturacion: {
-      factproDocumentId: documentosTable.factproDocumentId,
-      hash: documentosTable.hash,
-      qr: documentosTable.qr,
-      linkXml: documentosTable.linkXml,
-      linkPdf: documentosTable.linkPdf,
-      linkCdr: documentosTable.linkCdr
+      factproDocumentId: documentosFacturacionTable.factproDocumentId,
+      hash: documentosFacturacionTable.hash,
+      qr: documentosFacturacionTable.qr,
+      linkXml: documentosFacturacionTable.linkXml,
+      linkPdf: documentosFacturacionTable.linkPdf,
+      linkCdr: documentosFacturacionTable.linkCdr
     }
   }
   private readonly detallesVentaSelectFields = {
@@ -119,7 +119,10 @@ export class GetVentaById {
         tiposDocumentoClienteTable,
         eq(clientesTable.tipoDocumentoId, tiposDocumentoClienteTable.id)
       )
-      .leftJoin(documentosTable, eq(ventasTable.id, documentosTable.ventaId))
+      .leftJoin(
+        documentosFacturacionTable,
+        eq(ventasTable.id, documentosFacturacionTable.ventaId)
+      )
       .where(
         and(
           eq(ventasTable.id, numericIdDto.id),

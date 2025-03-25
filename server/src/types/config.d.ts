@@ -50,17 +50,23 @@ export type refreshAccessTokenType = (args: {
 interface Success<T> {
   data: T
   error: null
-  rawTextResponse: string
 }
 
 interface Failure<E> {
   data: null
   error: E
-  rawTextResponse: string
 }
 
 type Result<T, E> = Success<T> | Failure<E>
 
 export type sendDocumentType = (args: {
   document: DocumentoFacturacion
-}) => Promise<Result<ApiSuccessResponse, ApiErrorResponse>>
+}) => Promise<Result<BillingApiSuccessResponse, BillingApiErrorResponse>>
+
+export type consultDocumentType = (args: {
+  document: {
+    tipo_documento: string
+    serie: string
+    numero: string
+  }
+}) => Promise<Result<BillingApiSuccessResponse, BillingApiSuccessResponse>>

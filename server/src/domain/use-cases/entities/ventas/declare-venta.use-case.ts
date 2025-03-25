@@ -5,7 +5,8 @@ import { db } from '@/db/connection'
 import {
   clientesTable,
   detallesVentaTable,
-  documentosTable,
+  documentosFacturacionTable,
+  estadosDocumentoFacturacion,
   metodosPagoTable,
   monedasFacturacionTable,
   sucursalesTable,
@@ -214,32 +215,48 @@ export class DeclareVenta {
     documentoFacturacion: DocumentoFacturacion,
     numericIdDto: NumericIdDto
   ) {
-    const {
-      data: documentDataResponse,
-      error,
-      rawTextResponse
-    } = await this.billingService.sendDocument({
-      document: documentoFacturacion
-    })
+    const { data: documentDataResponse, error } =
+      await this.billingService.sendDocument({
+        document: documentoFacturacion
+      })
 
     if (error !== null) {
       throw CustomError.badGateway(error.message)
     }
 
+    const estados = await db
+      .select({ id: estadosDocumentoFacturacion.id })
+      .from(estadosDocumentoFacturacion)
+      .where(
+        eq(
+          estadosDocumentoFacturacion.codigo,
+          documentDataResponse.data.state_type_id
+        )
+      )
+
+    let estado = undefined
+
+    if (estados.length < 1) {
+      ;[estado] = estados
+    }
+
     return await db.transaction(async (tx) => {
       const [documento] = await tx
-        .insert(documentosTable)
+        .insert(documentosFacturacionTable)
         .values({
+          factproFilename: documentDataResponse.data.filename,
           factproDocumentId: documentDataResponse.data.external_id,
           hash: documentDataResponse.data.hash,
           qr: documentDataResponse.data.qr,
           linkXml: documentDataResponse.links.xml,
           linkPdf: documentDataResponse.links.pdf,
           linkCdr: documentDataResponse.links.cdr,
-          apiRawResponse: rawTextResponse,
+          estadoRawId: documentDataResponse.data.state_type_id,
+          estadoId: estado?.id,
+          informacionSunat: documentDataResponse.sunat_information,
           ventaId: numericIdDto.id
         })
-        .returning({ id: documentosTable.id })
+        .returning({ id: documentosFacturacionTable.id })
 
       const updatedResults = await tx
         .update(ventasTable)

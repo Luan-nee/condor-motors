@@ -72,8 +72,9 @@ interface Item {
   total: number
 }
 
-interface ApiSuccessResponse {
+interface BillingApiSuccessResponse {
   success: boolean
+  message: string
   data: {
     number: string
     filename: string
@@ -81,20 +82,24 @@ interface ApiSuccessResponse {
     number_to_letter: string
     hash: string
     qr: string
+    state_type_id: string
+    state_description: string
   }
   links: {
     xml: string
-    pdf: string
     cdr: string
+    pdf: string
+    download_pdf: string
+    pdf_html: string
   }
-  response: {
+  sunat_information: {
     code: string
     description: string
     notes: any[]
   }
 }
 
-interface ApiErrorResponse {
+interface BillingApiErrorResponse {
   success: boolean
   message: string
 }

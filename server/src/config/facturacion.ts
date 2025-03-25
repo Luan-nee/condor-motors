@@ -1,6 +1,6 @@
 import { envs } from '@/config/envs'
 import { CustomError } from '@/core/errors/custom.error'
-import type { sendDocumentType } from '@/types/config'
+import type { consultDocumentType, sendDocumentType } from '@/types/config'
 
 const { TOKEN_FACTURACION, FACTURACION_API_BASE_URL } = envs
 
@@ -19,6 +19,34 @@ export class ServicioFacturacion {
     }
   }
 
+  private static async formatResponse(res: Response) {
+    if (res.status === 401) {
+      throw CustomError.serviceUnavailable('Token de facturación inválido')
+    }
+    if (res.status >= 500) {
+      throw CustomError.serviceUnavailable(
+        'El servicio de facturación no se encuentra activo en este momento'
+      )
+    }
+
+    try {
+      const jsonResponse = await res.json()
+
+      if (jsonResponse.success !== true) {
+        return { data: null, error: jsonResponse }
+      }
+
+      return { data: jsonResponse, error: null }
+    } catch (e) {
+      const error = {
+        message:
+          'La respuesta obtenida del servicio de facturación se encuentra en un formato inesperado',
+        success: false
+      }
+      return { data: null, error }
+    }
+  }
+
   static sendDocument: sendDocumentType = async ({ document }) => {
     ServicioFacturacion.checkAvailability()
 
@@ -31,38 +59,25 @@ export class ServicioFacturacion {
       body: JSON.stringify(document)
     })
 
-    try {
-      const textResponse = await res.text()
+    const apiResponse = await this.formatResponse(res)
 
-      if (!res.ok) {
-        if (res.status === 401) {
-          throw CustomError.serviceUnavailable('Token de facturación inválido')
-        }
-        if (res.status >= 500) {
-          throw CustomError.serviceUnavailable(
-            'El servicio de facturación no se encuentra activo en este momento'
-          )
-        }
+    return apiResponse
+  }
 
-        const error = JSON.parse(textResponse)
-        return { data: null, error, rawTextResponse: textResponse }
-      }
+  static consultDocument: consultDocumentType = async ({ document }) => {
+    ServicioFacturacion.checkAvailability()
 
-      const apiResponse = JSON.parse(textResponse)
+    const res = await fetch(FACTURACION_API_BASE_URL + '/consulta', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${TOKEN_FACTURACION}`
+      },
+      body: JSON.stringify(document)
+    })
 
-      if (apiResponse.success !== true) {
-        return { data: null, error: apiResponse, rawTextResponse: textResponse }
-      }
+    const apiResponse = await this.formatResponse(res)
 
-      return { data: apiResponse, error: null, rawTextResponse: textResponse }
-    } catch (e) {
-      const textResponse = await res.text()
-      const error = {
-        message:
-          'La respuesta obtenida del servicio de facturación se encuentra en un formato inesperado',
-        success: false
-      }
-      return { data: null, error, rawTextResponse: textResponse }
-    }
+    return apiResponse
   }
 }
