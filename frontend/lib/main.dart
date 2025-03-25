@@ -16,9 +16,11 @@ late CondorMotorsApi api;
 
 // Lista de servidores posibles para intentar conectarse
 final List<String> _serverUrls = [
+  'http://192.168.1.66:3000/api',  // IP de tu PC en la red WiFi local
   'http://192.168.1.100:3000/api', // IP principal
   'http://localhost:3000/api',      // Servidor local
   'http://127.0.0.1:3000/api',      // Localhost alternativo
+  'http://10.0.2.2:3000/api',       // Emulador Android
 ];
 
 // Función para inicializar la API global

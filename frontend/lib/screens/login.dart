@@ -267,7 +267,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               controller: ipController,
               decoration: InputDecoration(
                 labelText: 'Dirección IP',
-                hintText: 'Ej: localhost o 192.168.1.100',
+                hintText: 'Ej: localhost o 192.168.1.66',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -276,7 +276,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
             const SizedBox(height: 8),
             Text(
-              '• Para desarrollo local: localhost\n• Para emuladores Android: 10.0.2.2\n• Para dispositivos físicos: IP de tu PC',
+              '• Para desarrollo local (PC): localhost o 127.0.0.1\n'
+              '• Para emuladores Android: 10.0.2.2\n'
+              '• Para dispositivos físicos: IP de tu PC en la red WiFi (ej: 192.168.1.66)\n'
+              '• Si estás fuera de la red local: IP pública + configurar port forwarding',
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../api/protected/proforma.api.dart';
+import '../../../models/proforma.model.dart';
 import '../ventas_computer.dart' show VentasUtils;
 import 'ventas_pendientes_utils.dart';
 
@@ -561,9 +562,6 @@ class _NumericKeypadState extends State<NumericKeypad> {
     );
   }
 
-
-
-
   Widget _buildNumberKeyButton(String number) {
     return Expanded(
       child: AspectRatio(
@@ -668,11 +666,10 @@ class _NumericKeypadState extends State<NumericKeypad> {
     final montoIngresado = double.tryParse(_enteredAmount) ?? 0;
     return montoIngresado >= widget.minAmount;
   }
-  
 }
 
 class ProformaSaleDialog extends StatelessWidget {
-  final ProformaVenta proforma;
+  final Proforma proforma;
   final Function(Map<String, dynamic>) onConfirm;
   final VoidCallback onCancel;
 
@@ -733,11 +730,12 @@ class ProformaSaleDialog extends StatelessWidget {
             
             // Detalles de la proforma
             Text(
-              'Proforma: ${proforma.id}',
+              'Proforma #${proforma.id} - ${proforma.fechaCreacion != null 
+                ? '${proforma.fechaCreacion.day}/${proforma.fechaCreacion.month}/${proforma.fechaCreacion.year}'
+                : 'Fecha no disponible'}',
               style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+                fontSize: 14,
+                color: Colors.white70,
               ),
             ),
             const SizedBox(height: 8),
@@ -749,7 +747,7 @@ class ProformaSaleDialog extends StatelessWidget {
               ),
             ),
             Text(
-              'Fecha: ${VentasPendientesUtils.formatearFecha(proforma.createdAt)}',
+              'Fecha: ${VentasPendientesUtils.formatearFecha(proforma.fechaCreacion)}',
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.white70,

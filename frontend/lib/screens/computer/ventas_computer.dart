@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../api/index.api.dart';
 import '../../main.dart' show api;
+import '../../models/proforma.model.dart' as models;
 import 'widgets/form_sales_computer.dart' show NumericKeypad, ProcessingDialog, DebugPrint, ProformaSaleDialog;
 import 'widgets/ventas_pendientes_utils.dart';
 import 'widgets/ventas_pendientes_widget.dart';
@@ -138,7 +139,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   late final ProformaVentaApi _proformasApi;
   bool _isLoading = false;
   List<Venta> _ventas = [];
-  List<ProformaVenta> _proformasObj = [];
+  List<models.Proforma> _proformasObj = [];
   List<Map<String, dynamic>> _proformasFormateadas = [];
   
   // Datos de prueba para ventas pendientes - Será reemplazado con proformas reales
@@ -275,10 +276,13 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   
   // Método para seleccionar una venta pendiente para procesar
   void _seleccionarVenta(Map<String, dynamic> venta) {
-    DebugPrint.log('Venta seleccionada: ${venta['id']}');
+    DebugPrint.log('Venta seleccionada: $venta');
     
     // Verificar si es una proforma
-    final esProforma = VentasPendientesUtils.esProforma(venta['id'].toString());
+    final esProforma = VentasPendientesUtils.esProforma(
+      venta['id'].toString(),
+      tipoVenta: venta['tipoVenta'] as String?,
+    );
     
     if (esProforma) {
       // Buscar la proforma en la lista de objetos
@@ -701,10 +705,17 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     
     try {
       // Determinar si es una proforma que debemos convertir
-      final esProforma = VentasPendientesUtils.esProforma(_ventaSeleccionada!['id'].toString());
+      final esProforma = VentasPendientesUtils.esProforma(
+        _ventaSeleccionada!['id'].toString(),
+        tipoVenta: _ventaSeleccionada!['tipoVenta'] as String?,
+      );
       
       if (esProforma) {
-        await _convertirProformaAVenta(_ventaSeleccionada!);
+        // Extraer ID numérico de la proforma
+        final proformaId = VentasPendientesUtils.extraerIdProforma(_ventaSeleccionada!['id'].toString());
+        if (proformaId != null) {
+          await _convertirProformaAVenta(proformaId, _ventaSeleccionada!);
+        }
       } else {
         // Proceso original para ventas normales
         await _actualizarProductosVenta();
@@ -886,44 +897,35 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     );
   }
 
-
-
-  // Método para cargar proformas desde la API
+  // Método para cargar proformas de venta
   Future<void> _cargarProformas() async {
-    setState(() => _isLoading = true);
     try {
-      // Usar el ID de sucursal del widget, o obtenerlo de las utilidades de forma asíncrona
-      int? sucursalId;
-      if (widget.sucursalId != null) {
-        sucursalId = widget.sucursalId;
-      } else {
-        sucursalId = await VentasPendientesUtils.obtenerSucursalId();
-      }
+      setState(() {
+        _isLoading = true;
+      });
       
+      final sucursalId = await VentasPendientesUtils.obtenerSucursalId();
       if (sucursalId == null) {
-        throw Exception('No se pudo determinar el ID de sucursal');
+        debugPrint('Error: No se pudo obtener el ID de sucursal');
+        return;
       }
       
       final proformasResponse = await _proformasApi.getProformasVenta(
-        sucursalId: sucursalId,
+        sucursalId: sucursalId.toString(),
       );
       
       if (!mounted) return;
       
-      // Obtener lista de objetos ProformaVenta
-      final proformas = _proformasApi.parseProformasVenta(proformasResponse['data']);
-      
-      // Convertir a formato compatible con PendingSalesWidget
-      final proformasFormateadas = VentasPendientesUtils.convertirProformasAVentasPendientes(proformas);
+      final proformasObj = _proformasApi.parseProformasVenta(proformasResponse);
+      final proformasFormateadas = VentasPendientesUtils.convertirProformasAVentasPendientes(proformasObj);
       
       setState(() {
-        _proformasObj = proformas;
+        _proformasObj = proformasObj;
         _proformasFormateadas = proformasFormateadas;
       });
-      
-      DebugPrint.log('Proformas cargadas: ${_proformasObj.length}');
     } catch (e) {
-      if (!mounted) return;
+      debugPrint('Error al cargar proformas: $e');
+      // Mostrar mensaje de error en un snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cargar proformas: $e'),
@@ -932,64 +934,60 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
   
-  // Método para convertir una proforma en venta
-  Future<void> _convertirProformaAVenta(Map<String, dynamic> proforma) async {
-    setState(() => _procesandoPago = true);
-    
+  // Método para convertir proforma a venta
+  Future<void> _convertirProformaAVenta(
+    int proformaId, 
+    Map<String, dynamic> ventaData
+  ) async {
     try {
-      // Extraer ID numérico de la proforma
-      final proformaId = VentasPendientesUtils.extraerIdProforma(proforma['id']);
+      setState(() {
+        _isLoading = true;
+      });
       
-      if (proformaId == null) {
-        throw Exception('ID de proforma inválido: ${proforma['id']}');
-      }
+      // Mostrar diálogo de procesamiento
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => const ProcessingDialog(
+          documentType: 'venta',
+        ),
+      );
       
-      // Usar el ID de sucursal del widget, o obtenerlo de las utilidades de forma asíncrona
-      int? sucursalId;
-      if (widget.sucursalId != null) {
-        sucursalId = widget.sucursalId;
-      } else {
-        sucursalId = await VentasPendientesUtils.obtenerSucursalId();
-      }
-      
+      // Obtener sucursalId
+      final sucursalId = await VentasPendientesUtils.obtenerSucursalId();
       if (sucursalId == null) {
-        throw Exception('No se pudo determinar el ID de sucursal');
+        debugPrint('Error: No se pudo obtener el ID de sucursal');
+        return;
       }
       
-      // Preparar datos de venta
+      // Preparar datos para la conversión
       final datosVenta = {
-        'cliente': proforma['cliente'],
-        'productos': proforma['productos'],
-        'total': proforma['total'],
-        'metodoPago': 'EFECTIVO', // Por defecto
-        'tipoDocumento': _tipoDocumento,
+        'metodoPago': ventaData['metodoPago'] ?? 'EFECTIVO',
+        'tipoDocumento': ventaData['tipoDocumento'] ?? 'BOLETA',
+        'cliente': ventaData['cliente'],
+        'total': ventaData['total'],
+        // Convertir detalles a formato esperado por la API
+        'productos': _convertirDetallesAProductos(ventaData['detalles']),
       };
-      
-      // Mostrar dialog de procesamiento
-      if (mounted) {
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => ProcessingDialog(documentType: _tipoDocumento),
-        );
-      }
       
       // Llamar a la API para convertir la proforma en venta
       await _proformasApi.convertirProformaAVenta(
-        sucursalId: sucursalId,
+        sucursalId: sucursalId.toString(),
         proformaId: proformaId,
         datosVenta: datosVenta,
       );
       
-      if (!mounted) return;
-      
-      // Cerrar dialog de procesamiento
-      Navigator.of(context).pop();
+      // Cerrar diálogo de procesamiento
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       
       // Mostrar mensaje de éxito
       ScaffoldMessenger.of(context).showSnackBar(
@@ -999,18 +997,17 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         ),
       );
       
-      // Recargar proformas y ventas
+      // Recargar datos
+      await _cargarVentasPendientes();
       await _cargarProformas();
-      await _cargarVentas();
-      
     } catch (e) {
-      if (!mounted) return;
-      
-      // Cerrar dialog si está abierto
-      if (Navigator.canPop(context)) {
+      debugPrint('Error al convertir proforma a venta: $e');
+      // Cerrar diálogo de procesamiento
+      if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
       
+      // Mostrar mensaje de error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al convertir proforma a venta: $e'),
@@ -1018,8 +1015,41 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         ),
       );
     } finally {
-      setState(() => _procesandoPago = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  /// Convierte detalles de proforma a formato de productos esperado por la API
+  List<Map<String, dynamic>> _convertirDetallesAProductos(List<dynamic> detalles) {
+    return detalles.map<Map<String, dynamic>>((detalle) {
+      if (detalle is models.DetalleProforma) {
+        return {
+          'id': detalle.productoId,
+          'nombre': detalle.nombre,
+          'precio': detalle.precioUnitario,
+          'cantidad': detalle.cantidad,
+        };
+      } else if (detalle is Map<String, dynamic>) {
+        return {
+          'id': detalle['productoId'],
+          'nombre': detalle['nombre'],
+          'precio': detalle['precioUnitario'],
+          'cantidad': detalle['cantidad'],
+        };
+      }
+      return {};
+    }).toList();
+  }
+
+  /// Carga las ventas pendientes para mostrarlas en la interfaz
+  Future<void> _cargarVentasPendientes() async {
+    // Recargar las ventas normales y proformas
+    await _cargarProformas();
+    await _cargarVentas();
   }
 
   @override
