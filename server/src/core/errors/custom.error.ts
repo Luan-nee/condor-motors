@@ -49,6 +49,10 @@ export class CustomError extends Error {
     return new CustomError(501, message, responseStatus.error)
   }
 
+  static badGateway(message: string) {
+    return new CustomError(502, message, responseStatus.error)
+  }
+
   static serviceUnavailable(message: string) {
     return new CustomError(503, message, responseStatus.error)
   }

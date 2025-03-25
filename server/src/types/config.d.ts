@@ -50,11 +50,13 @@ export type refreshAccessTokenType = (args: {
 interface Success<T> {
   data: T
   error: null
+  rawTextResponse: string
 }
 
 interface Failure<E> {
   data: null
   error: E
+  rawTextResponse: string
 }
 
 type Result<T, E> = Success<T> | Failure<E>

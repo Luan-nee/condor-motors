@@ -1,5 +1,9 @@
 import { envs } from '@/config/envs'
-import { permissionCodes, tiposDocFacturacionCodes } from '@/consts'
+import {
+  permissionCodes,
+  tiposDocFacturacionCodes,
+  tiposTaxCodes
+} from '@/consts'
 import {
   transformPermissionsCodesFromArray,
   transformPermissionCodes
@@ -21,7 +25,7 @@ export const seedConfig: SeedConfig = {
       clave: 'Compu123'
     }
   },
-  rolesDefault: ['Adminstrador', 'Vendedor', 'Computadora'],
+  rolesDefault: ['Administrador', 'Vendedor', 'Computadora'],
   categoriasDefault: [
     'No especificada',
     'Cascos',
@@ -96,17 +100,20 @@ export const seedConfig: SeedConfig = {
     {
       nombre: 'Con impuestos... not stonks 📉📉📉',
       codigo: '10',
-      porcentajeTax: 18
+      porcentajeTax: 18,
+      codigoLocal: tiposTaxCodes.gravado
     },
     {
       nombre: 'Sin impuestos STONKS 📈📈📈',
       codigo: '20',
-      porcentajeTax: 0
+      porcentajeTax: 0,
+      codigoLocal: tiposTaxCodes.exonerado
     },
     {
       nombre: 'Gratis y sin impuestos stonks? 📉📈❔',
       codigo: '21',
-      porcentajeTax: 0
+      porcentajeTax: 0,
+      codigoLocal: tiposTaxCodes.gratuito
     }
   ],
   sucursalesCount: 3,

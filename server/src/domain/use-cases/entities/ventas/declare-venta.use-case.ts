@@ -214,13 +214,16 @@ export class DeclareVenta {
     documentoFacturacion: DocumentoFacturacion,
     numericIdDto: NumericIdDto
   ) {
-    const { data: documentDataResponse, error } =
-      await this.billingService.sendDocument({
-        document: documentoFacturacion
-      })
+    const {
+      data: documentDataResponse,
+      error,
+      rawTextResponse
+    } = await this.billingService.sendDocument({
+      document: documentoFacturacion
+    })
 
     if (error !== null) {
-      throw CustomError.badRequest(error.message)
+      throw CustomError.badGateway(error.message)
     }
 
     return await db.transaction(async (tx) => {
@@ -233,6 +236,7 @@ export class DeclareVenta {
           linkXml: documentDataResponse.links.xml,
           linkPdf: documentDataResponse.links.pdf,
           linkCdr: documentDataResponse.links.cdr,
+          apiRawResponse: rawTextResponse,
           ventaId: numericIdDto.id
         })
         .returning({ id: documentosTable.id })
@@ -287,6 +291,8 @@ export class DeclareVenta {
     declareVentaDto: DeclareVentaDto,
     sucursalId: SucursalIdType
   ) {
+    await this.validatePermissions(sucursalId)
+
     const documentoFacturacion = await this.getFormattedData(
       numericIdDto,
       declareVentaDto,

@@ -1,4 +1,9 @@
-import { permissionCodes, tiposDocFacturacionCodes } from '@/consts'
+/* eslint-disable max-lines */
+import {
+  permissionCodes,
+  tiposDocFacturacionCodes,
+  tiposTaxCodes
+} from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import {
@@ -40,6 +45,16 @@ interface DetalleVenta {
   total: string
 }
 
+interface ComputePriceOfferArgs {
+  cantidad: number
+  cantidadMinimaDescuento: number | null
+  cantidadGratisDescuento: number | null
+  porcentajeDescuento: number | null
+  precioVenta: string
+  precioOferta: string | null
+  liquidacion: boolean
+}
+
 export class CreateVenta {
   private readonly authPayload: AuthPayload
   private readonly permissionAny = permissionCodes.ventas.createAny
@@ -54,7 +69,7 @@ export class CreateVenta {
     sucursalId: SucursalIdType,
     serieDocumento: string
   ) {
-    const { moneda, metodoPago } = await this.getDefaultMonedaMetodoPago()
+    const { moneda, metodoPago, freeItemTax } = await this.getDefaultIds()
 
     const { date, time } = this.getDateTime()
 
@@ -74,19 +89,24 @@ export class CreateVenta {
 
     const tiposTaxMap = new Map(tiposTax.map((t) => [t.id, t]))
 
-    const result = await db.transaction(async (tx) => {
-      const productoIds = createVentaDto.detalles.map(
-        (detalle) => detalle.productoId
-      )
+    const productoIds = createVentaDto.detalles.map(
+      (detalle) => detalle.productoId
+    )
 
+    const result = await db.transaction(async (tx) => {
       const detallesProductos = await tx
         .select({
           id: detallesProductoTable.id,
           stock: detallesProductoTable.stock,
           precioVenta: detallesProductoTable.precioVenta,
+          precioOferta: detallesProductoTable.precioOferta,
           productoId: detallesProductoTable.productoId,
           sku: productosTable.sku,
-          nombre: productosTable.nombre
+          nombre: productosTable.nombre,
+          cantidadMinimaDescuento: productosTable.cantidadMinimaDescuento,
+          cantidadGratisDescuento: productosTable.cantidadGratisDescuento,
+          porcentajeDescuento: productosTable.porcentajeDescuento,
+          liquidacion: detallesProductoTable.liquidacion
         })
         .from(detallesProductoTable)
         .innerJoin(
@@ -129,9 +149,18 @@ export class CreateVenta {
         }
 
         this.validateStock(detalleProducto, detalleVenta.cantidad)
+        const { price, free } = this.computePriceOffer({
+          cantidad: detalleVenta.cantidad,
+          cantidadMinimaDescuento: detalleProducto.cantidadMinimaDescuento,
+          cantidadGratisDescuento: detalleProducto.cantidadGratisDescuento,
+          porcentajeDescuento: detalleProducto.porcentajeDescuento,
+          precioVenta: detalleProducto.precioVenta,
+          precioOferta: detalleProducto.precioOferta,
+          liquidacion: detalleProducto.liquidacion
+        })
 
         const detallesItem = this.computeDetallesItem(
-          detalleProducto.precioVenta,
+          price,
           detalleVenta.cantidad,
           tipoTaxProducto.porcentajeTax
         )
@@ -155,12 +184,32 @@ export class CreateVenta {
           totalTax += detallesItem.totalTax
         }
 
-        totalGratuitas += detallesItem.totalGratuitas
-
         await tx
           .update(detallesProductoTable)
           .set({ stock: detalleProducto.stock - detalleVenta.cantidad })
           .where(eq(detallesProductoTable.id, detalleProducto.id))
+
+        if (free > 0) {
+          const detallesFreeItem = this.computeDetallesItem(
+            price,
+            free,
+            freeItemTax.porcentajeTax
+          )
+
+          detallesVenta.push({
+            sku: detalleProducto.sku,
+            nombre: detalleProducto.nombre,
+            cantidad: free,
+            precioSinIgv: fixedTwoDecimals(detallesFreeItem.valorUnitario),
+            precioConIgv: fixedTwoDecimals(detallesFreeItem.precioUnitario),
+            tipoTaxId: freeItemTax.id,
+            totalBaseTax: fixedTwoDecimals(detallesFreeItem.totalBaseTax),
+            totalTax: fixedTwoDecimals(detallesFreeItem.totalTax),
+            total: fixedTwoDecimals(detallesFreeItem.totalItem)
+          })
+
+          totalGratuitas += detallesFreeItem.totalItem
+        }
       }
 
       const [venta] = await tx
@@ -221,7 +270,7 @@ export class CreateVenta {
     return nextDocumentNumber.toString().padStart(fixedLength, '0')
   }
 
-  private async getDefaultMonedaMetodoPago() {
+  private async getDefaultIds() {
     const [moneda] = await db
       .select({ id: monedasFacturacionTable.id })
       .from(monedasFacturacionTable)
@@ -232,7 +281,15 @@ export class CreateVenta {
       .from(metodosPagoTable)
       .limit(1)
 
-    return { moneda, metodoPago }
+    const [freeItemTax] = await db
+      .select({
+        id: tiposTaxTable.id,
+        porcentajeTax: tiposTaxTable.porcentajeTax
+      })
+      .from(tiposTaxTable)
+      .where(eq(tiposTaxTable.codigoLocal, tiposTaxCodes.gratuito))
+
+    return { moneda, metodoPago, freeItemTax }
   }
 
   private validateStock(
@@ -246,8 +303,43 @@ export class CreateVenta {
     }
   }
 
+  private computePriceOffer({
+    cantidad,
+    cantidadMinimaDescuento,
+    cantidadGratisDescuento,
+    porcentajeDescuento,
+    precioVenta,
+    precioOferta,
+    liquidacion
+  }: ComputePriceOfferArgs) {
+    let price = parseFloat(precioVenta)
+    let free = 0
+
+    if (precioOferta !== null && liquidacion) {
+      price = parseFloat(precioOferta)
+    }
+
+    if (
+      cantidadMinimaDescuento === null ||
+      cantidad < cantidadMinimaDescuento
+    ) {
+      return { price, free }
+    }
+
+    if (cantidadGratisDescuento !== null) {
+      free = cantidadGratisDescuento
+    } else if (porcentajeDescuento !== null) {
+      price = productWithTwoDecimals(price, 1 - porcentajeDescuento / 100)
+    }
+
+    return {
+      price,
+      free
+    }
+  }
+
   private computeDetallesItem(
-    precioVenta: string,
+    precioVenta: number,
     cantidad: number,
     porcentajeTax: number | null
   ) {
@@ -257,7 +349,7 @@ export class CreateVenta {
       )
     }
 
-    const valorUnitario = parseFloat(precioVenta)
+    const valorUnitario = precioVenta
     const taxUnitario = valorUnitario * (porcentajeTax / 100)
     const precioUnitario = roundTwoDecimals(valorUnitario + taxUnitario)
     const totalBaseTax = productWithTwoDecimals(valorUnitario, cantidad)
@@ -272,7 +364,6 @@ export class CreateVenta {
       totalBaseTax,
       totalTax,
       totalItem,
-      totalGratuitas: 0,
       exonerada
     }
   }

@@ -369,7 +369,8 @@ export const tiposTaxTable = pgTable('tipos_tax', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
   codigo: text('codigo').notNull().unique(),
-  porcentajeTax: integer('porcentaje').notNull()
+  porcentajeTax: integer('porcentaje').notNull(),
+  codigoLocal: text('codigo_local').notNull()
 })
 
 export const detallesVentaTable = pgTable('detalles_venta', {
@@ -501,6 +502,7 @@ export const documentosTable = pgTable('documentos_table', {
   linkXml: text('link_xml'),
   linkPdf: text('link_pdf'),
   linkCdr: text('link_cdr'),
+  apiRawResponse: text('api_raw_response'),
   ventaId: integer('venta_id')
     .notNull()
     .references(() => ventasTable.id)

@@ -74,6 +74,7 @@ interface SeedConfig {
     nombre: string
     codigo: string
     porcentajeTax: number
+    codigoLocal: string
   }>
   sucursalesCount: number
   empleadosCount: number

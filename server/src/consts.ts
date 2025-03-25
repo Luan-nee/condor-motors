@@ -107,3 +107,8 @@ export const tiposDocFacturacionCodes = {
   factura: 'factura',
   boleta: 'boleta'
 }
+export const tiposTaxCodes = {
+  gravado: 'gravado',
+  exonerado: 'exonerado',
+  gratuito: 'gratuito'
+}
