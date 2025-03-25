@@ -37,8 +37,10 @@ export class DeclareVenta {
     cliente_tipo_documento: tiposDocumentoClienteTable.codigo,
     cliente_numero_documento: clientesTable.numeroDocumento,
     cliente_denominacion: clientesTable.denominacion,
-    // codigo_pais: clientesTable.codigoPais,
+    codigo_pais: clientesTable.codigoPais,
     cliente_direccion: clientesTable.direccion,
+    cliente_email: clientesTable.correo,
+    cliente_telefono: clientesTable.telefono,
     total_gravadas: totalesVentaTable.totalGravadas,
     total_exoneradas: totalesVentaTable.totalExoneradas,
     total_gratuitas: totalesVentaTable.totalGratuitas,
@@ -48,7 +50,8 @@ export class DeclareVenta {
       descripcion: metodosPagoTable.codigo,
       tipo: metodosPagoTable.tipo
     },
-    observaciones: ventasTable.observaciones
+    observaciones: ventasTable.observaciones,
+    declarada: ventasTable.declarada
   }
   private readonly detallesVentaSelectFields = {
     unidad: detallesVentaTable.tipoUnidad,
@@ -117,8 +120,14 @@ export class DeclareVenta {
     const [venta] = ventas
 
     if (venta.datos_del_emisor.codigo_establecimiento === null) {
-      throw CustomError.notFound(
+      throw CustomError.badRequest(
         `La sucursal que realizó la venta no posee un código de establecimiento, pero este es requerido para declarar una venta`
+      )
+    }
+
+    if (venta.declarada) {
+      throw CustomError.badRequest(
+        'Esta venta no puede ser declarada (Ya ha sido declarada con anterioridad)'
       )
     }
 
@@ -135,6 +144,8 @@ export class DeclareVenta {
       unidad: detalle.unidad,
       codigo: detalle.codigo,
       descripcion: detalle.descripcion,
+      codigo_producto_sunat: '',
+      codigo_producto_gsl: '',
       cantidad: detalle.cantidad,
       valor_unitario: parseFloat(detalle.valor_unitario),
       precio_unitario: parseFloat(detalle.precio_unitario),
@@ -153,6 +164,7 @@ export class DeclareVenta {
       hora_de_emision: venta.hora_de_emision,
       moneda: venta.moneda,
       porcentaje_de_venta: venta.porcentaje_de_venta,
+      fecha_de_vencimiento: '',
       enviar_automaticamente_al_cliente: declareVentaDto.enviarCliente,
       datos_del_emisor: {
         codigo_establecimiento: venta.datos_del_emisor.codigo_establecimiento
@@ -161,11 +173,16 @@ export class DeclareVenta {
         cliente_tipo_documento: venta.cliente_tipo_documento,
         cliente_numero_documento: venta.cliente_numero_documento,
         cliente_denominacion: venta.cliente_denominacion,
-        // codigo_pais: venta.codigo_pais,
-        cliente_direccion: venta.cliente_direccion ?? ''
+        codigo_pais: '',
+        ubigeo: '',
+        cliente_direccion: venta.cliente_direccion ?? '',
+        cliente_email: venta.cliente_email ?? '',
+        cliente_telefono: venta.cliente_telefono ?? ''
       },
       totales: {
+        total_exportacion: 0,
         total_gravadas: parseFloat(venta.total_gravadas),
+        total_inafectas: 0,
         total_exoneradas: parseFloat(venta.total_exoneradas),
         total_gratuitas: parseFloat(venta.total_gratuitas),
         total_tax: parseFloat(venta.total_tax),
@@ -179,10 +196,53 @@ export class DeclareVenta {
         descripcion: venta.termino_de_pago.descripcion,
         tipo: venta.termino_de_pago.tipo
       },
+      metodo_de_pago: '',
+      canal_de_venta: '',
+      orden_de_compra: '',
+      almacen: '',
       observaciones: venta.observaciones ?? ''
     }
 
     return document
+  }
+
+  private handleApiErrors(statusCode: number) {
+    if (statusCode === 400) {
+      throw CustomError.internalServer('This is somehow my fault')
+    }
+    if (statusCode === 401) {
+      throw CustomError.serviceUnavailable(
+        'El token de facturación especificado es inválido'
+      )
+    }
+    if (statusCode >= 500) {
+      throw CustomError.internalServer(
+        'I have no clue about this type of error'
+      )
+    }
+  }
+
+  private async declareVenta(documentoFacturacion: DocumentoFacturacion) {
+    const res = await fetch(this.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.tokenFacturacion}`
+      },
+      body: JSON.stringify(documentoFacturacion)
+    })
+
+    this.handleApiErrors(res.status)
+
+    try {
+      const data = await res.json()
+
+      return data
+    } catch (error) {
+      throw CustomError.internalServer(
+        'La respuesta obtenida de la api se encuentra en un formato inesperado'
+      )
+    }
   }
 
   async execute(
@@ -191,15 +251,19 @@ export class DeclareVenta {
     sucursalId: SucursalIdType
   ) {
     if (this.tokenFacturacion === undefined) {
-      throw CustomError.internalServer(
+      throw CustomError.serviceUnavailable(
         'No se ha especificado un token de facturación, por lo que no se pueden declarar ventas'
       )
     }
 
-    return await this.getFormattedData(
+    const documentoFacturacion = await this.getFormattedData(
       numericIdDto,
       declareVentaDto,
       sucursalId
     )
+
+    const result = await this.declareVenta(documentoFacturacion)
+
+    return result
   }
 }

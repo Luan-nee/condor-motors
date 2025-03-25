@@ -416,7 +416,7 @@ const seedDatabase = async () => {
     () => {
       const tipoDocumento = getRandomValueFromArray(tiposDocumentoCliente)
       const personaNatural = tipoDocumento.codigo === '1'
-      const dni = faker.number.int({ min: 11111111, max: 999999999 }).toString()
+      const dni = faker.number.int({ min: 11111111, max: 99999999 }).toString()
       const numeroDocumento = personaNatural
         ? dni
         : getRandomValueFromArray(['10', '20']) + dni + getRandomNumber(1, 9)

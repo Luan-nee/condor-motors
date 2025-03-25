@@ -1,7 +1,7 @@
 import { declareVentaValidator } from '@/domain/validators/entities/ventas/venta.validator'
 
 export class DeclareVentaDto {
-  public enviarCliente?: boolean
+  public enviarCliente: boolean
 
   constructor({ enviarCliente }: DeclareVentaDto) {
     this.enviarCliente = enviarCliente
