@@ -1,9 +1,11 @@
-import { endpointEmisionDocumentos } from '@/consts'
+import { permissionCodes } from '@/consts'
+import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import {
   clientesTable,
   detallesVentaTable,
+  documentosTable,
   metodosPagoTable,
   monedasFacturacionTable,
   sucursalesTable,
@@ -15,13 +17,15 @@ import {
 } from '@/db/schema'
 import type { DeclareVentaDto } from '@/domain/dtos/entities/ventas/declare-venta.dto'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
+import type { BillingService } from '@/types/interfaces'
 import type { SucursalIdType } from '@/types/schemas'
 import { and, eq } from 'drizzle-orm'
 
 export class DeclareVenta {
-  private readonly authPayload?: AuthPayload
-  private readonly tokenFacturacion?: string
-  private readonly endpoint = endpointEmisionDocumentos
+  private readonly authPayload: AuthPayload
+  private readonly billingService: BillingService
+  private readonly permissionAny = permissionCodes.ventas.declareAny
+  private readonly permissionRelated = permissionCodes.ventas.declareRelated
   private readonly ventaSelectFields = {
     tipo_documento: tiposDocumentoFacturacionTable.codigo,
     serie: ventasTable.serieDocumento,
@@ -66,9 +70,9 @@ export class DeclareVenta {
     total: detallesVentaTable.total
   }
 
-  constructor(authPayload: AuthPayload, tokenFacturacion?: string) {
+  constructor(authPayload: AuthPayload, billingService: BillingService) {
     this.authPayload = authPayload
-    this.tokenFacturacion = tokenFacturacion
+    this.billingService = billingService
   }
 
   async getFormattedData(
@@ -206,43 +210,76 @@ export class DeclareVenta {
     return document
   }
 
-  private handleApiErrors(statusCode: number) {
-    if (statusCode === 400) {
-      throw CustomError.internalServer('This is somehow my fault')
+  private async declareVenta(
+    documentoFacturacion: DocumentoFacturacion,
+    numericIdDto: NumericIdDto
+  ) {
+    const { data: documentDataResponse, error } =
+      await this.billingService.sendDocument({
+        document: documentoFacturacion
+      })
+
+    if (error !== null) {
+      throw CustomError.badRequest(error.message)
     }
-    if (statusCode === 401) {
-      throw CustomError.serviceUnavailable(
-        'El token de facturación especificado es inválido'
-      )
-    }
-    if (statusCode >= 500) {
-      throw CustomError.internalServer(
-        'I have no clue about this type of error'
-      )
-    }
+
+    return await db.transaction(async (tx) => {
+      const [documento] = await tx
+        .insert(documentosTable)
+        .values({
+          factproDocumentId: documentDataResponse.data.external_id,
+          hash: documentDataResponse.data.hash,
+          qr: documentDataResponse.data.qr,
+          linkXml: documentDataResponse.links.xml,
+          linkPdf: documentDataResponse.links.pdf,
+          linkCdr: documentDataResponse.links.cdr,
+          ventaId: numericIdDto.id
+        })
+        .returning({ id: documentosTable.id })
+
+      const updatedResults = await tx
+        .update(ventasTable)
+        .set({ declarada: true })
+        .where(eq(ventasTable.id, numericIdDto.id))
+        .returning({ id: ventasTable.id })
+
+      if (updatedResults.length < 1) {
+        throw CustomError.internalServer(
+          'Ha ocurrido un problema al intentar declarar la venta (Contacte a soporte técnico para resolver este problema)'
+        )
+      }
+
+      return documento
+    })
   }
 
-  private async declareVenta(documentoFacturacion: DocumentoFacturacion) {
-    const res = await fetch(this.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.tokenFacturacion}`
-      },
-      body: JSON.stringify(documentoFacturacion)
-    })
+  private async validatePermissions(sucursalId: SucursalIdType) {
+    const validPermissions = await AccessControl.verifyPermissions(
+      this.authPayload,
+      [this.permissionAny, this.permissionRelated]
+    )
 
-    this.handleApiErrors(res.status)
+    let hasPermissionAny = false
+    let hasPermissionRelated = false
+    let isSameSucursal = false
 
-    try {
-      const data = await res.json()
+    for (const permission of validPermissions) {
+      if (permission.codigoPermiso === this.permissionAny) {
+        hasPermissionAny = true
+      }
+      if (permission.codigoPermiso === this.permissionRelated) {
+        hasPermissionRelated = true
+      }
+      if (permission.sucursalId === sucursalId) {
+        isSameSucursal = true
+      }
 
-      return data
-    } catch (error) {
-      throw CustomError.internalServer(
-        'La respuesta obtenida de la api se encuentra en un formato inesperado'
-      )
+      if (hasPermissionAny || (hasPermissionRelated && isSameSucursal)) {
+        return
+      }
     }
+
+    throw CustomError.forbidden()
   }
 
   async execute(
@@ -250,19 +287,13 @@ export class DeclareVenta {
     declareVentaDto: DeclareVentaDto,
     sucursalId: SucursalIdType
   ) {
-    if (this.tokenFacturacion === undefined) {
-      throw CustomError.serviceUnavailable(
-        'No se ha especificado un token de facturación, por lo que no se pueden declarar ventas'
-      )
-    }
-
     const documentoFacturacion = await this.getFormattedData(
       numericIdDto,
       declareVentaDto,
       sucursalId
     )
 
-    const result = await this.declareVenta(documentoFacturacion)
+    const result = await this.declareVenta(documentoFacturacion, numericIdDto)
 
     return result
   }

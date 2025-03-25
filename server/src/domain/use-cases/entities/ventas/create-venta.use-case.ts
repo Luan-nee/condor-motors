@@ -18,6 +18,7 @@ import {
   monedasFacturacionTable,
   productosTable,
   sucursalesTable,
+  tiposDocumentoClienteTable,
   tiposDocumentoFacturacionTable,
   tiposTaxTable,
   totalesVentaTable,
@@ -41,13 +42,11 @@ interface DetalleVenta {
 
 export class CreateVenta {
   private readonly authPayload: AuthPayload
-  private readonly tokenFacturacion?: string
   private readonly permissionAny = permissionCodes.ventas.createAny
   private readonly permissionRelated = permissionCodes.ventas.createRelated
 
-  constructor(authPayload: AuthPayload, tokenFacturacion?: string) {
+  constructor(authPayload: AuthPayload) {
     this.authPayload = authPayload
-    this.tokenFacturacion = tokenFacturacion
   }
 
   private async createVenta(
@@ -56,6 +55,10 @@ export class CreateVenta {
     serieDocumento: string
   ) {
     const { moneda, metodoPago } = await this.getDefaultMonedaMetodoPago()
+
+    const { date, time } = this.getDateTime()
+
+    const numeroDocumento = await this.getDocumentNumber(serieDocumento, 8)
 
     const tipoTaxIds = createVentaDto.detalles.map(
       (detalle) => detalle.tipoTaxId
@@ -159,10 +162,6 @@ export class CreateVenta {
           .set({ stock: detalleProducto.stock - detalleVenta.cantidad })
           .where(eq(detallesProductoTable.id, detalleProducto.id))
       }
-
-      const { date, time } = this.getDateTime()
-
-      const numeroDocumento = await this.getDocumentNumber(serieDocumento, 8)
 
       const [venta] = await tx
         .insert(ventasTable)
@@ -298,6 +297,7 @@ export class CreateVenta {
         tipoDocumentoId: tiposDocumentoFacturacionTable.id,
         tipoDocumentoCodigo: tiposDocumentoFacturacionTable.codigoLocal,
         clienteId: clientesTable.id,
+        tipoDocumentoClienteCodigo: tiposDocumentoClienteTable.codigo,
         direccionCliente: clientesTable.direccion,
         empleadoId: empleadosTable.id,
         sucursalId: sucursalesTable.id,
@@ -310,6 +310,10 @@ export class CreateVenta {
         eq(tiposDocumentoFacturacionTable.id, createVentaDto.tipoDocumentoId)
       )
       .leftJoin(clientesTable, eq(clientesTable.id, createVentaDto.clienteId))
+      .leftJoin(
+        tiposDocumentoClienteTable,
+        eq(clientesTable.tipoDocumentoId, tiposDocumentoClienteTable.id)
+      )
       .leftJoin(
         empleadosTable,
         eq(empleadosTable.id, createVentaDto.empleadoId)
@@ -334,7 +338,26 @@ export class CreateVenta {
       throw CustomError.badRequest('El empleado que intentó asignar no existe')
     }
 
+    this.validateClientDocument({
+      tipoDocumentoClienteCodigo: result.tipoDocumentoClienteCodigo,
+      tipoDocumentoCodigo: result.tipoDocumentoCodigo
+    })
+
     return this.getSerieDocument(result)
+  }
+
+  private validateClientDocument(data: {
+    tipoDocumentoClienteCodigo: string | null
+    tipoDocumentoCodigo: string | null
+  }) {
+    if (
+      data.tipoDocumentoCodigo === tiposDocFacturacionCodes.factura &&
+      data.tipoDocumentoClienteCodigo === '1'
+    ) {
+      throw CustomError.badRequest(
+        'No es posible emitir facturas para clientes con DNI, esto solo esta permitido para clientes con RUC'
+      )
+    }
   }
 
   private getSerieDocument(data: {
@@ -406,7 +429,7 @@ export class CreateVenta {
 
     if (serieDocumento === undefined) {
       throw CustomError.badRequest(
-        'El tipo de documento especificado no se puede emitir en la sucursal especificada (No tiene una serie definida)'
+        'El tipo de documento de facturación especificado no se puede emitir en la sucursal especificada (No tiene una serie definida)'
       )
     }
 
