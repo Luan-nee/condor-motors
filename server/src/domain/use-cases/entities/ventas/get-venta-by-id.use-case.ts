@@ -5,6 +5,7 @@ import { db } from '@/db/connection'
 import {
   clientesTable,
   detallesVentaTable,
+  documentosTable,
   empleadosTable,
   metodosPagoTable,
   monedasFacturacionTable,
@@ -25,6 +26,7 @@ export class GetVentaById {
   private readonly permissionRelated = permissionCodes.ventas.getRelated
   private readonly ventaSelectFields = {
     id: ventasTable.id,
+    declarada: ventasTable.declarada,
     serieDocumento: ventasTable.serieDocumento,
     numeroDocumento: ventasTable.numeroDocumento,
     observaciones: ventasTable.observaciones,
@@ -55,6 +57,14 @@ export class GetVentaById {
       totalGratuitas: totalesVentaTable.totalGratuitas,
       totalTax: totalesVentaTable.totalTax,
       totalVenta: totalesVentaTable.totalVenta
+    },
+    documentoFacturacion: {
+      factproDocumentId: documentosTable.factproDocumentId,
+      hash: documentosTable.hash,
+      qr: documentosTable.qr,
+      linkXml: documentosTable.linkXml,
+      linkPdf: documentosTable.linkPdf,
+      linkCdr: documentosTable.linkCdr
     }
   }
   private readonly detallesVentaSelectFields = {
@@ -109,6 +119,7 @@ export class GetVentaById {
         tiposDocumentoClienteTable,
         eq(clientesTable.tipoDocumentoId, tiposDocumentoClienteTable.id)
       )
+      .leftJoin(documentosTable, eq(ventasTable.id, documentosTable.ventaId))
       .where(
         and(
           eq(ventasTable.id, numericIdDto.id),

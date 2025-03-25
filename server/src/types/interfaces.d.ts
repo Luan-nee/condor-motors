@@ -6,6 +6,7 @@ import type {
   randomSecretType,
   refreshAccessTokenType,
   refreshTokenCookieType,
+  sendDocumentType,
   verifyType
 } from '@/types/config'
 
@@ -26,4 +27,8 @@ export interface AuthSerializer {
   refreshTokenCookie: refreshTokenCookieType
   bearerAccessToken: bearerAccessTokenType
   refreshAccessToken: refreshAccessTokenType
+}
+
+export interface BillingService {
+  sendDocument: sendDocumentType
 }

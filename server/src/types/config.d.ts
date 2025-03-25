@@ -46,3 +46,19 @@ export type refreshAccessTokenType = (args: {
   refresTokenCookie: string
   bearerAccessToken: string
 }
+
+interface Success<T> {
+  data: T
+  error: null
+}
+
+interface Failure<E> {
+  data: null
+  error: E
+}
+
+type Result<T, E> = Success<T> | Failure<E>
+
+export type sendDocumentType = (args: {
+  document: DocumentoFacturacion
+}) => Promise<Result<ApiSuccessResponse, ApiErrorResponse>>

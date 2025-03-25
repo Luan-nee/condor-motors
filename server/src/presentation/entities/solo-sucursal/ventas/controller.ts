@@ -6,10 +6,11 @@ import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { CreateVenta } from '@/domain/use-cases/entities/ventas/create-venta.use-case'
 import { DeclareVenta } from '@/domain/use-cases/entities/ventas/declare-venta.use-case'
 import { GetVentaById } from '@/domain/use-cases/entities/ventas/get-venta-by-id.use-case'
+import type { BillingService } from '@/types/interfaces'
 import type { Request, Response } from 'express'
 
 export class VentasController {
-  constructor(private readonly tokenFacturacion?: string) {}
+  constructor(private readonly billingService: BillingService) {}
 
   create = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
@@ -67,7 +68,7 @@ export class VentasController {
 
     const { authPayload, sucursalId } = req
 
-    const declareVenta = new DeclareVenta(authPayload, this.tokenFacturacion)
+    const declareVenta = new DeclareVenta(authPayload, this.billingService)
 
     declareVenta
       .execute(numericIdDto, declareVentaDto, sucursalId)

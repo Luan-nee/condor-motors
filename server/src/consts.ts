@@ -67,10 +67,12 @@ export const permissionCodes = {
   },
   ventas: {
     createAny: 'ventas:create_any',
+    declareAny: 'ventas:declare_any',
     getAny: 'ventas:get_any',
     updateAny: 'ventas:update_any',
     deleteAny: 'ventas:delete_any',
     createRelated: 'ventas:create_related',
+    declareRelated: 'ventas:declare_related',
     getRelated: 'ventas:get_related',
     updateRelated: 'ventas:update_related',
     deleteRelated: 'ventas:delete_related'
@@ -105,6 +107,3 @@ export const tiposDocFacturacionCodes = {
   factura: 'factura',
   boleta: 'boleta'
 }
-
-export const endpointEmisionDocumentos =
-  'https://dev.factpro.la/api/v2/documentos'
