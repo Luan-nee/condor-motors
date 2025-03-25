@@ -12,3 +12,6 @@ const createReservasProductosSchema = z.object({
 
 export const CreateReservasProductoValidator = (object: unknown) =>
   createReservasProductosSchema.safeParse(object)
+
+export const updateReservasProductosValidator = (object: unknown) =>
+  createReservasProductosSchema.partial().safeParse(object)

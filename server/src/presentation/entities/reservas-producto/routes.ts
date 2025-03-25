@@ -13,6 +13,8 @@ export class ReservasProductoRoutes {
 
     router.get('/', ReservasProducto.getAll)
 
+    router.patch('/:id', ReservasProducto.update)
+
     return router
   }
 }
