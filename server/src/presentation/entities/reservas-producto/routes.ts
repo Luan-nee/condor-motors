@@ -11,6 +11,8 @@ export class ReservasProductoRoutes {
 
     router.get('/:id', ReservasProducto.getById)
 
+    router.get('/', ReservasProducto.getAll)
+
     return router
   }
 }
