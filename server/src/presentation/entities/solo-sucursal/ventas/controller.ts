@@ -30,7 +30,7 @@ export class VentasController {
 
     const { authPayload, sucursalId } = req
 
-    const createVenta = new CreateVenta(authPayload, this.tokenFacturacion)
+    const createVenta = new CreateVenta(authPayload)
 
     createVenta
       .execute(createVentaDto, sucursalId)
