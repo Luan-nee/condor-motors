@@ -49,23 +49,37 @@ class _ProductosTableState extends State<ProductosTable>
     // Verificar si realmente los productos han cambiado (por contenido, no solo por referencia)
     bool productosHanCambiado = oldWidget.productos.length != widget.productos.length;
     
-    if (!productosHanCambiado && oldWidget.productos.isNotEmpty) {
-      // Verificar algunos productos para detectar cambios
-      final oldProducto = oldWidget.productos.first;
-      final newProducto = widget.productos.firstWhere(
-        (p) => p.id == oldProducto.id, 
-        orElse: () => oldProducto
-      );
+    if (!productosHanCambiado && widget.productos.isNotEmpty) {
+      // Verificar más profundamente comparando varios productos
+      // Tomar una muestra de productos para comparar (hasta 5)
+      final sampleSize = widget.productos.length > 5 ? 5 : widget.productos.length;
       
-      // Si algún campo importante cambió, consideramos que los productos cambiaron
-      productosHanCambiado = 
-          oldProducto.nombre != newProducto.nombre ||
-          oldProducto.stock != newProducto.stock ||
-          oldProducto.precioVenta != newProducto.precioVenta;
+      for (int i = 0; i < sampleSize; i++) {
+        final oldProducto = oldWidget.productos[i];
+        final newProducto = widget.productos.firstWhere(
+          (p) => p.id == oldProducto.id, 
+          orElse: () => oldProducto
+        );
+        
+        // Si algún campo importante cambió, consideramos que los productos cambiaron
+        if (oldProducto.nombre != newProducto.nombre ||
+            oldProducto.stock != newProducto.stock ||
+            oldProducto.precioVenta != newProducto.precioVenta ||
+            oldProducto.precioCompra != newProducto.precioCompra ||
+            oldProducto.precioOferta != newProducto.precioOferta ||
+            oldProducto.marca != newProducto.marca ||
+            oldProducto.categoria != newProducto.categoria) {
+          productosHanCambiado = true;
+          break;
+        }
+      }
     }
     
-    if (productosHanCambiado || oldWidget.key != widget.key) {
-      debugPrint('ProductosTable: Productos actualizados, reagrupando (${widget.productos.length} items)');
+    // Si la key cambió significa que hubo una operación que requiere reconstrucción
+    final keyDiferente = oldWidget.key != widget.key;
+    
+    if (productosHanCambiado || keyDiferente) {
+      debugPrint('ProductosTable: Actualización detectada. Productos cambiados: $productosHanCambiado, Key diferente: $keyDiferente');
       _agruparProductos();
       
       // Forzar reconstrucción del widget

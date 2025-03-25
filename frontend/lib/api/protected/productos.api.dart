@@ -24,6 +24,7 @@ class ProductosApi {
   /// [filterValue] Valor para el filtro (opcional)
   /// [filterType] Tipo de filtro a aplicar (opcional)
   /// [useCache] Indica si se debe usar el caché (default: true)
+  /// [forceRefresh] Si es true, invalida la caché antes de obtener los datos
   Future<PaginatedResponse<Producto>> getProductos({
     required String sucursalId,
     String? search,
@@ -35,8 +36,15 @@ class ProductosApi {
     String? filterValue,
     String? filterType,
     bool useCache = true,
+    bool forceRefresh = false,
   }) async {
     try {
+      // Si se requiere forzar la recarga, invalidar la caché primero
+      if (forceRefresh) {
+        debugPrint('Forzando recarga de productos para sucursal $sucursalId');
+        invalidateCache(sucursalId);
+      }
+      
       // Generar clave única para este conjunto de parámetros
       final cacheKey = _generateCacheKey(
         'productos_$sucursalId',
@@ -51,7 +59,7 @@ class ProductosApi {
       );
       
       // Intentar obtener desde caché si useCache es true
-      if (useCache) {
+      if (useCache && !forceRefresh) {
         final cachedData = _cache.get<PaginatedResponse<Producto>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Datos obtenidos desde caché: $cacheKey');
@@ -200,8 +208,9 @@ class ProductosApi {
         body: productoData,
       );
       
-      // Invalidar caché relacionada con esta sucursal
-      _invalidateRelatedCache(sucursalId);
+      // Invalidar caché relacionada de manera más agresiva
+      invalidateCache(sucursalId);
+      debugPrint('✅ Caché de productos completamente invalidada después de crear producto');
       
       return Producto.fromJson(response['data']);
     } catch (e) {
@@ -279,8 +288,8 @@ class ProductosApi {
       
       debugPrint('ProductosApi: Respuesta recibida para la actualización del producto');
       
-      // Invalidar caché relacionada
-      _invalidateRelatedCache(sucursalId, productoId);
+      // Invalidar caché relacionada de manera más agresiva
+      invalidateCache(sucursalId);
       
       // Verificar estructura de respuesta
       if (response['data'] == null) {
@@ -435,6 +444,7 @@ class ProductosApi {
     // Invalidar listas que podrían contener este producto
     _cache.invalidateByPattern('productos_$sucursalId');
     debugPrint('✅ Caché de productos invalidada para sucursal $sucursalId');
+    debugPrint('📊 Estado de caché después de invalidación: ${_cache.size} entradas');
   }
   
   // Método público para forzar refresco de caché
@@ -454,13 +464,12 @@ class ProductosApi {
       }
       
       debugPrint('✅ Caché de productos completamente invalidada para sucursal $sucursalId');
+      debugPrint('📊 Estado de caché después de invalidación: ${_cache.size} entradas');
     } else {
       _cache.clear();
       debugPrint('✅ Caché de productos completamente invalidada para todas las sucursales');
+      debugPrint('📊 Estado de caché después de invalidación: ${_cache.size} entradas');
     }
-    
-    // Imprimir estado de caché después de invalidación
-    debugPrint('📊 Estado de caché después de invalidación: ${_cache.size} entradas');
   }
   
   // Método para verificar si los datos en caché están obsoletos

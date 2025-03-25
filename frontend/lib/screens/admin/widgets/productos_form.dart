@@ -54,6 +54,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   List<String> _categorias = [];
   List<String> _marcas = [];
   List<ColorApp> _colores = [];
+  // Mapas para almacenar los IDs correspondientes a los nombres
+  Map<String, dynamic> _categoriasMap = {};
+  Map<String, dynamic> _marcasMap = {};
 
   @override
   void initState() {
@@ -106,19 +109,32 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     setState(() => _isLoadingCategorias = true);
 
     try {
-      final categorias = await ProductosUtils.obtenerCategorias();
-
+      // Obtenemos las categorías como objetos tipados
+      final categoriasList = await api.categorias.getCategoriasObjetos(useCache: false);
+      
       if (mounted) {
-    setState(() {
-          _categorias = categorias;
+        setState(() {
+          // Extraer nombres para la lista desplegable
+          _categorias = categoriasList
+              .map<String>((cat) => cat.nombre)
+              .where((nombre) => nombre.isNotEmpty)
+              .toList();
+          _categorias.sort(); // Mantener orden alfabético
+          
+          // Crear un mapa para fácil acceso a los IDs por nombre
+          _categoriasMap = {
+            for (var cat in categoriasList)
+              cat.nombre: {'id': cat.id, 'nombre': cat.nombre}
+          };
+          
           _isLoadingCategorias = false;
 
           // Establecer la categoría seleccionada
           if (widget.producto != null &&
-              categorias.contains(widget.producto!.categoria)) {
+              _categorias.contains(widget.producto!.categoria)) {
             _categoriaSeleccionada = widget.producto!.categoria;
-          } else if (categorias.isNotEmpty) {
-            _categoriaSeleccionada = categorias.first;
+          } else if (_categorias.isNotEmpty) {
+            _categoriaSeleccionada = _categorias.first;
           }
         });
       }
@@ -136,16 +152,29 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     setState(() => _isLoadingMarcas = true);
 
     try {
-      final marcas = await ProductosUtils.obtenerMarcas();
+      // Obtenemos las marcas como objetos tipados
+      final marcasList = await api.marcas.getMarcasObjetos(useCache: false);
 
       if (mounted) {
-    setState(() {
-          _marcas = marcas;
+        setState(() {
+          // Extraer nombres para la lista desplegable
+          _marcas = marcasList
+              .map<String>((marca) => marca.nombre)
+              .where((nombre) => nombre.isNotEmpty)
+              .toList();
+          _marcas.sort(); // Mantener orden alfabético
+          
+          // Crear un mapa para fácil acceso a los IDs por nombre
+          _marcasMap = {
+            for (var marca in marcasList)
+              marca.nombre: {'id': marca.id, 'nombre': marca.nombre}
+          };
+          
           _isLoadingMarcas = false;
 
           // Si la marca actual no está en la lista y hay una marca seleccionada
           if (widget.producto != null &&
-              !marcas.contains(widget.producto!.marca) &&
+              !_marcas.contains(widget.producto!.marca) &&
               _marcaController.text.isNotEmpty) {
             // Añadir la marca actual a la lista para evitar problemas
             _marcas.add(widget.producto!.marca);
@@ -1331,11 +1360,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       // Verificar si estamos en modo edición
       final bool esNuevoProducto = widget.producto == null;
 
+      // Construir el cuerpo de la solicitud
       final productoData = <String, dynamic>{
         if (widget.producto != null) 'id': widget.producto!.id,
         'nombre': _nombreController.text,
-        // El SKU sólo se envía si estamos creando un nuevo producto
-        // (aunque ahora se maneja automáticamente en el backend)
         'descripcion': _descripcionController.text,
         'marca': _marcaController.text,
         'categoria': _categoriaSeleccionada,
@@ -1343,24 +1371,85 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         'precioCompra': double.parse(_precioCompraController.text),
         // Solo incluir stock para productos nuevos
         if (esNuevoProducto) 'stock': int.parse(_stockController.text),
-        'color': _colorSeleccionado?.nombre ?? _colorController.text,
-        if (_precioOfertaController.text.isNotEmpty)
-          'precioOferta': double.parse(_precioOfertaController.text),
-        if (_stockMinimoController.text.isNotEmpty)
-          'stockMinimo': int.parse(_stockMinimoController.text),
-        if (_cantidadMinimaDescuentoController.text.isNotEmpty)
-          'cantidadMinimaDescuento':
-              int.parse(_cantidadMinimaDescuentoController.text),
-        if (_porcentajeDescuentoController.text.isNotEmpty)
-          'porcentajeDescuento': int.parse(_porcentajeDescuentoController.text),
       };
+      
+      // Buscar y añadir el ID de categoría si está disponible
+      if (_categoriasMap.containsKey(_categoriaSeleccionada)) {
+        final categoriaInfo = _categoriasMap[_categoriaSeleccionada];
+        if (categoriaInfo != null && categoriaInfo['id'] != null) {
+          // Verificar que el ID sea un número válido
+          final idValue = categoriaInfo['id'];
+          if (idValue is int || (idValue is String && int.tryParse(idValue) != null)) {
+            // Convertir explícitamente a entero para evitar el error NaN
+            productoData['categoriaId'] = idValue is int ? idValue : int.parse(idValue);
+            debugPrint('ProductosForm: Categoría ${_categoriaSeleccionada} con ID válido: ${productoData['categoriaId']}');
+          } else {
+            debugPrint('ProductosForm: Advertencia - ID de categoría no válido: $idValue');
+          }
+        }
+      }
+      
+      // Buscar y añadir el ID de marca si está disponible
+      final marcaText = _marcaController.text;
+      if (_marcasMap.containsKey(marcaText)) {
+        final marcaInfo = _marcasMap[marcaText];
+        if (marcaInfo != null && marcaInfo['id'] != null) {
+          // Verificar que el ID sea un número válido
+          final idValue = marcaInfo['id'];
+          if (idValue is int || (idValue is String && int.tryParse(idValue) != null)) {
+            // Convertir explícitamente a entero para evitar el error NaN
+            productoData['marcaId'] = idValue is int ? idValue : int.parse(idValue);
+            debugPrint('ProductosForm: Marca $marcaText con ID válido: ${productoData['marcaId']}');
+          } else {
+            debugPrint('ProductosForm: Advertencia - ID de marca no válido: $idValue');
+          }
+        }
+      }
+      
+      // Manejar el color correctamente
+      if (_colorSeleccionado != null) {
+        // ColorApp.id ya es int según la definición del modelo
+        productoData['colorId'] = _colorSeleccionado!.id;
+        debugPrint('ProductosForm: Color ${_colorSeleccionado!.nombre} con ID: ${_colorSeleccionado!.id}');
+        
+        // Incluir también el nombre para claridad
+        productoData['color'] = _colorSeleccionado!.nombre;
+      } else if (_colorController.text.isNotEmpty) {
+        // Si solo tenemos texto pero no ID, enviar solo el nombre
+        productoData['color'] = _colorController.text;
+        // No enviar colorId si no tenemos un ID válido
+      }
+            
+      // Campos opcionales
+      if (_precioOfertaController.text.isNotEmpty) {
+        productoData['precioOferta'] = double.parse(_precioOfertaController.text);
+      }
+      
+      if (_stockMinimoController.text.isNotEmpty) {
+        productoData['stockMinimo'] = int.parse(_stockMinimoController.text);
+      }
+      
+      if (_cantidadMinimaDescuentoController.text.isNotEmpty) {
+        productoData['cantidadMinimaDescuento'] = int.parse(_cantidadMinimaDescuentoController.text);
+      }
+      
+      if (_porcentajeDescuentoController.text.isNotEmpty) {
+        productoData['porcentajeDescuento'] = int.parse(_porcentajeDescuentoController.text);
+      }
 
       // Añadir mensajes de depuración para rastrear los datos
       debugPrint('ProductosForm: Datos preparados para guardar:');
       debugPrint('ProductosForm: Sucursal seleccionada: ${_sucursalSeleccionada?.id}');
       debugPrint('ProductosForm: Producto ID: ${widget.producto?.id}');
       debugPrint('ProductosForm: Es nuevo producto: $esNuevoProducto');
-      debugPrint('ProductosForm: Datos: $productoData');
+      
+      // Mostrar datos completos para depuración
+      debugPrint('ProductosForm: === DATOS COMPLETOS DEL PRODUCTO ===');
+      productoData.forEach((key, value) {
+        final tipo = value?.runtimeType.toString() ?? 'null';
+        debugPrint('ProductosForm:   - $key: $value (Tipo: $tipo)');
+      });
+      debugPrint('ProductosForm: === FIN DATOS PRODUCTO ===');
       
       // Llamar al callback onSave proporcionado por el componente padre
       widget.onSave(productoData);

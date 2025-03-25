@@ -148,6 +148,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         order: _order,
         // Forzar bypass de caché después de operaciones de escritura
         useCache: false,
+        forceRefresh: true, // Forzar refresco ignorando completamente la caché
       );
       
       if (!mounted) return;
@@ -226,11 +227,15 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       debugPrint('ProductosAdmin: Es nuevo producto: $esNuevo');
       debugPrint('ProductosAdmin: Datos del producto: $productoData');
       
+      // Mostrar indicador de carga
+      setState(() => _isLoadingProductos = true);
+      
       if (esNuevo) {
         await api.productos.createProducto(
           sucursalId: sucursalId,
           productoData: productoData,
         );
+        debugPrint('ProductosAdmin: Producto creado correctamente');
       } else {
         // Manejar correctamente el tipo de ID
         final dynamic rawId = productoData['id'];
@@ -255,6 +260,8 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
           productoData: productoData,
         );
         
+        debugPrint('ProductosAdmin: Producto actualizado correctamente');
+        
         // Forzar limpieza de caché para este producto específico
         api.productos.invalidateCache(sucursalId);
       }
@@ -267,9 +274,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       // Forzar actualización de la vista después de guardar el producto
       setState(() {
         // Esta llamada a setState fuerza la reconstrucción del widget
-        // después de actualizar los datos y asegura que se refleje 
-        // visualmente el cambio
+        // y asegura que se refleje visualmente el cambio
         _productosKey.value = 'productos_${_sucursalSeleccionada!.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
+        _isLoadingProductos = false;
       });
       
       if (!mounted) return;
@@ -282,6 +289,10 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     } catch (e) {
       debugPrint('ProductosAdmin: ERROR al guardar producto: $e');
       if (!mounted) return;
+      
+      // Ocultar indicador de carga
+      setState(() => _isLoadingProductos = false);
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al guardar producto: $e'),

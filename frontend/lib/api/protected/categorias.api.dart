@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+
+import '../../models/categoria.model.dart';
 import '../main.api.dart';
 import 'cache/fast_cache.dart';
 
@@ -75,6 +77,20 @@ class CategoriasApi {
     }
   }
   
+  /// Obtiene todas las categorías como objetos [Categoria]
+  /// 
+  /// Ordenadas alfabéticamente por nombre
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<List<Categoria>> getCategoriasObjetos({bool useCache = true}) async {
+    try {
+      final categoriasRaw = await getCategorias(useCache: useCache);
+      return categoriasRaw.map((data) => Categoria.fromJson(data)).toList();
+    } catch (e) {
+      debugPrint('CategoriasApi: ERROR al obtener categorías como objetos: $e');
+      rethrow;
+    }
+  }
+  
   /// Crea una nueva categoría
   /// 
   /// [nombre] Nombre de la categoría
@@ -115,6 +131,20 @@ class CategoriasApi {
           debugPrint('CategoriasApi: Datos adicionales del error: ${e.data}');
         }
       }
+      rethrow;
+    }
+  }
+  
+  /// Crea una nueva categoría usando un objeto [Categoria]
+  Future<Categoria> createCategoriaObjeto(Categoria categoria) async {
+    try {
+      final data = await createCategoria(
+        nombre: categoria.nombre,
+        descripcion: categoria.descripcion,
+      );
+      return Categoria.fromJson(data);
+    } catch (e) {
+      debugPrint('CategoriasApi: ERROR al crear categoría como objeto: $e');
       rethrow;
     }
   }
@@ -170,6 +200,21 @@ class CategoriasApi {
           debugPrint('CategoriasApi: Datos adicionales del error: ${e.data}');
         }
       }
+      rethrow;
+    }
+  }
+  
+  /// Actualiza una categoría existente usando un objeto [Categoria]
+  Future<Categoria> updateCategoriaObjeto(Categoria categoria) async {
+    try {
+      final data = await updateCategoria(
+        id: categoria.id.toString(),
+        nombre: categoria.nombre,
+        descripcion: categoria.descripcion,
+      );
+      return Categoria.fromJson(data);
+    } catch (e) {
+      debugPrint('CategoriasApi: ERROR al actualizar categoría como objeto: $e');
       rethrow;
     }
   }
@@ -250,6 +295,17 @@ class CategoriasApi {
           debugPrint('CategoriasApi: Datos adicionales del error: ${e.data}');
         }
       }
+      rethrow;
+    }
+  }
+  
+  /// Obtiene una categoría específica por su ID como objeto [Categoria]
+  Future<Categoria> getCategoriaObjeto(String id, {bool useCache = true}) async {
+    try {
+      final categoriaData = await getCategoria(id, useCache: useCache);
+      return Categoria.fromJson(categoriaData);
+    } catch (e) {
+      debugPrint('CategoriasApi: ERROR al obtener categoría como objeto: $e');
       rethrow;
     }
   }

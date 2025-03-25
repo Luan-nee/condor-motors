@@ -380,18 +380,19 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
     
     try {
       // Convertir los productos de la venta al formato esperado por la API
-      final List<Map<String, dynamic>> detalles = _productosVenta.map((producto) {
-        return {
-          'productoId': int.parse(producto['id'].toString()),
-          'nombre': producto['nombre'],
-          'cantidad': producto['cantidad'],
-          'subtotal': producto['precio'] * producto['cantidad'],
-        };
+      final List<DetalleProforma> detalles = _productosVenta.map((producto) {
+        return DetalleProforma(
+          productoId: int.parse(producto['id'].toString()),
+          nombre: producto['nombre'],
+          cantidad: producto['cantidad'],
+          subtotal: producto['precio'] * producto['cantidad'],
+          precioUnitario: producto['precio'],
+        );
       }).toList();
       
       // Llamar a la API para crear la proforma
       final respuesta = await _proformasApi.createProformaVenta(
-        sucursalId: int.parse(_sucursalId),
+        sucursalId: _sucursalId,
         nombre: 'Proforma ${_clienteSeleccionado!['nombre']}',
         total: _totalVenta,
         detalles: detalles,
@@ -400,7 +401,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       
       if (!mounted) return;
       
-      // Convertir la respuesta a un objeto ProformaVenta estructurado
+      // Convertir la respuesta a un objeto estructurado
       final proformaCreada = _proformasApi.parseProformaVenta(respuesta);
       
       // Mostrar diálogo de confirmación

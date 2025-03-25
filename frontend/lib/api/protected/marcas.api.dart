@@ -1,58 +1,8 @@
 import 'package:flutter/foundation.dart';
 
+import '../../models/marca.model.dart';
 import '../main.api.dart';
 import 'cache/fast_cache.dart';
-
-/// Modelo para las marcas
-class Marca {
-  final String id;
-  final String nombre;
-  final String? descripcion;
-  final String? logo;
-  final bool activo;
-  final DateTime? fechaCreacion;
-  final DateTime? fechaActualizacion;
-
-  Marca({
-    required this.id,
-    required this.nombre,
-    this.descripcion,
-    this.logo,
-    this.activo = true,
-    this.fechaCreacion,
-    this.fechaActualizacion,
-  });
-
-  factory Marca.fromJson(Map<String, dynamic> json) {
-    return Marca(
-      id: json['id']?.toString() ?? '',
-      nombre: json['nombre'] ?? '',
-      descripcion: json['descripcion'],
-      logo: json['logo'],
-      activo: json['activo'] ?? true,
-      fechaCreacion: json['fechaCreacion'] != null 
-          ? DateTime.parse(json['fechaCreacion']) 
-          : null,
-      fechaActualizacion: json['fechaActualizacion'] != null 
-          ? DateTime.parse(json['fechaActualizacion']) 
-          : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'nombre': nombre,
-      'descripcion': descripcion,
-      'logo': logo,
-      'activo': activo,
-    };
-  }
-  
-  @override
-  String toString() {
-    return 'Marca{id: $id, nombre: $nombre, activo: $activo}';
-  }
-}
 
 class MarcasApi {
   final ApiClient _api;
@@ -109,6 +59,18 @@ class MarcasApi {
       return items;
     } catch (e) {
       debugPrint('MarcasApi: ERROR al obtener marcas: $e');
+      rethrow;
+    }
+  }
+  
+  /// Obtiene todas las marcas como objetos [Marca]
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<List<Marca>> getMarcasObjetos({bool useCache = true}) async {
+    try {
+      final marcasRaw = await getMarcas(useCache: useCache);
+      return marcasRaw.map((data) => Marca.fromJson(data)).toList();
+    } catch (e) {
+      debugPrint('MarcasApi: ERROR al obtener marcas como objetos: $e');
       rethrow;
     }
   }
@@ -173,6 +135,17 @@ class MarcasApi {
       rethrow;
     }
   }
+
+  /// Obtiene una marca por su ID como objeto [Marca]
+  Future<Marca> getMarcaObjeto(String marcaId, {bool useCache = true}) async {
+    try {
+      final marcaData = await getMarca(marcaId, useCache: useCache);
+      return Marca.fromJson(marcaData);
+    } catch (e) {
+      debugPrint('MarcasApi: ERROR al obtener marca como objeto: $e');
+      rethrow;
+    }
+  }
   
   /// Crea una nueva marca
   Future<Map<String, dynamic>> createMarca(Map<String, dynamic> marcaData) async {
@@ -215,6 +188,17 @@ class MarcasApi {
       return data;
     } catch (e) {
       debugPrint('MarcasApi: ERROR al crear marca: $e');
+      rethrow;
+    }
+  }
+
+  /// Crea una nueva marca usando un objeto [Marca]
+  Future<Marca> createMarcaObjeto(Marca marca) async {
+    try {
+      final data = await createMarca(marca.toJson());
+      return Marca.fromJson(data);
+    } catch (e) {
+      debugPrint('MarcasApi: ERROR al crear marca como objeto: $e');
       rethrow;
     }
   }
@@ -263,6 +247,17 @@ class MarcasApi {
       return data;
     } catch (e) {
       debugPrint('MarcasApi: ERROR al actualizar marca #$marcaId: $e');
+      rethrow;
+    }
+  }
+
+  /// Actualiza una marca existente usando un objeto [Marca]
+  Future<Marca> updateMarcaObjeto(Marca marca) async {
+    try {
+      final data = await updateMarca(marca.id.toString(), marca.toJson());
+      return Marca.fromJson(data);
+    } catch (e) {
+      debugPrint('MarcasApi: ERROR al actualizar marca como objeto: $e');
       rethrow;
     }
   }
@@ -338,6 +333,17 @@ class MarcasApi {
       return items;
     } catch (e) {
       debugPrint('MarcasApi: ERROR al obtener marcas activas: $e');
+      rethrow;
+    }
+  }
+
+  /// Obtiene solo las marcas activas como objetos [Marca]
+  Future<List<Marca>> getMarcasActivasObjetos({bool useCache = true}) async {
+    try {
+      final marcasRaw = await getMarcasActivas(useCache: useCache);
+      return marcasRaw.map((data) => Marca.fromJson(data)).toList();
+    } catch (e) {
+      debugPrint('MarcasApi: ERROR al obtener marcas activas como objetos: $e');
       rethrow;
     }
   }

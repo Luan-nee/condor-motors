@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../api/main.api.dart' show ApiException;
-import '../../api/protected/marcas.api.dart';
+import '../../models/marca.model.dart';
 import '../../main.dart' show api;
 
 class MarcasAdminScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
   bool _isLoading = false;
   String _errorMessage = '';
   List<Marca> _marcas = [];
-  Map<String, int> _productosPorMarca = {};
+  Map<int, int> _productosPorMarca = {};
 
   @override
   void initState() {
@@ -44,9 +44,9 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
       
       // TODO: Obtener cantidad de productos por marca desde el API cuando esté disponible
       // Por ahora usar datos de ejemplo
-      final tempProductosPorMarca = <String, int>{};
+      final tempProductosPorMarca = <int, int>{};
       for (var marca in marcas) {
-        tempProductosPorMarca[marca.id] = (marca.id.hashCode % 100) + 5; // Valor aleatorio de ejemplo
+        tempProductosPorMarca[marca.id] = (marca.id % 100) + 5; // Valor aleatorio de ejemplo
       }
       
       if (!mounted) return;
@@ -88,7 +88,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
       
       if (marca != null) {
         // Actualizar marca existente
-        await api.marcas.updateMarca(marca.id, marcaData);
+        await api.marcas.updateMarca(marca.id.toString(), marcaData);
       } else {
         // Crear nueva marca
         await api.marcas.createMarca(marcaData);
@@ -122,7 +122,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
     try {
       setState(() => _isLoading = true);
       
-      await api.marcas.deleteMarca(marca.id);
+      await api.marcas.deleteMarca(marca.id.toString());
       
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

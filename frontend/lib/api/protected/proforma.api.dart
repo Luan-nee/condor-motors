@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
 
-import '../../models/proforma.model.dart';
 import '../../models/producto.model.dart';
+import '../../models/proforma.model.dart';
 import '../main.api.dart';
+import 'cache/fast_cache.dart';
 
 /// Modelo para los detalles de una proforma de venta
 class DetalleProforma {
@@ -57,9 +58,32 @@ class DetalleProforma {
 /// API para manejar proformas de venta
 class ProformaVentaApi {
   final ApiClient _api;
+  final FastCache _cache = FastCache(maxSize: 50);
+  
+  // Prefijos para las claves de caché
+  static const String _prefixListaProformas = 'proformas_lista_';
+  static const String _prefixProforma = 'proforma_detalle_';
 
   /// Constructor que recibe una instancia de ApiClient
   ProformaVentaApi(this._api);
+
+  /// Invalida el caché para una sucursal específica o para todas las sucursales
+  /// 
+  /// [sucursalId] - ID de la sucursal (opcional, si no se especifica invalida para todas las sucursales)
+  void invalidateCache([String? sucursalId]) {
+    if (sucursalId != null) {
+      // Invalidar sólo las proformas de esta sucursal
+      _cache.invalidateByPattern('$_prefixListaProformas$sucursalId');
+      _cache.invalidateByPattern('$_prefixProforma$sucursalId');
+      debugPrint('🔄 Caché de proformas invalidado para sucursal $sucursalId');
+    } else {
+      // Invalidar todas las proformas en caché
+      _cache.invalidateByPattern(_prefixListaProformas);
+      _cache.invalidateByPattern(_prefixProforma);
+      debugPrint('🔄 Caché de proformas invalidado completamente');
+    }
+    debugPrint('📊 Entradas en caché después de invalidación: ${_cache.size}');
+  }
 
   /// Obtener lista de proformas de venta para una sucursal específica
   /// 
@@ -67,6 +91,8 @@ class ProformaVentaApi {
   /// [page] - Número de página (paginación)
   /// [pageSize] - Tamaño de página (paginación)
   /// [search] - Término de búsqueda opcional
+  /// [useCache] - Si se debe usar el caché (por defecto true)
+  /// [forceRefresh] - Si se debe forzar una actualización desde el servidor (por defecto false)
   /// 
   /// Retorna un mapa con la siguiente estructura:
   /// ```
@@ -106,19 +132,40 @@ class ProformaVentaApi {
     int page = 1,
     int pageSize = 10,
     String? search,
+    bool useCache = true,
+    bool forceRefresh = false,
   }) async {
     try {
+      final cacheKey = '$_prefixListaProformas${sucursalId}_p${page}_s${pageSize}_q${search ?? ""}';
+      
+      // Intentar obtener del caché si corresponde
+      if (useCache && !forceRefresh) {
+        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        if (cachedData != null && !_cache.isStale(cacheKey)) {
+          debugPrint('🔍 Usando proformas en caché para sucursal $sucursalId');
+          return cachedData;
+        }
+      }
+      
       final queryParams = <String, String>{
         'page': page.toString(),
         'page_size': pageSize.toString(),
         if (search != null && search.isNotEmpty) 'search': search,
       };
       
-      return await _api.authenticatedRequest(
+      final response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa',
         method: 'GET',
         queryParams: queryParams,
       );
+      
+      // Guardar en caché
+      if (useCache) {
+        _cache.set(cacheKey, response);
+        debugPrint('💾 Guardadas proformas en caché para sucursal $sucursalId');
+      }
+      
+      return response;
     } catch (e) {
       debugPrint('❌ Error al obtener proformas de venta: $e');
       rethrow;
@@ -129,6 +176,8 @@ class ProformaVentaApi {
   /// 
   /// [sucursalId] - ID de la sucursal
   /// [proformaId] - ID de la proforma
+  /// [useCache] - Si se debe usar el caché (por defecto true)
+  /// [forceRefresh] - Si se debe forzar una actualización desde el servidor (por defecto false)
   /// 
   /// Retorna un mapa con la siguiente estructura:
   /// ```
@@ -158,12 +207,33 @@ class ProformaVentaApi {
   Future<Map<String, dynamic>> getProformaVenta({
     required String sucursalId,
     required int proformaId,
+    bool useCache = true,
+    bool forceRefresh = false,
   }) async {
     try {
-      return await _api.authenticatedRequest(
+      final cacheKey = '$_prefixProforma${sucursalId}_${proformaId}';
+      
+      // Intentar obtener del caché si corresponde
+      if (useCache && !forceRefresh) {
+        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        if (cachedData != null && !_cache.isStale(cacheKey)) {
+          debugPrint('🔍 Usando proforma en caché: $sucursalId/$proformaId');
+          return cachedData;
+        }
+      }
+      
+      final response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
         method: 'GET',
       );
+      
+      // Guardar en caché
+      if (useCache) {
+        _cache.set(cacheKey, response);
+        debugPrint('💾 Guardada proforma en caché: $sucursalId/$proformaId');
+      }
+      
+      return response;
     } catch (e) {
       debugPrint('❌ Error al obtener proforma de venta: $e');
       rethrow;
@@ -227,11 +297,16 @@ class ProformaVentaApi {
         if (fechaExpiracion != null) 'fechaExpiracion': fechaExpiracion.toIso8601String(),
       };
       
-      return await _api.authenticatedRequest(
+      final response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa',
         method: 'POST',
         body: body,
       );
+      
+      // Invalidar caché después de crear
+      invalidateCache(sucursalId);
+      
+      return response;
     } catch (e) {
       debugPrint('❌ Error al crear proforma de venta: $e');
       rethrow;
@@ -276,16 +351,24 @@ class ProformaVentaApi {
       if (clienteId != null) body['clienteId'] = clienteId;
       if (fechaExpiracion != null) body['fechaExpiracion'] = fechaExpiracion.toIso8601String();
       
-      return await _api.authenticatedRequest(
+      final response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
         method: 'PATCH',
         body: body,
       );
+      
+      // Invalidar caché después de actualizar
+      invalidateCache(sucursalId);
+      
+      return response;
     } catch (e) {
       // Si el servidor retorna notImplemented, devolver una respuesta simulada
       debugPrint('⚠️ Error al actualizar proforma: $e');
       debugPrint('⚠️ El método updateProformaVenta puede no estar implementado en el servidor.');
       debugPrint('⚠️ Devolviendo respuesta simulada para propósitos de demostración.');
+      
+      // Invalidar caché de todos modos para consistencia
+      invalidateCache(sucursalId);
       
       return {
         'status': 'success',
@@ -313,15 +396,23 @@ class ProformaVentaApi {
   }) async {
     try {
       // Intentar llamar al endpoint real
-      return await _api.authenticatedRequest(
+      final response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
         method: 'DELETE',
       );
+      
+      // Invalidar caché después de eliminar
+      invalidateCache(sucursalId);
+      
+      return response;
     } catch (e) {
       // Si el servidor retorna notImplemented, devolver una respuesta simulada
       debugPrint('⚠️ Error al eliminar proforma: $e');
       debugPrint('⚠️ El método deleteProformaVenta puede no estar implementado en el servidor.');
       debugPrint('⚠️ Devolviendo respuesta simulada para propósitos de demostración.');
+      
+      // Invalidar caché de todos modos para consistencia
+      invalidateCache(sucursalId);
       
       return {
         'status': 'success',
@@ -356,6 +447,9 @@ class ProformaVentaApi {
         body: datosVenta,
       );
       
+      // Invalidar caché después de convertir
+      invalidateCache(sucursalId);
+      
       return response;
     } catch (e) {
       // El endpoint convertir puede no existir, usar la API regular de ventas
@@ -370,6 +464,7 @@ class ProformaVentaApi {
           final proformaResponse = await getProformaVenta(
             sucursalId: sucursalId,
             proformaId: proformaId,
+            forceRefresh: true, // Forzar obtener datos frescos
           );
           proforma = parseProformaVenta(proformaResponse);
         } catch (e) {
@@ -405,6 +500,9 @@ class ProformaVentaApi {
             debugPrint('⚠️ Error al actualizar el estado de la proforma: $e');
           }
         }
+
+        // Invalidar caché después de la operación
+        invalidateCache(sucursalId);
 
         // Agregar información sobre la proforma original
         final Map<String, dynamic> response = {...ventaResponse};
