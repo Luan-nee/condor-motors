@@ -5,13 +5,13 @@ import { db } from '@/db/connection'
 import {
   clientesTable,
   detallesVentaTable,
-  documentosFacturacionTable,
-  estadosDocumentoFacturacion,
+  docsFacturacionTable,
+  estadosDocFacturacion,
   metodosPagoTable,
   monedasFacturacionTable,
   sucursalesTable,
   tiposDocumentoClienteTable,
-  tiposDocumentoFacturacionTable,
+  tiposDocFacturacionTable,
   tiposTaxTable,
   totalesVentaTable,
   ventasTable
@@ -28,18 +28,18 @@ export class DeclareVenta {
   private readonly permissionRelated =
     permissionCodes.facturacion.declareRelated
   private readonly ventaSelectFields = {
-    tipo_documento: tiposDocumentoFacturacionTable.codigo,
+    tipo_documento: tiposDocFacturacionTable.codigoSunat,
     serie: ventasTable.serieDocumento,
     numero: ventasTable.numeroDocumento,
     tipo_operacion: ventasTable.tipoOperacion,
     fecha_de_emision: ventasTable.fechaEmision,
     hora_de_emision: ventasTable.horaEmision,
-    moneda: monedasFacturacionTable.codigo,
+    moneda: monedasFacturacionTable.codigoSunat,
     porcentaje_de_venta: ventasTable.porcentajeVenta,
     datos_del_emisor: {
       codigo_establecimiento: sucursalesTable.codigoEstablecimiento
     },
-    cliente_tipo_documento: tiposDocumentoClienteTable.codigo,
+    cliente_tipo_documento: tiposDocumentoClienteTable.codigoSunat,
     cliente_numero_documento: clientesTable.numeroDocumento,
     cliente_denominacion: clientesTable.denominacion,
     codigo_pais: clientesTable.codigoPais,
@@ -52,7 +52,7 @@ export class DeclareVenta {
     total_tax: totalesVentaTable.totalTax,
     total_venta: totalesVentaTable.totalVenta,
     termino_de_pago: {
-      descripcion: metodosPagoTable.codigo,
+      descripcion: metodosPagoTable.codigoSunat,
       tipo: metodosPagoTable.tipo
     },
     observaciones: ventasTable.observaciones,
@@ -65,7 +65,7 @@ export class DeclareVenta {
     cantidad: detallesVentaTable.cantidad,
     valor_unitario: detallesVentaTable.precioSinIgv,
     precio_unitario: detallesVentaTable.precioConIgv,
-    tipo_tax: tiposTaxTable.codigo,
+    tipo_tax: tiposTaxTable.codigoSunat,
     total_base_tax: detallesVentaTable.totalBaseTax,
     total_tax: detallesVentaTable.totalTax,
     total: detallesVentaTable.total
@@ -88,8 +88,8 @@ export class DeclareVenta {
         eq(ventasTable.id, totalesVentaTable.ventaId)
       )
       .innerJoin(
-        tiposDocumentoFacturacionTable,
-        eq(ventasTable.tipoDocumentoId, tiposDocumentoFacturacionTable.id)
+        tiposDocFacturacionTable,
+        eq(ventasTable.tipoDocumentoId, tiposDocFacturacionTable.id)
       )
       .innerJoin(
         monedasFacturacionTable,
@@ -224,11 +224,11 @@ export class DeclareVenta {
     }
 
     const estados = await db
-      .select({ id: estadosDocumentoFacturacion.id })
-      .from(estadosDocumentoFacturacion)
+      .select({ id: estadosDocFacturacion.id })
+      .from(estadosDocFacturacion)
       .where(
         eq(
-          estadosDocumentoFacturacion.codigo,
+          estadosDocFacturacion.codigoSunat,
           documentDataResponse.data.state_type_id
         )
       )
@@ -241,7 +241,7 @@ export class DeclareVenta {
 
     return await db.transaction(async (tx) => {
       const [documento] = await tx
-        .insert(documentosFacturacionTable)
+        .insert(docsFacturacionTable)
         .values({
           factproFilename: documentDataResponse.data.filename,
           factproDocumentId: documentDataResponse.data.external_id,
@@ -255,7 +255,7 @@ export class DeclareVenta {
           informacionSunat: documentDataResponse.sunat_information,
           ventaId: declareVentaDto.ventaId
         })
-        .returning({ id: documentosFacturacionTable.id })
+        .returning({ id: docsFacturacionTable.id })
 
       const updatedResults = await tx
         .update(ventasTable)

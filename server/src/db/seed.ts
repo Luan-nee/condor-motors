@@ -401,10 +401,10 @@ const seedDatabase = async () => {
     .values(seedConfig.tiposDocumentoClienteDefault)
     .returning({
       id: schema.tiposDocumentoClienteTable.id,
-      codigo: schema.tiposDocumentoClienteTable.codigo
+      codigo: schema.tiposDocumentoClienteTable.codigoSunat
     })
   await db
-    .insert(schema.tiposDocumentoFacturacionTable)
+    .insert(schema.tiposDocFacturacionTable)
     .values(seedConfig.tiposDocumentoFacturacionDefault)
   await db
     .insert(schema.monedasFacturacionTable)

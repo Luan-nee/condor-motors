@@ -173,7 +173,7 @@ export const empleadosTable = pgTable('empleados', {
 export const tiposDocumentoClienteTable = pgTable('tipos_documento_cliente', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
-  codigo: text('codigo').notNull().unique()
+  codigoSunat: text('codigo_sunat').notNull().unique()
 })
 
 export const clientesTable = pgTable('clientes', {
@@ -306,26 +306,23 @@ export const rolesPermisosTable = pgTable(
  * Ventas
  */
 
-export const tiposDocumentoFacturacionTable = pgTable(
-  'tipos_documento_facturacion',
-  {
-    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-    nombre: text('nombre').notNull().unique(),
-    codigo: text('codigo').notNull().unique(),
-    codigoLocal: text('codigo_local').notNull()
-  }
-)
+export const tiposDocFacturacionTable = pgTable('tipos_doc_facturacion', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  nombre: text('nombre').notNull().unique(),
+  codigoSunat: text('codigo_sunat').notNull().unique(),
+  codigo: text('codigo').notNull()
+})
 
 export const monedasFacturacionTable = pgTable('monedas_facturacion', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
-  codigo: text('codigo').notNull().unique()
+  codigoSunat: text('codigo_sunat').notNull().unique()
 })
 
 export const metodosPagoTable = pgTable('metodos_pago', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
-  codigo: text('codigo').notNull().unique(),
+  codigoSunat: text('codigo_sunat').notNull().unique(),
   tipo: text('tipo').notNull().unique(),
   activado: boolean('activado').notNull()
 })
@@ -339,7 +336,7 @@ export const ventasTable = pgTable(
     porcentajeVenta: integer('porcentaje_venta').notNull().default(18),
     tipoDocumentoId: integer('tipo_documento_id')
       .notNull()
-      .references(() => tiposDocumentoFacturacionTable.id),
+      .references(() => tiposDocFacturacionTable.id),
     serieDocumento: text('serie_documento').notNull(),
     numeroDocumento: text('numero_documento').notNull(),
     monedaId: integer('moneda_id')
@@ -370,9 +367,9 @@ export const ventasTable = pgTable(
 export const tiposTaxTable = pgTable('tipos_tax', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
-  codigo: text('codigo').notNull().unique(),
+  codigoSunat: text('codigo_sunat').notNull().unique(),
   porcentaje: integer('porcentaje').notNull(),
-  codigoLocal: text('codigo_local').notNull()
+  codigo: text('codigo').notNull()
 })
 
 export const detallesVentaTable = pgTable('detalles_venta', {
@@ -488,17 +485,14 @@ export const reservasProductosTable = pgTable('reservas_productos', {
  * Facturación
  */
 
-export const estadosDocumentoFacturacion = pgTable(
-  'estados_documento_facturacion',
-  {
-    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-    nombre: text('nombre').notNull().unique(),
-    codigo: text('codigo').notNull().unique(),
-    codigoLocal: text('codigo_local').notNull()
-  }
-)
+export const estadosDocFacturacion = pgTable('estados_doc_facturacion', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  nombre: text('nombre').notNull().unique(),
+  codigoSunat: text('codigo_sunat').notNull().unique(),
+  codigo: text('codigo').notNull()
+})
 
-export const documentosFacturacionTable = pgTable('documentos_facturacion', {
+export const docsFacturacionTable = pgTable('docs_facturacion', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   factproFilename: text('factpro_filename'),
   factproDocumentId: text('factpro_document_id'),
@@ -509,9 +503,7 @@ export const documentosFacturacionTable = pgTable('documentos_facturacion', {
   linkCdr: text('link_cdr'),
   estadoRawId: text('estado_raw_id'),
   informacionSunat: jsonb('informacion_sunat'),
-  estadoId: integer('estado_id').references(
-    () => estadosDocumentoFacturacion.id
-  ),
+  estadoId: integer('estado_id').references(() => estadosDocFacturacion.id),
   ventaId: integer('venta_id')
     .notNull()
     .references(() => ventasTable.id)

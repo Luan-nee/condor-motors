@@ -24,7 +24,7 @@ import {
   productosTable,
   sucursalesTable,
   tiposDocumentoClienteTable,
-  tiposDocumentoFacturacionTable,
+  tiposDocFacturacionTable,
   tiposTaxTable,
   totalesVentaTable,
   ventasTable
@@ -387,11 +387,11 @@ export class CreateVenta {
     const [freeItemTax] = await db
       .select({
         id: tiposTaxTable.id,
-        codigoLocal: tiposTaxTable.codigoLocal,
+        codigoLocal: tiposTaxTable.codigo,
         porcentajeTax: tiposTaxTable.porcentaje
       })
       .from(tiposTaxTable)
-      .where(eq(tiposTaxTable.codigoLocal, tiposTaxCodes.gratuito))
+      .where(eq(tiposTaxTable.codigo, tiposTaxCodes.gratuito))
 
     return { moneda, metodoPago, freeItemTax }
   }
@@ -494,10 +494,10 @@ export class CreateVenta {
   ) {
     const results = await db
       .select({
-        tipoDocumentoId: tiposDocumentoFacturacionTable.id,
-        tipoDocumentoCodigo: tiposDocumentoFacturacionTable.codigoLocal,
+        tipoDocumentoId: tiposDocFacturacionTable.id,
+        tipoDocumentoCodigo: tiposDocFacturacionTable.codigo,
         clienteId: clientesTable.id,
-        tipoDocumentoClienteCodigo: tiposDocumentoClienteTable.codigo,
+        tipoDocumentoClienteCodigo: tiposDocumentoClienteTable.codigoSunat,
         direccionCliente: clientesTable.direccion,
         empleadoId: empleadosTable.id,
         sucursalId: sucursalesTable.id,
@@ -506,8 +506,8 @@ export class CreateVenta {
       })
       .from(sucursalesTable)
       .leftJoin(
-        tiposDocumentoFacturacionTable,
-        eq(tiposDocumentoFacturacionTable.id, createVentaDto.tipoDocumentoId)
+        tiposDocFacturacionTable,
+        eq(tiposDocFacturacionTable.id, createVentaDto.tipoDocumentoId)
       )
       .leftJoin(clientesTable, eq(clientesTable.id, createVentaDto.clienteId))
       .leftJoin(

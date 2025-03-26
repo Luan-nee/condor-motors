@@ -5,13 +5,13 @@ import { db } from '@/db/connection'
 import {
   clientesTable,
   detallesVentaTable,
-  documentosFacturacionTable,
+  docsFacturacionTable,
   empleadosTable,
   metodosPagoTable,
   monedasFacturacionTable,
   sucursalesTable,
   tiposDocumentoClienteTable,
-  tiposDocumentoFacturacionTable,
+  tiposDocFacturacionTable,
   tiposTaxTable,
   totalesVentaTable,
   ventasTable
@@ -30,7 +30,7 @@ export class GetVentaById {
     serieDocumento: ventasTable.serieDocumento,
     numeroDocumento: ventasTable.numeroDocumento,
     observaciones: ventasTable.observaciones,
-    tipoDocumento: tiposDocumentoFacturacionTable.nombre,
+    tipoDocumento: tiposDocFacturacionTable.nombre,
     fechaEmision: ventasTable.fechaEmision,
     horaEmision: ventasTable.horaEmision,
     moneda: monedasFacturacionTable.nombre,
@@ -59,12 +59,12 @@ export class GetVentaById {
       totalVenta: totalesVentaTable.totalVenta
     },
     documentoFacturacion: {
-      factproDocumentId: documentosFacturacionTable.factproDocumentId,
-      hash: documentosFacturacionTable.hash,
-      qr: documentosFacturacionTable.qr,
-      linkXml: documentosFacturacionTable.linkXml,
-      linkPdf: documentosFacturacionTable.linkPdf,
-      linkCdr: documentosFacturacionTable.linkCdr
+      factproDocumentId: docsFacturacionTable.factproDocumentId,
+      hash: docsFacturacionTable.hash,
+      qr: docsFacturacionTable.qr,
+      linkXml: docsFacturacionTable.linkXml,
+      linkPdf: docsFacturacionTable.linkPdf,
+      linkCdr: docsFacturacionTable.linkCdr
     }
   }
   private readonly detallesVentaSelectFields = {
@@ -98,8 +98,8 @@ export class GetVentaById {
         eq(ventasTable.id, totalesVentaTable.ventaId)
       )
       .innerJoin(
-        tiposDocumentoFacturacionTable,
-        eq(ventasTable.tipoDocumentoId, tiposDocumentoFacturacionTable.id)
+        tiposDocFacturacionTable,
+        eq(ventasTable.tipoDocumentoId, tiposDocFacturacionTable.id)
       )
       .innerJoin(
         monedasFacturacionTable,
@@ -120,8 +120,8 @@ export class GetVentaById {
         eq(clientesTable.tipoDocumentoId, tiposDocumentoClienteTable.id)
       )
       .leftJoin(
-        documentosFacturacionTable,
-        eq(ventasTable.id, documentosFacturacionTable.ventaId)
+        docsFacturacionTable,
+        eq(ventasTable.id, docsFacturacionTable.ventaId)
       )
       .where(
         and(

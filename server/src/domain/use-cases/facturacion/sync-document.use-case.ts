@@ -2,7 +2,7 @@ import { permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import { tiposDocumentoFacturacionTable, ventasTable } from '@/db/schema'
+import { tiposDocFacturacionTable, ventasTable } from '@/db/schema'
 import type { SyncDocumentDto } from '@/domain/dtos/entities/facturacion/sync-document.dto'
 import type { BillingService } from '@/types/interfaces'
 import type { SucursalIdType } from '@/types/schemas'
@@ -27,12 +27,12 @@ export class SyncDocument {
       .select({
         serie: ventasTable.serieDocumento,
         numero: ventasTable.numeroDocumento,
-        tipo_documento: tiposDocumentoFacturacionTable.codigo
+        tipo_documento: tiposDocFacturacionTable.codigoSunat
       })
       .from(ventasTable)
       .innerJoin(
-        tiposDocumentoFacturacionTable,
-        eq(ventasTable.tipoDocumentoId, tiposDocumentoFacturacionTable.id)
+        tiposDocFacturacionTable,
+        eq(ventasTable.tipoDocumentoId, tiposDocFacturacionTable.id)
       )
       .where(
         and(
