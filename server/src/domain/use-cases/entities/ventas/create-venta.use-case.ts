@@ -53,6 +53,19 @@ interface ComputePriceOfferArgs {
   precioVenta: string
   precioOferta: string | null
   liquidacion: boolean
+  aplicarOferta: boolean
+}
+
+interface ComputeTotalArgs {
+  isFreeItem: boolean
+  totalItem: number
+  totalTaxItem: number
+  totalBaseTaxItem: number
+  exonerada: boolean
+  totalGratuitas: number
+  totalExoneradas: number
+  totalGravadas: number
+  totalTax: number
 }
 
 export class CreateVenta {
@@ -148,6 +161,9 @@ export class CreateVenta {
           )
         }
 
+        const isFreeItem = detalleVenta.tipoTaxId === freeItemTax.id
+        const applyOffer = detalleVenta.aplicarOferta && !isFreeItem
+
         this.validateStock(detalleProducto, detalleVenta.cantidad)
         const { price, free } = this.computePriceOffer({
           cantidad: detalleVenta.cantidad,
@@ -156,7 +172,8 @@ export class CreateVenta {
           porcentajeDescuento: detalleProducto.porcentajeDescuento,
           precioVenta: detalleProducto.precioVenta,
           precioOferta: detalleProducto.precioOferta,
-          liquidacion: detalleProducto.liquidacion
+          liquidacion: detalleProducto.liquidacion,
+          aplicarOferta: applyOffer
         })
 
         const detallesItem = this.computeDetallesItem(
@@ -177,14 +194,29 @@ export class CreateVenta {
           total: fixedTwoDecimals(detallesItem.totalItem)
         })
 
-        if (detallesItem.exonerada) {
-          totalExoneradas += detallesItem.totalItem
-        } else {
-          totalGravadas += detallesItem.totalBaseTax
-          totalTax += detallesItem.totalTax
-        }
+        const {
+          totalGratuitas: newTotalGratuitas,
+          totalExoneradas: newTotalExoneradas,
+          totalGravadas: newTotalGravadas,
+          totalTax: newTotalTax
+        } = this.computeNewTotal({
+          isFreeItem,
+          totalItem: detallesItem.totalItem,
+          totalTaxItem: detallesItem.totalTax,
+          totalBaseTaxItem: detallesItem.totalBaseTax,
+          exonerada: detallesItem.exonerada,
+          totalGratuitas,
+          totalExoneradas,
+          totalGravadas,
+          totalTax
+        })
 
-        if (free > 0) {
+        totalGratuitas = newTotalGratuitas
+        totalExoneradas = newTotalExoneradas
+        totalGravadas = newTotalGravadas
+        totalTax = newTotalTax
+
+        if (free > 0 && applyOffer) {
           const detallesFreeItem = this.computeDetallesItem(
             price,
             free,
@@ -254,6 +286,43 @@ export class CreateVenta {
     return result
   }
 
+  private computeNewTotal({
+    isFreeItem,
+    totalItem,
+    totalTaxItem,
+    totalBaseTaxItem,
+    exonerada,
+    totalGratuitas,
+    totalExoneradas,
+    totalGravadas,
+    totalTax
+  }: ComputeTotalArgs) {
+    if (isFreeItem) {
+      return {
+        totalGratuitas: totalGratuitas + totalItem,
+        totalExoneradas,
+        totalGravadas,
+        totalTax
+      }
+    }
+
+    if (exonerada) {
+      return {
+        totalGratuitas,
+        totalExoneradas: totalExoneradas + totalItem,
+        totalGravadas,
+        totalTax
+      }
+    }
+
+    return {
+      totalGratuitas,
+      totalExoneradas,
+      totalGravadas: totalGravadas + totalBaseTaxItem,
+      totalTax: totalTax + totalTaxItem
+    }
+  }
+
   private async getDocumentNumber(serieDocumento: string, fixedLength: number) {
     const documents = await db
       .select({
@@ -318,6 +387,7 @@ export class CreateVenta {
     const [freeItemTax] = await db
       .select({
         id: tiposTaxTable.id,
+        codigoLocal: tiposTaxTable.codigoLocal,
         porcentajeTax: tiposTaxTable.porcentajeTax
       })
       .from(tiposTaxTable)
@@ -344,10 +414,15 @@ export class CreateVenta {
     porcentajeDescuento,
     precioVenta,
     precioOferta,
-    liquidacion
+    liquidacion,
+    aplicarOferta
   }: ComputePriceOfferArgs) {
     let price = parseFloat(precioVenta)
     let free = 0
+
+    if (!aplicarOferta) {
+      return { price, free }
+    }
 
     if (precioOferta !== null && liquidacion) {
       price = parseFloat(precioOferta)

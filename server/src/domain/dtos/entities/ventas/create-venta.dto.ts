@@ -7,6 +7,7 @@ export class CreateVentaDto {
     productoId: number
     cantidad: number
     tipoTaxId: number
+    aplicarOferta: boolean
   }>
   public monedaId?: number
   public metodoPagoId?: number

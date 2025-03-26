@@ -14,7 +14,8 @@ export const ventaSchema = {
     .object({
       productoId: idTypeBaseSchema.numericId,
       cantidad: z.number().min(1),
-      tipoTaxId: idTypeBaseSchema.numericId
+      tipoTaxId: idTypeBaseSchema.numericId,
+      aplicarOferta: z.boolean().default(true)
     })
     .array()
     .min(1),
