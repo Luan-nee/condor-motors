@@ -15,10 +15,3 @@ const createVentaSchema = z.object({
 
 export const createVentaValidator = (object: unknown) =>
   createVentaSchema.safeParse(object)
-
-const declareVentaSchema = z.object({
-  enviarCliente: ventaSchema.enviarCliente
-})
-
-export const declareVentaValidator = (object: unknown) =>
-  declareVentaSchema.safeParse(object)

@@ -1,5 +1,6 @@
 import type {
   bearerAccessTokenType,
+  consultDocumentType,
   decodeType,
   generateAccessTokenType,
   generateRefreshTokenType,
@@ -31,4 +32,5 @@ export interface AuthSerializer {
 
 export interface BillingService {
   sendDocument: sendDocumentType
+  consultDocument: consultDocumentType
 }

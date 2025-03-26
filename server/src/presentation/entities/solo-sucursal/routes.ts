@@ -4,6 +4,7 @@ import { InventariosRoutes } from '@/presentation/entities/solo-sucursal/inventa
 import { ProformasVentaRoutes } from '@/presentation/entities/solo-sucursal/proformas-venta/routes'
 import { NotificacionesRoutes } from './notificaciones/routes'
 import { VentasRoutes } from '@/presentation/entities/solo-sucursal/ventas/routes'
+import { FacturacionRoutes } from './facturacion/routes'
 
 export class SoloSucursalRoutes {
   static get routes() {
@@ -13,6 +14,7 @@ export class SoloSucursalRoutes {
     router.use('/inventarios', InventariosRoutes.routes)
     router.use('/proformasventa', ProformasVentaRoutes.routes)
     router.use('/ventas', VentasRoutes.routes)
+    router.use('/facturacion', FacturacionRoutes.routes)
     router.use('/notificaciones', NotificacionesRoutes.routes)
 
     return router

@@ -31,6 +31,5 @@ export const ventaSchema = {
     .time({
       message: 'El formato esperado es el siguiente: hh:mm:ss'
     })
-    .optional(),
-  enviarCliente: z.boolean().default(true)
+    .optional()
 }

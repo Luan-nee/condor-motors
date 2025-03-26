@@ -67,15 +67,19 @@ export const permissionCodes = {
   },
   ventas: {
     createAny: 'ventas:create_any',
-    declareAny: 'ventas:declare_any',
     getAny: 'ventas:get_any',
     updateAny: 'ventas:update_any',
     deleteAny: 'ventas:delete_any',
     createRelated: 'ventas:create_related',
-    declareRelated: 'ventas:declare_related',
     getRelated: 'ventas:get_related',
     updateRelated: 'ventas:update_related',
     deleteRelated: 'ventas:delete_related'
+  },
+  facturacion: {
+    declareAny: 'facturacion:declare_any',
+    declareRelated: 'facturacion:declare_related',
+    syncAny: 'facturacion:sync_any',
+    syncRelated: 'facturacion:sync_related'
   },
   categorias: {
     createAny: 'categorias:create_any'

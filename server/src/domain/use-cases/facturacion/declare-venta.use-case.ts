@@ -16,8 +16,7 @@ import {
   totalesVentaTable,
   ventasTable
 } from '@/db/schema'
-import type { DeclareVentaDto } from '@/domain/dtos/entities/ventas/declare-venta.dto'
-import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
+import type { DeclareVentaDto } from '@/domain/dtos/entities/facturacion/declare-venta.dto'
 import type { BillingService } from '@/types/interfaces'
 import type { SucursalIdType } from '@/types/schemas'
 import { and, eq } from 'drizzle-orm'
@@ -25,8 +24,9 @@ import { and, eq } from 'drizzle-orm'
 export class DeclareVenta {
   private readonly authPayload: AuthPayload
   private readonly billingService: BillingService
-  private readonly permissionAny = permissionCodes.ventas.declareAny
-  private readonly permissionRelated = permissionCodes.ventas.declareRelated
+  private readonly permissionAny = permissionCodes.facturacion.declareAny
+  private readonly permissionRelated =
+    permissionCodes.facturacion.declareRelated
   private readonly ventaSelectFields = {
     tipo_documento: tiposDocumentoFacturacionTable.codigo,
     serie: ventasTable.serieDocumento,
@@ -77,7 +77,6 @@ export class DeclareVenta {
   }
 
   async getFormattedData(
-    numericIdDto: NumericIdDto,
     declareVentaDto: DeclareVentaDto,
     sucursalId: SucursalIdType
   ) {
@@ -111,14 +110,14 @@ export class DeclareVenta {
       )
       .where(
         and(
-          eq(ventasTable.id, numericIdDto.id),
+          eq(ventasTable.id, declareVentaDto.ventaId),
           eq(ventasTable.sucursalId, sucursalId)
         )
       )
 
     if (ventas.length < 1) {
       throw CustomError.notFound(
-        `No se encontró la venta con id ${numericIdDto.id} en la sucursal especificada`
+        `No se encontró la venta con id ${declareVentaDto.ventaId} en la sucursal especificada`
       )
     }
 
@@ -143,7 +142,7 @@ export class DeclareVenta {
         tiposTaxTable,
         eq(detallesVentaTable.tipoTaxId, tiposTaxTable.id)
       )
-      .where(eq(detallesVentaTable.ventaId, numericIdDto.id))
+      .where(eq(detallesVentaTable.ventaId, declareVentaDto.ventaId))
 
     const items: Item[] = detalles.map((detalle) => ({
       unidad: detalle.unidad,
@@ -212,8 +211,8 @@ export class DeclareVenta {
   }
 
   private async declareVenta(
-    documentoFacturacion: DocumentoFacturacion,
-    numericIdDto: NumericIdDto
+    declareVentaDto: DeclareVentaDto,
+    documentoFacturacion: DocumentoFacturacion
   ) {
     const { data: documentDataResponse, error } =
       await this.billingService.sendDocument({
@@ -236,7 +235,7 @@ export class DeclareVenta {
 
     let estado = undefined
 
-    if (estados.length < 1) {
+    if (estados.length > 0) {
       ;[estado] = estados
     }
 
@@ -254,14 +253,14 @@ export class DeclareVenta {
           estadoRawId: documentDataResponse.data.state_type_id,
           estadoId: estado?.id,
           informacionSunat: documentDataResponse.sunat_information,
-          ventaId: numericIdDto.id
+          ventaId: declareVentaDto.ventaId
         })
         .returning({ id: documentosFacturacionTable.id })
 
       const updatedResults = await tx
         .update(ventasTable)
         .set({ declarada: true })
-        .where(eq(ventasTable.id, numericIdDto.id))
+        .where(eq(ventasTable.id, declareVentaDto.ventaId))
         .returning({ id: ventasTable.id })
 
       if (updatedResults.length < 1) {
@@ -303,20 +302,18 @@ export class DeclareVenta {
     throw CustomError.forbidden()
   }
 
-  async execute(
-    numericIdDto: NumericIdDto,
-    declareVentaDto: DeclareVentaDto,
-    sucursalId: SucursalIdType
-  ) {
+  async execute(declareVentaDto: DeclareVentaDto, sucursalId: SucursalIdType) {
     await this.validatePermissions(sucursalId)
 
     const documentoFacturacion = await this.getFormattedData(
-      numericIdDto,
       declareVentaDto,
       sucursalId
     )
 
-    const result = await this.declareVenta(documentoFacturacion, numericIdDto)
+    const result = await this.declareVenta(
+      declareVentaDto,
+      documentoFacturacion
+    )
 
     return result
   }

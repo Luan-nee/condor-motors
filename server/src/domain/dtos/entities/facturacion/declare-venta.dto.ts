@@ -1,10 +1,12 @@
-import { declareVentaValidator } from '@/domain/validators/entities/ventas/venta.validator'
+import { declareVentaValidator } from '@/domain/validators/entities/facturacion/facturacion.validator'
 
 export class DeclareVentaDto {
   public enviarCliente: boolean
+  public ventaId: number
 
-  constructor({ enviarCliente }: DeclareVentaDto) {
+  constructor({ enviarCliente, ventaId }: DeclareVentaDto) {
     this.enviarCliente = enviarCliente
+    this.ventaId = ventaId
   }
 
   static validate(input: any): [string?, DeclareVentaDto?] {

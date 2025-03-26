@@ -103,3 +103,9 @@ interface BillingApiErrorResponse {
   success: boolean
   message: string
 }
+
+interface ConsultDocument {
+  tipo_documento: string
+  serie: string
+  numero: string
+}
