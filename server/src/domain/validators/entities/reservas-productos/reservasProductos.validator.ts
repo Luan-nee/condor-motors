@@ -13,5 +13,13 @@ const createReservasProductosSchema = z.object({
 export const CreateReservasProductoValidator = (object: unknown) =>
   createReservasProductosSchema.safeParse(object)
 
+const updateReservaProductoSchema = z.object({
+  descripcion: ReservasProductoSchema.descripcion,
+  detallesReserva: ReservasProductoSchema.detallesReserva,
+  montoAdelantado: ReservasProductoSchema.montoAdelantado,
+  fechaRecojo: ReservasProductoSchema.fechaRecojo,
+  sucursalId: ReservasProductoSchema.sucursalId
+})
+
 export const updateReservasProductosValidator = (object: unknown) =>
-  createReservasProductosSchema.partial().safeParse(object)
+  updateReservaProductoSchema.partial().safeParse(object)
