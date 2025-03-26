@@ -269,10 +269,10 @@ export const permisosTable = pgTable('permisos', {
   nombre: text('nombre').notNull().unique()
 })
 
-export const rolesCuentasEmpleadosTable = pgTable('roles_cuentas_empleados', {
+export const rolesTable = pgTable('roles', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   codigo: text('codigo').notNull().unique(),
-  nombreRol: text('nombre_rol').notNull().unique()
+  nombre: text('nombre').notNull().unique()
 })
 
 export const cuentasEmpleadosTable = pgTable('cuentas_empleados', {
@@ -280,9 +280,9 @@ export const cuentasEmpleadosTable = pgTable('cuentas_empleados', {
   usuario: text('usuario').notNull().unique(),
   clave: text('clave').notNull(),
   secret: text('secret').notNull(),
-  rolCuentaEmpleadoId: integer('rol_cuenta_empleado_id')
+  rolId: integer('rol_id')
     .notNull()
-    .references(() => rolesCuentasEmpleadosTable.id),
+    .references(() => rolesTable.id),
   empleadoId: integer('empleado_id')
     .notNull()
     .references(() => empleadosTable.id),
@@ -294,7 +294,7 @@ export const rolesPermisosTable = pgTable(
   {
     rolId: integer('rol_id')
       .notNull()
-      .references(() => rolesCuentasEmpleadosTable.id),
+      .references(() => rolesTable.id),
     permisoId: integer('permiso_id')
       .notNull()
       .references(() => permisosTable.id)

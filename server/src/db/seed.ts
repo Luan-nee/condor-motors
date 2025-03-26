@@ -155,9 +155,9 @@ const seedDatabase = async () => {
   const [admin, vendedorEmpleado, computadoraEmpleado] = empleados
 
   const [adminRole, vendedorRole, computadoraRole] = await db
-    .insert(schema.rolesCuentasEmpleadosTable)
+    .insert(schema.rolesTable)
     .values(rolesValues)
-    .returning({ id: schema.rolesCuentasEmpleadosTable.id })
+    .returning({ id: schema.rolesTable.id })
 
   const permisos = await db
     .insert(schema.permisosTable)

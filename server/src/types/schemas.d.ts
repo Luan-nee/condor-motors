@@ -2,7 +2,7 @@ import type {
   cuentasEmpleadosTable,
   sucursalesTable,
   empleadosTable,
-  rolesCuentasEmpleadosTable,
+  rolesTable,
   productosTable,
   categoriasTable,
   marcasTable,
@@ -11,9 +11,7 @@ import type {
 } from '@/db/schema'
 import type { InferSelectModel } from 'drizzle-orm'
 
-type RolCuentaEmpleadoEntity = InferSelectModel<
-  typeof rolesCuentasEmpleadosTable
->
+type RolCuentaEmpleadoEntity = InferSelectModel<typeof rolesTable>
 
 export type UserEntity = Omit<
   InferSelectModel<typeof cuentasEmpleadosTable>,

@@ -34,7 +34,7 @@ export class AccessControl {
       )
       .innerJoin(
         cuentasEmpleadosTable,
-        eq(cuentasEmpleadosTable.rolCuentaEmpleadoId, rolesPermisosTable.rolId)
+        eq(cuentasEmpleadosTable.rolId, rolesPermisosTable.rolId)
       )
       .innerJoin(
         empleadosTable,

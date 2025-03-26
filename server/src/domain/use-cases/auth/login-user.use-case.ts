@@ -5,7 +5,7 @@ import { db } from '@db/connection'
 import {
   cuentasEmpleadosTable,
   empleadosTable,
-  rolesCuentasEmpleadosTable,
+  rolesTable,
   sucursalesTable
 } from '@db/schema'
 import type { LoginUserDto } from '@domain/dtos/auth/login-user.dto'
@@ -18,8 +18,8 @@ export class LoginUser {
     usuario: cuentasEmpleadosTable.usuario,
     clave: cuentasEmpleadosTable.clave,
     secret: cuentasEmpleadosTable.secret,
-    rolCuentaEmpleadoId: cuentasEmpleadosTable.rolCuentaEmpleadoId,
-    rolCuentaEmpleadoCodigo: rolesCuentasEmpleadosTable.codigo,
+    rolCuentaEmpleadoId: cuentasEmpleadosTable.rolId,
+    rolCuentaEmpleadoCodigo: rolesTable.codigo,
     empleadoId: cuentasEmpleadosTable.empleadoId,
     fechaCreacion: cuentasEmpleadosTable.fechaCreacion,
     fechaActualizacion: cuentasEmpleadosTable.fechaActualizacion,
@@ -36,13 +36,7 @@ export class LoginUser {
     const users = await db
       .select(this.selectFields)
       .from(cuentasEmpleadosTable)
-      .innerJoin(
-        rolesCuentasEmpleadosTable,
-        eq(
-          rolesCuentasEmpleadosTable.id,
-          cuentasEmpleadosTable.rolCuentaEmpleadoId
-        )
-      )
+      .innerJoin(rolesTable, eq(rolesTable.id, cuentasEmpleadosTable.rolId))
       .innerJoin(
         empleadosTable,
         eq(empleadosTable.id, cuentasEmpleadosTable.empleadoId)

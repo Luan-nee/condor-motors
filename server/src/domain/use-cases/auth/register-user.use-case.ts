@@ -7,7 +7,7 @@ import { db } from '@db/connection'
 import {
   cuentasEmpleadosTable,
   empleadosTable,
-  rolesCuentasEmpleadosTable,
+  rolesTable,
   sucursalesTable
 } from '@db/schema'
 import type { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
@@ -67,13 +67,11 @@ export class RegisterUser {
 
     const roles = await db
       .select({
-        id: rolesCuentasEmpleadosTable.id,
-        codigo: rolesCuentasEmpleadosTable.codigo
+        id: rolesTable.id,
+        codigo: rolesTable.codigo
       })
-      .from(rolesCuentasEmpleadosTable)
-      .where(
-        eq(rolesCuentasEmpleadosTable.id, registerUserDto.rolCuentaEmpleadoId)
-      )
+      .from(rolesTable)
+      .where(eq(rolesTable.id, registerUserDto.rolCuentaEmpleadoId))
 
     if (roles.length <= 0) {
       throw CustomError.badRequest('El rol que intentó asignar no existe')

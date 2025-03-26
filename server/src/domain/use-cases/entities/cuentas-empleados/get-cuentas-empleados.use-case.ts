@@ -5,7 +5,7 @@ import { db } from '@/db/connection'
 import {
   cuentasEmpleadosTable,
   empleadosTable,
-  rolesCuentasEmpleadosTable,
+  rolesTable,
   sucursalesTable
 } from '@/db/schema'
 import type { SucursalIdType } from '@/types/schemas'
@@ -19,7 +19,7 @@ export class GetCuentasEmpleados {
   private readonly selectFields = {
     id: cuentasEmpleadosTable.id,
     usuario: cuentasEmpleadosTable.usuario,
-    rolEmpleado: rolesCuentasEmpleadosTable.nombreRol,
+    rolEmpleado: rolesTable.nombre,
     empleado: {
       id: empleadosTable.id,
       nombre: empleadosTable.nombre
@@ -37,13 +37,7 @@ export class GetCuentasEmpleados {
     return await db
       .select(this.selectFields)
       .from(cuentasEmpleadosTable)
-      .innerJoin(
-        rolesCuentasEmpleadosTable,
-        eq(
-          cuentasEmpleadosTable.rolCuentaEmpleadoId,
-          rolesCuentasEmpleadosTable.id
-        )
-      )
+      .innerJoin(rolesTable, eq(cuentasEmpleadosTable.rolId, rolesTable.id))
       .innerJoin(
         empleadosTable,
         eq(cuentasEmpleadosTable.empleadoId, empleadosTable.id)
@@ -59,13 +53,7 @@ export class GetCuentasEmpleados {
     return await db
       .select(this.selectFields)
       .from(cuentasEmpleadosTable)
-      .innerJoin(
-        rolesCuentasEmpleadosTable,
-        eq(
-          cuentasEmpleadosTable.rolCuentaEmpleadoId,
-          rolesCuentasEmpleadosTable.id
-        )
-      )
+      .innerJoin(rolesTable, eq(cuentasEmpleadosTable.rolId, rolesTable.id))
       .innerJoin(
         empleadosTable,
         eq(cuentasEmpleadosTable.empleadoId, empleadosTable.id)

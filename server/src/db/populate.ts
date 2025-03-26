@@ -7,7 +7,7 @@ import {
   cuentasEmpleadosTable,
   empleadosTable,
   permisosTable,
-  rolesCuentasEmpleadosTable,
+  rolesTable,
   rolesPermisosTable,
   sucursalesTable,
   marcasTable,
@@ -38,7 +38,7 @@ const populateDatabase = async (
       .returning()
 
     const [rolEmpleado] = await tx
-      .insert(rolesCuentasEmpleadosTable)
+      .insert(rolesTable)
       .values(config.rolEmpleado)
       .returning()
 

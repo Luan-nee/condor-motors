@@ -2,7 +2,7 @@ import { permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import { rolesCuentasEmpleadosTable } from '@/db/schema'
+import { rolesTable } from '@/db/schema'
 import { asc } from 'drizzle-orm'
 
 export class GetRolesCuentas {
@@ -10,9 +10,9 @@ export class GetRolesCuentas {
   private readonly permissionGetAny =
     permissionCodes.rolesCuentasEmpleados.getAny
   private readonly selectFields = {
-    id: rolesCuentasEmpleadosTable.id,
-    nombreRol: rolesCuentasEmpleadosTable.nombreRol,
-    codigo: rolesCuentasEmpleadosTable.codigo
+    id: rolesTable.id,
+    nombreRol: rolesTable.nombre,
+    codigo: rolesTable.codigo
   }
 
   constructor(authPayload: AuthPayload) {
@@ -39,8 +39,8 @@ export class GetRolesCuentas {
 
     const rolesCuentas = await db
       .select(this.selectFields)
-      .from(rolesCuentasEmpleadosTable)
-      .orderBy(asc(rolesCuentasEmpleadosTable.nombreRol))
+      .from(rolesTable)
+      .orderBy(asc(rolesTable.nombre))
 
     return rolesCuentas
   }

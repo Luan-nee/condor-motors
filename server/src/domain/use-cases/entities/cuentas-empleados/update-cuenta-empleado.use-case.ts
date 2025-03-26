@@ -2,7 +2,7 @@ import { permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import { cuentasEmpleadosTable, rolesCuentasEmpleadosTable } from '@/db/schema'
+import { cuentasEmpleadosTable, rolesTable } from '@/db/schema'
 import type { UpdateCuentaEmpleadoDto } from '@/domain/dtos/entities/cuentas-empleados/update-cuenta-empleado.dto'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import type { Encryptor, TokenAuthenticator } from '@/types/interfaces'
@@ -47,16 +47,11 @@ export class UpdateCuentaEmpleado {
     if (updateCuentaEmpleadoDto.rolCuentaEmpleadoId !== undefined) {
       const roles = await db
         .select({
-          id: rolesCuentasEmpleadosTable.id,
-          codigo: rolesCuentasEmpleadosTable.codigo
+          id: rolesTable.id,
+          codigo: rolesTable.codigo
         })
-        .from(rolesCuentasEmpleadosTable)
-        .where(
-          eq(
-            rolesCuentasEmpleadosTable.id,
-            updateCuentaEmpleadoDto.rolCuentaEmpleadoId
-          )
-        )
+        .from(rolesTable)
+        .where(eq(rolesTable.id, updateCuentaEmpleadoDto.rolCuentaEmpleadoId))
 
       if (roles.length <= 0) {
         throw CustomError.badRequest('El rol que intentó asignar no existe')
