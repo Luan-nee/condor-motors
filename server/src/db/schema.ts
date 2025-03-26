@@ -1,6 +1,7 @@
 /* eslint-disable max-lines */
 import { sql } from 'drizzle-orm'
 import {
+  unique,
   uniqueIndex,
   index,
   boolean,
@@ -328,38 +329,42 @@ export const metodosPagoTable = pgTable('metodos_pago', {
   activado: boolean('activado').notNull()
 })
 
-export const ventasTable = pgTable('ventas', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  observaciones: text('observaciones'),
-  tipoOperacion: text('tipo_operacion').notNull().default('0101'),
-  porcentajeVenta: integer('porcentaje_venta').notNull().default(18),
-  tipoDocumentoId: integer('tipo_documento_id')
-    .notNull()
-    .references(() => tiposDocumentoFacturacionTable.id),
-  serieDocumento: text('serie_documento').notNull(),
-  numeroDocumento: text('numero_documento').notNull(),
-  monedaId: integer('moneda_id')
-    .notNull()
-    .references(() => monedasFacturacionTable.id),
-  metodoPagoId: integer('metodo_pago_id')
-    .notNull()
-    .references(() => metodosPagoTable.id),
-  clienteId: integer('cliente_id')
-    .notNull()
-    .references(() => clientesTable.id),
-  empleadoId: integer('empleado_id')
-    .notNull()
-    .references(() => empleadosTable.id),
-  sucursalId: integer('sucursal_id')
-    .notNull()
-    .references(() => sucursalesTable.id),
-  fechaEmision: date('fecha_emision', {
-    mode: 'string'
-  }).notNull(),
-  horaEmision: time('hora_emision').notNull(),
-  declarada: boolean('declarada').notNull().default(false),
-  ...timestampsColumns
-})
+export const ventasTable = pgTable(
+  'ventas',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    observaciones: text('observaciones'),
+    tipoOperacion: text('tipo_operacion').notNull().default('0101'),
+    porcentajeVenta: integer('porcentaje_venta').notNull().default(18),
+    tipoDocumentoId: integer('tipo_documento_id')
+      .notNull()
+      .references(() => tiposDocumentoFacturacionTable.id),
+    serieDocumento: text('serie_documento').notNull(),
+    numeroDocumento: text('numero_documento').notNull(),
+    monedaId: integer('moneda_id')
+      .notNull()
+      .references(() => monedasFacturacionTable.id),
+    metodoPagoId: integer('metodo_pago_id')
+      .notNull()
+      .references(() => metodosPagoTable.id),
+    clienteId: integer('cliente_id')
+      .notNull()
+      .references(() => clientesTable.id),
+    empleadoId: integer('empleado_id')
+      .notNull()
+      .references(() => empleadosTable.id),
+    sucursalId: integer('sucursal_id')
+      .notNull()
+      .references(() => sucursalesTable.id),
+    fechaEmision: date('fecha_emision', {
+      mode: 'string'
+    }).notNull(),
+    horaEmision: time('hora_emision').notNull(),
+    declarada: boolean('declarada').notNull().default(false),
+    ...timestampsColumns
+  },
+  (table) => [unique().on(table.serieDocumento, table.numeroDocumento)]
+)
 
 export const tiposTaxTable = pgTable('tipos_tax', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
@@ -410,6 +415,7 @@ export const totalesVentaTable = pgTable('totales_venta', {
     scale: 2
   }).notNull(),
   ventaId: integer('venta_id')
+    .primaryKey()
     .notNull()
     .references(() => ventasTable.id)
 })
