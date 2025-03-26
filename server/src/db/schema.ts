@@ -108,12 +108,12 @@ export const detallesProductoTable = pgTable(
   {
     id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     precioCompra: numeric('precio_compra', {
-      precision: 7,
+      precision: 12,
       scale: 2
     }).notNull(),
     porcentajeGanancia: text('porcentaje_ganancia'),
-    precioVenta: numeric('precio_venta', { precision: 7, scale: 2 }).notNull(),
-    precioOferta: numeric('precio_oferta', { precision: 7, scale: 2 }),
+    precioVenta: numeric('precio_venta', { precision: 12, scale: 2 }).notNull(),
+    precioOferta: numeric('precio_oferta', { precision: 12, scale: 2 }),
     stock: integer('stock').notNull().default(0),
     stockBajo: boolean('stock_bajo').notNull().default(false),
     liquidacion: boolean('liquidacion').notNull().default(false),
@@ -161,7 +161,7 @@ export const empleadosTable = pgTable('empleados', {
     mode: 'string'
   }),
   sueldo: numeric('sueldo', {
-    precision: 7,
+    precision: 12,
     scale: 2
   }),
   sucursalId: integer('sucursal_id')
@@ -378,14 +378,23 @@ export const detallesVentaTable = pgTable('detalles_venta', {
   sku: text('sku').notNull(),
   nombre: text('nombre').notNull(),
   cantidad: integer('cantidad').notNull().default(1),
-  precioSinIgv: numeric('precio_sin_igv', { precision: 7, scale: 2 }).notNull(),
-  precioConIgv: numeric('precio_con_igv', { precision: 7, scale: 2 }).notNull(),
+  precioSinIgv: numeric('precio_sin_igv', {
+    precision: 12,
+    scale: 2
+  }).notNull(),
+  precioConIgv: numeric('precio_con_igv', {
+    precision: 12,
+    scale: 2
+  }).notNull(),
   tipoTaxId: integer('tipo_tax_id')
     .notNull()
     .references(() => tiposTaxTable.id),
-  totalBaseTax: numeric('total_base_tax', { precision: 7, scale: 2 }).notNull(),
-  totalTax: numeric('total_tax', { precision: 7, scale: 2 }).notNull(),
-  total: numeric('total', { precision: 7, scale: 2 }).notNull(),
+  totalBaseTax: numeric('total_base_tax', {
+    precision: 12,
+    scale: 2
+  }).notNull(),
+  totalTax: numeric('total_tax', { precision: 12, scale: 2 }).notNull(),
+  total: numeric('total', { precision: 12, scale: 2 }).notNull(),
   productoId: integer('producto_id'),
   ventaId: integer('venta_id')
     .notNull()
@@ -397,23 +406,23 @@ export const totalesVentaTable = pgTable('totales_venta', {
     .primaryKey()
     .references(() => ventasTable.id),
   totalGravadas: numeric('total_gravadas', {
-    precision: 7,
+    precision: 12,
     scale: 2
   }).notNull(),
   totalExoneradas: numeric('total_exoneradas', {
-    precision: 7,
+    precision: 12,
     scale: 2
   }).notNull(),
   totalGratuitas: numeric('total_gratuitas', {
-    precision: 7,
+    precision: 12,
     scale: 2
   }).notNull(),
   totalTax: numeric('total_tax', {
-    precision: 7,
+    precision: 12,
     scale: 2
   }).notNull(),
   totalVenta: numeric('total_venta', {
-    precision: 7,
+    precision: 12,
     scale: 2
   }).notNull()
 })
@@ -425,7 +434,7 @@ export const totalesVentaTable = pgTable('totales_venta', {
 export const proformasVentaTable = pgTable('proformas_venta', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre'),
-  total: numeric('total', { precision: 8, scale: 2 }).notNull(),
+  total: numeric('total', { precision: 12, scale: 2 }).notNull(),
   detalles: jsonb('detalles').notNull().$type<
     Array<{
       productoId: number
@@ -459,7 +468,7 @@ export const reservasProductosTable = pgTable('reservas_productos', {
     total: number
   }>(),
   montoAdelantado: numeric('monto_adelantado', {
-    precision: 7,
+    precision: 12,
     scale: 2
   }).notNull(),
   fechaRecojo: date('fecha_recojo', {
