@@ -122,35 +122,6 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
     }
   }
 
-  Future<void> _eliminarMarca(Marca marca) async {
-    try {
-      setState(() => _isLoading = true);
-
-      await api.marcas.deleteMarca(marca.id.toString());
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Marca eliminada correctamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      await _cargarMarcas(); // Recargar la lista
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al eliminar marca: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   void _mostrarFormularioMarca([Marca? marca]) {
     _nombreController.text = marca?.nombre ?? '';
     _descripcionController.text = marca?.descripcion ?? '';
