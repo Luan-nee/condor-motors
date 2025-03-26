@@ -33,22 +33,23 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
       _isLoading = true;
       _errorMessage = '';
     });
-    
+
     try {
       final response = await api.marcas.getMarcas();
-      
+
       final List<Marca> marcas = [];
       for (var item in response) {
         marcas.add(Marca.fromJson(item));
       }
-      
+
       // TODO: Obtener cantidad de productos por marca desde el API cuando esté disponible
       // Por ahora usar datos de ejemplo
       final tempProductosPorMarca = <int, int>{};
       for (var marca in marcas) {
-        tempProductosPorMarca[marca.id] = (marca.id % 100) + 5; // Valor aleatorio de ejemplo
+        tempProductosPorMarca[marca.id] =
+            (marca.id % 100) + 5; // Valor aleatorio de ejemplo
       }
-      
+
       if (!mounted) return;
       setState(() {
         _marcas = marcas;
@@ -61,12 +62,13 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
         _isLoading = false;
         _errorMessage = 'Error al cargar marcas: $e';
       });
-      
+
       // Manejar errores de autenticación
       if (e is ApiException && e.statusCode == 401) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Sesión expirada. Por favor, inicie sesión nuevamente.'),
+            content:
+                Text('Sesión expirada. Por favor, inicie sesión nuevamente.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -74,18 +76,18 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
       }
     }
   }
-  
+
   Future<void> _guardarMarca([Marca? marca]) async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     try {
       setState(() => _isLoading = true);
-      
+
       final marcaData = {
         'nombre': _nombreController.text,
         'descripcion': _descripcionController.text,
       };
-      
+
       if (marca != null) {
         // Actualizar marca existente
         await api.marcas.updateMarca(marca.id.toString(), marcaData);
@@ -93,12 +95,14 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
         // Crear nueva marca
         await api.marcas.createMarca(marcaData);
       }
-      
+
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(marca == null ? 'Marca creada correctamente' : 'Marca actualizada correctamente'),
+          content: Text(marca == null
+              ? 'Marca creada correctamente'
+              : 'Marca actualizada correctamente'),
           backgroundColor: Colors.green,
         ),
       );
@@ -108,7 +112,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
       setState(() {
         _isLoading = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al guardar marca: $e'),
@@ -117,13 +121,13 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
       );
     }
   }
-  
+
   Future<void> _eliminarMarca(Marca marca) async {
     try {
       setState(() => _isLoading = true);
-      
+
       await api.marcas.deleteMarca(marca.id.toString());
-      
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -137,7 +141,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
       setState(() {
         _isLoading = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al eliminar marca: $e'),
@@ -247,9 +251,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                           vertical: 12,
                         ),
                       ),
-                      onPressed: _isLoading 
-                          ? null 
-                          : () => _guardarMarca(marca),
+                      onPressed: _isLoading ? null : () => _guardarMarca(marca),
                       child: _isLoading
                           ? const SizedBox(
                               width: 20,
@@ -267,43 +269,6 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  void _mostrarConfirmacion(Marca marca) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text(
-          '¿Eliminar marca?',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          '¿Está seguro que desea eliminar la marca "${marca.nombre}"? Esta acción no se puede deshacer.',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(color: Colors.white54),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE31E24),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              _eliminarMarca(marca);
-            },
-            child: const Text('Eliminar'),
-          ),
-        ],
       ),
     );
   }
@@ -362,7 +327,8 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                       vertical: 16,
                     ),
                   ),
-                  onPressed: _isLoading ? null : () => _mostrarFormularioMarca(),
+                  onPressed:
+                      _isLoading ? null : () => _mostrarFormularioMarca(),
                 ),
               ],
             ),
@@ -410,7 +376,8 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                               )
                             : SingleChildScrollView(
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     // Encabezado de la tabla
                                     Container(
@@ -474,7 +441,8 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                           decoration: BoxDecoration(
                                             border: Border(
                                               bottom: BorderSide(
-                                                color: Colors.white.withOpacity(0.1),
+                                                color: Colors.white
+                                                    .withOpacity(0.1),
                                               ),
                                             ),
                                           ),
@@ -491,14 +459,17 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                                       width: 32,
                                                       height: 32,
                                                       decoration: BoxDecoration(
-                                                        color: const Color(0xFF2D2D2D),
+                                                        color: const Color(
+                                                            0xFF2D2D2D),
                                                         borderRadius:
-                                                            BorderRadius.circular(8),
+                                                            BorderRadius
+                                                                .circular(8),
                                                       ),
                                                       child: const Center(
                                                         child: FaIcon(
                                                           FontAwesomeIcons.tag,
-                                                          color: Color(0xFFE31E24),
+                                                          color:
+                                                              Color(0xFFE31E24),
                                                           size: 14,
                                                         ),
                                                       ),
@@ -516,9 +487,11 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                               Expanded(
                                                 flex: 45,
                                                 child: Text(
-                                                  marca.descripcion ?? 'Sin descripción',
+                                                  marca.descripcion ??
+                                                      'Sin descripción',
                                                   style: TextStyle(
-                                                    color: Colors.white.withOpacity(0.7),
+                                                    color: Colors.white
+                                                        .withOpacity(0.7),
                                                   ),
                                                 ),
                                               ),
@@ -527,23 +500,29 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                                 flex: 10,
                                                 child: Center(
                                                   child: Container(
-                                                    padding: const EdgeInsets.symmetric(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
                                                       horizontal: 12,
                                                       vertical: 4,
                                                     ),
                                                     decoration: BoxDecoration(
-                                                      color: const Color(0xFFE31E24)
+                                                      color: const Color(
+                                                              0xFFE31E24)
                                                           .withOpacity(0.1),
                                                       borderRadius:
-                                                          BorderRadius.circular(12),
+                                                          BorderRadius.circular(
+                                                              12),
                                                     ),
                                                     child: Text(
-                                                      _productosPorMarca[marca.id]
+                                                      _productosPorMarca[
+                                                                  marca.id]
                                                               ?.toString() ??
                                                           '0',
                                                       style: const TextStyle(
-                                                        color: Color(0xFFE31E24),
-                                                        fontWeight: FontWeight.bold,
+                                                        color:
+                                                            Color(0xFFE31E24),
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                       ),
                                                     ),
                                                   ),
@@ -558,32 +537,21 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                                   children: [
                                                     IconButton(
                                                       icon: const FaIcon(
-                                                        FontAwesomeIcons.penToSquare,
+                                                        FontAwesomeIcons
+                                                            .penToSquare,
                                                         color: Colors.white54,
                                                         size: 16,
                                                       ),
                                                       onPressed: () =>
-                                                          _mostrarFormularioMarca(marca),
-                                                      constraints: const BoxConstraints(
+                                                          _mostrarFormularioMarca(
+                                                              marca),
+                                                      constraints:
+                                                          const BoxConstraints(
                                                         minWidth: 30,
                                                         minHeight: 30,
                                                       ),
                                                       padding: EdgeInsets.zero,
-                                                    ),
-                                                    IconButton(
-                                                      icon: const FaIcon(
-                                                        FontAwesomeIcons.trash,
-                                                        color: Color(0xFFE31E24),
-                                                        size: 16,
-                                                      ),
-                                                      onPressed: () =>
-                                                          _mostrarConfirmacion(marca),
-                                                      constraints: const BoxConstraints(
-                                                        minWidth: 30,
-                                                        minHeight: 30,
-                                                      ),
-                                                      padding: EdgeInsets.zero,
-                                                    ),
+                                                    )
                                                   ],
                                                 ),
                                               ),
