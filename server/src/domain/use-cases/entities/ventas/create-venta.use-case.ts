@@ -31,7 +31,7 @@ import {
 } from '@/db/schema'
 import type { CreateVentaDto } from '@/domain/dtos/entities/ventas/create-venta.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray, like, or } from 'drizzle-orm'
 
 interface DetalleVenta {
   sku: string
@@ -254,7 +254,9 @@ export class CreateVenta {
 
   private async getDocumentNumber(serieDocumento: string, fixedLength: number) {
     const documents = await db
-      .select({ numeroDocumento: ventasTable.numeroDocumento })
+      .select({
+        numeroDocumento: ventasTable.numeroDocumento
+      })
       .from(ventasTable)
       .orderBy(desc(ventasTable.fechaCreacion))
       .where(eq(ventasTable.serieDocumento, serieDocumento))
@@ -265,6 +267,36 @@ export class CreateVenta {
     if (documents.length > 0) {
       const [document] = documents
       nextDocumentNumber = parseInt(document.numeroDocumento) + 1
+    } else {
+      const sucursales = await db
+        .select({
+          numeroFacturaInicial: sucursalesTable.numeroFacturaInicial,
+          numeroBoletaInicial: sucursalesTable.numeroBoletaInicial
+        })
+        .from(sucursalesTable)
+        .where(
+          or(
+            like(sucursalesTable.serieFacturaSucursal, serieDocumento),
+            like(sucursalesTable.serieBoletaSucursal, serieDocumento)
+          )
+        )
+
+      if (sucursales.length < 1) {
+        throw CustomError.badRequest(
+          'No se encontró una serie de documento para registrar la venta en la sucursal especificada'
+        )
+      }
+
+      const [{ numeroFacturaInicial, numeroBoletaInicial }] = sucursales
+
+      if (serieDocumento.startsWith('F') && numeroFacturaInicial !== null) {
+        nextDocumentNumber = numeroFacturaInicial
+      } else if (
+        serieDocumento.startsWith('B') &&
+        numeroBoletaInicial !== null
+      ) {
+        nextDocumentNumber = numeroBoletaInicial
+      }
     }
 
     return nextDocumentNumber.toString().padStart(fixedLength, '0')

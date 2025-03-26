@@ -36,7 +36,9 @@ export const sucursalesTable = pgTable('sucursales', {
   direccion: text('direccion'),
   sucursalCentral: boolean('sucursal_central').notNull(),
   serieFacturaSucursal: text('serie_factura_sucursal').unique(),
+  numeroFacturaInicial: integer('numero_factura_inicial').default(1),
   serieBoletaSucursal: text('serie_boleta_sucursal').unique(),
+  numeroBoletaInicial: integer('numero_boleta_inicial').default(1),
   codigoEstablecimiento: text('codigo_establecimiento').unique(),
   tieneNotificaciones: boolean('tiene_notificaciones').notNull().default(false),
   ...timestampsColumns
