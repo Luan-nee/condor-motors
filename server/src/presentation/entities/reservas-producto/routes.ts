@@ -15,6 +15,8 @@ export class ReservasProductoRoutes {
 
     router.patch('/:id', ReservasProducto.update)
 
+    router.delete('/:id', ReservasProducto.delete)
+
     return router
   }
 }
