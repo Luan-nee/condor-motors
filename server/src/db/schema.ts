@@ -265,8 +265,8 @@ export const itemsTransferenciaInventarioTable = pgTable(
 
 export const permisosTable = pgTable('permisos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  codigoPermiso: text('codigo_permiso').notNull().unique(),
-  nombrePermiso: text('nombre_permiso').notNull().unique()
+  codigo: text('codigo').notNull().unique(),
+  nombre: text('nombre').notNull().unique()
 })
 
 export const rolesCuentasEmpleadosTable = pgTable('roles_cuentas_empleados', {

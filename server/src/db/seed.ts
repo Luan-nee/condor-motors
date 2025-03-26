@@ -164,7 +164,7 @@ const seedDatabase = async () => {
     .values(adminPermissions)
     .returning({
       id: schema.permisosTable.id,
-      codigoPermiso: schema.permisosTable.codigoPermiso
+      codigoPermiso: schema.permisosTable.codigo
     })
 
   const permisosVendedorId = permisos.filter((permiso) =>

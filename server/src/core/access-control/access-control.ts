@@ -10,7 +10,7 @@ import { and, eq, or } from 'drizzle-orm'
 export class AccessControl {
   private static getConditionals(permissionCodes: string[]) {
     const conditionals = permissionCodes.map((permissionCode) =>
-      eq(permisosTable.codigoPermiso, permissionCode)
+      eq(permisosTable.codigo, permissionCode)
     )
 
     return or(...conditionals)
@@ -24,7 +24,7 @@ export class AccessControl {
 
     const permissions = await db
       .select({
-        codigoPermiso: permisosTable.codigoPermiso,
+        codigoPermiso: permisosTable.codigo,
         sucursalId: empleadosTable.sucursalId
       })
       .from(rolesPermisosTable)
