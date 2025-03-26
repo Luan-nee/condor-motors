@@ -220,28 +220,25 @@ export const transferenciasInventariosTable = pgTable(
     solicitanteId: integer('empleado_id')
       .notNull()
       .references(() => empleadosTable.id),
-    proveedorId: integer('proveedor_id')
-      .notNull()
-      .references(() => empleadosTable.id),
+    proveedorId: integer('proveedor_id').references(() => empleadosTable.id),
     estadoTransferenciaId: integer('estado_transferencia_id')
       .notNull()
       .references(() => estadosTransferenciasInventarios.id),
-    sucursalOrigenId: integer('sucursal_origen_id')
-      .notNull()
-      .references(() => sucursalesTable.id),
+    sucursalOrigenId: integer('sucursal_origen_id').references(
+      () => sucursalesTable.id
+    ),
     sucursalDestinoId: integer('sucursal_destino_id')
       .notNull()
       .references(() => sucursalesTable.id),
     salidaOrigen: timestamp('salida_origen', {
       mode: 'date',
       withTimezone: false
-    })
-      .notNull()
-      .defaultNow(),
+    }),
     llegadaDestino: timestamp('llegada_destino', {
       mode: 'date',
       withTimezone: false
     }),
+    modificable: boolean('modificable').notNull().default(true),
     ...timestampsColumns
   }
 )
