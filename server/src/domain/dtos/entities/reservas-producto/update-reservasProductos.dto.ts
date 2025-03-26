@@ -3,15 +3,14 @@ import { updateReservasProductosValidator } from '@/domain/validators/entities/r
 export class UpdateReservasProductosDto {
   public descripcion?: string
   public detallesReserva?: {
-    nombreProducto?: string
-    precioCompra?: number
-    precioVenta?: number
-    cantidad?: number
-    total?: number
+    nombreProducto: string
+    precioCompra: number
+    precioVenta: number
+    cantidad: number
+    total: number
   }
   public montoAdelantado?: number
   public fechaRecojo?: string
-  public clienteId?: number
   public sucursalId?: number
 
   private constructor({
@@ -19,14 +18,12 @@ export class UpdateReservasProductosDto {
     detallesReserva,
     montoAdelantado,
     fechaRecojo,
-    clienteId,
     sucursalId
   }: UpdateReservasProductosDto) {
     this.descripcion = descripcion
-    this.detallesReserva = detallesReserva ?? {}
+    this.detallesReserva = detallesReserva
     this.montoAdelantado = montoAdelantado
     this.fechaRecojo = fechaRecojo
-    this.clienteId = clienteId
     this.sucursalId = sucursalId
   }
 

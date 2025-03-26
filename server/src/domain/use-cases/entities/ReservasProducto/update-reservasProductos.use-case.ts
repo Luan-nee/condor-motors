@@ -27,10 +27,9 @@ export class UpdateReservasProductos {
       .update(reservasProductosTable)
       .set({
         descripcion: updateReservasProductosDto.descripcion,
-        //   detallesReserva: updateReservasProductosDto.detallesReserva,
+        detallesReserva: updateReservasProductosDto.detallesReserva,
         montoAdelantado: updateReservasProductosDto.montoAdelantado?.toFixed(2),
         fechaRecojo: updateReservasProductosDto.fechaRecojo,
-        clienteId: updateReservasProductosDto.clienteId,
         sucursalId: updateReservasProductosDto.sucursalId,
         fechaActualizacion: now
       })
