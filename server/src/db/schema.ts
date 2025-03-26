@@ -371,7 +371,7 @@ export const tiposTaxTable = pgTable('tipos_tax', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
   codigo: text('codigo').notNull().unique(),
-  porcentajeTax: integer('porcentaje').notNull(),
+  porcentaje: integer('porcentaje').notNull(),
   codigoLocal: text('codigo_local').notNull()
 })
 
@@ -389,12 +389,16 @@ export const detallesVentaTable = pgTable('detalles_venta', {
   totalBaseTax: numeric('total_base_tax', { precision: 7, scale: 2 }).notNull(),
   totalTax: numeric('total_tax', { precision: 7, scale: 2 }).notNull(),
   total: numeric('total', { precision: 7, scale: 2 }).notNull(),
+  productoId: integer('producto_id'),
   ventaId: integer('venta_id')
     .notNull()
     .references(() => ventasTable.id)
 })
 
 export const totalesVentaTable = pgTable('totales_venta', {
+  ventaId: integer('venta_id')
+    .primaryKey()
+    .references(() => ventasTable.id),
   totalGravadas: numeric('total_gravadas', {
     precision: 7,
     scale: 2
@@ -414,11 +418,7 @@ export const totalesVentaTable = pgTable('totales_venta', {
   totalVenta: numeric('total_venta', {
     precision: 7,
     scale: 2
-  }).notNull(),
-  ventaId: integer('venta_id')
-    .primaryKey()
-    .notNull()
-    .references(() => ventasTable.id)
+  }).notNull()
 })
 
 /*
@@ -475,14 +475,14 @@ export const reservasProductosTable = pgTable('reservas_productos', {
   ...timestampsColumns
 })
 
-export const devolucionesTable = pgTable('devoluciones', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  motivo: text('motivo').notNull(),
-  ventaId: integer('venta_id')
-    .notNull()
-    .references(() => ventasTable.id),
-  ...timestampsColumns
-})
+// export const devolucionesTable = pgTable('devoluciones', {
+//   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+//   motivo: text('motivo').notNull(),
+//   ventaId: integer('venta_id')
+//     .notNull()
+//     .references(() => ventasTable.id),
+//   ...timestampsColumns
+// })
 
 /*
  * Facturación
@@ -525,6 +525,7 @@ export const notificacionesTable = pgTable('notificaciones', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   titulo: text('titulo').notNull(),
   descripcion: text('descripcion'),
+  leida: boolean('leida').notNull().default(false),
   sucursalId: integer('sucursal_id')
     .notNull()
     .references(() => sucursalesTable.id),

@@ -95,7 +95,7 @@ export class CreateVenta {
     const tiposTax = await db
       .select({
         id: tiposTaxTable.id,
-        porcentajeTax: tiposTaxTable.porcentajeTax
+        porcentajeTax: tiposTaxTable.porcentaje
       })
       .from(tiposTaxTable)
       .where(inArray(tiposTaxTable.id, tipoTaxIds))
@@ -388,7 +388,7 @@ export class CreateVenta {
       .select({
         id: tiposTaxTable.id,
         codigoLocal: tiposTaxTable.codigoLocal,
-        porcentajeTax: tiposTaxTable.porcentajeTax
+        porcentajeTax: tiposTaxTable.porcentaje
       })
       .from(tiposTaxTable)
       .where(eq(tiposTaxTable.codigoLocal, tiposTaxCodes.gratuito))
