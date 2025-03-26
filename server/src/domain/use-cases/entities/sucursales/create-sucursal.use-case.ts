@@ -22,7 +22,7 @@ export class CreateSucursal {
     if (createSucursalDto.serieBoletaSucursal !== undefined) {
       conditionals.push(
         ilike(
-          sucursalesTable.serieBoletaSucursal,
+          sucursalesTable.serieBoleta,
           createSucursalDto.serieBoletaSucursal
         )
       )
@@ -31,7 +31,7 @@ export class CreateSucursal {
     if (createSucursalDto.serieFacturaSucursal !== undefined) {
       conditionals.push(
         ilike(
-          sucursalesTable.serieFacturaSucursal,
+          sucursalesTable.serieFactura,
           createSucursalDto.serieFacturaSucursal
         )
       )
@@ -55,8 +55,8 @@ export class CreateSucursal {
     const sucursales = await db
       .select({
         id: sucursalesTable.id,
-        serieFacturaSucursal: sucursalesTable.serieFacturaSucursal,
-        serieBoletaSucursal: sucursalesTable.serieBoletaSucursal,
+        serieFacturaSucursal: sucursalesTable.serieFactura,
+        serieBoletaSucursal: sucursalesTable.serieBoleta,
         codigoEstablecimiento: sucursalesTable.codigoEstablecimiento
       })
       .from(sucursalesTable)

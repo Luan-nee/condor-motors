@@ -36,9 +36,9 @@ export const sucursalesTable = pgTable('sucursales', {
   nombre: text('nombre').notNull().unique(),
   direccion: text('direccion'),
   sucursalCentral: boolean('sucursal_central').notNull(),
-  serieFacturaSucursal: text('serie_factura_sucursal').unique(),
+  serieFactura: text('serie_factura').unique(),
   numeroFacturaInicial: integer('numero_factura_inicial').default(1),
-  serieBoletaSucursal: text('serie_boleta_sucursal').unique(),
+  serieBoleta: text('serie_boleta').unique(),
   numeroBoletaInicial: integer('numero_boleta_inicial').default(1),
   codigoEstablecimiento: text('codigo_establecimiento').unique(),
   tieneNotificaciones: boolean('tiene_notificaciones').notNull().default(false),
@@ -48,6 +48,12 @@ export const sucursalesTable = pgTable('sucursales', {
 /*
  * Productos
  */
+
+export const coloresTable = pgTable('colores', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  nombre: text('nombre').notNull().unique(),
+  hex: text('hex')
+})
 
 export const categoriasTable = pgTable('categorias', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
@@ -59,12 +65,6 @@ export const marcasTable = pgTable('marcas', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
   descripcion: text('descripcion')
-})
-
-export const coloresTable = pgTable('colores', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull().unique(),
-  hex: text('hex')
 })
 
 export const productosTable = pgTable(
@@ -125,11 +125,12 @@ export const detallesProductoTable = pgTable(
       .references(() => sucursalesTable.id),
     ...timestampsColumns
   },
-  (table) => [
-    index('detalles_producto_precio_compra_idx').on(table.precioCompra),
-    index('detalles_producto_precio_venta_idx').on(table.precioVenta),
-    index('detalles_producto_precio_oferta_idx').on(table.precioOferta),
-    index('detalles_producto_precio_stock_idx').on(table.stock)
+  (t) => [
+    unique().on(t.productoId, t.sucursalId),
+    index('detalles_producto_precio_compra_idx').on(t.precioCompra),
+    index('detalles_producto_precio_venta_idx').on(t.precioVenta),
+    index('detalles_producto_precio_oferta_idx').on(t.precioOferta),
+    index('detalles_producto_precio_stock_idx').on(t.stock)
   ]
 )
 
@@ -244,8 +245,8 @@ export const transferenciasInventariosTable = pgTable(
   }
 )
 
-export const detallesTransferenciaInventarioTable = pgTable(
-  'detalles_transferencia_inventario',
+export const itemsTransferenciaInventarioTable = pgTable(
+  'items_transferencia_inventario',
   {
     id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     cantidad: integer('cantidad').notNull().default(1),
@@ -298,7 +299,7 @@ export const rolesPermisosTable = pgTable(
       .notNull()
       .references(() => permisosTable.id)
   },
-  (table) => [primaryKey({ columns: [table.rolId, table.permisoId] })]
+  (t) => [primaryKey({ columns: [t.rolId, t.permisoId] })]
 )
 
 /*
@@ -363,7 +364,7 @@ export const ventasTable = pgTable(
     declarada: boolean('declarada').notNull().default(false),
     ...timestampsColumns
   },
-  (table) => [unique().on(table.serieDocumento, table.numeroDocumento)]
+  (t) => [unique().on(t.serieDocumento, t.numeroDocumento)]
 )
 
 export const tiposTaxTable = pgTable('tipos_tax', {

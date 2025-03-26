@@ -25,7 +25,7 @@ export class UpdateSucursal {
     if (updateSucursalDto.serieBoletaSucursal !== undefined) {
       conditionals.push(
         ilike(
-          sucursalesTable.serieBoletaSucursal,
+          sucursalesTable.serieBoleta,
           updateSucursalDto.serieBoletaSucursal
         )
       )
@@ -34,7 +34,7 @@ export class UpdateSucursal {
     if (updateSucursalDto.serieFacturaSucursal !== undefined) {
       conditionals.push(
         ilike(
-          sucursalesTable.serieFacturaSucursal,
+          sucursalesTable.serieFactura,
           updateSucursalDto.serieFacturaSucursal
         )
       )
@@ -58,8 +58,8 @@ export class UpdateSucursal {
     const sucursales = await db
       .select({
         id: sucursalesTable.id,
-        serieFacturaSucursal: sucursalesTable.serieFacturaSucursal,
-        serieBoletaSucursal: sucursalesTable.serieBoletaSucursal,
+        serieFacturaSucursal: sucursalesTable.serieFactura,
+        serieBoletaSucursal: sucursalesTable.serieBoleta,
         codigoEstablecimiento: sucursalesTable.codigoEstablecimiento
       })
       .from(sucursalesTable)

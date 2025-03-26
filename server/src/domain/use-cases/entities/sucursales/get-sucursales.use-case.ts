@@ -19,8 +19,8 @@ export class GetSucursales {
     nombre: sucursalesTable.nombre,
     direccion: sucursalesTable.direccion,
     sucursalCentral: sucursalesTable.sucursalCentral,
-    serieFacturaSucursal: sucursalesTable.serieFacturaSucursal,
-    serieBoletaSucursal: sucursalesTable.serieBoletaSucursal,
+    serieFacturaSucursal: sucursalesTable.serieFactura,
+    serieBoletaSucursal: sucursalesTable.serieBoleta,
     codigoEstablecimiento: sucursalesTable.codigoEstablecimiento,
     tieneNotificaciones: sucursalesTable.tieneNotificaciones,
     fechaCreacion: sucursalesTable.fechaCreacion,
@@ -32,8 +32,8 @@ export class GetSucursales {
     nombre: sucursalesTable.nombre,
     direccion: sucursalesTable.direccion,
     sucursalCentral: sucursalesTable.sucursalCentral,
-    serieFacturaSucursal: sucursalesTable.serieFacturaSucursal,
-    serieBoletaSucursal: sucursalesTable.serieBoletaSucursal,
+    serieFacturaSucursal: sucursalesTable.serieFactura,
+    serieBoletaSucursal: sucursalesTable.serieBoleta,
     codigoEstablecimiento: sucursalesTable.codigoEstablecimiento
   } as const
 

@@ -347,8 +347,8 @@ export class CreateVenta {
         .from(sucursalesTable)
         .where(
           or(
-            like(sucursalesTable.serieFacturaSucursal, serieDocumento),
-            like(sucursalesTable.serieBoletaSucursal, serieDocumento)
+            like(sucursalesTable.serieFactura, serieDocumento),
+            like(sucursalesTable.serieBoleta, serieDocumento)
           )
         )
 
@@ -501,8 +501,8 @@ export class CreateVenta {
         direccionCliente: clientesTable.direccion,
         empleadoId: empleadosTable.id,
         sucursalId: sucursalesTable.id,
-        serieFacturaSucursal: sucursalesTable.serieFacturaSucursal,
-        serieBoletaSucursal: sucursalesTable.serieBoletaSucursal
+        serieFacturaSucursal: sucursalesTable.serieFactura,
+        serieBoletaSucursal: sucursalesTable.serieBoleta
       })
       .from(sucursalesTable)
       .leftJoin(
