@@ -104,6 +104,11 @@ export const permissionCodes = {
     getRelated: 'proformas_venta:get_related',
     updateRelated: 'proformas_venta:update_related',
     deleteRelated: 'proformas_venta:delete_related'
+  },
+  reservasProductos: {
+    createAny: 'reservas_productos:create_any',
+    deleteAny: 'reservas_productos:delete_any',
+    updateAny: 'reservas_productos:update_any'
   }
 } as const
 
