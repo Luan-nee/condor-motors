@@ -184,11 +184,6 @@ export class CreateVenta {
           totalTax += detallesItem.totalTax
         }
 
-        await tx
-          .update(detallesProductoTable)
-          .set({ stock: detalleProducto.stock - detalleVenta.cantidad })
-          .where(eq(detallesProductoTable.id, detalleProducto.id))
-
         if (free > 0) {
           const detallesFreeItem = this.computeDetallesItem(
             price,
@@ -209,7 +204,14 @@ export class CreateVenta {
           })
 
           totalGratuitas += detallesFreeItem.totalItem
+          detalleVenta.cantidad += free
+          this.validateStock(detalleProducto, detalleVenta.cantidad)
         }
+
+        await tx
+          .update(detallesProductoTable)
+          .set({ stock: detalleProducto.stock - detalleVenta.cantidad })
+          .where(eq(detallesProductoTable.id, detalleProducto.id))
       }
 
       const [venta] = await tx
