@@ -18,7 +18,7 @@ export const populateConfig: PopulateConfig = {
   },
   rolEmpleado: {
     codigo: 'administrador',
-    nombreRol: 'Adminstrador'
+    nombre: 'Adminstrador'
   },
   defaultCategoria: {
     nombre: 'No especificada',
