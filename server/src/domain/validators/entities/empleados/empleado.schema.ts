@@ -28,7 +28,8 @@ export const empleadoSchema = {
     .length(8)
     .refine((val) => Validator.isOnlyNumbers(val), {
       message: 'El dni del empleado solo puede contener números'
-    }),
+    })
+    .optional(),
   celular: z
     .string()
     .trim()

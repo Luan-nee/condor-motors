@@ -14,30 +14,47 @@ export class CreateEmpleado {
     this.authPayload = authPayload
   }
 
+  private async validateRelated(createEmpleadoDto: CreateEmpleadoDto) {
+    if (createEmpleadoDto.dni !== undefined) {
+      const results = await db
+        .select({
+          empleadoId: empleadosTable.id,
+          sucursalId: sucursalesTable.id
+        })
+        .from(sucursalesTable)
+        .leftJoin(
+          empleadosTable,
+          ilike(empleadosTable.dni, createEmpleadoDto.dni)
+        )
+        .where(eq(sucursalesTable.id, createEmpleadoDto.sucursalId))
+
+      if (results.length < 1) {
+        throw CustomError.badRequest('La sucursal ingresada no existe')
+      }
+
+      const [result] = results
+
+      if (result.empleadoId != null) {
+        throw CustomError.badRequest(
+          `Ya existe un empleado con ese dni: ${createEmpleadoDto.dni}`
+        )
+      }
+    } else {
+      const results = await db
+        .select({
+          sucursalId: sucursalesTable.id
+        })
+        .from(sucursalesTable)
+        .where(eq(sucursalesTable.id, createEmpleadoDto.sucursalId))
+
+      if (results.length < 1) {
+        throw CustomError.badRequest('La sucursal ingresada no existe')
+      }
+    }
+  }
+
   private async createEmpleado(createEmpleadoDto: CreateEmpleadoDto) {
-    const results = await db
-      .select({
-        empleadoId: empleadosTable.id,
-        sucursalId: sucursalesTable.id
-      })
-      .from(sucursalesTable)
-      .leftJoin(
-        empleadosTable,
-        ilike(empleadosTable.dni, createEmpleadoDto.dni)
-      )
-      .where(eq(sucursalesTable.id, createEmpleadoDto.sucursalId))
-
-    if (results.length < 1) {
-      throw CustomError.badRequest('La sucursal ingresada no existe')
-    }
-
-    const [result] = results
-
-    if (result.empleadoId != null) {
-      throw CustomError.badRequest(
-        `Ya existe un empleado con ese dni: ${createEmpleadoDto.dni}`
-      )
-    }
+    await this.validateRelated(createEmpleadoDto)
 
     const sueldoString =
       createEmpleadoDto.sueldo === undefined

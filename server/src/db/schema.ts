@@ -152,7 +152,7 @@ export const empleadosTable = pgTable('empleados', {
   nombre: text('nombre').notNull(),
   apellidos: text('apellidos').notNull(),
   activo: boolean('activo').notNull().default(true),
-  dni: text('dni').notNull().unique(),
+  dni: text('dni').unique(),
   pathFoto: text('path_foto'),
   celular: text('celular'),
   horaInicioJornada: time('hora_inicio_jornada'),
@@ -181,7 +181,7 @@ export const clientesTable = pgTable('clientes', {
   tipoDocumentoId: integer('tipo_documento_id')
     .notNull()
     .references(() => tiposDocumentoClienteTable.id),
-  numeroDocumento: text('numero_documento').notNull(),
+  numeroDocumento: text('numero_documento').unique(),
   denominacion: text('denominacion').notNull(),
   codigoPais: text('codigo_pais').notNull().default('PE'),
   direccion: text('direccion'),

@@ -73,10 +73,9 @@ export class UpdateEmpleado {
         empleadosTable,
         or(
           eq(empleadosTable.id, numericIdDto.id),
-          ilike(
-            empleadosTable.dni,
-            updateEmpleadoDto.dni ?? 'this-is-not-a-dni'
-          )
+          updateEmpleadoDto.dni !== undefined
+            ? ilike(empleadosTable.dni, updateEmpleadoDto.dni)
+            : undefined
         )
       )
       .where(whereCondition)

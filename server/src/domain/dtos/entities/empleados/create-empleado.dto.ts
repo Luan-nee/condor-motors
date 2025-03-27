@@ -4,7 +4,7 @@ export class CreateEmpleadoDto {
   public nombre: string
   public apellidos: string
   public activo: boolean
-  public dni: string
+  public dni?: string
   public celular?: string
   public horaInicioJornada?: string
   public horaFinJornada?: string
