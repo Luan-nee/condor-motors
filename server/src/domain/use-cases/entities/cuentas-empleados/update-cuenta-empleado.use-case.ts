@@ -76,7 +76,7 @@ export class UpdateCuentaEmpleado {
         usuario: updateCuentaEmpleadoDto.usuario,
         clave: hashedPassword,
         secret,
-        rolCuentaEmpleadoId: updateCuentaEmpleadoDto.rolCuentaEmpleadoId,
+        rolId: updateCuentaEmpleadoDto.rolCuentaEmpleadoId,
         fechaActualizacion: now
       })
       .where(eq(cuentasEmpleadosTable.id, numericIdDto.id))

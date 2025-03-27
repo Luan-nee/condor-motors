@@ -1,7 +1,6 @@
 import { permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
-import { UserEntityMapper } from '@/domain/mappers/user-entity.mapper'
 import type { Encryptor, TokenAuthenticator } from '@/types/interfaces'
 import { db } from '@db/connection'
 import {
@@ -86,7 +85,7 @@ export class RegisterUser {
         usuario: registerUserDto.usuario,
         clave: hashedPassword,
         secret,
-        rolCuentaEmpleadoId: registerUserDto.rolCuentaEmpleadoId,
+        rolId: registerUserDto.rolCuentaEmpleadoId,
         empleadoId: registerUserDto.empleadoId
       })
       .returning()
@@ -155,12 +154,20 @@ export class RegisterUser {
       user.secret
     )
 
-    const mappedUser = UserEntityMapper.userEntityFromObject(user)
-
     return {
       accessToken,
       refreshToken,
-      data: mappedUser
+      data: {
+        id: user.id,
+        usuario: user.usuario,
+        rolCuentaEmpleadoId: user.rolId,
+        rolCuentaEmpleadoCodigo: user.rolCuentaEmpleadoCodigo,
+        empleadoId: user.empleadoId,
+        fechaCreacion: user.fechaCreacion,
+        fechaActualizacion: user.fechaActualizacion,
+        sucursal: user.sucursal,
+        sucursalId: user.sucursalId
+      }
     }
   }
 }

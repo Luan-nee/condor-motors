@@ -1,5 +1,4 @@
 import { CustomError } from '@/core/errors/custom.error'
-import { UserEntityMapper } from '@/domain/mappers/user-entity.mapper'
 import type { Encryptor, TokenAuthenticator } from '@/types/interfaces'
 import { db } from '@db/connection'
 import {
@@ -93,12 +92,20 @@ export class LoginUser {
       user.secret
     )
 
-    const mappedUser = UserEntityMapper.userEntityFromObject(user)
-
     return {
       accessToken,
       refreshToken,
-      data: mappedUser
+      data: {
+        id: user.id,
+        usuario: user.usuario,
+        rolCuentaEmpleadoId: user.rolCuentaEmpleadoId,
+        rolCuentaEmpleadoCodigo: user.rolCuentaEmpleadoCodigo,
+        empleadoId: user.empleadoId,
+        fechaCreacion: user.fechaCreacion,
+        fechaActualizacion: user.fechaActualizacion,
+        sucursal: user.sucursal,
+        sucursalId: user.sucursalId
+      }
     }
   }
 }
