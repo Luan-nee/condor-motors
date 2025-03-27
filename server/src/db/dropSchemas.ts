@@ -9,11 +9,11 @@ const dropSchema = async (dbSchemas: string[]) => {
       DO $$
       DECLARE
         r RECORD;
-    BEGIN
-    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = '${dbSchema}') LOOP
-    EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
-    END LOOP;
-    END $$;
+      BEGIN
+      FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = '${dbSchema}') LOOP
+      EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+      END LOOP;
+      END $$;
     `)
   )
 
