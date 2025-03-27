@@ -22,21 +22,15 @@ export class UpdateSucursal {
       conditionals.push(ilike(sucursalesTable.nombre, updateSucursalDto.nombre))
     }
 
-    if (updateSucursalDto.serieBoletaSucursal !== undefined) {
+    if (updateSucursalDto.serieBoleta !== undefined) {
       conditionals.push(
-        ilike(
-          sucursalesTable.serieBoleta,
-          updateSucursalDto.serieBoletaSucursal
-        )
+        ilike(sucursalesTable.serieBoleta, updateSucursalDto.serieBoleta)
       )
     }
 
-    if (updateSucursalDto.serieFacturaSucursal !== undefined) {
+    if (updateSucursalDto.serieFactura !== undefined) {
       conditionals.push(
-        ilike(
-          sucursalesTable.serieFactura,
-          updateSucursalDto.serieFacturaSucursal
-        )
+        ilike(sucursalesTable.serieFactura, updateSucursalDto.serieFactura)
       )
     }
 
@@ -58,8 +52,8 @@ export class UpdateSucursal {
     const sucursales = await db
       .select({
         id: sucursalesTable.id,
-        serieFacturaSucursal: sucursalesTable.serieFactura,
-        serieBoletaSucursal: sucursalesTable.serieBoleta,
+        serieFactura: sucursalesTable.serieFactura,
+        serieBoleta: sucursalesTable.serieBoleta,
         codigoEstablecimiento: sucursalesTable.codigoEstablecimiento
       })
       .from(sucursalesTable)
@@ -73,19 +67,19 @@ export class UpdateSucursal {
 
     for (const sucursal of sucursales) {
       if (
-        updateSucursalDto.serieFacturaSucursal !== undefined &&
-        sucursal.serieFacturaSucursal === updateSucursalDto.serieFacturaSucursal
+        updateSucursalDto.serieFactura !== undefined &&
+        sucursal.serieFactura === updateSucursalDto.serieFactura
       ) {
         throw CustomError.badRequest(
-          `Ya existe una sucursal con esa serie de factura: '${updateSucursalDto.serieFacturaSucursal}'`
+          `Ya existe una sucursal con esa serie de factura: '${updateSucursalDto.serieFactura}'`
         )
       }
       if (
-        updateSucursalDto.serieBoletaSucursal !== undefined &&
-        sucursal.serieBoletaSucursal === updateSucursalDto.serieBoletaSucursal
+        updateSucursalDto.serieBoleta !== undefined &&
+        sucursal.serieBoleta === updateSucursalDto.serieBoleta
       ) {
         throw CustomError.badRequest(
-          `Ya existe una sucursal con esa serie de boleta: '${updateSucursalDto.serieFacturaSucursal}'`
+          `Ya existe una sucursal con esa serie de boleta: '${updateSucursalDto.serieFactura}'`
         )
       }
       if (
@@ -117,8 +111,8 @@ export class UpdateSucursal {
 
     if (
       updateSucursalDto.nombre !== undefined ||
-      updateSucursalDto.serieFacturaSucursal !== undefined ||
-      updateSucursalDto.serieBoletaSucursal !== undefined ||
+      updateSucursalDto.serieFactura !== undefined ||
+      updateSucursalDto.serieBoleta !== undefined ||
       updateSucursalDto.codigoEstablecimiento !== undefined
     ) {
       await this.checkDuplicated(updateSucursalDto)
@@ -132,6 +126,11 @@ export class UpdateSucursal {
         nombre: updateSucursalDto.nombre,
         direccion: updateSucursalDto.direccion,
         sucursalCentral: updateSucursalDto.sucursalCentral,
+        serieFactura: updateSucursalDto.serieFactura,
+        numeroFacturaInicial: updateSucursalDto.numeroFacturaInicial,
+        serieBoleta: updateSucursalDto.serieBoleta,
+        numeroBoletaInicial: updateSucursalDto.numeroBoletaInicial,
+        codigoEstablecimiento: updateSucursalDto.codigoEstablecimiento,
         fechaActualizacion: now
       })
       .where(eq(sucursalesTable.id, numericIdDto.id))

@@ -5,8 +5,10 @@ const createSucursalSchema = z.object({
   nombre: sucursalSchema.nombre,
   direccion: sucursalSchema.direccion,
   sucursalCentral: sucursalSchema.sucursalCentral,
-  serieFacturaSucursal: sucursalSchema.serieFacturaSucursal,
-  serieBoletaSucursal: sucursalSchema.serieBoletaSucursal,
+  serieFactura: sucursalSchema.serieFactura,
+  numeroFacturaInicial: sucursalSchema.numeroFacturaInicial,
+  serieBoleta: sucursalSchema.serieBoleta,
+  numeroBoletaInicial: sucursalSchema.numeroBoletaInicial,
   codigoEstablecimiento: sucursalSchema.codigoEstablecimiento
 })
 
@@ -17,8 +19,10 @@ const updateSucursalSchema = z.object({
   nombre: sucursalSchema.nombre,
   direccion: sucursalSchema.direccion,
   sucursalCentral: sucursalSchema.sucursalCentral,
-  serieFacturaSucursal: sucursalSchema.serieFacturaSucursal,
-  serieBoletaSucursal: sucursalSchema.serieBoletaSucursal,
+  serieFactura: sucursalSchema.serieFactura,
+  numeroFacturaInicial: sucursalSchema.numeroFacturaInicial,
+  serieBoleta: sucursalSchema.serieBoleta,
+  numeroBoletaInicial: sucursalSchema.numeroBoletaInicial,
   codigoEstablecimiento: sucursalSchema.codigoEstablecimiento
 })
 

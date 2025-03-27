@@ -15,10 +15,11 @@ import {
 } from '@db/schema'
 import { exit } from 'process'
 import { populateConfig } from '@db/config/populate.config'
+import { transformPermissionCodes } from '@/core/lib/utils'
 
 const populateDatabase = async (
   config: PopulateConfig,
-  permissions: Array<{ nombrePermiso: string; codigoPermiso: string }>
+  permissions: Array<{ nombre: string; codigo: string }>
 ) => {
   const hashedPassword = await BcryptAdapter.hash(config.user.clave)
   const secret = JwtAdapter.randomSecret()
@@ -46,7 +47,7 @@ const populateDatabase = async (
       usuario: config.user.usuario,
       clave: hashedPassword,
       secret,
-      rolCuentaEmpleadoId: rolEmpleado.id,
+      rolId: rolEmpleado.id,
       empleadoId: empleado.id
     })
 
@@ -71,14 +72,6 @@ const populateDatabase = async (
     clave: config.user.clave
   }
 }
-
-const transformPermissionCodes = (codes: typeof permissionCodes) =>
-  Object.values(codes).flatMap((category) =>
-    Object.values(category).map((code) => ({
-      nombrePermiso: code,
-      codigoPermiso: code
-    }))
-  )
 
 const permissions = transformPermissionCodes(permissionCodes)
 

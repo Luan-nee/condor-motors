@@ -3,7 +3,7 @@ import type { UserEntity } from '@/types/schemas'
 export class UserEntityMapper {
   static userEntityFromObject(input: UserEntity) {
     const parsedId = String(input.id)
-    const parsedRolCuentaEmpleadoId = String(input.rolCuentaEmpleadoId)
+    const parsedRolCuentaEmpleadoId = String(input.rolId)
     const parsedEmpleadoId = String(input.empleadoId)
 
     return {

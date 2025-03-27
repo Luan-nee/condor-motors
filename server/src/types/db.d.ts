@@ -16,7 +16,7 @@ interface PopulateConfig {
   }
   rolEmpleado: {
     codigo: string
-    nombreRol: string
+    nombre: string
   }
   defaultCategoria: {
     nombre: string
