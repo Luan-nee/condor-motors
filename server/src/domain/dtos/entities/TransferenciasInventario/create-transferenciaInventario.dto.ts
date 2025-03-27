@@ -2,7 +2,6 @@ import { createTransferenciaInventarioValidator } from '@/domain/validators/enti
 
 export class CreateTransferenciaInventarioDto {
   public empleadoId?: number
-  public estadoTransferenciaId: number
   public sucursalOrigenId?: number
   public sucursalDestinoId: number
   public detalleVenta: {
@@ -13,13 +12,11 @@ export class CreateTransferenciaInventarioDto {
 
   constructor({
     empleadoId,
-    estadoTransferenciaId,
     sucursalOrigenId,
     sucursalDestinoId,
     detalleVenta
   }: CreateTransferenciaInventarioDto) {
     this.empleadoId = empleadoId
-    this.estadoTransferenciaId = estadoTransferenciaId
     this.sucursalOrigenId = sucursalOrigenId
     this.sucursalDestinoId = sucursalDestinoId
     this.detalleVenta = detalleVenta
