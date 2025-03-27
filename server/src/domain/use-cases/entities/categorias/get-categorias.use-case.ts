@@ -1,14 +1,15 @@
 import { orderValues } from '@/consts'
 import { db } from '@/db/connection'
-import { categoriasTable } from '@/db/schema'
+import { categoriasTable, productosTable } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
-import { asc, desc, ilike, or } from 'drizzle-orm'
+import { asc, count, desc, eq, ilike, or } from 'drizzle-orm'
 
 export class GetCategorias {
   private readonly selectFields = {
     id: categoriasTable.id,
     nombre: categoriasTable.nombre,
-    descripcion: categoriasTable.descripcion
+    descripcion: categoriasTable.descripcion,
+    totalProductos: count(productosTable.id)
   }
 
   private readonly validSortBy = {
@@ -49,7 +50,12 @@ export class GetCategorias {
     const categorias = await db
       .select(this.selectFields)
       .from(categoriasTable)
+      .leftJoin(
+        productosTable,
+        eq(categoriasTable.id, productosTable.categoriaId)
+      )
       .where(whereCondition)
+      .groupBy(categoriasTable.id)
       .orderBy(order)
       .limit(queriesDto.page_size)
       .offset(queriesDto.page_size * (queriesDto.page - 1))

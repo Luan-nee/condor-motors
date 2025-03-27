@@ -1,8 +1,8 @@
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import { categoriasTable } from '@/db/schema'
+import { categoriasTable, productosTable } from '@/db/schema'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
-import { eq } from 'drizzle-orm'
+import { count, eq } from 'drizzle-orm'
 
 export class GetCategoriaById {
   private readonly authpayload: AuthPayload
@@ -10,7 +10,8 @@ export class GetCategoriaById {
   private readonly selectFields = {
     id: categoriasTable.id,
     nombre: categoriasTable.nombre,
-    descripcion: categoriasTable.descripcion
+    descripcion: categoriasTable.descripcion,
+    totalProductos: count(productosTable.id)
   }
 
   constructor(authpayload: AuthPayload) {
@@ -21,7 +22,12 @@ export class GetCategoriaById {
     return await db
       .select(this.selectFields)
       .from(categoriasTable)
+      .leftJoin(
+        productosTable,
+        eq(categoriasTable.id, productosTable.categoriaId)
+      )
       .where(eq(categoriasTable.id, numericIdDto.id))
+      .groupBy(categoriasTable.id)
   }
 
   private async getCategoriaById(numeric: NumericIdDto) {
