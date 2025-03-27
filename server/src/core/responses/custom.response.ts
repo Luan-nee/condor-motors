@@ -136,7 +136,7 @@ export class CustomResponse {
       res,
       error: 'Not found',
       status: responseStatus.fail,
-      statusCode: 401
+      statusCode: 404
     })
   }
 

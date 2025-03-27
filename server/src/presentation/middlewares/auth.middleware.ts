@@ -5,23 +5,31 @@ import type { NextFunction, Request, Response } from 'express'
 import { JsonWebTokenError } from 'jsonwebtoken'
 
 export class AuthMiddleware {
+  private static handleAuthError(res: Response) {
+    CustomResponse.unauthorized({
+      res,
+      error: 'Invalid or missing authorization token'
+    })
+  }
+
   static readonly requests = (
     req: Request,
     res: Response,
     next: NextFunction
   ) => {
-    const { headers } = req
-    const { authorization: authHeader } = headers
+    const {
+      headers: { authorization: authHeader }
+    } = req
 
     if (authHeader === undefined || typeof authHeader !== 'string') {
-      CustomResponse.invalidAccessToken({ res })
+      AuthMiddleware.handleAuthError(res)
       return
     }
 
     const parts = authHeader.split(' ')
 
     if (parts.length !== 2 || parts[0] !== 'Bearer') {
-      CustomResponse.invalidAccessToken({ res })
+      AuthMiddleware.handleAuthError(res)
       return
     }
 
@@ -30,21 +38,22 @@ export class AuthMiddleware {
     try {
       const decodedAuthPayload = JwtAdapter.verify({ token })
 
-      const result = authPayloadValidator(decodedAuthPayload)
+      const validationResult = authPayloadValidator(decodedAuthPayload)
 
-      if (!result.success) {
-        CustomResponse.invalidAccessToken({ res })
+      if (!validationResult.success) {
+        AuthMiddleware.handleAuthError(res)
         return
       }
 
-      const { data: authPayload } = result
+      const { data: authPayload } = validationResult
 
       req.authPayload = authPayload
 
       next()
     } catch (error) {
       if (error instanceof JsonWebTokenError) {
-        CustomResponse.invalidAccessToken({ res })
+        AuthMiddleware.handleAuthError(res)
+        return
       }
 
       next(error)
