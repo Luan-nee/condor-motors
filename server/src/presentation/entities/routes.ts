@@ -10,6 +10,7 @@ import { CuentasEmpleadosRoutes } from '@/presentation/entities/cuentas-empleado
 import { ColoresRoutes } from '@/presentation/entities/colores/routes'
 import { ClientesRoutes } from './clientes/routes'
 import { ReservasProductoRoutes } from './reservas-producto/routes'
+import { TransferenciasInventarioRouter } from './transeferenciasInventario/routes'
 
 export class EntitiesRoutes {
   static get routes() {
@@ -24,6 +25,10 @@ export class EntitiesRoutes {
     router.use('/ReservasProducto', ReservasProductoRoutes.routes)
     router.use('/cuentasempleados', CuentasEmpleadosRoutes.routes)
     router.use('/colores', ColoresRoutes.routes)
+    router.use(
+      'transferenciasInventario',
+      TransferenciasInventarioRouter.routes
+    )
     router.use(
       '/:sucursalId',
       [EntitiesMiddleware.soloSucursal],
