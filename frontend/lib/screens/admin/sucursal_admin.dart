@@ -51,10 +51,10 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
       _isLoading = true;
       _errorMessage = '';
     });
-    
+
     try {
       final sucursales = await api.sucursales.getSucursales();
-      
+
       if (!mounted) return;
       setState(() {
         _todasLasSucursales = sucursales;
@@ -78,8 +78,8 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
 
     final termino = _terminoBusqueda.toLowerCase();
     _sucursales = _todasLasSucursales.where((sucursal) {
-      return sucursal.nombre.toLowerCase().contains(termino) || 
-             sucursal.direccion.toLowerCase().contains(termino);
+      return sucursal.nombre.toLowerCase().contains(termino) ||
+          sucursal.direccion.toLowerCase().contains(termino);
     }).toList();
   }
 
@@ -92,11 +92,12 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
       );
 
       if (data['id'] != null) {
-        await api.sucursales.updateSucursal(data['id'].toString(), request.toJson());
+        await api.sucursales
+            .updateSucursal(data['id'].toString(), request.toJson());
       } else {
         await api.sucursales.createSucursal(request.toJson());
       }
-      
+
       if (!mounted) return;
       await _cargarSucursales();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -132,7 +133,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
       'centrales': [],
       'noCentrales': [],
     };
-    
+
     for (final sucursal in _sucursales) {
       if (sucursal.sucursalCentral) {
         grupos['centrales']!.add(sucursal);
@@ -140,7 +141,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
         grupos['noCentrales']!.add(sucursal);
       }
     }
-    
+
     return grupos;
   }
 
@@ -205,9 +206,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
             child: Row(
               children: [
                 Expanded(
-            child: TextField(
+                  child: TextField(
                     decoration: InputDecoration(
-                labelText: 'Buscar sucursal',
+                      labelText: 'Buscar sucursal',
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -215,11 +216,13 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                       ),
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.05),
-                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                      labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                      hintStyle:
+                          TextStyle(color: Colors.white.withOpacity(0.5)),
+                      labelStyle:
+                          TextStyle(color: Colors.white.withOpacity(0.7)),
                     ),
                     style: const TextStyle(color: Colors.white),
-              onChanged: (value) {
+                    onChanged: (value) {
                       setState(() {
                         _terminoBusqueda = value;
                         _aplicarFiltroBusqueda();
@@ -229,7 +232,8 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                 ),
                 const SizedBox(width: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2D2D2D),
                     borderRadius: BorderRadius.circular(8),
@@ -263,7 +267,8 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
                         ),
                         SizedBox(height: 16),
                         Text(
@@ -353,63 +358,12 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                // Encabezado de la tabla
-                                Container(
-                                  color: const Color(0xFF2D2D2D),
-                                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                                  child: const Row(
-                            children: [
-                                      Expanded(
-                                        flex: 30,
-                                        child: Text(
-                                          'Nombre',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 40,
-                                        child: Text(
-                                          'Dirección',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 15,
-                                        child: Text(
-                                          'Tipo',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 15,
-                                        child: Text(
-                                          'Acciones',
-                                          textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                            color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                
                                 // Sucursales Centrales
                                 if (sucursalesCentrales.isNotEmpty) ...[
                                   Container(
                                     color: const Color(0xFF2D2D2D),
-                                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 20),
                                     child: Row(
                                       children: [
                                         const FaIcon(
@@ -428,14 +382,16 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                                       ],
                                     ),
                                   ),
-                                  ...sucursalesCentrales.map((sucursal) => _buildSucursalRow(sucursal)),
+                                  ...sucursalesCentrales.map((sucursal) =>
+                                      _buildSucursalRow(sucursal)),
                                 ],
-                                
+
                                 // Sucursales No Centrales
                                 if (sucursalesNoCentrales.isNotEmpty) ...[
                                   Container(
                                     color: const Color(0xFF2D2D2D),
-                                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 20),
                                     child: Row(
                                       children: [
                                         const FaIcon(
@@ -454,7 +410,8 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                                       ],
                                     ),
                                   ),
-                                  ...sucursalesNoCentrales.map((sucursal) => _buildSucursalRow(sucursal)),
+                                  ...sucursalesNoCentrales.map((sucursal) =>
+                                      _buildSucursalRow(sucursal)),
                                 ],
                               ],
                             ),
@@ -495,10 +452,10 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
           style: TextStyle(
             color: Colors.white.withOpacity(0.7),
           ),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -520,48 +477,50 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
               ),
             ),
             const SizedBox(width: 8),
-                              IconButton(
+            IconButton(
               icon: const FaIcon(
                 FontAwesomeIcons.penToSquare,
                 color: Colors.white70,
                 size: 18,
               ),
               tooltip: 'Editar sucursal',
-                                onPressed: () => _showSucursalDialog(sucursal),
-                              ),
-                              IconButton(
+              onPressed: () => _showSucursalDialog(sucursal),
+            ),
+            IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
               tooltip: 'Eliminar sucursal',
-                                onPressed: () async {
-                                  final confirm = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: const Text('Confirmar eliminación'),
-                    content: Text('¿Está seguro de eliminar la sucursal "${sucursal.nombre}"?'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(context, false),
-                                          child: const Text('Cancelar'),
-                                        ),
-                                        TextButton(
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Confirmar eliminación'),
+                    content: Text(
+                        '¿Está seguro de eliminar la sucursal "${sucursal.nombre}"?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancelar'),
+                      ),
+                      TextButton(
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.red,
                         ),
-                                          onPressed: () => Navigator.pop(context, true),
-                                          child: const Text('Eliminar'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Eliminar'),
+                      ),
+                    ],
+                  ),
+                );
 
-                                  if (confirm == true) {
+                if (confirm == true) {
                   try {
-                                    await api.sucursales.deleteSucursal(sucursal.id.toString());
-                                    await _cargarSucursales();
+                    await api.sucursales.deleteSucursal(sucursal.id.toString());
+                    await _cargarSucursales();
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Sucursal "${sucursal.nombre}" eliminada correctamente'),
+                        content: Text(
+                            'Sucursal "${sucursal.nombre}" eliminada correctamente'),
                         backgroundColor: const Color(0xFF4CAF50),
                       ),
                     );
@@ -574,11 +533,11 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                       ),
                     );
                   }
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -617,7 +576,7 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
   @override
   Widget build(BuildContext context) {
     final bool esNuevaSucursal = widget.sucursal == null;
-    
+
     return AlertDialog(
       title: Text(
         esNuevaSucursal ? 'Nueva Sucursal' : 'Editar Sucursal',
@@ -664,7 +623,8 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
               const SizedBox(height: 16),
               SwitchListTile(
                 title: const Text('Sucursal Central'),
-                subtitle: const Text('Las sucursales centrales tienen permisos especiales'),
+                subtitle: const Text(
+                    'Las sucursales centrales tienen permisos especiales'),
                 value: _sucursalCentral,
                 activeColor: const Color(0xFFE31E24),
                 onChanged: (value) => setState(() => _sucursalCentral = value),
