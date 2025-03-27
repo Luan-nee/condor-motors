@@ -15,7 +15,7 @@ class DashboardItemInfo {
   final String value;
   final Color color;
   final Color bgColor;
-  
+
   DashboardItemInfo({
     required this.icon,
     required this.title,
@@ -50,10 +50,11 @@ class DashboardAdminScreen extends StatefulWidget {
   State<DashboardAdminScreen> createState() => _DashboardAdminScreenState();
 }
 
-class _DashboardAdminScreenState extends State<DashboardAdminScreen> with SingleTickerProviderStateMixin {
+class _DashboardAdminScreenState extends State<DashboardAdminScreen>
+    with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   String _sucursalSeleccionadaId = '';
-  
+
   // Controlador de animación para los elementos del dashboard
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -69,7 +70,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> with Single
   int _totalEmpleados = 0;
   int _totalCategorias = 0;
   int _productosAgotados = 0;
-  
+
   // Mapa para agrupar productos por sucursal
   Map<String, List<Producto>> _productosPorSucursal = {};
 
@@ -86,31 +87,31 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> with Single
       curve: Curves.easeInOutCubic,
     );
     _animationController.forward();
-    
+
     _loadData();
   }
-  
+
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _loadData() async {
     try {
       // Cargar sucursales primero
       final sucursalesResponse = await api.sucursales.getSucursales();
-      
+
       final List<Sucursal> sucursalesList = [];
       final List<Sucursal> centralesList = [];
-      
+
       for (var sucursal in sucursalesResponse) {
         sucursalesList.add(sucursal);
         if (sucursal.sucursalCentral) {
           centralesList.add(sucursal);
         }
       }
-      
+
       // Establecer la sucursal seleccionada: central si existe, o la primera disponible
       String sucursalId = '';
       if (centralesList.isNotEmpty) {
@@ -118,7 +119,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> with Single
       } else if (sucursalesList.isNotEmpty) {
         sucursalId = sucursalesList.first.id.toString();
       }
-      
+
       if (sucursalId.isNotEmpty) {
         _sucursalSeleccionadaId = sucursalId;
         await Future.wait([
@@ -129,9 +130,9 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> with Single
           _loadVentasStats(),
         ]);
       }
-      
+
       if (mounted) {
-      setState(() {
+        setState(() {
           _isLoading = false;
           _sucursales = sucursalesList;
           _centrales = centralesList;
@@ -151,34 +152,34 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> with Single
     try {
       // Mapa para organizar productos por sucursal
       final Map<String, List<Producto>> productosBySucursal = {};
-      
+
       // Inicializar listas vacías para cada sucursal
       for (var sucursal in _sucursales) {
         productosBySucursal[sucursal.id.toString()] = [];
       }
-      
+
       // Cargar productos para la sucursal seleccionada
       final paginatedProductos = await api.productos.getProductos(
         sucursalId: _sucursalSeleccionadaId,
       );
-      
+
       final Map<int, int> newExistencias = {};
       int agotados = 0;
-      
+
       // Procesar los datos de productos
       for (var producto in paginatedProductos.items) {
         newExistencias[producto.id] = producto.stock;
         if (producto.stock <= 0) {
           agotados++;
         }
-        
+
         // Agregar al mapa de productos por sucursal
         final sucId = _sucursalSeleccionadaId;
         if (productosBySucursal.containsKey(sucId)) {
           productosBySucursal[sucId]!.add(producto);
         }
       }
-      
+
       // Para cada sucursal, cargar algunos productos (en una implementación real,
       // podrías cargar datos para todas las sucursales de forma paralela)
       for (var sucursal in _sucursales) {
@@ -192,11 +193,12 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> with Single
             );
             productosBySucursal[sucursal.id.toString()] = sucProducts.items;
           } catch (e) {
-            debugPrint('Error cargando productos para sucursal ${sucursal.id}: $e');
+            debugPrint(
+                'Error cargando productos para sucursal ${sucursal.id}: $e');
           }
         }
       }
-      
+
       if (mounted) {
         setState(() {
           _productos = paginatedProductos.items;
@@ -209,7 +211,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> with Single
       debugPrint('Error cargando productos: $e');
     }
   }
-  
+
   Future<void> _loadEmpleados() async {
     try {
       final empleados = await api.empleados.getEmpleados();
@@ -222,7 +224,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> with Single
       debugPrint('Error cargando empleados: $e');
     }
   }
-  
+
   Future<void> _loadCategorias() async {
     try {
       final categorias = await api.categorias.getCategorias();
@@ -235,12 +237,12 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> with Single
       debugPrint('Error cargando categorías: $e');
     }
   }
-  
+
   Future<void> _loadColores() async {
     try {
       final colores = await api.colores.getColores();
       if (mounted) {
-    setState(() {
+        setState(() {
           _colores = colores;
         });
       }
@@ -248,7 +250,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> with Single
       debugPrint('Error cargando colores: $e');
     }
   }
-  
+
   Future<void> _loadVentasStats() async {
     try {
       // Simulando datos de ventas y ganancias
@@ -256,7 +258,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> with Single
       final random = math.Random();
       _totalVentas = 15000 + random.nextDouble() * 5000;
       _totalGanancias = _totalVentas * 0.3;
-      
+
       // Idealmente, obtendrías estos datos de la API de ventas
       // final ventasStats = await api.ventas.getVentasStats(sucursalId: _sucursalSeleccionadaId);
       // _totalVentas = ventasStats.total;
@@ -298,11 +300,11 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> with Single
           : _DashboardContent(
               animation: _animation,
               productos: _productos,
-      totalVentas: _totalVentas,
-      totalGanancias: _totalGanancias,
+              totalVentas: _totalVentas,
+              totalGanancias: _totalGanancias,
               existencias: _stockPorProducto,
-      sucursales: _sucursales,
-      centrales: _centrales,
+              sucursales: _sucursales,
+              centrales: _centrales,
               colores: _colores,
               totalEmpleados: _totalEmpleados,
               totalCategorias: _totalCategorias,
@@ -341,12 +343,13 @@ class _DashboardContent extends StatelessWidget {
     required this.productosAgotados,
     required this.productosPorSucursal,
   });
-  
+
   Color _getColorForProducto(Producto producto) {
-    final colorApp = colores.where((c) => 
-      c.nombre.toLowerCase() == (producto.color?.toLowerCase() ?? '')
-    ).firstOrNull;
-    
+    final colorApp = colores
+        .where((c) =>
+            c.nombre.toLowerCase() == (producto.color?.toLowerCase() ?? ''))
+        .firstOrNull;
+
     return colorApp?.toColor() ?? Colors.grey;
   }
 
@@ -354,13 +357,13 @@ class _DashboardContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
-    
+
     return Container(
       color: const Color(0xFF111111),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView(
-      children: [
+          children: [
             // Sección de estadísticas principales
             FadeTransition(
               opacity: animation,
@@ -372,9 +375,9 @@ class _DashboardContent extends StatelessWidget {
                 child: _buildMainStatsSection(isMobile),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Distribución geográfica de sucursales
             FadeTransition(
               opacity: animation,
@@ -386,9 +389,9 @@ class _DashboardContent extends StatelessWidget {
                 child: _buildSucursalesDistribution(isMobile),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Sección de productos con stock bajo
             FadeTransition(
               opacity: animation,
@@ -398,14 +401,14 @@ class _DashboardContent extends StatelessWidget {
                   end: Offset.zero,
                 ).animate(animation),
                 child: _buildLowStockProductsSection(isMobile),
-                      ),
-                    ),
-                  ],
-                ),
               ),
+            ),
+          ],
+        ),
+      ),
     );
   }
-  
+
   Widget _buildMainStatsSection(bool isMobile) {
     final List<DashboardItemInfo> statsItems = [
       DashboardItemInfo(
@@ -431,27 +434,27 @@ class _DashboardContent extends StatelessWidget {
       ),
       DashboardItemInfo(
         icon: FontAwesomeIcons.store,
-        title: 'Sucursales',
+        title: 'Locales',
         value: sucursales.length.toString(),
         color: Colors.orange,
         bgColor: Colors.orange.withOpacity(0.15),
       ),
       DashboardItemInfo(
         icon: FontAwesomeIcons.userTie,
-        title: 'Empleados',
+        title: 'Colaboradores',
         value: totalEmpleados.toString(),
         color: Colors.teal,
         bgColor: Colors.teal.withOpacity(0.15),
       ),
       DashboardItemInfo(
         icon: FontAwesomeIcons.circleExclamation,
-        title: 'Agotados',
+        title: 'Productos agotados',
         value: productosAgotados.toString(),
         color: const Color(0xFFE31E24),
         bgColor: const Color(0xFFE31E24).withOpacity(0.15),
       ),
     ];
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -460,23 +463,22 @@ class _DashboardContent extends StatelessWidget {
           child: Row(
             children: [
               FaIcon(
-                FontAwesomeIcons.gaugeHigh, 
+                FontAwesomeIcons.gaugeHigh,
                 color: Colors.white,
                 size: 20,
               ),
               SizedBox(width: 10),
               Text(
                 'Panel de Control',
-                                      style: TextStyle(
+                style: TextStyle(
                   fontSize: 20,
-                                        fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
             ],
           ),
         ),
-
         isMobile
             ? Column(
                 children: statsItems.map((item) {
@@ -486,20 +488,25 @@ class _DashboardContent extends StatelessWidget {
                   );
                 }).toList(),
               )
-            : GridView.count(
-                crossAxisCount: 3,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
+            : Wrap(
+                spacing: 10, // Espaciado horizontal entre tarjetas
+                runSpacing: 10, // Espaciado vertical entre tarjetas
                 children: statsItems.map((item) {
-                  return _buildModernCard(item);
+                  return ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minWidth:
+                          isMobile ? double.infinity : 200, // Ancho mínimo
+                      maxWidth:
+                          isMobile ? double.infinity : 300, // Ancho máximo
+                    ),
+                    child: _buildModernCard(item),
+                  );
                 }).toList(),
               ),
       ],
     );
   }
-  
+
   Widget _buildModernCard(DashboardItemInfo info) {
     return Container(
       decoration: BoxDecoration(
@@ -522,22 +529,22 @@ class _DashboardContent extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+          children: [
             Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
                 Text(
                   info.title,
                   style: const TextStyle(
                     fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
@@ -560,13 +567,13 @@ class _DashboardContent extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 color: info.color,
               ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
     );
   }
-  
+
   Widget _buildSucursalesDistribution(bool isMobile) {
     return Container(
       decoration: BoxDecoration(
@@ -582,19 +589,19 @@ class _DashboardContent extends StatelessWidget {
         ],
       ),
       padding: const EdgeInsets.all(20),
-        child: Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(
-          children: [
+            children: [
               FaIcon(
-                FontAwesomeIcons.mapLocationDot, 
+                FontAwesomeIcons.mapLocationDot,
                 color: Colors.orange,
                 size: 20,
               ),
               SizedBox(width: 10),
-            Text(
-                'Distribución de Sucursales',
+              Text(
+                'Distribución de locales',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -618,16 +625,16 @@ class _DashboardContent extends StatelessWidget {
               final sucursal = sucursales[index];
               return _buildSucursalCard(sucursal);
             },
-            ),
-          ],
-        ),
-      );
-    }
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildSucursalCard(Sucursal sucursal) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -655,23 +662,25 @@ class _DashboardContent extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: sucursal.sucursalCentral 
-                    ? Colors.amber.withOpacity(0.2) 
-                    : Colors.blue.withOpacity(0.2),
+                  color: sucursal.sucursalCentral
+                      ? Colors.amber.withOpacity(0.2)
+                      : Colors.blue.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: FaIcon(
-                  sucursal.sucursalCentral ? FontAwesomeIcons.buildingFlag : FontAwesomeIcons.store,
+                  sucursal.sucursalCentral
+                      ? FontAwesomeIcons.buildingFlag
+                      : FontAwesomeIcons.store,
                   color: sucursal.sucursalCentral ? Colors.amber : Colors.blue,
                   size: 16,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
                         Expanded(
                           child: Text(
@@ -685,25 +694,26 @@ class _DashboardContent extends StatelessWidget {
                           ),
                         ),
                         if (sucursal.sucursalCentral)
-                  Container(
+                          Container(
                             margin: const EdgeInsets.only(left: 4),
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
                               color: Colors.amber.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(4),
                               border: Border.all(
                                 color: Colors.amber.withOpacity(0.5),
                               ),
-                    ),
+                            ),
                             child: const Text(
                               'CENTRAL',
-                      style: TextStyle(
+                              style: TextStyle(
                                 color: Colors.amber,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -721,22 +731,22 @@ class _DashboardContent extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 10),
-          
+
           // Indicadores de productos y empleados
           Row(
             children: [
               _buildMiniStat(
-                FontAwesomeIcons.boxesStacked, 
-                'Productos', 
+                FontAwesomeIcons.boxesStacked,
+                'Productos',
                 '${productosPorSucursal[sucursal.id.toString()]?.length ?? 0}',
                 Colors.blue,
               ),
               const SizedBox(width: 12),
               _buildMiniStat(
-                FontAwesomeIcons.userTie, 
-                'Empleados', 
+                FontAwesomeIcons.userTie,
+                'Colaboradores',
                 '3', // Este dato debería venir de una API real
                 Colors.teal,
               ),
@@ -746,11 +756,12 @@ class _DashboardContent extends StatelessWidget {
       ),
     );
   }
-  
-  Widget _buildMiniStat(IconData icon, String label, String value, Color color) {
+
+  Widget _buildMiniStat(
+      IconData icon, String label, String value, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.black12,
         borderRadius: BorderRadius.circular(6),
       ),
@@ -782,12 +793,11 @@ class _DashboardContent extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildLowStockProductsSection(bool isMobile) {
-    final lowStockProducts = productos
-      .where((producto) => producto.stockBajo)
-      .toList();
-    
+    final lowStockProducts =
+        productos.where((producto) => producto.stockBajo).toList();
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
@@ -808,7 +818,7 @@ class _DashboardContent extends StatelessWidget {
           const Row(
             children: [
               FaIcon(
-                FontAwesomeIcons.triangleExclamation, 
+                FontAwesomeIcons.triangleExclamation,
                 color: Color(0xFFE31E24),
                 size: 20,
               ),
@@ -824,7 +834,6 @@ class _DashboardContent extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          
           if (lowStockProducts.isEmpty)
             Center(
               child: Padding(
@@ -890,7 +899,7 @@ class _DashboardContent extends StatelessWidget {
                   ),
                   DataColumn(
                     label: Text(
-                      'Precio',
+                      'Precio de venta',
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
@@ -930,34 +939,36 @@ class _DashboardContent extends StatelessWidget {
                               fontFamily: 'monospace',
                             ),
                           )),
-                          DataCell(producto.color != null && producto.color!.isNotEmpty
-                            ? Row(
-                                children: [
-                                  Container(
-                                    width: 16,
-                                    height: 16,
-                                    decoration: BoxDecoration(
-                                      color: _getColorForProducto(producto),
-                                      borderRadius: BorderRadius.circular(3),
-                                      border: Border.all(
-                                        color: Colors.white.withOpacity(0.3),
+                          DataCell(producto.color != null &&
+                                  producto.color!.isNotEmpty
+                              ? Row(
+                                  children: [
+                                    Container(
+                                      width: 16,
+                                      height: 16,
+                                      decoration: BoxDecoration(
+                                        color: _getColorForProducto(producto),
+                                        borderRadius: BorderRadius.circular(3),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.3),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    producto.color!,
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                ],
-                              )
-                            : const Text(
-                                'N/A',
-                                style: TextStyle(color: Colors.white70),
-                              )
-                          ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      producto.color!,
+                                      style:
+                                          const TextStyle(color: Colors.white),
+                                    ),
+                                  ],
+                                )
+                              : const Text(
+                                  'N/A',
+                                  style: TextStyle(color: Colors.white70),
+                                )),
                           DataCell(Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: const Color(0xFFE31E24).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
