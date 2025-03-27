@@ -11,9 +11,20 @@ import {
   productosTable,
   sucursalesTable
 } from '@/db/schema'
-import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
+import type { QueriesProductoDto } from '@/domain/dtos/entities/productos/queries-producto.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  ilike,
+  lt,
+  or,
+  type SQL
+} from 'drizzle-orm'
 
 export class GetProductos {
   private readonly authPayload: AuthPayload
@@ -50,11 +61,10 @@ export class GetProductos {
     fechaCreacion: productosTable.fechaCreacion
   } as const
 
-  private readonly validFilter = {
-    stockBajo: detallesProductoTable.stockBajo
-    // precioCompra: detallesProductoTable.precioCompra,
-    // precioVenta: detallesProductoTable.precioVenta,
-    // precioOferta: detallesProductoTable.precioOferta
+  private readonly validDecimalFilter = {
+    precioCompra: detallesProductoTable.precioCompra,
+    precioVenta: detallesProductoTable.precioVenta,
+    precioOferta: detallesProductoTable.precioOferta
   } as const
 
   constructor(authPayload: AuthPayload) {
@@ -77,40 +87,40 @@ export class GetProductos {
 
   private isValidDecimalFilter(
     filter: string
-  ): filter is keyof typeof this.validFilter {
-    return Object.keys(this.validFilter).includes(filter)
+  ): filter is keyof typeof this.validDecimalFilter {
+    return Object.keys(this.validDecimalFilter).includes(filter)
   }
 
-  private getFilterColumn(filter: string) {
+  private getDecimalFilterColumn(filter: string) {
     if (this.isValidDecimalFilter(filter)) {
-      return this.validFilter[filter]
+      return this.validDecimalFilter[filter]
     }
 
     return undefined
   }
 
   private async getProductos(
-    queriesDto: QueriesDto,
+    queriesProductoDto: QueriesProductoDto,
     sucursalId: SucursalIdType
   ) {
-    const sortByColumn = this.getSortByColumn(queriesDto.sort_by)
+    const sortByColumn = this.getSortByColumn(queriesProductoDto.sort_by)
 
     const order =
-      queriesDto.order === orderValues.asc
+      queriesProductoDto.order === orderValues.asc
         ? asc(sortByColumn)
         : desc(sortByColumn)
 
     const searchCondition =
-      queriesDto.search.length > 0
+      queriesProductoDto.search.length > 0
         ? or(
-            ilike(productosTable.nombre, `%${queriesDto.search}%`),
-            ilike(coloresTable.nombre, `%${queriesDto.search}%`),
-            ilike(categoriasTable.nombre, `%${queriesDto.search}%`),
-            ilike(marcasTable.nombre, `%${queriesDto.search}%`)
+            ilike(productosTable.nombre, `%${queriesProductoDto.search}%`),
+            ilike(coloresTable.nombre, `%${queriesProductoDto.search}%`),
+            ilike(categoriasTable.nombre, `%${queriesProductoDto.search}%`),
+            ilike(marcasTable.nombre, `%${queriesProductoDto.search}%`)
           )
         : undefined
 
-    const filterCondition = this.getFilterCondition(queriesDto)
+    const filterCondition = this.getFilterCondition(queriesProductoDto)
 
     const whereCondition = and(searchCondition, filterCondition)
 
@@ -133,8 +143,8 @@ export class GetProductos {
       .innerJoin(sucursalesTable, eq(sucursalesTable.id, sucursalId))
       .where(whereCondition)
       .orderBy(order)
-      .limit(queriesDto.page_size)
-      .offset(queriesDto.page_size * (queriesDto.page - 1))
+      .limit(queriesProductoDto.page_size)
+      .offset(queriesProductoDto.page_size * (queriesProductoDto.page - 1))
 
     return productos
   }
@@ -142,38 +152,57 @@ export class GetProductos {
   private getMetadata() {
     return {
       sortByOptions: Object.keys(this.validSortBy),
-      filterOptions: Object.keys(this.validFilter)
+      filterOptions: Object.keys(this.validDecimalFilter)
     }
   }
 
-  private getFilterCondition(queriesDto: QueriesDto) {
-    const filterColumn = this.getFilterColumn(queriesDto.filter)
-    const filterBooleanValue = parseBoolString(queriesDto.filter_value)
+  private getFilterCondition(queriesProductoDto: QueriesProductoDto) {
+    const { stockBajo } = queriesProductoDto
+    const conditions: SQL[] = []
 
-    if (filterColumn === undefined || filterBooleanValue === undefined) {
-      return
+    if (stockBajo !== undefined) {
+      const stockBajoBoolean = parseBoolString(stockBajo)
+
+      if (stockBajoBoolean !== undefined) {
+        conditions.push(eq(detallesProductoTable.stockBajo, stockBajoBoolean))
+      }
     }
 
-    if (queriesDto.filter_type === 'eq') {
-      return eq(filterColumn, filterBooleanValue)
+    const filterColumn = this.getDecimalFilterColumn(queriesProductoDto.filter)
+    const filterValueNumber = parseFloat(queriesProductoDto.filter_value)
+
+    if (filterColumn === undefined || isNaN(filterValueNumber)) {
+      return and(...conditions)
     }
+
+    const filterValueString = filterValueNumber.toFixed(2)
+
+    if (queriesProductoDto.filter_type === 'eq') {
+      conditions.push(eq(filterColumn, filterValueString))
+    } else if (queriesProductoDto.filter_type === 'gt') {
+      conditions.push(gt(filterColumn, filterValueString))
+    } else if (queriesProductoDto.filter_type === 'lt') {
+      conditions.push(lt(filterColumn, filterValueString))
+    }
+
+    return and(...conditions)
   }
 
   private async getPagination(
-    queriesDto: QueriesDto,
+    queriesProductoDto: QueriesProductoDto,
     sucursalId: SucursalIdType
   ) {
     const searchCondition =
-      queriesDto.search.length > 0
+      queriesProductoDto.search.length > 0
         ? or(
-            ilike(productosTable.nombre, `%${queriesDto.search}%`),
-            ilike(coloresTable.nombre, `%${queriesDto.search}%`),
-            ilike(categoriasTable.nombre, `%${queriesDto.search}%`),
-            ilike(marcasTable.nombre, `%${queriesDto.search}%`)
+            ilike(productosTable.nombre, `%${queriesProductoDto.search}%`),
+            ilike(coloresTable.nombre, `%${queriesProductoDto.search}%`),
+            ilike(categoriasTable.nombre, `%${queriesProductoDto.search}%`),
+            ilike(marcasTable.nombre, `%${queriesProductoDto.search}%`)
           )
         : undefined
 
-    const filterCondition = this.getFilterCondition(queriesDto)
+    const filterCondition = this.getFilterCondition(queriesProductoDto)
 
     const whereCondition = and(searchCondition, filterCondition)
 
@@ -198,14 +227,18 @@ export class GetProductos {
 
     const [totalItems] = results
 
-    const totalPages = Math.ceil(totalItems.count / queriesDto.page_size)
-    const hasNext = queriesDto.page < totalPages && queriesDto.page >= 1
-    const hasPrev = queriesDto.page > 1 && queriesDto.page <= totalPages
+    const totalPages = Math.ceil(
+      totalItems.count / queriesProductoDto.page_size
+    )
+    const hasNext =
+      queriesProductoDto.page < totalPages && queriesProductoDto.page >= 1
+    const hasPrev =
+      queriesProductoDto.page > 1 && queriesProductoDto.page <= totalPages
 
     return {
       totalItems: totalItems.count,
       totalPages,
-      currentPage: queriesDto.page,
+      currentPage: queriesProductoDto.page,
       hasNext,
       hasPrev
     }
@@ -239,11 +272,14 @@ export class GetProductos {
     }
   }
 
-  async execute(queriesDto: QueriesDto, sucursalId: SucursalIdType) {
+  async execute(
+    queriesProductoDto: QueriesProductoDto,
+    sucursalId: SucursalIdType
+  ) {
     await this.validatePermissions(sucursalId)
 
     const metadata = this.getMetadata()
-    const pagination = await this.getPagination(queriesDto, sucursalId)
+    const pagination = await this.getPagination(queriesProductoDto, sucursalId)
 
     const isValidPage =
       (pagination.currentPage <= pagination.totalPages ||
@@ -251,7 +287,7 @@ export class GetProductos {
       pagination.totalItems > 0
 
     const results = isValidPage
-      ? await this.getProductos(queriesDto, sucursalId)
+      ? await this.getProductos(queriesProductoDto, sucursalId)
       : []
 
     return {

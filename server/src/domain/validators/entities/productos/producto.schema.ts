@@ -35,3 +35,7 @@ export const productoSchema = {
   precioOferta: z.number().min(0).optional(),
   stock: z.number().min(0).default(0)
 }
+
+export const queriesProductoSchema = {
+  stockBajo: z.coerce.string().optional()
+}

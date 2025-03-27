@@ -2,6 +2,7 @@ import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
 import { AddProductoDto } from '@/domain/dtos/entities/productos/add-producto.dto'
 import { CreateProductoDto } from '@/domain/dtos/entities/productos/create-producto.dto'
+import { QueriesProductoDto } from '@/domain/dtos/entities/productos/queries-producto.dto'
 import { UpdateProductoDto } from '@/domain/dtos/entities/productos/update-producto.dto'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
@@ -126,8 +127,8 @@ export class ProductosController {
       return
     }
 
-    const [error, queriesDto] = QueriesDto.create(req.query)
-    if (error !== undefined || queriesDto === undefined) {
+    const [error, queriesProductoDto] = QueriesProductoDto.create(req.query)
+    if (error !== undefined || queriesProductoDto === undefined) {
       CustomResponse.badRequest({ res, error })
       return
     }
@@ -137,7 +138,7 @@ export class ProductosController {
     const getProductos = new GetProductos(authPayload)
 
     getProductos
-      .execute(queriesDto, sucursalId)
+      .execute(queriesProductoDto, sucursalId)
       .then((productos) => {
         CustomResponse.success({
           res,

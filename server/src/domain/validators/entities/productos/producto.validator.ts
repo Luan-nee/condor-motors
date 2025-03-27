@@ -1,5 +1,24 @@
-import { productoSchema } from '@domain/validators/entities/productos/producto.schema'
+import {
+  queriesProductoSchema,
+  productoSchema
+} from '@domain/validators/entities/productos/producto.schema'
+import { queriesBaseSchema } from '@/domain/validators/query-params/query-params.schema'
 import z from 'zod'
+
+export const QueriesProductoSchema = z.object({
+  sort_by: queriesBaseSchema.sort_by,
+  order: queriesBaseSchema.order,
+  page: queriesBaseSchema.page,
+  search: queriesBaseSchema.search,
+  page_size: queriesBaseSchema.page_size,
+  filter: queriesBaseSchema.filter,
+  filter_value: queriesBaseSchema.filter_value,
+  filter_type: queriesBaseSchema.filter_type,
+  stockBajo: queriesProductoSchema.stockBajo
+})
+
+export const queriesProductoValidator = (object: unknown) =>
+  QueriesProductoSchema.safeParse(object)
 
 const createProductoSchema = z.object({
   nombre: productoSchema.nombre,
