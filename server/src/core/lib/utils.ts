@@ -16,15 +16,15 @@ export const getRandomNumber = (min: number, max: number) => {
 export const transformPermissionCodes = (codes: typeof permissionCodes) =>
   Object.values(codes).flatMap((category) =>
     Object.values(category).map((code) => ({
-      nombrePermiso: code,
-      codigoPermiso: code
+      nombre: code,
+      codigo: code
     }))
   )
 
 export const transformPermissionsCodesFromArray = (permisos: string[]) =>
   permisos.map((permiso) => ({
-    nombrePermiso: permiso,
-    codigoPermiso: permiso
+    nombre: permiso,
+    codigo: permiso
   }))
 
 export const fisherYatesShuffle = <T>(array: T[]) => {

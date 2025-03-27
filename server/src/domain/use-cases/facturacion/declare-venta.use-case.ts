@@ -53,7 +53,7 @@ export class DeclareVenta {
     total_venta: totalesVentaTable.totalVenta,
     termino_de_pago: {
       descripcion: metodosPagoTable.codigoSunat,
-      tipo: metodosPagoTable.tipo
+      tipo: metodosPagoTable.codigoTipo
     },
     observaciones: ventasTable.observaciones,
     declarada: ventasTable.declarada

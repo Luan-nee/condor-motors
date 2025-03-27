@@ -53,28 +53,28 @@ interface SeedConfig {
   estadosTransferenciasInventariosDefault: string[]
   tiposDocumentoClienteDefault: Array<{
     nombre: string
-    codigo: string
+    codigoSunat: string
   }>
   tiposDocumentoFacturacionDefault: Array<{
     nombre: string
+    codigoSunat: string
     codigo: string
-    codigoLocal: string
   }>
   monedasFacturacionDefault: Array<{
     nombre: string
-    codigo: string
+    codigoSunat: string
   }>
   metodosPagoDefault: Array<{
     nombre: string
-    tipo: string
-    codigo: string
+    codigoTipo: string
+    codigoSunat: string
     activado: boolean
   }>
   tiposTaxDefault: Array<{
     nombre: string
     codigo: string
-    porcentajeTax: number
-    codigoLocal: string
+    porcentaje: number
+    codigoSunat: string
   }>
   sucursalesCount: number
   empleadosCount: number

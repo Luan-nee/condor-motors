@@ -66,7 +66,7 @@ const sucursalesValues = Array.from({ length: seedConfig.sucursalesCount }).map(
 
 const rolesValues = seedConfig.rolesDefault.map((rol) => ({
   codigo: formatCode(rol),
-  nombreRol: rol
+  nombre: rol
 }))
 
 const categoriasValues = seedConfig.categoriasDefault.map((categoria) => ({
@@ -164,20 +164,18 @@ const seedDatabase = async () => {
     .values(adminPermissions)
     .returning({
       id: schema.permisosTable.id,
-      codigoPermiso: schema.permisosTable.codigo
+      codigo: schema.permisosTable.codigo
     })
 
   const permisosVendedorId = permisos.filter((permiso) =>
     vendedorPermisssions.some(
-      (vendedorPermiso) =>
-        vendedorPermiso.codigoPermiso === permiso.codigoPermiso
+      (vendedorPermiso) => vendedorPermiso.codigo === permiso.codigo
     )
   )
 
   const permisosComputadoraId = permisos.filter((permiso) =>
     computadoraPermissions.some(
-      (computadoraPermiso) =>
-        computadoraPermiso.codigoPermiso === permiso.codigoPermiso
+      (computadoraPermiso) => computadoraPermiso.codigo === permiso.codigo
     )
   )
 
@@ -201,21 +199,21 @@ const seedDatabase = async () => {
       usuario: adminAccount.usuario,
       clave: hashedAdminPassword,
       secret: adminSecret,
-      rolCuentaEmpleadoId: adminRole.id,
+      rolId: adminRole.id,
       empleadoId: admin.id
     },
     {
       usuario: vendedorAccount.usuario,
       clave: hashedVendedorPassword,
       secret: vendedorSecret,
-      rolCuentaEmpleadoId: vendedorRole.id,
+      rolId: vendedorRole.id,
       empleadoId: vendedorEmpleado.id
     },
     {
       usuario: computadoraAccount.usuario,
       clave: hashedComputadoraPassword,
       secret: computadoraSecret,
-      rolCuentaEmpleadoId: computadoraRole.id,
+      rolId: computadoraRole.id,
       empleadoId: computadoraEmpleado.id
     }
   ])
@@ -430,7 +428,7 @@ const seedDatabase = async () => {
         numeroDocumento,
         denominacion,
         direccion: faker.location.streetAddress(true),
-        correo: faker.internet.email({ provider: 'mail.fake' }),
+        correo: faker.internet.email({ provider: 'mail.fake.local' }),
         telefono: faker.phone.number({ style: 'international' })
       }
     }

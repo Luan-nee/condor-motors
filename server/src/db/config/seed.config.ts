@@ -52,68 +52,68 @@ export const seedConfig: SeedConfig = {
   tiposDocumentoClienteDefault: [
     {
       nombre: 'RUC',
-      codigo: '6'
+      codigoSunat: '6'
     },
     {
       nombre: 'DNI',
-      codigo: '1'
+      codigoSunat: '1'
     },
     {
       nombre: 'CARNET DE EXTRANJERÍA',
-      codigo: '4'
+      codigoSunat: '4'
     },
     {
       nombre: 'PASAPORTE',
-      codigo: '7'
+      codigoSunat: '7'
     },
     {
       nombre: 'CÉDULA DIPLOMÁTICA DE IDENTIDAD',
-      codigo: 'A'
+      codigoSunat: 'A'
     },
     {
       nombre: 'NO DOMICILIADO, SIN RUC',
-      codigo: '0'
+      codigoSunat: '0'
     }
   ],
   tiposDocumentoFacturacionDefault: [
     {
       nombre: 'Factura electrónica',
-      codigo: '01',
-      codigoLocal: tiposDocFacturacionCodes.factura
+      codigoSunat: '01',
+      codigo: tiposDocFacturacionCodes.factura
     },
     {
       nombre: 'Boleta de venta electrónica',
-      codigo: '03',
-      codigoLocal: tiposDocFacturacionCodes.boleta
+      codigoSunat: '03',
+      codigo: tiposDocFacturacionCodes.boleta
     }
   ],
-  monedasFacturacionDefault: [{ nombre: 'Soles', codigo: 'PEN' }],
+  monedasFacturacionDefault: [{ nombre: 'Soles', codigoSunat: 'PEN' }],
   metodosPagoDefault: [
     {
       nombre: 'Contado',
-      codigo: 'Contado',
-      tipo: '0',
+      codigoSunat: 'Contado',
+      codigoTipo: '0',
       activado: true
     }
   ],
   tiposTaxDefault: [
     {
       nombre: 'Con impuestos... not stonks 📉📉📉',
-      codigo: '10',
-      porcentajeTax: 18,
-      codigoLocal: tiposTaxCodes.gravado
+      codigoSunat: '10',
+      porcentaje: 18,
+      codigo: tiposTaxCodes.gravado
     },
     {
       nombre: 'Sin impuestos STONKS 📈📈📈',
-      codigo: '20',
-      porcentajeTax: 0,
-      codigoLocal: tiposTaxCodes.exonerado
+      codigoSunat: '20',
+      porcentaje: 0,
+      codigo: tiposTaxCodes.exonerado
     },
     {
       nombre: 'Gratis y sin impuestos stonks? 📉📈❔',
-      codigo: '21',
-      porcentajeTax: 0,
-      codigoLocal: tiposTaxCodes.gratuito
+      codigoSunat: '21',
+      porcentaje: 0,
+      codigo: tiposTaxCodes.gratuito
     }
   ],
   sucursalesCount: 3,
