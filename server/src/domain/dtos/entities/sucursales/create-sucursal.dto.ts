@@ -4,23 +4,29 @@ export class CreateSucursalDto {
   public nombre: string
   public direccion?: string
   public sucursalCentral: boolean
-  public serieFacturaSucursal?: string
-  public serieBoletaSucursal?: string
+  public serieFactura?: string
+  public numeroFacturaInicial?: number
+  public serieBoleta?: string
+  public numeroBoletaInicial?: number
   public codigoEstablecimiento?: string
 
   private constructor({
     nombre,
     direccion,
     sucursalCentral,
-    serieFacturaSucursal,
-    serieBoletaSucursal,
+    serieFactura,
+    numeroFacturaInicial,
+    serieBoleta,
+    numeroBoletaInicial,
     codigoEstablecimiento
   }: CreateSucursalDto) {
     this.nombre = nombre
     this.direccion = direccion
     this.sucursalCentral = sucursalCentral
-    this.serieFacturaSucursal = serieFacturaSucursal
-    this.serieBoletaSucursal = serieBoletaSucursal
+    this.serieFactura = serieFactura
+    this.numeroFacturaInicial = numeroFacturaInicial
+    this.serieBoleta = serieBoleta
+    this.numeroBoletaInicial = numeroBoletaInicial
     this.codigoEstablecimiento = codigoEstablecimiento
   }
 

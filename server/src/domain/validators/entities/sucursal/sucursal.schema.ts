@@ -22,19 +22,21 @@ export const sucursalSchema = {
     })
     .optional(),
   sucursalCentral: z.boolean(),
-  serieFacturaSucursal: z
+  serieFactura: z
     .string()
     .trim()
     .length(4)
     .startsWith('F')
     .toUpperCase()
     .optional(),
-  serieBoletaSucursal: z
+  numeroFacturaInicial: z.number().int().min(1).optional(),
+  serieBoleta: z
     .string()
     .trim()
     .length(4)
     .startsWith('B')
     .toUpperCase()
     .optional(),
+  numeroBoletaInicial: z.number().int().min(1).optional(),
   codigoEstablecimiento: z.string().trim().length(4).optional()
 }

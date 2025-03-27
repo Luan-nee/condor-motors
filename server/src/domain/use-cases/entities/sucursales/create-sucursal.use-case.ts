@@ -19,21 +19,15 @@ export class CreateSucursal {
       ilike(sucursalesTable.nombre, createSucursalDto.nombre)
     ]
 
-    if (createSucursalDto.serieBoletaSucursal !== undefined) {
+    if (createSucursalDto.serieBoleta !== undefined) {
       conditionals.push(
-        ilike(
-          sucursalesTable.serieBoleta,
-          createSucursalDto.serieBoletaSucursal
-        )
+        ilike(sucursalesTable.serieBoleta, createSucursalDto.serieBoleta)
       )
     }
 
-    if (createSucursalDto.serieFacturaSucursal !== undefined) {
+    if (createSucursalDto.serieFactura !== undefined) {
       conditionals.push(
-        ilike(
-          sucursalesTable.serieFactura,
-          createSucursalDto.serieFacturaSucursal
-        )
+        ilike(sucursalesTable.serieFactura, createSucursalDto.serieFactura)
       )
     }
 
@@ -55,8 +49,8 @@ export class CreateSucursal {
     const sucursales = await db
       .select({
         id: sucursalesTable.id,
-        serieFacturaSucursal: sucursalesTable.serieFactura,
-        serieBoletaSucursal: sucursalesTable.serieBoleta,
+        serieFactura: sucursalesTable.serieFactura,
+        serieBoleta: sucursalesTable.serieBoleta,
         codigoEstablecimiento: sucursalesTable.codigoEstablecimiento
       })
       .from(sucursalesTable)
@@ -70,19 +64,19 @@ export class CreateSucursal {
 
     for (const sucursal of sucursales) {
       if (
-        createSucursalDto.serieFacturaSucursal !== undefined &&
-        sucursal.serieFacturaSucursal === createSucursalDto.serieFacturaSucursal
+        createSucursalDto.serieFactura !== undefined &&
+        sucursal.serieFactura === createSucursalDto.serieFactura
       ) {
         throw CustomError.badRequest(
-          `Ya existe una sucursal con esa serie de factura: '${createSucursalDto.serieFacturaSucursal}'`
+          `Ya existe una sucursal con esa serie de factura: '${createSucursalDto.serieFactura}'`
         )
       }
       if (
-        createSucursalDto.serieBoletaSucursal !== undefined &&
-        sucursal.serieBoletaSucursal === createSucursalDto.serieBoletaSucursal
+        createSucursalDto.serieBoleta !== undefined &&
+        sucursal.serieBoleta === createSucursalDto.serieBoleta
       ) {
         throw CustomError.badRequest(
-          `Ya existe una sucursal con esa serie de boleta: '${createSucursalDto.serieFacturaSucursal}'`
+          `Ya existe una sucursal con esa serie de boleta: '${createSucursalDto.serieBoleta}'`
         )
       }
       if (
@@ -104,8 +98,10 @@ export class CreateSucursal {
         nombre: createSucursalDto.nombre,
         direccion: createSucursalDto.direccion,
         sucursalCentral: createSucursalDto.sucursalCentral,
-        serieFacturaSucursal: createSucursalDto.serieFacturaSucursal,
-        serieBoletaSucursal: createSucursalDto.serieBoletaSucursal,
+        serieFactura: createSucursalDto.serieFactura,
+        numeroFacturaInicial: createSucursalDto.numeroFacturaInicial,
+        serieBoleta: createSucursalDto.serieBoleta,
+        numeroBoletaInicial: createSucursalDto.numeroBoletaInicial,
         codigoEstablecimiento: createSucursalDto.codigoEstablecimiento
       })
       .returning({ id: sucursalesTable.id })
