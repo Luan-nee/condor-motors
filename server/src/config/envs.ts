@@ -3,10 +3,7 @@ import { get } from 'env-var'
 
 export const envs = {
   NODE_ENV: get('NODE_ENV').default('development').asString(),
-  ALLOWED_ORIGINS: get('ALLOWED_ORIGINS')
-    .default('')
-    .asArray(',')
-    .filter(Boolean),
+  ALLOWED_ORIGINS: get('ALLOWED_ORIGINS').default('').asArray(','),
   SERVER_HOST: get('SERVER_HOST').default('localhost').asString(),
   SERVER_PORT: get('SERVER_PORT').default(3000).asPortNumber(),
   DATABASE_URL: get('DATABASE_URL').required().asString(),

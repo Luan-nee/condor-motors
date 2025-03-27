@@ -7,14 +7,23 @@ export class CorsMiddleware {
 
   static readonly requests = cors({
     origin: (origin, callback) => {
+      if (origin === undefined) {
+        callback(null, true)
+        return
+      }
+
       if (
-        typeof origin !== 'string' ||
+        CorsMiddleware.allowedOrigins.includes('*') ||
         CorsMiddleware.allowedOrigins.includes(origin)
       ) {
         callback(null, true)
-      } else {
-        callback(CustomError.corsError(undefined, this.allowedOrigins), false)
+        return
       }
+
+      callback(
+        CustomError.corsError(undefined, CorsMiddleware.allowedOrigins),
+        false
+      )
     }
   })
 }
