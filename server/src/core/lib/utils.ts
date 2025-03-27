@@ -106,3 +106,15 @@ export const roundTwoDecimals = (num: number) =>
   new Big(num).round(2).toNumber()
 
 export const fixedTwoDecimals = (num: number) => new Big(num).toFixed(2)
+
+export const parseBoolString = (str: string) => {
+  if (/true/i.test(str)) {
+    return true
+  }
+
+  if (/false/i.test(str)) {
+    return false
+  }
+
+  return undefined
+}

@@ -1,6 +1,7 @@
 import { orderValues, permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
+import { parseBoolString } from '@/core/lib/utils'
 import { db } from '@/db/connection'
 import {
   categoriasTable,
@@ -12,7 +13,7 @@ import {
 } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { and, asc, count, desc, eq, gt, ilike, lt, or } from 'drizzle-orm'
+import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm'
 
 export class GetProductos {
   private readonly authPayload: AuthPayload
@@ -50,11 +51,10 @@ export class GetProductos {
   } as const
 
   private readonly validFilter = {
-    precioCompra: detallesProductoTable.precioCompra,
-    precioVenta: detallesProductoTable.precioVenta,
-    precioOferta: detallesProductoTable.precioOferta
-    // stock: detallesProductoTable.stock
-    // fechaCreacion: productosTable.fechaCreacion
+    stockBajo: detallesProductoTable.stockBajo
+    // precioCompra: detallesProductoTable.precioCompra,
+    // precioVenta: detallesProductoTable.precioVenta,
+    // precioOferta: detallesProductoTable.precioOferta
   } as const
 
   constructor(authPayload: AuthPayload) {
@@ -75,14 +75,14 @@ export class GetProductos {
     return this.validSortBy.fechaCreacion
   }
 
-  private isValidFilter(
+  private isValidDecimalFilter(
     filter: string
   ): filter is keyof typeof this.validFilter {
     return Object.keys(this.validFilter).includes(filter)
   }
 
   private getFilterColumn(filter: string) {
-    if (this.isValidFilter(filter)) {
+    if (this.isValidDecimalFilter(filter)) {
       return this.validFilter[filter]
     }
 
@@ -148,24 +148,14 @@ export class GetProductos {
 
   private getFilterCondition(queriesDto: QueriesDto) {
     const filterColumn = this.getFilterColumn(queriesDto.filter)
-    const filterValueNumber = parseFloat(queriesDto.filter_value)
+    const filterBooleanValue = parseBoolString(queriesDto.filter_value)
 
-    if (filterColumn === undefined || isNaN(filterValueNumber)) {
+    if (filterColumn === undefined || filterBooleanValue === undefined) {
       return
     }
 
-    const filterValueString = filterValueNumber.toFixed(2)
-
     if (queriesDto.filter_type === 'eq') {
-      return eq(filterColumn, filterValueString)
-    }
-
-    if (queriesDto.filter_type === 'gt') {
-      return gt(filterColumn, filterValueString)
-    }
-
-    if (queriesDto.filter_type === 'lt') {
-      return lt(filterColumn, filterValueString)
+      return eq(filterColumn, filterBooleanValue)
     }
   }
 
