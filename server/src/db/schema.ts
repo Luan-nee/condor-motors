@@ -219,10 +219,6 @@ export const transferenciasInventariosTable = pgTable(
   'transferencias_inventarios',
   {
     id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-    solicitanteId: integer('empleado_id')
-      .notNull()
-      .references(() => empleadosTable.id),
-    proveedorId: integer('proveedor_id').references(() => empleadosTable.id),
     estadoTransferenciaId: integer('estado_transferencia_id')
       .notNull()
       .references(() => estadosTransferenciasInventarios.id),
