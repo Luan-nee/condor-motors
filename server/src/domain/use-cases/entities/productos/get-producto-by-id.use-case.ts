@@ -37,7 +37,8 @@ export class GetProductoById {
     precioVenta: detallesProductoTable.precioVenta,
     precioOferta: detallesProductoTable.precioOferta,
     stock: detallesProductoTable.stock,
-    stockBajo: detallesProductoTable.stockBajo
+    stockBajo: detallesProductoTable.stockBajo,
+    liquidacion: detallesProductoTable.liquidacion
   }
 
   constructor(authPayload: AuthPayload) {

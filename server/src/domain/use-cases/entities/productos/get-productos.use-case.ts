@@ -49,7 +49,8 @@ export class GetProductos {
     precioVenta: detallesProductoTable.precioVenta,
     precioOferta: detallesProductoTable.precioOferta,
     stock: detallesProductoTable.stock,
-    stockBajo: detallesProductoTable.stockBajo
+    stockBajo: detallesProductoTable.stockBajo,
+    liquidacion: detallesProductoTable.liquidacion
   }
 
   private readonly validSortBy = {
