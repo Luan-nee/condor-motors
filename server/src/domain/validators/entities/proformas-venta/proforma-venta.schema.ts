@@ -13,9 +13,9 @@ export const proformaVentaSchema = {
     .trim()
     .min(2)
     .max(255)
-    .refine((val) => Validator.isValidGeneralName(val), {
+    .refine((val) => Validator.isValidDescription(val), {
       message:
-        'El nombre solo puede contener este set de caracteres: a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ-_'
+        'El nombre solo puede contener este set de caracteres: a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ.,¡!¿?-()[]{}$%&*\'_"@#+'
     })
     .optional(),
   empleadoId: idTypeBaseSchema.numericId,
