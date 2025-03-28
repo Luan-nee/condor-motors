@@ -1,15 +1,16 @@
-import { permissionCodes } from '@/consts'
+import { estadosTransferenciasInvCodes, permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import {
+  estadosTransferenciasInventarios,
   itemsTransferenciaInventarioTable,
   productosTable,
   sucursalesTable,
   transferenciasInventariosTable
 } from '@/db/schema'
 import type { CreateTransferenciaInvDto } from '@/domain/dtos/entities/transferencias-inventario/create-transferencia-inventario.dto'
-import { eq, inArray } from 'drizzle-orm'
+import { eq, ilike, inArray } from 'drizzle-orm'
 
 export class CreateTransferenciaInv {
   private readonly authPayload: AuthPayload
@@ -24,6 +25,18 @@ export class CreateTransferenciaInv {
   private async createTransferenciaInv(
     createTransferenciaInvDto: CreateTransferenciaInvDto
   ) {
+    const [estadoPedido] = await db
+      .select({
+        id: estadosTransferenciasInventarios.id
+      })
+      .from(estadosTransferenciasInventarios)
+      .where(
+        ilike(
+          estadosTransferenciasInventarios.codigo,
+          estadosTransferenciasInvCodes.pedido
+        )
+      )
+
     const sucursales = await db
       .select({ id: sucursalesTable.id })
       .from(sucursalesTable)
@@ -71,7 +84,7 @@ export class CreateTransferenciaInv {
       const [transferenciaInventario] = await tx
         .insert(transferenciasInventariosTable)
         .values({
-          estadoTransferenciaId: 1,
+          estadoTransferenciaId: estadoPedido.id,
           sucursalDestinoId: createTransferenciaInvDto.sucursalDestinoId,
           modificable: true
         })
