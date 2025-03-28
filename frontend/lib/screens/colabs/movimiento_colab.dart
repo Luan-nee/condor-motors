@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../api/index.api.dart';
+import '../../main.dart' show api;
+import '../../models/movimiento.model.dart';
 import 'widgets/movimiento_request_dialog.dart';
 
 class MovimientosColabScreen extends StatefulWidget {
@@ -12,84 +15,10 @@ class MovimientosColabScreen extends StatefulWidget {
 class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
   bool _isLoading = false;
   String _selectedFilter = 'Todos';
-
-  // Datos de ejemplo para movimientos
-  final List<Map<String, dynamic>> _movimientos = [
-    {
-      'id': 1,
-      'codigo': 'MOV001',
-      'fechaSolicitud': '2024-03-15 10:00',
-      'fechaPreparacion': '2024-03-15 11:00',
-      'fechaDespacho': '2024-03-15 14:00',
-      'fechaRecepcion': null,
-      'estado': 'DESPACHADO',
-      'origen': {
-        'id': 1,
-        'nombre': 'Central Principal',
-        'tipo': 'central',
-      },
-      'destino': {
-        'id': 2,
-        'nombre': 'Sucursal San Miguel',
-        'tipo': 'sucursal',
-      },
-      'solicitante': {
-        'id': 1,
-        'nombre': 'Juan Pérez',
-        'rol': 'Vendedor',
-      },
-      'detalles': [
-        {
-          'producto': {
-            'id': 1,
-            'codigo': 'CAS001',
-            'nombre': 'Casco MT Thunder',
-            'marca': 'MT Helmets',
-          },
-          'cantidad': 5,
-          'cantidadRecibida': null,
-          'estado': 'DESPACHADO',
-        }
-      ],
-    },
-    {
-      'id': 2,
-      'codigo': 'MOV002',
-      'fechaSolicitud': '2024-03-14 15:00',
-      'fechaPreparacion': null,
-      'fechaDespacho': null,
-      'fechaRecepcion': null,
-      'estado': 'PENDIENTE',
-      'origen': {
-        'id': 1,
-        'nombre': 'Central Principal',
-        'tipo': 'central',
-      },
-      'destino': {
-        'id': 3,
-        'nombre': 'Sucursal Los Olivos',
-        'tipo': 'sucursal',
-      },
-      'solicitante': {
-        'id': 2,
-        'nombre': 'María García',
-        'rol': 'Vendedor',
-      },
-      'detalles': [
-        {
-          'producto': {
-            'id': 2,
-            'codigo': 'ACE001',
-            'nombre': 'Aceite Motul 5100',
-            'marca': 'Motul',
-          },
-          'cantidad': 10,
-          'cantidadRecibida': null,
-          'estado': 'PENDIENTE',
-        }
-      ],
-    },
-  ];
+  late final MovimientosApi _movimientosApi;
+  List<Movimiento> _movimientos = [];
+  String? _sucursalId;
+  int? _empleadoId;
 
   // Filtros disponibles
   final List<String> _filters = [
@@ -101,22 +30,98 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
     'Anulados'
   ];
 
-  // Usuario actual (simulado)
-  final Map<String, dynamic> _currentUser = {
-    'id': '1',
-    'nombre': 'Juan Pérez',
-    'rol': 'Colaborador',
-    'sucursalId': 1
-  };
+  // Usuario actual (se obtendrá de la sesión)
+
+  @override
+  void initState() {
+    super.initState();
+    _movimientosApi = api.movimientos;
+    _obtenerDatosUsuario();
+  }
+
+  // Obtener datos del usuario y cargar movimientos
+  Future<void> _obtenerDatosUsuario() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      // Obtener datos del usuario autenticado
+      final userData = await api.authService.getUserData();
+      if (userData != null) {
+        setState(() {
+          _sucursalId = userData['sucursalId']?.toString();
+          _empleadoId = int.tryParse(userData['id']?.toString() ?? '0');
+        });
+        
+        debugPrint('Usuario obtenido: ID=$_empleadoId, SucursalID=$_sucursalId');
+      } else {
+        debugPrint('No se pudieron obtener datos del usuario');
+      }
+    } catch (e) {
+      debugPrint('Error al obtener datos del usuario: $e');
+    } finally {
+      // Cargar movimientos después de obtener los datos del usuario
+      await _cargarMovimientos();
+    }
+  }
+
+  // Cargar movimientos desde la API
+  Future<void> _cargarMovimientos() async {
+    if (_sucursalId == null) {
+      debugPrint('No se puede cargar movimientos: ID de sucursal no disponible');
+      setState(() => _isLoading = false);
+      return;
+    }
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      debugPrint('Cargando movimientos para sucursal ID: $_sucursalId');
+      
+      // Determinar si se debe aplicar un filtro de estado
+      String? estadoFiltro;
+      if (_selectedFilter != 'Todos') {
+        estadoFiltro = _selectedFilter.toUpperCase().replaceAll('ES', '');
+      }
+      
+      // Obtener movimientos desde la API
+      final movimientosData = await _movimientosApi.getMovimientos(
+        sucursalId: _sucursalId,
+        estado: estadoFiltro,
+        forceRefresh: true, // Forzar actualización desde el servidor
+      );
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _movimientos = movimientosData;
+        _isLoading = false;
+      });
+      
+      debugPrint('Movimientos cargados: ${_movimientos.length}');
+    } catch (e) {
+      debugPrint('Error al cargar movimientos: $e');
+      
+      if (mounted) {
+        setState(() => _isLoading = false);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar movimientos: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   // Obtener movimientos filtrados según el filtro seleccionado
-  List<Map<String, dynamic>> _getMovimientosFiltrados() {
+  List<Movimiento> _getMovimientosFiltrados() {
     if (_selectedFilter == 'Todos') {
       return _movimientos;
     }
-    return _movimientos.where((m) => 
-      m['estado'] == _selectedFilter.toUpperCase().replaceAll('ES', '')
-    ).toList();
+    
+    final estadoFiltro = _selectedFilter.toUpperCase().replaceAll('ES', '');
+    return _movimientos.where((m) => m.estado == estadoFiltro).toList();
   }
 
   @override
@@ -208,6 +213,10 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                 setState(() {
                   _selectedFilter = filter;
                 });
+                // Recargar movimientos si cambia el filtro
+                if (filter != 'Todos') {
+                  _cargarMovimientos();
+                }
               },
             ),
           ),
@@ -216,18 +225,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
               FontAwesomeIcons.arrowsRotate,
               color: Colors.white,
             ),
-            onPressed: () {
-    setState(() {
-      _isLoading = true;
-                Future.delayed(const Duration(milliseconds: 500), () {
-                  if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-                });
-              });
-            },
+            onPressed: _cargarMovimientos,
             tooltip: 'Recargar',
           ),
         ],
@@ -260,7 +258,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                         const SizedBox(width: 12),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                          children: [
                             const Text(
                               'MOVIMIENTOS',
                               style: TextStyle(
@@ -269,7 +267,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                                 color: Colors.white,
                               ),
                             ),
-                  Text(
+                            Text(
                               'gestión de movimientos',
                               style: TextStyle(
                                 fontSize: 14,
@@ -281,22 +279,22 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                       ],
                     ),
                     if (_selectedFilter != 'Todos')
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
                           color: _getEstadoColor(
                             _selectedFilter.toUpperCase().replaceAll('ES', '')
                           ).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
                             color: _getEstadoColor(
                               _selectedFilter.toUpperCase().replaceAll('ES', '')
                             ),
-                      ),
-                    ),
+                          ),
+                        ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -312,17 +310,17 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                             const SizedBox(width: 8),
                             Text(
                               _selectedFilter,
-                      style: TextStyle(
+                              style: TextStyle(
                                 color: _getEstadoColor(
                                   _selectedFilter.toUpperCase().replaceAll('ES', '')
-                      ),
+                                ),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ],
@@ -339,15 +337,15 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                   )
                 : movimientosFiltrados.isEmpty
                     ? Center(
-            child: Column(
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+                          children: [
                             FaIcon(
                               FontAwesomeIcons.boxOpen,
                               size: 48,
                               color: Colors.grey[600],
                             ),
-                const SizedBox(height: 16),
+                            const SizedBox(height: 16),
                             Text(
                               'No hay movimientos ${_selectedFilter != 'Todos' ? _selectedFilter.toLowerCase() : ''}',
                               style: TextStyle(
@@ -365,46 +363,57 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                           final movimiento = movimientosFiltrados[index];
                           return _buildMovimientoCard(movimiento, isMobile);
                         },
-            ),
+                      ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
+          if (_sucursalId == null || _empleadoId == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Error: No se pudo obtener información del usuario'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+          
           showDialog(
             context: context,
             builder: (context) => MovimientoRequestDialog(
-              onSave: (movimiento) {
-                setState(() {
-                  _movimientos.insert(0, {
-                    'id': movimiento.id,
-                    'codigo': 'MOV${movimiento.id}',
-                    'fechaSolicitud': movimiento.fechaSolicitud.toString(),
-                    'fechaPreparacion': null,
-                    'fechaDespacho': null,
-                    'fechaRecepcion': null,
-                    'estado': movimiento.estado,
-                    'origen': {
-                      'id': movimiento.localOrigenId,
-                      'nombre': 'Central Principal',
-                      'tipo': 'central',
-                    },
-                    'destino': {
-                      'id': movimiento.localDestinoId,
-                      'nombre': 'Sucursal San Miguel',
-                      'tipo': 'sucursal',
-                    },
-                    'solicitante': {
-                      'id': int.parse(movimiento.solicitanteId),
-                      'nombre': _currentUser['nombre'],
-                      'rol': _currentUser['rol'],
-                    },
-                    'detalles': movimiento.detalles,
-                  });
-                });
+              onSave: (movimientoData) async {
+                try {
+                  setState(() => _isLoading = true);
+                  
+                  // Crear movimiento usando la API
+                  
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Movimiento creado exitosamente'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    
+                    // Recargar movimientos para mostrar el nuevo
+                    await _cargarMovimientos();
+                  }
+                } catch (e) {
+                  debugPrint('Error al crear movimiento: $e');
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error al crear movimiento: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    setState(() => _isLoading = false);
+                  }
+                }
               },
-              usuarioId: _currentUser['id'],
-              localId: _currentUser['sucursalId'],
+              usuarioId: _empleadoId.toString(),
+              localId: int.parse(_sucursalId!),
             ),
           );
         },
@@ -415,7 +424,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
     );
   }
 
-  Widget _buildMovimientoCard(Map<String, dynamic> movimiento, bool isMobile) {
+  Widget _buildMovimientoCard(Movimiento movimiento, bool isMobile) {
     return Container(
       margin: EdgeInsets.only(bottom: isMobile ? 8 : 16),
       decoration: BoxDecoration(
@@ -428,16 +437,16 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
           Padding(
             padding: EdgeInsets.all(isMobile ? 12 : 16),
             child: Row(
-            children: [
-              Container(
+              children: [
+                Container(
                   padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                    color: _getEstadoColor(movimiento['estado']).withOpacity(0.1),
+                  decoration: BoxDecoration(
+                    color: _getEstadoColor(movimiento.estado).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: FaIcon(
-                    _getEstadoIcon(movimiento['estado']),
-                    color: _getEstadoColor(movimiento['estado']),
+                    _getEstadoIcon(movimiento.estado),
+                    color: _getEstadoColor(movimiento.estado),
                     size: isMobile ? 16 : 24,
                   ),
                 ),
@@ -451,36 +460,36 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
-                            movimiento['codigo'],
+                            'MOV${movimiento.id}',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: isMobile ? 14 : 16,
                             ),
                           ),
-                Container(
+                          Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 2,
                             ),
-                  decoration: BoxDecoration(
-                              color: _getEstadoColor(movimiento['estado']).withOpacity(0.1),
+                            decoration: BoxDecoration(
+                              color: _getEstadoColor(movimiento.estado).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              movimiento['estado'],
+                              movimiento.estado,
                               style: TextStyle(
-                                color: _getEstadoColor(movimiento['estado']),
+                                color: _getEstadoColor(movimiento.estado),
                                 fontSize: isMobile ? 10 : 12,
                                 fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-                        'Solicitado por: ${movimiento['solicitante']['nombre']}',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Solicitado por: ${movimiento.solicitante ?? 'Desconocido'}',
                         style: TextStyle(
                           color: Colors.grey[400],
                           fontSize: isMobile ? 12 : 14,
@@ -489,7 +498,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                     ],
                   ),
                 ),
-                if (movimiento['estado'] == 'DESPACHADO')
+                if (movimiento.estado == 'DESPACHADO')
                   ElevatedButton.icon(
                     onPressed: () => _showValidationDialog(movimiento),
                     icon: FaIcon(FontAwesomeIcons.check, size: isMobile ? 14 : 16),
@@ -534,112 +543,117 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                 ),
               ),
               children: [
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: movimiento['detalles'].length,
-                  itemBuilder: (context, index) {
-                    final detalle = movimiento['detalles'][index];
-                    final producto = detalle['producto'];
-                    return Container(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
-                      ),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A1A),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE31E24).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const FaIcon(
-                              FontAwesomeIcons.box,
-                              color: Color(0xFFE31E24),
-                              size: 16,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  producto['nombre'],
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  '${producto['codigo']} - ${producto['marca']}',
-            style: TextStyle(
-                                    color: Colors.grey[400],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE31E24).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  'Cant: ${detalle['cantidad']}',
-                                  style: const TextStyle(
-                                    color: Color(0xFFE31E24),
-                                    fontWeight: FontWeight.bold,
-              fontSize: 12,
-                                  ),
-                                ),
+                if (movimiento.productos != null && movimiento.productos!.isNotEmpty)
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: movimiento.productos!.length,
+                    itemBuilder: (context, index) {
+                      final detalle = movimiento.productos![index];
+                      return Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A1A1A),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE31E24).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              if (detalle['cantidadRecibida'] != null)
+                              child: const FaIcon(
+                                FontAwesomeIcons.box,
+                                color: Color(0xFFE31E24),
+                                size: 16,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    detalle.nombre,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Código: ${detalle.codigo}',
+                                    style: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
                                 Container(
-                                  margin: const EdgeInsets.only(top: 4),
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 8,
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: detalle['cantidadRecibida'] == detalle['cantidad']
-                                        ? Colors.green.withOpacity(0.1)
-                                        : Colors.orange.withOpacity(0.1),
+                                    color: const Color(0xFFE31E24).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
-                                    'Rec: ${detalle['cantidadRecibida']}',
-                                    style: TextStyle(
-                                      color: detalle['cantidadRecibida'] == detalle['cantidad']
-                                          ? Colors.green
-                                          : Colors.orange,
-                                      fontSize: 11,
+                                    'Cant: ${detalle.cantidad}',
+                                    style: const TextStyle(
+                                      color: Color(0xFFE31E24),
                                       fontWeight: FontWeight.bold,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                                if (detalle.cantidad > 0)
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'Rec: ${detalle.cantidad}',
+                                      style: TextStyle(
+                                        color: Colors.green,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  )
+                else
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'No hay productos registrados para este movimiento',
+                      style: TextStyle(color: Colors.white54),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -648,31 +662,34 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
     );
   }
 
-  Widget _buildTimeline(Map<String, dynamic> movimiento, bool isMobile) {
+  Widget _buildTimeline(Movimiento movimiento, bool isMobile) {
     final steps = [
       {
         'title': 'Solicitado',
         'icon': FontAwesomeIcons.fileLines,
-        'date': movimiento['fechaSolicitud'],
+        'date': movimiento.salidaOrigen,
         'isCompleted': true,
       },
       {
         'title': 'Preparado',
         'icon': FontAwesomeIcons.boxOpen,
-        'date': movimiento['fechaPreparacion'],
-        'isCompleted': movimiento['fechaPreparacion'] != null,
+        'date': null,
+        'isCompleted': movimiento.estado == 'PREPARADO' || 
+                       movimiento.estado == 'DESPACHADO' || 
+                       movimiento.estado == 'RECIBIDO',
       },
       {
         'title': 'Despachado',
         'icon': FontAwesomeIcons.truckFast,
-        'date': movimiento['fechaDespacho'],
-        'isCompleted': movimiento['fechaDespacho'] != null,
+        'date': null,
+        'isCompleted': movimiento.estado == 'DESPACHADO' || 
+                       movimiento.estado == 'RECIBIDO',
       },
       {
         'title': 'Recibido',
         'icon': FontAwesomeIcons.check,
-        'date': movimiento['fechaRecepcion'],
-        'isCompleted': movimiento['fechaRecepcion'] != null,
+        'date': movimiento.llegadaDestino,
+        'isCompleted': movimiento.estado == 'RECIBIDO',
       },
     ];
 
@@ -681,6 +698,10 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
         final index = entry.key;
         final step = entry.value;
         final isLast = index == steps.length - 1;
+        final date = step['date'] as DateTime?;
+        final formattedDate = date != null 
+            ? '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}'
+            : null;
 
         return Expanded(
           child: Row(
@@ -723,9 +744,9 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                         fontSize: isMobile ? 10 : 12,
                       ),
                     ),
-                    if (step['date'] != null)
+                    if (formattedDate != null)
                       Text(
-                        step['date'] as String,
+                        formattedDate,
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: isMobile ? 9 : 10,
@@ -737,7 +758,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
               if (!isLast)
                 Expanded(
                   child: Container(
-      height: 2,
+                    height: 2,
                     color: step['isCompleted'] as bool
                         ? const Color(0xFFE31E24)
                         : Colors.grey[800],
@@ -785,7 +806,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
   }
 
   // Mostrar diálogo para validar recepción
-  void _showValidationDialog(Map<String, dynamic> movimiento) {
+  void _showValidationDialog(Movimiento movimiento) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -852,7 +873,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Movimiento: ${movimiento['codigo']}',
+                                'Movimiento: MOV${movimiento.id}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -864,14 +885,14 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: _getEstadoColor(movimiento['estado'])
+                                  color: _getEstadoColor(movimiento.estado)
                                       .withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  movimiento['estado'],
+                                  movimiento.estado,
                                   style: TextStyle(
-                                    color: _getEstadoColor(movimiento['estado']),
+                                    color: _getEstadoColor(movimiento.estado),
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -881,15 +902,15 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Origen: ${movimiento['origen']['nombre']}',
+                            'Solicitante: ${movimiento.solicitante ?? 'Sin información'}',
                             style: TextStyle(color: Colors.grey[400]),
                           ),
                           Text(
-                            'Destino: ${movimiento['destino']['nombre']}',
+                            'Origen: ${movimiento.nombreSucursalOrigen}',
                             style: TextStyle(color: Colors.grey[400]),
                           ),
                           Text(
-                            'Solicitante: ${movimiento['solicitante']['nombre']}',
+                            'Destino: ${movimiento.nombreSucursalDestino}',
                             style: TextStyle(color: Colors.grey[400]),
                           ),
                         ],
@@ -898,79 +919,88 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                     const SizedBox(height: 16),
                     const Text(
                       'Productos a recibir:',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     // Lista de productos
-                    ...movimiento['detalles'].map<Widget>((detalle) {
-                      final producto = detalle['producto'];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2D2D2D),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE31E24).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const FaIcon(
-                                FontAwesomeIcons.box,
-                                color: Color(0xFFE31E24),
-                                size: 16,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    producto['nombre'],
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${producto['codigo']} - ${producto['marca']}',
-                                    style: TextStyle(
-                                      color: Colors.grey[400],
-                                      fontSize: 12,
-                                    ),
-          ),
-        ],
-      ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE31E24).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${detalle['cantidad']} unidades',
-                                style: const TextStyle(
+                    if (movimiento.productos != null && movimiento.productos!.isNotEmpty)
+                      ...movimiento.productos!.map<Widget>((detalle) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2D2D2D),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE31E24).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const FaIcon(
+                                  FontAwesomeIcons.box,
                                   color: Color(0xFFE31E24),
-                                  fontWeight: FontWeight.bold,
+                                  size: 16,
                                 ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      detalle.nombre,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Código: ${detalle.codigo}',
+                                      style: TextStyle(
+                                        color: Colors.grey[400],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE31E24).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${detalle.cantidad} unidades',
+                                  style: const TextStyle(
+                                    color: Color(0xFFE31E24),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      })
+                    else
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text(
+                          'No hay productos registrados para este movimiento',
+                          style: TextStyle(color: Colors.white54),
+                          textAlign: TextAlign.center,
                         ),
-                      );
-                    }).toList(),
+                      ),
                   ],
                 ),
               ),
@@ -995,30 +1025,16 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-            ElevatedButton.icon(
-                    onPressed: () {
-                      // Simular validación de recepción
-                      setState(() {
-                        movimiento['estado'] = 'RECIBIDO';
-                        movimiento['fechaRecepcion'] = DateTime.now().toString();
-                        for (var detalle in movimiento['detalles']) {
-                          detalle['estado'] = 'RECIBIDO';
-                          detalle['cantidadRecibida'] = detalle['cantidad'];
-                        }
-                      });
+                  ElevatedButton.icon(
+                    onPressed: () async {
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Recepción validada correctamente'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
+                      await _validarRecepcion(movimiento);
                     },
                     icon: const FaIcon(FontAwesomeIcons.check, size: 16),
                     label: const Text('Confirmar Recepción'),
-              style: ElevatedButton.styleFrom(
+                    style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
+                      foregroundColor: Colors.white,
                     ),
                   ),
                 ],
@@ -1028,5 +1044,44 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
         ),
       ),
     );
+  }
+  
+  // Método para validar la recepción de un movimiento
+  Future<void> _validarRecepcion(Movimiento movimiento) async {
+    setState(() => _isLoading = true);
+    
+    try {
+      // Actualizar estado del movimiento a RECIBIDO
+      await _movimientosApi.cambiarEstado(
+        movimiento.id.toString(),
+        'RECIBIDO',
+        observacion: 'Recepción validada correctamente',
+      );
+      
+      // Mostrar mensaje de éxito
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Recepción validada correctamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+      
+      // Recargar movimientos
+      await _cargarMovimientos();
+    } catch (e) {
+      debugPrint('Error al validar recepción: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al validar recepción: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() => _isLoading = false);
+      }
+    }
   }
 } 

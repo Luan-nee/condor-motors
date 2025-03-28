@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../api/index.api.dart';
 import '../../main.dart' show api;
+import '../../models/cliente.model.dart'; // Importamos el modelo de Cliente
+import '../../api/protected/proforma.api.dart'; // Importamos la API de proformas para usar DetalleProforma
 import 'barcode_colab.dart';
 import 'historial_ventas_colab.dart';
 
@@ -14,8 +16,9 @@ class VentasColabScreen extends StatefulWidget {
 
 class _VentasColabScreenState extends State<VentasColabScreen> {
   bool _isLoading = false;
-  late final StocksApi _stocksApi;
+  late final ProductosApi _productosApi;
   late final ProformaVentaApi _proformasApi;
+  late final ClientesApi _clientesApi; // Agregamos la API de clientes
   String _sucursalId = '9'; // Valor por defecto, se actualizará al inicializar
   int _empleadoId = 1; // Valor por defecto, se actualizará al inicializar
   List<Map<String, dynamic>> _productos = []; // Lista de productos obtenidos de la API
@@ -24,24 +27,25 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
   // Lista de productos en la venta actual
   final List<Map<String, dynamic>> _productosVenta = [];
   
-  // Cliente seleccionado
-  Map<String, dynamic>? _clienteSeleccionado;
+  // Cliente seleccionado (cambiamos de Map a Cliente)
+  Cliente? _clienteSeleccionado;
+  
+  // Lista de clientes cargados desde la API
+  List<Cliente> _clientes = [];
+  bool _clientesLoaded = false;
   
   // Controlador para el campo de búsqueda de productos
   final TextEditingController _searchController = TextEditingController();
   
-  // Datos de ejemplo para clientes
-  final List<Map<String, dynamic>> _clientes = [
-    {'id': 1, 'nombre': 'Juan Pérez', 'documento': '12345678', 'telefono': '987654321'},
-    {'id': 2, 'nombre': 'María García', 'documento': '87654321', 'telefono': '123456789'},
-    {'id': 3, 'nombre': 'Carlos López', 'documento': '45678912', 'telefono': '789456123'},
-  ];
+  // Controlador para el campo de búsqueda de clientes
+  final TextEditingController _clienteSearchController = TextEditingController();
   
   @override
   void initState() {
     super.initState();
-    _stocksApi = api.stocks;
+    _productosApi = api.productos;
     _proformasApi = api.proformas;
+    _clientesApi = api.clientes; // Inicializamos la API de clientes
     
     // Configurar los datos iniciales y cargar productos
     _configurarDatosIniciales();
@@ -68,18 +72,22 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
     } catch (e) {
       debugPrint('Error al obtener datos del usuario: $e');
     } finally {
-      // Cargar productos después de configurar la sucursal
-      await _cargarProductos();
+      // Cargar productos y clientes después de configurar la sucursal
+      await Future.wait([
+        _cargarProductos(),
+        _cargarClientes(),
+      ]);
     }
   }
   
   @override
   void dispose() {
     _searchController.dispose();
+    _clienteSearchController.dispose(); // Eliminamos también el controlador de búsqueda de clientes
     super.dispose();
   }
   
-  // Cargar productos desde la API
+  // Cargar productos desde la API usando ProductosApi
   Future<void> _cargarProductos() async {
     if (_productosLoaded) return; // Evitar cargar múltiples veces
     
@@ -88,25 +96,28 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
     try {
       debugPrint('Cargando productos para sucursal ID: $_sucursalId (Sucursal del vendedor)');
       
-      final stocksResponse = await _stocksApi.getStockBySucursal(
+      // Usar el método getProductos de ProductosApi
+      final response = await _productosApi.getProductos(
         sucursalId: _sucursalId,
+        pageSize: 100, // Obtener más productos por página
+        sortBy: 'nombre', // Ordenar por nombre
+        order: 'asc', // Orden ascendente
       );
       
       if (!mounted) return;
       
       final List<Map<String, dynamic>> productosFormateados = [];
       
-      for (var item in stocksResponse) {
+      // Procesar la lista de productos obtenida
+      for (var producto in response.items) {
         // Convertir cada producto al formato esperado por la UI
         productosFormateados.add({
-          'id': item['id'].toString(),
-          'codigo': item['codigo'] ?? 'SIN-COD',
-          'nombre': item['nombre'] ?? 'Producto sin nombre',
-          'precio': (item['precioVenta'] ?? 0.0).toDouble(),
-          'stock': item['stockActual'] ?? 0,
-          'categoria': item['categoria'] is Map 
-              ? item['categoria']['nombre'] 
-              : (item['categoria'] as String? ?? 'Sin categoría'),
+          'id': producto.id.toString(),
+          'codigo': producto.sku,
+          'nombre': producto.nombre,
+          'precio': producto.precioVenta,
+          'stock': producto.stock,
+          'categoria': producto.categoria,
         });
       }
           
@@ -130,6 +141,46 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       );
       
       setState(() => _isLoading = false);
+    }
+  }
+  
+  // Cargar clientes desde la API usando ClientesApi
+  Future<void> _cargarClientes() async {
+    if (_clientesLoaded) return; // Evitar cargar múltiples veces
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      debugPrint('Cargando clientes desde la API...');
+      
+      // Obtener los clientes desde la API
+      final clientesData = await _clientesApi.getClientes(
+        pageSize: 100, // Obtener más clientes por página
+        sortBy: 'denominacion', // Ordenar por nombre
+      );
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _clientes = clientesData;
+        _clientesLoaded = true;
+        debugPrint('Clientes cargados: ${_clientes.length}');
+      });
+    } catch (e) {
+      debugPrint('Error al cargar clientes: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar clientes: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
   
@@ -187,28 +238,150 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
   
   // Mostrar diálogo para seleccionar cliente
   void _mostrarDialogoClientes() {
+    // Asegurarse de que los clientes estén cargados
+    if (!_clientesLoaded) {
+      _cargarClientes();
+    }
+    
+    // Resetear el controlador de búsqueda
+    _clienteSearchController.text = '';
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          // Filtrar clientes según la búsqueda
+          List<Cliente> clientesFiltrados = _clientes;
+          
+          if (_clienteSearchController.text.isNotEmpty) {
+            final query = _clienteSearchController.text.toLowerCase();
+            clientesFiltrados = _clientes.where((cliente) {
+              return cliente.denominacion.toLowerCase().contains(query) || 
+                     cliente.numeroDocumento.toLowerCase().contains(query);
+            }).toList();
+          }
+          
+          return AlertDialog(
+            title: const Text('Seleccionar Cliente'),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 400,
+              child: Column(
+                children: [
+                  // Campo de búsqueda
+                  TextField(
+                    controller: _clienteSearchController,
+                    decoration: const InputDecoration(
+                      labelText: 'Buscar por nombre o documento',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: (_) {
+                      // Actualizar la búsqueda en tiempo real
+                      setState(() {});
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // Lista de clientes
+                  Expanded(
+                    child: _isLoading && !_clientesLoaded
+                      ? const Center(
+                          child: CircularProgressIndicator(),
+                        )
+                      : clientesFiltrados.isEmpty
+                        ? const Center(
+                            child: Text('No se encontraron clientes con esa búsqueda'),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: clientesFiltrados.length,
+                            itemBuilder: (context, index) {
+                              final cliente = clientesFiltrados[index];
+                              return ListTile(
+                                title: Text(cliente.denominacion),
+                                subtitle: Text('Doc: ${cliente.numeroDocumento}'),
+                                onTap: () {
+                                  // Actualizar el cliente seleccionado
+                                  this.setState(() {
+                                    _clienteSeleccionado = cliente;
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () => _mostrarDialogoNuevoCliente(),
+                child: const Text('Nuevo Cliente'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+  
+  // Mostrar diálogo para crear nuevo cliente
+  void _mostrarDialogoNuevoCliente() {
+    final denominacionController = TextEditingController();
+    final numeroDocumentoController = TextEditingController();
+    final telefonoController = TextEditingController();
+    final direccionController = TextEditingController();
+    final correoController = TextEditingController();
+    
+    // Cerrar diálogo anterior
+    Navigator.pop(context);
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Seleccionar Cliente'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: _clientes.length,
-            itemBuilder: (context, index) {
-              final cliente = _clientes[index];
-              return ListTile(
-                title: Text(cliente['nombre']),
-                subtitle: Text('Doc: ${cliente['documento']}'),
-                onTap: () {
-                  setState(() {
-                    _clienteSeleccionado = cliente;
-                  });
-                  Navigator.pop(context);
-                },
-              );
-            },
+        title: const Text('Nuevo Cliente'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: denominacionController,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre/Razón Social *',
+                ),
+              ),
+              TextField(
+                controller: numeroDocumentoController,
+                decoration: const InputDecoration(
+                  labelText: 'Número de Documento *',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: telefonoController,
+                decoration: const InputDecoration(
+                  labelText: 'Teléfono',
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+              TextField(
+                controller: direccionController,
+                decoration: const InputDecoration(
+                  labelText: 'Dirección',
+                ),
+              ),
+              TextField(
+                controller: correoController,
+                decoration: const InputDecoration(
+                  labelText: 'Correo Electrónico',
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ],
           ),
         ),
         actions: [
@@ -217,11 +390,65 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Implementar creación de nuevo cliente
+            onPressed: () async {
+              // Validar campos obligatorios
+              if (denominacionController.text.isEmpty || numeroDocumentoController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Nombre y número de documento son obligatorios'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              
+              // Cerrar el diálogo
               Navigator.pop(context);
+              
+              // Mostrar indicador de carga
+              setState(() => _isLoading = true);
+              
+              try {
+                // Crear cliente en la API
+                final nuevoCliente = await _clientesApi.createCliente({
+                  'tipoDocumentoId': 1, // DNI por defecto
+                  'numeroDocumento': numeroDocumentoController.text,
+                  'denominacion': denominacionController.text,
+                  'telefono': telefonoController.text,
+                  'direccion': direccionController.text,
+                  'correo': correoController.text,
+                });
+                
+                // Actualizar la lista de clientes y seleccionar el nuevo cliente
+                setState(() {
+                  _clientes.add(nuevoCliente);
+                  _clienteSeleccionado = nuevoCliente;
+                  _isLoading = false;
+                });
+                
+                // Mostrar mensaje de éxito
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Cliente ${nuevoCliente.denominacion} creado exitosamente'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                debugPrint('Error al crear cliente: $e');
+                
+                setState(() => _isLoading = false);
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error al crear cliente: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
-            child: const Text('Nuevo Cliente'),
+            child: const Text('Guardar'),
           ),
         ],
       ),
@@ -349,7 +576,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
   }
   
   // Método para finalizar venta
-  void _finalizarVenta() {
+  void _finalizarVenta() async {
     if (_productosVenta.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -370,8 +597,42 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       return;
     }
     
-    // Crear proforma en lugar de enviar directamente
-    _crearProformaVenta();
+    try {
+      // Verificar stock de productos antes de crear la proforma
+      for (var producto in _productosVenta) {
+        final int productoId = int.parse(producto['id']);
+        final int cantidad = producto['cantidad'];
+        
+        // Obtener producto actualizado para verificar stock
+        final productoActual = await _productosApi.getProducto(
+          sucursalId: _sucursalId,
+          productoId: productoId,
+          useCache: false, // No usar caché para obtener datos actualizados
+        );
+        
+        if (productoActual.stock < cantidad) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Stock insuficiente para ${productoActual.nombre}. Disponible: ${productoActual.stock}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+      
+      // Si hay stock suficiente, crear la proforma
+      await _crearProformaVenta();
+      
+    } catch (e) {
+      debugPrint('Error al verificar stock: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al verificar disponibilidad de productos: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
   
   // Método para crear proforma de venta
@@ -393,16 +654,20 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       // Llamar a la API para crear la proforma
       final respuesta = await _proformasApi.createProformaVenta(
         sucursalId: _sucursalId,
-        nombre: 'Proforma ${_clienteSeleccionado!['nombre']}',
+        nombre: 'Proforma ${_clienteSeleccionado!.denominacion}',
         total: _totalVenta,
         detalles: detalles,
         empleadoId: _empleadoId,
+        clienteId: _clienteSeleccionado!.id, // Usar el ID del cliente seleccionado
       );
       
       if (!mounted) return;
       
       // Convertir la respuesta a un objeto estructurado
       final proformaCreada = _proformasApi.parseProformaVenta(respuesta);
+      
+      // Actualizar stock de productos involucrados en la proforma
+      await _actualizarStockProductos();
       
       // Mostrar diálogo de confirmación
       await showDialog(
@@ -426,7 +691,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text('Cliente: ${_clienteSeleccionado!['nombre']}'),
+              Text('Cliente: ${_clienteSeleccionado!.denominacion}'),
               if (proformaCreada != null) ...[
                 const SizedBox(height: 8),
                 Text('Proforma ID: ${proformaCreada.id}'),
@@ -460,6 +725,43 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
+      }
+    }
+  }
+  
+  // Método para actualizar el stock de los productos después de crear la proforma
+  Future<void> _actualizarStockProductos() async {
+    try {
+      for (var producto in _productosVenta) {
+        final int productoId = int.parse(producto['id']);
+        final int cantidad = producto['cantidad'];
+        
+        // Usar la API de productos para disminuir el stock
+        await _productosApi.disminuirStock(
+          sucursalId: _sucursalId,
+          productoId: productoId,
+          cantidad: cantidad,
+          motivo: 'Proforma de venta generada',
+        );
+        
+        debugPrint('Stock actualizado para producto ID $productoId: -$cantidad unidades');
+      }
+      
+      // Recargar productos para reflejar el nuevo stock
+      _productosLoaded = false;
+      await _cargarProductos();
+      
+    } catch (e) {
+      debugPrint('Error al actualizar stock de productos: $e');
+      // No lanzamos excepción aquí para que no interrumpa el flujo de la creación de proforma
+      // pero mostramos una notificación
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Advertencia: No se pudo actualizar el stock de algunos productos: $e'),
+            backgroundColor: Colors.orange,
+          ),
+        );
       }
     }
   }
@@ -521,11 +823,15 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
             ),
             tooltip: 'Recargar Productos',
             onPressed: () {
-              setState(() => _productosLoaded = false);
+              setState(() {
+                _productosLoaded = false;
+                _clientesLoaded = false; // También recargar clientes
+              });
               _cargarProductos();
+              _cargarClientes();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Recargando productos...'),
+                  content: Text('Recargando datos...'),
                   backgroundColor: Colors.blue,
                 ),
               );
@@ -581,7 +887,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                           Expanded(
                             child: Text(
                               _clienteSeleccionado != null
-                                  ? _clienteSeleccionado!['nombre']
+                                  ? _clienteSeleccionado!.denominacion
                                   : 'Seleccionar Cliente',
                               style: TextStyle(
                                 color: _clienteSeleccionado != null

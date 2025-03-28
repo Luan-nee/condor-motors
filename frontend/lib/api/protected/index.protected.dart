@@ -1,5 +1,6 @@
 export 'cache/fast_cache.dart';
 export 'categorias.api.dart';
+export 'clientes.api.dart';
 export 'colores.api.dart';
 export 'empleados.api.dart';
 export 'marcas.api.dart';
