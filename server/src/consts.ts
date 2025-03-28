@@ -117,8 +117,8 @@ export const permissionCodes = {
     getAny: 'transferencias_inventarios:get_any',
     updateAny: 'transferencias_inventarios:update_any',
     createRelated: 'transferencias_inventarios:create_related',
-    sendRelated: 'transferencias_inventarios:send_any',
-    receiveRelated: 'transferencias_inventarios:receive_any',
+    sendRelated: 'transferencias_inventarios:send_related',
+    receiveRelated: 'transferencias_inventarios:receive_related',
     getRelated: 'transferencias_inventarios:get_related',
     updateRelated: 'transferencias_inventarios:update_related'
   }
