@@ -524,41 +524,6 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
     }
   }
 
-  // Widget para mostrar un elemento de información
-  Widget _buildInfoItem(String titulo, String valor, IconData icono) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            FaIcon(
-              icono,
-              size: 12,
-              color: const Color(0xFFE31E24),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              titulo,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          valor,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildEstadoCell(String estado) {
     Color backgroundColor;
     Color textColor = Colors.white;

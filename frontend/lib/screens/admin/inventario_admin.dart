@@ -35,11 +35,10 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   // Nuevo: Productos consolidados de todas las sucursales
-  Map<int, Map<String, int>> _stockPorSucursal =
+  final Map<int, Map<String, int>> _stockPorSucursal =
       {}; // productoId -> {sucursalId -> stock}
   List<Producto> _productosBajoStock =
       []; // Productos con problemas en cualquier sucursal
-  bool _isLoadingConsolidado = false;
 
   // Parámetros de paginación y filtrado
   String _searchQuery = '';
@@ -168,7 +167,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       );
 
       // Reorganizar los productos según la prioridad de stock
-      List<Producto> productosReorganizados =
+      final List<Producto> productosReorganizados =
           StockUtils.reorganizarProductosPorPrioridad(paginatedProductos.items);
 
       setState(() {
@@ -311,7 +310,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   }) async {
     // Configuración inicial de paginación
     int paginaActual = 1;
-    final int tamanioPagina = 100;
+    const int tamanioPagina = 100;
     bool hayMasPaginas = true;
     final List<Producto> productosObtenidos = [];
     

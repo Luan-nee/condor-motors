@@ -4,7 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../api/index.api.dart';
 import '../../main.dart' show api;
 import '../../models/proforma.model.dart' as models;
-import 'widgets/form_sales_computer.dart' show NumericKeypad, ProcessingDialog, DebugPrint, ProformaSaleDialog;
+import 'widgets/form_sales_computer.dart' show NumericKeypad, ProcessingDialog, ProformaSaleDialog;
 import 'widgets/ventas_pendientes_utils.dart';
 import 'widgets/ventas_pendientes_widget.dart';
 
@@ -276,7 +276,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   
   // Método para seleccionar una venta pendiente para procesar
   void _seleccionarVenta(Map<String, dynamic> venta) {
-    DebugPrint.log('Venta seleccionada: $venta');
+    debugPrint('Venta seleccionada: $venta');
     
     // Verificar si es una proforma
     final esProforma = VentasPendientesUtils.esProforma(
@@ -679,7 +679,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                           isProcessing: _procesandoPago,
                           minAmount: venta['total'],
                           onCharge: (monto) {
-                            DebugPrint.log('Monto recibido para cobrar: $monto');
+                            debugPrint('Monto recibido para cobrar: $monto');
                             Navigator.pop(context);
                             _procesarPago();
                           },
@@ -700,7 +700,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   Future<void> _procesarPago() async {
     if (_ventaSeleccionada == null) return;
     
-    DebugPrint.log('Procesando pago para venta: ${_ventaSeleccionada!['id']} con monto: $_montoIngresado');
+    debugPrint('Procesando pago para venta: ${_ventaSeleccionada!['id']} con monto: $_montoIngresado');
     setState(() => _procesandoPago = true);
     
     try {
@@ -732,8 +732,8 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         // Simular procesamiento (aquí harías la llamada a la API)
         await Future.delayed(const Duration(seconds: 2));
         
-        DebugPrint.log('Pago procesado exitosamente');
-        DebugPrint.log('Marcando venta como procesada');
+        debugPrint('Pago procesado exitosamente');
+        debugPrint('Marcando venta como procesada');
         
         // Cerrar dialog de procesamiento
         if (mounted) {
@@ -762,7 +762,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       await _cargarVentas();
       await _cargarProformas();
     } catch (e) {
-      DebugPrint.log('Error al procesar pago: $e');
+      debugPrint('Error al procesar pago: $e');
       
       if (mounted) {
         // Cerrar dialog de procesamiento si está abierto
@@ -788,7 +788,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     if (_ventaSeleccionada == null) return;
     
     try {
-      DebugPrint.log('Actualizando cantidades de productos para venta: ${_ventaSeleccionada!['id']}');
+      debugPrint('Actualizando cantidades de productos para venta: ${_ventaSeleccionada!['id']}');
       
       // Crear estructura de datos para enviar a la API
       final Map<String, dynamic> ventaData = {
@@ -805,10 +805,10 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       // Actualizar la venta en la API
       await _ventasApi.updateVenta(_ventaSeleccionada!['id'], ventaData);
       
-      DebugPrint.log('Cantidades de productos actualizadas correctamente');
+      debugPrint('Cantidades de productos actualizadas correctamente');
       
     } catch (e) {
-      DebugPrint.log('Error al actualizar cantidades de productos: $e');
+      debugPrint('Error al actualizar cantidades de productos: $e');
       throw Exception('No se pudieron actualizar las cantidades de productos: $e');
     }
   }
@@ -843,8 +843,8 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
           _ventaSeleccionada = Map<String, dynamic>.from(venta);
         }
         
-        DebugPrint.log('Cantidad actualizada para ${producto['nombre']}: $nuevaCantidad');
-        DebugPrint.log('Nuevo total de la venta: ${venta['total']}');
+        debugPrint('Cantidad actualizada para ${producto['nombre']}: $nuevaCantidad');
+        debugPrint('Nuevo total de la venta: ${venta['total']}');
       }
     });
     
@@ -952,7 +952,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       });
       
       // Mostrar diálogo de procesamiento
-      showDialog(
+      await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) => const ProcessingDialog(

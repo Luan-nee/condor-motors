@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'dart:developer' as developer;
 
 import '../../../models/proforma.model.dart';
 import '../ventas_computer.dart' show VentasUtils;
 import 'ventas_pendientes_utils.dart';
-
-// Clase para depurar eventos
-class DebugPrint {
-  static void log(String message) {
-    debugPrint('FORM_SALES_DEBUG: $message');
-  }
-}
 
 class ProcessingDialog extends StatelessWidget {
   final String documentType;
@@ -108,7 +102,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
   @override
   void initState() {
     super.initState();
-    DebugPrint.log('Inicializando NumericKeypad');
+    developer.log('Inicializando NumericKeypad');
     _focusNode.requestFocus();
     _customerNameController.text = widget.customerName;
     // Establecer valores iniciales si es necesario
@@ -148,22 +142,22 @@ class _NumericKeypadState extends State<NumericKeypad> {
   }
 
   void _handleKeyEvent(String key) {
-    DebugPrint.log('Tecla presionada: $key');
+    developer.log('Tecla presionada: $key');
     
     if (key == 'Enter') {
-      DebugPrint.log('Intentando ejecutar onCharge - Monto ingresado: $_enteredAmount');
+      developer.log('Intentando ejecutar onCharge - Monto ingresado: $_enteredAmount');
       final montoIngresado = double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
       if (_enteredAmount.isNotEmpty && montoIngresado >= widget.minAmount) {
-        DebugPrint.log('Ejecutando onCharge con monto: $montoIngresado');
+        developer.log('Ejecutando onCharge con monto: $montoIngresado');
         widget.onCharge(montoIngresado);
       } else {
-        DebugPrint.log('Monto insuficiente para ejecutar onCharge');
+        developer.log('Monto insuficiente para ejecutar onCharge');
       }
       return;
     }
     
     if (key == 'Backspace') {
-      DebugPrint.log('Borrando último dígito');
+      developer.log('Borrando último dígito');
       if (_enteredAmount.isNotEmpty) {
         setState(() {
           _enteredAmount = _enteredAmount.substring(0, _enteredAmount.length - 1);
@@ -197,7 +191,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
   }
 
   void _handleClearClick() {
-    DebugPrint.log('Limpiando campo de monto');
+    developer.log('Limpiando campo de monto');
     setState(() {
       _enteredAmount = '';
       // Sincronizar con el componente padre
@@ -207,14 +201,14 @@ class _NumericKeypadState extends State<NumericKeypad> {
 
   @override
   Widget build(BuildContext context) {
-    DebugPrint.log('Construyendo NumericKeypad');
+    developer.log('Construyendo NumericKeypad');
     return KeyboardListener(
       focusNode: _focusNode,
       onKeyEvent: (KeyEvent event) {
         if (event is! KeyDownEvent) return;
 
         final key = event.logicalKey;
-        DebugPrint.log('Tecla física presionada: ${key.keyLabel}');
+        developer.log('Tecla física presionada: ${key.keyLabel}');
         
         if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.numpadEnter) {
           _handleKeyEvent('Enter');
@@ -302,7 +296,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () {
-                              DebugPrint.log('Seleccionado tipo de documento: Boleta');
+                              developer.log('Seleccionado tipo de documento: Boleta');
                               widget.onDocumentTypeChanged('Boleta');
                             },
                             borderRadius: BorderRadius.circular(8),
@@ -351,7 +345,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () {
-                              DebugPrint.log('Seleccionado tipo de documento: Factura');
+                              developer.log('Seleccionado tipo de documento: Factura');
                               widget.onDocumentTypeChanged('Factura');
                             },
                             borderRadius: BorderRadius.circular(8),
@@ -571,7 +565,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
             color: Colors.transparent,
             child: InkWell(
               onTap: () {
-                DebugPrint.log('Botón numérico presionado: $number');
+                developer.log('Botón numérico presionado: $number');
                 _handleKeyEvent(number);
               },
               borderRadius: BorderRadius.circular(8),
@@ -613,7 +607,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
             color: Colors.transparent,
             child: InkWell(
               onTap: isEnabled ? () {
-                DebugPrint.log('Botón de acción presionado: $label');
+                developer.log('Botón de acción presionado: $label');
                 onPressed();
               } : null,
               borderRadius: BorderRadius.circular(8),

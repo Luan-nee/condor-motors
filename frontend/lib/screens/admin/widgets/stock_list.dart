@@ -169,9 +169,7 @@ class TableProducts extends StatelessWidget {
             if (hayFiltrosAplicados) ...[
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: onRetry != null 
-                    ? onRetry 
-                    : () {
+                onPressed: onRetry ?? () {
                         debugPrint('No se configuró un manejador para reiniciar filtros');
                       },
                 icon: const Icon(FontAwesomeIcons.arrowsRotate, size: 16),
@@ -914,7 +912,7 @@ class TableProducts extends StatelessWidget {
     final mostrarAlertaGlobal = (porcentajeAgotadas + porcentajeBajo) > 50;
     
     // Mostrar primero las sucursales con problemas y luego otras (si hay espacio)
-    List<Sucursal> sucursalesMostradas = [];
+    final List<Sucursal> sucursalesMostradas = [];
     
     // Priorizar mostrar las sucursales agotadas primero
     if (sucursalesAgotadas.isNotEmpty) {
@@ -944,7 +942,6 @@ class TableProducts extends StatelessWidget {
     }
     
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
         // Mostrar indicador de alerta global si es necesario
