@@ -23,6 +23,7 @@ class ProductosApi {
   /// [filter] Campo por el cual filtrar (opcional)
   /// [filterValue] Valor para el filtro (opcional)
   /// [filterType] Tipo de filtro a aplicar (opcional)
+  /// [stockBajo] Filtrar productos con stock bajo (opcional)
   /// [useCache] Indica si se debe usar el caché (default: true)
   /// [forceRefresh] Si es true, invalida la caché antes de obtener los datos
   Future<PaginatedResponse<Producto>> getProductos({
@@ -35,6 +36,7 @@ class ProductosApi {
     String? filter,
     String? filterValue,
     String? filterType,
+    bool? stockBajo,
     bool useCache = true,
     bool forceRefresh = false,
   }) async {
@@ -56,6 +58,7 @@ class ProductosApi {
         filter: filter,
         filterValue: filterValue,
         filterType: filterType,
+        stockBajo: stockBajo,
       );
       
       // Intentar obtener desde caché si useCache es true
@@ -69,7 +72,7 @@ class ProductosApi {
       
       // Si no hay caché o useCache es false, obtener desde la API
       debugPrint('Obteniendo productos para sucursal $sucursalId con parámetros: '
-          '{ search: $search, page: $page, pageSize: $pageSize, sortBy: $sortBy, order: $order, filter: $filter }');
+          '{ search: $search, page: $page, pageSize: $pageSize, sortBy: $sortBy, order: $order, filter: $filter, stockBajo: $stockBajo }');
       
       final queryParams = <String, String>{};
       
@@ -103,6 +106,11 @@ class ProductosApi {
       
       if (filterType != null && filterType.isNotEmpty) {
         queryParams['filter_type'] = filterType;
+      }
+      
+      // Añadir parámetro stockBajo si está definido
+      if (stockBajo != null) {
+        queryParams['stockBajo'] = stockBajo.toString();
       }
       
       final response = await _api.authenticatedRequest(
@@ -147,6 +155,139 @@ class ProductosApi {
     }
   }
   
+  /// Obtiene productos con stock bajo de una sucursal específica
+  /// 
+  /// Método helper que utiliza getProductos con el parámetro stockBajo=true
+  /// 
+  /// [sucursalId] ID de la sucursal
+  /// [page] Número de página para paginación (opcional)
+  /// [pageSize] Número de elementos por página (opcional)
+  /// [sortBy] Campo por el cual ordenar (opcional)
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<PaginatedResponse<Producto>> getProductosConStockBajo({
+    required String sucursalId,
+    int? page,
+    int? pageSize,
+    String? sortBy,
+    bool useCache = true,
+  }) async {
+    return getProductos(
+      sucursalId: sucursalId,
+      page: page ?? 1,
+      pageSize: pageSize ?? 20,
+      sortBy: sortBy ?? 'nombre',
+      order: 'asc',
+      stockBajo: true,
+      useCache: useCache,
+    );
+  }
+  
+  /// Obtiene productos agotados (stock = 0) de una sucursal específica
+  /// 
+  /// [sucursalId] ID de la sucursal
+  /// [page] Número de página para paginación (opcional)
+  /// [pageSize] Número de elementos por página (opcional)
+  /// [sortBy] Campo por el cual ordenar (opcional)
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<PaginatedResponse<Producto>> getProductosAgotados({
+    required String sucursalId,
+    int? page,
+    int? pageSize,
+    String? sortBy,
+    bool useCache = true,
+  }) async {
+    // Usamos el método general y filtramos manualmente
+    // porque el backend no tiene un endpoint específico para agotados
+    final response = await getProductos(
+      sucursalId: sucursalId,
+      page: page ?? 1,
+      pageSize: pageSize ?? 50, // Tamaño grande para tener suficientes después de filtrar
+      sortBy: sortBy ?? 'nombre',
+      order: 'asc',
+      useCache: useCache,
+    );
+    
+    // Filtramos solo los productos agotados (stock = 0)
+    final productosAgotados = response.items.where((p) => p.stock <= 0).toList();
+    
+    // Mantenemos la misma información de paginación pero ajustamos totalItems
+    final paginacionAjustada = Paginacion(
+      currentPage: response.paginacion.currentPage,
+      totalPages: response.paginacion.totalPages,
+      totalItems: productosAgotados.length,
+      hasNext: response.paginacion.hasNext,
+      hasPrev: response.paginacion.hasPrev,
+    );
+    
+    // Devolvemos una nueva respuesta paginada con solo los productos agotados
+    return PaginatedResponse<Producto>(
+      items: productosAgotados,
+      paginacion: paginacionAjustada,
+      metadata: response.metadata,
+    );
+  }
+  
+  /// Obtiene productos sin stock bajo de una sucursal específica
+  /// 
+  /// Método helper que utiliza getProductos con el parámetro stockBajo=false
+  /// 
+  /// [sucursalId] ID de la sucursal
+  /// [page] Número de página para paginación (opcional)
+  /// [pageSize] Número de elementos por página (opcional)
+  /// [sortBy] Campo por el cual ordenar (opcional)
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<PaginatedResponse<Producto>> getProductosSinStockBajo({
+    required String sucursalId,
+    int? page,
+    int? pageSize,
+    String? sortBy,
+    bool useCache = true,
+  }) async {
+    return getProductos(
+      sucursalId: sucursalId,
+      page: page ?? 1,
+      pageSize: pageSize ?? 20,
+      sortBy: sortBy ?? 'nombre',
+      order: 'asc',
+      stockBajo: false,
+      useCache: useCache,
+    );
+  }
+  
+  /// Busca productos por nombre en una sucursal específica
+  /// 
+  /// Método helper que utiliza getProductos con el parámetro search
+  /// 
+  /// [sucursalId] ID de la sucursal
+  /// [nombre] Término de búsqueda para filtrar productos por nombre
+  /// [page] Número de página para paginación (opcional)
+  /// [pageSize] Número de elementos por página (opcional)
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<PaginatedResponse<Producto>> buscarProductosPorNombre({
+    required String sucursalId,
+    required String nombre,
+    int? page,
+    int? pageSize,
+    bool useCache = true,
+  }) async {
+    if (nombre.isEmpty) {
+      throw ApiException(
+        statusCode: 400,
+        message: 'El término de búsqueda no puede estar vacío',
+      );
+    }
+    
+    return getProductos(
+      sucursalId: sucursalId,
+      search: nombre,
+      page: page ?? 1,
+      pageSize: pageSize ?? 20,
+      sortBy: 'nombre',
+      order: 'asc',
+      useCache: useCache,
+    );
+  }
+
   /// Obtiene un producto específico de una sucursal
   /// 
   /// [sucursalId] ID de la sucursal
@@ -366,6 +507,51 @@ class ProductosApi {
     }
   }
   
+  /// Disminuye stock de un producto mediante el endpoint de salidas de inventario
+  /// 
+  /// [sucursalId] ID de la sucursal
+  /// [productoId] ID del producto
+  /// [cantidad] Cantidad a restar (debe ser positiva)
+  /// [motivo] Motivo de la salida de inventario (opcional)
+  Future<bool> disminuirStock({
+    required String sucursalId,
+    required int productoId,
+    required int cantidad,
+    String? motivo,
+  }) async {
+    try {
+      if (cantidad <= 0) {
+        throw Exception('La cantidad a disminuir debe ser mayor a 0');
+      }
+      
+      debugPrint('Disminuyendo $cantidad unidades al producto $productoId en sucursal $sucursalId');
+      
+      // Asegurarse de que los tipos sean los correctos para la API
+      final Map<String, dynamic> body = {
+        'productoId': productoId, // Asegurarse que sea un entero
+        'cantidad': cantidad, // Asegurarse que sea un entero
+      };
+      
+      if (motivo != null && motivo.isNotEmpty) {
+        body['motivo'] = motivo;
+      }
+      
+      await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/inventarios/salidas',
+        method: 'POST',
+        body: body,
+      );
+      
+      // Invalidar caché relacionada
+      _invalidateRelatedCache(sucursalId, productoId);
+      
+      return true;
+    } catch (e) {
+      debugPrint('Error al disminuir stock: $e');
+      rethrow;
+    }
+  }
+  
   /// Agrega stock a un producto mediante el endpoint de entradas de inventario
   /// 
   /// [sucursalId] ID de la sucursal
@@ -385,10 +571,15 @@ class ProductosApi {
       
       debugPrint('Agregando $cantidad unidades al producto $productoId en sucursal $sucursalId');
       
-      final body = {
-        'productoId': productoId,
-        'cantidad': cantidad,
+      // Asegurarse de que los tipos sean los correctos para la API
+      final Map<String, dynamic> body = {
+        'productoId': productoId, // Asegurarse que sea un entero
+        'cantidad': cantidad, // Asegurarse que sea un entero
       };
+      
+      if (motivo != null && motivo.isNotEmpty) {
+        body['motivo'] = motivo;
+      }
       
       await _api.authenticatedRequest(
         endpoint: '/$sucursalId/inventarios/entradas',
@@ -417,6 +608,7 @@ class ProductosApi {
     String? filter,
     String? filterValue,
     String? filterType,
+    bool? stockBajo,
   }) {
     final List<String> components = [base];
     
@@ -428,6 +620,7 @@ class ProductosApi {
     if (filter != null && filter.isNotEmpty) components.add('f:$filter');
     if (filterValue != null) components.add('fv:$filterValue');
     if (filterType != null && filterType.isNotEmpty) components.add('ft:$filterType');
+    if (stockBajo != null) components.add('stb:${stockBajo ? 'true' : 'false'}');
     
     return components.join('_');
   }
@@ -482,6 +675,7 @@ class ProductosApi {
     String? filter,
     String? filterValue,
     String? filterType,
+    bool? stockBajo,
   }) {
     final cacheKey = _generateCacheKey(
       'productos_$sucursalId',
@@ -493,6 +687,7 @@ class ProductosApi {
       filter: filter,
       filterValue: filterValue,
       filterType: filterType,
+      stockBajo: stockBajo,
     );
     
     return _cache.isStale(cacheKey);

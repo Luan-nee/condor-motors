@@ -24,6 +24,9 @@ class TableProducts extends StatelessWidget {
   final List<Sucursal>? sucursales;
   final bool esVistaGlobal;
   
+  // Nuevo parámetro para indicar si hay filtros activos
+  final bool filtrosActivos;
+  
   const TableProducts({
     super.key, 
     required this.selectedSucursalId,
@@ -40,6 +43,7 @@ class TableProducts extends StatelessWidget {
     this.stockPorSucursal,
     this.sucursales,
     this.esVistaGlobal = false,
+    this.filtrosActivos = false,
   });
 
   final List<String> _columnHeaders = const [
@@ -119,25 +123,77 @@ class TableProducts extends StatelessWidget {
     
     // Si no hay productos para esta sucursal o vista
     if (productos == null || productos!.isEmpty) {
+      // Determinar si es probable que haya filtros aplicados
+      final bool hayFiltrosAplicados = 
+          filtrosActivos || esVistaGlobal; // La vista global o cuando hay filtros explícitos
+      
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              FontAwesomeIcons.boxOpen,
-              color: Colors.white54,
-              size: 48,
+            // Usar un icono diferente cuando no hay productos por filtros
+            Icon(
+              hayFiltrosAplicados 
+                  ? FontAwesomeIcons.filter // Icono de filtro cuando hay filtros aplicados
+                  : FontAwesomeIcons.boxOpen, // Icono de caja vacía para otros casos
+              color: hayFiltrosAplicados ? Colors.amber : Colors.white54,
+              size: 64,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Text(
-              esVistaGlobal 
-                  ? 'No hay productos con problemas de stock en ninguna sucursal'
-                  : 'No hay productos en esta sucursal',
+              hayFiltrosAplicados
+                  ? 'No se encontraron productos'
+                  : (esVistaGlobal 
+                      ? 'No hay productos con problemas de stock'
+                      : 'No hay productos en esta sucursal'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              hayFiltrosAplicados
+                  ? 'Ningún producto coincide con los filtros o criterios de búsqueda aplicados'
+                  : (esVistaGlobal 
+                      ? 'Todos los productos tienen niveles de stock adecuados en las sucursales'
+                      : 'Considera agregar productos a esta sucursal'),
               style: TextStyle(
                 color: Colors.white.withOpacity(0.7),
-                fontSize: 16,
+                fontSize: 14,
               ),
+              textAlign: TextAlign.center,
             ),
+            if (hayFiltrosAplicados) ...[
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: onRetry != null 
+                    ? onRetry 
+                    : () {
+                        debugPrint('No se configuró un manejador para reiniciar filtros');
+                      },
+                icon: const Icon(FontAwesomeIcons.arrowsRotate, size: 16),
+                label: const Text('Reiniciar filtros'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2D2D2D),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  textStyle: const TextStyle(fontSize: 16),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Al reiniciar, se mostrarán todos los productos disponibles',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ],
         ),
       );
@@ -641,6 +697,12 @@ class TableProducts extends StatelessWidget {
     // Obtener datos de stock por sucursal
     final stocks = stockPorSucursal?[producto.id] ?? {};
     
+    // Calcular cuántas sucursales tienen stock bajo o agotado para este producto
+    final sucursalesConProblemas = stocks.entries
+        .where((entry) => entry.value <= 0 || // Agotado
+                         (entry.value < (producto.stockMinimo ?? 0))) // Stock bajo
+        .length;
+    
     return Container(
       decoration: BoxDecoration(
         border: Border(
@@ -686,6 +748,25 @@ class TableProducts extends StatelessWidget {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      // Mostrar indicador de sucursales con problemas
+                      if (sucursalesConProblemas > 0) ...[
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE31E24).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Problemas en $sucursalesConProblemas ${sucursalesConProblemas == 1 ? 'sucursal' : 'sucursales'}',
+                            style: const TextStyle(
+                              color: Color(0xFFE31E24),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ],
@@ -809,125 +890,154 @@ class TableProducts extends StatelessWidget {
     // Determinar qué sucursales tienen problemas de stock para este producto
     final sucursalesConProblemas = <Sucursal>[];
     final sucursalesNormales = <Sucursal>[];
+    final sucursalesAgotadas = <Sucursal>[];
     
     for (final sucursal in sucursales!) {
       final stock = stocks[sucursal.id] ?? 0;
-      if (stock <= 0 || stock < 5) { // Si el stock es bajo o nulo
+      if (stock <= 0) { 
+        // Si el stock es nulo o cero (agotado)
+        sucursalesAgotadas.add(sucursal);
+      } else if (stock < 5) { 
+        // Si el stock es bajo (usar producto.stockMinimo sería mejor)
         sucursalesConProblemas.add(sucursal);
       } else {
         sucursalesNormales.add(sucursal);
       }
     }
     
+    // Calcular porcentajes para mostrar estadística
+    final totalSucursales = sucursales!.length;
+    final porcentajeAgotadas = (sucursalesAgotadas.length / totalSucursales * 100).round();
+    final porcentajeBajo = (sucursalesConProblemas.length / totalSucursales * 100).round();
+    
+    // Si hay más de 50% de sucursales con problemas, mostrar un indicador de alerta global
+    final mostrarAlertaGlobal = (porcentajeAgotadas + porcentajeBajo) > 50;
+    
     // Mostrar primero las sucursales con problemas y luego otras (si hay espacio)
     List<Sucursal> sucursalesMostradas = [];
-    if (sucursalesConProblemas.length <= 3) {
-      // Si tenemos 3 o menos sucursales con problemas, las mostramos todas
-      sucursalesMostradas = [...sucursalesConProblemas];
-      
-      // Si todavía hay espacio, mostrar algunas sucursales normales
-      if (sucursalesMostradas.length < 3 && sucursalesNormales.isNotEmpty) {
-        final espacioRestante = 3 - sucursalesMostradas.length;
-        sucursalesMostradas.addAll(
-          sucursalesNormales.length > espacioRestante 
-              ? sucursalesNormales.sublist(0, espacioRestante) 
-              : sucursalesNormales
-        );
-      }
-    } else {
-      // Si hay más de 3 sucursales con problemas, mostrar solo las primeras 3
-      sucursalesMostradas = sucursalesConProblemas.sublist(0, 3);
+    
+    // Priorizar mostrar las sucursales agotadas primero
+    if (sucursalesAgotadas.isNotEmpty) {
+      sucursalesMostradas.addAll(
+        sucursalesAgotadas.length > 2 ? sucursalesAgotadas.sublist(0, 2) : sucursalesAgotadas
+      );
     }
     
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    // Luego las que tienen stock bajo
+    if (sucursalesMostradas.length < 3 && sucursalesConProblemas.isNotEmpty) {
+      final espacioRestante = 3 - sucursalesMostradas.length;
+      sucursalesMostradas.addAll(
+        sucursalesConProblemas.length > espacioRestante 
+            ? sucursalesConProblemas.sublist(0, espacioRestante) 
+            : sucursalesConProblemas
+      );
+    }
+    
+    // Por último, si queda espacio, mostrar alguna sucursal normal
+    if (sucursalesMostradas.length < 3 && sucursalesNormales.isNotEmpty) {
+      final espacioRestante = 3 - sucursalesMostradas.length;
+      sucursalesMostradas.addAll(
+        sucursalesNormales.length > espacioRestante 
+            ? sucursalesNormales.sublist(0, espacioRestante) 
+            : sucursalesNormales
+      );
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        ...sucursalesMostradas.map((sucursal) {
-          final stock = stocks[sucursal.id] ?? 0;
-          final Color color = stock <= 0
-              ? Colors.red.shade800
-              : (stock < 5 ? const Color(0xFFE31E24) : Colors.green);
-          
-          return Tooltip(
-            message: '${sucursal.nombre}: $stock unidades',
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: color.withOpacity(0.5)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    sucursal.nombre.substring(0, 1).toUpperCase(),
-                    style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    stock.toString(),
-                    style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
+        // Mostrar indicador de alerta global si es necesario
+        if (mostrarAlertaGlobal) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.red.shade800.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: Colors.red.shade800.withOpacity(0.3)),
             ),
-          );
-        }),
-        
-        // Mostrar cuántas sucursales con problemas hay si no pudimos mostrarlas todas
-        if (sucursalesConProblemas.length > 3)
-          Tooltip(
-            message: 'Hay ${sucursalesConProblemas.length - 3} sucursales más con problemas de stock',
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE31E24).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: const Color(0xFFE31E24).withOpacity(0.3)),
-              ),
-              child: Text(
-                '+${sucursalesConProblemas.length - 3}',
-                style: const TextStyle(
-                  color: Color(0xFFE31E24),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
-                ),
-              ),
-            ),
-          )
-        // Si no hay sucursales con problemas extra pero hay normales que no mostramos
-        else if (sucursalesNormales.length > (3 - sucursalesConProblemas.length))
-          Tooltip(
-            message: 'Hay ${sucursalesNormales.length - (3 - sucursalesConProblemas.length)} sucursales más',
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.white.withOpacity(0.3)),
-              ),
-              child: Text(
-                '+${sucursalesNormales.length - (3 - sucursalesConProblemas.length)}',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
-                ),
+            child: Text(
+              '${porcentajeAgotadas + porcentajeBajo}% sucursales con problemas',
+              style: TextStyle(
+                color: Colors.red.shade800,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
               ),
             ),
           ),
+        ],
+        
+        // Mostrar los indicadores de sucursales
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ...sucursalesMostradas.map((sucursal) {
+              final stock = stocks[sucursal.id] ?? 0;
+              final Color color = stock <= 0
+                  ? Colors.red.shade800
+                  : (stock < 5 ? const Color(0xFFE31E24) : Colors.green);
+              
+              return Tooltip(
+                message: '${sucursal.nombre}: $stock unidades',
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: color.withOpacity(0.5)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        sucursal.nombre.substring(0, 1).toUpperCase(),
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        stock.toString(),
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            
+            // Mostrar cuántas sucursales con problemas hay si no pudimos mostrarlas todas
+            if (sucursalesAgotadas.length + sucursalesConProblemas.length > 3)
+              Tooltip(
+                message: 'Hay ${(sucursalesAgotadas.length + sucursalesConProblemas.length) - sucursalesMostradas.length} sucursales más con problemas de stock',
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE31E24).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: const Color(0xFFE31E24).withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    '+${(sucursalesAgotadas.length + sucursalesConProblemas.length) - sucursalesMostradas.length}',
+                    style: const TextStyle(
+                      color: Color(0xFFE31E24),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ],
     );
   }

@@ -31,6 +31,9 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   bool _isLoadingProductos = false;
   String? _errorProductos;
 
+  // Controlador para el campo de búsqueda
+  final TextEditingController _searchController = TextEditingController();
+
   // Nuevo: Productos consolidados de todas las sucursales
   Map<int, Map<String, int>> _stockPorSucursal =
       {}; // productoId -> {sucursalId -> stock}
@@ -55,6 +58,13 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   void initState() {
     super.initState();
     _cargarSucursales();
+  }
+
+  @override
+  void dispose() {
+    // Liberar recursos
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _cargarSucursales() async {
@@ -99,6 +109,53 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       // Aplicar la búsqueda del servidor sólo si la búsqueda es mayor a 3 caracteres
       final searchQuery = _searchQuery.length >= 3 ? _searchQuery : null;
 
+      // Si está seleccionado el filtro de stock bajo, usar el método específico
+      if (_filtroEstadoStock == StockStatus.stockBajo) {
+        final paginatedProductos = await api.productos.getProductosConStockBajo(
+          sucursalId: sucursalId,
+          page: _currentPage,
+          pageSize: _pageSize,
+          sortBy: _sortBy.isNotEmpty ? _sortBy : 'nombre',
+        );
+        
+        setState(() {
+          _paginatedProductos = paginatedProductos;
+          _productosFiltrados = paginatedProductos.items;
+          _isLoadingProductos = false;
+        });
+        
+        // Mostrar mensaje si no hay productos
+        if (paginatedProductos.items.isEmpty) {
+          _mostrarMensajeNoProductos('No se encontraron productos con stock bajo');
+        }
+        
+        return;
+      }
+      
+      // Si está seleccionado el filtro de agotados, usamos el método específico
+      if (_filtroEstadoStock == StockStatus.agotado) {
+        final paginatedProductos = await api.productos.getProductosAgotados(
+          sucursalId: sucursalId,
+          page: _currentPage,
+          pageSize: _pageSize,
+          sortBy: _sortBy.isNotEmpty ? _sortBy : 'nombre',
+        );
+        
+        setState(() {
+          _paginatedProductos = paginatedProductos;
+          _productosFiltrados = paginatedProductos.items;
+          _isLoadingProductos = false;
+        });
+        
+        // Mostrar mensaje si no hay productos
+        if (paginatedProductos.items.isEmpty) {
+          _mostrarMensajeNoProductos('No se encontraron productos agotados');
+        }
+        
+        return;
+      }
+      
+      // Para otros casos, usar el método general
       final paginatedProductos = await api.productos.getProductos(
         sucursalId: sucursalId,
         search: searchQuery,
@@ -106,18 +163,13 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
         pageSize: _pageSize,
         sortBy: _sortBy.isNotEmpty ? _sortBy : null,
         order: _order,
+        // Si filtro es disponible, enviamos stockBajo=false
+        stockBajo: _filtroEstadoStock == StockStatus.disponible ? false : null,
       );
 
       // Reorganizar los productos según la prioridad de stock
       List<Producto> productosReorganizados =
           StockUtils.reorganizarProductosPorPrioridad(paginatedProductos.items);
-
-      // Aplicar filtro por estado de stock si está seleccionado
-      if (_filtroEstadoStock != null) {
-        final grupos =
-            StockUtils.agruparProductosPorEstadoStock(productosReorganizados);
-        productosReorganizados = grupos[_filtroEstadoStock]!;
-      }
 
       setState(() {
         _paginatedProductos = paginatedProductos;
@@ -125,6 +177,12 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
         _productosFiltrados = productosReorganizados;
         _isLoadingProductos = false;
       });
+      
+      // Mostrar mensaje si no hay productos y hay filtros aplicados
+      if (productosReorganizados.isEmpty && (_searchQuery.isNotEmpty || _filtroEstadoStock != null)) {
+        _mostrarMensajeNoProductos('No se encontraron productos que coincidan con los filtros aplicados');
+      }
+      
     } catch (e) {
       setState(() {
         _errorProductos = e.toString();
@@ -133,110 +191,181 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     }
   }
 
-  // NUEVO: Método para cargar productos de todas las sucursales y consolidar información
+  // Método para mostrar un snackbar con mensaje cuando no hay productos
+  void _mostrarMensajeNoProductos(String mensaje) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.info_outline, color: Colors.white),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  mensaje,
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF444444),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Limpiar filtros',
+            textColor: const Color(0xFFE31E24),
+            onPressed: () {
+              setState(() {
+                _searchQuery = '';
+                _filtroEstadoStock = null;
+                _currentPage = 1;
+              });
+              _cargarProductos(_selectedSucursalId);
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
+        ),
+      );
+    });
+  }
+
+  // Método para cargar productos con problemas de stock de todas las sucursales
   Future<void> _cargarProductosTodasSucursales() async {
     if (_sucursales.isEmpty) {
+      setState(() {
+        _productosBajoStock = [];
+      });
       return;
     }
 
     setState(() {
-      _isLoadingConsolidado = true;
+      _isLoadingProductos = true;
       _errorProductos = null;
-      _stockPorSucursal = {};
-      _productosBajoStock = [];
+      _stockPorSucursal.clear(); // Reiniciar el mapa para evitar datos antiguos
     });
 
     try {
-      // Lista para almacenar todos los productos encontrados
       final List<Producto> todosProductos = [];
-
-      // Para cada sucursal, cargar todos los productos (todas las páginas)
-      final sucursalesFutures = <Future>[];
+      
+      // Cargar productos de cada sucursal utilizando el nuevo método getProductosConStockBajo
+      final futures = <Future>[];
+      
       for (final sucursal in _sucursales) {
-        sucursalesFutures
-            .add(_cargarTodosProductosSucursal(sucursal, todosProductos));
+        futures.add(_cargarProductosConBajoStockDeSucursal(sucursal, todosProductos));
       }
-
-      // Esperamos a que se completen todas las cargas de sucursales
-      await Future.wait(sucursalesFutures);
-
-      // Filtrar productos con problemas y eliminar duplicados
-      _productosBajoStock =
-          StockUtils.filtrarProductosConProblemasStock(todosProductos);
-      _productosBajoStock =
-          StockUtils.consolidarProductosUnicos(_productosBajoStock);
-
-      // Ordenar por prioridad (agotados primero, luego stock bajo)
-      _productosBajoStock =
-          StockUtils.reorganizarProductosPorPrioridad(_productosBajoStock);
-
+      
+      // Esperar a que todas las peticiones terminen
+      await Future.wait(futures);
+      
+      // Consolidar productos para evitar duplicados
+      final productosUnicos = StockUtils.consolidarProductosUnicos(todosProductos);
+      
+      // Priorizar productos con problemas más graves
+      final productosPrioritarios = StockUtils.reorganizarProductosPorPrioridad(
+        productosUnicos,
+        stockPorSucursal: _stockPorSucursal,
+        sucursales: _sucursales,
+      );
+      
       setState(() {
-        _isLoadingConsolidado = false;
+        _productosBajoStock = productosPrioritarios;
+        _isLoadingProductos = false;
       });
     } catch (e) {
       setState(() {
         _errorProductos = e.toString();
-        _isLoadingConsolidado = false;
+        _isLoadingProductos = false;
       });
     }
   }
-
-  // Método auxiliar para cargar todos los productos de una sucursal (todas las páginas)
-  Future<void> _cargarTodosProductosSucursal(
+  
+  // Método auxiliar para cargar productos con stock bajo de una sucursal
+  Future<void> _cargarProductosConBajoStockDeSucursal(
       Sucursal sucursal, List<Producto> todosProductos) async {
     try {
-      // Primero obtenemos la primera página para saber cuántas páginas hay en total
-      final primeraPagina = await api.productos.getProductos(
-        sucursalId: sucursal.id,
-        page: 1,
-        pageSize:
-            50, // Usamos un tamaño grande para reducir el número de peticiones
+      // Cargar productos con stock bajo usando paginación completa
+      await _cargarTodosProductosConCondicion(
+        sucursal: sucursal,
+        todosProductos: todosProductos,
+        condicion: 'stockBajo',
+        mensaje: 'con stock bajo'
       );
-
-      // Procesamos la primera página
-      _procesarProductosPorSucursal(primeraPagina.items, sucursal);
-
-      // Añadimos los productos a la lista general
-      todosProductos.addAll(primeraPagina.items);
-
-      // Calculamos cuántas páginas hay en total
-      final totalPages = primeraPagina.paginacion.totalPages;
-
-      // Si hay más de una página, cargamos el resto
-      if (totalPages > 1) {
-        final futures = <Future>[];
-
-        // Empezamos desde la página 2 ya que la 1 ya la cargamos
-        for (int pagina = 2; pagina <= totalPages; pagina++) {
-          futures.add(_cargarPaginaSucursal(pagina, sucursal, todosProductos));
-        }
-
-        // Esperamos a que todas las peticiones terminen
-        await Future.wait(futures);
-      }
+      
+      // Cargar productos agotados (pueden solaparse con los de stock bajo)
+      await _cargarTodosProductosConCondicion(
+        sucursal: sucursal,
+        todosProductos: todosProductos,
+        condicion: 'agotados',
+        mensaje: 'agotados'
+      );
     } catch (e) {
-      debugPrint(
-          'Error al cargar productos de sucursal ${sucursal.nombre}: $e');
+      debugPrint('Error al cargar productos de sucursal ${sucursal.nombre}: $e');
     }
   }
-
-  // Método para cargar una página específica de una sucursal
-  Future<void> _cargarPaginaSucursal(
-      int pagina, Sucursal sucursal, List<Producto> todosProductos) async {
+  
+  // Método para cargar todos los productos de una sucursal que cumplan una condición específica
+  Future<void> _cargarTodosProductosConCondicion({
+    required Sucursal sucursal,
+    required List<Producto> todosProductos,
+    required String condicion,
+    required String mensaje,
+  }) async {
+    // Configuración inicial de paginación
+    int paginaActual = 1;
+    final int tamanioPagina = 100;
+    bool hayMasPaginas = true;
+    final List<Producto> productosObtenidos = [];
+    
     try {
-      final paginaProductos = await api.productos.getProductos(
-        sucursalId: sucursal.id,
-        page: pagina,
-        pageSize: 50,
-      );
-
-      _procesarProductosPorSucursal(paginaProductos.items, sucursal);
-
-      // Añadimos los productos a la lista general
-      todosProductos.addAll(paginaProductos.items);
+      // Iteramos mientras haya más páginas
+      while (hayMasPaginas) {
+        PaginatedResponse<Producto> respuesta;
+        
+        // Según la condición, usamos el método API correspondiente
+        if (condicion == 'stockBajo') {
+          respuesta = await api.productos.getProductosConStockBajo(
+            sucursalId: sucursal.id,
+            page: paginaActual,
+            pageSize: tamanioPagina,
+          );
+        } else if (condicion == 'agotados') {
+          // Para los agotados ahora usamos el método específico
+          respuesta = await api.productos.getProductosAgotados(
+            sucursalId: sucursal.id,
+            page: paginaActual,
+            pageSize: tamanioPagina,
+          );
+        } else {
+          // Por defecto, traemos todos los productos
+          respuesta = await api.productos.getProductos(
+            sucursalId: sucursal.id,
+            page: paginaActual,
+            pageSize: tamanioPagina,
+          );
+        }
+        
+        // Guardamos los productos obtenidos
+        productosObtenidos.addAll(respuesta.items);
+        
+        // Procesamos los productos de esta página
+        if (respuesta.items.isNotEmpty) {
+          _procesarProductosPorSucursal(respuesta.items, sucursal);
+          todosProductos.addAll(respuesta.items);
+        }
+        
+        // Verificamos si hay más páginas
+        hayMasPaginas = paginaActual < respuesta.paginacion.totalPages;
+        
+        // Si hay más páginas, incrementamos la página actual
+        if (hayMasPaginas) {
+          paginaActual++;
+        } else {
+          break;
+        }
+      }
+      
+      debugPrint('Cargados ${productosObtenidos.length} productos $mensaje de ${sucursal.nombre}');
     } catch (e) {
-      debugPrint(
-          'Error al cargar página $pagina de sucursal ${sucursal.nombre}: $e');
+      debugPrint('Error al cargar productos $mensaje de sucursal ${sucursal.nombre}: $e');
     }
   }
 
@@ -251,22 +380,6 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
 
       // Guardamos el stock de este producto en esta sucursal
       _stockPorSucursal[producto.id]![sucursal.id] = producto.stock;
-    }
-  }
-
-  // Método para activar/desactivar la vista consolidada
-  void _toggleVistaConsolidada() {
-    setState(() {
-      _mostrarVistaConsolidada = !_mostrarVistaConsolidada;
-    });
-
-    if (_mostrarVistaConsolidada) {
-      _cargarProductosTodasSucursales();
-    } else {
-      // Volver a la vista individual
-      if (_selectedSucursalId.isNotEmpty) {
-        _cargarProductos(_selectedSucursalId);
-      }
     }
   }
 
@@ -327,8 +440,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       _selectedSucursal = sucursal;
       _currentPage = 1; // Volver a la primera página al cambiar de sucursal
       _filtroEstadoStock = null; // Resetear filtro al cambiar de sucursal
-      _mostrarVistaConsolidada =
-          false; // Desactivar vista consolidada al cambiar de sucursal
+      _mostrarVistaConsolidada = false; // Desactivar vista consolidada al cambiar de sucursal
     });
     _cargarProductos(sucursal.id);
   }
@@ -371,27 +483,114 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     });
   }
 
+  void _toggleVistaConsolidada() {
+    setState(() {
+      _mostrarVistaConsolidada = !_mostrarVistaConsolidada;
+    });
+    if (_mostrarVistaConsolidada) {
+      _cargarProductosTodasSucursales();
+    } else {
+      _cargarSucursales();
+      if (_selectedSucursalId.isNotEmpty) {
+        _cargarProductos(_selectedSucursalId);
+      }
+    }
+  }
+
+  // Filtrar los productos en la vista consolidada por estado
+  void _filtrarConsolidadoPorEstado(StockStatus estado) {
+    setState(() {
+      // Si ya tenemos todos los productos cargados, simplemente filtramos
+      _productosBajoStock = StockUtils.filtrarPorEstadoStock(
+        _productosBajoStock, 
+        estado
+      );
+    });
+    
+    // Mostrar mensaje si no hay productos de este tipo
+    if (_productosBajoStock.isEmpty) {
+      _mostrarMensajeNoProductos('No se encontraron productos ${estado == StockStatus.agotado ? 'agotados' : 'con stock bajo'} en ninguna sucursal');
+      _reiniciarFiltrosConsolidados(); // Reiniciar si no hay productos
+    }
+  }
+  
+  // Reiniciar filtros en la vista consolidada
+  void _reiniciarFiltrosConsolidados() {
+    _cargarProductosTodasSucursales(); // Volver a cargar todos los productos
+  }
+  
+  // Widget para botones de acción rápida
+  Widget _buildActionButton(String label, IconData icon, Color color, VoidCallback onTap) {
+    return ElevatedButton.icon(
+      icon: FaIcon(
+        icon,
+        color: Colors.white,
+        size: 14,
+      ),
+      label: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+        ),
+      ),
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+    );
+  }
+
+  // Método para limpiar todos los filtros aplicados
+  void _limpiarFiltros() {
+    debugPrint('Ejecutando _limpiarFiltros() - Limpiando todos los filtros aplicados');
+    
+    // Limpiar campo de búsqueda físicamente si existe un controlador de texto
+    _searchController.clear();
+
+    setState(() {
+      _searchQuery = '';
+      _filtroEstadoStock = null;
+      _currentPage = 1;
+    });
+    
+    debugPrint('Filtros limpiados. Recargando productos...');
+    
+    // Recargar productos sin filtros
+    if (_mostrarVistaConsolidada) {
+      _cargarProductosTodasSucursales();
+    } else if (_selectedSucursalId.isNotEmpty) {
+      _cargarProductos(_selectedSucursalId);
+    }
+    
+    // Mostrar mensaje confirmando que los filtros fueron limpiados
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Filtros restablecidos'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // Organizar productos por estado para el resumen
-    Map<StockStatus, List<Producto>> productosAgrupados = {};
 
     // Determinar qué productos usar según la vista activa
     final List<Producto> productosAMostrar =
         _mostrarVistaConsolidada ? _productosBajoStock : _productosFiltrados;
 
     if (productosAMostrar.isNotEmpty) {
-      productosAgrupados =
-          StockUtils.agruparProductosPorEstadoStock(productosAMostrar);
     }
-
-    // Contar productos por estado
-    final agotadosCount = productosAgrupados[StockStatus.agotado]?.length ?? 0;
-    final stockBajoCount =
-        productosAgrupados[StockStatus.stockBajo]?.length ?? 0;
-
-    // Determinar si hay problemas críticos en el inventario
-    final hayProblemasInventario = agotadosCount > 0 || stockBajoCount > 0;
 
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
@@ -403,71 +602,22 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         actions: [
-          // Botón para alternar entre vista individual y consolidada
+          // Botón para activar/desactivar vista consolidada
           IconButton(
-            icon: FaIcon(
+            icon: Icon(
               _mostrarVistaConsolidada
-                  ? FontAwesomeIcons.building
-                  : FontAwesomeIcons.buildingColumns,
+                  ? FontAwesomeIcons.tableList
+                  : FontAwesomeIcons.tableColumns,
               size: 18,
+              color: _mostrarVistaConsolidada
+                  ? const Color(0xFFE31E24)
+                  : Colors.white,
             ),
             onPressed: _toggleVistaConsolidada,
             tooltip: _mostrarVistaConsolidada
-                ? 'Ver sucursal individual'
-                : 'Ver todas las sucursales',
+                ? 'Ver vista individual'
+                : 'Ver vista consolidada',
           ),
-
-          // Mostrar badge si hay problemas de inventario
-          if (hayProblemasInventario)
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                IconButton(
-                  icon: const FaIcon(FontAwesomeIcons.bell, size: 18),
-                  onPressed: () {
-                    // Mostrar notificación de problemas de inventario
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            'Hay $agotadosCount productos agotados y $stockBajoCount con stock bajo'),
-                        backgroundColor: const Color(0xFFE31E24),
-                        duration: const Duration(seconds: 5),
-                        action: SnackBarAction(
-                          label: 'Ver',
-                          textColor: Colors.white,
-                          onPressed: () {
-                            // Filtrar para mostrar solo los problemáticos
-                            if (!_mostrarVistaConsolidada) {
-                              _filtrarPorEstadoStock(StockStatus.agotado);
-                            }
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                  tooltip: 'Problemas de inventario',
-                ),
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE31E24),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      (agotadosCount + stockBajoCount).toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 18),
             onPressed: () {
@@ -549,6 +699,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                         SizedBox(
                           width: 300,
                           child: TextField(
+                            controller: _searchController,
                             decoration: InputDecoration(
                               hintText: 'Buscar productos...',
                               hintStyle: TextStyle(
@@ -637,6 +788,46 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                       ),
                     ),
                   ],
+                  
+                  // Botones de acción rápida en vista consolidada
+                  if (_mostrarVistaConsolidada && _productosBajoStock.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          const Text(
+                            'Acciones rápidas: ',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildActionButton(
+                            'Ver solo agotados',
+                            FontAwesomeIcons.ban,
+                            Colors.red.shade800,
+                            () => _filtrarConsolidadoPorEstado(StockStatus.agotado),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildActionButton(
+                            'Ver solo stock bajo',
+                            FontAwesomeIcons.triangleExclamation,
+                            const Color(0xFFE31E24),
+                            () => _filtrarConsolidadoPorEstado(StockStatus.stockBajo),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildActionButton(
+                            'Reiniciar filtros',
+                            FontAwesomeIcons.arrowsRotate,
+                            Colors.blue,
+                            _reiniciarFiltrosConsolidados,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   // Resumen del inventario
                   if (productosAMostrar.isNotEmpty) ...[
@@ -660,16 +851,16 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                   selectedSucursalId:
                                       'todas', // Valor especial para indicar vista consolidada
                                   productos: _productosBajoStock,
-                                  isLoading: _isLoadingConsolidado,
+                                  isLoading: _isLoadingProductos,
                                   error: _errorProductos,
-                                  onRetry: () =>
-                                      _cargarProductosTodasSucursales(),
+                                  onRetry: _limpiarFiltros,
                                   onVerDetalles: _verDetallesProducto,
                                   onVerStockDetalles: _verStockDetalles,
                                   // Datos adicionales para la vista consolidada
                                   stockPorSucursal: _stockPorSucursal,
                                   sucursales: _sucursales,
                                   esVistaGlobal: true,
+                                  filtrosActivos: true, // La vista global siempre tiene filtros implícitos
                                 )
                               : TableProducts(
                                   selectedSucursalId: _selectedSucursalId,
@@ -677,8 +868,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                   isLoading: _isLoadingProductos,
                                   error: _errorProductos,
                                   onRetry: _selectedSucursalId.isNotEmpty
-                                      ? () =>
-                                          _cargarProductos(_selectedSucursalId)
+                                      ? _limpiarFiltros
                                       : null,
                                   onEditProducto: _editarProducto,
                                   onVerDetalles: _verDetallesProducto,
@@ -686,6 +876,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                   onSort: _ordenarPor,
                                   sortBy: _sortBy,
                                   sortOrder: _order,
+                                  // Indicar si hay filtros aplicados en esta vista
+                                  filtrosActivos: _searchQuery.isNotEmpty || _filtroEstadoStock != null,
                                 ),
                         ),
 
@@ -756,11 +948,17 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
 
             const SizedBox(width: 16),
 
-            // SlideSucursal a la derecha (25% del ancho) - solo en vista individual
+            // SlideSucursal a la derecha (25% del ancho)
             Expanded(
               flex: 25,
               child: _mostrarVistaConsolidada
-                  ? _buildConsolidatedSidebar()
+                  ? SlideSucursal(
+                      sucursales: _sucursales,
+                      sucursalSeleccionada: null,
+                      onSucursalSelected: _onSucursalSeleccionada,
+                      onRecargarSucursales: _cargarSucursales,
+                      isLoading: _isLoadingSucursales,
+                    )
                   : SlideSucursal(
                       sucursales: _sucursales,
                       sucursalSeleccionada: _selectedSucursal,
@@ -775,132 +973,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     );
   }
 
-  // Widget para mostrar la barra lateral en vista consolidada
-  Widget _buildConsolidatedSidebar() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2D2D2D),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const FaIcon(
-                    FontAwesomeIcons.buildingColumns,
-                    size: 16,
-                    color: Color(0xFFE31E24),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Sucursales',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    '${_sucursales.length} sucursales',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Estás viendo la información consolidada de stock de todas las sucursales, con foco en los productos que requieren atención.',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                icon: const FaIcon(
-                  FontAwesomeIcons.rotate,
-                  size: 14,
-                ),
-                label: const Text('Actualizar datos'),
-                onPressed: _cargarProductosTodasSucursales,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE31E24),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 40),
-                ),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                icon: const FaIcon(
-                  FontAwesomeIcons.building,
-                  size: 14,
-                ),
-                label: const Text('Volver a vista individual'),
-                onPressed: _toggleVistaConsolidada,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white30),
-                  minimumSize: const Size(double.infinity, 40),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2D2D2D),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ListView.builder(
-              itemCount: _sucursales.length,
-              itemBuilder: (context, index) {
-                final sucursal = _sucursales[index];
-                return ListTile(
-                  title: Text(
-                    sucursal.nombre,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  subtitle: Text(
-                    sucursal.direccion,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 12,
-                    ),
-                  ),
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xFF1A1A1A),
-                    child: FaIcon(
-                      FontAwesomeIcons.store,
-                      color: Color(0xFFE31E24),
-                      size: 16,
-                    ),
-                  ),
-                  onTap: () => _onSucursalSeleccionada(sucursal),
-                  dense: true,
-                  visualDensity: VisualDensity.compact,
-                );
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
+  // Widget para mostrar filtros de stock
   Widget _buildFilterChip(String label, IconData icon, Color color,
       bool selected, VoidCallback onTap) {
     return InkWell(
