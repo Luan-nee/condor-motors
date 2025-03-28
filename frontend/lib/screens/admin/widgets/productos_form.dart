@@ -153,7 +153,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
     try {
       // Obtenemos las marcas como objetos tipados
-      final marcasList = await api.marcas.getMarcasObjetos(useCache: false);
+      final marcasResult = await api.marcas.getMarcasPaginadas(useCache: false);
+      
+      // Extraemos la lista de marcas del resultado paginado
+      final marcasList = marcasResult.items;
 
       if (mounted) {
         setState(() {

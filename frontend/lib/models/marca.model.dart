@@ -9,6 +9,7 @@ class Marca {
   final bool activo;
   final DateTime? fechaCreacion;
   final DateTime? fechaActualizacion;
+  final int totalProductos;
 
   Marca({
     required this.id,
@@ -18,6 +19,7 @@ class Marca {
     this.activo = true,
     this.fechaCreacion,
     this.fechaActualizacion,
+    this.totalProductos = 0,
   });
 
   /// Crea una instancia de [Marca] a partir de un mapa JSON
@@ -34,6 +36,16 @@ class Marca {
       debugPrint('Marca.fromJson: ID no válido: $rawId (${rawId?.runtimeType})');
     }
 
+    // Parseamos totalProductos de manera segura
+    int totalProductos = 0;
+    if (json['totalProductos'] != null) {
+      if (json['totalProductos'] is int) {
+        totalProductos = json['totalProductos'];
+      } else if (json['totalProductos'] is String) {
+        totalProductos = int.tryParse(json['totalProductos']) ?? 0;
+      }
+    }
+
     return Marca(
       id: id,
       nombre: json['nombre'] ?? '',
@@ -46,6 +58,7 @@ class Marca {
       fechaActualizacion: json['fechaActualizacion'] != null 
           ? DateTime.parse(json['fechaActualizacion']) 
           : null,
+      totalProductos: totalProductos,
     );
   }
 
@@ -65,6 +78,7 @@ class Marca {
     return {
       'id': id,
       ...toJson(),
+      'totalProductos': totalProductos,
       if (fechaCreacion != null) 'fechaCreacion': fechaCreacion!.toIso8601String(),
       if (fechaActualizacion != null) 'fechaActualizacion': fechaActualizacion!.toIso8601String(),
     };
@@ -72,6 +86,6 @@ class Marca {
   
   @override
   String toString() {
-    return 'Marca{id: $id, nombre: $nombre, activo: $activo}';
+    return 'Marca{id: $id, nombre: $nombre, activo: $activo, totalProductos: $totalProductos}';
   }
 } 

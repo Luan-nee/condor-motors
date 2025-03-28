@@ -116,7 +116,7 @@ class Movimiento {
     final bool modificable = json['modificable'] == true;
 
     debugPrint('✅ [Movimiento.fromJson] Conversión completada. ID: $id, Estado: $estado, '
-        'Origen: $origen, Destino: $destino, Productos: ${productos?.length ?? 0}');
+        'Origen: $origen, Destino: $destino, Productos: ${productos.length}');
 
     return Movimiento(
       id: id,

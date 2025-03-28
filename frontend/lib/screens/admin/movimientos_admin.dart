@@ -461,7 +461,6 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                                         borderRadius: BorderRadius.circular(6),
                                         border: Border.all(
                                           color: const Color(0xFFE31E24).withOpacity(0.2),
-                                          width: 1,
                                         ),
                                       ),
                                       child: IconButton(
@@ -611,7 +610,6 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: textColor.withOpacity(0.4),
-              width: 1,
             ),
           ),
           child: Row(

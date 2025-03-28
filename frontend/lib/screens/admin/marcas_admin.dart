@@ -35,19 +35,13 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
     });
 
     try {
-      final response = await api.marcas.getMarcas();
+      // Obtenemos las marcas directamente como objetos Marca
+      final marcas = await api.marcas.getMarcas();
 
-      final List<Marca> marcas = [];
-      for (var item in response) {
-        marcas.add(Marca.fromJson(item));
-      }
-
-      // TODO: Obtener cantidad de productos por marca desde el API cuando esté disponible
-      // Por ahora usar datos de ejemplo
+      // Crear mapa de totalProductos usando el valor real que viene en el modelo
       final tempProductosPorMarca = <int, int>{};
       for (var marca in marcas) {
-        tempProductosPorMarca[marca.id] =
-            (marca.id % 100) + 5; // Valor aleatorio de ejemplo
+        tempProductosPorMarca[marca.id] = marca.totalProductos;
       }
 
       if (!mounted) return;

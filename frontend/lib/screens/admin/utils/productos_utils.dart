@@ -52,9 +52,9 @@ class ProductosUtils {
     try {
       final marcas = await api.marcas.getMarcas();
       
-      // Extraer nombres de marcas
+      // Extraer nombres de marcas usando la notación de punto
       final listaMarcas = marcas
-          .map<String>((marca) => marca['nombre'] as String)
+          .map<String>((marca) => marca.nombre)
           .where((nombre) => nombre.isNotEmpty)
           .toList();
       

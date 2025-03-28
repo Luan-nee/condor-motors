@@ -69,4 +69,47 @@ class PaginatedResponse<T> {
     required this.paginacion,
     this.metadata,
   });
+}
+
+/// Clase que representa un resultado paginado de la API
+class ResultadoPaginado<T> {
+  final List<T> items;
+  final int total;
+  final int page;
+  final int totalPages;
+  final int pageSize;
+  
+  ResultadoPaginado({
+    required this.items,
+    required this.total,
+    required this.page,
+    required this.totalPages,
+    required this.pageSize,
+  });
+  
+  /// Verifica si hay página siguiente
+  bool get hasNextPage => page < totalPages;
+  
+  /// Verifica si hay página anterior
+  bool get hasPrevPage => page > 1;
+  
+  /// Obtiene el número de la siguiente página, o null si no hay
+  int? get nextPage => hasNextPage ? page + 1 : null;
+  
+  /// Obtiene el número de la página anterior, o null si no hay
+  int? get prevPage => hasPrevPage ? page - 1 : null;
+  
+  /// Convierte este resultado paginado a un objeto PaginatedResponse
+  PaginatedResponse<T> toPaginatedResponse() {
+    return PaginatedResponse<T>(
+      items: items,
+      paginacion: Paginacion(
+        totalItems: total,
+        totalPages: totalPages,
+        currentPage: page,
+        hasNext: hasNextPage,
+        hasPrev: hasPrevPage,
+      ),
+    );
+  }
 } 

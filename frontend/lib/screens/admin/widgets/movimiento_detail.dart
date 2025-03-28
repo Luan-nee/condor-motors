@@ -12,9 +12,9 @@ class MovimientoDetailDialog extends StatefulWidget {
   final Movimiento movimiento;
 
   const MovimientoDetailDialog({
-    Key? key,
+    super.key,
     required this.movimiento,
-  }) : super(key: key);
+  });
 
   @override
   State<MovimientoDetailDialog> createState() => _MovimientoDetailDialogState();

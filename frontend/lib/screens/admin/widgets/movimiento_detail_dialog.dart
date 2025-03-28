@@ -12,9 +12,9 @@ class MovimientoDetailDialog extends StatefulWidget {
   final Movimiento movimiento;
 
   const MovimientoDetailDialog({
-    Key? key,
+    super.key,
     required this.movimiento,
-  }) : super(key: key);
+  });
 
   @override
   State<MovimientoDetailDialog> createState() => _MovimientoDetailDialogState();
@@ -751,7 +751,6 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: const Color(0xFFE31E24).withOpacity(0.3),
-                    width: 1,
                   ),
                 ),
                 child: Text(

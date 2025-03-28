@@ -174,57 +174,40 @@ class MovimientosApi {
       
       debugPrint('🔄 [MovimientosApi] Respuesta recibida para transferencia $id');
       
-      // Verificar que la respuesta no sea nula
-      if (response == null) {
-        debugPrint('❌ [MovimientosApi] Respuesta nula para transferencia $id');
-        throw ApiException(
-          message: 'Respuesta nula del servidor',
-          statusCode: 500,
-        );
-      }
-      
       // La respuesta puede venir con o sin el campo 'data'
       Map<String, dynamic> responseData;
       
-      if (response is Map<String, dynamic>) {
-        if (response.containsKey('data')) {
-          debugPrint('📦 [MovimientosApi] Respuesta contiene campo "data"');
-          responseData = Map<String, dynamic>.from(response['data']);
-        } else {
-          debugPrint('📦 [MovimientosApi] Respuesta sin campo "data", usando respuesta directa');
-          responseData = Map<String, dynamic>.from(response);
-        }
-        
-        // Asegurar que el ID esté presente en los datos
-        if (!responseData.containsKey('id')) {
-          debugPrint('⚠️ [MovimientosApi] ID no encontrado en los datos, añadiendo manualmente');
-          responseData['id'] = id;
-        }
-        
-        // Verificar si la respuesta tiene productos o itemsVenta
-        if (responseData.containsKey('productos')) {
-          final productos = responseData['productos'] as List?;
-          debugPrint('📦 [MovimientosApi] Respuesta contiene campo "productos": ${productos?.length ?? 0} items');
-          if (productos != null && productos.isNotEmpty) {
-            debugPrint('📦 [MovimientosApi] Primer producto: ${productos.first}');
-          }
-        } else if (responseData.containsKey('itemsVenta')) {
-          final itemsVenta = responseData['itemsVenta'] as List?;
-          debugPrint('📦 [MovimientosApi] Respuesta contiene campo "itemsVenta": ${itemsVenta?.length ?? 0} items');
-          if (itemsVenta != null && itemsVenta.isNotEmpty) {
-            debugPrint('📦 [MovimientosApi] Primer itemVenta: ${itemsVenta.first}');
-          }
-        } else {
-          debugPrint('⚠️ [MovimientosApi] No se encontraron productos ni itemsVenta en la respuesta');
-        }
+      if (response.containsKey('data')) {
+        debugPrint('📦 [MovimientosApi] Respuesta contiene campo "data"');
+        responseData = Map<String, dynamic>.from(response['data']);
       } else {
-        debugPrint('⚠️ [MovimientosApi] Respuesta no es un mapa: ${response.runtimeType}');
-        throw ApiException(
-          message: 'Formato de respuesta inválido',
-          statusCode: 500,
-        );
+        debugPrint('📦 [MovimientosApi] Respuesta sin campo "data", usando respuesta directa');
+        responseData = Map<String, dynamic>.from(response);
       }
       
+      // Asegurar que el ID esté presente en los datos
+      if (!responseData.containsKey('id')) {
+        debugPrint('⚠️ [MovimientosApi] ID no encontrado en los datos, añadiendo manualmente');
+        responseData['id'] = id;
+      }
+      
+      // Verificar si la respuesta tiene productos o itemsVenta
+      if (responseData.containsKey('productos')) {
+        final productos = responseData['productos'] as List?;
+        debugPrint('📦 [MovimientosApi] Respuesta contiene campo "productos": ${productos?.length ?? 0} items');
+        if (productos != null && productos.isNotEmpty) {
+          debugPrint('📦 [MovimientosApi] Primer producto: ${productos.first}');
+        }
+      } else if (responseData.containsKey('itemsVenta')) {
+        final itemsVenta = responseData['itemsVenta'] as List?;
+        debugPrint('📦 [MovimientosApi] Respuesta contiene campo "itemsVenta": ${itemsVenta?.length ?? 0} items');
+        if (itemsVenta != null && itemsVenta.isNotEmpty) {
+          debugPrint('📦 [MovimientosApi] Primer itemVenta: ${itemsVenta.first}');
+        }
+      } else {
+        debugPrint('⚠️ [MovimientosApi] No se encontraron productos ni itemsVenta en la respuesta');
+      }
+          
       debugPrint('📊 [MovimientosApi] Datos a convertir: ${responseData.keys.toList()}');
       
       try {
