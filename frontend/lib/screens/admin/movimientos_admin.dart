@@ -276,17 +276,27 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                                   ],
                                 ),
                               ),
-                              // // ID (15%)
-                              // Expanded(
-                              //   flex: 15,
-                              //   child: Text(
-                              //     'ID',
-                              //     style: TextStyle(
-                              //       color: Colors.white,
-                              //       fontWeight: FontWeight.bold,
-                              //     ),
-                              //   ),
-                              // ),
+                              // ID (15%)
+                              Expanded(
+                                flex: 15,
+                                child: Row(
+                                  children: [
+                                    FaIcon(
+                                      FontAwesomeIcons.calendar,
+                                      color: Color(0xFFE31E24),
+                                      size: 14,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Fecha recibida',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                               // Solicitante (15%)
                               // Expanded(
                               //   flex: 15,
@@ -397,13 +407,36 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                                       ),
                                     ),
                                     // ID
-                                    // Expanded(
-                                    //   flex: 15,
-                                    //   child: Text(
-                                    //     movimiento.id.toString(),
-                                    //     style: const TextStyle(color: Colors.white),
-                                    //   ),
-                                    // ),
+                                    Expanded(
+                                      flex: 15,
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 32,
+                                            height: 32,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF2D2D2D),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Center(
+                                              child: FaIcon(
+                                                FontAwesomeIcons.calendar,
+                                                color: Color(0xFFE31E24),
+                                                size: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            _formatFecha(
+                                                movimiento.llegadaDestino),
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                     // // Solicitante
                                     // Expanded(
                                     //   flex: 15,
