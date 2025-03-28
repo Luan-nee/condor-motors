@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-import '../../../api/main.api.dart' show ApiException;
-import '../../../main.dart' show api;
-import '../../../widgets/dialogs/confirm_dialog.dart';
+import '../../../../api/main.api.dart' show ApiException;
+import '../../../../main.dart' show api;
+import '../../../../widgets/dialogs/confirm_dialog.dart';
 
 /// Diálogo para gestionar la cuenta de un empleado
 /// 

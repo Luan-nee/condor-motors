@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-import '../../../models/producto.model.dart';
-import '../../../models/sucursal.model.dart';
-import '../utils/stock_utils.dart';
+import '../../../../models/producto.model.dart';
+import '../../../../models/sucursal.model.dart';
+import '../../utils/stock_utils.dart';
 import 'stock_detalle_sucursal.dart';
 
 class TableProducts extends StatelessWidget {
@@ -520,13 +520,49 @@ class TableProducts extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        producto.nombre,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              producto.nombre,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          // Mostrar badge de liquidación si aplica
+                          if (producto.liquidacion)
+                            Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const FaIcon(
+                                    FontAwesomeIcons.fire,
+                                    size: 10,
+                                    color: Colors.orange,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Text(
+                                    'Liquidación',
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
                       if (producto.descripcion != null && producto.descripcion!.isNotEmpty) ...[
                         const SizedBox(height: 4),
@@ -538,6 +574,31 @@ class TableProducts extends StatelessWidget {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      // Mostrar precio de liquidación si aplica
+                      if (producto.liquidacion && producto.precioOferta != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              'Precio: ${producto.getPrecioActualFormateado()}',
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              producto.getPrecioVentaFormateado(),
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 11,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
@@ -728,13 +789,49 @@ class TableProducts extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        producto.nombre,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              producto.nombre,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          // Mostrar badge de liquidación si aplica
+                          if (producto.liquidacion)
+                            Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const FaIcon(
+                                    FontAwesomeIcons.fire,
+                                    size: 10,
+                                    color: Colors.orange,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Text(
+                                    'Liquidación',
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
                       if (producto.descripcion != null && producto.descripcion!.isNotEmpty) ...[
                         const SizedBox(height: 4),
@@ -746,6 +843,31 @@ class TableProducts extends StatelessWidget {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      // Mostrar precio de liquidación si aplica
+                      if (producto.liquidacion && producto.precioOferta != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              'Precio: ${producto.getPrecioActualFormateado()}',
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              producto.getPrecioVentaFormateado(),
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 11,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                       // Mostrar indicador de sucursales con problemas

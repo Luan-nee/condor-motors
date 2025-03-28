@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../models/sucursal.model.dart';
+import '../../../../models/sucursal.model.dart';
 
 class ProductosList extends StatelessWidget {
   final List<Sucursal> sucursales;

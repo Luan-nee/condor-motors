@@ -3,8 +3,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../main.dart' show api;
 import '../../../models/empleado.model.dart';
-import '../widgets/empleado_cuenta_dialog.dart';
-import '../widgets/empleado_horario_dialog.dart';
+import '../widgets/empleado/empleado_cuenta_dialog.dart';
+import '../widgets/empleado/empleado_horario_dialog.dart';
 
 /// Clase de utilidades para funciones comunes relacionadas con empleados
 /// 

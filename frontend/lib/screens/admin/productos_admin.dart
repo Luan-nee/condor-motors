@@ -8,9 +8,9 @@ import '../../models/sucursal.model.dart';
 import '../../widgets/dialogs/confirm_dialog.dart';
 import '../../widgets/paginador.dart';
 import 'utils/productos_utils.dart';
-import 'widgets/producto_detalle_dialog.dart';
-import 'widgets/productos_form.dart';
-import 'widgets/productos_table.dart';
+import 'widgets/producto/producto_detalle_dialog.dart';
+import 'widgets/producto/productos_form.dart';
+import 'widgets/producto/productos_table.dart';
 import 'widgets/slide_sucursal.dart';
 
 class ProductosAdminScreen extends StatefulWidget {

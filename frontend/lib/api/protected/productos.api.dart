@@ -24,6 +24,7 @@ class ProductosApi {
   /// [filterValue] Valor para el filtro (opcional)
   /// [filterType] Tipo de filtro a aplicar (opcional)
   /// [stockBajo] Filtrar productos con stock bajo (opcional)
+  /// [liquidacion] Filtrar productos en liquidación (opcional)
   /// [useCache] Indica si se debe usar el caché (default: true)
   /// [forceRefresh] Si es true, invalida la caché antes de obtener los datos
   Future<PaginatedResponse<Producto>> getProductos({
@@ -37,6 +38,7 @@ class ProductosApi {
     String? filterValue,
     String? filterType,
     bool? stockBajo,
+    bool? liquidacion,
     bool useCache = true,
     bool forceRefresh = false,
   }) async {
@@ -59,6 +61,7 @@ class ProductosApi {
         filterValue: filterValue,
         filterType: filterType,
         stockBajo: stockBajo,
+        liquidacion: liquidacion,
       );
       
       // Intentar obtener desde caché si useCache es true
@@ -72,7 +75,7 @@ class ProductosApi {
       
       // Si no hay caché o useCache es false, obtener desde la API
       debugPrint('Obteniendo productos para sucursal $sucursalId con parámetros: '
-          '{ search: $search, page: $page, pageSize: $pageSize, sortBy: $sortBy, order: $order, filter: $filter, stockBajo: $stockBajo }');
+          '{ search: $search, page: $page, pageSize: $pageSize, sortBy: $sortBy, order: $order, filter: $filter, stockBajo: $stockBajo, liquidacion: $liquidacion }');
       
       final queryParams = <String, String>{};
       
@@ -111,6 +114,11 @@ class ProductosApi {
       // Añadir parámetro stockBajo si está definido
       if (stockBajo != null) {
         queryParams['stockBajo'] = stockBajo.toString();
+      }
+      
+      // Añadir parámetro liquidacion si está definido
+      if (liquidacion != null) {
+        queryParams['liquidacion'] = liquidacion.toString();
       }
       
       final response = await _api.authenticatedRequest(
@@ -597,6 +605,93 @@ class ProductosApi {
     }
   }
   
+  /// Obtiene productos en liquidación de una sucursal específica
+  /// 
+  /// [sucursalId] ID de la sucursal
+  /// [page] Número de página para paginación (opcional)
+  /// [pageSize] Número de elementos por página (opcional)
+  /// [sortBy] Campo por el cual ordenar (opcional)
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<PaginatedResponse<Producto>> getProductosEnLiquidacion({
+    required String sucursalId,
+    int? page,
+    int? pageSize,
+    String? sortBy,
+    bool useCache = true,
+  }) async {
+    return getProductos(
+      sucursalId: sucursalId,
+      page: page ?? 1,
+      pageSize: pageSize ?? 20,
+      sortBy: sortBy ?? 'nombre',
+      order: 'asc',
+      liquidacion: true,
+      useCache: useCache,
+    );
+  }
+  
+  /// Establece un producto en liquidación o quita la liquidación
+  /// 
+  /// [sucursalId] ID de la sucursal
+  /// [productoId] ID del producto
+  /// [enLiquidacion] Si es true, pone el producto en liquidación, si es false, quita la liquidación
+  /// [precioLiquidacion] Precio de liquidación (opcional si enLiquidacion es false)
+  Future<Producto> setLiquidacion({
+    required String sucursalId,
+    required int productoId,
+    required bool enLiquidacion,
+    double? precioLiquidacion,
+  }) async {
+    try {
+      if (sucursalId.isEmpty) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'ID de sucursal no puede estar vacío',
+        );
+      }
+      
+      if (productoId <= 0) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'ID de producto inválido: $productoId',
+        );
+      }
+      
+      // Si se está activando la liquidación, el precio de liquidación debe ser proporcionado
+      if (enLiquidacion && precioLiquidacion == null) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'Se requiere precio de liquidación al poner un producto en liquidación',
+        );
+      }
+      
+      // Datos a enviar al servidor
+      final Map<String, dynamic> data = {
+        'liquidacion': enLiquidacion,
+      };
+      
+      // Añadir precio de liquidación si está presente
+      if (precioLiquidacion != null) {
+        data['precioOferta'] = precioLiquidacion;
+      }
+      
+      debugPrint('Estableciendo liquidación para producto $productoId en sucursal $sucursalId: $enLiquidacion');
+      if (precioLiquidacion != null) {
+        debugPrint('Precio de liquidación: $precioLiquidacion');
+      }
+      
+      // Actualizar el producto con los datos de liquidación
+      return await updateProducto(
+        sucursalId: sucursalId,
+        productoId: productoId,
+        productoData: data,
+      );
+    } catch (e) {
+      debugPrint('Error al establecer liquidación: $e');
+      rethrow;
+    }
+  }
+  
   // Método helper para generar claves de caché consistentes
   String _generateCacheKey(
     String base, {
@@ -609,6 +704,7 @@ class ProductosApi {
     String? filterValue,
     String? filterType,
     bool? stockBajo,
+    bool? liquidacion,
   }) {
     final List<String> components = [base];
     
@@ -621,6 +717,7 @@ class ProductosApi {
     if (filterValue != null) components.add('fv:$filterValue');
     if (filterType != null && filterType.isNotEmpty) components.add('ft:$filterType');
     if (stockBajo != null) components.add('stb:${stockBajo ? 'true' : 'false'}');
+    if (liquidacion != null) components.add('liq:${liquidacion ? 'true' : 'false'}');
     
     return components.join('_');
   }

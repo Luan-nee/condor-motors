@@ -5,9 +5,9 @@ import '../../../models/empleado.model.dart';
 import '../../api/main.api.dart' show ApiException;
 import '../../main.dart' show api;
 import 'utils/empleados_utils.dart';
-import 'widgets/empleado_detalles_dialog.dart';
-import 'widgets/empleado_form.dart';
-import 'widgets/empleados_table.dart';
+import 'widgets/empleado/empleado_detalles_dialog.dart';
+import 'widgets/empleado/empleado_form.dart';
+import 'widgets/empleado/empleados_table.dart';
 
 class ColaboradoresAdminScreen extends StatefulWidget {
   const ColaboradoresAdminScreen({super.key});

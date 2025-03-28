@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../main.dart' show api;
-import '../../../models/color.model.dart';
-import '../../../models/producto.model.dart';
-import '../../../models/sucursal.model.dart';
-import '../utils/productos_utils.dart';
+import '../../../../main.dart' show api;
+import '../../../../models/color.model.dart';
+import '../../../../models/producto.model.dart';
+import '../../../../models/sucursal.model.dart';
+import '../../utils/productos_utils.dart';
 
 class ProductoDetalleDialog extends StatefulWidget {
   final Producto producto;
