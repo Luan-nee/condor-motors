@@ -7,6 +7,8 @@ import { GetTransferenciasInventarios } from '@/domain/use-cases/entities/transf
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { GetTransferenciasInventariosById } from '@/domain/use-cases/entities/transferencias-inventario/get-transferenciaInventario-by-id.use-case'
 import type { Request, Response } from 'express'
+import { EnviarTransferenciaInvDto } from '@/domain/dtos/entities/transferencias-inventario/enviar-transferencia-inventario.dto'
+import { EnviarTransferenciaInventario } from '@/domain/use-cases/entities/transferencias-inventario/enviar-transferencia-inventario.use-case'
 
 export class TransferenciasInventarioController {
   create = (req: Request, res: Response) => {
@@ -18,7 +20,6 @@ export class TransferenciasInventarioController {
     const [error, createTransferenciaInvDto] = CreateTransferenciaInvDto.create(
       req.body
     )
-
     if (error !== undefined || createTransferenciaInvDto === undefined) {
       CustomResponse.badRequest({ res, error })
       return
@@ -36,6 +37,45 @@ export class TransferenciasInventarioController {
       .catch((error: unknown) => {
         handleError(error, res)
       })
+  }
+
+  enviar = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [error, enviarTransferenciaInvDto] = EnviarTransferenciaInvDto.create(
+      req.body
+    )
+    if (error !== undefined || enviarTransferenciaInvDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload } = req
+
+    const enviarTransferenciaInv = new EnviarTransferenciaInventario(
+      authPayload
+    )
+
+    enviarTransferenciaInv
+      .execute(enviarTransferenciaInvDto)
+      .then((enviarTransferenciaInv) => {
+        CustomResponse.success({ res, data: enviarTransferenciaInv })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
+
+  recibir = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    CustomResponse.notImplemented({ res })
   }
 
   getById = (req: Request, res: Response) => {

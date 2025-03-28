@@ -8,3 +8,11 @@ const createTransferenciaInvSchema = z.object({
 
 export const createTransferenciaInvValidator = (object: unknown) =>
   createTransferenciaInvSchema.safeParse(object)
+
+const enviarTransferenciaInvSchema = z.object({
+  transferenciaInvId: transferenciaInvSchema.transferenciaInvId,
+  sucursalOrigenId: transferenciaInvSchema.sucursalDestinoId
+})
+
+export const enviarTransferenciaInvValidator = (object: unknown) =>
+  enviarTransferenciaInvSchema.safeParse(object)
