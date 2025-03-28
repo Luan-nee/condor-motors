@@ -33,7 +33,8 @@ export const productoSchema = {
   precioCompra: z.number().min(0),
   precioVenta: z.number().min(0),
   precioOferta: z.number().min(0).optional(),
-  stock: z.number().min(0).default(0)
+  stock: z.number().min(0).default(0),
+  liquidacion: z.boolean().default(false)
 }
 
 export const queriesProductoSchema = {

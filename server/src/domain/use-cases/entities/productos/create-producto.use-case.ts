@@ -67,6 +67,7 @@ export class CreateProducto {
           stock: createProductoDto.stock,
           stockBajo: detalleProductoStockBajo,
           productoId: producto.id,
+          liquidacion: createProductoDto.liquidacion,
           sucursalId
         })
         .returning({

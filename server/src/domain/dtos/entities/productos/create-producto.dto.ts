@@ -15,6 +15,7 @@ export class CreateProductoDto {
   public precioVenta: number
   public precioOferta?: number
   public stock: number
+  public liquidacion: boolean
 
   private constructor({
     nombre,
@@ -30,7 +31,8 @@ export class CreateProductoDto {
     precioCompra,
     precioVenta,
     precioOferta,
-    stock
+    stock,
+    liquidacion
   }: CreateProductoDto) {
     this.nombre = nombre
     this.descripcion = descripcion
@@ -46,6 +48,7 @@ export class CreateProductoDto {
     this.precioVenta = precioVenta
     this.precioOferta = precioOferta
     this.stock = stock
+    this.liquidacion = liquidacion
   }
 
   static create(input: any): [string?, CreateProductoDto?] {

@@ -56,6 +56,7 @@ export class UpdateProducto {
             precioCompra: mappedPrices.precioCompra,
             precioVenta: mappedPrices.precioVenta,
             precioOferta: mappedPrices.precioOferta,
+            liquidacion: updateProductoDto.liquidacion,
             fechaActualizacion: now
           })
           .where(

@@ -34,7 +34,8 @@ const createProductoSchema = z.object({
   precioCompra: productoSchema.precioCompra,
   precioVenta: productoSchema.precioVenta,
   precioOferta: productoSchema.precioOferta,
-  stock: productoSchema.stock
+  stock: productoSchema.stock,
+  liquidacion: productoSchema.liquidacion
 })
 
 export const createProductoValidator = (object: unknown) =>
@@ -53,7 +54,8 @@ const updateProductoSchema = z.object({
   marcaId: productoSchema.marcaId,
   precioCompra: productoSchema.precioCompra,
   precioVenta: productoSchema.precioVenta,
-  precioOferta: productoSchema.precioOferta
+  precioOferta: productoSchema.precioOferta,
+  liquidacion: productoSchema.liquidacion
 })
 
 export const updateProductoValidator = (object: unknown) =>
@@ -63,7 +65,8 @@ const addProductoSchema = z.object({
   precioCompra: productoSchema.precioCompra,
   precioVenta: productoSchema.precioVenta,
   precioOferta: productoSchema.precioOferta,
-  stock: productoSchema.stock
+  stock: productoSchema.stock,
+  liquidacion: productoSchema.liquidacion
 })
 
 export const addProductoValidator = (object: unknown) =>
