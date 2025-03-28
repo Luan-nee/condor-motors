@@ -109,6 +109,14 @@ export const permissionCodes = {
     createAny: 'reservas_productos:create_any',
     deleteAny: 'reservas_productos:delete_any',
     updateAny: 'reservas_productos:update_any'
+  },
+  transferenciasInvs: {
+    createAny: 'transferencias_inventarios:create_any',
+    getAny: 'transferencias_inventarios:get_any',
+    updateAny: 'transferencias_inventarios:update_any',
+    createRelated: 'transferencias_inventarios:create_related',
+    getRelated: 'transferencias_inventarios:get_related',
+    updateRelated: 'transferencias_inventarios:update_related'
   }
 } as const
 
