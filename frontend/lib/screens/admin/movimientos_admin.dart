@@ -47,7 +47,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
         fechaFin: _fechaFin,
         forceRefresh: forceRefresh,
       );
-      
+
       if (mounted) {
         setState(() {
           _movimientos = movimientos;
@@ -137,9 +137,12 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                             style: const TextStyle(color: Colors.white),
                             underline: const SizedBox(),
                             items: [
-                              const DropdownMenuItem(value: 'Todos', child: Text('Todos los estados')),
-                              ...MovimientosApi.estadosDetalle.entries.map((e) => 
-                                DropdownMenuItem(value: e.key, child: Text(e.value)),
+                              const DropdownMenuItem(
+                                  value: 'Todos',
+                                  child: Text('Todos los estados')),
+                              ...MovimientosApi.estadosDetalle.entries.map(
+                                (e) => DropdownMenuItem(
+                                    value: e.key, child: Text(e.value)),
                               ),
                             ],
                             onChanged: (String? value) {
@@ -154,7 +157,8 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                     ),
                     // Botón de refrescar
                     IconButton(
-                      icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16, color: Colors.white),
+                      icon: const FaIcon(FontAwesomeIcons.arrowsRotate,
+                          size: 16, color: Colors.white),
                       onPressed: () => _cargarMovimientos(forceRefresh: true),
                       tooltip: 'Refrescar datos',
                     ),
@@ -179,7 +183,8 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    const Icon(Icons.error_outline,
+                        color: Colors.red, size: 48),
                     const SizedBox(height: 16),
                     Text(
                       _errorMensaje!,
@@ -246,7 +251,8 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                         // Encabezado de la tabla
                         Container(
                           color: const Color(0xFF2D2D2D),
-                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 16, horizontal: 20),
                           child: const Row(
                             children: [
                               // Fecha solicitada (15%)
@@ -273,25 +279,35 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                               // ID (15%)
                               Expanded(
                                 flex: 15,
-                                child: Text(
-                                  'ID',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                child: Row(
+                                  children: [
+                                    FaIcon(
+                                      FontAwesomeIcons.calendar,
+                                      color: Color(0xFFE31E24),
+                                      size: 14,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Fecha recibida',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               // Solicitante (15%)
-                              Expanded(
-                                flex: 15,
-                                child: Text(
-                                  'Solicitante',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                              // Expanded(
+                              //   flex: 15,
+                              //   child: Text(
+                              //     'Solicitante',
+                              //     style: TextStyle(
+                              //       color: Colors.white,
+                              //       fontWeight: FontWeight.bold,
+                              //     ),
+                              //   ),
+                              // ),
                               // Origen (20%)
                               Expanded(
                                 flex: 20,
@@ -328,7 +344,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                               ),
                               // Columna para acciones
                               SizedBox(
-                                width: 48,
+                                width: 60,
                                 child: Center(
                                   child: Text(
                                     'Acciones',
@@ -343,148 +359,182 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                             ],
                           ),
                         ),
-                        
+
                         // Filas de movimientos
                         ..._movimientos.map((movimiento) => InkWell(
-                          // Eliminamos el onTap para no abrir al hacer clic en cualquier parte de la fila
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: Colors.white.withOpacity(0.1),
-                                ),
-                              ),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                            child: Row(
-                              children: [
-                                // Fecha solicitada
-                                Expanded(
-                                  flex: 15,
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 32,
-                                        height: 32,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF2D2D2D),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: const Center(
-                                          child: FaIcon(
-                                            FontAwesomeIcons.calendar,
-                                            color: Color(0xFFE31E24),
-                                            size: 14,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        _formatFecha(movimiento.salidaOrigen),
-                                        style: const TextStyle(color: Colors.white),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // ID
-                                Expanded(
-                                  flex: 15,
-                                  child: Text(
-                                    movimiento.id.toString(),
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                                // Solicitante
-                                Expanded(
-                                  flex: 15,
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF2D2D2D),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const FaIcon(
-                                              FontAwesomeIcons.user,
-                                              color: Colors.white54,
-                                              size: 12,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              movimiento.solicitante ?? 'N/A',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Origen
-                                Expanded(
-                                  flex: 20,
-                                  child: Text(
-                                    movimiento.nombreSucursalOrigen,
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                                // Destino
-                                Expanded(
-                                  flex: 20,
-                                  child: Text(
-                                    movimiento.nombreSucursalDestino,
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                                // Estado
-                                Expanded(
-                                  flex: 15,
-                                  child: _buildEstadoCell(movimiento.estado),
-                                ),
-                                // Columna de acciones
-                                SizedBox(
-                                  width: 48,
-                                  child: Center(
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF222222),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: const Color(0xFFE31E24).withOpacity(0.2),
-                                        ),
-                                      ),
-                                      child: IconButton(
-                                        onPressed: () => _mostrarDetalleMovimiento(movimiento),
-                                        icon: const FaIcon(
-                                          FontAwesomeIcons.magnifyingGlass,
-                                          color: Color(0xFFE31E24),
-                                          size: 14,
-                                        ),
-                                        tooltip: 'Ver detalles',
-                                        constraints: const BoxConstraints(
-                                          minWidth: 36,
-                                          minHeight: 36,
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                        splashRadius: 18,
-                                      ),
+                              // Eliminamos el onTap para no abrir al hacer clic en cualquier parte de la fila
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: Colors.white.withOpacity(0.1),
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        )),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 20),
+                                child: Row(
+                                  children: [
+                                    // Fecha solicitada
+                                    Expanded(
+                                      flex: 15,
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 32,
+                                            height: 32,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF2D2D2D),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Center(
+                                              child: FaIcon(
+                                                FontAwesomeIcons.calendar,
+                                                color: Color(0xFFE31E24),
+                                                size: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            _formatFecha(
+                                                movimiento.salidaOrigen),
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // ID
+                                    Expanded(
+                                      flex: 15,
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 32,
+                                            height: 32,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF2D2D2D),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Center(
+                                              child: FaIcon(
+                                                FontAwesomeIcons.calendar,
+                                                color: Color(0xFFE31E24),
+                                                size: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            _formatFecha(
+                                                movimiento.llegadaDestino),
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // // Solicitante
+                                    // Expanded(
+                                    //   flex: 15,
+                                    //   child: Row(
+                                    //     children: [
+                                    //       Container(
+                                    //         padding: const EdgeInsets.symmetric(
+                                    //           horizontal: 12,
+                                    //           vertical: 6,
+                                    //         ),
+                                    //         decoration: BoxDecoration(
+                                    //           color: const Color(0xFF2D2D2D),
+                                    //           borderRadius: BorderRadius.circular(8),
+                                    //         ),
+                                    //         child: Row(
+                                    //           mainAxisSize: MainAxisSize.min,
+                                    //           children: [
+                                    //             const FaIcon(
+                                    //               FontAwesomeIcons.user,
+                                    //               color: Colors.white54,
+                                    //               size: 12,
+                                    //             ),
+                                    //             const SizedBox(width: 8),
+                                    //             Text(
+                                    //               movimiento.solicitante ?? 'N/A',
+                                    //               style: const TextStyle(
+                                    //                 color: Colors.white,
+                                    //                 fontSize: 13,
+                                    //               ),
+                                    //             ),
+                                    //           ],
+                                    //         ),
+                                    //       ),
+                                    //     ],
+                                    //   ),
+                                    // ),
+                                    // Origen
+                                    Expanded(
+                                      flex: 20,
+                                      child: Text(
+                                        movimiento.nombreSucursalOrigen,
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                      ),
+                                    ),
+                                    // Destino
+                                    Expanded(
+                                      flex: 20,
+                                      child: Text(
+                                        movimiento.nombreSucursalDestino,
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                      ),
+                                    ),
+                                    // Estado
+                                    Expanded(
+                                      flex: 15,
+                                      child:
+                                          _buildEstadoCell(movimiento.estado),
+                                    ),
+                                    // Columna de acciones
+                                    SizedBox(
+                                      width: 60,
+                                      child: Center(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF222222),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: const Color(0xFFE31E24)
+                                                  .withOpacity(0.2),
+                                            ),
+                                          ),
+                                          child: IconButton(
+                                            onPressed: () =>
+                                                _mostrarDetalleMovimiento(
+                                                    movimiento),
+                                            icon: const FaIcon(
+                                              FontAwesomeIcons.magnifyingGlass,
+                                              color: Color(0xFFE31E24),
+                                              size: 14,
+                                            ),
+                                            tooltip: 'Ver detalles',
+                                            constraints: const BoxConstraints(
+                                              minWidth: 36,
+                                              minHeight: 36,
+                                            ),
+                                            padding: EdgeInsets.zero,
+                                            splashRadius: 18,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )),
                       ],
                     ),
                   ),
@@ -500,9 +550,10 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
   void _mostrarDetalleMovimiento(Movimiento movimiento) async {
     // Verificar si estamos montados
     if (!mounted) return;
-    
-    debugPrint('🔍 Iniciando visualización de detalles para movimiento #${movimiento.id}');
-    
+
+    debugPrint(
+        '🔍 Iniciando visualización de detalles para movimiento #${movimiento.id}');
+
     // Usamos el nuevo widget que maneja internamente los estados
     await showDialog(
       context: context,
@@ -510,7 +561,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
         return MovimientoDetailDialog(movimiento: movimiento);
       },
     );
-    
+
     debugPrint('✅ Diálogo de detalles cerrado correctamente');
   }
 
@@ -529,7 +580,8 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
     Color textColor = Colors.white;
     IconData iconData;
     String tooltipText;
-    final String estadoDisplay = MovimientosApi.estadosDetalle[estado] ?? estado;
+    final String estadoDisplay =
+        MovimientosApi.estadosDetalle[estado] ?? estado;
 
     switch (estado.toUpperCase()) {
       case 'COMPLETADO':
@@ -606,4 +658,4 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
   void dispose() {
     super.dispose();
   }
-} 
+}
