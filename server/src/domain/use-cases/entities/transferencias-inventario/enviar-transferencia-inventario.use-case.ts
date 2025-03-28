@@ -11,6 +11,7 @@ import {
   transferenciasInventariosTable
 } from '@/db/schema'
 import type { EnviarTransferenciaInvDto } from '@/domain/dtos/entities/transferencias-inventario/enviar-transferencia-inventario.dto'
+import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import type { SucursalIdType } from '@/types/schemas'
 import { and, eq, ilike, inArray } from 'drizzle-orm'
 
@@ -25,6 +26,7 @@ export class EnviarTransferenciaInventario {
   }
 
   private async enviarTransferenciaInv(
+    numericIdDto: NumericIdDto,
     enviarTransferenciaInvDto: EnviarTransferenciaInvDto
   ) {
     const now = new Date()
@@ -51,7 +53,7 @@ export class EnviarTransferenciaInventario {
       .where(
         eq(
           itemsTransferenciaInventarioTable.transferenciaInventarioId,
-          enviarTransferenciaInvDto.transferenciaInvId
+          numericIdDto.id
         )
       )
 
@@ -126,12 +128,7 @@ export class EnviarTransferenciaInventario {
           salidaOrigen: now,
           fechaActualizacion: now
         })
-        .where(
-          eq(
-            transferenciasInventariosTable.id,
-            enviarTransferenciaInvDto.transferenciaInvId
-          )
-        )
+        .where(eq(transferenciasInventariosTable.id, numericIdDto.id))
         .returning({
           id: transferenciasInventariosTable.id,
           sucursalOrigenId: transferenciasInventariosTable.sucursalOrigenId,
@@ -151,6 +148,7 @@ export class EnviarTransferenciaInventario {
   }
 
   private async validateRelated(
+    numericIdDto: NumericIdDto,
     enviarTransferenciaInvDto: EnviarTransferenciaInvDto,
     sucursalId: SucursalIdType,
     hasPermissionAny: boolean
@@ -181,12 +179,7 @@ export class EnviarTransferenciaInventario {
           estadosTransferenciasInventarios.id
         )
       )
-      .where(
-        eq(
-          transferenciasInventariosTable.id,
-          enviarTransferenciaInvDto.transferenciaInvId
-        )
-      )
+      .where(eq(transferenciasInventariosTable.id, numericIdDto.id))
 
     if (transferenciasInventario.length < 1) {
       throw CustomError.badRequest(
@@ -248,16 +241,23 @@ export class EnviarTransferenciaInventario {
     throw CustomError.forbidden()
   }
 
-  async execute(enviarTransferenciaInvDto: EnviarTransferenciaInvDto) {
+  async execute(
+    numericIdDto: NumericIdDto,
+    enviarTransferenciaInvDto: EnviarTransferenciaInvDto
+  ) {
     const { hasPermissionAny, sucursalId } = await this.validatePermissions()
 
     await this.validateRelated(
+      numericIdDto,
       enviarTransferenciaInvDto,
       sucursalId,
       hasPermissionAny
     )
 
-    const result = await this.enviarTransferenciaInv(enviarTransferenciaInvDto)
+    const result = await this.enviarTransferenciaInv(
+      numericIdDto,
+      enviarTransferenciaInvDto
+    )
 
     return result
   }

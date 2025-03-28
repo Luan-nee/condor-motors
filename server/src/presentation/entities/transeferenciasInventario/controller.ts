@@ -45,6 +45,12 @@ export class TransferenciasInventarioController {
       return
     }
 
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
     const [error, enviarTransferenciaInvDto] = EnviarTransferenciaInvDto.create(
       req.body
     )
@@ -60,7 +66,7 @@ export class TransferenciasInventarioController {
     )
 
     enviarTransferenciaInv
-      .execute(enviarTransferenciaInvDto)
+      .execute(numericIdDto, enviarTransferenciaInvDto)
       .then((enviarTransferenciaInv) => {
         CustomResponse.success({ res, data: enviarTransferenciaInv })
       })

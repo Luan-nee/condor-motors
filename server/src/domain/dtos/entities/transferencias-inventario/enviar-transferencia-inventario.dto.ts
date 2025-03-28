@@ -2,14 +2,9 @@ import { enviarTransferenciaInvValidator } from '@/domain/validators/entities/tr
 
 export class EnviarTransferenciaInvDto {
   public sucursalOrigenId: number
-  public transferenciaInvId: number
 
-  constructor({
-    sucursalOrigenId,
-    transferenciaInvId
-  }: EnviarTransferenciaInvDto) {
+  constructor({ sucursalOrigenId }: EnviarTransferenciaInvDto) {
     this.sucursalOrigenId = sucursalOrigenId
-    this.transferenciaInvId = transferenciaInvId
   }
 
   static create(input: any): [string?, EnviarTransferenciaInvDto?] {

@@ -2,7 +2,6 @@ import z from 'zod'
 import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
 
 export const transferenciaInvSchema = {
-  transferenciaInvId: idTypeBaseSchema.numericId,
   sucursalOrigenId: idTypeBaseSchema.numericId,
   sucursalDestinoId: idTypeBaseSchema.numericId,
   items: z
