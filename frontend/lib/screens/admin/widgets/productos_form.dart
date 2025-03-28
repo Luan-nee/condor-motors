@@ -1382,7 +1382,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           if (idValue is int || (idValue is String && int.tryParse(idValue) != null)) {
             // Convertir explícitamente a entero para evitar el error NaN
             productoData['categoriaId'] = idValue is int ? idValue : int.parse(idValue);
-            debugPrint('ProductosForm: Categoría ${_categoriaSeleccionada} con ID válido: ${productoData['categoriaId']}');
+            debugPrint('ProductosForm: Categoría $_categoriaSeleccionada con ID válido: ${productoData['categoriaId']}');
           } else {
             debugPrint('ProductosForm: Advertencia - ID de categoría no válido: $idValue');
           }

@@ -211,7 +211,7 @@ class ProformaVentaApi {
     bool forceRefresh = false,
   }) async {
     try {
-      final cacheKey = '$_prefixProforma${sucursalId}_${proformaId}';
+      final cacheKey = '$_prefixProforma${sucursalId}_$proformaId';
       
       // Intentar obtener del caché si corresponde
       if (useCache && !forceRefresh) {

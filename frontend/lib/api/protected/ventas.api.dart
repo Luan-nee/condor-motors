@@ -54,7 +54,7 @@ class VentasApi {
       final String searchStr = search ?? '';
       final String estadoStr = estado ?? '';
       
-      final cacheKey = '${_prefixListaVentas}${sucursalKey}_p${page}_s${pageSize}_q${searchStr}_f${fechaInicioStr}_t${fechaFinStr}_e${estadoStr}';
+      final cacheKey = '$_prefixListaVentas${sucursalKey}_p${page}_s${pageSize}_q${searchStr}_f${fechaInicioStr}_t${fechaFinStr}_e$estadoStr';
       
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
@@ -137,7 +137,7 @@ class VentasApi {
     try {
       // Generar clave de caché
       final String sucursalKey = sucursalId ?? 'global';
-      final cacheKey = '${_prefixVenta}${sucursalKey}_$id';
+      final cacheKey = '$_prefixVenta${sucursalKey}_$id';
       
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
@@ -225,7 +225,7 @@ class VentasApi {
       
       // Invalidar caché de esta venta específica
       final String sucursalKey = sucursalId ?? 'global';
-      final cacheKey = '${_prefixVenta}${sucursalKey}_$id';
+      final cacheKey = '$_prefixVenta${sucursalKey}_$id';
       _cache.invalidate(cacheKey);
       
       // También invalidar listas que podrían contener esta venta
@@ -306,7 +306,7 @@ class VentasApi {
       final String sucursalKey = sucursalId ?? 'global';
       final String fechaInicioStr = fechaInicio?.toIso8601String() ?? '';
       final String fechaFinStr = fechaFin?.toIso8601String() ?? '';
-      final cacheKey = '${_prefixEstadisticas}${sucursalKey}_f${fechaInicioStr}_t${fechaFinStr}';
+      final cacheKey = '$_prefixEstadisticas${sucursalKey}_f${fechaInicioStr}_t$fechaFinStr';
       
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {

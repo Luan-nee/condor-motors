@@ -89,7 +89,7 @@ class SucursalesApi {
     bool forceRefresh = false,
   }) async {
     try {
-      final cacheKey = _prefixSucursales;
+      const cacheKey = _prefixSucursales;
       
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
