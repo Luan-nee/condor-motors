@@ -57,8 +57,6 @@ export class GetCategorias {
       .where(whereCondition)
       .groupBy(categoriasTable.id)
       .orderBy(order)
-      .limit(queriesDto.page_size)
-      .offset(queriesDto.page_size * (queriesDto.page - 1))
 
     return categorias
   }

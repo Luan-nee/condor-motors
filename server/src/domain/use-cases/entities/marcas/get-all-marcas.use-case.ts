@@ -15,16 +15,12 @@ export class GetAllMarcas implements GetAllMarcasUseCase {
   }
 
   async execute(page = 1, pageSize = 10): Promise<any> {
-    const offset = (page - 1) * pageSize
-
     const [marcas, totalResult] = await Promise.all([
       db
         .select(this.selectFields)
         .from(marcasTable)
         .leftJoin(productosTable, eq(marcasTable.id, productosTable.marcaId))
-        .groupBy(marcasTable.id)
-        .limit(pageSize)
-        .offset(offset),
+        .groupBy(marcasTable.id),
       db.select({ count: sql`count(*)` }).from(marcasTable)
     ])
 
