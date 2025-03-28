@@ -16,6 +16,9 @@ class CategoriasApi {
   /// 
   /// Ordenadas alfabéticamente por nombre
   /// [useCache] Indica si se debe usar el caché (default: true)
+  /// 
+  /// La respuesta incluye el campo `totalProductos` que indica la cantidad de
+  /// productos asociados a cada categoría.
   Future<List<dynamic>> getCategorias({bool useCache = true}) async {
     try {
       const cacheKey = 'categorias_all';
@@ -57,6 +60,15 @@ class CategoriasApi {
       final categorias = response['data'] as List;
       debugPrint('CategoriasApi: ${categorias.length} categorías encontradas');
       
+      // Información adicional sobre totalProductos
+      var totalProductosGlobal = 0;
+      for (final cat in categorias) {
+        if (cat is Map && cat.containsKey('totalProductos')) {
+          totalProductosGlobal += (cat['totalProductos'] as int? ?? 0);
+        }
+      }
+      debugPrint('CategoriasApi: Total de productos en todas las categorías: $totalProductosGlobal');
+      
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, categorias);
@@ -81,10 +93,18 @@ class CategoriasApi {
   /// 
   /// Ordenadas alfabéticamente por nombre
   /// [useCache] Indica si se debe usar el caché (default: true)
+  /// 
+  /// La respuesta incluye el campo `totalProductos` que indica la cantidad de
+  /// productos asociados a cada categoría.
   Future<List<Categoria>> getCategoriasObjetos({bool useCache = true}) async {
     try {
       final categoriasRaw = await getCategorias(useCache: useCache);
-      return categoriasRaw.map((data) => Categoria.fromJson(data)).toList();
+      final categorias = categoriasRaw.map((data) => Categoria.fromJson(data)).toList();
+      
+      // Ordenar categorías por nombre (extra)
+      categorias.sort((a, b) => a.nombre.compareTo(b.nombre));
+      
+      return categorias;
     } catch (e) {
       debugPrint('CategoriasApi: ERROR al obtener categorías como objetos: $e');
       rethrow;

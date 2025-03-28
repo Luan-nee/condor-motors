@@ -8,6 +8,7 @@ class Categoria {
   final bool activo;
   final DateTime? fechaCreacion;
   final DateTime? fechaActualizacion;
+  final int totalProductos;
 
   Categoria({
     required this.id,
@@ -16,6 +17,7 @@ class Categoria {
     this.activo = true,
     this.fechaCreacion,
     this.fechaActualizacion,
+    this.totalProductos = 0,
   });
 
   /// Crea una instancia de [Categoria] a partir de un mapa JSON
@@ -43,6 +45,11 @@ class Categoria {
       fechaActualizacion: json['fechaActualizacion'] != null 
           ? DateTime.parse(json['fechaActualizacion']) 
           : null,
+      totalProductos: json['totalProductos'] is int 
+          ? json['totalProductos'] 
+          : (json['totalProductos'] is String 
+              ? int.tryParse(json['totalProductos']) ?? 0 
+              : 0),
     );
   }
 
@@ -63,11 +70,12 @@ class Categoria {
       ...toJson(),
       if (fechaCreacion != null) 'fechaCreacion': fechaCreacion!.toIso8601String(),
       if (fechaActualizacion != null) 'fechaActualizacion': fechaActualizacion!.toIso8601String(),
+      'totalProductos': totalProductos,
     };
   }
   
   @override
   String toString() {
-    return 'Categoria{id: $id, nombre: $nombre, activo: $activo}';
+    return 'Categoria{id: $id, nombre: $nombre, activo: $activo, totalProductos: $totalProductos}';
   }
 } 

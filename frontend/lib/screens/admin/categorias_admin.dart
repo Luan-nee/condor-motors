@@ -48,7 +48,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
           'id': categoria['id'],
           'nombre': categoria['nombre'] ?? 'Sin nombre',
           'descripcion': categoria['descripcion'] ?? 'Sin descripción',
-          'cantidadProductos': categoria['cantidadProductos'] ?? 0,
+          'totalProductos': categoria['totalProductos'] ?? 0,
         });
       }
 
@@ -72,25 +72,25 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
             'id': 1,
             'nombre': 'Cascos',
             'descripcion': 'Cascos de seguridad para motociclistas',
-            'cantidadProductos': 45,
+            'totalProductos': 45,
           },
           {
             'id': 2,
             'nombre': 'Lubricantes',
             'descripcion': 'Aceites y lubricantes para motocicletas',
-            'cantidadProductos': 32,
+            'totalProductos': 32,
           },
           {
             'id': 3,
             'nombre': 'Llantas',
             'descripcion': 'Llantas y neumáticos para motocicletas',
-            'cantidadProductos': 28,
+            'totalProductos': 28,
           },
           {
             'id': 4,
             'nombre': 'Repuestos',
             'descripcion': 'Repuestos y partes para motocicletas',
-            'cantidadProductos': 156,
+            'totalProductos': 156,
           },
         ];
       });
@@ -606,13 +606,24 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                                   horizontal: 12,
                                                   vertical: 4,
                                                 ),
-                                                child: Text(
-                                                  categoria['cantidadProductos']
-                                                      .toString(),
-                                                  style: const TextStyle(
-                                                    color: Color(0xFFE31E24),
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    const FaIcon(
+                                                      FontAwesomeIcons.box,
+                                                      size: 12,
+                                                      color: Color(0xFFE31E24),
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      categoria['totalProductos']
+                                                          .toString(),
+                                                      style: const TextStyle(
+                                                        color: Color(0xFFE31E24),
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ),
