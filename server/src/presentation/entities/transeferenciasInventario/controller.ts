@@ -10,6 +10,7 @@ import type { Request, Response } from 'express'
 import { EnviarTransferenciaInvDto } from '@/domain/dtos/entities/transferencias-inventario/enviar-transferencia-inventario.dto'
 import { EnviarTransferenciaInventario } from '@/domain/use-cases/entities/transferencias-inventario/enviar-transferencia-inventario.use-case'
 import { RecibirTransferenciaInventario } from '@/domain/use-cases/entities/transferencias-inventario/recibir-transferencia-inventario.use-case'
+import { DeleteTransferenciaInventario } from '@/domain/use-cases/entities/transferencias-inventario/delete-transferencia-inventario.use-case'
 
 export class TransferenciasInventarioController {
   create = (req: Request, res: Response) => {
@@ -168,6 +169,25 @@ export class TransferenciasInventarioController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
+    const { authPayload } = req
+
+    const deleteTransferenciaInv = new DeleteTransferenciaInventario(
+      authPayload
+    )
+
+    deleteTransferenciaInv
+      .execute(numericIdDto)
+      .then((transferenciaInv) => {
+        CustomResponse.success({ res, data: transferenciaInv })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 }
