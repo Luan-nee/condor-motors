@@ -1,7 +1,7 @@
 import { createProformaVentaValidator } from '@/domain/validators/entities/proformas-venta/proforma-venta.validator'
 
 export class CreateProformaVentaDto {
-  public nombre: string
+  public nombre?: string
   public empleadoId: number
   public detalles: Array<{
     productoId: number
