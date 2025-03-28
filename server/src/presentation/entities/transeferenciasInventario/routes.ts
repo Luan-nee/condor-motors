@@ -8,8 +8,12 @@ export class TransferenciasInventarioRoutes {
       new TransferenciasInventarioController()
 
     router.post('/', transferenciaInventarioController.create)
+
     router.post('/:id/enviar', transferenciaInventarioController.enviar)
+
     router.post('/:id/recibir', transferenciaInventarioController.recibir)
+
+    router.post('/:id/cancelar', transferenciaInventarioController.cancelar)
 
     router.get('/:id', transferenciaInventarioController.getById)
 

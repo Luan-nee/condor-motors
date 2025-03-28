@@ -48,6 +48,7 @@ class Producto {
   final double? precioOferta;
   final int stock;
   final bool stockBajo;
+  final bool liquidacion;
 
   Producto({
     required this.id,
@@ -69,6 +70,7 @@ class Producto {
     this.precioOferta,
     required this.stock,
     this.stockBajo = false,
+    this.liquidacion = false,
   });
 
   factory Producto.fromJson(Map<String, dynamic> json) {
@@ -92,6 +94,7 @@ class Producto {
       precioOferta: json['precioOferta'] != null ? _parseDouble(json['precioOferta']) : null,
       stock: _parseInt(json['stock']),
       stockBajo: json['stockBajo'] as bool? ?? false,
+      liquidacion: json['liquidacion'] as bool? ?? false,
     );
   }
 
@@ -115,6 +118,7 @@ class Producto {
     if (precioOferta != null) 'precioOferta': precioOferta,
     'stock': stock,
     'stockBajo': stockBajo,
+    'liquidacion': liquidacion,
   };
   
   /// Helper para convertir valores numéricos a double
@@ -187,6 +191,38 @@ class Producto {
     return porcentaje != null ? '${porcentaje.toStringAsFixed(0)}%' : null;
   }
 
+  /// Verifica si el producto está en liquidación
+  bool estaEnLiquidacion() {
+    return liquidacion;
+  }
+
+  /// Obtiene el precio actual considerando si está en liquidación o oferta
+  double getPrecioActual() {
+    if (liquidacion && precioOferta != null) {
+      return precioOferta!;
+    } else if (estaEnOferta()) {
+      return precioOferta!;
+    } else {
+      return precioVenta;
+    }
+  }
+
+  /// Formatea el precio actual considerando liquidación a soles peruanos
+  String getPrecioActualFormateado() {
+    return 'S/ ${getPrecioActual().toStringAsFixed(2)}';
+  }
+  
+  /// Calcula la ganancia considerando la liquidación
+  double getGananciaActual() {
+    return getPrecioActual() - precioCompra;
+  }
+
+  /// Calcula el margen de ganancia en porcentaje considerando la liquidación
+  double getMargenPorcentajeActual() {
+    if (precioCompra <= 0) return 0;
+    return (getGananciaActual() / precioCompra) * 100;
+  }
+
   /// Create a new instance with updated fields
   Producto copyWith({
     int? id,
@@ -208,6 +244,7 @@ class Producto {
     double? precioOferta,
     int? stock,
     bool? stockBajo,
+    bool? liquidacion,
   }) {
     return Producto(
       id: id ?? this.id,
@@ -229,6 +266,7 @@ class Producto {
       precioOferta: precioOferta ?? this.precioOferta,
       stock: stock ?? this.stock,
       stockBajo: stockBajo ?? this.stockBajo,
+      liquidacion: liquidacion ?? this.liquidacion,
     );
   }
 } 

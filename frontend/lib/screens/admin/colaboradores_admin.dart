@@ -5,9 +5,9 @@ import '../../../models/empleado.model.dart';
 import '../../api/main.api.dart' show ApiException;
 import '../../main.dart' show api;
 import 'utils/empleados_utils.dart';
-import 'widgets/empleado_detalles_dialog.dart';
-import 'widgets/empleado_form.dart';
-import 'widgets/empleados_table.dart';
+import 'widgets/empleado/empleado_detalles_dialog.dart';
+import 'widgets/empleado/empleado_form.dart';
+import 'widgets/empleado/empleados_table.dart';
 
 class ColaboradoresAdminScreen extends StatefulWidget {
   const ColaboradoresAdminScreen({super.key});
@@ -293,15 +293,33 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                 ),
                 Row(
                   children: [
-                    IconButton(
-                      icon: const FaIcon(
-                        FontAwesomeIcons.arrowsRotate,
-                        color: Colors.white,
-                        size: 16,
+                    ElevatedButton.icon(
+                      icon: _isLoading 
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const FaIcon(
+                            FontAwesomeIcons.arrowsRotate,
+                            size: 16,
+                            color: Colors.white
+                          ),
+                      label: Text(_isLoading ? 'Actualizando...' : 'Actualizar Datos'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0075FF),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
                       ),
                       onPressed: _isLoading ? null : _cargarDatos,
-                      tooltip: 'Recargar colaboradores',
                     ),
+                    const SizedBox(width: 12),
                     ElevatedButton.icon(
                       icon: const FaIcon(FontAwesomeIcons.plus,
                           size: 16, color: Colors.white),

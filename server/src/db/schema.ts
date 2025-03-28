@@ -251,7 +251,9 @@ export const itemsTransferenciaInventarioTable = pgTable(
       .references(() => productosTable.id),
     transferenciaInventarioId: integer('transferencia_inventario_id')
       .notNull()
-      .references(() => transferenciasInventariosTable.id)
+      .references(() => transferenciasInventariosTable.id, {
+        onDelete: 'cascade'
+      })
   }
 )
 
@@ -394,7 +396,7 @@ export const detallesVentaTable = pgTable('detalles_venta', {
   productoId: integer('producto_id'),
   ventaId: integer('venta_id')
     .notNull()
-    .references(() => ventasTable.id)
+    .references(() => ventasTable.id, { onDelete: 'cascade' })
 })
 
 export const totalesVentaTable = pgTable('totales_venta', {

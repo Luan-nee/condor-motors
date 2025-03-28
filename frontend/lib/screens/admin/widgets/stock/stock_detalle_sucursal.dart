@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-import '../../../main.dart' show api;
-import '../../../models/producto.model.dart';
-import '../../../models/sucursal.model.dart';
-import '../utils/stock_utils.dart';
+import '../../../../main.dart' show api;
+import '../../../../models/producto.model.dart';
+import '../../../../models/sucursal.model.dart';
+import '../../utils/stock_utils.dart';
 import 'stock_detalles_dialog.dart';
 
 /// Diálogo que muestra el stock de un producto en todas las sucursales
@@ -114,11 +114,13 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
       categoria: widget.producto.categoria,
       precioCompra: widget.producto.precioCompra,
       precioVenta: widget.producto.precioVenta,
+      precioOferta: widget.producto.precioOferta,
+      liquidacion: widget.producto.liquidacion,
       fechaCreacion: widget.producto.fechaCreacion,
     );
     
     // Mostrar el diálogo de detalles de stock para la sucursal seleccionada
-    final result = await showDialog<bool>(
+    final result = await showDialog<Producto>(
       context: context,
       builder: (BuildContext context) {
         return StockDetallesDialog(
@@ -129,8 +131,8 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
       },
     );
     
-    // Si hubo cambios en el stock, recargar las sucursales para actualizar la información
-    if (result == true) {
+    // Si hubo cambios en el stock o liquidación, recargar las sucursales para actualizar la información
+    if (result != null) {
       await _cargarSucursales();
     }
   }
@@ -510,19 +512,23 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
       decoration: BoxDecoration(
         color: const Color(0xFF2D2D2D),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.1),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          // Título con icono
+          Row(
             children: [
-              FaIcon(
+              const FaIcon(
                 FontAwesomeIcons.box,
                 size: 16,
                 color: Color(0xFFE31E24),
               ),
-              SizedBox(width: 8),
-              Text(
+              const SizedBox(width: 8),
+              const Text(
                 'Información del Producto',
                 style: TextStyle(
                   color: Colors.white,
@@ -530,45 +536,113 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                   fontSize: 16,
                 ),
               ),
+              if (widget.producto.liquidacion) ...[
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const FaIcon(
+                        FontAwesomeIcons.fire,
+                        size: 12,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'En Liquidación',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
+          
           const SizedBox(height: 16),
+          
+          // Información básica en forma de rejilla (2 columnas)
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Datos básicos
+              // Columna 1 - Datos generales
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInfoItem('Nombre', widget.producto.nombre),
-                    _buildInfoItem('SKU', widget.producto.sku),
-                    _buildInfoItem('Categoría', widget.producto.categoria),
+                    _buildInfoRow('SKU', widget.producto.sku),
+                    _buildInfoRow('Categoría', widget.producto.categoria),
+                    _buildInfoRow('Marca', widget.producto.marca),
+                    if (widget.producto.stockMinimo != null)
+                      _buildInfoRow('Stock Mínimo', widget.producto.stockMinimo.toString()),
                   ],
                 ),
               ),
-              // Datos adicionales
+              
+              // Columna 2 - Precios
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInfoItem('Marca', widget.producto.marca),
-                    _buildInfoItem('Stock Mínimo', '${widget.producto.stockMinimo ?? 0}'),
-                    if (widget.producto.descripcion != null && widget.producto.descripcion!.isNotEmpty)
-                      _buildInfoItem('Descripción', widget.producto.descripcion!),
+                    _buildInfoRow('Precio Compra', widget.producto.getPrecioCompraFormateado()),
+                    _buildInfoRow('Precio Venta', widget.producto.getPrecioVentaFormateado()),
+                    if (widget.producto.precioOferta != null)
+                      _buildInfoRow(
+                        widget.producto.liquidacion ? 'Precio Liquidación' : 'Precio Oferta', 
+                        widget.producto.getPrecioOfertaFormateado()!,
+                        textColor: widget.producto.liquidacion ? Colors.orange : Colors.green,
+                      ),
+                    if (widget.producto.liquidacion)
+                      _buildInfoRow(
+                        'Descuento', 
+                        widget.producto.getPorcentajeDescuentoOfertaFormateado() ?? '0%',
+                        textColor: Colors.orange,
+                      ),
                   ],
                 ),
               ),
             ],
           ),
+          
+          // Descripción (si existe)
+          if (widget.producto.descripcion != null && widget.producto.descripcion!.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Descripción:',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.producto.descripcion!,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 14,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
   
-  Widget _buildInfoItem(String label, String value) {
+  // Helper para crear filas de información
+  Widget _buildInfoRow(String label, String value, {Color? textColor}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -579,14 +653,17 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
               style: TextStyle(
                 color: Colors.white.withOpacity(0.7),
                 fontWeight: FontWeight.w500,
+                fontSize: 14,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: textColor ?? Colors.white,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
               ),
             ),
           ),

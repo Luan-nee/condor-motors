@@ -7,7 +7,7 @@ import '../../utils/role_utils.dart' as role_utils;
 import 'categorias_admin.dart';
 import 'colaboradores_admin.dart';
 import 'dashboard_admin.dart';
-import 'inventario_admin.dart';
+import 'stocks_admin.dart';
 import 'marcas_admin.dart';
 import 'movimientos_admin.dart';
 import 'productos_admin.dart';
