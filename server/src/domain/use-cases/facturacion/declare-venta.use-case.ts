@@ -175,7 +175,7 @@ export class DeclareVenta {
       },
       cliente: {
         cliente_tipo_documento: venta.cliente_tipo_documento,
-        cliente_numero_documento: venta.cliente_numero_documento,
+        cliente_numero_documento: venta.cliente_numero_documento ?? '',
         cliente_denominacion: venta.cliente_denominacion,
         codigo_pais: '',
         ubigeo: '',
