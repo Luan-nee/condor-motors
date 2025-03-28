@@ -13,7 +13,8 @@ class ColaboradoresAdminScreen extends StatefulWidget {
   const ColaboradoresAdminScreen({super.key});
 
   @override
-  State<ColaboradoresAdminScreen> createState() => _ColaboradoresAdminScreenState();
+  State<ColaboradoresAdminScreen> createState() =>
+      _ColaboradoresAdminScreenState();
 }
 
 class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
@@ -21,7 +22,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
   String _errorMessage = '';
   List<Empleado> _empleados = [];
   Map<String, String> _nombresSucursales = {};
-  
+
   // Lista de roles disponibles
   final List<String> _roles = ['Administrador', 'Vendedor', 'Computadora'];
 
@@ -36,101 +37,64 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       _isLoading = true;
       _errorMessage = '';
     });
-    
     try {
-      // Cargar sucursales y empleados en paralelo para optimizar
+      debugPrint('Cargando datos de colaboradores...');
       final futureSucursales = _cargarSucursales();
-      final futureEmpleados = api.empleados.getEmpleados();
-      
-      // Esperar a que ambas solicitudes se completen
+      final futureEmpleados = api.empleados.getEmpleados(useCache: false);
       final results = await Future.wait([futureSucursales, futureEmpleados]);
-      
-      // Las sucursales ya fueron procesadas en _cargarSucursales
       final empleadosData = results[1] as List<dynamic>;
-      
       final List<Empleado> empleados = [];
       for (var item in empleadosData) {
         try {
           final empleado = item;
-          
-          // Si el empleado tiene información de sucursal, actualizamos el mapa de nombres
-          if (empleado.sucursalId != null && empleado.sucursalNombre != null) {
-            _nombresSucursales[empleado.sucursalId!] = empleado.sucursalNombre!;
-            if (empleado.sucursalCentral) {
-              _nombresSucursales[empleado.sucursalId!] = '${empleado.sucursalNombre!} (Central)';
-            }
-          }
-          
           empleados.add(empleado);
         } catch (e) {
           debugPrint('Error al procesar empleado: $e');
         }
       }
-      
+
       if (!mounted) return;
       setState(() {
         _empleados = empleados;
         _isLoading = false;
       });
     } catch (e) {
+      debugPrint('Error al cargar datos: $e');
       if (!mounted) return;
-      
-      String mensajeError = 'Error al cargar datos';
-      
-      if (e is ApiException) {
-        if (e.statusCode == 401) {
-          mensajeError = 'Sesión expirada. Por favor, inicie sesión nuevamente.';
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(mensajeError),
-              backgroundColor: Colors.red,
-            ),
-          );
-          
-          await Navigator.of(context).pushReplacementNamed('/login');
-          return;
-        } else {
-          mensajeError = e.message;
-        }
-      } else {
-        mensajeError = e.toString();
-      }
-      
       setState(() {
         _isLoading = false;
-        _errorMessage = mensajeError;
+        _errorMessage = 'Error al cargar datos';
       });
     }
   }
-  
+
   Future<Map<String, String>> _cargarSucursales() async {
     try {
       final sucursalesData = await api.sucursales.getSucursales();
       final Map<String, String> sucursales = {};
-      
+
       for (var sucursal in sucursalesData) {
         final id = sucursal.id.toString();
         String nombre = sucursal.nombre;
         final bool esCentral = sucursal.sucursalCentral;
-        
+
         // Agregar indicador de Central al nombre si corresponde
         if (esCentral) {
           nombre = '$nombre (Central)';
         }
-        
+
         if (id.isNotEmpty) {
           sucursales[id] = nombre;
         }
       }
-      
+
       // Actualizar el estado si estamos montados
       if (mounted) {
         setState(() {
           _nombresSucursales = sucursales;
         });
       }
-      
+
       return sucursales;
     } catch (e) {
       debugPrint('Error al cargar sucursales: $e');
@@ -170,19 +134,19 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
         ],
       ),
     );
-    
+
     if (confirmacion != true) return;
-    
+
     try {
       await api.empleados.deleteEmpleado(empleado.id);
-      
+
       if (!mounted) return;
-      
+
       // Actualizar localmente
       setState(() {
         _empleados.removeWhere((e) => e.id == empleado.id);
       });
-      
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -192,14 +156,14 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       String mensajeError = 'Error al eliminar colaborador';
       if (e is ApiException) {
         mensajeError = '$mensajeError: ${e.message}';
       } else {
         mensajeError = '$mensajeError: $e';
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(mensajeError),
@@ -222,39 +186,40 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       ),
     );
   }
-  
-  Future<void> _guardarEmpleado(Empleado? empleadoExistente, Map<String, dynamic> empleadoData) async {
+
+  Future<void> _guardarEmpleado(
+      Empleado? empleadoExistente, Map<String, dynamic> empleadoData) async {
     try {
       if (empleadoExistente != null) {
         // Actualizar empleado existente
         await api.empleados.updateEmpleado(empleadoExistente.id, empleadoData);
-        
+
         if (!mounted) return;
-        
+
         _mostrarMensajeExito('Colaborador actualizado correctamente');
       } else {
         // Crear nuevo empleado
         await api.empleados.createEmpleado(empleadoData);
-        
+
         if (!mounted) return;
-        
+
         _mostrarMensajeExito('Colaborador creado correctamente');
       }
-      
+
       // Cerrar el diálogo y recargar datos
       if (!mounted) return;
       Navigator.pop(context);
       await _cargarDatos();
     } catch (e) {
       if (!mounted) return;
-      
+
       String mensajeError = 'Error al guardar colaborador';
       if (e is ApiException) {
         mensajeError = '$mensajeError: ${e.message}';
       } else {
         mensajeError = '$mensajeError: $e';
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(mensajeError),
@@ -263,7 +228,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       );
     }
   }
-  
+
   void _mostrarMensajeExito(String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -272,7 +237,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       ),
     );
   }
-  
+
   void _mostrarDetallesEmpleado(Empleado empleado) {
     showDialog(
       context: context,
@@ -326,24 +291,39 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                     ),
                   ],
                 ),
-                ElevatedButton.icon(
-                  icon: const FaIcon(FontAwesomeIcons.plus,
-                      size: 16, color: Colors.white),
-                  label: const Text('Nuevo Colaborador'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE31E24),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const FaIcon(
+                        FontAwesomeIcons.arrowsRotate,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      onPressed: _isLoading ? null : _cargarDatos,
+                      tooltip: 'Recargar colaboradores',
                     ),
-                  ),
-                  onPressed: _isLoading ? null : () => _mostrarFormularioEmpleado(),
-                ),
+                    ElevatedButton.icon(
+                      icon: const FaIcon(FontAwesomeIcons.plus,
+                          size: 16, color: Colors.white),
+                      label: const Text('Nuevo Colaborador'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE31E24),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                      ),
+                      onPressed: _isLoading
+                          ? null
+                          : () => _mostrarFormularioEmpleado(),
+                    ),
+                  ],
+                )
               ],
             ),
             const SizedBox(height: 24),
-            
+
             // Tabla de empleados
             Expanded(
               child: EmpleadosTable(
@@ -355,7 +335,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                 onViewDetails: _mostrarDetallesEmpleado,
                 isLoading: _isLoading,
                 hasMorePages: false,
-                onLoadMore: () {}, 
+                onLoadMore: () {},
                 errorMessage: _errorMessage,
                 onRetry: _cargarDatos,
               ),
@@ -365,4 +345,4 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       ),
     );
   }
-} 
+}

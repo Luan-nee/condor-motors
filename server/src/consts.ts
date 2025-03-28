@@ -116,11 +116,13 @@ export const permissionCodes = {
     receiveAny: 'transferencias_inventarios:receive_any',
     getAny: 'transferencias_inventarios:get_any',
     updateAny: 'transferencias_inventarios:update_any',
+    deleteAny: 'transferencias_inventarios:delete_any',
     createRelated: 'transferencias_inventarios:create_related',
-    sendRelated: 'transferencias_inventarios:send_any',
-    receiveRelated: 'transferencias_inventarios:receive_any',
+    sendRelated: 'transferencias_inventarios:send_related',
+    receiveRelated: 'transferencias_inventarios:receive_related',
     getRelated: 'transferencias_inventarios:get_related',
-    updateRelated: 'transferencias_inventarios:update_related'
+    updateRelated: 'transferencias_inventarios:update_related',
+    deleteRelated: 'transferencias_inventarios:delete_related'
   }
 } as const
 

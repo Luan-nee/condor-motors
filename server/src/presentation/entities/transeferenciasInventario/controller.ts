@@ -7,6 +7,10 @@ import { GetTransferenciasInventarios } from '@/domain/use-cases/entities/transf
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { GetTransferenciasInventariosById } from '@/domain/use-cases/entities/transferencias-inventario/get-transferenciaInventario-by-id.use-case'
 import type { Request, Response } from 'express'
+import { EnviarTransferenciaInvDto } from '@/domain/dtos/entities/transferencias-inventario/enviar-transferencia-inventario.dto'
+import { EnviarTransferenciaInventario } from '@/domain/use-cases/entities/transferencias-inventario/enviar-transferencia-inventario.use-case'
+import { RecibirTransferenciaInventario } from '@/domain/use-cases/entities/transferencias-inventario/recibir-transferencia-inventario.use-case'
+import { DeleteTransferenciaInventario } from '@/domain/use-cases/entities/transferencias-inventario/delete-transferencia-inventario.use-case'
 
 export class TransferenciasInventarioController {
   create = (req: Request, res: Response) => {
@@ -18,7 +22,6 @@ export class TransferenciasInventarioController {
     const [error, createTransferenciaInvDto] = CreateTransferenciaInvDto.create(
       req.body
     )
-
     if (error !== undefined || createTransferenciaInvDto === undefined) {
       CustomResponse.badRequest({ res, error })
       return
@@ -30,6 +33,70 @@ export class TransferenciasInventarioController {
 
     createTransferenciaInv
       .execute(createTransferenciaInvDto)
+      .then((transferenciaInv) => {
+        CustomResponse.success({ res, data: transferenciaInv })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
+
+  enviar = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
+    const [error, enviarTransferenciaInvDto] = EnviarTransferenciaInvDto.create(
+      req.body
+    )
+    if (error !== undefined || enviarTransferenciaInvDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload } = req
+
+    const enviarTransferenciaInv = new EnviarTransferenciaInventario(
+      authPayload
+    )
+
+    enviarTransferenciaInv
+      .execute(numericIdDto, enviarTransferenciaInvDto)
+      .then((transferenciaInv) => {
+        CustomResponse.success({ res, data: transferenciaInv })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
+
+  recibir = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
+    const { authPayload } = req
+
+    const recibirTransferenciaInv = new RecibirTransferenciaInventario(
+      authPayload
+    )
+
+    recibirTransferenciaInv
+      .execute(numericIdDto)
       .then((transferenciaInv) => {
         CustomResponse.success({ res, data: transferenciaInv })
       })
@@ -102,6 +169,25 @@ export class TransferenciasInventarioController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
+    const { authPayload } = req
+
+    const deleteTransferenciaInv = new DeleteTransferenciaInventario(
+      authPayload
+    )
+
+    deleteTransferenciaInv
+      .execute(numericIdDto)
+      .then((transferenciaInv) => {
+        CustomResponse.success({ res, data: transferenciaInv })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 }
