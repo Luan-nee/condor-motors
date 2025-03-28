@@ -23,17 +23,17 @@ export class GetInformacion {
   }
 
   private async getInformacion() {
-    const taxDatosvalores = await db.select(this.taxDatos).from(tiposTaxTable)
-    const facturacion = await db
+    const tiposTax = await db.select(this.taxDatos).from(tiposTaxTable)
+    const tiposDocFacturacion = await db
       .select(this.docFacturacion)
       .from(tiposDocFacturacionTable)
-    const clienteDoc = await db
+    const clitiposDocCliententeDoc = await db
       .select(this.docCliente)
       .from(tiposDocumentoClienteTable)
 
-    const [valores] = taxDatosvalores
+    const [tiposTaxs] = tiposTax
 
-    return { ...valores, facturacion, clienteDoc }
+    return { tiposTaxs, tiposDocFacturacion, clitiposDocCliententeDoc }
   }
 
   async execute() {
