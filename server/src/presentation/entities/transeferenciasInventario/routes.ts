@@ -9,6 +9,8 @@ export class TransferenciasInventarioRouter {
 
     router.get('/', transferenciaInventarioController.getAll)
 
+    router.get('/:id', transferenciaInventarioController.getById)
+
     return router
   }
 }

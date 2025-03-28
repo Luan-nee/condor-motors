@@ -18,6 +18,7 @@ export class GetTransferenciasInventarios {
     'sucursalDestino'
   )
   private readonly selectFields = {
+    id: transferenciasInventariosTable.id,
     estado: estadosTransferenciasInventarios.nombre,
     nombreSucursalOrigen: this.sucursalOrigen.nombre,
     nombreSucursalDestino: this.sucursalDestino.nombre,
