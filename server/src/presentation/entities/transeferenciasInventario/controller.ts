@@ -42,4 +42,17 @@ export class TransferenciasInventarioController {
         handleError(error, res)
       })
   }
+  getById = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+    const [error, queriesDto] = QueriesDto.create(req.query)
+
+    if (error !== undefined || queriesDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+    }
+
+    // const
+  }
 }

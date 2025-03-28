@@ -26,7 +26,7 @@ export class EntitiesRoutes {
     router.use('/cuentasempleados', CuentasEmpleadosRoutes.routes)
     router.use('/colores', ColoresRoutes.routes)
     router.use(
-      'transferenciasInventario',
+      '/transferenciasInventario',
       TransferenciasInventarioRouter.routes
     )
     router.use(

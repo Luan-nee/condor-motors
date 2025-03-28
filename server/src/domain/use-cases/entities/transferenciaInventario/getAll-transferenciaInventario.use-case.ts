@@ -6,13 +6,21 @@ import {
   transferenciasInventariosTable
 } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
-import { and, asc, desc, eq, ilike, or } from 'drizzle-orm'
+import { aliasedTable, asc, desc, eq, ilike, or } from 'drizzle-orm'
 
 export class GetTransferenciasInventarios {
+  private readonly sucursalOrigen = aliasedTable(
+    sucursalesTable,
+    'sucursalOrigen'
+  )
+  private readonly sucursalDestino = aliasedTable(
+    sucursalesTable,
+    'sucursalDestino'
+  )
   private readonly selectFields = {
     estado: estadosTransferenciasInventarios.nombre,
-    nombreSucursalOrigen: sucursalesTable.nombre,
-    nombreSucursalDestino: sucursalesTable.nombre,
+    nombreSucursalOrigen: this.sucursalOrigen.nombre,
+    nombreSucursalDestino: this.sucursalDestino.nombre,
     modificable: transferenciasInventariosTable.modificable,
     salidaOrigen: transferenciasInventariosTable.salidaOrigen,
     llegadaDestino: transferenciasInventariosTable.llegadaDestino
@@ -38,6 +46,7 @@ export class GetTransferenciasInventarios {
     }
     return this.validSortBy.salidaOrigen
   }
+
   private async getRelated(queriesDto: QueriesDto) {
     const sortByColumn = this.getSortByColum(queriesDto.sort_by)
     const order =
@@ -48,8 +57,10 @@ export class GetTransferenciasInventarios {
     const whereCondition =
       queriesDto.search.length > 0
         ? or(
-            eq(estadosTransferenciasInventarios.id, Number(queriesDto.filter)),
-            ilike(sucursalesTable.nombre, `%${queriesDto.search}%`)
+            ilike(
+              estadosTransferenciasInventarios.nombre,
+              `%${queriesDto.search}%`
+            )
           )
         : undefined
 
@@ -57,16 +68,17 @@ export class GetTransferenciasInventarios {
       .select(this.selectFields)
       .from(transferenciasInventariosTable)
       .leftJoin(
-        sucursalesTable,
-        and(
-          eq(
-            sucursalesTable.id,
-            transferenciasInventariosTable.sucursalOrigenId
-          ),
-          eq(
-            sucursalesTable.id,
-            transferenciasInventariosTable.sucursalDestinoId
-          )
+        this.sucursalOrigen,
+        eq(
+          this.sucursalOrigen.id,
+          transferenciasInventariosTable.sucursalOrigenId
+        )
+      )
+      .leftJoin(
+        this.sucursalDestino,
+        eq(
+          this.sucursalDestino.id,
+          transferenciasInventariosTable.sucursalDestinoId
         )
       )
       .leftJoin(
@@ -77,7 +89,6 @@ export class GetTransferenciasInventarios {
         )
       )
       .where(whereCondition)
-      .groupBy(transferenciasInventariosTable.id)
       .orderBy(order)
       .limit(queriesDto.page_size)
       .offset(queriesDto.page_size * (queriesDto.page - 1))
