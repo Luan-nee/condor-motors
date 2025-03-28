@@ -140,6 +140,10 @@ export const vendedorPermisssions = transformPermissionsCodesFromArray([
   permissionCodes.empleados.getRelated,
   permissionCodes.productos.createRelated,
   permissionCodes.productos.getRelated,
+  permissionCodes.proformasVenta.createRelated,
+  permissionCodes.proformasVenta.getRelated,
+  permissionCodes.proformasVenta.updateRelated,
+  permissionCodes.proformasVenta.deleteRelated,
   permissionCodes.ventas.createRelated,
   permissionCodes.ventas.getRelated,
   permissionCodes.cuentasEmpleados.getRelated,
@@ -153,6 +157,10 @@ export const computadoraPermissions = transformPermissionsCodesFromArray([
   permissionCodes.sucursales.getRelated,
   permissionCodes.empleados.getRelated,
   permissionCodes.productos.getRelated,
+  permissionCodes.proformasVenta.createRelated,
+  permissionCodes.proformasVenta.getRelated,
+  permissionCodes.proformasVenta.updateRelated,
+  permissionCodes.proformasVenta.deleteRelated,
   permissionCodes.ventas.getRelated,
   permissionCodes.cuentasEmpleados.getRelated
 ])
