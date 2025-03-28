@@ -191,11 +191,10 @@ export class EnviarTransferenciaInventario {
 
     if (
       transferenciaInventario.codigoEstado !==
-        estadosTransferenciasInvCodes.pedido ||
-      !transferenciaInventario.modificable
+      estadosTransferenciasInvCodes.pedido
     ) {
       throw CustomError.badRequest(
-        'La transferencia de inventario que intentó atender ya ha sido atendida o no es modificable'
+        'La transferencia de inventario que intentó atender ya ha sido atendida'
       )
     }
 
