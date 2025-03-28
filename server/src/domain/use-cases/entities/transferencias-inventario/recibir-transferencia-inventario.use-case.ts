@@ -7,31 +7,29 @@ import {
   estadosTransferenciasInventarios,
   itemsTransferenciaInventarioTable,
   productosTable,
-  sucursalesTable,
   transferenciasInventariosTable
 } from '@/db/schema'
-import type { EnviarTransferenciaInvDto } from '@/domain/dtos/entities/transferencias-inventario/enviar-transferencia-inventario.dto'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import type { SucursalIdType } from '@/types/schemas'
 import { and, eq, ilike, inArray } from 'drizzle-orm'
 
-export class EnviarTransferenciaInventario {
+export class RecibirTransferenciaInventario {
   private readonly authPayload: AuthPayload
-  private readonly permissionAny = permissionCodes.transferenciasInvs.sendAny
+  private readonly permissionAny = permissionCodes.transferenciasInvs.receiveAny
   private readonly permissionRelated =
-    permissionCodes.transferenciasInvs.sendRelated
+    permissionCodes.transferenciasInvs.receiveRelated
 
   constructor(authPayload: AuthPayload) {
     this.authPayload = authPayload
   }
 
-  private async enviarTransferenciaInv(
+  private async recibirTransferenciaInv(
     numericIdDto: NumericIdDto,
-    enviarTransferenciaInvDto: EnviarTransferenciaInvDto
+    sucursalDestinoId: SucursalIdType
   ) {
     const now = new Date()
 
-    const [estadoEnviado] = await db
+    const [estadoRecibido] = await db
       .select({
         id: estadosTransferenciasInventarios.id
       })
@@ -39,7 +37,7 @@ export class EnviarTransferenciaInventario {
       .where(
         ilike(
           estadosTransferenciasInventarios.codigo,
-          estadosTransferenciasInvCodes.enviado
+          estadosTransferenciasInvCodes.recibido
         )
       )
 
@@ -59,7 +57,7 @@ export class EnviarTransferenciaInventario {
 
     if (itemsTransferencia.length < 1) {
       throw CustomError.badRequest(
-        'La transferencia de inventario no tiene ningún producto para ser transferido'
+        'La transferencia de inventario no tiene ningún producto para ser recibido'
       )
     }
 
@@ -68,64 +66,69 @@ export class EnviarTransferenciaInventario {
     const [result] = await db.transaction(async (tx) => {
       const productos = await tx
         .select({
-          id: detallesProductoTable.id,
-          nombre: productosTable.nombre,
+          id: productosTable.id,
+          stockMinimo: productosTable.stockMinimo,
           stock: detallesProductoTable.stock,
-          productoId: detallesProductoTable.productoId
+          detallesProductoId: detallesProductoTable.id
         })
-        .from(detallesProductoTable)
-        .innerJoin(
-          productosTable,
+        .from(productosTable)
+        .leftJoin(
+          detallesProductoTable,
           eq(productosTable.id, detallesProductoTable.productoId)
         )
         .where(
           and(
-            eq(
-              detallesProductoTable.sucursalId,
-              enviarTransferenciaInvDto.sucursalOrigenId
-            ),
+            eq(detallesProductoTable.sucursalId, sucursalDestinoId),
             inArray(detallesProductoTable.productoId, productoIds)
           )
         )
 
-      const productosMap = new Map(productos.map((p) => [p.productoId, p]))
+      const productosMap = new Map(productos.map((p) => [p.id, p]))
 
       for (const itemTransferencia of itemsTransferencia) {
         const producto = productosMap.get(itemTransferencia.productoId)
 
         if (producto === undefined) {
-          throw CustomError.badRequest(
-            `El producto con id ${itemTransferencia.productoId} no existe en la sucursal de origen especificada`
-          )
+          throw CustomError.internalServer()
         }
 
-        if (producto.stock < itemTransferencia.cantidad) {
-          throw CustomError.badRequest(
-            `El producto ${producto.nombre} de la sucursal de origen no tiene el stock suficiente para abastecer este pedido`
-          )
-        }
+        const stockBajo =
+          producto.stockMinimo !== null
+            ? itemTransferencia.cantidad < producto.stockMinimo
+            : false
 
-        await tx
-          .update(detallesProductoTable)
-          .set({ stock: producto.stock - itemTransferencia.cantidad })
-          .where(
-            and(
-              eq(
-                detallesProductoTable.sucursalId,
-                enviarTransferenciaInvDto.sucursalOrigenId
-              ),
-              eq(detallesProductoTable.productoId, itemTransferencia.productoId)
+        if (producto.detallesProductoId === null) {
+          await tx.insert(detallesProductoTable).values({
+            precioCompra: '0',
+            precioVenta: '0',
+            stock: itemTransferencia.cantidad,
+            stockBajo,
+            liquidacion: false,
+            productoId: itemTransferencia.productoId,
+            sucursalId: sucursalDestinoId
+          })
+        } else {
+          await tx
+            .update(detallesProductoTable)
+            .set({
+              stock: itemTransferencia.cantidad + (producto.stock ?? 0),
+              stockBajo
+            })
+            .where(
+              and(
+                eq(detallesProductoTable.productoId, producto.id),
+                eq(detallesProductoTable.sucursalId, sucursalDestinoId)
+              )
             )
-          )
+        }
       }
 
       const transferenciasInvs = await tx
         .update(transferenciasInventariosTable)
         .set({
           modificable: false,
-          estadoTransferenciaId: estadoEnviado.id,
-          sucursalOrigenId: enviarTransferenciaInvDto.sucursalOrigenId,
-          salidaOrigen: now,
+          estadoTransferenciaId: estadoRecibido.id,
+          llegadaDestino: now,
           fechaActualizacion: now
         })
         .where(eq(transferenciasInventariosTable.id, numericIdDto.id))
@@ -149,25 +152,12 @@ export class EnviarTransferenciaInventario {
 
   private async validateRelated(
     numericIdDto: NumericIdDto,
-    enviarTransferenciaInvDto: EnviarTransferenciaInvDto,
     sucursalId: SucursalIdType,
     hasPermissionAny: boolean
   ) {
-    const sucursales = await db
-      .select({ id: sucursalesTable.id })
-      .from(sucursalesTable)
-      .where(eq(sucursalesTable.id, enviarTransferenciaInvDto.sucursalOrigenId))
-
-    if (sucursales.length < 1) {
-      throw CustomError.badRequest(
-        'La sucursal de origen especificada no existe'
-      )
-    }
-
     const transferenciasInventario = await db
       .select({
         id: transferenciasInventariosTable.id,
-        modificable: transferenciasInventariosTable.modificable,
         sucursalDestinoId: transferenciasInventariosTable.sucursalDestinoId,
         codigoEstado: estadosTransferenciasInventarios.codigo
       })
@@ -183,7 +173,7 @@ export class EnviarTransferenciaInventario {
 
     if (transferenciasInventario.length < 1) {
       throw CustomError.badRequest(
-        'La transferencia de inventario que intentó atender no existe'
+        'La transferencia de inventario que intentó recibir no existe'
       )
     }
 
@@ -191,28 +181,21 @@ export class EnviarTransferenciaInventario {
 
     if (
       transferenciaInventario.codigoEstado !==
-      estadosTransferenciasInvCodes.pedido
+      estadosTransferenciasInvCodes.enviado
     ) {
       throw CustomError.badRequest(
-        'La transferencia de inventario que intentó atender ya ha sido atendida'
+        'La transferencia de inventario que intentó recibir aún no ha sido enviada o ya ha sido recibida'
       )
     }
 
     if (
-      transferenciaInventario.sucursalDestinoId ===
-      enviarTransferenciaInvDto.sucursalOrigenId
-    ) {
-      throw CustomError.badRequest(
-        'La sucursal de origen y de destino no puede ser la misma'
-      )
-    }
-
-    if (
-      sucursalId !== enviarTransferenciaInvDto.sucursalOrigenId &&
+      sucursalId !== transferenciaInventario.sucursalDestinoId &&
       !hasPermissionAny
     ) {
       throw CustomError.forbidden()
     }
+
+    return { sucursalDestinoId: transferenciaInventario.sucursalDestinoId }
   }
 
   private async validatePermissions() {
@@ -240,22 +223,18 @@ export class EnviarTransferenciaInventario {
     throw CustomError.forbidden()
   }
 
-  async execute(
-    numericIdDto: NumericIdDto,
-    enviarTransferenciaInvDto: EnviarTransferenciaInvDto
-  ) {
+  async execute(numericIdDto: NumericIdDto) {
     const { hasPermissionAny, sucursalId } = await this.validatePermissions()
 
-    await this.validateRelated(
+    const { sucursalDestinoId } = await this.validateRelated(
       numericIdDto,
-      enviarTransferenciaInvDto,
       sucursalId,
       hasPermissionAny
     )
 
-    const result = await this.enviarTransferenciaInv(
+    const result = await this.recibirTransferenciaInv(
       numericIdDto,
-      enviarTransferenciaInvDto
+      sucursalDestinoId
     )
 
     return result
