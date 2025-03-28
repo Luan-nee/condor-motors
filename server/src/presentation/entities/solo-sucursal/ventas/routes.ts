@@ -15,6 +15,7 @@ export class VentasRoutes {
 
     router.patch('/:id', ventasController.update)
 
+    router.get('/informacion', ventasController.getInformacion)
     // router.delete('/:id', ventasController.delete)
 
     return router
