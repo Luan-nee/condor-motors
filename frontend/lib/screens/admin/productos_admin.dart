@@ -365,6 +365,11 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       context: context,
       producto: producto,
       sucursales: _sucursales,
+      onSave: (productoActualizado) => _guardarProducto({
+        'id': productoActualizado.id,
+        'precioOferta': productoActualizado.precioOferta,
+        'liquidacion': productoActualizado.liquidacion,
+      }, false),
     );
   }
 

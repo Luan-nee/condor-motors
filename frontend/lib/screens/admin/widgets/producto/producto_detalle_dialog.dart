@@ -9,17 +9,20 @@ import '../../utils/productos_utils.dart';
 class ProductoDetalleDialog extends StatefulWidget {
   final Producto producto;
   final List<Sucursal> sucursales;
+  final Function(Producto)? onSave;
 
   const ProductoDetalleDialog({
     super.key,
     required this.producto,
     required this.sucursales,
+    this.onSave,
   });
 
   static Future<void> show({
     required BuildContext context,
     required Producto producto,
     required List<Sucursal> sucursales,
+    Function(Producto)? onSave,
   }) async {
     await showDialog(
       context: context,
@@ -32,6 +35,7 @@ class ProductoDetalleDialog extends StatefulWidget {
           child: ProductoDetalleDialog(
             producto: producto,
             sucursales: sucursales,
+            onSave: onSave,
           ),
         );
       },
@@ -53,12 +57,21 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   // Controlador para pestañas
   late TabController _atributosTabController;
 
+  bool _isEditingPrecio = false;
+  TextEditingController _precioOfertaController = TextEditingController();
+  bool _liquidacionModificada = false;
+  bool _enLiquidacion = false;
+
   @override
   void initState() {
     super.initState();
     _cargarDetallesProducto();
     _cargarColores();
 
+    // Inicializar estado de liquidación
+    _enLiquidacion = widget.producto.liquidacion;
+    _precioOfertaController.text = widget.producto.precioOferta?.toString() ?? '';
+    
     // Inicializar controlador de pestañas
     _atributosTabController = TabController(length: 3, vsync: this);
   }
@@ -66,6 +79,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   @override
   void dispose() {
     _atributosTabController.dispose();
+    _precioOfertaController.dispose();
     super.dispose();
   }
 
@@ -218,13 +232,49 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.producto.nombre,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.producto.nombre,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      if (widget.producto.liquidacion) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.amber),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              FaIcon(
+                                FontAwesomeIcons.tag,
+                                size: 12,
+                                color: Colors.amber,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'EN LIQUIDACIÓN',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.amber,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
                   SingleChildScrollView(
@@ -546,6 +596,289 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                 ],
               ),
             ),
+
+            // Sección de liquidación
+            if (widget.onSave != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _enLiquidacion 
+                    ? Colors.amber.withOpacity(0.08) 
+                    : Colors.grey.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _enLiquidacion 
+                      ? Colors.amber.withOpacity(0.3) 
+                      : Colors.white.withOpacity(0.1),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            FaIcon(
+                              FontAwesomeIcons.tag,
+                              size: 16,
+                              color: _enLiquidacion ? Colors.amber : Colors.white60,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Liquidación',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: _enLiquidacion ? Colors.amber : Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Switch(
+                          value: _enLiquidacion,
+                          onChanged: (value) {
+                            setState(() {
+                              _enLiquidacion = value;
+                              _liquidacionModificada = true;
+                              if (!value) {
+                                _precioOfertaController.text = '';
+                              }
+                            });
+                          },
+                          activeColor: Colors.amber,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (_enLiquidacion) ...[
+                      _isEditingPrecio 
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextFormField(
+                              controller: _precioOfertaController,
+                              decoration: InputDecoration(
+                                labelText: 'Precio de liquidación',
+                                labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                                prefixText: 'S/ ',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFF2D2D2D),
+                              ),
+                              style: const TextStyle(color: Colors.white),
+                              keyboardType: TextInputType.number,
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _isEditingPrecio = false;
+                                      _precioOfertaController.text = widget.producto.precioOferta?.toString() ?? '';
+                                    });
+                                  },
+                                  child: const Text('Cancelar'),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _isEditingPrecio = false;
+                                      _liquidacionModificada = true;
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.amber,
+                                    foregroundColor: Colors.black,
+                                  ),
+                                  child: const Text('Guardar'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Precio de venta:',
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.7),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        widget.producto.getPrecioVentaFormateado(),
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          decoration: TextDecoration.lineThrough,
+                                          decorationColor: Colors.red.withOpacity(0.7),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Precio de liquidación:',
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.7),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            _precioOfertaController.text.isNotEmpty
+                                              ? 'S/ ${double.parse(_precioOfertaController.text).toStringAsFixed(2)}'
+                                              : widget.producto.getPrecioOfertaFormateado() ?? 'No definido',
+                                            style: const TextStyle(
+                                              color: Colors.amber,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.edit, size: 16, color: Colors.amber),
+                                            onPressed: () {
+                                              setState(() {
+                                                _isEditingPrecio = true;
+                                              });
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            // Mostrar descuento
+                            if (widget.producto.precioOferta != null && widget.producto.precioOferta! > 0) ...[
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Ahorro:',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'S/ ${(widget.producto.precioVenta - (widget.producto.precioOferta ?? 0)).toStringAsFixed(2)}',
+                                          style: const TextStyle(
+                                            color: Colors.amber,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.amber.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        '${widget.producto.getPorcentajeDescuentoOfertaFormateado()} descuento',
+                                        style: const TextStyle(
+                                          color: Colors.amber,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      
+                      if (_liquidacionModificada && widget.onSave != null) ...[
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: _guardarLiquidacion,
+                              icon: const FaIcon(FontAwesomeIcons.floppyDisk, size: 16),
+                              label: const Text('Guardar Cambios'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ] else ...[
+                      Text(
+                        'Active esta opción para establecer un precio especial de liquidación. '
+                        'El producto se mostrará como "En liquidación" en todas las vistas.',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
+                      ),
+                      if (_liquidacionModificada && widget.onSave != null) ...[
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: _guardarLiquidacion,
+                              icon: const FaIcon(FontAwesomeIcons.floppyDisk, size: 16),
+                              label: const Text('Guardar Cambios'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ],
 
             // Sección de descuentos (si aplica)
             if (widget.producto.cantidadMinimaDescuento != null ||
@@ -1480,5 +1813,53 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         ],
       ),
     );
+  }
+
+  // Método para guardar los cambios en la liquidación
+  void _guardarLiquidacion() {
+    if (widget.onSave == null) return;
+    
+    try {
+      double? precioOferta;
+      if (_enLiquidacion && _precioOfertaController.text.isNotEmpty) {
+        precioOferta = double.tryParse(_precioOfertaController.text);
+        if (precioOferta == null || precioOferta <= 0 || precioOferta >= widget.producto.precioVenta) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('El precio de liquidación debe ser mayor a 0 y menor al precio de venta'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+      
+      // Crear copia del producto con los valores modificados
+      final productoActualizado = widget.producto.copyWith(
+        liquidacion: _enLiquidacion,
+        precioOferta: _enLiquidacion ? precioOferta : null,
+      );
+      
+      // Llamar al callback onSave
+      widget.onSave!(productoActualizado);
+      
+      setState(() {
+        _liquidacionModificada = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cambios guardados correctamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al guardar cambios: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

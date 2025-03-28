@@ -49,6 +49,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   bool _isLoadingColores = false;
   bool _isLoadingSucursalesCompartidas = false;
   List<ProductoEnSucursal> _sucursalesCompartidas = [];
+  bool _estaEnLiquidacion = false;
 
   // Listas para categorías, marcas y colores
   List<String> _categorias = [];
@@ -88,6 +89,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     _porcentajeDescuentoController = TextEditingController(
       text: producto?.porcentajeDescuento?.toString() ?? '',
     );
+    
+    // Inicializar estado de liquidación
+    _estaEnLiquidacion = producto?.liquidacion ?? false;
 
     // Inicializar la sucursal seleccionada
     _sucursalSeleccionada = widget.sucursalSeleccionada ??
@@ -980,7 +984,182 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle('Descuentos', FontAwesomeIcons.percent),
-          const SizedBox(height: 16),
+        const SizedBox(height: 16),
+        
+        // Sección de liquidación
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _estaEnLiquidacion 
+              ? Colors.amber.withOpacity(0.08) 
+              : Colors.grey.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: _estaEnLiquidacion 
+                ? Colors.amber.withOpacity(0.3) 
+                : Colors.white.withOpacity(0.1),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const FaIcon(
+                    FontAwesomeIcons.tag,
+                    size: 16,
+                    color: Colors.amber,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Liquidación',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Spacer(),
+                  Switch(
+                    value: _estaEnLiquidacion,
+                    onChanged: (value) {
+                      setState(() {
+                        _estaEnLiquidacion = value;
+                        if (!value) {
+                          // Si se desactiva la liquidación, limpiar el precio de oferta
+                          _precioOfertaController.text = '';
+                        }
+                      });
+                    },
+                    activeColor: Colors.amber,
+                  ),
+                ],
+              ),
+              if (_estaEnLiquidacion) ...[
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _precioOfertaController,
+                  decoration: _getInputDecoration(
+                    'Precio de liquidación', 
+                    prefixText: 'S/ ',
+                    helperText: 'Precio especial para liquidar este producto',
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'El precio de liquidación es obligatorio';
+                    }
+                    try {
+                      final precio = double.parse(value);
+                      if (precio <= 0) {
+                        return 'El precio debe ser mayor a cero';
+                      }
+                      final precioVenta = double.tryParse(_precioVentaController.text) ?? 0;
+                      if (precio >= precioVenta) {
+                        return 'El precio de liquidación debe ser menor al precio de venta';
+                      }
+                    } catch (e) {
+                      return 'Ingrese un número válido';
+                    }
+                    return null;
+                  },
+                ),
+                
+                // Mostrar comparación de precios
+                const SizedBox(height: 12),
+                ValueListenableBuilder(
+                  valueListenable: _precioOfertaController,
+                  builder: (context, precioOfertaText, _) {
+                    return ValueListenableBuilder(
+                      valueListenable: _precioVentaController,
+                      builder: (context, precioVentaText, _) {
+                        final precioVenta = double.tryParse(precioVentaText.text) ?? 0;
+                        final precioOferta = double.tryParse(precioOfertaText.text) ?? 0;
+                        
+                        if (precioOferta <= 0 || precioVenta <= 0) {
+                          return Container();
+                        }
+                        
+                        final ahorro = precioVenta - precioOferta;
+                        final porcentaje = precioVenta > 0 
+                          ? (ahorro / precioVenta) * 100 
+                          : 0;
+                          
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.amber.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Precio original: S/ ${precioVenta.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.7),
+                                        decoration: TextDecoration.lineThrough,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Precio liquidación: S/ ${precioOferta.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        color: Colors.amber,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  '${porcentaje.toStringAsFixed(0)}% descuento',
+                                  style: const TextStyle(
+                                    color: Colors.amber,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+              const SizedBox(height: 16),
+              Text(
+                _estaEnLiquidacion
+                  ? 'Este producto estará marcado como "En Liquidación". '
+                    'Se mostrará con el precio especial destacado en todas las vistas.'
+                  : 'Active esta opción para establecer un precio especial de liquidación.',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
         TextFormField(
           controller: _cantidadMinimaDescuentoController,
           decoration:
@@ -1374,6 +1553,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         'precioCompra': double.parse(_precioCompraController.text),
         // Solo incluir stock para productos nuevos
         if (esNuevoProducto) 'stock': int.parse(_stockController.text),
+        // Incluir el estado de liquidación
+        'liquidacion': _estaEnLiquidacion,
       };
       
       // Buscar y añadir el ID de categoría si está disponible
