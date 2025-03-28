@@ -1,5 +1,6 @@
 import { envs } from '@/config/envs'
 import {
+  estadosTransferenciasInvCodes,
   permissionCodes,
   tiposDocFacturacionCodes,
   tiposTaxCodes
@@ -43,11 +44,19 @@ export const seedConfig: SeedConfig = {
     { nombre: 'Naranja', hex: '#FFA500' },
     { nombre: 'Morado', hex: '#800080' }
   ],
-  estadosTransferenciasInventariosDefault: [
-    'Pendiente',
-    'Solicitando',
-    'Rechazado',
-    'Completado'
+  estadosTransferenciasInvDefault: [
+    {
+      nombre: 'Pedido',
+      codigo: estadosTransferenciasInvCodes.pedido
+    },
+    {
+      nombre: 'Enviado',
+      codigo: estadosTransferenciasInvCodes.enviado
+    },
+    {
+      nombre: 'Recibido',
+      codigo: estadosTransferenciasInvCodes.recibido
+    }
   ],
   tiposDocumentoClienteDefault: [
     {

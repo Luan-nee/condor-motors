@@ -50,7 +50,10 @@ interface SeedConfig {
     nombre: string
     hex: string
   }>
-  estadosTransferenciasInventariosDefault: string[]
+  estadosTransferenciasInvDefault: Array<{
+    nombre: string
+    codigo: string
+  }>
   tiposDocumentoClienteDefault: Array<{
     nombre: string
     codigoSunat: string

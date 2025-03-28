@@ -84,12 +84,6 @@ const coloresValues = seedConfig.coloresDefault.map((color) => ({
   hex: color.hex
 }))
 
-const estadosTransferenciasInventariosValues =
-  seedConfig.estadosTransferenciasInventariosDefault.map((estado) => ({
-    nombre: estado,
-    codigo: formatCode(estado)
-  }))
-
 const { cuentas } = seedConfig
 const {
   admin: adminAccount,
@@ -306,7 +300,7 @@ const seedDatabase = async () => {
 
   await db
     .insert(schema.estadosTransferenciasInventarios)
-    .values(estadosTransferenciasInventariosValues)
+    .values(seedConfig.estadosTransferenciasInvDefault)
 
   const detallesProductosMap = new Map(
     detallesProductosValues.map((detalle) => [

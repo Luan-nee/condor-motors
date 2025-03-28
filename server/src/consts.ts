@@ -112,9 +112,13 @@ export const permissionCodes = {
   },
   transferenciasInvs: {
     createAny: 'transferencias_inventarios:create_any',
+    sendAny: 'transferencias_inventarios:send_any',
+    receiveAny: 'transferencias_inventarios:receive_any',
     getAny: 'transferencias_inventarios:get_any',
     updateAny: 'transferencias_inventarios:update_any',
     createRelated: 'transferencias_inventarios:create_related',
+    sendRelated: 'transferencias_inventarios:send_any',
+    receiveRelated: 'transferencias_inventarios:receive_any',
     getRelated: 'transferencias_inventarios:get_related',
     updateRelated: 'transferencias_inventarios:update_related'
   }
@@ -124,8 +128,15 @@ export const tiposDocFacturacionCodes = {
   factura: 'factura',
   boleta: 'boleta'
 }
+
 export const tiposTaxCodes = {
   gravado: 'gravado',
   exonerado: 'exonerado',
   gratuito: 'gratuito'
+}
+
+export const estadosTransferenciasInvCodes = {
+  pedido: 'pedido',
+  enviado: 'enviado',
+  recibido: 'recibido'
 }
