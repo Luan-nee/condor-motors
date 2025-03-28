@@ -584,36 +584,29 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
         MovimientosApi.estadosDetalle[estado] ?? estado;
 
     switch (estado.toUpperCase()) {
-      case 'COMPLETADO':
+      case 'RECIBIDO':
         backgroundColor = const Color(0xFF2D8A3B).withOpacity(0.15);
         textColor = const Color(0xFF4CAF50);
         iconData = FontAwesomeIcons.circleCheck;
         tooltipText = 'Movimiento completado';
         break;
-      case 'EN_PROCESO':
+      case 'PENDIENTE':
         backgroundColor = const Color(0xFFFFA000).withOpacity(0.15);
         textColor = const Color(0xFFFFA000);
         iconData = FontAwesomeIcons.clockRotateLeft;
         tooltipText = 'En proceso';
         break;
-      case 'ENTREGADO':
+      case 'SOLICITANDO':
         backgroundColor = const Color(0xFF009688).withOpacity(0.15);
         textColor = const Color(0xFF009688);
         iconData = FontAwesomeIcons.truckRampBox;
         tooltipText = 'Entregado';
         break;
-      case 'EN_TRANSITO':
-        backgroundColor = const Color(0xFF1976D2).withOpacity(0.15);
-        textColor = const Color(0xFF1976D2);
-        iconData = FontAwesomeIcons.truckMoving;
-        tooltipText = 'En tránsito';
-        break;
-      case 'PENDIENTE':
       default:
         backgroundColor = const Color(0xFF757575).withOpacity(0.15);
         textColor = const Color(0xFF9E9E9E);
         iconData = FontAwesomeIcons.hourglassHalf;
-        tooltipText = 'Pendiente';
+        tooltipText = 'estado sin definir';
     }
 
     return Container(
