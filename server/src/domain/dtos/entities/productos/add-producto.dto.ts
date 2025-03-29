@@ -3,7 +3,7 @@ import { addProductoValidator } from '@/domain/validators/entities/productos/pro
 export class AddProductoDto {
   public precioCompra: number
   public precioVenta: number
-  public precioOferta?: number
+  public precioOferta?: number | null
   public stock: number
   public liquidacion: boolean
 
