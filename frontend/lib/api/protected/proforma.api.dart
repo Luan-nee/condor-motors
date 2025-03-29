@@ -148,6 +148,9 @@ class ProformaVentaApi {
     try {
       final String cacheKey = '$_prefixListaProformas${sucursalId}_p${page}_s${pageSize}_q${search ?? ""}';
       
+      // Nuevo mensaje de debug para seguimiento detallado
+      debugPrint('📝 [ProformaVentaApi] Solicitando proformas de sucursal $sucursalId (page: $page, pageSize: $pageSize, useCache: $useCache, forceRefresh: $forceRefresh)');
+      
       // Intentar obtener del caché si corresponde
       if (useCache && !forceRefresh) {
         final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
@@ -163,11 +166,20 @@ class ProformaVentaApi {
         if (search != null && search.isNotEmpty) 'search': search,
       };
       
+      debugPrint('🔄 [ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa');
+      
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa',
         method: 'GET',
         queryParams: queryParams,
       );
+      
+      // Nuevo mensaje de debug con información de respuesta
+      debugPrint('✅ [ProformaVentaApi] Respuesta recibida para proformas de sucursal $sucursalId');
+      if (response.containsKey('data')) {
+        final int proformasCount = response['data'] is List ? (response['data'] as List).length : 0;
+        debugPrint('📊 [ProformaVentaApi] Proformas recibidas: $proformasCount');
+      }
       
       // Guardar en caché
       if (useCache) {
@@ -177,7 +189,7 @@ class ProformaVentaApi {
       
       return response;
     } catch (e) {
-      debugPrint('❌ Error al obtener proformas de venta: $e');
+      debugPrint('❌ [ProformaVentaApi] ERROR al obtener proformas de venta: $e');
       rethrow;
     }
   }
@@ -223,29 +235,40 @@ class ProformaVentaApi {
     try {
       final String cacheKey = '$_prefixProforma${sucursalId}_$proformaId';
       
+      // Nuevo mensaje de debug para seguimiento detallado
+      debugPrint('📝 [ProformaVentaApi] Solicitando proforma #$proformaId de sucursal $sucursalId (useCache: $useCache, forceRefresh: $forceRefresh)');
+      
       // Intentar obtener del caché si corresponde
       if (useCache && !forceRefresh) {
         final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
-          debugPrint('🔍 Usando proforma en caché: $sucursalId/$proformaId');
+          debugPrint('🔍 [ProformaVentaApi] Usando proforma en caché: $sucursalId/$proformaId');
           return cachedData;
         }
       }
+      
+      debugPrint('🔄 [ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa/$proformaId');
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
         method: 'GET',
       );
       
+      // Nuevo mensaje de debug con información de respuesta
+      debugPrint('✅ [ProformaVentaApi] Respuesta recibida para proforma #$proformaId');
+      if (response.containsKey('status')) {
+        debugPrint('📊 [ProformaVentaApi] Status: ${response['status']}');
+      }
+      
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, response);
-        debugPrint('💾 Guardada proforma en caché: $sucursalId/$proformaId');
+        debugPrint('💾 [ProformaVentaApi] Guardada proforma en caché: $sucursalId/$proformaId');
       }
       
       return response;
     } catch (e) {
-      debugPrint('❌ Error al obtener proforma de venta: $e');
+      debugPrint('❌ [ProformaVentaApi] ERROR al obtener proforma #$proformaId: $e');
       rethrow;
     }
   }
@@ -327,77 +350,53 @@ class ProformaVentaApi {
   /// 
   /// [sucursalId] - ID de la sucursal
   /// [proformaId] - ID de la proforma a actualizar
-  /// [nombre] - Nombre o identificador de la proforma (opcional)
-  /// [total] - Total de la proforma
-  /// [detalles] - Lista de productos incluidos en la proforma
-  /// [estado] - Estado de la proforma (opcional)
+  /// [data] - Datos a actualizar
+  /// [estado] - Estado nuevo de la proforma (opcional)
   /// 
-  /// Retorna un mapa con la proforma actualizada
-  /// 
-  /// NOTA: Esta funcionalidad está definida pero puede no estar implementada en el servidor.
-  /// Si el servidor devuelve notImplemented, este método simulará una respuesta exitosa.
+  /// Retorna un mapa con la respuesta del servidor
   Future<Map<String, dynamic>> updateProformaVenta({
     required String sucursalId,
     required int proformaId,
-    String? nombre,
-    double? total,
-    List<DetalleProforma>? detalles,
+    Map<String, dynamic>? data,
     String? estado,
-    int? clienteId,
-    DateTime? fechaExpiracion,
   }) async {
     try {
-      // Intentar llamar al endpoint real
-      final Map<String, dynamic> body = <String, dynamic>{};
+      // Nuevo mensaje de debug para seguimiento
+      debugPrint('📝 [ProformaVentaApi] Actualizando proforma #$proformaId en sucursal $sucursalId');
       
-      if (nombre != null) {
-        body['nombre'] = nombre;
-      }
-      if (total != null) {
-        body['total'] = total;
-      }
-      
-      if (detalles != null) {
-        body['detalles'] = detalles.map((DetalleProforma d) => d.toJson()).toList();
-      }
-      
+      // Si se especifica el estado, preparar los datos para actualizar
       if (estado != null) {
-        body['estado'] = estado;
+        data = data ?? <String, dynamic>{};
+        data['estado'] = estado;
+        
+        debugPrint('🔄 [ProformaVentaApi] Cambiando estado de proforma a: $estado');
       }
-      if (clienteId != null) {
-        body['clienteId'] = clienteId;
+      
+      if (data == null || data.isEmpty) {
+        throw Exception('Se deben proporcionar datos para actualizar la proforma');
       }
-      if (fechaExpiracion != null) {
-        body['fechaExpiracion'] = fechaExpiracion.toIso8601String();
-      }
+      
+      debugPrint('🔄 [ProformaVentaApi] Realizando petición API PATCH a /$sucursalId/proformasventa/$proformaId');
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
         method: 'PATCH',
-        body: body,
+        body: data,
       );
       
-      // Invalidar caché después de actualizar
+      // Nuevo mensaje de debug con resultado
+      debugPrint('✅ [ProformaVentaApi] Respuesta de actualización de proforma #$proformaId recibida');
+      if (response.containsKey('status')) {
+        debugPrint('📊 [ProformaVentaApi] Status: ${response['status']}');
+      }
+      
+      // Invalidar caché para esta proforma
       invalidateCache(sucursalId);
       
       return response;
     } catch (e) {
-      // Si el servidor retorna notImplemented, devolver una respuesta simulada
-      debugPrint('⚠️ Error al actualizar proforma: $e');
-      debugPrint('⚠️ El método updateProformaVenta puede no estar implementado en el servidor.');
-      debugPrint('⚠️ Devolviendo respuesta simulada para propósitos de demostración.');
-      
-      // Invalidar caché de todos modos para consistencia
-      invalidateCache(sucursalId);
-      
-      return <String, dynamic>{
-        'status': 'success',
-        'data': <String, Object>{
-          'id': proformaId,
-          'message': 'Proforma actualizada (simulado)',
-          'warning': 'Esta respuesta es simulada. El endpoint aún no está implementado en el servidor.'
-        }
-      };
+      debugPrint('❌ [ProformaVentaApi] ERROR al actualizar proforma #$proformaId: $e');
+      rethrow;
     }
   }
 

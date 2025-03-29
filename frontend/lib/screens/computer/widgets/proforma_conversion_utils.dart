@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' show min;
 
 import 'package:condorsmotors/main.dart' show api; // Importar la API global
 import 'package:condorsmotors/utils/logger.dart';
@@ -23,8 +24,7 @@ class ProformaConversionManager {
     required VoidCallback onSuccess,
   }) async {
     try {
-      Logger.debug('Convirtiendo proforma a venta: '
-          'ProformaID: $proformaId, Tipo: $tipoDocumento');
+      Logger.debug('INICIO: Convirtiendo proforma #$proformaId a venta tipo $tipoDocumento en sucursal $sucursalId');
       
       // Invalidar cache al inicio para asegurar que tenemos datos actualizados
       _recargarDatos(sucursalId);
@@ -40,6 +40,7 @@ class ProformaConversionManager {
       
       // Primero, verificar si la proforma existe sin usar caché para evitar problemas
       try {
+        Logger.debug('Verificando existencia de proforma #$proformaId...');
         final proformaExistResponse = await api.proformas.getProformaVenta(
           sucursalId: sucursalId,
           proformaId: proformaId,
@@ -47,11 +48,16 @@ class ProformaConversionManager {
           forceRefresh: true,
         );
         
+        Logger.debug('Respuesta de verificación: ${proformaExistResponse.toString().substring(0, min(100, proformaExistResponse.toString().length))}...');
+        
         // Verificar explícitamente si hay un error 404
         if (proformaExistResponse.isEmpty || 
             proformaExistResponse['status'] == 'fail' || 
             !proformaExistResponse.containsKey('data') || 
             proformaExistResponse['data'] == null) {
+          
+          Logger.debug('ERROR: Proforma #$proformaId no encontrada o datos inválidos');
+          Logger.debug('Respuesta completa: $proformaExistResponse');
           
           // Cerrar diálogo de procesamiento
           if (context.mounted) {
@@ -74,14 +80,19 @@ class ProformaConversionManager {
           return false;
         }
         
+        Logger.debug('ÉXITO: Proforma #$proformaId verificada, obteniendo datos completos...');
+        
         // Si llegamos aquí, la proforma existe, obtenerla de nuevo para procesar sus datos
         final proformaResponse = await api.proformas.getProformaVenta(
           sucursalId: sucursalId,
           proformaId: proformaId,
         );
         
+        Logger.debug('Datos de proforma recibidos, validando formato...');
+        
         // Verificar si el formato de datos es correcto
         if (!proformaResponse.containsKey('data') || proformaResponse['data'] == null) {
+          Logger.debug('ERROR: Formato inválido en datos de proforma');
           if (context.mounted) {
             _cerrarDialogoProcesamiento(context);
             _mostrarError(context, 'Formato de datos de proforma inválido');
@@ -92,8 +103,11 @@ class ProformaConversionManager {
         final proformaData = proformaResponse['data'];
         final List<dynamic> detalles = proformaData['detalles'] ?? [];
         
+        Logger.debug('Detalles de proforma: ${detalles.length} productos');
+        
         // Verificar si hay detalles en la proforma
         if (detalles.isEmpty) {
+          Logger.debug('ERROR: Proforma sin productos');
           if (context.mounted) {
             _cerrarDialogoProcesamiento(context);
             _mostrarError(context, 'La proforma no tiene productos, no se puede convertir a venta');
@@ -101,15 +115,11 @@ class ProformaConversionManager {
           return false;
         }
         
-        // Verificar si hay cliente
+        // Verificar si hay cliente - Ahora lo hacemos opcional
         final dynamic clienteId = proformaData['clienteId'];
-        if (clienteId == null) {
-          if (context.mounted) {
-            _cerrarDialogoProcesamiento(context);
-            _mostrarError(context, 'La proforma no tiene un cliente asignado');
-          }
-          return false;
-        }
+        final dynamic clienteInfo = proformaData['cliente'];
+        
+        Logger.debug('Información de cliente: ${clienteInfo != null ? "Presente" : "No presente"}, ID: $clienteId');
         
         // Crear venta a partir de los datos de la proforma
         final Map<String, dynamic> ventaData = {
@@ -117,9 +127,16 @@ class ProformaConversionManager {
           'tipoDocumentoId': tipoDocumento == 'BOLETA' ? 1 : 2,
           'monedaId': 1, // PEN por defecto
           'metodoPagoId': 1, // Efectivo por defecto
-          'clienteId': int.tryParse(clienteId.toString()) ?? 0,
           'detalles': detalles,
         };
+        
+        // Solo agregamos clienteId si no es nulo
+        if (clienteId != null) {
+          ventaData['clienteId'] = int.tryParse(clienteId.toString()) ?? 0;
+          Logger.debug('Cliente asignado a la venta: ${ventaData['clienteId']}');
+        } else {
+          Logger.debug('Creando venta sin cliente asignado');
+        }
         
         // Obtener el ID del empleado actual
         final userData = await api.authService.getUserData();
@@ -127,13 +144,16 @@ class ProformaConversionManager {
           ventaData['empleadoId'] = int.tryParse(userData['id'].toString()) ?? 0;
         }
         
-        Logger.debug('Preparando datos para crear venta: $ventaData');
+        Logger.debug('PREPARANDO VENTA: $ventaData');
         
         // Crear la venta usando la API estándar de ventas
+        Logger.debug('Enviando petición para crear venta...');
         final Map<String, dynamic> ventaResponse = await api.ventas.createVenta(
           ventaData,
           sucursalId: sucursalId,
         );
+        
+        Logger.debug('RESPUESTA CREACIÓN VENTA: ${ventaResponse.toString().substring(0, min(200, ventaResponse.toString().length))}...');
         
         // Cerrar diálogo de procesamiento
         if (context.mounted) {
@@ -145,7 +165,8 @@ class ProformaConversionManager {
               ? ventaResponse['error'].toString() 
               : ventaResponse['message'] ?? 'Error desconocido';
           
-          Logger.error('Error al crear venta: $errorMsg');
+          Logger.error('ERROR CREACIÓN VENTA: $errorMsg');
+          Logger.debug('Respuesta completa: $ventaResponse');
           
           if (context.mounted) {
             _mostrarError(context, 'No se pudo crear la venta: $errorMsg');
@@ -154,29 +175,42 @@ class ProformaConversionManager {
         }
         
         final String numeroDoc = ventaResponse['data']?['numeroDocumento'] ?? '';
+        Logger.debug('ÉXITO: Venta creada correctamente con documento: $numeroDoc');
+        Logger.debug('Datos de venta creada: ${ventaResponse['data']}');
+        
         if (context.mounted) {
           _mostrarExito(context, 'Venta creada correctamente: $numeroDoc');
         }
         
         // Marcar la proforma como convertida (actualizar estado)
-        await api.proformas.updateProformaVenta(
+        Logger.debug('Actualizando estado de proforma a "convertida"...');
+        final updateResponse = await api.proformas.updateProformaVenta(
           sucursalId: sucursalId,
           proformaId: proformaId,
           estado: 'convertida',
         );
         
+        Logger.debug('Respuesta de actualización proforma: $updateResponse');
+        
         // Ejecutar callback de éxito
+        Logger.debug('Ejecutando callback de éxito...');
         onSuccess();
         
         // Forzar recarga de proformas para actualizar UI
+        Logger.debug('Recargando lista de proformas...');
         _recargarProformasSucursal(sucursalId);
         
+        Logger.debug('PROCESO COMPLETADO: Proforma #$proformaId convertida exitosamente a venta');
         return true;
         
       } catch (apiError) {
         // Manejar específicamente el caso donde la proforma no existe (404)
+        Logger.error('ERROR EN API: $apiError');
+        
         if (apiError.toString().contains('404') || 
             apiError.toString().contains('Not found')) {
+          
+          Logger.debug('ERROR 404: Proforma #$proformaId no encontrada');
           
           // Invalidar caché
           api.proformas.invalidateCache(sucursalId);
@@ -198,7 +232,8 @@ class ProformaConversionManager {
         return false;
       }
     } catch (e) {
-      Logger.error('Error en conversión de proforma: $e');
+      Logger.error('ERROR GENERAL: $e');
+      Logger.debug('Traza de error: ${e.toString()}');
       if (context.mounted) {
         _cerrarDialogoProcesamiento(context);
         _mostrarError(context, 'Error en la conversión: ${e.toString()}');

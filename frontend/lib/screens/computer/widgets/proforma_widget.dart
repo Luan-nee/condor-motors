@@ -5,6 +5,8 @@ import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:condorsmotors/utils/logger.dart';
+import 'dart:math' show min;
 
 /// Widget para mostrar los detalles de una proforma individual
 class ProformaWidget extends StatelessWidget {
@@ -543,101 +545,191 @@ class ProformaWidget extends StatelessWidget {
   }
   
   Future<void> _handleConvert(BuildContext context) async {
-    // Mostrar diálogo para confirmar conversión
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) => ProformaSaleDialog(
-        proforma: proforma,
-        onConfirm: (Map<String, dynamic> ventaData) async {
-          Navigator.of(dialogContext).pop();
-          
-          // Mostrar diálogo de procesamiento
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (BuildContext context) => _buildProcessingDialog(ventaData['tipoDocumento'].toLowerCase()),
-          );
-          
-          // Intentar la conversión
-          bool success = await ProformaConversionManager.convertirProformaAVenta(
-            context: context,
-            sucursalId: await _obtenerSucursalId(),
-            proformaId: proforma.id,
-            tipoDocumento: ventaData['tipoDocumento'],
-            onSuccess: () {
-              if (onConvert != null) {
-                onConvert!(proforma);
+    // Guardamos el contexto de construcción antes de operaciones asíncronas
+    final BuildContext originalContext = context;
+    
+    try {
+      // Registrar inicio del proceso
+      Logger.debug('INICIO CONVERSIÓN UI: Iniciando conversión de proforma #${proforma.id}');
+      
+      // Mostrar diálogo para confirmar conversión
+      showDialog(
+        context: context,
+        builder: (BuildContext dialogContext) => ProformaSaleDialog(
+          proforma: proforma,
+          onConfirm: (Map<String, dynamic> ventaData) async {
+            Logger.debug('Confirmación recibida con datos: ${ventaData.toString().substring(0, min(100, ventaData.toString().length))}...');
+            Navigator.of(dialogContext).pop();
+            
+            // Mostrar diálogo de procesamiento
+            showDialog(
+              context: originalContext,
+              barrierDismissible: false,
+              builder: (BuildContext context) => _buildProcessingDialog(ventaData['tipoDocumento'].toLowerCase()),
+            );
+            
+            Logger.debug('Obteniendo ID de sucursal...');
+            final String sucursalId = await _obtenerSucursalId();
+            Logger.debug('ID de sucursal obtenido: $sucursalId');
+            
+            // Intentar la conversión
+            Logger.debug('Llamando a convertirProformaAVenta...');
+            bool success = await ProformaConversionManager.convertirProformaAVenta(
+              context: originalContext,
+              sucursalId: sucursalId,
+              proformaId: proforma.id,
+              tipoDocumento: ventaData['tipoDocumento'],
+              onSuccess: () {
+                Logger.debug('Callback de éxito ejecutado');
+                if (onConvert != null) {
+                  onConvert!(proforma);
+                }
+              },
+            );
+            
+            // Verificar si el widget sigue montado antes de continuar
+            if (!originalContext.mounted) {
+              Logger.debug('Widget desmontado, deteniendo proceso');
+              return;
+            }
+            
+            // Cerrar el diálogo de procesamiento
+            Navigator.of(originalContext).pop();
+            
+            Logger.debug('Resultado de conversión: ${success ? 'Éxito' : 'Fallo'}');
+            
+            // Si falló, intentar con el método alternativo
+            if (!success) {
+              Logger.debug('Primer intento fallido, buscando método alternativo...');
+              final sucursalId = await VentasPendientesUtils.obtenerSucursalId();
+              
+              // Verificar nuevamente si el widget sigue montado
+              if (!originalContext.mounted) {
+                Logger.debug('Widget desmontado durante obtención de sucursal alternativa');
+                return;
               }
-            },
-          );
-          
-          // Si falló, intentar con el método alternativo
-          if (!success) {
-            final sucursalId = await VentasPendientesUtils.obtenerSucursalId();
-            if (sucursalId != null) {
-              // Mostrar diálogo preguntando si desea intentar el método alternativo
-              final bool intentarAlternativo = await showDialog<bool>(
-                context: context,
-                builder: (BuildContext context) => AlertDialog(
-                  backgroundColor: const Color(0xFF2D2D2D),
-                  title: const Row(
-                    children: [
-                      Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                      SizedBox(width: 10),
-                      Text(
-                        'Error en la conversión',
-                        style: TextStyle(color: Colors.white),
+              
+              if (sucursalId != null) {
+                Logger.debug('Sucursal alternativa encontrada: $sucursalId');
+                // Mostrar diálogo preguntando si desea intentar el método alternativo
+                final bool intentarAlternativo = await showDialog<bool>(
+                  context: originalContext,
+                  builder: (BuildContext context) => AlertDialog(
+                    backgroundColor: const Color(0xFF2D2D2D),
+                    title: const Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                        SizedBox(width: 10),
+                        Text(
+                          'Error en la conversión',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    content: const Text(
+                      'La conversión normal falló. ¿Desea intentar de nuevo?',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('Cancelar'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.blue,
+                          backgroundColor: Colors.blue.withOpacity(0.1),
+                        ),
+                        child: const Text('Intentar de nuevo'),
                       ),
                     ],
                   ),
-                  content: const Text(
-                    'La conversión normal falló. ¿Desea intentar de nuevo?',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Cancelar'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.blue,
-                        backgroundColor: Colors.blue.withOpacity(0.1),
-                      ),
-                      child: const Text('Intentar de nuevo'),
-                    ),
-                  ],
-                ),
-              ) ?? false;
-              
-              if (intentarAlternativo) {
-                // Mostrar diálogo de procesamiento nuevamente
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (BuildContext context) => _buildProcessingDialog(ventaData['tipoDocumento'].toLowerCase()),
-                );
+                ) ?? false;
                 
-                // Intentar nuevamente
-                await ProformaConversionManager.convertirProformaAVenta(
-                  context: context,
-                  sucursalId: sucursalId.toString(),
-                  proformaId: proforma.id,
-                  tipoDocumento: ventaData['tipoDocumento'],
-                  onSuccess: () {
-                    if (onConvert != null) {
-                      onConvert!(proforma);
-                    }
-                  },
-                );
+                // Verificar si el widget sigue montado antes de continuar
+                if (!originalContext.mounted) {
+                  Logger.debug('Widget desmontado durante confirmación de método alternativo');
+                  return;
+                }
+                
+                if (intentarAlternativo) {
+                  Logger.debug('Usuario confirmó intento alternativo, procesando...');
+                  // Mostrar diálogo de procesamiento nuevamente
+                  showDialog(
+                    context: originalContext,
+                    barrierDismissible: false,
+                    builder: (BuildContext context) => _buildProcessingDialog(ventaData['tipoDocumento'].toLowerCase()),
+                  );
+                  
+                  // Intentar nuevamente
+                  Logger.debug('Segundo intento con sucursal alternativa...');
+                  final bool segundoResultado = await ProformaConversionManager.convertirProformaAVenta(
+                    context: originalContext,
+                    sucursalId: sucursalId.toString(),
+                    proformaId: proforma.id,
+                    tipoDocumento: ventaData['tipoDocumento'],
+                    onSuccess: () {
+                      Logger.debug('Callback de éxito ejecutado en segundo intento');
+                      if (onConvert != null) {
+                        onConvert!(proforma);
+                      }
+                    },
+                  );
+                  
+                  // Verificar si el widget sigue montado antes de continuar
+                  if (!originalContext.mounted) {
+                    Logger.debug('Widget desmontado después del segundo intento');
+                    return;
+                  }
+                  
+                  // Cerrar el diálogo de procesamiento
+                  Navigator.of(originalContext).pop();
+                  
+                  Logger.debug('Resultado del segundo intento: ${segundoResultado ? 'Éxito' : 'Fallo'}');
+                }
+              } else {
+                Logger.debug('No se pudo encontrar sucursal alternativa');
               }
             }
-          }
-        },
-        onCancel: () => Navigator.of(dialogContext).pop(),
-      ),
-    );
+          },
+          onCancel: () {
+            Logger.debug('Usuario canceló la conversión');
+            Navigator.of(dialogContext).pop();
+          },
+        ),
+      );
+    } catch (e) {
+      Logger.error('ERROR en _handleConvert: $e');
+      if (originalContext.mounted) {
+        showDialog(
+          context: originalContext,
+          builder: (BuildContext context) => AlertDialog(
+            backgroundColor: const Color(0xFF2D2D2D),
+            title: const Row(
+              children: [
+                Icon(Icons.error, color: Colors.red),
+                SizedBox(width: 10),
+                Text(
+                  'Error en conversión',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+            content: Text(
+              'Ocurrió un error al procesar la conversión: ${e.toString()}',
+              style: const TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cerrar'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
   }
   
   Widget _buildProcessingDialog(String tipoDocumento) {
@@ -987,9 +1079,9 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(StringProperty('_tipoDocumento', _tipoDocumento));
-    properties.add(StringProperty('_customerName', _customerName));
-    properties.add(StringProperty('_paymentAmount', _paymentAmount));
-    properties.add(DiagnosticsProperty<bool>('_isProcessing', _isProcessing));
+    properties..add(StringProperty('_tipoDocumento', _tipoDocumento))
+    ..add(StringProperty('_customerName', _customerName))
+    ..add(StringProperty('_paymentAmount', _paymentAmount))
+    ..add(DiagnosticsProperty<bool>('_isProcessing', _isProcessing));
   }
 }
