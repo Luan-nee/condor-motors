@@ -1,5 +1,6 @@
+import 'package:condorsmotors/api/protected/movimientos.api.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../api/protected/movimientos.api.dart';
 
 class ProgresoMovimiento extends StatelessWidget {
   final String estadoActual;
@@ -13,16 +14,16 @@ class ProgresoMovimiento extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const estados = MovimientosApi.estadosDetalle;
-    final estadosValues = estados.values.toList();
-    final currentIndex = estadosValues.indexOf(estadoActual);
+    const Map<String, String> estados = MovimientosApi.estadosDetalle;
+    final List<String> estadosValues = estados.values.toList();
+    final int currentIndex = estadosValues.indexOf(estadoActual);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
+          children: <Widget>[
             const Text(
               'Estado del Movimiento',
               style: TextStyle(
@@ -39,11 +40,11 @@ class ProgresoMovimiento extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Row(
-          children: estadosValues.asMap().entries.map((entry) {
-            final index = entry.key;
-            final estado = entry.value;
-            final isActive = index <= currentIndex;
-            final isCurrentState = estado == estadoActual;
+          children: estadosValues.asMap().entries.map((MapEntry<int, String> entry) {
+            final int index = entry.key;
+            final String estado = entry.value;
+            final bool isActive = index <= currentIndex;
+            final bool isCurrentState = estado == estadoActual;
 
             return Expanded(
               child: Container(
@@ -72,10 +73,10 @@ class ProgresoMovimiento extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: estadosValues.asMap().entries.map((entry) {
-            final index = entry.key;
-            final estado = entry.value;
-            final isActive = index <= currentIndex;
+          children: estadosValues.asMap().entries.map((MapEntry<int, String> entry) {
+            final int index = entry.key;
+            final String estado = entry.value;
+            final bool isActive = index <= currentIndex;
             return Text(
               estado,
               style: TextStyle(
@@ -88,5 +89,13 @@ class ProgresoMovimiento extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(StringProperty('estadoActual', estadoActual))
+      ..add(ObjectFlagProperty<VoidCallback?>.has('onInfoTap', onInfoTap));
   }
 } 

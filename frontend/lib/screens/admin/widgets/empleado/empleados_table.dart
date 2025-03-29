@@ -1,8 +1,8 @@
+import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_list_item.dart';
+import 'package:condorsmotors/utils/empleados_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
-import '../../../../models/empleado.model.dart';
-import '../../../../utils/empleados_utils.dart';
-import 'empleado_list_item.dart';
 
 class EmpleadosTable extends StatefulWidget {
   final List<Empleado> empleados;
@@ -34,6 +34,23 @@ class EmpleadosTable extends StatefulWidget {
 
   @override
   State<EmpleadosTable> createState() => _EmpleadosTableState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(IterableProperty<Empleado>('empleados', empleados))
+      ..add(DiagnosticsProperty<Map<String, String>>('nombresSucursales', nombresSucursales))
+      ..add(ObjectFlagProperty<String Function(Empleado p1)>.has('obtenerRolDeEmpleado', obtenerRolDeEmpleado))
+      ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onEdit', onEdit))
+      ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onDelete', onDelete))
+      ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onViewDetails', onViewDetails))
+      ..add(DiagnosticsProperty<bool>('isLoading', isLoading))
+      ..add(DiagnosticsProperty<bool>('hasMorePages', hasMorePages))
+      ..add(ObjectFlagProperty<VoidCallback>.has('onLoadMore', onLoadMore))
+      ..add(StringProperty('errorMessage', errorMessage))
+      ..add(ObjectFlagProperty<VoidCallback>.has('onRetry', onRetry));
+  }
 }
 
 class _EmpleadosTableState extends State<EmpleadosTable> {
@@ -43,12 +60,12 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
   @override
   Widget build(BuildContext context) {
     // Agrupar empleados por estado
-    final gruposEmpleados = EmpleadosUtils.agruparEmpleadosPorEstado(widget.empleados);
-    final empleadosActivos = gruposEmpleados['activos'] ?? [];
-    final empleadosInactivos = gruposEmpleados['inactivos'] ?? [];
+    final Map<String, List<Empleado>> gruposEmpleados = EmpleadosUtils.agruparEmpleadosPorEstado(widget.empleados);
+    final List<Empleado> empleadosActivos = gruposEmpleados['activos'] ?? <Empleado>[];
+    final List<Empleado> empleadosInactivos = gruposEmpleados['inactivos'] ?? <Empleado>[];
     
     // Determinar si hay empleados inactivos para mostrar
-    final hayEmpleadosInactivos = empleadosInactivos.isNotEmpty;
+    final bool hayEmpleadosInactivos = empleadosInactivos.isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
@@ -64,7 +81,7 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                children: <Widget>[
                   Text(
                     widget.errorMessage,
                     style: const TextStyle(color: Colors.red),
@@ -91,13 +108,13 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
             : SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+                  children: <Widget>[
                     // Encabezado de la tabla
                     Container(
                       color: const Color(0xFF2D2D2D),
                       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                       child: const Row(
-                        children: [
+                        children: <Widget>[
                           // Nombre (25% del ancho)
                           Expanded(
                             flex: 25,
@@ -159,8 +176,8 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                     ),
                     
                     // Filas de colaboradores activos
-                    if (empleadosActivos.isNotEmpty) ...[
-                      ...empleadosActivos.map((empleado) => EmpleadoListItem(
+                    if (empleadosActivos.isNotEmpty) ...<Widget>[
+                      ...empleadosActivos.map((Empleado empleado) => EmpleadoListItem(
                         empleado: empleado,
                         nombresSucursales: widget.nombresSucursales,
                         onEdit: widget.onEdit,
@@ -171,7 +188,7 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                     ],
                     
                     // Sección desplegable de colaboradores inactivos
-                    if (hayEmpleadosInactivos) ...[
+                    if (hayEmpleadosInactivos) ...<Widget>[
                       const SizedBox(height: 16),
                       
                       // Encabezado desplegable para inactivos
@@ -185,7 +202,7 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                           color: const Color(0xFF2D2D2D),
                           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                           child: Row(
-                            children: [
+                            children: <Widget>[
                               Icon(
                                 _isInactiveSectionExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
                                 color: Colors.white,
@@ -207,7 +224,7 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                       // Contenido expandible
                       if (_isInactiveSectionExpanded)
                         Column(
-                          children: empleadosInactivos.map((empleado) => EmpleadoListItem(
+                          children: empleadosInactivos.map((Empleado empleado) => EmpleadoListItem(
                             empleado: empleado,
                             nombresSucursales: widget.nombresSucursales,
                             onEdit: widget.onEdit,

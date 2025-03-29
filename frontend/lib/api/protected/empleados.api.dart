@@ -1,8 +1,7 @@
+import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:flutter/foundation.dart';
-
-import '../../models/empleado.model.dart';
-import '../main.api.dart';
-import 'cache/fast_cache.dart';
 
 class EmpleadosApi {
   final ApiClient _api;
@@ -26,7 +25,7 @@ class EmpleadosApi {
   }) async {
     try {
       // Generar clave única para este conjunto de parámetros
-      final cacheKey = _generateCacheKey(
+      final String cacheKey = _generateCacheKey(
         'empleados',
         page: page,
         pageSize: pageSize,
@@ -39,7 +38,7 @@ class EmpleadosApi {
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final cachedData = _cache.get<List<Empleado>>(cacheKey);
+        final List<Empleado>? cachedData = _cache.get<List<Empleado>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Empleados obtenidos desde caché: $cacheKey');
           return cachedData;
@@ -49,7 +48,7 @@ class EmpleadosApi {
       debugPrint('EmpleadosApi: Obteniendo lista de empleados');
       
       // Construir parámetros de consulta
-      final Map<String, String> queryParams = {};
+      final Map<String, String> queryParams = <String, String>{};
       
       // Solo agregar parámetros de paginación si se proporcionan explícitamente
       if (page != null && page > 0) {
@@ -75,7 +74,7 @@ class EmpleadosApi {
       }
       
       // Usar authenticatedRequest en lugar de request para manejar automáticamente tokens
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/empleados',
         method: 'GET',
         queryParams: queryParams,
@@ -84,7 +83,7 @@ class EmpleadosApi {
       debugPrint('EmpleadosApi: Respuesta de getEmpleados recibida');
       
       // Extraer los datos de la respuesta
-      List<dynamic> items = [];
+      List<dynamic> items = <dynamic>[];
       
       if (response['data'] is List) {
         // Nueva estructura: { status: "success", data: [ ... ] }
@@ -97,7 +96,7 @@ class EmpleadosApi {
       }
       
       // Convertir a lista de Empleado
-      final empleados = items
+      final List<Empleado> empleados = items
           .map((item) => Empleado.fromJson(item as Map<String, dynamic>))
           .toList();
       
@@ -131,11 +130,11 @@ class EmpleadosApi {
       }
       
       // Clave para caché
-      final cacheKey = 'empleado_$empleadoId';
+      final String cacheKey = 'empleado_$empleadoId';
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final cachedData = _cache.get<Empleado>(cacheKey);
+        final Empleado? cachedData = _cache.get<Empleado>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Empleado obtenido desde caché: $cacheKey');
           return cachedData;
@@ -143,7 +142,7 @@ class EmpleadosApi {
       }
       
       debugPrint('EmpleadosApi: Obteniendo empleado con ID: $empleadoId');
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/empleados/$empleadoId',
         method: 'GET',
       );
@@ -158,7 +157,7 @@ class EmpleadosApi {
         data = response['data'] as Map<String, dynamic>;
       }
       
-      final empleado = Empleado.fromJson(data);
+      final Empleado empleado = Empleado.fromJson(data);
       
       // Guardar en caché si useCache es true
       if (useCache) {
@@ -198,7 +197,7 @@ class EmpleadosApi {
       }
       
       debugPrint('EmpleadosApi: Creando nuevo empleado: ${formattedData['nombre']} ${formattedData['apellidos']}');
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/empleados',
         method: 'POST',
         body: formattedData,
@@ -260,14 +259,14 @@ class EmpleadosApi {
       }
       
       // Usar PATCH para actualizar el empleado
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/empleados/$empleadoId',
         method: 'PATCH',
         body: formattedData,
       );
       
       debugPrint('EmpleadosApi: Respuesta de updateEmpleado recibida');
-      final data = _processResponse(response);
+      final Map<String, dynamic> data = _processResponse(response);
       
       // Invalidar caché del empleado específico y listas
       _cache.invalidate('empleado_$empleadoId');
@@ -294,7 +293,7 @@ class EmpleadosApi {
     
     // Para otros formatos, intentar convertir a hh:mm:ss
     try {
-      final parts = timeString.split(':');
+      final List<String> parts = timeString.split(':');
       if (parts.length == 1) {
         // Si solo hay horas, agregar minutos y segundos
         return '${parts[0].padLeft(2, '0')}:00:00';
@@ -331,7 +330,7 @@ class EmpleadosApi {
       await _api.authenticatedRequest(
         endpoint: '/empleados/$empleadoId',
         method: 'PATCH',
-        body: {'activo': false},
+        body: <String, dynamic>{'activo': false},
       );
       
       // Invalidar caché del empleado específico y listas
@@ -411,10 +410,10 @@ class EmpleadosApi {
     try {
       debugPrint('EmpleadosApi: Registrando cuenta para empleado $empleadoId');
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/auth/register',
         method: 'POST',
-        body: {
+        body: <String, dynamic>{
           'empleadoId': empleadoId,
           'usuario': usuario,
           'clave': clave,
@@ -456,11 +455,15 @@ class EmpleadosApi {
       );
     }
 
-    final Map<String, dynamic> data = {};
-    if (usuario != null) data['usuario'] = usuario;
-    if (clave != null) data['clave'] = clave;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    if (usuario != null) {
+      data['usuario'] = usuario;
+    }
+    if (clave != null) {
+      data['clave'] = clave;
+    }
 
-    final response = await _api.authenticatedRequest(
+    final Map<String, dynamic> response = await _api.authenticatedRequest(
       endpoint: '/cuentasempleados/$cuentaId',
       method: 'PATCH',
       body: data,
@@ -485,11 +488,11 @@ class EmpleadosApi {
   /// Retorna los detalles de la cuenta asociada a un empleado
   Future<Map<String, dynamic>> getCuentaEmpleado(String cuentaId, {bool useCache = true}) async {
     try {
-      final cacheKey = 'cuenta_$cuentaId';
+      final String cacheKey = 'cuenta_$cuentaId';
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Cuenta obtenida desde caché: $cacheKey');
           return cachedData;
@@ -498,12 +501,12 @@ class EmpleadosApi {
       
       debugPrint('EmpleadosApi: Obteniendo información de cuenta $cuentaId');
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/cuentasempleados/$cuentaId',
         method: 'GET',
       );
       
-      final cuenta = _processResponse(response);
+      final Map<String, dynamic> cuenta = _processResponse(response);
       
       // Guardar en caché si useCache es true
       if (useCache) {
@@ -524,11 +527,11 @@ class EmpleadosApi {
   /// Retorna una lista con todas las cuentas de empleados registradas
   Future<List<dynamic>> getCuentasEmpleados({bool useCache = true}) async {
     try {
-      const cacheKey = 'cuentas_empleados_todas';
+      const String cacheKey = 'cuentas_empleados_todas';
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final cachedData = _cache.get<List<dynamic>>(cacheKey);
+        final List? cachedData = _cache.get<List<dynamic>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Cuentas de empleados obtenidas desde caché: $cacheKey');
           return cachedData;
@@ -537,7 +540,7 @@ class EmpleadosApi {
       
       debugPrint('EmpleadosApi: Obteniendo lista de cuentas de empleados');
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/cuentasempleados',
         method: 'GET',
       );
@@ -549,7 +552,7 @@ class EmpleadosApi {
       } else if (response['data'] is Map && response['data']['data'] is List) {
         data = response['data']['data'];
       } else {
-        data = [];
+        data = <dynamic>[];
       }
       
       // Guardar en caché si useCache es true
@@ -593,23 +596,23 @@ class EmpleadosApi {
   /// Obtiene los roles disponibles para cuentas de empleados
   Future<List<Map<String, dynamic>>> getRolesCuentas({bool useCache = true}) async {
     try {
-      const cacheKey = 'roles_cuentas';
+      const String cacheKey = 'roles_cuentas';
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
+        final List<Map<String, dynamic>>? cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Roles de cuentas obtenidos desde caché: $cacheKey');
           return cachedData;
         }
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/rolescuentas',
         method: 'GET',
       );
       
-      List<Map<String, dynamic>> roles = [];
+      List<Map<String, dynamic>> roles = <Map<String, dynamic>>[];
       if (response['data'] is List) {
         roles = (response['data'] as List)
             .map((item) => item as Map<String, dynamic>)
@@ -625,18 +628,18 @@ class EmpleadosApi {
       return roles;
     } catch (e) {
       debugPrint('Error al obtener roles de cuentas: $e');
-      return [];
+      return <Map<String, dynamic>>[];
     }
   }
 
   /// Obtiene la cuenta de un empleado por su ID
   Future<Map<String, dynamic>?> getCuentaByEmpleadoId(String empleadoId, {bool useCache = true}) async {
     try {
-      final cacheKey = 'cuenta_empleado_$empleadoId';
+      final String cacheKey = 'cuenta_empleado_$empleadoId';
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Cuenta por empleado obtenida desde caché: $cacheKey');
           return cachedData;
@@ -645,14 +648,14 @@ class EmpleadosApi {
       
       // Añadir headers especiales para evitar que el token sea renovado automáticamente
       // si es un 401 específico de "no encontrado"
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/cuentasempleados/empleado/$empleadoId',
         method: 'GET',
-        headers: {'x-no-retry-on-401': 'true'}, // Header especial para evitar renovación automática
+        headers: <String, String>{'x-no-retry-on-401': 'true'}, // Header especial para evitar renovación automática
       );
       
       if (response['data'] is Map<String, dynamic>) {
-        final cuenta = response['data'] as Map<String, dynamic>;
+        final Map<String, dynamic> cuenta = response['data'] as Map<String, dynamic>;
         
         // Guardar en caché si useCache es true
         if (useCache) {
@@ -697,15 +700,29 @@ class EmpleadosApi {
     String? filter,
     String? filterValue,
   }) {
-    final List<String> components = [base];
+    final List<String> components = <String>[base];
     
-    if (page != null) components.add('p:$page');
-    if (pageSize != null) components.add('ps:$pageSize');
-    if (sortBy != null && sortBy.isNotEmpty) components.add('sb:$sortBy');
-    if (order != null && order != 'asc') components.add('o:$order');
-    if (search != null && search.isNotEmpty) components.add('s:$search');
-    if (filter != null && filter.isNotEmpty) components.add('f:$filter');
-    if (filterValue != null) components.add('fv:$filterValue');
+    if (page != null) {
+      components.add('p:$page');
+    }
+    if (pageSize != null) {
+      components.add('ps:$pageSize');
+    }
+    if (sortBy != null && sortBy.isNotEmpty) {
+      components.add('sb:$sortBy');
+    }
+    if (order != null && order != 'asc') {
+      components.add('o:$order');
+    }
+    if (search != null && search.isNotEmpty) {
+      components.add('s:$search');
+    }
+    if (filter != null && filter.isNotEmpty) {
+      components.add('f:$filter');
+    }
+    if (filterValue != null) {
+      components.add('fv:$filterValue');
+    }
     
     return components.join('_');
   }
@@ -725,8 +742,8 @@ class EmpleadosApi {
   void invalidateCache([String? empleadoId]) {
     if (empleadoId != null) {
       // Invalidar caché específica para este empleado
-      _cache.invalidate('empleado_$empleadoId');
-      _cache.invalidate('cuenta_empleado_$empleadoId');
+      _cache..invalidate('empleado_$empleadoId')
+      ..invalidate('cuenta_empleado_$empleadoId');
       debugPrint('✅ Caché invalidada para empleado: $empleadoId');
     } else {
       // Invalidar toda la caché relacionada con empleados

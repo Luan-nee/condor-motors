@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 /// - Invalidación por patrones
 /// - Política LRU (Least Recently Used) para liberar espacio
 class FastCache {
-  final Map<String, _CacheEntry> _cache = {};
+  final Map<String, _CacheEntry> _cache = <String, _CacheEntry>{};
   final int maxSize;
   final Duration stalePeriod;
   final Duration expirePeriod;
@@ -24,8 +24,10 @@ class FastCache {
   /// Obtiene un valor del caché
   /// Retorna null si no existe o ha expirado
   T? get<T>(String key) {
-    final entry = _cache[key];
-    if (entry == null) return null;
+    final _CacheEntry? entry = _cache[key];
+    if (entry == null) {
+      return null;
+    }
 
     // Si ha expirado, eliminarlo y retornar null
     if (DateTime.now().difference(entry.timestamp) > expirePeriod) {
@@ -40,8 +42,10 @@ class FastCache {
 
   /// Verifica si una entrada del caché está obsoleta
   bool isStale(String key) {
-    final entry = _cache[key];
-    if (entry == null) return true;
+    final _CacheEntry? entry = _cache[key];
+    if (entry == null) {
+      return true;
+    }
     return DateTime.now().difference(entry.timestamp) > stalePeriod;
   }
 
@@ -66,7 +70,7 @@ class FastCache {
 
   /// Invalida todas las entradas que coincidan con un patrón
   void invalidateByPattern(String pattern) {
-    _cache.removeWhere((key, _) => key.startsWith(pattern));
+    _cache.removeWhere((String key, _) => key.startsWith(pattern));
   }
 
   /// Limpia completamente el caché
@@ -76,12 +80,14 @@ class FastCache {
 
   /// Elimina la entrada menos usada recientemente (LRU)
   void _removeOldest() {
-    if (_cache.isEmpty) return;
+    if (_cache.isEmpty) {
+      return;
+    }
 
     String? oldestKey;
     DateTime? oldestAccess;
 
-    for (var entry in _cache.entries) {
+    for (MapEntry<String, _CacheEntry> entry in _cache.entries) {
       if (oldestAccess == null || entry.value.lastAccessed.isBefore(oldestAccess)) {
         oldestAccess = entry.value.lastAccessed;
         oldestKey = entry.key;

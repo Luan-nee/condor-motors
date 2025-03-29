@@ -1,9 +1,9 @@
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/utils/empleados_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import '../../../../main.dart' show api;
-import '../../../../models/empleado.model.dart';
-import '../../../../utils/empleados_utils.dart';
 
 class EmpleadoListItem extends StatefulWidget {
   final Empleado empleado;
@@ -25,6 +25,18 @@ class EmpleadoListItem extends StatefulWidget {
 
   @override
   State<EmpleadoListItem> createState() => _EmpleadoListItemState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty<Empleado>('empleado', empleado))
+      ..add(DiagnosticsProperty<Map<String, String>>('nombresSucursales', nombresSucursales))
+      ..add(ObjectFlagProperty<String Function(Empleado p1)>.has('obtenerRolDeEmpleado', obtenerRolDeEmpleado))
+      ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onEdit', onEdit))
+      ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onDelete', onDelete))
+      ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onViewDetails', onViewDetails));
+  }
 }
 
 class _EmpleadoListItemState extends State<EmpleadoListItem> {
@@ -48,14 +60,14 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
 
       // Obtener información de la cuenta de empleado por su ID
       if (widget.empleado.cuentaEmpleadoId != null) {
-        final cuentaInfo = await api.empleados
+        final Map<String, dynamic> cuentaInfo = await api.empleados
             .getCuentaEmpleado(widget.empleado.cuentaEmpleadoId!);
         if (cuentaInfo['usuario'] != null) {
           setState(() => _usuarioEmpleado = cuentaInfo['usuario'].toString());
         }
       } else {
         // Compatibilidad con versión anterior: obtener por ID de empleado
-        final cuentaInfo =
+        final Map<String, dynamic>? cuentaInfo =
             await api.empleados.getCuentaByEmpleadoId(widget.empleado.id);
         if (cuentaInfo != null && cuentaInfo['usuario'] != null) {
           setState(() => _usuarioEmpleado = cuentaInfo['usuario'].toString());
@@ -107,12 +119,12 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
           child: Row(
-            children: [
+            children: <Widget>[
               // Nombre (25% del ancho)
               Expanded(
                 flex: 25,
                 child: Row(
-                  children: [
+                  children: <Widget>[
                     // Avatar o foto
                     Container(
                       width: 36,
@@ -131,14 +143,14 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: Stack(
-                                  children: [
+                                  children: <Widget>[
                                     Image.network(
                                       widget.empleado.ubicacionFoto!,
                                       width: 36,
                                       height: 36,
                                       fit: BoxFit.cover,
                                       errorBuilder:
-                                          (context, error, stackTrace) =>
+                                          (BuildContext context, Object error, StackTrace? stackTrace) =>
                                               const FaIcon(
                                         FontAwesomeIcons.user,
                                         color: Color(0xFFE31E24),
@@ -155,7 +167,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                 ),
                               )
                             : Stack(
-                                children: [
+                                children: <Widget>[
                                   const FaIcon(
                                     FontAwesomeIcons.user,
                                     color: Color(0xFFE31E24),
@@ -190,9 +202,9 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           Row(
-                            children: [
+                            children: <Widget>[
                               Expanded(
                                 child: Text(
                                   '${widget.empleado.nombre} ${widget.empleado.apellidos}',
@@ -217,7 +229,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                 ),
                             ],
                           ),
-                          if (_isLoading) ...[
+                          if (_isLoading) ...<Widget>[
                             const SizedBox(height: 4),
                             SizedBox(
                               height: 2,
@@ -228,7 +240,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                     Color(0xFFE31E24)),
                               ),
                             ),
-                          ] else if (_usuarioEmpleado != null) ...[
+                          ] else if (_usuarioEmpleado != null) ...<Widget>[
                             const SizedBox(height: 4),
                             Text(
                               '(@$_usuarioEmpleado)',
@@ -239,7 +251,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
-                          if (esInactivo) ...[
+                          if (esInactivo) ...<Widget>[
                             const SizedBox(height: 4),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -272,7 +284,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
               Expanded(
                 flex: 15,
                 child: Row(
-                  children: [
+                  children: <Widget>[
                     FaIcon(
                       FontAwesomeIcons.phone,
                       color: esInactivo
@@ -300,7 +312,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
               Expanded(
                 flex: 20,
                 child: Row(
-                  children: [
+                  children: <Widget>[
                     FaIcon(
                       EmpleadosUtils.getRolIcon(rol),
                       color: esInactivo
@@ -325,7 +337,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
               Expanded(
                 flex: 25,
                 child: Row(
-                  children: [
+                  children: <Widget>[
                     FaIcon(
                       EmpleadosUtils.esSucursalCentral(
                               widget.empleado.sucursalId,
@@ -377,7 +389,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                 flex: 15,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
+                  children: <Widget>[
                     // Botón para ver detalles
                     IconButton(
                       icon: FaIcon(

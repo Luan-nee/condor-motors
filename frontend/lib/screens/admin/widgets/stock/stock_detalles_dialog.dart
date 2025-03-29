@@ -1,9 +1,9 @@
+import 'package:condorsmotors/main.dart' show api; // Importamos el API global
+import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/utils/stock_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import '../../../../main.dart' show api; // Importamos el API global
-import '../../../../models/producto.model.dart';
-import '../../../../utils/stock_utils.dart';
 
 /// Diálogo para mostrar los detalles de stock de un producto
 class StockDetallesDialog extends StatefulWidget {
@@ -20,6 +20,15 @@ class StockDetallesDialog extends StatefulWidget {
 
   @override
   State<StockDetallesDialog> createState() => _StockDetallesDialogState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty<Producto>('producto', producto))
+      ..add(StringProperty('sucursalId', sucursalId))
+      ..add(StringProperty('sucursalNombre', sucursalNombre));
+  }
 }
 
 class _StockDetallesDialogState extends State<StockDetallesDialog> {
@@ -65,7 +74,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   }
 
   Future<void> _actualizarStock() async {
-    if (_stockNuevo == _stockActual) return;
+    if (_stockNuevo == _stockActual) {
+      return;
+    }
 
     if (_stockNuevo < _stockActual) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -96,7 +107,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         cantidad: cantidadAAgregar,
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         _stockActual = _stockNuevo;
@@ -110,7 +123,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         ),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
       setState(() {
         _error = 'Error al actualizar stock: ${e.toString()}';
@@ -160,14 +175,16 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
     try {
       // Usar la API para establecer liquidación
-      final productoActualizado = await api.productos.setLiquidacion(
+      final Producto productoActualizado = await api.productos.setLiquidacion(
         sucursalId: widget.sucursalId,
         productoId: widget.producto.id,
         enLiquidacion: _enLiquidacion,
         precioLiquidacion: _enLiquidacion ? double.parse(_precioLiquidacionController.text) : null,
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         _isUpdating = false;
@@ -185,7 +202,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         ),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
       setState(() {
         _error = 'Error al gestionar liquidación: ${e.toString()}';
@@ -203,11 +222,11 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor =
+    final Color statusColor =
         StockUtils.getStockStatusColor(_stockActual, _stockMinimo);
-    final statusIcon =
+    final IconData statusIcon =
         StockUtils.getStockStatusIcon(_stockActual, _stockMinimo);
-    final statusText =
+    final String statusText =
         StockUtils.getStockStatusText(_stockActual, _stockMinimo);
 
     return Dialog(
@@ -222,11 +241,11 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+          children: <Widget>[
             // Título y cierre
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+              children: <Widget>[
                 Text(
                   'Detalle de Stock: ${widget.producto.nombre}',
                   style: const TextStyle(
@@ -254,21 +273,21 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     // Información del producto y stock
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: <Widget>[
                         // Detalles del producto
                         Expanded(
                           flex: 6,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                            children: <Widget>[
                               _buildInfoSection(
                                 'Información del Producto',
                                 FontAwesomeIcons.box,
-                                [
+                                <Widget>[
                                   _buildInfoRow('SKU', widget.producto.sku),
                                   _buildInfoRow(
                                       'Categoría', widget.producto.categoria),
@@ -287,7 +306,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                               _buildInfoSection(
                                 'Información de Stock',
                                 FontAwesomeIcons.chartLine,
-                                [
+                                <Widget>[
                                   _buildInfoRow(
                                       'Stock Actual', _stockActual.toString(),
                                       color: statusColor),
@@ -304,7 +323,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                               _buildInfoSection(
                                 'Información de Precios',
                                 FontAwesomeIcons.tag,
-                                [
+                                <Widget>[
                                   _buildInfoRow(
                                     'Precio Compra', 
                                     widget.producto.getPrecioCompraFormateado(),
@@ -365,9 +384,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   Widget _buildInfoSection(String title, IconData icon, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         Row(
-          children: [
+          children: <Widget>[
             FaIcon(
               icon,
               size: 16,
@@ -397,7 +416,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           SizedBox(
             width: 100,
             child: Text(
@@ -408,7 +427,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               ),
             ),
           ),
-          if (icon != null) ...[
+          if (icon != null) ...<Widget>[
             FaIcon(
               icon,
               size: 14,
@@ -443,7 +462,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           // Título y botón para expandir/colapsar
           InkWell(
             onTap: () {
@@ -452,7 +471,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               });
             },
             child: Row(
-              children: [
+              children: <Widget>[
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -495,7 +514,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               duration: const Duration(milliseconds: 300),
               child: _mostrarSeccionLiquidacion ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   const SizedBox(height: 16),
                   
                   // Descripción de liquidación
@@ -508,9 +527,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: <Widget>[
                         const Row(
-                          children: [
+                          children: <Widget>[
                             FaIcon(
                               FontAwesomeIcons.circleInfo,
                               size: 14,
@@ -545,7 +564,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                   
                   // Switch para activar/desactivar liquidación
                   Row(
-                    children: [
+                    children: <Widget>[
                       const Text(
                         'Activar liquidación',
                         style: TextStyle(
@@ -556,7 +575,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                       const SizedBox(width: 16),
                       Switch(
                         value: _enLiquidacion,
-                        onChanged: (value) {
+                        onChanged: (bool value) {
                           setState(() {
                             _enLiquidacion = value;
                           });
@@ -578,7 +597,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                       duration: const Duration(milliseconds: 300),
                       child: _enLiquidacion ? Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           const Text(
                             'Precio de liquidación',
                             style: TextStyle(
@@ -616,7 +635,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Column(
-                              children: [
+                              children: <Widget>[
                                 _buildPrecioComparacion(
                                   'Precio Regular',
                                   widget.producto.precioVenta,
@@ -649,7 +668,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                   // Botones para guardar/cancelar
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
+                    children: <Widget>[
                       ElevatedButton(
                         onPressed: _isUpdating ? null : () {
                           setState(() {
@@ -697,13 +716,13 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
     // Calcular porcentaje de descuento
     String porcentajeDescuento = '';
     if (isDescuento && precioOriginal != null && precioOriginal > 0) {
-      final porcentaje = (precio / precioOriginal) * 100;
+      final double porcentaje = (precio / precioOriginal) * 100;
       porcentajeDescuento = ' (${porcentaje.toStringAsFixed(1)}%)';
     }
     
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
+      children: <Widget>[
         Text(
           label,
           style: TextStyle(
@@ -736,7 +755,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           const Text(
             'Agregar Stock',
             style: TextStyle(
@@ -750,9 +769,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
           // Valor actual y nuevo
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+            children: <Widget>[
               Column(
-                children: [
+                children: <Widget>[
                   const Text(
                     'Actual',
                     style: TextStyle(
@@ -778,7 +797,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               ),
               const SizedBox(width: 20),
               Column(
-                children: [
+                children: <Widget>[
                   const Text(
                     'Nuevo',
                     style: TextStyle(
@@ -820,7 +839,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               errorText:
                   _mostrarAdvertencia ? 'Valor muy alto, ¿está seguro?' : null,
             ),
-            onChanged: (value) {
+            onChanged: (String value) {
               // Validar que sea un número
               if (value.isEmpty) {
                 setState(() {
@@ -830,9 +849,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                 return;
               }
 
-              final cantidad = int.tryParse(value);
+              final int? cantidad = int.tryParse(value);
               if (cantidad != null) {
-                final nuevoStock = _stockActual + cantidad;
+                final int nuevoStock = _stockActual + cantidad;
                 setState(() {
                   _stockNuevo = nuevoStock;
                   _mostrarAdvertencia = cantidad > 100;
@@ -846,7 +865,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
           // Controles para ajustar
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+            children: <Widget>[
               // Botón para reducir la cantidad a agregar
               IconButton(
                 icon: const FaIcon(FontAwesomeIcons.circleMinus,
@@ -910,7 +929,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
+                        children: <Widget>[
                           // Botón +5
                           ElevatedButton.icon(
                             icon: const FaIcon(
@@ -975,7 +994,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
           // Botón para guardar cambios
           Row(
-            children: [
+            children: <Widget>[
               // Botón para cancelar
               if (_stockNuevo != _stockActual)
                 Expanded(
@@ -1035,7 +1054,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
             Padding(
               padding: const EdgeInsets.only(top: 16.0),
               child: Row(
-                children: [
+                children: <Widget>[
                   const FaIcon(
                     FontAwesomeIcons.triangleExclamation,
                     color: Color(0xFFE31E24),

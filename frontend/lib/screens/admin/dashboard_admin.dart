@@ -1,11 +1,12 @@
 import 'dart:math' as math;
 
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/models/paginacion.model.dart';
+import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import '../../main.dart' show api;
-import '../../models/producto.model.dart';
-import '../../models/sucursal.model.dart';
 
 // Un modelo básico para el widget de estadísticas del Dashboard
 class DashboardItemInfo {
@@ -59,15 +60,15 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
   late Animation<double> _animation;
 
   // Datos para mostrar en el dashboard
-  List<Sucursal> _sucursales = [];
-  List<Producto> _productos = [];
+  List<Sucursal> _sucursales = <Sucursal>[];
+  List<Producto> _productos = <Producto>[];
   double _totalVentas = 0;
   double _totalGanancias = 0;
   int _totalEmpleados = 0;
   int _productosAgotados = 0;
 
   // Mapa para agrupar productos por sucursal
-  Map<String, List<Producto>> _productosPorSucursal = {};
+  Map<String, List<Producto>> _productosPorSucursal = <String, List<Producto>>{};
 
   @override
   void initState() {
@@ -95,12 +96,12 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
   Future<void> _loadData() async {
     try {
       // Cargar sucursales primero
-      final sucursalesResponse = await api.sucursales.getSucursales();
+      final List<Sucursal> sucursalesResponse = await api.sucursales.getSucursales();
 
-      final List<Sucursal> sucursalesList = [];
-      final List<Sucursal> centralesList = [];
+      final List<Sucursal> sucursalesList = <Sucursal>[];
+      final List<Sucursal> centralesList = <Sucursal>[];
 
-      for (var sucursal in sucursalesResponse) {
+      for (Sucursal sucursal in sucursalesResponse) {
         sucursalesList.add(sucursal);
         if (sucursal.sucursalCentral) {
           centralesList.add(sucursal);
@@ -117,7 +118,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
 
       if (sucursalId.isNotEmpty) {
         _sucursalSeleccionadaId = sucursalId;
-        await Future.wait([
+        await Future.wait(<Future<void>>[
           _loadProductos(),
           _loadEmpleados(),
           _loadCategorias(),
@@ -145,30 +146,30 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
   Future<void> _loadProductos() async {
     try {
       // Mapa para organizar productos por sucursal
-      final Map<String, List<Producto>> productosBySucursal = {};
+      final Map<String, List<Producto>> productosBySucursal = <String, List<Producto>>{};
 
       // Inicializar listas vacías para cada sucursal
-      for (var sucursal in _sucursales) {
-        productosBySucursal[sucursal.id.toString()] = [];
+      for (Sucursal sucursal in _sucursales) {
+        productosBySucursal[sucursal.id.toString()] = <Producto>[];
       }
 
       // Cargar productos para la sucursal seleccionada
-      final paginatedProductos = await api.productos.getProductos(
+      final PaginatedResponse<Producto> paginatedProductos = await api.productos.getProductos(
         sucursalId: _sucursalSeleccionadaId,
       );
 
-      final Map<int, int> newExistencias = {};
+      final Map<int, int> newExistencias = <int, int>{};
       int agotados = 0;
 
       // Procesar los datos de productos
-      for (var producto in paginatedProductos.items) {
+      for (Producto producto in paginatedProductos.items) {
         newExistencias[producto.id] = producto.stock;
         if (producto.stock <= 0) {
           agotados++;
         }
 
         // Agregar al mapa de productos por sucursal
-        final sucId = _sucursalSeleccionadaId;
+        final String sucId = _sucursalSeleccionadaId;
         if (productosBySucursal.containsKey(sucId)) {
           productosBySucursal[sucId]!.add(producto);
         }
@@ -176,12 +177,12 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
 
       // Para cada sucursal, cargar algunos productos (en una implementación real,
       // podrías cargar datos para todas las sucursales de forma paralela)
-      for (var sucursal in _sucursales) {
+      for (Sucursal sucursal in _sucursales) {
         if (sucursal.id.toString() != _sucursalSeleccionadaId) {
           try {
             // Cargar solo algunos productos para evitar demasiadas llamadas API
             // En producción, podrías implementar una API que devuelva conteos por sucursal
-            final sucProducts = await api.productos.getProductos(
+            final PaginatedResponse<Producto> sucProducts = await api.productos.getProductos(
               sucursalId: sucursal.id.toString(),
               pageSize: 10, // Solo obtener algunos para la demo
             );
@@ -207,7 +208,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
 
   Future<void> _loadEmpleados() async {
     try {
-      final empleados = await api.empleados.getEmpleados();
+      final List<Empleado> empleados = await api.empleados.getEmpleados();
       if (mounted) {
         setState(() {
           _totalEmpleados = empleados.length;
@@ -244,7 +245,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
     try {
       // Simulando datos de ventas y ganancias
       // En una implementación real, deberías obtener estos datos de la API
-      final random = math.Random();
+      final math.Random random = math.Random();
       _totalVentas = 15000 + random.nextDouble() * 5000;
       _totalGanancias = _totalVentas * 0.3;
 
@@ -259,8 +260,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 768;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isMobile = screenWidth < 768;
 
     return Scaffold(
       appBar: AppBar(
@@ -269,7 +270,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFF222222),
-        actions: [
+        actions: <Widget>[
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.rotate),
             onPressed: () async {
@@ -294,7 +295,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: ListView(
-                  children: [
+                  children: <Widget>[
                     // Sección de estadísticas principales
                     FadeTransition(
                       opacity: _animation,
@@ -328,7 +329,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
   }
 
   Widget _buildMainStatsSection(bool isMobile) {
-    final List<DashboardItemInfo> statsItems = [
+    final List<DashboardItemInfo> statsItems = <DashboardItemInfo>[
       DashboardItemInfo(
         icon: FontAwesomeIcons.boxesStacked,
         title: 'Productos',
@@ -375,11 +376,11 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         const Padding(
           padding: EdgeInsets.only(left: 8, bottom: 16),
           child: Row(
-            children: [
+            children: <Widget>[
               FaIcon(
                 FontAwesomeIcons.gaugeHigh,
                 color: Colors.white,
@@ -399,7 +400,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
         ),
         isMobile
             ? Column(
-                children: statsItems.map((item) {
+                children: statsItems.map((DashboardItemInfo item) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: _buildModernCard(item),
@@ -409,7 +410,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
             : Wrap(
                 spacing: 10, // Espaciado horizontal entre tarjetas
                 runSpacing: 10, // Espaciado vertical entre tarjetas
-                children: statsItems.map((item) {
+                children: statsItems.map((DashboardItemInfo item) {
                   return ConstrainedBox(
                     constraints: BoxConstraints(
                       minWidth:
@@ -431,13 +432,13 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF1A1A1A),
-            const Color(0xFF282828),
+          colors: const <Color>[
+            Color(0xFF1A1A1A),
+            Color(0xFF282828),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
             spreadRadius: 1,
@@ -451,10 +452,10 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
+          children: <Widget>[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+              children: <Widget>[
                 Text(
                   info.title,
                   style: const TextStyle(
@@ -497,7 +498,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
             spreadRadius: 1,
@@ -509,9 +510,9 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           const Row(
-            children: [
+            children: <Widget>[
               FaIcon(
                 FontAwesomeIcons.mapLocationDot,
                 color: Colors.orange,
@@ -539,8 +540,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
               mainAxisSpacing: 16,
             ),
             itemCount: _sucursales.length,
-            itemBuilder: (context, index) {
-              final sucursal = _sucursales[index];
+            itemBuilder: (BuildContext context, int index) {
+              final Sucursal sucursal = _sucursales[index];
               return _buildSucursalCard(sucursal);
             },
           ),
@@ -556,13 +557,13 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF2D2D2D),
-            const Color(0xFF363636),
+          colors: const <Color>[
+            Color(0xFF2D2D2D),
+            Color(0xFF363636),
           ],
         ),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
+        boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
             spreadRadius: 1,
@@ -574,9 +575,9 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
+        children: <Widget>[
           Row(
-            children: [
+            children: <Widget>[
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -597,9 +598,9 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     Row(
-                      children: [
+                      children: <Widget>[
                         Expanded(
                           child: Text(
                             sucursal.nombre,
@@ -636,10 +637,15 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      sucursal.direccion,
+                      sucursal.direccion ?? 'Sin dirección registrada',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: sucursal.direccion != null 
+                            ? Colors.white.withOpacity(0.7)
+                            : Colors.white.withOpacity(0.4),
                         fontSize: 12,
+                        fontStyle: sucursal.direccion != null 
+                            ? FontStyle.normal 
+                            : FontStyle.italic,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -654,14 +660,14 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
 
           // Indicadores de productos y empleados
           Row(
-            children: [
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
               _buildMiniStat(
                 FontAwesomeIcons.boxesStacked,
                 'Productos',
                 '${_productosPorSucursal[sucursal.id.toString()]?.length ?? 0}',
                 Colors.blue,
               ),
-              const SizedBox(width: 12),
               _buildMiniStat(
                 FontAwesomeIcons.userTie,
                 'Colaboradores',
@@ -684,7 +690,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
-        children: [
+        children: <Widget>[
           FaIcon(
             icon,
             color: color,

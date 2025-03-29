@@ -1,8 +1,9 @@
+import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/utils/productos_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../../models/producto.model.dart';
-import '../../../../models/sucursal.model.dart';
-import '../../../../utils/productos_utils.dart';
 
 class ProductosTable extends StatefulWidget {
   final List<Producto> productos;
@@ -28,12 +29,26 @@ class ProductosTable extends StatefulWidget {
 
   @override
   State<ProductosTable> createState() => _ProductosTableState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(IterableProperty<Producto>('productos', productos))
+      ..add(IterableProperty<Sucursal>('sucursales', sucursales))
+      ..add(ObjectFlagProperty<Function(Producto)>.has('onEdit', onEdit))
+      ..add(ObjectFlagProperty<Function(Producto)>.has('onDelete', onDelete))
+      ..add(ObjectFlagProperty<Function(Producto)>.has('onViewDetails', onViewDetails))
+      ..add(ObjectFlagProperty<Function(String)?>.has('onSort', onSort))
+      ..add(StringProperty('sortBy', sortBy))
+      ..add(StringProperty('sortOrder', sortOrder));
+  }
 }
 
 class _ProductosTableState extends State<ProductosTable>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  Map<String, List<Producto>> _productosAgrupados = {};
+  Map<String, List<Producto>> _productosAgrupados = <String, List<Producto>>{};
 
   @override
   void initState() {
@@ -52,12 +67,12 @@ class _ProductosTableState extends State<ProductosTable>
     if (!productosHanCambiado && widget.productos.isNotEmpty) {
       // Verificar más profundamente comparando varios productos
       // Tomar una muestra de productos para comparar (hasta 5)
-      final sampleSize = widget.productos.length > 5 ? 5 : widget.productos.length;
+      final int sampleSize = widget.productos.length > 5 ? 5 : widget.productos.length;
       
       for (int i = 0; i < sampleSize; i++) {
-        final oldProducto = oldWidget.productos[i];
-        final newProducto = widget.productos.firstWhere(
-          (p) => p.id == oldProducto.id, 
+        final Producto oldProducto = oldWidget.productos[i];
+        final Producto newProducto = widget.productos.firstWhere(
+          (Producto p) => p.id == oldProducto.id, 
           orElse: () => oldProducto
         );
         
@@ -76,7 +91,7 @@ class _ProductosTableState extends State<ProductosTable>
     }
     
     // Si la key cambió significa que hubo una operación que requiere reconstrucción
-    final keyDiferente = oldWidget.key != widget.key;
+    final bool keyDiferente = oldWidget.key != widget.key;
     
     if (productosHanCambiado || keyDiferente) {
       debugPrint('ProductosTable: Actualización detectada. Productos cambiados: $productosHanCambiado, Key diferente: $keyDiferente');
@@ -104,7 +119,7 @@ class _ProductosTableState extends State<ProductosTable>
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          children: <Widget>[
             const FaIcon(
               FontAwesomeIcons.boxOpen,
               size: 48,
@@ -133,19 +148,19 @@ class _ProductosTableState extends State<ProductosTable>
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         TabBar(
           controller: _tabController,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white.withOpacity(0.5),
           indicatorColor: const Color(0xFFE31E24),
           indicatorWeight: 3,
-          tabs: [
+          tabs: <Widget>[
             Tab(
               icon: Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                children: <Widget>[
                   const FaIcon(FontAwesomeIcons.boxOpen, size: 16),
                   const SizedBox(width: 8),
                   const Text('Todos'),
@@ -169,7 +184,7 @@ class _ProductosTableState extends State<ProductosTable>
               icon: Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                children: <Widget>[
                   const FaIcon(FontAwesomeIcons.triangleExclamation,
                       size: 16, color: Color(0xFFE31E24)),
                   const SizedBox(width: 8),
@@ -194,7 +209,7 @@ class _ProductosTableState extends State<ProductosTable>
               icon: Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                children: <Widget>[
                   FaIcon(FontAwesomeIcons.ban,
                       size: 16, color: Colors.red.shade800),
                   const SizedBox(width: 8),
@@ -220,15 +235,15 @@ class _ProductosTableState extends State<ProductosTable>
         Expanded(
           child: TabBarView(
             controller: _tabController,
-            children: [
+            children: <Widget>[
               // Todos los productos
               _buildProductosTabla(widget.productos),
 
               // Productos con stock bajo
-              _buildProductosTabla(_productosAgrupados['stockBajo'] ?? []),
+              _buildProductosTabla(_productosAgrupados['stockBajo'] ?? <Producto>[]),
 
               // Productos agotados
-              _buildProductosTabla(_productosAgrupados['agotados'] ?? []),
+              _buildProductosTabla(_productosAgrupados['agotados'] ?? <Producto>[]),
             ],
           ),
         ),
@@ -244,7 +259,7 @@ class _ProductosTableState extends State<ProductosTable>
           decoration: BoxDecoration(
             color: const Color(0xFF222222),
             borderRadius: BorderRadius.circular(8),
-            boxShadow: [
+            boxShadow: <BoxShadow>[
               BoxShadow(
                 color: Colors.black.withOpacity(0.2),
                 blurRadius: 8,
@@ -287,7 +302,7 @@ class _ProductosTableState extends State<ProductosTable>
       dataTextStyle: const TextStyle(
         color: Colors.white70,
       ),
-      columns: const [
+      columns: const <DataColumn>[
         DataColumn(
           label: Text('Producto'),
           tooltip: 'Nombre del producto',
@@ -315,15 +330,15 @@ class _ProductosTableState extends State<ProductosTable>
           tooltip: 'Acciones disponibles',
         ),
       ],
-      rows: productosLista.map((producto) {
+      rows: productosLista.map((Producto producto) {
         final bool stockBajo = producto.tieneStockBajo();
 
         return DataRow(
-          cells: [
+          cells: <DataCell>[
             // Nombre
             DataCell(
               Row(
-                children: [
+                children: <Widget>[
                   Container(
                     width: 8,
                     height: 32,
@@ -389,7 +404,7 @@ class _ProductosTableState extends State<ProductosTable>
               Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
+                children: <Widget>[
                   Text(
                     '${producto.stock}',
                     style: TextStyle(
@@ -398,7 +413,7 @@ class _ProductosTableState extends State<ProductosTable>
                           stockBajo ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
-                  if (stockBajo) ...[
+                  if (stockBajo) ...<Widget>[
                     const SizedBox(width: 4),
                     Tooltip(
                       message:
@@ -419,7 +434,7 @@ class _ProductosTableState extends State<ProductosTable>
               Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
+                children: <Widget>[
                   Text(
                     producto.getPrecioVentaFormateado(),
                     style: const TextStyle(
@@ -443,7 +458,7 @@ class _ProductosTableState extends State<ProductosTable>
             DataCell(
               Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
+                children: <Widget>[
                   IconButton(
                     icon: const Icon(
                       FontAwesomeIcons.eye,

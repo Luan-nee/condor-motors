@@ -1,13 +1,13 @@
+import 'package:condorsmotors/main.dart' as app_main;
+import 'package:condorsmotors/screens/colabs/historial_ventas_colab.dart';
+import 'package:condorsmotors/screens/colabs/movimiento_colab.dart';
+import 'package:condorsmotors/screens/colabs/productos_colab.dart';
+import 'package:condorsmotors/screens/colabs/ventas_colab.dart';
+import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../main.dart' show api;
-import '../../utils/role_utils.dart' as role_utils;
-import 'historial_ventas_colab.dart';
-import 'movimiento_colab.dart';
-import 'productos_colab.dart';
-import 'ventas_colab.dart';
 
 class SelectorColabScreen extends StatelessWidget {
   final Map<String, dynamic>? empleadoData;
@@ -19,9 +19,9 @@ class SelectorColabScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final cardWidth = isMobile ? screenWidth * 0.45 : 300.0;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isMobile = screenWidth < 600;
+    final double cardWidth = isMobile ? screenWidth * 0.45 : 300.0;
     
     // Obtener el nombre del empleado de los datos pasados
     final nombre = empleadoData?['nombre'] ?? 'Colaborador';
@@ -36,14 +36,14 @@ class SelectorColabScreen extends StatelessWidget {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               // Header con información del usuario
               Container(
                 padding: EdgeInsets.all(isMobile ? 16 : 20),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2D2D2D),
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
+                  boxShadow: <BoxShadow>[
                     BoxShadow(
                       color: Colors.black.withOpacity(0.2),
                       blurRadius: 8,
@@ -52,7 +52,7 @@ class SelectorColabScreen extends StatelessWidget {
                   ],
                 ),
                 child: Row(
-                  children: [
+                  children: <Widget>[
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -69,7 +69,7 @@ class SelectorColabScreen extends StatelessWidget {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           Text(
                             nombre.toUpperCase(),
                             style: TextStyle(
@@ -108,7 +108,7 @@ class SelectorColabScreen extends StatelessWidget {
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
+                          children: <Widget>[
                             const FaIcon(
                               FontAwesomeIcons.rightFromBracket,
                               size: 16,
@@ -160,7 +160,7 @@ class SelectorColabScreen extends StatelessWidget {
                     crossAxisSpacing: 16,
                     childAspectRatio: isMobile ? 0.75 : 0.85,
                   ),
-                  children: [
+                  children: <Widget>[
                     _buildOptionCard(
                       context,
                       'Nueva Venta',
@@ -211,10 +211,10 @@ class SelectorColabScreen extends StatelessWidget {
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (BuildContext context) => AlertDialog(
         title: const Text('Cerrar Sesión'),
         content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
-        actions: [
+        actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar'),
@@ -236,13 +236,13 @@ class SelectorColabScreen extends StatelessWidget {
   Future<void> _logout(BuildContext context) async {
     try {
       // Limpiar tokens de autenticación
-      await api.authService.logout();
+      await app_main.api.authService.logout();
       
       // Limpiar tokens almacenados en TokenService
-      await api.tokenService.clearTokens();
+      await app_main.api.tokenService.clearTokens();
       
       // Desactivar la opción "Permanecer conectado" y eliminar credenciales auto-login
-      final prefs = await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('stay_logged_in', false);
       await prefs.remove('username_auto');
       await prefs.remove('password_auto');
@@ -252,7 +252,7 @@ class SelectorColabScreen extends StatelessWidget {
         await Navigator.pushNamedAndRemoveUntil(
           context, 
           role_utils.login, 
-          (route) => false
+          (Route route) => false
         );
       }
     } catch (e) {
@@ -278,8 +278,8 @@ class SelectorColabScreen extends StatelessWidget {
     String description,
   ) {
     // Obtener el tamaño de la pantalla para hacer el diseño responsivo
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isMobile = screenWidth < 600;
     
     return Card(
       elevation: 0,
@@ -291,7 +291,7 @@ class SelectorColabScreen extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => screen),
+            MaterialPageRoute(builder: (BuildContext context) => screen),
           );
         },
         borderRadius: BorderRadius.circular(16),
@@ -299,7 +299,7 @@ class SelectorColabScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               // Icono en la parte superior
               Container(
                 padding: const EdgeInsets.all(12),
@@ -355,7 +355,7 @@ class SelectorColabScreen extends StatelessWidget {
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                  children: <Widget>[
                     Text(
                       'ACCEDER',
                       style: TextStyle(
@@ -378,5 +378,11 @@ class SelectorColabScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<Map<String, dynamic>?>('empleadoData', empleadoData));
   }
 } 

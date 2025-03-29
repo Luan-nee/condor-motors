@@ -16,43 +16,43 @@ class CornersPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
+    final Paint paint = Paint()
       ..color = color
       ..strokeWidth = cornerWidth
       ..style = PaintingStyle.stroke;
 
-    final width = size.width;
-    final height = size.height;
+    final double width = size.width;
+    final double height = size.height;
 
     // Esquina superior izquierda
-    canvas.drawPath(
+    canvas..drawPath(
       Path()
         ..moveTo(0, cornerSize)
         ..lineTo(0, 0)
         ..lineTo(cornerSize, 0),
       paint,
-    );
+    )
 
     // Esquina superior derecha
-    canvas.drawPath(
+    ..drawPath(
       Path()
         ..moveTo(width - cornerSize, 0)
         ..lineTo(width, 0)
         ..lineTo(width, cornerSize),
       paint,
-    );
+    )
 
     // Esquina inferior izquierda
-    canvas.drawPath(
+    ..drawPath(
       Path()
         ..moveTo(0, height - cornerSize)
         ..lineTo(0, height)
         ..lineTo(cornerSize, height),
       paint,
-    );
+    )
 
     // Esquina inferior derecha
-    canvas.drawPath(
+    ..drawPath(
       Path()
         ..moveTo(width - cornerSize, height)
         ..lineTo(width, height)
@@ -80,8 +80,8 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
   Map<String, dynamic>? _foundProduct;
 
   // Datos de ejemplo para productos
-  final List<Map<String, dynamic>> _productos = [
-    {
+  final List<Map<String, dynamic>> _productos = <Map<String, dynamic>>[
+    <String, dynamic>{
       'id': 1,
       'codigo': 'CAS001',
       'nombre': 'Casco MT Thunder',
@@ -95,7 +95,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
       'estado': 'ACTIVO',
       'imagen': 'assets/images/casco_mt.jpg'
     },
-    {
+    <String, dynamic>{
       'id': 2,
       'codigo': 'ACE001',
       'nombre': 'Aceite Motul 5100',
@@ -109,7 +109,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
       'estado': 'BAJO_STOCK',
       'imagen': 'assets/images/aceite_motul.jpg'
     },
-    {
+    <String, dynamic>{
       'id': 3,
       'codigo': 'LLA001',
       'nombre': 'Llanta Pirelli Diablo',
@@ -123,7 +123,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
       'estado': 'AGOTADO',
       'imagen': 'assets/images/llanta_pirelli.jpg'
     },
-    {
+    <String, dynamic>{
       'id': 4,
       'codigo': 'FRE001',
       'nombre': 'Kit de Frenos Brembo',
@@ -137,7 +137,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
       'estado': 'ACTIVO',
       'imagen': 'assets/images/frenos_brembo.jpg'
     },
-    {
+    <String, dynamic>{
       'id': 5,
       'codigo': 'AMO001',
       'nombre': 'Amortiguador YSS',
@@ -156,7 +156,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
   void _onDetect(BarcodeCapture capture) {
     final List<Barcode> barcodes = capture.barcodes;
     
-    for (final barcode in barcodes) {
+    for (final Barcode barcode in barcodes) {
       if (barcode.rawValue == _lastScannedCode) {
         return; // Evitar escaneos duplicados
       }
@@ -170,9 +170,9 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
     setState(() => _isLoading = true);
 
     // Simular búsqueda en datos locales
-    final producto = _productos.firstWhere(
-      (p) => p['codigo'] == code,
-      orElse: () => {},
+    final Map<String, dynamic> producto = _productos.firstWhere(
+      (Map<String, dynamic> p) => p['codigo'] == code,
+      orElse: () => <String, dynamic>{},
     );
 
     setState(() {
@@ -195,12 +195,12 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
   void _showProductDialog(Map<String, dynamic> producto) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (BuildContext context) => AlertDialog(
         title: const Text('Producto Encontrado'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             Text(
               producto['nombre'],
               style: const TextStyle(
@@ -233,7 +233,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
             ),
           ],
         ),
-        actions: [
+        actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar'),
@@ -255,11 +255,10 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Escanear Código'),
-        actions: [
+        actions: <Widget>[
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.keyboard),
             onPressed: () {
-              // TODO: Implementar entrada manual de código
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Función de entrada manual en desarrollo'),
@@ -271,7 +270,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
         ],
       ),
       body: Stack(
-        children: [
+        children: <Widget>[
           MobileScanner(
             onDetect: _onDetect,
           ),
@@ -289,7 +288,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                children: <Widget>[
                   Icon(
                     FontAwesomeIcons.barcode,
                     size: 48,
@@ -302,7 +301,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen> {
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
-                      shadows: [
+                      shadows: <Shadow>[
                         Shadow(
                           blurRadius: 4,
                         ),
@@ -338,13 +337,13 @@ class ScannerOverlayClipper extends CustomClipper<Path> {
 
   @override
   Path getClip(Size size) {
-    final path = Path()
+    final Path path = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
 
-    final cutoutLeft = (size.width - scanBoxWidth) / 2;
-    final cutoutTop = (size.height - scanBoxHeight) / 2;
+    final double cutoutLeft = (size.width - scanBoxWidth) / 2;
+    final double cutoutTop = (size.height - scanBoxHeight) / 2;
 
-    final cutout = Rect.fromLTWH(
+    final Rect cutout = Rect.fromLTWH(
       cutoutLeft,
       cutoutTop,
       scanBoxWidth,

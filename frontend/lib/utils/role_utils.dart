@@ -7,7 +7,7 @@ const String vendedorDashboard = '/vendedor';
 const String computerDashboard = '/computer';
 
 /// Definición de roles disponibles en la aplicación
-const Map<String, String> roles = {
+const Map<String, String> roles = <String, String>{
   'ADMINISTRADOR': 'ADMINISTRADOR',
   'ADMINSTRADOR': 'ADMINISTRADOR', // Typo en el backend
   'VENDEDOR': 'VENDEDOR',

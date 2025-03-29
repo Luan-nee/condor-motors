@@ -1,10 +1,11 @@
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/color.model.dart';
+import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/utils/productos_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../../main.dart' show api;
-import '../../../../models/color.model.dart';
-import '../../../../models/producto.model.dart';
-import '../../../../models/sucursal.model.dart';
-import '../../../../utils/productos_utils.dart';
 
 class ProductoDetalleDialog extends StatefulWidget {
   final Producto producto;
@@ -44,13 +45,22 @@ class ProductoDetalleDialog extends StatefulWidget {
 
   @override
   State<ProductoDetalleDialog> createState() => _ProductoDetalleDialogState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty<Producto>('producto', producto))
+      ..add(IterableProperty<Sucursal>('sucursales', sucursales))
+      ..add(ObjectFlagProperty<Function(Producto)?>.has('onSave', onSave));
+  }
 }
 
 class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     with TickerProviderStateMixin {
   bool _isLoading = true;
-  List<ProductoEnSucursal> _sucursalesCompartidas = [];
-  List<ColorApp> _colores = [];
+  List<ProductoEnSucursal> _sucursalesCompartidas = <ProductoEnSucursal>[];
+  List<ColorApp> _colores = <ColorApp>[];
   ColorApp? _colorProducto;
   String _error = '';
 
@@ -101,7 +111,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   Future<void> _cargarColores() async {
 
     try {
-      final colores = await api.colores.getColores();
+      final List<ColorApp> colores = await api.colores.getColores();
 
       if (mounted) {
         setState(() {
@@ -111,7 +121,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           if (widget.producto.color != null && widget.producto.color!.isNotEmpty) {
             try {
               _colorProducto = _colores.firstWhere(
-                (color) => color.nombre.toLowerCase() == widget.producto.color!.toLowerCase(),
+                (ColorApp color) => color.nombre.toLowerCase() == widget.producto.color!.toLowerCase(),
               );
             } catch (e) {
               // No se encontró coincidencia, _colorProducto queda como null
@@ -131,9 +141,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   @override
   Widget build(BuildContext context) {
     // Obtener el ancho de la pantalla para responsive
-    final screenWidth = MediaQuery.of(context).size.width;
+    final double screenWidth = MediaQuery.of(context).size.width;
     // Determinar si es pantalla pequeña (< 800px)
-    final isPantallaReducida = screenWidth < 800;
+    final bool isPantallaReducida = screenWidth < 800;
 
     return ConstrainedBox(
       constraints: BoxConstraints(
@@ -145,7 +155,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
-          children: [
+          children: <Widget>[
             _buildHeader(context),
             const SizedBox(height: 16),
             
@@ -171,7 +181,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
+      children: <Widget>[
         Expanded(
           child: Text(
             'Detalles del Producto en Sucursales',
@@ -202,7 +212,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         padding: const EdgeInsets.all(16.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             // Ícono del producto
             Container(
               width: 80,
@@ -226,9 +236,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   Row(
-                    children: [
+                    children: <Widget>[
                       Expanded(
                         child: Text(
                           widget.producto.nombre,
@@ -239,7 +249,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                           ),
                         ),
                       ),
-                      if (widget.producto.liquidacion) ...[
+                      if (widget.producto.liquidacion) ...<Widget>[
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -250,7 +260,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: [
+                            children: <Widget>[
                               FaIcon(
                                 FontAwesomeIcons.tag,
                                 size: 12,
@@ -275,7 +285,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
-                      children: [
+                      children: <Widget>[
                         _buildTag('SKU: ${widget.producto.sku}',
                             fontFamily: 'monospace'),
                         const SizedBox(width: 8),
@@ -283,7 +293,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         const SizedBox(width: 8),
                         _buildTag(widget.producto.marca),
                         if (widget.producto.color != null &&
-                            widget.producto.color!.isNotEmpty) ...[
+                            widget.producto.color!.isNotEmpty) ...<Widget>[
                           const SizedBox(width: 8),
                           _buildColorTag(widget.producto.color!, _colorProducto),
                         ],
@@ -291,7 +301,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                     ),
                   ),
                   if (widget.producto.descripcion != null &&
-                      widget.producto.descripcion!.isNotEmpty) ...[
+                      widget.producto.descripcion!.isNotEmpty) ...<Widget>[
                     const SizedBox(height: 8),
                     Text(
                       widget.producto.descripcion!,
@@ -321,13 +331,13 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           // Sección de estadísticas compacta
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
+              children: <Widget>[
                 _buildCompactEstadistica(
                   'Sucursales',
                   _isLoading ? '...' : '${_sucursalesCompartidas.length}',
@@ -339,7 +349,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   'Con stock',
                   _isLoading
                       ? '...'
-                      : '${_sucursalesCompartidas.where((s) => s.disponible && s.producto.stock > 0).length}',
+                      : '${_sucursalesCompartidas.where((ProductoEnSucursal s) => s.disponible && s.producto.stock > 0).length}',
                   icon: FontAwesomeIcons.boxOpen,
                   color: Colors.green,
                   isSmall: isPantallaReducida,
@@ -348,7 +358,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   'Stock bajo',
                   _isLoading
                       ? '...'
-                      : '${_sucursalesCompartidas.where((s) => s.disponible && s.producto.tieneStockBajo()).length}',
+                      : '${_sucursalesCompartidas.where((ProductoEnSucursal s) => s.disponible && s.producto.tieneStockBajo()).length}',
                   icon: FontAwesomeIcons.triangleExclamation,
                   color: const Color(0xFFE31E24),
                   isSmall: isPantallaReducida,
@@ -357,7 +367,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   'Agotado',
                   _isLoading
                       ? '...'
-                      : '${_sucursalesCompartidas.where((s) => s.disponible && s.producto.stock <= 0).length}',
+                      : '${_sucursalesCompartidas.where((ProductoEnSucursal s) => s.disponible && s.producto.stock <= 0).length}',
                   icon: FontAwesomeIcons.ban,
                   color: Colors.red.shade800,
                   isSmall: isPantallaReducida,
@@ -372,10 +382,10 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               padding: EdgeInsets.all(isPantallaReducida ? 12.0 : 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   // Pestañas superiores: Atributos y Filtros
                   Row(
-                    children: [
+                    children: <Widget>[
                       // Pestañas de atributos
                       Expanded(
                         flex: isPantallaReducida ? 3 : 2,
@@ -397,12 +407,12 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                                 horizontal: isPantallaReducida ? 4 : 8),
                             labelPadding: EdgeInsets.symmetric(
                                 horizontal: isPantallaReducida ? 8 : 12),
-                            tabs: [
+                            tabs: <Widget>[
                               Tab(
                                 height: isPantallaReducida ? 34 : 40,
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: [
+                                  children: <Widget>[
                                     FaIcon(FontAwesomeIcons.moneyBillWave,
                                         size: isPantallaReducida ? 14 : 16,
                                         color: Colors.green.shade700),
@@ -416,7 +426,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                                 height: isPantallaReducida ? 34 : 40,
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: [
+                                  children: <Widget>[
                                     FaIcon(FontAwesomeIcons.boxOpen,
                                         size: isPantallaReducida ? 14 : 16,
                                         color: const Color(0xFFE31E24)),
@@ -430,7 +440,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                                 height: isPantallaReducida ? 34 : 40,
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: [
+                                  children: <Widget>[
                                     FaIcon(FontAwesomeIcons.circleInfo,
                                         size: isPantallaReducida ? 14 : 16,
                                         color: Colors.blue),
@@ -458,7 +468,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                             borderRadius: BorderRadius.circular(8)),
                         child: TabBarView(
                           controller: _atributosTabController,
-                          children: [
+                          children: <Widget>[
                             // Pestaña de Precios (ahora con descuentos y precios por sucursal)
                             _buildPreciosTab(isPantallaReducida),
 
@@ -471,7 +481,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                                   isPantallaReducida ? 12.0 : 16.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                                children: <Widget>[
                                   Text(
                                     'Información Adicional',
                                     style: TextStyle(
@@ -517,7 +527,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
+        children: <Widget>[
           FaIcon(
             icon,
             size: isSmall ? 12 : 14,
@@ -548,7 +558,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   Widget _buildFooter(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
-      children: [
+      children: <Widget>[
         TextButton(
           child: const Text(
             'Cerrar',
@@ -567,7 +577,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         padding: EdgeInsets.all(isPantallaReducida ? 12.0 : 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             // Sección de precios
             Container(
               padding: const EdgeInsets.all(12),
@@ -577,7 +587,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   Text(
                     'Información de Precios',
                     style: TextStyle(
@@ -593,7 +603,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             ),
 
             // Mostrar sección de liquidación en modo solo visualización
-            if (widget.producto.liquidacion || widget.producto.cantidadMinimaDescuento != null || widget.producto.porcentajeDescuento != null) ...[
+            if (widget.producto.liquidacion || widget.producto.cantidadMinimaDescuento != null || widget.producto.porcentajeDescuento != null) ...<Widget>[
               const SizedBox(height: 16),
               // Llamamos a nuestra función de visualización de promociones
               _buildPromocionesInfo(),
@@ -606,7 +616,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
 
   // Nueva función para mostrar el resumen de las promociones en la pestaña de precios
   Widget _buildPromocionesInfo() {
-    final producto = widget.producto;
+    final Producto producto = widget.producto;
     final bool enLiquidacion = producto.liquidacion;
     final bool tienePromocionGratis = producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0;
     final bool tieneDescuentoPorcentual = producto.cantidadMinimaDescuento != null && producto.cantidadMinimaDescuento! > 0 &&
@@ -614,7 +624,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     
     return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          children: <Widget>[
         // Mostrar resumen de cada promoción activa
         if (enLiquidacion)
           _buildResumenPromocion(
@@ -624,7 +634,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             FontAwesomeIcons.tag
           ),
           
-        if (tienePromocionGratis) ...[
+        if (tienePromocionGratis) ...<Widget>[
           if (enLiquidacion) const SizedBox(height: 8),
           _buildResumenPromocion(
             'Promoción: Lleva y Paga', 
@@ -634,7 +644,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           ),
         ],
           
-        if (tieneDescuentoPorcentual) ...[
+        if (tieneDescuentoPorcentual) ...<Widget>[
           if (enLiquidacion || tienePromocionGratis) const SizedBox(height: 8),
           _buildResumenPromocion(
             'Descuento por Cantidad', 
@@ -678,7 +688,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         ),
       ),
       child: Row(
-                      children: [
+                      children: <Widget>[
                         FaIcon(
             icono,
                           size: 16,
@@ -688,7 +698,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                         Text(
                   titulo,
                           style: TextStyle(
@@ -716,7 +726,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   // Métodos para la pestaña de precios
   Widget _buildPreciosRow() {
     return Row(
-            children: [
+            children: <Widget>[
               Expanded(
             child: _buildAtributo(
                 'Precio compra', widget.producto.getPrecioCompraFormateado())),
@@ -745,7 +755,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       child: Wrap(
         spacing: 16,
         runSpacing: 12,
-                children: [
+                children: <Widget>[
           SizedBox(
               width: 150,
               child: _buildAtributo('Precio compra',
@@ -782,7 +792,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+        children: <Widget>[
           // Información básica de stock del producto
           Padding(
             padding: EdgeInsets.all(isPantallaReducida ? 12.0 : 16.0),
@@ -794,7 +804,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   Text(
                     'Información de Stock',
                     style: TextStyle(
@@ -819,8 +829,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
+              children: const <Widget>[
+                Text(
                   'Stock por Sucursal',
                   style: TextStyle(
                     fontSize: 16,
@@ -853,7 +863,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          children: <Widget>[
             const Icon(
               Icons.error_outline,
               color: Color(0xFFE31E24),
@@ -884,23 +894,23 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     }
 
     // Ya no usamos filtrado, mostramos todas las sucursales disponibles
-    final sucursalesDisponibles =
-        _sucursalesCompartidas.where((s) => s.disponible).toList();
+    final List<ProductoEnSucursal> sucursalesDisponibles =
+        _sucursalesCompartidas.where((ProductoEnSucursal s) => s.disponible).toList();
 
     if (sucursalesDisponibles.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const FaIcon(
+          children: const <Widget>[
+            FaIcon(
               FontAwesomeIcons.store,
               size: 48,
               color: Colors.white24,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'Este producto no está disponible en ninguna sucursal.',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white70,
                 fontSize: 16,
               ),
@@ -915,12 +925,12 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       shrinkWrap: true,
       padding: const EdgeInsets.symmetric(vertical: 4),
       itemCount: sucursalesDisponibles.length,
-      separatorBuilder: (context, index) => const Divider(
+      separatorBuilder: (BuildContext context, int index) => const Divider(
         color: Colors.white10,
         height: 1,
       ),
-      itemBuilder: (context, index) {
-        final sucursalInfo = sucursalesDisponibles[index];
+      itemBuilder: (BuildContext context, int index) {
+        final ProductoEnSucursal sucursalInfo = sucursalesDisponibles[index];
         return _buildCompactSucursalTile(sucursalInfo);
       },
     );
@@ -928,13 +938,13 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
 
   // Versión compacta del tile de sucursal
   Widget _buildCompactSucursalTile(ProductoEnSucursal sucursalInfo) {
-    final disponible = sucursalInfo.disponible;
-    final producto = sucursalInfo.producto;
-    final sucursal = sucursalInfo.sucursal;
+    final bool disponible = sucursalInfo.disponible;
+    final Producto producto = sucursalInfo.producto;
+    final Sucursal sucursal = sucursalInfo.sucursal;
 
-    final stockBajo = disponible && producto.tieneStockBajo();
-    final agotado = disponible && producto.stock <= 0;
-    final esCentral = sucursal.sucursalCentral;
+    final bool stockBajo = disponible && producto.tieneStockBajo();
+    final bool agotado = disponible && producto.stock <= 0;
+    final bool esCentral = sucursal.sucursalCentral;
 
     Color indicadorColor = Colors.green;
     IconData statusIcon = FontAwesomeIcons.check;
@@ -958,7 +968,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
       child: Row(
-        children: [
+        children: <Widget>[
           // Indicador de estado (barra vertical)
           Container(
             width: 4,
@@ -975,10 +985,10 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
-              children: [
+              children: <Widget>[
                 // Nombre de sucursal y etiqueta central
                 Row(
-                  children: [
+                  children: <Widget>[
                     Expanded(
                       child: Text(
                         sucursal.nombre,
@@ -1017,10 +1027,13 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
 
                 // Dirección en formato compacto
                 Text(
-                  sucursal.direccion,
-                  style: const TextStyle(
+                  sucursal.direccion ?? 'Sin dirección registrada',
+                  style: TextStyle(
                     fontSize: 12,
                     color: Colors.white60,
+                    fontStyle: sucursal.direccion != null 
+                        ? FontStyle.normal 
+                        : FontStyle.italic,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1030,7 +1043,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
 
                 // Etiquetas de información en una sola fila
                 Row(
-                  children: [
+                  children: <Widget>[
                     // Estado (Disponible, Stock bajo, etc.)
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -1044,7 +1057,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
-                        children: [
+                        children: <Widget>[
                           FaIcon(
                             statusIcon,
                             size: 10,
@@ -1063,7 +1076,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                       ),
                     ),
 
-                    if (disponible) ...[
+                    if (disponible) ...<Widget>[
                       const SizedBox(width: 8),
 
                       // Stock
@@ -1076,7 +1089,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
+                          children: <Widget>[
                             Text(
                               'Stock: ',
                               style: TextStyle(
@@ -1125,7 +1138,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   // Métodos para la pestaña de stock
   Widget _buildStockRow() {
     return Row(
-      children: [
+      children: <Widget>[
         Expanded(
             child: _buildAtributo('Stock actual', '${widget.producto.stock}',
                 color: widget.producto.tieneStockBajo()
@@ -1161,7 +1174,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       child: Wrap(
         spacing: 16,
         runSpacing: 12,
-        children: [
+        children: <Widget>[
           SizedBox(
               width: 150,
               child: _buildAtributo('Stock actual', '${widget.producto.stock}',
@@ -1193,39 +1206,10 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       ),
     );
   }
-
-  // Métodos para la pestaña de descuentos
-
-  Widget _buildDescuentosWrap() {
-    return SingleChildScrollView(
-      child: Wrap(
-        spacing: 16,
-        runSpacing: 12,
-        children: [
-          if (widget.producto.cantidadMinimaDescuento != null)
-            SizedBox(
-                width: 150,
-                child: _buildAtributo('Cant. mín. descuento',
-                    '${widget.producto.cantidadMinimaDescuento}')),
-          if (widget.producto.cantidadGratisDescuento != null)
-            SizedBox(
-                width: 150,
-                child: _buildAtributo('Cant. gratis',
-                    '${widget.producto.cantidadGratisDescuento}')),
-          if (widget.producto.porcentajeDescuento != null)
-            SizedBox(
-                width: 150,
-                child: _buildAtributo(
-                    '% descuento', '${widget.producto.porcentajeDescuento}%')),
-        ],
-      ),
-    );
-  }
-
   // Métodos para la pestaña de información adicional
   Widget _buildInfoAdicionalRow() {
     return Row(
-      children: [
+      children: <Widget>[
         Expanded(child: _buildAtributo('ID', '${widget.producto.id}')),
         if (widget.producto.detalleProductoId != null)
           Expanded(
@@ -1245,7 +1229,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       child: Wrap(
         spacing: 16,
         runSpacing: 12,
-        children: [
+        children: <Widget>[
           SizedBox(
               width: 150,
               child:
@@ -1268,7 +1252,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   Widget _buildAtributo(String label, String value, {Color? color}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         Text(
           label,
           style: TextStyle(
@@ -1326,7 +1310,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
+        children: <Widget>[
           // Muestra visual del color
           Container(
             width: 14,
@@ -1349,7 +1333,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             ),
           ),
           // Código hexadecimal (si está disponible)
-          if (colorApp?.hex != null && colorApp!.hex!.isNotEmpty) ...[
+          if (colorApp?.hex != null && colorApp!.hex!.isNotEmpty) ...<Widget>[
             const SizedBox(width: 4),
             Text(
               colorApp.hex!.toUpperCase(),
@@ -1389,16 +1373,17 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             Row(
-              children: [
-                const FaIcon(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const <Widget>[
+                FaIcon(
                   FontAwesomeIcons.tags,
                   color: Colors.amber,
                   size: 18,
                 ),
-                const SizedBox(width: 8),
-                const Text(
+                SizedBox(width: 8),
+                Text(
                   'Promociones Activas',
                   style: TextStyle(
                     color: Colors.white,
@@ -1410,7 +1395,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             ),
             if ((enLiquidacion && tienePromocionGratis) || 
                 (enLiquidacion && tieneDescuentoPorcentual) ||
-                (tienePromocionGratis && tieneDescuentoPorcentual)) ...[
+                (tienePromocionGratis && tieneDescuentoPorcentual)) ...<Widget>[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -1420,15 +1405,15 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   border: Border.all(color: Colors.blue.withOpacity(0.3)),
                 ),
                 child: Row(
-                  children: [
-                    const FaIcon(
+                  children: const <Widget>[
+                    FaIcon(
                       FontAwesomeIcons.circleInfo,
                       color: Colors.blue,
                       size: 16,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
-                      child: const Text(
+                      child: Text(
                         'Este producto tiene múltiples promociones activas que se pueden aplicar conjuntamente.',
                         style: TextStyle(
                           color: Colors.white,
@@ -1443,13 +1428,13 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             const SizedBox(height: 16),
             
             // Mostrar todas las promociones activas
-            if (enLiquidacion) ...[
+            if (enLiquidacion) ...<Widget>[
               _buildPromocionLiquidacion(producto),
               if (tienePromocionGratis || tieneDescuentoPorcentual)
                 const SizedBox(height: 16),
             ],
             
-            if (tienePromocionGratis) ...[
+            if (tienePromocionGratis) ...<Widget>[
               _buildPromocionGratis(producto),
               if (tieneDescuentoPorcentual)
                 const SizedBox(height: 16),
@@ -1466,8 +1451,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   // Método para mostrar la promoción de liquidación
   Widget _buildPromocionLiquidacion(Producto producto) {
     // Mostrar promoción de liquidación
-    final ahorro = producto.precioVenta - (producto.precioOferta ?? 0);
-    final porcentaje = producto.precioVenta > 0 ? (ahorro / producto.precioVenta) * 100 : 0;
+    final double ahorro = producto.precioVenta - (producto.precioOferta ?? 0);
+    final num porcentaje = producto.precioVenta > 0 ? (ahorro / producto.precioVenta) * 100 : 0;
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1477,9 +1462,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         border: Border.all(color: Colors.amber.withOpacity(0.3)),
       ),
       child: Column(
-        children: [
+        children: <Widget>[
           Row(
-            children: [
+            children: <Widget>[
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -1521,11 +1506,11 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           ),
           const SizedBox(height: 16),
           Row(
-            children: [
+            children: <Widget>[
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     Text(
                       'Precio regular',
                       style: TextStyle(
@@ -1553,7 +1538,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
+                  children: <Widget>[
                     Text(
                       'Precio de liquidación',
                       style: TextStyle(
@@ -1583,9 +1568,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   // Método para mostrar la promoción de productos gratis
   Widget _buildPromocionGratis(Producto producto) {
     // Mostrar promoción de productos gratis
-    final cantidadMinima = producto.cantidadMinimaDescuento!;
-    final cantidadGratis = producto.cantidadGratisDescuento!;
-    final cantidadPago = cantidadMinima - cantidadGratis;
+    final int cantidadMinima = producto.cantidadMinimaDescuento!;
+    final int cantidadGratis = producto.cantidadGratisDescuento!;
+    final int cantidadPago = cantidadMinima - cantidadGratis;
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1595,9 +1580,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         border: Border.all(color: Colors.green.withOpacity(0.3)),
       ),
       child: Column(
-        children: [
+        children: <Widget>[
           Row(
-            children: [
+            children: <Widget>[
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -1631,7 +1616,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
-              children: [
+              children: <Widget>[
                 const FaIcon(
                   FontAwesomeIcons.circleInfo,
                   color: Colors.green,
@@ -1657,8 +1642,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   // Método para mostrar la promoción de descuento porcentual
   Widget _buildPromocionDescuentoPorcentual(Producto producto) {
     // Mostrar promoción de descuento porcentual
-    final cantidadMinima = producto.cantidadMinimaDescuento!;
-    final porcentaje = producto.porcentajeDescuento!;
+    final int cantidadMinima = producto.cantidadMinimaDescuento!;
+    final int porcentaje = producto.porcentajeDescuento!;
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1668,9 +1653,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         border: Border.all(color: Colors.blue.withOpacity(0.3)),
       ),
       child: Column(
-        children: [
+        children: <Widget>[
           Row(
-            children: [
+            children: <Widget>[
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -1704,7 +1689,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
-              children: [
+              children: <Widget>[
                 const FaIcon(
                   FontAwesomeIcons.circleInfo,
                   color: Colors.blue,

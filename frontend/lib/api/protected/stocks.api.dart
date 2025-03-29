@@ -1,5 +1,5 @@
+import 'package:condorsmotors/api/main.api.dart';
 import 'package:flutter/foundation.dart';
-import '../main.api.dart';
 
 class StocksApi {
   final ApiClient _api;
@@ -27,7 +27,7 @@ class StocksApi {
       
       debugPrint('StocksApi: Obteniendo productos para sucursal $sucursalId');
       
-      final queryParams = <String, String>{};
+      final Map<String, String> queryParams = <String, String>{};
       
       if (categoriaId != null) {
         queryParams['categoria_id'] = categoriaId;
@@ -42,11 +42,11 @@ class StocksApi {
       }
       
       // Construir el endpoint correcto
-      final endpoint = '/$sucursalId/productos';
+      final String endpoint = '/stocks/$sucursalId/productos';
       debugPrint('StocksApi: Solicitando a endpoint: $endpoint con parámetros: $queryParams');
       
-      final response = await _api.authenticatedRequest(
-        endpoint: '/stocks',
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
+        endpoint: endpoint,
         method: 'GET',
         queryParams: queryParams,
       );
@@ -56,15 +56,15 @@ class StocksApi {
       // Verificar estructura de respuesta
       if (response['data'] == null) {
         debugPrint('StocksApi: La respuesta no contiene datos');
-        return [];
+        return <dynamic>[];
       }
       
       if (response['data'] is! List) {
         debugPrint('StocksApi: Formato de datos inesperado. Recibido: ${response['data'].runtimeType}');
-        return [];
+        return <dynamic>[];
       }
       
-      final productos = response['data'] as List;
+      final List productos = response['data'] as List;
       debugPrint('StocksApi: ${productos.length} productos encontrados');
       
       return productos;
@@ -94,7 +94,7 @@ class StocksApi {
       
       debugPrint('StocksApi: Obteniendo stock del producto $productoId en sucursal $sucursalId');
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
         method: 'GET',
       );
@@ -130,10 +130,10 @@ class StocksApi {
       debugPrint('StocksApi: Actualizando stock del producto $productoId en sucursal $sucursalId');
       debugPrint('StocksApi: Operación: $tipo, Cantidad: $cantidad');
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId/stock',
         method: 'PATCH',
-        body: {
+        body: <String, dynamic>{
           'cantidad': cantidad,
           'tipo': tipo,
         },
@@ -161,7 +161,7 @@ class StocksApi {
     {String? motivo}
   ) async {
     try {
-      final Map<String, dynamic> body = {
+      final Map<String, dynamic> body = <String, dynamic>{
         'cantidad': cantidad,
         'tipo': tipo,
       };
@@ -170,10 +170,10 @@ class StocksApi {
         body['motivo'] = motivo;
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/movimientos',
         method: 'POST',
-        body: {
+        body: <String, dynamic>{
           'sucursalId': sucursalId,
           'productoId': productoId,
           'cantidad': cantidad,
@@ -202,7 +202,7 @@ class StocksApi {
     DateTime? fechaFin,
   }) async {
     try {
-      final queryParams = <String, String>{};
+      final Map<String, String> queryParams = <String, String>{};
       
       if (productoId != null) {
         queryParams['producto_id'] = productoId;
@@ -216,13 +216,13 @@ class StocksApi {
         queryParams['fecha_fin'] = fechaFin.toIso8601String();
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/movimientos',
         method: 'GET',
         queryParams: queryParams,
       );
       
-      return response['data'] ?? [];
+      return response['data'] ?? <dynamic>[];
     } catch (e) {
       debugPrint('Error al obtener historial de stock: $e');
       rethrow;
@@ -240,10 +240,10 @@ class StocksApi {
     List<Map<String, dynamic>> productos
   ) async {
     try {
-      final response = await _api.request(
+      final Map<String, dynamic> response = await _api.request(
         endpoint: '/$sucursalOrigenId/transferir-stock',
         method: 'POST',
-        body: {
+        body: <String, dynamic>{
           'sucursal_destino_id': sucursalDestinoId,
           'productos': productos,
         },
@@ -265,10 +265,10 @@ class StocksApi {
     String formato
   ) async {
     try {
-      final response = await _api.request(
+      final Map<String, dynamic> response = await _api.request(
         endpoint: '/$sucursalId/reporte-stock',
         method: 'GET',
-        queryParams: {
+        queryParams: <String, String>{
           'formato': formato
         },
       );

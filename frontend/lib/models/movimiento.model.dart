@@ -32,8 +32,10 @@ class Movimiento {
   factory Movimiento.fromJson(Map<String, dynamic> json) {
     debugPrint('🔄 [Movimiento.fromJson] Iniciando conversión de mapa a Movimiento');
     // Parsear fechas con manejo de nulos
-    DateTime? parseFecha(dynamic fecha) {
-      if (fecha == null) return null;
+    DateTime? parseFecha(fecha) {
+      if (fecha == null) {
+        return null;
+      }
       try {
         return DateTime.parse(fecha.toString());
       } catch (e) {
@@ -48,13 +50,13 @@ class Movimiento {
     // Primero revisamos si hay productos en el formato tradicional
     if (json['productos'] != null && json['productos'] is List) {
       try {
-        final productosLista = json['productos'] as List;
+        final List productosLista = json['productos'] as List;
         debugPrint('📦 [Movimiento.fromJson] Procesando ${productosLista.length} productos...');
         
-        productos = [];
-        for (var i = 0; i < productosLista.length; i++) {
+        productos = <DetalleProducto>[];
+        for (int i = 0; i < productosLista.length; i++) {
           try {
-            final item = productosLista[i] as Map<String, dynamic>;
+            final Map<String, dynamic> item = productosLista[i] as Map<String, dynamic>;
             productos.add(DetalleProducto.fromJson(item));
           } catch (e) {
             debugPrint('❌ [Movimiento.fromJson] Error al parsear producto[$i]: $e');
@@ -65,19 +67,19 @@ class Movimiento {
       } catch (e) {
         debugPrint('❌ [Movimiento.fromJson] Error al parsear productos: $e');
         // Intentamos recuperarnos del error
-        productos = [];
+        productos = <DetalleProducto>[];
       }
     } 
     // Si no, revisamos si hay itemsVenta (formato del detalle de movimiento)
     else if (json['itemsVenta'] != null && json['itemsVenta'] is List) {
       try {
-        final items = json['itemsVenta'] as List;
+        final List items = json['itemsVenta'] as List;
         debugPrint('🔍 [Movimiento.fromJson] Parseando ${items.length} itemsVenta...');
         
-        productos = [];
-        for (var i = 0; i < items.length; i++) {
+        productos = <DetalleProducto>[];
+        for (int i = 0; i < items.length; i++) {
           try {
-            final item = items[i] as Map<String, dynamic>;
+            final Map<String, dynamic> item = items[i] as Map<String, dynamic>;
             debugPrint('📦 [Movimiento.fromJson] Procesando item $i: ${item.keys.join(', ')}');
             productos.add(DetalleProducto.fromItemVenta(item));
           } catch (e) {
@@ -88,11 +90,11 @@ class Movimiento {
         debugPrint('✅ [Movimiento.fromJson] ${productos.length} productos parseados desde "itemsVenta"');
       } catch (e) {
         debugPrint('❌ [Movimiento.fromJson] Error al parsear itemsVenta: $e');
-        productos = [];
+        productos = <DetalleProducto>[];
       }
     } else {
       debugPrint('⚠️ [Movimiento.fromJson] No se encontraron productos ni itemsVenta en el JSON');
-      productos = [];
+      productos = <DetalleProducto>[];
     }
 
     // Manejo seguro de campos requeridos
@@ -134,7 +136,7 @@ class Movimiento {
 
   /// Convierte la instancia a un mapa JSON
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'id': id,
       'estado': estado,
       'nombreSucursalOrigen': nombreSucursalOrigen,
@@ -143,7 +145,7 @@ class Movimiento {
       'salidaOrigen': salidaOrigen?.toIso8601String(),
       'llegadaDestino': llegadaDestino?.toIso8601String(),
       if (productos != null)
-        'productos': productos!.map((producto) => producto.toJson()).toList(),
+        'productos': productos!.map((DetalleProducto producto) => producto.toJson()).toList(),
       if (observaciones != null) 'observaciones': observaciones,
       if (solicitante != null) 'solicitante': solicitante,
     };
@@ -293,7 +295,7 @@ class DetalleProducto {
 
   /// Convierte la instancia a un mapa JSON
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'id': id,
       'nombre': nombre,
       if (codigo != null) 'codigo': codigo,

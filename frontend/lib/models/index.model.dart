@@ -8,7 +8,6 @@ export 'empleado.model.dart';
 export 'marca.model.dart';
 export 'paginacion.model.dart';
 export 'producto.model.dart';
-export 'producto_extendido.model.dart';
 export 'proforma.model.dart';
 export 'sucursal.model.dart';
 // TODO: Exportar otros modelos a medida que se vayan creando/refactorizando

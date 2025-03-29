@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class ConfirmDialog extends StatelessWidget {
@@ -21,7 +22,7 @@ class ConfirmDialog extends StatelessWidget {
     return AlertDialog(
       title: Text(title),
       content: Text(message),
-      actions: [
+      actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
@@ -41,5 +42,16 @@ class ConfirmDialog extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(StringProperty('title', title))
+      ..add(StringProperty('message', message))
+      ..add(StringProperty('confirmText', confirmText))
+      ..add(StringProperty('cancelText', cancelText))
+      ..add(ObjectFlagProperty<VoidCallback>.has('onConfirm', onConfirm));
   }
 } 

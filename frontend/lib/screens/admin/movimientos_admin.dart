@@ -1,13 +1,12 @@
+import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/protected/movimientos.api.dart'; // Importación para acceder a MovimientosApi.estadosDetalle
+// Importamos la variable global api
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/movimiento.model.dart';
+import 'package:condorsmotors/screens/admin/widgets/movimiento_detail_dialog.dart'; // Importamos el nuevo widget unificado
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-
-import '../../api/index.api.dart';
-import '../../api/protected/movimientos.api.dart'; // Importación para acceder a MovimientosApi.estadosDetalle
-// Importamos la variable global api
-import '../../main.dart' show api;
-import '../../models/movimiento.model.dart';
-import 'widgets/movimiento_detail_dialog.dart'; // Importamos el nuevo widget unificado
 
 class MovimientosAdminScreen extends StatefulWidget {
   const MovimientosAdminScreen({super.key});
@@ -17,7 +16,7 @@ class MovimientosAdminScreen extends StatefulWidget {
 }
 
 class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
-  List<Movimiento> _movimientos = [];
+  List<Movimiento> _movimientos = <Movimiento>[];
   bool _cargando = true;
   String _filtroEstado = 'Todos';
   String? _filtroSucursal;
@@ -40,7 +39,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
     }
 
     try {
-      final movimientos = await api.movimientos.getMovimientos(
+      final List<Movimiento> movimientos = await api.movimientos.getMovimientos(
         sucursalId: _filtroSucursal,
         estado: _filtroEstado != 'Todos' ? _filtroEstado.toUpperCase() : null,
         fechaInicio: _fechaInicio,
@@ -77,13 +76,13 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+              children: <Widget>[
                 Row(
-                  children: [
+                  children: <Widget>[
                     const FaIcon(
                       FontAwesomeIcons.truck,
                       color: Colors.white,
@@ -92,7 +91,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                     const SizedBox(width: 16),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: <Widget>[
                         const Text(
                           'INVENTARIO',
                           style: TextStyle(
@@ -114,7 +113,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                 ),
                 // Filtros
                 Row(
-                  children: [
+                  children: <Widget>[
                     // Filtro por estado
                     Container(
                       decoration: BoxDecoration(
@@ -124,7 +123,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       margin: const EdgeInsets.only(right: 12),
                       child: Row(
-                        children: [
+                        children: <Widget>[
                           const FaIcon(
                             FontAwesomeIcons.filter,
                             color: Color(0xFFE31E24),
@@ -136,12 +135,12 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                             dropdownColor: const Color(0xFF2D2D2D),
                             style: const TextStyle(color: Colors.white),
                             underline: const SizedBox(),
-                            items: [
+                            items: <DropdownMenuItem<String>>[
                               const DropdownMenuItem(
                                   value: 'Todos',
                                   child: Text('Todos los estados')),
                               ...MovimientosApi.estadosDetalle.entries.map(
-                                (e) => DropdownMenuItem(
+                                (MapEntry<String, String> e) => DropdownMenuItem(
                                     value: e.key, child: Text(e.value)),
                               ),
                             ],
@@ -182,7 +181,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
               Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                  children: <Widget>[
                     const Icon(Icons.error_outline,
                         color: Colors.red, size: 48),
                     const SizedBox(height: 16),
@@ -207,7 +206,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                    children: <Widget>[
                       const FaIcon(
                         FontAwesomeIcons.boxOpen,
                         color: Colors.white38,
@@ -247,19 +246,19 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
+                      children: <Widget>[
                         // Encabezado de la tabla
                         Container(
                           color: const Color(0xFF2D2D2D),
                           padding: const EdgeInsets.symmetric(
                               vertical: 16, horizontal: 20),
                           child: const Row(
-                            children: [
+                            children: <Widget>[
                               // Fecha solicitada (15%)
                               Expanded(
                                 flex: 15,
                                 child: Row(
-                                  children: [
+                                  children: <Widget>[
                                     FaIcon(
                                       FontAwesomeIcons.calendar,
                                       color: Color(0xFFE31E24),
@@ -280,7 +279,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                               Expanded(
                                 flex: 15,
                                 child: Row(
-                                  children: [
+                                  children: <Widget>[
                                     FaIcon(
                                       FontAwesomeIcons.calendar,
                                       color: Color(0xFFE31E24),
@@ -361,7 +360,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                         ),
 
                         // Filas de movimientos
-                        ..._movimientos.map((movimiento) => InkWell(
+                        ..._movimientos.map((Movimiento movimiento) => InkWell(
                               // Eliminamos el onTap para no abrir al hacer clic en cualquier parte de la fila
                               child: Container(
                                 decoration: BoxDecoration(
@@ -374,12 +373,12 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     vertical: 12, horizontal: 20),
                                 child: Row(
-                                  children: [
+                                  children: <Widget>[
                                     // Fecha solicitada
                                     Expanded(
                                       flex: 15,
                                       child: Row(
-                                        children: [
+                                        children: <Widget>[
                                           Container(
                                             width: 32,
                                             height: 32,
@@ -410,7 +409,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                                     Expanded(
                                       flex: 15,
                                       child: Row(
-                                        children: [
+                                        children: <Widget>[
                                           Container(
                                             width: 32,
                                             height: 32,
@@ -549,7 +548,9 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
   // Función para mostrar el detalle de un movimiento
   void _mostrarDetalleMovimiento(Movimiento movimiento) async {
     // Verificar si estamos montados
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     debugPrint(
         '🔍 Iniciando visualización de detalles para movimiento #${movimiento.id}');
@@ -567,7 +568,9 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
 
   // Formato de fecha
   String _formatFecha(DateTime? fecha) {
-    if (fecha == null) return 'N/A';
+    if (fecha == null) {
+      return 'N/A';
+    }
     try {
       return DateFormat('dd/MM/yyyy').format(fecha);
     } catch (e) {
@@ -625,7 +628,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+            children: <Widget>[
               FaIcon(
                 iconData,
                 color: textColor,

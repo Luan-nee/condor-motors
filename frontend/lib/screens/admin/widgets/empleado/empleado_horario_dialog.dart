@@ -1,7 +1,8 @@
+import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/utils/empleados_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../../models/empleado.model.dart';
-import '../../../../utils/empleados_utils.dart';
 
 /// Widget para mostrar información del horario del empleado
 /// 
@@ -23,8 +24,8 @@ class EmpleadoHorarioViewer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Formatear las horas para asegurar que no tengan segundos
-    final horaInicio = EmpleadosUtils.formatearHora(empleado.horaInicioJornada);
-    final horaFin = EmpleadosUtils.formatearHora(empleado.horaFinJornada);
+    final String horaInicio = EmpleadosUtils.formatearHora(empleado.horaInicioJornada);
+    final String horaFin = EmpleadosUtils.formatearHora(empleado.horaFinJornada);
     
     return Container(
       width: width,
@@ -39,22 +40,22 @@ class EmpleadoHorarioViewer extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (showTitle) ...[
+        children: <Widget>[
+          if (showTitle) ...<Widget>[
             Row(
-              children: [
-                const FaIcon(
+              children: const <Widget>[
+                FaIcon(
                   FontAwesomeIcons.clock,
                   color: Color(0xFFE31E24),
                   size: 16,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'HORARIO LABORAL',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFFE31E24),
+                    color: Color(0xFFE31E24),
                   ),
                 ),
               ],
@@ -64,7 +65,7 @@ class EmpleadoHorarioViewer extends StatelessWidget {
           
           // Horario
           Column(
-            children: [
+            children: <Widget>[
               _buildHorarioItem(
                 'Hora de inicio',
                 horaInicio,
@@ -89,7 +90,7 @@ class EmpleadoHorarioViewer extends StatelessWidget {
   // Widget para mostrar un elemento de horario
   Widget _buildHorarioItem(String label, String value, IconData icon) {
     return Row(
-      children: [
+      children: <Widget>[
         Container(
           width: 40,
           height: 40,
@@ -109,7 +110,7 @@ class EmpleadoHorarioViewer extends StatelessWidget {
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               Text(
                 label,
                 style: TextStyle(
@@ -131,6 +132,16 @@ class EmpleadoHorarioViewer extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty<Empleado>('empleado', empleado))
+      ..add(DiagnosticsProperty<bool>('showTitle', showTitle))
+      ..add(ColorProperty('backgroundColor', backgroundColor))
+      ..add(DoubleProperty('width', width));
   }
 }
 
@@ -156,9 +167,9 @@ class EmpleadoHorarioDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             Row(
-              children: [
+              children: <Widget>[
                 const FaIcon(
                   FontAwesomeIcons.clock,
                   color: Colors.white,
@@ -204,5 +215,12 @@ class EmpleadoHorarioDialog extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      .add(DiagnosticsProperty<Empleado>('empleado', empleado));
   }
 } 

@@ -1,9 +1,8 @@
+import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/models/marca.model.dart';
+import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:flutter/foundation.dart';
-
-import '../../models/marca.model.dart';
-import '../../models/paginacion.model.dart';
-import '../main.api.dart';
-import 'cache/fast_cache.dart';
 
 /// Clase para gestionar las operaciones de API relacionadas con Marcas
 class MarcasApi {
@@ -31,11 +30,15 @@ class MarcasApi {
   }) async {
     try {
       // Validar parámetros
-      if (page < 1) page = 1;
-      if (pageSize < 1) pageSize = 10;
+      if (page < 1) {
+        page = 1;
+      }
+      if (pageSize < 1) {
+        pageSize = 10;
+      }
       
       // Generar clave única para este conjunto de parámetros
-      final cacheKey = '$_prefixListaMarcas${page}_$pageSize';
+      final String cacheKey = '$_prefixListaMarcas${page}_$pageSize';
       
       // Forzar refresco del caché si es necesario
       if (forceRefresh) {
@@ -44,7 +47,7 @@ class MarcasApi {
       
       // Intentar obtener desde caché si useCache es true
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<ResultadoPaginado<Marca>>(cacheKey);
+        final ResultadoPaginado<Marca>? cachedData = _cache.get<ResultadoPaginado<Marca>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ [MarcasApi] Marcas paginadas obtenidas desde caché: $cacheKey');
           return cachedData;
@@ -52,10 +55,10 @@ class MarcasApi {
       }
       
       debugPrint('🔄 [MarcasApi] Obteniendo lista de marcas paginada (página: $page, tamaño: $pageSize)');
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/marcas',
         method: 'GET',
-        queryParams: {
+        queryParams: <String, String>{
           'page': page.toString(),
           'pageSize': pageSize.toString(),
         },
@@ -73,7 +76,7 @@ class MarcasApi {
       }
       
       // Extraer lista de marcas
-      final List<dynamic> items = data['data'] ?? [];
+      final List<dynamic> items = data['data'] ?? <dynamic>[];
       
       // Extraer información de paginación
       final paginationData = data['pagination'];
@@ -97,10 +100,10 @@ class MarcasApi {
           // Si hay un error en la conversión, lo ignoramos y continuamos
           return Marca(id: 0, nombre: 'Error');
         }
-      }).where((marca) => marca.id > 0).toList();
+      }).where((Marca marca) => marca.id > 0).toList();
       
       // Crear resultado paginado
-      final resultado = ResultadoPaginado<Marca>(
+      final ResultadoPaginado<Marca> resultado = ResultadoPaginado<Marca>(
         items: marcas,
         total: totalItems,
         page: currentPage,
@@ -131,7 +134,7 @@ class MarcasApi {
   }) async {
     try {
       // Generar clave única
-      const cacheKey = '${_prefixListaMarcas}todas';
+      const String cacheKey = '${_prefixListaMarcas}todas';
       
       // Forzar refresco del caché si es necesario
       if (forceRefresh) {
@@ -140,7 +143,7 @@ class MarcasApi {
       
       // Intentar obtener desde caché si useCache es true
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<List<Marca>>(cacheKey);
+        final List<Marca>? cachedData = _cache.get<List<Marca>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ [MarcasApi] Todas las marcas obtenidas desde caché');
           return cachedData;
@@ -149,12 +152,12 @@ class MarcasApi {
       
       // Obtener todas las marcas a través de la paginación
       // Usando un tamaño de página grande para reducir peticiones
-      final resultado = await getMarcasPaginadas(
+      final ResultadoPaginado<Marca> resultado = await getMarcasPaginadas(
         pageSize: 100, // Tamaño grande para obtener más marcas en una sola petición
         useCache: false, // No usar caché para la paginación interna
       );
       
-      final marcas = resultado.items;
+      final List<Marca> marcas = resultado.items;
       
       // Guardar en caché si useCache es true
       if (useCache) {
@@ -174,13 +177,13 @@ class MarcasApi {
   /// [marcaId] ID de la marca a obtener
   /// [useCache] Indica si se debe usar el caché (default: true)
   /// [forceRefresh] Fuerza a obtener datos frescos del servidor (default: false)
-  Future<Marca> getMarca(dynamic marcaId, {
+  Future<Marca> getMarca(marcaId, {
     bool useCache = true,
     bool forceRefresh = false,
   }) async {
     try {
       // Validar que marcaId no sea nulo o vacío
-      final id = marcaId.toString();
+      final String id = marcaId.toString();
       if (id.isEmpty) {
         throw ApiException(
           statusCode: 400,
@@ -188,7 +191,7 @@ class MarcasApi {
         );
       }
       
-      final cacheKey = '$_prefixMarca$id';
+      final String cacheKey = '$_prefixMarca$id';
       
       // Forzar refresco del caché si es necesario
       if (forceRefresh) {
@@ -197,7 +200,7 @@ class MarcasApi {
       
       // Intentar obtener desde caché si useCache es true
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<Marca>(cacheKey);
+        final Marca? cachedData = _cache.get<Marca>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ [MarcasApi] Marca obtenida desde caché: $cacheKey');
           return cachedData;
@@ -205,7 +208,7 @@ class MarcasApi {
       }
       
       debugPrint('🔄 [MarcasApi] Obteniendo marca con ID: $id');
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/marcas/$id',
         method: 'GET',
       );
@@ -251,7 +254,7 @@ class MarcasApi {
       }
       
       debugPrint('🔄 [MarcasApi] Creando nueva marca: ${marcaData['nombre']}');
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/marcas',
         method: 'POST',
         body: marcaData,
@@ -292,10 +295,10 @@ class MarcasApi {
   /// 
   /// [marcaId] ID de la marca a actualizar
   /// [marcaData] Datos actualizados de la marca
-  Future<Marca> updateMarca(dynamic marcaId, Map<String, dynamic> marcaData) async {
+  Future<Marca> updateMarca(marcaId, Map<String, dynamic> marcaData) async {
     try {
       // Validar que marcaId no sea nulo o vacío
-      final id = marcaId.toString();
+      final String id = marcaId.toString();
       if (id.isEmpty) {
         throw ApiException(
           statusCode: 400,
@@ -312,7 +315,7 @@ class MarcasApi {
       }
       
       debugPrint('🔄 [MarcasApi] Actualizando marca con ID: $id');
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/marcas/$id',
         method: 'PATCH',
         body: marcaData,
@@ -353,10 +356,10 @@ class MarcasApi {
   /// Elimina una marca
   /// 
   /// [marcaId] ID de la marca a eliminar
-  Future<bool> deleteMarca(dynamic marcaId) async {
+  Future<bool> deleteMarca(marcaId) async {
     try {
       // Validar que marcaId no sea nulo o vacío
-      final id = marcaId.toString();
+      final String id = marcaId.toString();
       if (id.isEmpty) {
         throw ApiException(
           statusCode: 400,
@@ -365,7 +368,7 @@ class MarcasApi {
       }
       
       debugPrint('🔄 [MarcasApi] Eliminando marca con ID: $id');
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/marcas/$id',
         method: 'DELETE',
       );

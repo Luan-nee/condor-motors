@@ -1,21 +1,21 @@
 import 'dart:io';
 
+import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/routes/routes.dart' as routes;
+import 'package:condorsmotors/services/token_service.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
+import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
+import 'package:condorsmotors/widgets/connection_status.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'api/index.api.dart';
-import 'routes/routes.dart' as routes;
-import 'services/token_service.dart';
-import 'theme/apptheme.dart';
-import 'utils/role_utils.dart' as role_utils;
-import 'widgets/connection_status.dart';
 
 // Configuración global de API
 late CondorMotorsApi api;
 
 // Lista de servidores posibles para intentar conectarse
-final List<String> _serverUrls = [
+final List<String> _serverUrls = <String>[
   'http://192.168.1.66:3000/api',  // IP de tu PC en la red WiFi local
   'http://192.168.1.100:3000/api', // IP principal
   'http://localhost:3000/api',      // Servidor local
@@ -35,8 +35,8 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<bool> _checkServerConnectivity(String url) async {
   try {
     debugPrint('Comprobando conectividad con: $url');
-    final uri = Uri.parse(url.replaceAll('/api', ''));
-    final socket = await Socket.connect(uri.host, uri.port, timeout: Duration(seconds: 3));
+    final Uri uri = Uri.parse(url.replaceAll('/api', ''));
+    final Socket socket = await Socket.connect(uri.host, uri.port, timeout: Duration(seconds: 3));
     socket.destroy();
     debugPrint('Conexión exitosa con: $url');
     return true;
@@ -48,13 +48,13 @@ Future<bool> _checkServerConnectivity(String url) async {
 
 // Guardar la URL del servidor en preferencias
 Future<void> _saveServerUrl(String url) async {
-  final prefs = await SharedPreferences.getInstance();
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
   await prefs.setString('server_url', url);
 }
 
 // Obtener la última URL del servidor usada
 Future<String?> _getLastServerUrl() async {
-  final prefs = await SharedPreferences.getInstance();
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
   return prefs.getString('server_url');
 }
 
@@ -75,14 +75,14 @@ void main() async {
   debugPrint('Inicializando API...');
   
   // Obtener la última URL usada
-  final lastUrl = await _getLastServerUrl();
+  final String? lastUrl = await _getLastServerUrl();
   if (lastUrl != null) {
     _serverUrls.insert(0, lastUrl); // Priorizar la última URL usada
   }
   
   // Verificar conectividad con los servidores en orden
   String? workingUrl;
-  for (final url in _serverUrls) {
+  for (final String url in _serverUrls) {
     if (await _checkServerConnectivity(url)) {
       workingUrl = url;
       break;
@@ -90,7 +90,7 @@ void main() async {
   }
   
   // Si no se encuentra ningún servidor disponible, usar el primero de la lista
-  final baseUrl = workingUrl ?? _serverUrls.first;
+  final String baseUrl = workingUrl ?? _serverUrls.first;
   debugPrint('URL base de la API: $baseUrl');
   
   // Guardar la URL seleccionada para futuras sesiones
@@ -98,12 +98,12 @@ void main() async {
     await _saveServerUrl(workingUrl);
   }
   
-  final tokenService = TokenService.instance;
+  final TokenService tokenService = TokenService.instance;
   
   // Configurar la URL base en TokenService
   tokenService.setBaseUrl(baseUrl);
   
-  final apiInstance = CondorMotorsApi(baseUrl: baseUrl, tokenService: tokenService);
+  final CondorMotorsApi apiInstance = CondorMotorsApi(baseUrl: baseUrl, tokenService: tokenService);
   
   // Inicializar la API global
   initializeApi(apiInstance);
@@ -111,7 +111,7 @@ void main() async {
   
   // Verificar autenticación del usuario
   debugPrint('Verificando autenticación del usuario...');
-  final isAuthenticated = await tokenService.loadTokens();
+  final bool isAuthenticated = await tokenService.loadTokens();
   String initialRoute = role_utils.login;
   Map<String, dynamic>? userData;
   
@@ -121,7 +121,7 @@ void main() async {
       debugPrint('Validando token con el servidor...');
       // En lugar de solo hacer ping, verificamos si el token es válido
       // usando el endpoint específico para ello
-      final isTokenValid = await apiInstance.auth.verificarToken();
+      final bool isTokenValid = await apiInstance.auth.verificarToken();
       
       if (!isTokenValid) {
         debugPrint('Token no validado por el servidor, redirigiendo a login');
@@ -150,7 +150,7 @@ void main() async {
         // Verificar si necesitamos normalizar el rol
         if (!role_utils.roles.containsKey(rol)) {
           // Intentar con versión en mayúsculas
-          final rolUpper = rol.toUpperCase();
+          final String rolUpper = rol.toUpperCase();
           if (role_utils.roles.containsKey(rolUpper)) {
             userData['rol'] = rolUpper;
             debugPrint('Rol normalizado a mayúsculas: ${userData['rol']}');
@@ -210,12 +210,12 @@ class CondorMotorsApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Crear la aplicación base
-    final app = MaterialApp(
+    final MaterialApp app = MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Condor Motors',
       theme: AppTheme.theme,
-      onGenerateRoute: (settings) {
+      onGenerateRoute: (RouteSettings settings) {
         return routes.generateRoute(
           settings,
           initialRoute: initialRoute,
@@ -230,5 +230,12 @@ class CondorMotorsApp extends StatelessWidget {
     return ConnectionStatusWidget(
       child: app,
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties..add(StringProperty('initialRoute', initialRoute))
+    ..add(DiagnosticsProperty<Map<String, dynamic>?>('userData', userData));
   }
 }

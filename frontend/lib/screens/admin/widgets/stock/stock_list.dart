@@ -1,10 +1,10 @@
+import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalle_sucursal.dart';
+import 'package:condorsmotors/utils/stock_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import '../../../../models/producto.model.dart';
-import '../../../../models/sucursal.model.dart';
-import '../../../../utils/stock_utils.dart';
-import 'stock_detalle_sucursal.dart';
 
 class TableProducts extends StatelessWidget {
   final String selectedSucursalId;
@@ -46,7 +46,7 @@ class TableProducts extends StatelessWidget {
     this.filtrosActivos = false,
   });
 
-  final List<String> _columnHeaders = const [
+  final List<String> _columnHeaders = const <String>[
     'Producto',
     'Categoría',
     'Marca',
@@ -57,7 +57,7 @@ class TableProducts extends StatelessWidget {
   ];
   
   // Encabezados para la vista global
-  final List<String> _globalColumnHeaders = const [
+  final List<String> _globalColumnHeaders = const <String>[
     'Producto',
     'Categoría',
     'Marca',
@@ -82,7 +82,7 @@ class TableProducts extends StatelessWidget {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          children: <Widget>[
             const Icon(
               Icons.error_outline,
               color: Color(0xFFE31E24),
@@ -94,7 +94,7 @@ class TableProducts extends StatelessWidget {
               style: const TextStyle(color: Colors.white),
               textAlign: TextAlign.center,
             ),
-            if (onRetry != null) ...[
+            if (onRetry != null) ...<Widget>[
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 icon: const Icon(Icons.refresh),
@@ -130,7 +130,7 @@ class TableProducts extends StatelessWidget {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          children: <Widget>[
             // Usar un icono diferente cuando no hay productos por filtros
             Icon(
               hayFiltrosAplicados 
@@ -166,7 +166,7 @@ class TableProducts extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            if (hayFiltrosAplicados) ...[
+            if (hayFiltrosAplicados) ...<Widget>[
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: onRetry ?? () {
@@ -214,7 +214,7 @@ class TableProducts extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+        children: <Widget>[
           // Encabezado de la tabla
           Container(
             color: const Color(0xFF2D2D2D),
@@ -229,16 +229,16 @@ class TableProducts extends StatelessWidget {
           // Lista de productos agrupados por estado
           Expanded(
             child: ListView(
-              children: [
+              children: <Widget>[
                 // Grupo 1: Productos agotados (muestro primero los más críticos)
-                if (agotadosCount > 0) ...[
+                if (agotadosCount > 0) ...<Widget>[
                   _buildGroupHeader(
                     'Productos agotados', 
                     agotadosCount, 
                     Colors.red.shade800, 
                     FontAwesomeIcons.ban
                   ),
-                  ...productosAgrupados[StockStatus.agotado]!.map((producto) => 
+                  ...productosAgrupados[StockStatus.agotado]!.map((Producto producto) => 
                     esVistaGlobal
                         ? _buildGlobalProductRow(context, producto)
                         : _buildProductRow(context, producto)
@@ -246,14 +246,14 @@ class TableProducts extends StatelessWidget {
                 ],
                 
                 // Grupo 2: Productos con stock bajo
-                if (stockBajoCount > 0) ...[
+                if (stockBajoCount > 0) ...<Widget>[
                   _buildGroupHeader(
                     'Productos con stock bajo', 
                     stockBajoCount, 
                     const Color(0xFFE31E24), 
                     FontAwesomeIcons.triangleExclamation
                   ),
-                  ...productosAgrupados[StockStatus.stockBajo]!.map((producto) => 
+                  ...productosAgrupados[StockStatus.stockBajo]!.map((Producto producto) => 
                     esVistaGlobal
                         ? _buildGlobalProductRow(context, producto)
                         : _buildProductRow(context, producto)
@@ -261,14 +261,14 @@ class TableProducts extends StatelessWidget {
                 ],
                 
                 // Grupo 3: Productos disponibles (solo si no estamos en vista global)
-                if (disponiblesCount > 0 && !esVistaGlobal) ...[
+                if (disponiblesCount > 0 && !esVistaGlobal) ...<Widget>[
                   _buildGroupHeader(
                     'Productos disponibles', 
                     disponiblesCount, 
                     Colors.green, 
                     FontAwesomeIcons.check
                   ),
-                  ...productosAgrupados[StockStatus.disponible]!.map((producto) => 
+                  ...productosAgrupados[StockStatus.disponible]!.map((Producto producto) => 
                     _buildProductRow(context, producto)
                   ),
                 ],
@@ -282,7 +282,7 @@ class TableProducts extends StatelessWidget {
   
   // Método para construir los encabezados en vista estándar
   List<Widget> _buildStandardHeaders() {
-    return [
+    return <Widget>[
       // Nombre del producto (30%)
       Expanded(
         flex: 30,
@@ -369,7 +369,7 @@ class TableProducts extends StatelessWidget {
   
   // Método para construir los encabezados en vista global
   List<Widget> _buildGlobalHeaders() {
-    return [
+    return <Widget>[
       // Nombre del producto (25%)
       Expanded(
         flex: 25,
@@ -447,7 +447,7 @@ class TableProducts extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       color: color.withOpacity(0.15),
       child: Row(
-        children: [
+        children: <Widget>[
           FaIcon(
             icon,
             color: color,
@@ -485,13 +485,13 @@ class TableProducts extends StatelessWidget {
 
   // Método para construir una fila de producto en vista estándar (por sucursal)
   Widget _buildProductRow(BuildContext context, Producto producto) {
-    final stockActual = producto.stock;
-    final stockMinimo = producto.stockMinimo ?? 0;
+    final int stockActual = producto.stock;
+    final int stockMinimo = producto.stockMinimo ?? 0;
     
     // Determinar color e icono según el estado
-    final statusColor = StockUtils.getStockStatusColor(stockActual, stockMinimo);
-    final statusIcon = StockUtils.getStockStatusIcon(stockActual, stockMinimo);
-    final statusText = StockUtils.getStockStatusText(stockActual, stockMinimo);
+    final Color statusColor = StockUtils.getStockStatusColor(stockActual, stockMinimo);
+    final IconData statusIcon = StockUtils.getStockStatusIcon(stockActual, stockMinimo);
+    final String statusText = StockUtils.getStockStatusText(stockActual, stockMinimo);
     
     return Container(
       decoration: BoxDecoration(
@@ -503,12 +503,12 @@ class TableProducts extends StatelessWidget {
       ),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: Row(
-        children: [
+        children: <Widget>[
           // Nombre del producto (30%)
           Expanded(
             flex: 30,
             child: Row(
-              children: [
+              children: <Widget>[
                 FaIcon(
                   FontAwesomeIcons.box,
                   size: 14,
@@ -519,9 +519,9 @@ class TableProducts extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                    children: <Widget>[
                       Row(
-                        children: [
+                        children: <Widget>[
                           Expanded(
                             child: Text(
                               producto.nombre,
@@ -544,14 +544,14 @@ class TableProducts extends StatelessWidget {
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const FaIcon(
+                                children: const <Widget>[
+                                  FaIcon(
                                     FontAwesomeIcons.fire,
                                     size: 10,
                                     color: Colors.orange,
                                   ),
-                                  const SizedBox(width: 4),
-                                  const Text(
+                                  SizedBox(width: 4),
+                                  Text(
                                     'Liquidación',
                                     style: TextStyle(
                                       color: Colors.orange,
@@ -564,7 +564,7 @@ class TableProducts extends StatelessWidget {
                             ),
                         ],
                       ),
-                      if (producto.descripcion != null && producto.descripcion!.isNotEmpty) ...[
+                      if (producto.descripcion != null && producto.descripcion!.isNotEmpty) ...<Widget>[
                         const SizedBox(height: 4),
                         Text(
                           producto.descripcion!,
@@ -577,10 +577,10 @@ class TableProducts extends StatelessWidget {
                         ),
                       ],
                       // Mostrar precio de liquidación si aplica
-                      if (producto.liquidacion && producto.precioOferta != null) ...[
+                      if (producto.liquidacion && producto.precioOferta != null) ...<Widget>[
                         const SizedBox(height: 4),
                         Row(
-                          children: [
+                          children: <Widget>[
                             Text(
                               'Precio: ${producto.getPrecioActualFormateado()}',
                               style: const TextStyle(
@@ -651,7 +651,7 @@ class TableProducts extends StatelessWidget {
             flex: 15,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+              children: <Widget>[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -660,7 +660,7 @@ class TableProducts extends StatelessWidget {
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                    children: <Widget>[
                       FaIcon(
                         statusIcon,
                         color: statusColor,
@@ -686,7 +686,7 @@ class TableProducts extends StatelessWidget {
             flex: 15,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+              children: <Widget>[
                 IconButton(
                   icon: const FaIcon(
                     FontAwesomeIcons.chartLine,
@@ -745,20 +745,20 @@ class TableProducts extends StatelessWidget {
   
   // Método para construir una fila de producto en vista global (todas las sucursales)
   Widget _buildGlobalProductRow(BuildContext context, Producto producto) {
-    final stockActual = producto.stock;
-    final stockMinimo = producto.stockMinimo ?? 0;
+    final int stockActual = producto.stock;
+    final int stockMinimo = producto.stockMinimo ?? 0;
     
     // Determinar color e icono según el estado
-    final statusColor = StockUtils.getStockStatusColor(stockActual, stockMinimo);
-    final statusIcon = StockUtils.getStockStatusIcon(stockActual, stockMinimo);
-    final statusText = StockUtils.getStockStatusText(stockActual, stockMinimo);
+    final Color statusColor = StockUtils.getStockStatusColor(stockActual, stockMinimo);
+    final IconData statusIcon = StockUtils.getStockStatusIcon(stockActual, stockMinimo);
+    final String statusText = StockUtils.getStockStatusText(stockActual, stockMinimo);
     
     // Obtener datos de stock por sucursal
-    final stocks = stockPorSucursal?[producto.id] ?? {};
+    final Map<String, int> stocks = stockPorSucursal?[producto.id] ?? <String, int>{};
     
     // Calcular cuántas sucursales tienen stock bajo o agotado para este producto
-    final sucursalesConProblemas = stocks.entries
-        .where((entry) => entry.value <= 0 || // Agotado
+    final int sucursalesConProblemas = stocks.entries
+        .where((MapEntry<String, int> entry) => entry.value <= 0 || // Agotado
                          (entry.value < (producto.stockMinimo ?? 0))) // Stock bajo
         .length;
     
@@ -772,12 +772,12 @@ class TableProducts extends StatelessWidget {
       ),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: Row(
-        children: [
+        children: <Widget>[
           // Nombre del producto (25%)
           Expanded(
             flex: 25,
             child: Row(
-              children: [
+              children: <Widget>[
                 FaIcon(
                   FontAwesomeIcons.box,
                   size: 14,
@@ -788,9 +788,9 @@ class TableProducts extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                    children: <Widget>[
                       Row(
-                        children: [
+                        children: <Widget>[
                           Expanded(
                             child: Text(
                               producto.nombre,
@@ -813,14 +813,14 @@ class TableProducts extends StatelessWidget {
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const FaIcon(
+                                children: const <Widget>[
+                                  FaIcon(
                                     FontAwesomeIcons.fire,
                                     size: 10,
                                     color: Colors.orange,
                                   ),
-                                  const SizedBox(width: 4),
-                                  const Text(
+                                  SizedBox(width: 4),
+                                  Text(
                                     'Liquidación',
                                     style: TextStyle(
                                       color: Colors.orange,
@@ -833,7 +833,7 @@ class TableProducts extends StatelessWidget {
                             ),
                         ],
                       ),
-                      if (producto.descripcion != null && producto.descripcion!.isNotEmpty) ...[
+                      if (producto.descripcion != null && producto.descripcion!.isNotEmpty) ...<Widget>[
                         const SizedBox(height: 4),
                         Text(
                           producto.descripcion!,
@@ -846,10 +846,10 @@ class TableProducts extends StatelessWidget {
                         ),
                       ],
                       // Mostrar precio de liquidación si aplica
-                      if (producto.liquidacion && producto.precioOferta != null) ...[
+                      if (producto.liquidacion && producto.precioOferta != null) ...<Widget>[
                         const SizedBox(height: 4),
                         Row(
-                          children: [
+                          children: <Widget>[
                             Text(
                               'Precio: ${producto.getPrecioActualFormateado()}',
                               style: const TextStyle(
@@ -871,7 +871,7 @@ class TableProducts extends StatelessWidget {
                         ),
                       ],
                       // Mostrar indicador de sucursales con problemas
-                      if (sucursalesConProblemas > 0) ...[
+                      if (sucursalesConProblemas > 0) ...<Widget>[
                         const SizedBox(height: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -918,7 +918,7 @@ class TableProducts extends StatelessWidget {
             flex: 15,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+              children: <Widget>[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -927,7 +927,7 @@ class TableProducts extends StatelessWidget {
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                    children: <Widget>[
                       FaIcon(
                         statusIcon,
                         color: statusColor,
@@ -958,7 +958,7 @@ class TableProducts extends StatelessWidget {
             flex: 10,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+              children: <Widget>[
                 IconButton(
                   icon: const FaIcon(
                     FontAwesomeIcons.eye,
@@ -1008,12 +1008,12 @@ class TableProducts extends StatelessWidget {
     }
     
     // Determinar qué sucursales tienen problemas de stock para este producto
-    final sucursalesConProblemas = <Sucursal>[];
-    final sucursalesNormales = <Sucursal>[];
-    final sucursalesAgotadas = <Sucursal>[];
+    final List<Sucursal> sucursalesConProblemas = <Sucursal>[];
+    final List<Sucursal> sucursalesNormales = <Sucursal>[];
+    final List<Sucursal> sucursalesAgotadas = <Sucursal>[];
     
-    for (final sucursal in sucursales!) {
-      final stock = stocks[sucursal.id] ?? 0;
+    for (final Sucursal sucursal in sucursales!) {
+      final int stock = stocks[sucursal.id] ?? 0;
       if (stock <= 0) { 
         // Si el stock es nulo o cero (agotado)
         sucursalesAgotadas.add(sucursal);
@@ -1026,15 +1026,15 @@ class TableProducts extends StatelessWidget {
     }
     
     // Calcular porcentajes para mostrar estadística
-    final totalSucursales = sucursales!.length;
-    final porcentajeAgotadas = (sucursalesAgotadas.length / totalSucursales * 100).round();
-    final porcentajeBajo = (sucursalesConProblemas.length / totalSucursales * 100).round();
+    final int totalSucursales = sucursales!.length;
+    final int porcentajeAgotadas = (sucursalesAgotadas.length / totalSucursales * 100).round();
+    final int porcentajeBajo = (sucursalesConProblemas.length / totalSucursales * 100).round();
     
     // Si hay más de 50% de sucursales con problemas, mostrar un indicador de alerta global
-    final mostrarAlertaGlobal = (porcentajeAgotadas + porcentajeBajo) > 50;
+    final bool mostrarAlertaGlobal = (porcentajeAgotadas + porcentajeBajo) > 50;
     
     // Mostrar primero las sucursales con problemas y luego otras (si hay espacio)
-    final List<Sucursal> sucursalesMostradas = [];
+    final List<Sucursal> sucursalesMostradas = <Sucursal>[];
     
     // Priorizar mostrar las sucursales agotadas primero
     if (sucursalesAgotadas.isNotEmpty) {
@@ -1045,7 +1045,7 @@ class TableProducts extends StatelessWidget {
     
     // Luego las que tienen stock bajo
     if (sucursalesMostradas.length < 3 && sucursalesConProblemas.isNotEmpty) {
-      final espacioRestante = 3 - sucursalesMostradas.length;
+      final int espacioRestante = 3 - sucursalesMostradas.length;
       sucursalesMostradas.addAll(
         sucursalesConProblemas.length > espacioRestante 
             ? sucursalesConProblemas.sublist(0, espacioRestante) 
@@ -1055,7 +1055,7 @@ class TableProducts extends StatelessWidget {
     
     // Por último, si queda espacio, mostrar alguna sucursal normal
     if (sucursalesMostradas.length < 3 && sucursalesNormales.isNotEmpty) {
-      final espacioRestante = 3 - sucursalesMostradas.length;
+      final int espacioRestante = 3 - sucursalesMostradas.length;
       sucursalesMostradas.addAll(
         sucursalesNormales.length > espacioRestante 
             ? sucursalesNormales.sublist(0, espacioRestante) 
@@ -1065,9 +1065,9 @@ class TableProducts extends StatelessWidget {
     
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: [
+      children: <Widget>[
         // Mostrar indicador de alerta global si es necesario
-        if (mostrarAlertaGlobal) ...[
+        if (mostrarAlertaGlobal) ...<Widget>[
           Container(
             margin: const EdgeInsets.only(bottom: 4),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1090,9 +1090,9 @@ class TableProducts extends StatelessWidget {
         // Mostrar los indicadores de sucursales
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ...sucursalesMostradas.map((sucursal) {
-              final stock = stocks[sucursal.id] ?? 0;
+          children: <Widget>[
+            ...sucursalesMostradas.map((Sucursal sucursal) {
+              final int stock = stocks[sucursal.id] ?? 0;
               final Color color = stock <= 0
                   ? Colors.red.shade800
                   : (stock < 5 ? const Color(0xFFE31E24) : Colors.green);
@@ -1109,7 +1109,7 @@ class TableProducts extends StatelessWidget {
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                    children: <Widget>[
                       Text(
                         sucursal.nombre.substring(0, 1).toUpperCase(),
                         style: TextStyle(
@@ -1160,6 +1160,27 @@ class TableProducts extends StatelessWidget {
       ],
     );
   }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(StringProperty('selectedSucursalId', selectedSucursalId))
+      ..add(IterableProperty<Producto>('productos', productos))
+      ..add(DiagnosticsProperty<bool>('isLoading', isLoading))
+      ..add(StringProperty('error', error))
+      ..add(ObjectFlagProperty<VoidCallback?>.has('onRetry', onRetry))
+      ..add(ObjectFlagProperty<Function(Producto)?>.has('onEditProducto', onEditProducto))
+      ..add(ObjectFlagProperty<Function(Producto)?>.has('onVerDetalles', onVerDetalles))
+      ..add(ObjectFlagProperty<Function(Producto)?>.has('onVerStockDetalles', onVerStockDetalles))
+      ..add(ObjectFlagProperty<Function(String)?>.has('onSort', onSort))
+      ..add(StringProperty('sortBy', sortBy))
+      ..add(StringProperty('sortOrder', sortOrder))
+      ..add(DiagnosticsProperty<Map<int, Map<String, int>>?>('stockPorSucursal', stockPorSucursal))
+      ..add(IterableProperty<Sucursal>('sucursales', sucursales))
+      ..add(DiagnosticsProperty<bool>('esVistaGlobal', esVistaGlobal))
+      ..add(DiagnosticsProperty<bool>('filtrosActivos', filtrosActivos));
+  }
 }
 
 /// Widget para mostrar un resumen del inventario
@@ -1180,12 +1201,12 @@ class InventarioResumen extends StatelessWidget {
     }
     
     // Agrupar productos por disponibilidad usando la nueva función
-    final agrupados = StockUtils.agruparProductosPorEstadoStock(productos);
+    final Map<StockStatus, List<Producto>> agrupados = StockUtils.agruparProductosPorEstadoStock(productos);
     
     // Obtener contadores
-    final agotadosCount = agrupados[StockStatus.agotado]!.length;
-    final stockBajoCount = agrupados[StockStatus.stockBajo]!.length;
-    final disponiblesCount = agrupados[StockStatus.disponible]!.length;
+    final int agotadosCount = agrupados[StockStatus.agotado]!.length;
+    final int stockBajoCount = agrupados[StockStatus.stockBajo]!.length;
+    final int disponiblesCount = agrupados[StockStatus.disponible]!.length;
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1195,7 +1216,7 @@ class InventarioResumen extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           Text(
             sucursalNombre != null ? 'Resumen de $sucursalNombre' : 'Resumen del Inventario',
             style: const TextStyle(
@@ -1206,7 +1227,7 @@ class InventarioResumen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Row(
-            children: [
+            children: <Widget>[
               Expanded(
                 child: _buildStatCard(
                   'Productos agotados', 
@@ -1258,9 +1279,9 @@ class InventarioResumen extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           Row(
-            children: [
+            children: <Widget>[
               FaIcon(
                 icon,
                 color: color,
@@ -1299,5 +1320,13 @@ class InventarioResumen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(IterableProperty<Producto>('productos', productos))
+      ..add(StringProperty('sucursalNombre', sucursalNombre));
   }
 }

@@ -158,7 +158,7 @@ abstract class AppTheme {
   );
 
   /// Retorna un conjunto de sombras para usar en la aplicación
-  static List<BoxShadow> get commonShadows => [
+  static List<BoxShadow> get commonShadows => <BoxShadow>[
     BoxShadow(
       color: Colors.black.withOpacity(0.2),
       spreadRadius: 1,
@@ -171,7 +171,7 @@ abstract class AppTheme {
   static LinearGradient get primaryGradient => const LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
+    colors: <Color>[
       primaryColor,
       Color(0xFFC41015),
     ],

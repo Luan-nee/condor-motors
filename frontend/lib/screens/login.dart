@@ -1,16 +1,16 @@
 import 'dart:async';
 
+import 'package:condorsmotors/api/auth.api.dart';
+import 'package:condorsmotors/api/index.api.dart' show CondorMotorsApi;
+import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/services/token_service.dart'; // Importar TokenService
+import 'package:condorsmotors/utils/role_utils.dart' as role_utils; // Importar utilidad de roles con alias
+import 'package:condorsmotors/widgets/background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';  // Importar para KeyboardListener
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Importamos SharedPreferences
-
-import '../api/index.api.dart' show CondorMotorsApi;
-import '../api/main.api.dart';
-import '../main.dart' show api;
-import '../services/token_service.dart'; // Importar TokenService
-import '../utils/role_utils.dart' as role_utils; // Importar utilidad de roles con alias
-import '../widgets/background.dart';
 
 
 // Clase para manejar el ciclo de vida de la aplicación
@@ -41,12 +41,12 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
-  final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _usernameFocusNode = FocusNode();
-  final _passwordFocusNode = FocusNode();
-  final _storage = const FlutterSecureStorage();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _usernameFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
   bool _isLoading = false;
   bool _capsLockOn = false;
   bool _obscurePassword = true;
@@ -101,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   Future<void> _loadServerIp() async {
     try {
-      final ip = await _storage.read(key: 'server_ip');
+      final String? ip = await _storage.read(key: 'server_ip');
       if (ip != null && ip.isNotEmpty) {
         setState(() {
           _serverIp = ip;
@@ -136,10 +136,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     
     try {
       // Obtenemos las SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       
       // Verificamos si "Permanecer conectado" está activado
-      final stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
+      final bool stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
       debugPrint('Auto-login: Permanecer conectado está ${stayLoggedIn ? 'activado' : 'desactivado'}');
       
       if (!stayLoggedIn) {
@@ -152,8 +152,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       }
       
       // Obtenemos las credenciales guardadas
-      final username = prefs.getString('username_auto');
-      final password = prefs.getString('password_auto');
+      final String? username = prefs.getString('username_auto');
+      final String? password = prefs.getString('password_auto');
       
       if (username == null || password == null || username.isEmpty || password.isEmpty) {
         debugPrint('Auto-login: No hay credenciales guardadas');
@@ -167,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       debugPrint('Auto-login: Intentando iniciar sesión automáticamente con usuario: $username');
       
       // Intentamos el login
-      final usuarioAutenticado = await api.auth.login(
+      final UsuarioAutenticado usuarioAutenticado = await api.auth.login(
         username,
         password,
       );
@@ -183,17 +183,21 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       }
       
       // Si llegamos hasta aquí, el login fue exitoso, navegamos a la pantalla correspondiente
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
       // Determinamos la ruta inicial basada en el rol normalizado
-      final rolCodigo = usuarioAutenticado.rolCuentaEmpleadoCodigo;
-      final rolNormalizado = role_utils.normalizeRole(rolCodigo);
-      final initialRoute = role_utils.getInitialRoute(rolNormalizado);
+      final String rolCodigo = usuarioAutenticado.rolCuentaEmpleadoCodigo;
+      final String rolNormalizado = role_utils.normalizeRole(rolCodigo);
+      final String initialRoute = role_utils.getInitialRoute(rolNormalizado);
       
       debugPrint('Auto-login: Navegando a la ruta inicial: $initialRoute');
       
       // Navegamos a la pantalla correspondiente
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
       await Navigator.pushReplacementNamed(
         context,
@@ -218,7 +222,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     debugPrint('Actualizando URL base de la API a: http://$serverIp:3000/api');
     try {
       // Obtener la instancia de TokenService
-      final tokenService = TokenService.instance;
+      final TokenService tokenService = TokenService.instance;
       
       // Reinicializar la API global con la nueva URL base
       api = CondorMotorsApi(
@@ -253,11 +257,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (BuildContext dialogContext) => AlertDialog(
         title: const Text('Configuración del Servidor'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
+          children: <Widget>[
             Text(
               'Ingrese la dirección IP del servidor:',
               style: TextStyle(color: Colors.grey[700]),
@@ -284,20 +288,22 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
           ],
         ),
-        actions: [
+        actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
             onPressed: () async {
-              final newIp = ipController.text.trim();
+              final String newIp = ipController.text.trim();
               if (newIp.isNotEmpty) {
                 // Cerrar el diálogo usando el contexto de ese diálogo
                 Navigator.pop(dialogContext);
                 
                 // Mostrar indicador de carga mientras se actualiza la URL
-                if (!mounted) return;
+                if (!mounted) {
+                  return;
+                }
                 
                 setState(() {
                   _isLoading = true;
@@ -306,7 +312,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 await _saveServerIp(newIp);
                 
                 // Verificar si el widget sigue montado después de la operación asíncrona
-                if (!mounted) return;
+                if (!mounted) {
+                  return;
+                }
                 
                 setState(() {
                   _isLoading = false;
@@ -354,7 +362,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Future<void> _loadStayLoggedInPreference() async {
     try {
       // Cambiamos a SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       setState(() {
         _stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
       });
@@ -368,9 +376,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     try {
       // Mantenemos FlutterSecureStorage para las credenciales "Recordar" normal
       // ya que son menos sensibles que el auto-login
-      final username = await _storage.read(key: 'username');
-      final password = await _storage.read(key: 'password');
-      final shouldRemember = await _storage.read(key: 'remember_me');
+      final String? username = await _storage.read(key: 'username');
+      final String? password = await _storage.read(key: 'password');
+      final String? shouldRemember = await _storage.read(key: 'remember_me');
 
       if (username != null && password != null && shouldRemember == 'true') {
         setState(() {
@@ -400,7 +408,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     
     // Guardar preferencia y credenciales para auto-login
     // Usamos SharedPreferences para "Permanecer conectado"
-    final prefs = await SharedPreferences.getInstance();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('stay_logged_in', _stayLoggedIn);
     
     // Si permanecer conectado está activo, guardamos las credenciales
@@ -419,7 +427,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -430,7 +440,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       debugPrint('Iniciando proceso de login con usuario: ${_usernameController.text}');
       
       // Usar la API global en lugar de la local
-      final usuarioAutenticado = await api.auth.login(
+      final UsuarioAutenticado usuarioAutenticado = await api.auth.login(
         _usernameController.text,
         _passwordController.text,
       );
@@ -450,16 +460,18 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       await _saveCredentials();
 
       // Comprobación de seguridad: si el widget ya no está montado, no hacer nada más
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       // Navegar a la ruta correspondiente según el rol del usuario
-      final userData = usuarioAutenticado.toMap();
-      final rolCodigo = usuarioAutenticado.rolCuentaEmpleadoCodigo;
+      final Map<String, dynamic> userData = usuarioAutenticado.toMap();
+      final String rolCodigo = usuarioAutenticado.rolCuentaEmpleadoCodigo;
       
       debugPrint('Rol del usuario (código original): $rolCodigo');
       
       // Normalizar el rol utilizando nuestra utilidad centralizada
-      final rolNormalizado = role_utils.normalizeRole(rolCodigo);
+      final String rolNormalizado = role_utils.normalizeRole(rolCodigo);
       
       // Verificar si el rol no pudo ser normalizado
       if (rolNormalizado == 'DESCONOCIDO') {
@@ -475,11 +487,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       debugPrint('Rol normalizado a: $rolNormalizado');
       
       // Determinar la ruta inicial basada en el rol normalizado
-      final initialRoute = role_utils.getInitialRoute(rolNormalizado);
+      final String initialRoute = role_utils.getInitialRoute(rolNormalizado);
       debugPrint('Ruta inicial determinada: $initialRoute');
       
       // Navigación segura después de operaciones asíncronas
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
       await Navigator.pushReplacementNamed(
         context,
@@ -488,7 +502,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       );
     } catch (e) {
       debugPrint('Error durante el login: $e');
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
       String errorMsg = 'Error de autenticación';
       
@@ -526,7 +542,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+            children: <Widget>[
               // Logo
               Container(
                 width: 120,
@@ -563,12 +579,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       body: Stack(
-        children: [
+        children: <Widget>[
           // Fondo animado
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _animationController,
-              builder: (context, child) {
+              builder: (BuildContext context, Widget? child) {
                 return CustomPaint(
                   painter: BackgroundPainter(
                     animation: _animationController,
@@ -601,7 +617,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     border: Border.all(
                       color: Colors.white.withOpacity(0.1),
                     ),
-                    boxShadow: [
+                    boxShadow: <BoxShadow>[
                       BoxShadow(
                         color: Colors.black.withOpacity(0.3),
                         blurRadius: 20,
@@ -614,7 +630,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
+                      children: <Widget>[
                         // Logo
                         Center(
                           child: Container(
@@ -665,7 +681,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               borderSide: const BorderSide(color: Color(0xFFE31E24), width: 2),
                             ),
                           ),
-                          validator: (value) {
+                          validator: (String? value) {
                             if (value == null || value.isEmpty) {
                               return 'Por favor ingrese su usuario';
                             }
@@ -712,7 +728,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               borderSide: const BorderSide(color: Color(0xFFE31E24), width: 2),
                             ),
                           ),
-                          validator: (value) {
+                          validator: (String? value) {
                             if (value == null || value.isEmpty) {
                               return 'Por favor ingrese su clave';
                             }
@@ -726,7 +742,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Row(
-                              children: [
+                              children: <Widget>[
                                 const Icon(
                                   Icons.warning_amber_rounded,
                                   color: Color(0xFFE31E24),
@@ -747,13 +763,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         // Opciones de login
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          children: <Widget>[
                             // Recordar credenciales checkbox
                             Row(
-                              children: [
+                              children: <Widget>[
                                 Checkbox(
                                   value: _rememberMe,
-                                  onChanged: (value) {
+                                  onChanged: (bool? value) {
                                     setState(() {
                                       _rememberMe = value ?? false;
                                     });
@@ -779,10 +795,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             
                             // Permanecer conectado checkbox
                             Row(
-                              children: [
+                              children: <Widget>[
                                 Checkbox(
                                   value: _stayLoggedIn,
-                                  onChanged: (value) {
+                                  onChanged: (bool? value) {
                                     setState(() {
                                       _stayLoggedIn = value ?? false;
                                     });

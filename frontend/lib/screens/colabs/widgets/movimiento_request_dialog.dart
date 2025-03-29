@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -46,21 +47,30 @@ class MovimientoRequestDialog extends StatefulWidget {
 
   @override
   State<MovimientoRequestDialog> createState() => _MovimientoRequestDialogState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(ObjectFlagProperty<Function(MovimientoStock)>.has('onSave', onSave))
+      ..add(StringProperty('usuarioId', usuarioId))
+      ..add(IntProperty('localId', localId));
+  }
 }
 
 class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
-  final _cantidadController = TextEditingController();
+  final TextEditingController _cantidadController = TextEditingController();
   
   Map<String, dynamic>? _productoSeleccionado;
   String? _destinoSeleccionado;
   bool _isLoading = false;
   
   // Lista temporal de productos seleccionados
-  final List<Map<String, dynamic>> _productosSeleccionados = [];
+  final List<Map<String, dynamic>> _productosSeleccionados = <Map<String, dynamic>>[];
   
   // Datos de ejemplo para productos
-  final List<Map<String, dynamic>> _productos = [
-    {
+  final List<Map<String, dynamic>> _productos = <Map<String, dynamic>>[
+    <String, dynamic>{
       'id': 1,
       'codigo': 'CAS001',
       'nombre': 'Casco MT Thunder',
@@ -72,7 +82,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
       'marca': 'MT Helmets',
       'estado': 'BAJO_STOCK',
     },
-    {
+    <String, dynamic>{
       'id': 2,
       'codigo': 'ACE001',
       'nombre': 'Aceite Motul 5100',
@@ -84,7 +94,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
       'marca': 'Motul',
       'estado': 'AGOTADO',
     },
-    {
+    <String, dynamic>{
       'id': 3,
       'codigo': 'LLA001',
       'nombre': 'Llanta Pirelli Diablo',
@@ -96,7 +106,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
       'marca': 'Pirelli',
       'estado': 'NORMAL',
     },
-    {
+    <String, dynamic>{
       'id': 4,
       'codigo': 'FRE001',
       'nombre': 'Kit de Frenos Brembo',
@@ -108,7 +118,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
       'marca': 'Brembo',
       'estado': 'NORMAL',
     },
-    {
+    <String, dynamic>{
       'id': 5,
       'codigo': 'SUS001',
       'nombre': 'Amortiguador YSS',
@@ -123,8 +133,8 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
   ];
   
   // Lista de sucursales disponibles
-  final List<Map<String, dynamic>> _sucursales = [
-    {
+  final List<Map<String, dynamic>> _sucursales = <Map<String, dynamic>>[
+    <String, dynamic>{
       'id': 1,
       'nombre': 'Central Principal',
       'direccion': 'Av. La Marina 123, San Miguel',
@@ -133,7 +143,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
       'icon': FontAwesomeIcons.warehouse,
       'estado': true
     },
-    {
+    <String, dynamic>{
       'id': 2,
       'nombre': 'Sucursal San Miguel',
       'direccion': 'Av. Universitaria 456, San Miguel',
@@ -142,7 +152,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
       'icon': FontAwesomeIcons.store,
       'estado': true
     },
-    {
+    <String, dynamic>{
       'id': 3,
       'nombre': 'Sucursal Los Olivos',
       'direccion': 'Av. Antúnez de Mayolo 789, Los Olivos',
@@ -155,15 +165,15 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
   
   // Sucursal actual
   String get _sucursalActual {
-    final sucursal = _sucursales.firstWhere(
-      (s) => s['id'] == widget.localId,
+    final Map<String, dynamic> sucursal = _sucursales.firstWhere(
+      (Map<String, dynamic> s) => s['id'] == widget.localId,
       orElse: () => _sucursales.first,
     );
     return sucursal['nombre'] as String;
   }
   
   List<Map<String, dynamic>> get _sucursalesDisponibles => _sucursales
-      .where((sucursal) => sucursal['nombre'] != _sucursalActual)
+      .where((Map<String, dynamic> sucursal) => sucursal['nombre'] != _sucursalActual)
       .toList();
 
   // Método para agregar un producto a la lista temporal
@@ -178,7 +188,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
       return;
     }
 
-    final cantidad = int.tryParse(_cantidadController.text);
+    final int? cantidad = int.tryParse(_cantidadController.text);
     if (cantidad == null || cantidad <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -190,9 +200,9 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
     }
 
     // Verificar si el producto ya está en la lista
-    final productoExistente = _productosSeleccionados.firstWhere(
-      (p) => p['producto']['id'] == _productoSeleccionado!['id'],
-      orElse: () => {},
+    final Map<String, dynamic> productoExistente = _productosSeleccionados.firstWhere(
+      (Map<String, dynamic> p) => p['producto']['id'] == _productoSeleccionado!['id'],
+      orElse: () => <String, dynamic>{},
     );
 
     setState(() {
@@ -201,7 +211,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
         productoExistente['cantidad'] = cantidad;
       } else {
         // Agregar nuevo producto a la lista
-        _productosSeleccionados.add({
+        _productosSeleccionados.add(<String, dynamic>{
           'producto': _productoSeleccionado!,
           'cantidad': cantidad,
         });
@@ -247,14 +257,14 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
       // Simular creación de movimiento
       await Future.delayed(const Duration(milliseconds: 800));
       
-      final movimiento = MovimientoStock(
+      final MovimientoStock movimiento = MovimientoStock(
         id: DateTime.now().millisecondsSinceEpoch,
         tipo: 'TRASLADO',
         estado: 'PENDIENTE',
         localOrigenId: widget.localId,
         localDestinoId: int.parse(_destinoSeleccionado!),
         solicitanteId: widget.usuarioId,
-        detalles: _productosSeleccionados.map((item) => {
+        detalles: _productosSeleccionados.map((Map<String, dynamic> item) => <String, dynamic>{
           'producto_id': item['producto']['id'],
           'cantidad': item['cantidad'],
           'estado': 'PENDIENTE',
@@ -263,7 +273,9 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
         fechaSolicitud: DateTime.now(),
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
       // Notificar éxito
       ScaffoldMessenger.of(context).showSnackBar(
@@ -278,7 +290,9 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
       widget.onSave(movimiento);
       
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al crear solicitud: $e'),
@@ -294,8 +308,8 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isMobile = screenWidth < 600;
     
     return Dialog(
       backgroundColor: const Color(0xFF1A1A1A),
@@ -311,7 +325,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+          children: <Widget>[
             // Header
             Container(
               padding: const EdgeInsets.all(16),
@@ -323,7 +337,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
                 ),
               ),
               child: Row(
-                children: [
+                children: <Widget>[
                   const FaIcon(
                     FontAwesomeIcons.boxOpen,
                     color: Color(0xFFE31E24),
@@ -355,7 +369,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     // Información de origen y destino
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -365,7 +379,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           const Text(
                             'Información de la Solicitud',
                             style: TextStyle(
@@ -376,7 +390,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
                           ),
                           const SizedBox(height: 12),
                           Row(
-                            children: [
+                            children: <Widget>[
                               const FaIcon(
                                 FontAwesomeIcons.warehouse,
                                 size: 16,
@@ -413,13 +427,13 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
                               ),
                             ),
                             style: const TextStyle(color: Colors.white),
-                            items: _sucursalesDisponibles.map((sucursal) {
+                            items: _sucursalesDisponibles.map((Map<String, dynamic> sucursal) {
                               return DropdownMenuItem(
                                 value: sucursal['id'].toString(),
                                 child: Text(sucursal['nombre'] as String),
                               );
                             }).toList(),
-                            onChanged: (value) {
+                            onChanged: (String? value) {
                               setState(() => _destinoSeleccionado = value);
                             },
                           ),
@@ -437,10 +451,10 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
+                            children: <Widget>[
                               const Text(
                                 'Productos a Solicitar',
                                 style: TextStyle(
@@ -484,13 +498,13 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
                               ),
                             ),
                             style: const TextStyle(color: Colors.white),
-                            items: _productos.map((producto) {
+                            items: _productos.map((Map<String, dynamic> producto) {
                               return DropdownMenuItem(
                                 value: producto,
                                 child: Text('${producto['codigo']} - ${producto['nombre']}'),
                               );
                             }).toList(),
-                            onChanged: (value) {
+                            onChanged: (Map<String, dynamic>? value) {
                               setState(() => _productoSeleccionado = value);
                             },
                           ),
@@ -522,7 +536,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
                     const SizedBox(height: 16),
 
                     // Lista de productos seleccionados
-                    if (_productosSeleccionados.isNotEmpty) ...[
+                    if (_productosSeleccionados.isNotEmpty) ...<Widget>[
                       const Text(
                         'Productos Agregados',
                         style: TextStyle(
@@ -532,10 +546,10 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ...List.generate(_productosSeleccionados.length, (index) {
-                        final item = _productosSeleccionados[index];
-                        final producto = item['producto'] as Map<String, dynamic>;
-                        final cantidad = item['cantidad'] as int;
+                      ...List.generate(_productosSeleccionados.length, (int index) {
+                        final Map<String, dynamic> item = _productosSeleccionados[index];
+                        final Map<String, dynamic> producto = item['producto'] as Map<String, dynamic>;
+                        final int cantidad = item['cantidad'] as int;
                         
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
@@ -545,7 +559,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
-                            children: [
+                            children: <Widget>[
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
@@ -562,7 +576,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                                  children: <Widget>[
                                     Text(
                                       producto['nombre'],
                                       style: const TextStyle(
@@ -618,7 +632,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                          children: <Widget>[
                             FaIcon(
                               FontAwesomeIcons.boxOpen,
                               color: Colors.grey[600],
@@ -651,7 +665,7 @@ class _MovimientoRequestDialogState extends State<MovimientoRequestDialog> {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
+                children: <Widget>[
                   TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text(

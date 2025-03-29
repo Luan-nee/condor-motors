@@ -1,8 +1,7 @@
+import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:flutter/foundation.dart';
-
-import '../../models/cliente.model.dart';
-import '../main.api.dart';
-import 'cache/fast_cache.dart';
 
 class ClientesApi {
   final ApiClient _api;
@@ -27,7 +26,7 @@ class ClientesApi {
   }) async {
     try {
       // Generar clave única para este conjunto de parámetros
-      final cacheKey = _generateCacheKey(
+      final String cacheKey = _generateCacheKey(
         'clientes',
         page: page,
         pageSize: pageSize,
@@ -40,7 +39,7 @@ class ClientesApi {
       
       // Intentar obtener desde caché si useCache es true y no se fuerza la actualización
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<List<Cliente>>(cacheKey);
+        final List<Cliente>? cachedData = _cache.get<List<Cliente>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Clientes obtenidos desde caché: $cacheKey');
           return cachedData;
@@ -50,7 +49,7 @@ class ClientesApi {
       debugPrint('ClientesApi: Obteniendo lista de clientes');
       
       // Construir parámetros de consulta
-      final Map<String, String> queryParams = {};
+      final Map<String, String> queryParams = <String, String>{};
       
       // Solo agregar parámetros de paginación si se proporcionan explícitamente
       if (page != null && page > 0) {
@@ -76,7 +75,7 @@ class ClientesApi {
       }
       
       // Usar authenticatedRequest en lugar de request para manejar automáticamente tokens
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/clientes',
         method: 'GET',
         queryParams: queryParams,
@@ -85,7 +84,7 @@ class ClientesApi {
       debugPrint('ClientesApi: Respuesta de getClientes recibida');
       
       // Extraer los datos de la respuesta
-      List<dynamic> items = [];
+      List<dynamic> items = <dynamic>[];
       
       if (response['data'] is List) {
         // Nueva estructura: { status: "success", data: [ ... ] }
@@ -98,7 +97,7 @@ class ClientesApi {
       }
       
       // Convertir a lista de Cliente
-      final clientes = items
+      final List<Cliente> clientes = items
           .map((item) => Cliente.fromJson(item as Map<String, dynamic>))
           .toList();
       
@@ -132,11 +131,11 @@ class ClientesApi {
       }
       
       // Clave para caché
-      final cacheKey = 'cliente_$clienteId';
+      final String cacheKey = 'cliente_$clienteId';
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final cachedData = _cache.get<Cliente>(cacheKey);
+        final Cliente? cachedData = _cache.get<Cliente>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Cliente obtenido desde caché: $cacheKey');
           return cachedData;
@@ -144,7 +143,7 @@ class ClientesApi {
       }
       
       debugPrint('ClientesApi: Obteniendo cliente con ID: $clienteId');
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/clientes/$clienteId',
         method: 'GET',
       );
@@ -159,7 +158,7 @@ class ClientesApi {
         data = response['data'] as Map<String, dynamic>;
       }
       
-      final cliente = Cliente.fromJson(data);
+      final Cliente cliente = Cliente.fromJson(data);
       
       // Guardar en caché si useCache es true
       if (useCache) {
@@ -188,11 +187,11 @@ class ClientesApi {
       }
       
       // Clave para caché
-      final cacheKey = 'cliente_doc_$numeroDocumento';
+      final String cacheKey = 'cliente_doc_$numeroDocumento';
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final cachedData = _cache.get<Cliente>(cacheKey);
+        final Cliente? cachedData = _cache.get<Cliente>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Cliente obtenido desde caché: $cacheKey');
           return cachedData;
@@ -200,7 +199,7 @@ class ClientesApi {
       }
       
       debugPrint('ClientesApi: Buscando cliente con documento: $numeroDocumento');
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/clientes/doc/$numeroDocumento',
         method: 'GET',
       );
@@ -215,7 +214,7 @@ class ClientesApi {
         data = response['data'] as Map<String, dynamic>;
       }
       
-      final cliente = Cliente.fromJson(data);
+      final Cliente cliente = Cliente.fromJson(data);
       
       // Guardar en caché si useCache es true
       if (useCache) {
@@ -248,7 +247,7 @@ class ClientesApi {
       }
       
       debugPrint('ClientesApi: Creando nuevo cliente: ${clienteData['denominacion']}');
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/clientes',
         method: 'POST',
         body: clienteData,
@@ -295,7 +294,7 @@ class ClientesApi {
       }
       
       debugPrint('ClientesApi: Actualizando cliente con ID: $clienteId');
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/clientes/$clienteId',
         method: 'PATCH',
         body: clienteData,
@@ -352,15 +351,29 @@ class ClientesApi {
     String? filter,
     String? filterValue,
   }) {
-    final List<String> parts = [prefix];
+    final List<String> parts = <String>[prefix];
     
-    if (page != null) parts.add('page=$page');
-    if (pageSize != null) parts.add('pageSize=$pageSize');
-    if (sortBy != null) parts.add('sort=$sortBy');
-    if (order != null) parts.add('order=$order');
-    if (search != null) parts.add('search=$search');
-    if (filter != null) parts.add('filter=$filter');
-    if (filterValue != null) parts.add('filterValue=$filterValue');
+    if (page != null) {
+      parts.add('page=$page');
+    }
+    if (pageSize != null) {
+      parts.add('pageSize=$pageSize');
+    }
+    if (sortBy != null) {
+      parts.add('sort=$sortBy');
+    }
+    if (order != null) {
+      parts.add('order=$order');
+    }
+    if (search != null) {
+      parts.add('search=$search');
+    }
+    if (filter != null) {
+      parts.add('filter=$filter');
+    }
+    if (filterValue != null) {
+      parts.add('filterValue=$filterValue');
+    }
     
     return parts.join('_');
   }

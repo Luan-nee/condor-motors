@@ -1,9 +1,8 @@
+import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/models/proforma.model.dart' as proforma_model;
 import 'package:flutter/foundation.dart';
-
-import '../../models/producto.model.dart';
-import '../../models/proforma.model.dart';
-import '../main.api.dart';
-import 'cache/fast_cache.dart';
 
 /// Modelo para los detalles de una proforma de venta
 class DetalleProforma {
@@ -34,7 +33,7 @@ class DetalleProforma {
 
   /// Convierte el objeto a un mapa JSON
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'productoId': productoId,
       'nombre': nombre,
       'cantidad': cantidad,
@@ -51,6 +50,17 @@ class DetalleProforma {
       cantidad: cantidad,
       subtotal: producto.precioVenta * cantidad,
       precioUnitario: producto.precioVenta,
+    );
+  }
+
+  /// Convierte este DetalleProforma a un DetalleProforma del modelo
+  proforma_model.DetalleProforma toModelDetalleProforma() {
+    return proforma_model.DetalleProforma(
+      productoId: productoId,
+      nombre: nombre,
+      cantidad: cantidad,
+      subtotal: subtotal,
+      precioUnitario: precioUnitario,
     );
   }
 }
@@ -73,13 +83,13 @@ class ProformaVentaApi {
   void invalidateCache([String? sucursalId]) {
     if (sucursalId != null) {
       // Invalidar sólo las proformas de esta sucursal
-      _cache.invalidateByPattern('$_prefixListaProformas$sucursalId');
-      _cache.invalidateByPattern('$_prefixProforma$sucursalId');
+      _cache..invalidateByPattern('$_prefixListaProformas$sucursalId')
+      ..invalidateByPattern('$_prefixProforma$sucursalId');
       debugPrint('🔄 Caché de proformas invalidado para sucursal $sucursalId');
     } else {
       // Invalidar todas las proformas en caché
-      _cache.invalidateByPattern(_prefixListaProformas);
-      _cache.invalidateByPattern(_prefixProforma);
+      _cache..invalidateByPattern(_prefixListaProformas)
+      ..invalidateByPattern(_prefixProforma);
       debugPrint('🔄 Caché de proformas invalidado completamente');
     }
     debugPrint('📊 Entradas en caché después de invalidación: ${_cache.size}');
@@ -136,24 +146,24 @@ class ProformaVentaApi {
     bool forceRefresh = false,
   }) async {
     try {
-      final cacheKey = '$_prefixListaProformas${sucursalId}_p${page}_s${pageSize}_q${search ?? ""}';
+      final String cacheKey = '$_prefixListaProformas${sucursalId}_p${page}_s${pageSize}_q${search ?? ""}';
       
       // Intentar obtener del caché si corresponde
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
           debugPrint('🔍 Usando proformas en caché para sucursal $sucursalId');
           return cachedData;
         }
       }
       
-      final queryParams = <String, String>{
+      final Map<String, String> queryParams = <String, String>{
         'page': page.toString(),
         'page_size': pageSize.toString(),
         if (search != null && search.isNotEmpty) 'search': search,
       };
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa',
         method: 'GET',
         queryParams: queryParams,
@@ -211,18 +221,18 @@ class ProformaVentaApi {
     bool forceRefresh = false,
   }) async {
     try {
-      final cacheKey = '$_prefixProforma${sucursalId}_$proformaId';
+      final String cacheKey = '$_prefixProforma${sucursalId}_$proformaId';
       
       // Intentar obtener del caché si corresponde
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
           debugPrint('🔍 Usando proforma en caché: $sucursalId/$proformaId');
           return cachedData;
         }
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
         method: 'GET',
       );
@@ -286,10 +296,10 @@ class ProformaVentaApi {
     DateTime? fechaExpiracion,
   }) async {
     try {
-      final body = {
+      final Map<String, Object> body = <String, Object>{
         if (nombre != null) 'nombre': nombre,
         'total': total,
-        'detalles': detalles.map((d) => d.toJson()).toList(),
+        'detalles': detalles.map((DetalleProforma d) => d.toJson()).toList(),
         'empleadoId': empleadoId,
         'sucursalId': int.parse(sucursalId),
         if (clienteId != null) 'clienteId': clienteId,
@@ -297,7 +307,7 @@ class ProformaVentaApi {
         if (fechaExpiracion != null) 'fechaExpiracion': fechaExpiracion.toIso8601String(),
       };
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa',
         method: 'POST',
         body: body,
@@ -338,20 +348,30 @@ class ProformaVentaApi {
   }) async {
     try {
       // Intentar llamar al endpoint real
-      final body = <String, dynamic>{};
+      final Map<String, dynamic> body = <String, dynamic>{};
       
-      if (nombre != null) body['nombre'] = nombre;
-      if (total != null) body['total'] = total;
-      
-      if (detalles != null) {
-        body['detalles'] = detalles.map((d) => d.toJson()).toList();
+      if (nombre != null) {
+        body['nombre'] = nombre;
+      }
+      if (total != null) {
+        body['total'] = total;
       }
       
-      if (estado != null) body['estado'] = estado;
-      if (clienteId != null) body['clienteId'] = clienteId;
-      if (fechaExpiracion != null) body['fechaExpiracion'] = fechaExpiracion.toIso8601String();
+      if (detalles != null) {
+        body['detalles'] = detalles.map((DetalleProforma d) => d.toJson()).toList();
+      }
       
-      final response = await _api.authenticatedRequest(
+      if (estado != null) {
+        body['estado'] = estado;
+      }
+      if (clienteId != null) {
+        body['clienteId'] = clienteId;
+      }
+      if (fechaExpiracion != null) {
+        body['fechaExpiracion'] = fechaExpiracion.toIso8601String();
+      }
+      
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
         method: 'PATCH',
         body: body,
@@ -370,9 +390,9 @@ class ProformaVentaApi {
       // Invalidar caché de todos modos para consistencia
       invalidateCache(sucursalId);
       
-      return {
+      return <String, dynamic>{
         'status': 'success',
-        'data': {
+        'data': <String, Object>{
           'id': proformaId,
           'message': 'Proforma actualizada (simulado)',
           'warning': 'Esta respuesta es simulada. El endpoint aún no está implementado en el servidor.'
@@ -396,7 +416,7 @@ class ProformaVentaApi {
   }) async {
     try {
       // Intentar llamar al endpoint real
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
         method: 'DELETE',
       );
@@ -414,9 +434,9 @@ class ProformaVentaApi {
       // Invalidar caché de todos modos para consistencia
       invalidateCache(sucursalId);
       
-      return {
+      return <String, dynamic>{
         'status': 'success',
-        'data': {
+        'data': <String, Object>{
           'id': proformaId,
           'message': 'Proforma eliminada (simulado)',
           'warning': 'Esta respuesta es simulada. El endpoint aún no está implementado en el servidor.'
@@ -441,7 +461,7 @@ class ProformaVentaApi {
   }) async {
     try {
       // Intentar llamar al endpoint específico si existe
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId/convertir',
         method: 'POST',
         body: datosVenta,
@@ -459,9 +479,9 @@ class ProformaVentaApi {
       
       try {
         // Verificar si tenemos la proforma para usar sus datos
-        Proforma? proforma;
+        proforma_model.Proforma? proforma;
         try {
-          final proformaResponse = await getProformaVenta(
+          final Map<String, dynamic> proformaResponse = await getProformaVenta(
             sucursalId: sucursalId,
             proformaId: proformaId,
             forceRefresh: true, // Forzar obtener datos frescos
@@ -472,9 +492,9 @@ class ProformaVentaApi {
         }
 
         // Preparar datos para la API de ventas
-        final ventaData = {
-          'productos': datosVenta['productos'] ?? [],
-          'cliente': datosVenta['cliente'] ?? {},
+        final Map<String, dynamic> ventaData = <String, dynamic>{
+          'productos': datosVenta['productos'] ?? <dynamic>[],
+          'cliente': datosVenta['cliente'] ?? <String, dynamic>{},
           'metodoPago': datosVenta['metodoPago'] ?? 'EFECTIVO',
           'tipoDocumento': datosVenta['tipoDocumento'] ?? 'BOLETA',
           'total': datosVenta['total'] ?? proforma?.total ?? 0,
@@ -482,7 +502,7 @@ class ProformaVentaApi {
         };
         
         // Llamar a la API de ventas
-        final ventaResponse = await _api.authenticatedRequest(
+        final Map<String, dynamic> ventaResponse = await _api.authenticatedRequest(
           endpoint: '/$sucursalId/ventas',
           method: 'POST',
           body: ventaData,
@@ -505,8 +525,8 @@ class ProformaVentaApi {
         invalidateCache(sucursalId);
 
         // Agregar información sobre la proforma original
-        final Map<String, dynamic> response = {...ventaResponse};
-        response['origen'] = {
+        final Map<String, dynamic> response = <String, dynamic>{...ventaResponse};
+        response['origen'] = <String, Object>{
           'proformaId': proformaId,
           'mensaje': 'Venta creada a partir de la proforma'
         };
@@ -524,8 +544,10 @@ class ProformaVentaApi {
   /// [data] - Datos recibidos de la API
   /// 
   /// Retorna una lista de objetos Proforma
-  List<Proforma> parseProformasVenta(dynamic data) {
-    if (data == null) return [];
+  List<proforma_model.Proforma> parseProformasVenta(data) {
+    if (data == null) {
+      return <proforma_model.Proforma>[];
+    }
     
     // Verificar si los datos son una lista directamente o están dentro de un objeto
     List<dynamic> proformasData;
@@ -536,21 +558,21 @@ class ProformaVentaApi {
       proformasData = data['data'] as List;
     } else {
       debugPrint('⚠️ Formato inesperado de respuesta de proformas: $data');
-      return [];
+      return <proforma_model.Proforma>[];
     }
 
     // Convertir cada elemento de la lista a un objeto Proforma
     return proformasData.map((item) {
       if (item is Map<String, dynamic>) {
         try {
-          return Proforma.fromJson(item);
+          return proforma_model.Proforma.fromJson(item);
         } catch (e) {
           debugPrint('⚠️ Error al parsear proforma $item: $e');
           // Crear un objeto con datos mínimos para evitar errores en cascada
-          return Proforma(
+          return proforma_model.Proforma(
             id: item['id'] ?? 0,
             total: 0,
-            detalles: [],
+            detalles: <proforma_model.DetalleProforma>[],
             empleadoId: 0,
             sucursalId: 0,
             fechaCreacion: DateTime.now(),
@@ -566,8 +588,10 @@ class ProformaVentaApi {
   /// [data] - Datos de una proforma recibidos de la API
   /// 
   /// Retorna un objeto Proforma
-  Proforma? parseProformaVenta(dynamic data) {
-    if (data == null) return null;
+  proforma_model.Proforma? parseProformaVenta(data) {
+    if (data == null) {
+      return null;
+    }
     
     // Verificar si los datos están directamente o dentro de un objeto con clave 'data'
     Map<String, dynamic> proformaData;
@@ -580,7 +604,7 @@ class ProformaVentaApi {
       }
       
       try {
-        return Proforma.fromJson(proformaData);
+        return proforma_model.Proforma.fromJson(proformaData);
       } catch (e) {
         debugPrint('⚠️ Error al procesar datos de proforma: $e');
         return null;
@@ -595,11 +619,13 @@ class ProformaVentaApi {
     List<Producto> productos, 
     Map<int, int> cantidades,
   ) {
-    final result = <DetalleProforma>[];
+    final List<DetalleProforma> result = <DetalleProforma>[];
     
-    for (final producto in productos) {
-      final cantidad = cantidades[producto.id] ?? 1;
-      if (cantidad <= 0) continue; // No agregar productos con cantidad 0
+    for (final Producto producto in productos) {
+      final int cantidad = cantidades[producto.id] ?? 1;
+      if (cantidad <= 0) {
+        continue; // No agregar productos con cantidad 0
+      }
       
       result.add(DetalleProforma.fromProducto(
         producto, 
@@ -612,6 +638,6 @@ class ProformaVentaApi {
   
   /// Calcula el total de una lista de detalles de proforma
   double calcularTotal(List<DetalleProforma> detalles) {
-    return detalles.fold(0.0, (sum, detalle) => sum + detalle.subtotal);
+    return detalles.fold(0.0, (double sum, DetalleProforma detalle) => sum + detalle.subtotal);
   }
 }

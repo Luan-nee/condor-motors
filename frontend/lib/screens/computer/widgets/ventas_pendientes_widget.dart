@@ -1,6 +1,7 @@
+import 'package:condorsmotors/screens/computer/widgets/ventas_pendientes_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'ventas_pendientes_utils.dart';
 
 class PendingSalesWidget extends StatefulWidget {
   final Function(Map<String, dynamic>) onSaleSelected;
@@ -16,6 +17,15 @@ class PendingSalesWidget extends StatefulWidget {
 
   @override
   State<PendingSalesWidget> createState() => _PendingSalesWidgetState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has('onSaleSelected', onSaleSelected))
+      ..add(IterableProperty<Map<String, dynamic>>('ventasPendientes', ventasPendientes))
+      ..add(ObjectFlagProperty<VoidCallback?>.has('onReload', onReload));
+  }
 }
 
 class _PendingSalesWidgetState extends State<PendingSalesWidget> {
@@ -43,7 +53,9 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
         widget.onReload!();
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cargar ventas pendientes: $e'),
@@ -63,22 +75,28 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
       return widget.ventasPendientes;
     }
     
-    return widget.ventasPendientes.where((venta) {
+    return widget.ventasPendientes.where((Map<String, dynamic> venta) {
       // Buscar en nombre de cliente
-      final nombreCliente = venta['cliente']['nombre'].toString().toLowerCase();
-      if (nombreCliente.contains(_searchText.toLowerCase())) return true;
+      final String nombreCliente = venta['cliente']['nombre'].toString().toLowerCase();
+      if (nombreCliente.contains(_searchText.toLowerCase())) {
+        return true;
+      }
       
       // Buscar en documento de cliente
-      final documento = venta['cliente']['documento'].toString().toLowerCase();
-      if (documento.contains(_searchText.toLowerCase())) return true;
+      final String documento = venta['cliente']['documento'].toString().toLowerCase();
+      if (documento.contains(_searchText.toLowerCase())) {
+        return true;
+      }
       
       // Buscar en ID de venta
-      final id = venta['id'].toString().toLowerCase();
-      if (id.contains(_searchText.toLowerCase())) return true;
+      final String id = venta['id'].toString().toLowerCase();
+      if (id.contains(_searchText.toLowerCase())) {
+        return true;
+      }
       
       // Buscar en productos
-      final tieneProductoCoincidente = (venta['productos'] as List<dynamic>).any((producto) {
-        final nombreProducto = producto['nombre'].toString().toLowerCase();
+      final bool tieneProductoCoincidente = (venta['productos'] as List<dynamic>).any((producto) {
+        final String nombreProducto = producto['nombre'].toString().toLowerCase();
         return nombreProducto.contains(_searchText.toLowerCase());
       });
       
@@ -95,12 +113,12 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           // Encabezado
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
-              children: [
+              children: <Widget>[
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -150,7 +168,7 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
               ),
-              onChanged: (value) {
+              onChanged: (String value) {
                 setState(() {
                   _searchText = value;
                 });
@@ -166,7 +184,7 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                          children: <Widget>[
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
@@ -193,9 +211,9 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: ventasFiltradas.length,
-                        itemBuilder: (context, index) {
-                          final venta = ventasFiltradas[index];
-                          final esProforma = VentasPendientesUtils.esProforma(venta['id'].toString());
+                        itemBuilder: (BuildContext context, int index) {
+                          final Map<String, dynamic> venta = ventasFiltradas[index];
+                          final bool esProforma = VentasPendientesUtils.esProforma(venta['id'].toString());
                           
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -210,9 +228,9 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
                                 padding: const EdgeInsets.all(16),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                                  children: <Widget>[
                                     Row(
-                                      children: [
+                                      children: <Widget>[
                                         Container(
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
@@ -235,7 +253,7 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
+                                            children: <Widget>[
                                               Text(
                                                 venta['cliente']['nombre'],
                                                 style: const TextStyle(
@@ -281,7 +299,7 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
                                     const SizedBox(height: 8),
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
+                                      children: <Widget>[
                                         Text(
                                           '${venta['productos'].length} productos',
                                           style: TextStyle(
@@ -329,5 +347,12 @@ class _PendingSalesWidgetState extends State<PendingSalesWidget> {
         ],
       ),
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      .add(IterableProperty<Map<String, dynamic>>('ventasFiltradas', ventasFiltradas));
   }
 } 

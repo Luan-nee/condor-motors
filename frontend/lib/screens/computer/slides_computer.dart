@@ -1,12 +1,11 @@
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/screens/computer/dashboard_computer.dart';
+import 'package:condorsmotors/screens/computer/ventas_computer.dart';
+import 'package:condorsmotors/services/token_service.dart';
+import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../main.dart' show api;
-import '../../services/token_service.dart';
-import '../../utils/role_utils.dart' as role_utils;
-import 'dashboard_computer.dart';
-import 'ventas_computer.dart';
 
 class SlidesComputerScreen extends StatefulWidget {
   const SlidesComputerScreen({super.key});
@@ -28,14 +27,14 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
   void initState() {
     super.initState();
     // Inicializar los elementos del menú con valores por defecto
-    _menuItems = [
-      {
+    _menuItems = <Map<String, dynamic>>[
+      <String, dynamic>{
         'title': 'Dashboard',
         'icon': FontAwesomeIcons.chartLine,
         'screen': const DashboardComputerScreen(),
         'description': 'Información general de la sucursal',
       },
-      {
+      <String, dynamic>{
         'title': 'Aprobar Ventas',
         'icon': FontAwesomeIcons.cashRegister,
         'screen': const SalesComputerScreen(),
@@ -52,7 +51,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
   void _obtenerInformacionSucursal() {
     debugPrint('Obteniendo información de sucursal...');
     try {
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      final Map<String, dynamic>? args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       debugPrint('Argumentos recibidos: ${args?.toString()}');
       
       if (args != null) {
@@ -66,7 +65,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
         } else if (sucursalData is String) {
           debugPrint('Sucursal es un String: $sucursalData');
           // Si es un string, podemos crear un mapa con el nombre
-          sucursalInfo = {'nombre': sucursalData};
+          sucursalInfo = <String, dynamic>{'nombre': sucursalData};
         } else {
           debugPrint('Sucursal es de tipo: ${sucursalData?.runtimeType}');
           sucursalInfo = null;
@@ -117,14 +116,14 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
   void _actualizarWidgets() {
     // Actualizar los widgets con la información de la sucursal
     setState(() {
-      _menuItems = [
-        {
+      _menuItems = <Map<String, dynamic>>[
+        <String, dynamic>{
           'title': 'Dashboard',
           'icon': FontAwesomeIcons.chartLine,
           'screen': DashboardComputerScreen(sucursalId: _sucursalId, nombreSucursal: _nombreSucursal),
           'description': 'Información general de la sucursal',
         },
-        {
+        <String, dynamic>{
           'title': 'Aprobar Ventas',
           'icon': FontAwesomeIcons.cashRegister,
           'screen': SalesComputerScreen(sucursalId: _sucursalId, nombreSucursal: _nombreSucursal),
@@ -138,7 +137,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
-        children: [
+        children: <Widget>[
           // Menú lateral
           Container(
             width: 250,
@@ -149,7 +148,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                   color: Colors.white.withOpacity(0.1),
                 ),
               ),
-              boxShadow: [
+              boxShadow: <BoxShadow>[
                 BoxShadow(
                   color: Colors.black.withOpacity(0.2),
                   blurRadius: 8,
@@ -159,15 +158,15 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 // Logo y título
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: <Widget>[
                       Row(
-                        children: [
+                        children: <Widget>[
                           Container(
                             width: 40,
                             height: 40,
@@ -199,7 +198,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Row(
-                          children: [
+                          children: <Widget>[
                             const FaIcon(
                               FontAwesomeIcons.store,
                               color: Color(0xFFE31E24),
@@ -223,7 +222,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                       const SizedBox(height: 4),
                       // Información del usuario
                       Row(
-                        children: [
+                        children: <Widget>[
                           const FaIcon(
                             FontAwesomeIcons.user,
                             color: Colors.white54,
@@ -248,9 +247,9 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                 const SizedBox(height: 16),
 
                 // Menú de opciones
-                ..._menuItems.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final item = entry.value;
+                ..._menuItems.asMap().entries.map((MapEntry<int, Map<String, dynamic>> entry) {
+                  final int index = entry.key;
+                  final Map<String, dynamic> item = entry.value;
                   return _buildMenuItem(
                     icon: item['icon'] as IconData,
                     text: item['title'] as String,
@@ -279,13 +278,15 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                       }
                       
                       // 3. Desactivar la opción "Permanecer conectado"
-                      final prefs = await SharedPreferences.getInstance();
+                      final SharedPreferences prefs = await SharedPreferences.getInstance();
                       await prefs.setBool('stay_logged_in', false);
                       await prefs.remove('username_auto');
                       await prefs.remove('password_auto');
                       
                       // 4. Navegar a la pantalla de login
-                      if (!context.mounted) return;
+                      if (!context.mounted) {
+                        return;
+                      }
                       await Navigator.pushReplacementNamed(context, role_utils.login);
                     },
                     icon: const FaIcon(
@@ -344,7 +345,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
           ),
         ),
         child: Row(
-          children: [
+          children: <Widget>[
             FaIcon(
               icon,
               color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
@@ -354,7 +355,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   Text(
                     text,
                     style: TextStyle(

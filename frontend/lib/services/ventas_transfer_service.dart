@@ -9,7 +9,7 @@ class VentasTransferService {
   VentasTransferService._internal();
 
   // Stream controller para las ventas pendientes
-  final _ventasPendientesController = StreamController<Map<String, dynamic>>.broadcast();
+  final StreamController<Map<String, dynamic>> _ventasPendientesController = StreamController<Map<String, dynamic>>.broadcast();
 
   // Stream para escuchar las ventas pendientes
   Stream<Map<String, dynamic>> get ventasPendientes => _ventasPendientesController.stream;
@@ -18,7 +18,7 @@ class VentasTransferService {
   Future<bool> enviarVentaAComputadora(Map<String, dynamic> ventaData) async {
     try {
       // Agregar un ID único a la venta
-      final ventaConId = {
+      final Map<String, dynamic> ventaConId = <String, dynamic>{
         ...ventaData,
         'id': DateTime.now().millisecondsSinceEpoch.toString(),
         'estado': 'PENDIENTE',
@@ -46,7 +46,7 @@ class VentasTransferService {
     // desde un almacenamiento local o remoto
     
     // Para fines de demostración, retornamos una lista vacía
-    return [];
+    return <Map<String, dynamic>>[];
   }
 
   // Método para marcar una venta como procesada

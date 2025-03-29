@@ -1,6 +1,7 @@
+import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../models/sucursal.model.dart';
 
 class SlideSucursal extends StatefulWidget {
   final List<Sucursal> sucursales;
@@ -20,6 +21,17 @@ class SlideSucursal extends StatefulWidget {
 
   @override
   State<SlideSucursal> createState() => _SlideSucursalState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(IterableProperty<Sucursal>('sucursales', sucursales))
+      ..add(DiagnosticsProperty<Sucursal?>('sucursalSeleccionada', sucursalSeleccionada))
+      ..add(ObjectFlagProperty<Function(Sucursal)>.has('onSucursalSelected', onSucursalSelected))
+      ..add(ObjectFlagProperty<VoidCallback>.has('onRecargarSucursales', onRecargarSucursales))
+      ..add(DiagnosticsProperty<bool>('isLoading', isLoading));
+  }
 }
 
 class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProviderStateMixin {
@@ -49,12 +61,12 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
 
   // Método para agrupar las sucursales
   Map<String, List<Sucursal>> _agruparSucursales() {
-    final Map<String, List<Sucursal>> grupos = {
-      'Centrales': [],
-      'Sucursales': [],
+    final Map<String, List<Sucursal>> grupos = <String, List<Sucursal>>{
+      'Centrales': <Sucursal>[],
+      'Sucursales': <Sucursal>[],
     };
 
-    for (final sucursal in widget.sucursales) {
+    for (final Sucursal sucursal in widget.sucursales) {
       if (sucursal.nombre.toLowerCase().contains('central') || 
           sucursal.nombre.toLowerCase().contains('principal') ||
           sucursal.sucursalCentral) {
@@ -65,8 +77,8 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
     }
 
     // Ordenamos por nombre dentro de cada grupo
-    grupos['Centrales']!.sort((a, b) => a.nombre.compareTo(b.nombre));
-    grupos['Sucursales']!.sort((a, b) => a.nombre.compareTo(b.nombre));
+    grupos['Centrales']!.sort((Sucursal a, Sucursal b) => a.nombre.compareTo(b.nombre));
+    grupos['Sucursales']!.sort((Sucursal a, Sucursal b) => a.nombre.compareTo(b.nombre));
 
     return grupos;
   }
@@ -79,7 +91,7 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
     }
     
     // Luego revisamos el nombre
-    final nombre = sucursal.nombre.toLowerCase();
+    final String nombre = sucursal.nombre.toLowerCase();
     if (nombre.contains('central') || nombre.contains('principal')) {
       return FontAwesomeIcons.building;
     } else if (nombre.contains('taller')) {
@@ -98,7 +110,7 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          children: <Widget>[
             CircularProgressIndicator(
               color: Color(0xFFE31E24),
             ),
@@ -116,9 +128,9 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.store_mall_directory_outlined,
+          children: <Widget>[
+            const FaIcon(
+              FontAwesomeIcons.buildingCircleXmark,
               color: Colors.white54,
               size: 48,
             ),
@@ -129,7 +141,7 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              icon: const Icon(Icons.refresh),
+              icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16),
               label: const Text('Recargar'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE31E24),
@@ -143,33 +155,43 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
     }
 
     // Agrupar las sucursales si es necesario
-    final sucursalesAgrupadas = _mostrarAgrupados ? _agruparSucursales() : null;
+    final Map<String, List<Sucursal>>? sucursalesAgrupadas = _mostrarAgrupados ? _agruparSucursales() : null;
 
     return FadeTransition(
       opacity: _animation,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+        children: <Widget>[
           // Cabecera del panel
           Container(
             padding: const EdgeInsets.all(16),
             color: const Color(0xFF222222),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'SUCURSALES',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                  children: <Widget>[
+                    const Row(
+                      children: <Widget>[
+                        FaIcon(
+                          FontAwesomeIcons.buildingUser,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'SUCURSALES',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                     Row(
-                      children: [
+                      children: <Widget>[
                         Tooltip(
                           message: '${widget.sucursales.length} sucursales',
                           child: Container(
@@ -190,10 +212,13 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
                         ),
                         const SizedBox(width: 8),
                         IconButton(
-                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          icon: const FaIcon(
+                            FontAwesomeIcons.arrowsRotate,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                           onPressed: widget.onRecargarSucursales,
                           tooltip: 'Recargar sucursales',
-                          iconSize: 20,
                         ),
                       ],
                     ),
@@ -203,17 +228,29 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
                 // Switch para agrupar/desagrupar
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Agrupar sucursales',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        FaIcon(
+                          _mostrarAgrupados 
+                              ? FontAwesomeIcons.layerGroup 
+                              : FontAwesomeIcons.list,
+                          color: Colors.white70,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Agrupar sucursales',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                     Switch(
                       value: _mostrarAgrupados,
-                      onChanged: (value) {
+                      onChanged: (bool value) {
                         setState(() {
                           _mostrarAgrupados = value;
                         });
@@ -240,16 +277,16 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
   Widget _buildAgrupadas(Map<String, List<Sucursal>> grupos) {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
+      children: <Widget>[
         // Construimos los grupos que tienen elementos
-        if (grupos['Centrales']!.isNotEmpty) ...[
+        if (grupos['Centrales']!.isNotEmpty) ...<Widget>[
           _buildGrupoHeader('Centrales', grupos['Centrales']!.length),
-          ...grupos['Centrales']!.map((sucursal) => _buildSucursalItem(sucursal)),
+          ...grupos['Centrales']!.map((Sucursal sucursal) => _buildSucursalItem(sucursal)),
         ],
-        if (grupos['Sucursales']!.isNotEmpty) ...[
+        if (grupos['Sucursales']!.isNotEmpty) ...<Widget>[
           if (grupos['Centrales']!.isNotEmpty) const SizedBox(height: 16),
           _buildGrupoHeader('Sucursales', grupos['Sucursales']!.length),
-          ...grupos['Sucursales']!.map((sucursal) => _buildSucursalItem(sucursal)),
+          ...grupos['Sucursales']!.map((Sucursal sucursal) => _buildSucursalItem(sucursal)),
         ],
       ],
     );
@@ -260,7 +297,7 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
       padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
+        children: <Widget>[
           Text(
             titulo.toUpperCase(),
             style: const TextStyle(
@@ -292,16 +329,16 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: widget.sucursales.length,
-      itemBuilder: (context, index) {
-        final sucursal = widget.sucursales[index];
+      itemBuilder: (BuildContext context, int index) {
+        final Sucursal sucursal = widget.sucursales[index];
         return _buildSucursalItem(sucursal);
       },
     );
   }
 
   Widget _buildSucursalItem(Sucursal sucursal) {
-    final isSelected = widget.sucursalSeleccionada?.id == sucursal.id;
-    final icon = _getIconForSucursal(sucursal);
+    final bool isSelected = widget.sucursalSeleccionada?.id == sucursal.id;
+    final IconData icon = _getIconForSucursal(sucursal);
     
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -326,7 +363,7 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
               ),
             ),
             child: Row(
-              children: [
+              children: <Widget>[
                 AnimatedScale(
                   scale: isSelected ? 1.2 : 1.0,
                   duration: const Duration(milliseconds: 200),
@@ -349,7 +386,7 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: <Widget>[
                       Text(
                         sucursal.nombre,
                         style: TextStyle(
@@ -366,10 +403,15 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        sucursal.direccion,
+                        sucursal.direccion ?? 'Sin dirección registrada',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white.withOpacity(0.5),
+                          color: sucursal.direccion != null
+                              ? Colors.white.withOpacity(0.5)
+                              : Colors.white.withOpacity(0.3),
+                          fontStyle: sucursal.direccion != null
+                              ? FontStyle.normal
+                              : FontStyle.italic,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 2,
@@ -378,10 +420,10 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
                   ),
                 ),
                 if (isSelected)
-                  const Icon(
-                    Icons.check_circle,
+                  const FaIcon(
+                    FontAwesomeIcons.circleCheck,
                     color: Color(0xFFE31E24),
-                    size: 20,
+                    size: 18,
                   ),
               ],
             ),

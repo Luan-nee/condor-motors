@@ -38,7 +38,7 @@ class Paginacion {
   // Método para generar un rango de páginas visible (útil para UI)
   List<int> getVisiblePages({int maxVisiblePages = 5}) {
     if (totalPages <= maxVisiblePages) {
-      return List.generate(totalPages, (i) => i + 1);
+      return List.generate(totalPages, (int i) => i + 1);
     }
 
     // Calcular el rango de páginas visibles
@@ -55,7 +55,7 @@ class Paginacion {
       }
     }
 
-    return List.generate(end - start + 1, (i) => start + i);
+    return List.generate(end - start + 1, (int i) => start + i);
   }
 }
 

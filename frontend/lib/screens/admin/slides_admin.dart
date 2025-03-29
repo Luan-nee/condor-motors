@@ -1,19 +1,18 @@
+import 'package:condorsmotors/screens/admin/categorias_admin.dart';
+import 'package:condorsmotors/screens/admin/colaboradores_admin.dart';
+import 'package:condorsmotors/screens/admin/dashboard_admin.dart';
+import 'package:condorsmotors/screens/admin/marcas_admin.dart';
+import 'package:condorsmotors/screens/admin/movimientos_admin.dart';
+import 'package:condorsmotors/screens/admin/productos_admin.dart';
+import 'package:condorsmotors/screens/admin/settings_admin.dart';
+import 'package:condorsmotors/screens/admin/stocks_admin.dart';
+import 'package:condorsmotors/screens/admin/sucursal_admin.dart';
+import 'package:condorsmotors/screens/admin/ventas_admin.dart';
+import 'package:condorsmotors/services/token_service.dart';
+import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../services/token_service.dart';
-import '../../utils/role_utils.dart' as role_utils;
-import 'categorias_admin.dart';
-import 'colaboradores_admin.dart';
-import 'dashboard_admin.dart';
-import 'marcas_admin.dart';
-import 'movimientos_admin.dart';
-import 'productos_admin.dart';
-import 'settings_admin.dart';
-import 'stocks_admin.dart';
-import 'sucursal_admin.dart';
-import 'ventas_admin.dart';
 
 class SlidesAdminScreen extends StatefulWidget {
   const SlidesAdminScreen({super.key});
@@ -32,7 +31,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
-        children: [
+        children: <Widget>[
           // Menú lateral
           Container(
             width: 250,
@@ -43,7 +42,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                   color: Colors.white.withOpacity(0.1),
                 ),
               ),
-              boxShadow: [
+              boxShadow: <BoxShadow>[
                 BoxShadow(
                   color: Colors.black.withOpacity(0.2),
                   blurRadius: 8,
@@ -53,12 +52,12 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 // Logo y título
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
-                    children: [
+                    children: <Widget>[
                       Container(
                         width: 40,
                         height: 40,
@@ -109,7 +108,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                   text: 'Inventario',
                   isSelected: _selectedIndex == 2,
                   isExpanded: true,
-                  subItems: [
+                  subItems: <Widget>[
                     _buildSubMenuItem(
                       'Control de stock',
                       onTap: () => setState(() {
@@ -186,13 +185,15 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                       await TokenService.instance.clearTokens();
                       
                       // 2. Desactivar la opción "Permanecer conectado"
-                      final prefs = await SharedPreferences.getInstance();
+                      final SharedPreferences prefs = await SharedPreferences.getInstance();
                       await prefs.setBool('stay_logged_in', false);
                       await prefs.remove('username_auto');
                       await prefs.remove('password_auto');
                       
                       // 3. Navegar a la pantalla de login
-                      if (!context.mounted) return;
+                      if (!context.mounted) {
+                        return;
+                      }
                       await Navigator.pushReplacementNamed(context, role_utils.login);
                     },
                     icon: const FaIcon(
@@ -222,13 +223,13 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
           Expanded(
             child: IndexedStack(
               index: _selectedIndex,
-              children: [
+              children: <Widget>[
                 const DashboardAdminScreen(),
                 const VentasAdminScreen(),
                 // Sección de Inventario con sus subvistas
                 IndexedStack(
                   index: _selectedSubIndex,
-                  children: const [
+                  children: const <Widget>[
                     CategoriasAdminScreen(),
                     InventarioAdminScreen(),
                     MovimientosAdminScreen(),
@@ -273,7 +274,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
           ),
         ),
         child: Row(
-          children: [
+          children: <Widget>[
             FaIcon(
               icon,
               color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
@@ -303,7 +304,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         _buildMenuItem(
           icon: icon,
           text: text,

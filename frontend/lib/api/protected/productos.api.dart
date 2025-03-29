@@ -1,9 +1,8 @@
+import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/models/paginacion.model.dart';
+import 'package:condorsmotors/models/producto.model.dart';
 import 'package:flutter/foundation.dart';
-
-import '../../models/paginacion.model.dart';
-import '../../models/producto.model.dart';
-import '../main.api.dart';
-import 'cache/fast_cache.dart';
 
 class ProductosApi {
   final ApiClient _api;
@@ -50,7 +49,7 @@ class ProductosApi {
       }
       
       // Generar clave única para este conjunto de parámetros
-      final cacheKey = _generateCacheKey(
+      final String cacheKey = _generateCacheKey(
         'productos_$sucursalId',
         search: search,
         page: page,
@@ -66,7 +65,7 @@ class ProductosApi {
       
       // Intentar obtener desde caché si useCache es true
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<PaginatedResponse<Producto>>(cacheKey);
+        final PaginatedResponse<Producto>? cachedData = _cache.get<PaginatedResponse<Producto>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Datos obtenidos desde caché: $cacheKey');
           return cachedData;
@@ -77,7 +76,7 @@ class ProductosApi {
       debugPrint('Obteniendo productos para sucursal $sucursalId con parámetros: '
           '{ search: $search, page: $page, pageSize: $pageSize, sortBy: $sortBy, order: $order, filter: $filter, stockBajo: $stockBajo, liquidacion: $liquidacion }');
       
-      final queryParams = <String, String>{};
+      final Map<String, String> queryParams = <String, String>{};
       
       if (search != null && search.isNotEmpty) {
         queryParams['search'] = search;
@@ -121,18 +120,18 @@ class ProductosApi {
         queryParams['liquidacion'] = liquidacion.toString();
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos',
         method: 'GET',
         queryParams: queryParams,
       );
       
       // Extraer los datos de productos
-      final List<dynamic> rawData = response['data'] ?? [];
-      final productos = rawData.map((item) => Producto.fromJson(item)).toList();
+      final List<dynamic> rawData = response['data'] ?? <dynamic>[];
+      final List<Producto> productos = rawData.map((item) => Producto.fromJson(item)).toList();
       
       // Extraer información de paginación
-      Map<String, dynamic> paginacionData = {};
+      Map<String, dynamic> paginacionData = <String, dynamic>{};
       if (response.containsKey('pagination') && response['pagination'] != null) {
         paginacionData = response['pagination'] as Map<String, dynamic>;
       }
@@ -144,7 +143,7 @@ class ProductosApi {
       }
       
       // Crear la respuesta paginada
-      final result = PaginatedResponse<Producto>(
+      final PaginatedResponse<Producto> result = PaginatedResponse<Producto>(
         items: productos,
         paginacion: Paginacion.fromJson(paginacionData),
         metadata: metadata,
@@ -206,7 +205,7 @@ class ProductosApi {
   }) async {
     // Usamos el método general y filtramos manualmente
     // porque el backend no tiene un endpoint específico para agotados
-    final response = await getProductos(
+    final PaginatedResponse<Producto> response = await getProductos(
       sucursalId: sucursalId,
       page: page ?? 1,
       pageSize: pageSize ?? 50, // Tamaño grande para tener suficientes después de filtrar
@@ -216,10 +215,10 @@ class ProductosApi {
     );
     
     // Filtramos solo los productos agotados (stock = 0)
-    final productosAgotados = response.items.where((p) => p.stock <= 0).toList();
+    final List<Producto> productosAgotados = response.items.where((Producto p) => p.stock <= 0).toList();
     
     // Mantenemos la misma información de paginación pero ajustamos totalItems
-    final paginacionAjustada = Paginacion(
+    final Paginacion paginacionAjustada = Paginacion(
       currentPage: response.paginacion.currentPage,
       totalPages: response.paginacion.totalPages,
       totalItems: productosAgotados.length,
@@ -307,11 +306,11 @@ class ProductosApi {
     bool useCache = true,
   }) async {
     try {
-      final cacheKey = 'producto_${sucursalId}_$productoId';
+      final String cacheKey = 'producto_${sucursalId}_$productoId';
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final cachedData = _cache.get<Producto>(cacheKey);
+        final Producto? cachedData = _cache.get<Producto>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Producto obtenido desde caché: $cacheKey');
           return cachedData;
@@ -320,12 +319,12 @@ class ProductosApi {
       
       debugPrint('Obteniendo producto $productoId de sucursal $sucursalId');
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
         method: 'GET',
       );
       
-      final producto = Producto.fromJson(response['data']);
+      final Producto producto = Producto.fromJson(response['data']);
       
       // Guardar en caché si useCache es true
       if (useCache) {
@@ -351,7 +350,7 @@ class ProductosApi {
     try {
       debugPrint('Creando nuevo producto en sucursal $sucursalId');
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos',
         method: 'POST',
         body: productoData,
@@ -381,7 +380,7 @@ class ProductosApi {
     try {
       debugPrint('Añadiendo producto $productoId a sucursal $sucursalId');
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
         method: 'POST',
         body: productoData,
@@ -421,7 +420,7 @@ class ProductosApi {
       }
       
       // Eliminar el ID del producto de los datos para evitar conflictos
-      final dataToSend = Map<String, dynamic>.from(productoData);
+      final Map<String, dynamic> dataToSend = Map<String, dynamic>.from(productoData);
       dataToSend.remove('id'); // No enviar el ID en el cuerpo
       
       debugPrint('ProductosApi: Actualizando producto $productoId en sucursal $sucursalId');
@@ -429,7 +428,7 @@ class ProductosApi {
       debugPrint('ProductosApi: Método: PATCH');
       debugPrint('ProductosApi: Datos a enviar: $dataToSend');
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
         method: 'PATCH',
         body: dataToSend,
@@ -498,10 +497,10 @@ class ProductosApi {
     try {
       debugPrint('Actualizando stock del producto $productoId a $nuevoStock');
       
-      final producto = await updateProducto(
+      final Producto producto = await updateProducto(
         sucursalId: sucursalId,
         productoId: productoId,
-        productoData: {
+        productoData: <String, dynamic>{
           'stock': nuevoStock,
         },
       );
@@ -535,7 +534,7 @@ class ProductosApi {
       debugPrint('Disminuyendo $cantidad unidades al producto $productoId en sucursal $sucursalId');
       
       // Asegurarse de que los tipos sean los correctos para la API
-      final Map<String, dynamic> body = {
+      final Map<String, dynamic> body = <String, dynamic>{
         'productoId': productoId, // Asegurarse que sea un entero
         'cantidad': cantidad, // Asegurarse que sea un entero
       };
@@ -580,7 +579,7 @@ class ProductosApi {
       debugPrint('Agregando $cantidad unidades al producto $productoId en sucursal $sucursalId');
       
       // Asegurarse de que los tipos sean los correctos para la API
-      final Map<String, dynamic> body = {
+      final Map<String, dynamic> body = <String, dynamic>{
         'productoId': productoId, // Asegurarse que sea un entero
         'cantidad': cantidad, // Asegurarse que sea un entero
       };
@@ -666,7 +665,7 @@ class ProductosApi {
       }
       
       // Datos a enviar al servidor
-      final Map<String, dynamic> data = {
+      final Map<String, dynamic> data = <String, dynamic>{
         'liquidacion': enLiquidacion,
       };
       
@@ -706,18 +705,38 @@ class ProductosApi {
     bool? stockBajo,
     bool? liquidacion,
   }) {
-    final List<String> components = [base];
+    final List<String> components = <String>[base];
     
-    if (search != null && search.isNotEmpty) components.add('s:$search');
-    if (page != null) components.add('p:$page');
-    if (pageSize != null) components.add('ps:$pageSize');
-    if (sortBy != null && sortBy.isNotEmpty) components.add('sb:$sortBy');
-    if (order != null && order.isNotEmpty) components.add('o:$order');
-    if (filter != null && filter.isNotEmpty) components.add('f:$filter');
-    if (filterValue != null) components.add('fv:$filterValue');
-    if (filterType != null && filterType.isNotEmpty) components.add('ft:$filterType');
-    if (stockBajo != null) components.add('stb:${stockBajo ? 'true' : 'false'}');
-    if (liquidacion != null) components.add('liq:${liquidacion ? 'true' : 'false'}');
+    if (search != null && search.isNotEmpty) {
+      components.add('s:$search');
+    }
+    if (page != null) {
+      components.add('p:$page');
+    }
+    if (pageSize != null) {
+      components.add('ps:$pageSize');
+    }
+    if (sortBy != null && sortBy.isNotEmpty) {
+      components.add('sb:$sortBy');
+    }
+    if (order != null && order.isNotEmpty) {
+      components.add('o:$order');
+    }
+    if (filter != null && filter.isNotEmpty) {
+      components.add('f:$filter');
+    }
+    if (filterValue != null) {
+      components.add('fv:$filterValue');
+    }
+    if (filterType != null && filterType.isNotEmpty) {
+      components.add('ft:$filterType');
+    }
+    if (stockBajo != null) {
+      components.add('stb:${stockBajo ? 'true' : 'false'}');
+    }
+    if (liquidacion != null) {
+      components.add('liq:${liquidacion ? 'true' : 'false'}');
+    }
     
     return components.join('_');
   }
@@ -726,7 +745,7 @@ class ProductosApi {
   void _invalidateRelatedCache(String sucursalId, [int? productoId]) {
     if (productoId != null) {
       // Invalidar caché específica de este producto
-      final cacheKey = 'producto_${sucursalId}_$productoId';
+      final String cacheKey = 'producto_${sucursalId}_$productoId';
       _cache.invalidate(cacheKey);
       debugPrint('✅ Caché invalidada para producto $productoId en sucursal $sucursalId: $cacheKey');
     }
@@ -745,10 +764,10 @@ class ProductosApi {
       
       // También invalidar todos los productos individuales de esta sucursal 
       // ya que podrían haber cambiado
-      final productKeys = _cache.keys.where((key) => 
+      final List<String> productKeys = _cache.keys.where((String key) => 
           key.startsWith('producto_$sucursalId')).toList();
       
-      for (final key in productKeys) {
+      for (final String key in productKeys) {
         _cache.invalidate(key);
         debugPrint('✅ Caché invalidada: $key');
       }
@@ -774,7 +793,7 @@ class ProductosApi {
     String? filterType,
     bool? stockBajo,
   }) {
-    final cacheKey = _generateCacheKey(
+    final String cacheKey = _generateCacheKey(
       'productos_$sucursalId',
       search: search,
       page: page,
@@ -817,7 +836,7 @@ class ProductosApi {
     bool useCache = true,
   }) async {
     // Construir parámetros base
-    final Map<String, String> queryParams = {};
+    final Map<String, String> queryParams = <String, String>{};
     
     if (categoria != null && categoria.isNotEmpty) {
       queryParams['filter'] = 'categoria';
@@ -848,7 +867,7 @@ class ProductosApi {
     }
     
     // Obtenemos resultados base
-    final resultados = await getProductos(
+    final PaginatedResponse<Producto> resultados = await getProductos(
       sucursalId: sucursalId,
       page: page ?? 1,
       pageSize: pageSize ?? 20,
@@ -864,7 +883,7 @@ class ProductosApi {
     }
     
     // Filtros post-proceso (porque el backend no soporta estos filtros directamente)
-    final List<Producto> productosFiltrados = resultados.items.where((producto) {
+    final List<Producto> productosFiltrados = resultados.items.where((Producto producto) {
       // Filtrar por stock positivo
       if (stockPositivo == true && (producto.stock <= 0)) {
         return false;
@@ -886,7 +905,7 @@ class ProductosApi {
     }).toList();
     
     // Ajustar paginación para reflejar los resultados filtrados
-    final paginacionAjustada = Paginacion(
+    final Paginacion paginacionAjustada = Paginacion(
       currentPage: resultados.paginacion.currentPage,
       totalPages: (productosFiltrados.length / (pageSize ?? 20)).ceil(),
       totalItems: productosFiltrados.length,
@@ -926,7 +945,7 @@ class ProductosApi {
     }
     
     // Para otros tipos, obtenemos todos y filtramos
-    final resultados = await getProductos(
+    final PaginatedResponse<Producto> resultados = await getProductos(
       sucursalId: sucursalId,
       page: page ?? 1,
       pageSize: 100, // Obtenemos más para poder filtrar adecuadamente
@@ -944,19 +963,19 @@ class ProductosApi {
     
     switch (tipoPromocion) {
       case 'gratis':
-        productosFiltrados = resultados.items.where((p) => 
+        productosFiltrados = resultados.items.where((Producto p) => 
           p.cantidadGratisDescuento != null && p.cantidadGratisDescuento! > 0
         ).toList();
         break;
       case 'porcentaje':
-        productosFiltrados = resultados.items.where((p) => 
+        productosFiltrados = resultados.items.where((Producto p) => 
           p.cantidadMinimaDescuento != null && p.porcentajeDescuento != null &&
           p.cantidadMinimaDescuento! > 0 && p.porcentajeDescuento! > 0
         ).toList();
         break;
       case 'cualquiera':
       default:
-        productosFiltrados = resultados.items.where((p) => 
+        productosFiltrados = resultados.items.where((Producto p) => 
           p.liquidacion || // Liquidación
           (p.cantidadGratisDescuento != null && p.cantidadGratisDescuento! > 0) || // Promo gratis
           (p.cantidadMinimaDescuento != null && p.porcentajeDescuento != null && 
@@ -976,11 +995,11 @@ class ProductosApi {
     // Asegurarnos de no ir fuera de rango
     final List<Producto> paginatedResults = startIndex < productosFiltrados.length 
         ? productosFiltrados.sublist(startIndex, endIndex)
-        : [];
+        : <Producto>[];
     
     // Ajustar paginación
-    final totalPages = (productosFiltrados.length / itemsPerPage).ceil();
-    final paginacionAjustada = Paginacion(
+    final int totalPages = (productosFiltrados.length / itemsPerPage).ceil();
+    final Paginacion paginacionAjustada = Paginacion(
       currentPage: pageNumber,
       totalPages: totalPages > 0 ? totalPages : 1,
       totalItems: productosFiltrados.length,
@@ -1017,7 +1036,7 @@ class ProductosApi {
     
     debugPrint('Obteniendo productos más vendidos en la sucursal $sucursalId durante los últimos $dias días');
     
-    final productos = await getProductos(
+    final PaginatedResponse<Producto> productos = await getProductos(
       sucursalId: sucursalId,
       page: page ?? 1,
       pageSize: pageSize ?? 20,

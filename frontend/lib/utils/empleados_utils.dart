@@ -1,10 +1,9 @@
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_cuenta_dialog.dart';
+import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_horario_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import '../main.dart' show api;
-import '../models/empleado.model.dart';
-import '../screens/admin/widgets/empleado/empleado_cuenta_dialog.dart';
-import '../screens/admin/widgets/empleado/empleado_horario_dialog.dart';
 
 /// Clase de utilidades para funciones comunes relacionadas con empleados
 /// 
@@ -22,11 +21,11 @@ import '../screens/admin/widgets/empleado/empleado_horario_dialog.dart';
 /// la inicialización de campos de formulario, y la presentación visual de datos de empleados.
 class EmpleadosUtils {
   // Constantes para manejar errores comunes
-  static const _errorNotFoundResponses = [
+  static const List<String> _errorNotFoundResponses = <String>[
     '404', 'not found', 'no encontrado', 'no existe', 'empleado no tiene cuenta'
   ];
   
-  static const _errorAuthResponses = [
+  static const List<String> _errorAuthResponses = <String>[
     '401', 'no autorizado', 'sesión expirada', 'token inválido'
   ];
   
@@ -63,7 +62,7 @@ class EmpleadosUtils {
     }
     
     // Alternamos entre vendedor y computadora para el resto
-    final idNum = int.tryParse(empleado.id) ?? 0;
+    final int idNum = int.tryParse(empleado.id) ?? 0;
     if (idNum % 2 == 0) {
       return 'Vendedor';
     } else {
@@ -101,7 +100,7 @@ class EmpleadosUtils {
     if (sucursalId == null || sucursalId.isEmpty) {
       return false;
     }
-    final nombre = nombresSucursales[sucursalId] ?? '';
+    final String nombre = nombresSucursales[sucursalId] ?? '';
     return nombre.contains('(Central)');
   }
   
@@ -154,12 +153,12 @@ class EmpleadosUtils {
   ///
   /// Retorna un mapa con dos listas: 'activos' e 'inactivos'
   static Map<String, List<Empleado>> agruparEmpleadosPorEstado(List<Empleado> empleados) {
-    final Map<String, List<Empleado>> grupos = {
-      'activos': [],
-      'inactivos': [],
+    final Map<String, List<Empleado>> grupos = <String, List<Empleado>>{
+      'activos': <Empleado>[],
+      'inactivos': <Empleado>[],
     };
     
-    for (final empleado in empleados) {
+    for (final Empleado empleado in empleados) {
       if (empleado.activo) {
         grupos['activos']!.add(empleado);
       } else {
@@ -171,12 +170,12 @@ class EmpleadosUtils {
   }
   
   /// Obtiene un ícono para el estado de un empleado (activo/inactivo)
-  static IconData getIconoEstadoEmpleado(bool activo) {
+  static IconData getIconoEstadoEmpleado({required bool activo}) {
     return activo ? FontAwesomeIcons.userCheck : FontAwesomeIcons.userXmark;
   }
   
   /// Obtiene el color para el estado de un empleado (activo/inactivo)
-  static Color getColorEstadoEmpleado(bool activo) {
+  static Color getColorEstadoEmpleado({required bool activo}) {
     return activo ? const Color(0xFF4CAF50) : Colors.grey;
   }
   
@@ -217,7 +216,7 @@ class EmpleadosUtils {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
+        children: <Widget>[
           FaIcon(
             icono,
             color: color,
@@ -248,7 +247,7 @@ class EmpleadosUtils {
   }) {
     // Inicializar hora de inicio
     if (horaInicio != null && horaInicio.isNotEmpty) {
-      final partes = horaInicio.split(':');
+      final List<String> partes = horaInicio.split(':');
       if (partes.length >= 2) {
         horaInicioHoraController.text = partes[0].padLeft(2, '0');
         horaInicioMinutoController.text = partes[1].padLeft(2, '0');
@@ -263,7 +262,7 @@ class EmpleadosUtils {
     
     // Inicializar hora de fin
     if (horaFin != null && horaFin.isNotEmpty) {
-      final partes = horaFin.split(':');
+      final List<String> partes = horaFin.split(':');
       if (partes.length >= 2) {
         horaFinHoraController.text = partes[0].padLeft(2, '0');
         horaFinMinutoController.text = partes[1].padLeft(2, '0');
@@ -280,9 +279,9 @@ class EmpleadosUtils {
   /// Obtiene el nombre de un rol a partir de su ID
   static Future<String?> obtenerNombreRol(int rolId) async {
     try {
-      final roles = await api.cuentasEmpleados.getRolesCuentas();
-      final rol = roles.firstWhere(
-        (r) => r['id'] == rolId,
+      final List<Map<String, dynamic>> roles = await api.cuentasEmpleados.getRolesCuentas();
+      final Map<String, dynamic> rol = roles.firstWhere(
+        (Map<String, dynamic> r) => r['id'] == rolId,
         orElse: () => <String, dynamic>{},
       );
       
@@ -296,21 +295,25 @@ class EmpleadosUtils {
   
   /// Determina si un error es debido a recurso no encontrado
   static bool _esErrorNotFound(String errorMessage) {
-    final msgLower = errorMessage.toLowerCase();
-    return _errorNotFoundResponses.any((term) => msgLower.contains(term));
+    final String msgLower = errorMessage.toLowerCase();
+    return _errorNotFoundResponses.any((String term) {
+      return msgLower.contains(term);
+    });
   }
   
   /// Determina si un error es debido a problemas de autenticación
   static bool _esErrorAutenticacion(String errorMessage) {
-    final msgLower = errorMessage.toLowerCase();
-    return _errorAuthResponses.any((term) => msgLower.contains(term));
+    final String msgLower = errorMessage.toLowerCase();
+    return _errorAuthResponses.any((String term) {
+      return msgLower.contains(term);
+    });
   }
   
   /// Carga información de la cuenta de un empleado
   /// 
   /// Retorna un Future con un Map que contiene la información de la cuenta
   static Future<Map<String, dynamic>> cargarInformacionCuenta(Empleado empleado) async {
-    final Map<String, dynamic> resultado = {
+    final Map<String, dynamic> resultado = <String, dynamic>{
       'cuentaNoEncontrada': false,
       'errorCargaInfo': null as String?,
       'usuarioActual': null as String?,
@@ -321,26 +324,28 @@ class EmpleadosUtils {
       // Intentar obtener la cuenta - primero por ID de cuenta si está disponible
       if (empleado.cuentaEmpleadoId != null) {
         try {
-          final cuentaIdInt = int.tryParse(empleado.cuentaEmpleadoId!);
+          final int? cuentaIdInt = int.tryParse(empleado.cuentaEmpleadoId!);
           if (cuentaIdInt != null) {
-            final cuentaInfo = await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
+            final Map<String, dynamic>? cuentaInfo = await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
             if (cuentaInfo != null) {
               // Cuenta encontrada por ID
               return await _procesarInfoCuenta(cuentaInfo, resultado);
             }
           }
         } catch (e) {
-          final errorStr = e.toString();
+          final String errorStr = e.toString();
           // Si es error de "no encontrado", solo continuamos al siguiente método
           // Si es error de autenticación, lo propagamos
-          if (_esErrorAutenticacion(errorStr)) rethrow;
+          if (_esErrorAutenticacion(errorStr)) {
+            rethrow;
+          }
           // Para otros errores, continuamos con el siguiente método
         }
       }
       
       // Si llegamos aquí, intentamos encontrar la cuenta por ID de empleado
       try {
-        final cuentaInfo = await api.cuentasEmpleados.getCuentaByEmpleadoId(empleado.id);
+        final Map<String, dynamic>? cuentaInfo = await api.cuentasEmpleados.getCuentaByEmpleadoId(empleado.id);
         if (cuentaInfo != null) {
           // Cuenta encontrada por ID de empleado
           return await _procesarInfoCuenta(cuentaInfo, resultado);
@@ -350,14 +355,16 @@ class EmpleadosUtils {
           return resultado;
         }
       } catch (e) {
-        final errorStr = e.toString();
+        final String errorStr = e.toString();
         
         if (_esErrorNotFound(errorStr)) {
           resultado['cuentaNoEncontrada'] = true;
           return resultado;
         }
         
-        if (_esErrorAutenticacion(errorStr)) rethrow;
+        if (_esErrorAutenticacion(errorStr)) {
+          rethrow;
+        }
         
         // Cualquier otro error
         resultado['errorCargaInfo'] = 'Error: ${errorStr.replaceAll('Exception: ', '')}';
@@ -365,14 +372,16 @@ class EmpleadosUtils {
       }
     } catch (e) {
       // Error general - propagar errores de autenticación, manejar otros errores
-      final errorStr = e.toString();
+      final String errorStr = e.toString();
       
       if (_esErrorNotFound(errorStr)) {
         resultado['cuentaNoEncontrada'] = true;
         return resultado;
       }
       
-      if (_esErrorAutenticacion(errorStr)) rethrow;
+      if (_esErrorAutenticacion(errorStr)) {
+        rethrow;
+      }
       
       resultado['errorCargaInfo'] = 'Error: ${errorStr.replaceAll('Exception: ', '')}';
       return resultado;
@@ -399,21 +408,27 @@ class EmpleadosUtils {
   /// 
   /// Muestra un diálogo para gestionar la cuenta y maneja todas las interacciones con la API
   static Future<bool> gestionarCuenta(BuildContext context, Empleado empleado) async {
-    if (!context.mounted) return false;
+    if (!context.mounted) {
+      return false;
+    }
     
     try {
       // Obtener roles disponibles
-      final roles = await _obtenerRolesDisponibles();
+      final List<Map<String, dynamic>> roles = await _obtenerRolesDisponibles();
       
-      if (!context.mounted) return false;
+      if (!context.mounted) {
+        return false;
+      }
       
       // Obtener información de cuenta
-      final cuentaInfo = await _obtenerInfoCuenta(empleado);
+      final Map<String, dynamic> cuentaInfo = await _obtenerInfoCuenta(empleado);
       
-      if (!context.mounted) return false;
+      if (!context.mounted) {
+        return false;
+      }
       
       // Preparar nombre del empleado para mostrar
-      final nombreEmpleado = '${empleado.nombre} ${empleado.apellidos}';
+      final String nombreEmpleado = '${empleado.nombre} ${empleado.apellidos}';
       
       // Mostrar diálogo
       return await _mostrarDialogoCuenta(
@@ -425,9 +440,11 @@ class EmpleadosUtils {
       );
       
     } catch (e) {
-      if (!context.mounted) return false;
+      if (!context.mounted) {
+        return false;
+      }
       
-      final errorStr = e.toString();
+      final String errorStr = e.toString();
       // Si es error de "no encontrado", mostramos formulario de creación
       if (_esErrorNotFound(errorStr)) {
         return await _mostrarDialogoCreacionCuenta(context, empleado);
@@ -444,7 +461,7 @@ class EmpleadosUtils {
       return await api.cuentasEmpleados.getRolesCuentas();
     } catch (e) {
       debugPrint('Error al obtener roles: $e');
-      return []; // Devolver lista vacía en caso de error
+      return <Map<String, dynamic>>[]; // Devolver lista vacía en caso de error
     }
   }
   
@@ -462,15 +479,15 @@ class EmpleadosUtils {
       
       // Intentar obtener la cuenta por ID
       if (cuentaId != null) {
-        final cuentaIdInt = int.tryParse(cuentaId);
+        final int? cuentaIdInt = int.tryParse(cuentaId);
         if (cuentaIdInt != null) {
           try {
-            final cuentaInfo = await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
+            final Map<String, dynamic>? cuentaInfo = await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
             
             if (cuentaInfo != null) {
               usuarioActual = cuentaInfo['usuario']?.toString();
               rolActualId = cuentaInfo['rolCuentaEmpleadoId'];
-              return {
+              return <String, dynamic>{
                 'cuentaId': cuentaId,
                 'usuarioActual': usuarioActual,
                 'rolActualId': rolActualId,
@@ -478,9 +495,11 @@ class EmpleadosUtils {
               };
             }
           } catch (e) {
-            final errorStr = e.toString();
+            final String errorStr = e.toString();
             
-            if (_esErrorAutenticacion(errorStr)) rethrow;
+            if (_esErrorAutenticacion(errorStr)) {
+              rethrow;
+            }
             
             if (_esErrorNotFound(errorStr)) {
               esCreacionDeCuenta = true;
@@ -493,13 +512,13 @@ class EmpleadosUtils {
     
     // Si no se encontró por ID directo, intentar por ID de empleado
     try {
-      final cuentaInfo = await api.cuentasEmpleados.getCuentaByEmpleadoId(empleado.id);
+      final Map<String, dynamic>? cuentaInfo = await api.cuentasEmpleados.getCuentaByEmpleadoId(empleado.id);
       
       if (cuentaInfo != null) {
         cuentaId = cuentaInfo['id']?.toString();
         usuarioActual = cuentaInfo['usuario']?.toString();
         rolActualId = cuentaInfo['rolCuentaEmpleadoId'];
-        return {
+        return <String, dynamic>{
           'cuentaId': cuentaId,
           'usuarioActual': usuarioActual,
           'rolActualId': rolActualId,
@@ -510,7 +529,7 @@ class EmpleadosUtils {
         esCreacionDeCuenta = true;
       }
     } catch (e) {
-      final errorStr = e.toString();
+      final String errorStr = e.toString();
       
       if (_esErrorNotFound(errorStr)) {
         esCreacionDeCuenta = true;
@@ -522,7 +541,7 @@ class EmpleadosUtils {
       }
     }
     
-    return {
+    return <String, dynamic>{
       'cuentaId': cuentaId,
       'usuarioActual': usuarioActual,
       'rolActualId': rolActualId,
@@ -538,11 +557,13 @@ class EmpleadosUtils {
     Map<String, dynamic> cuentaInfo,
     List<Map<String, dynamic>> roles
   ) async {
-    if (!context.mounted) return false;
+    if (!context.mounted) {
+      return false;
+    }
     
     return await showDialog<bool>(
       context: context,
-      builder: (context) => Dialog(
+      builder: (BuildContext context) => Dialog(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 600),
           child: EmpleadoCuentaDialog(
@@ -561,16 +582,20 @@ class EmpleadosUtils {
   
   /// Muestra un diálogo para crear una nueva cuenta
   static Future<bool> _mostrarDialogoCreacionCuenta(BuildContext context, Empleado empleado) async {
-    if (!context.mounted) return false;
+    if (!context.mounted) {
+      return false;
+    }
     
-    final nombreEmpleado = '${empleado.nombre} ${empleado.apellidos}';
-    final roles = await _obtenerRolesDisponibles();
+    final String nombreEmpleado = '${empleado.nombre} ${empleado.apellidos}';
+    final List<Map<String, dynamic>> roles = await _obtenerRolesDisponibles();
     
-    if (!context.mounted) return false;
+    if (!context.mounted) {
+      return false;
+    }
     
     return await showDialog<bool>(
       context: context,
-      builder: (context) => Dialog(
+      builder: (BuildContext context) => Dialog(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 600),
           child: EmpleadoCuentaDialog(
@@ -588,7 +613,7 @@ class EmpleadosUtils {
   static Widget buildInfoItem(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         Text(
           label,
           style: TextStyle(
@@ -611,13 +636,17 @@ class EmpleadosUtils {
   
   /// Formatea un valor de sueldo para mostrar
   static String formatearSueldo(double? sueldo) {
-    if (sueldo == null) return 'No especificado';
+    if (sueldo == null) {
+      return 'No especificado';
+    }
     return 'S/ ${sueldo.toStringAsFixed(2)}';
   }
   
   /// Formatea un valor de fecha para mostrar
   static String formatearFecha(String? fecha) {
-    if (fecha == null || fecha.isEmpty) return 'No especificada';
+    if (fecha == null || fecha.isEmpty) {
+      return 'No especificada';
+    }
     // Si se necesita un formato más complejo, se puede implementar aquí
     return fecha;
   }
@@ -625,11 +654,13 @@ class EmpleadosUtils {
   /// Muestra el diálogo de horario del empleado
   static Future<void> mostrarHorarioEmpleado(BuildContext context, Empleado empleado) async {
     // Verificar si el contexto es seguro de usar antes de mostrar el diálogo
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      return;
+    }
     
     await showDialog(
       context: context,
-      builder: (context) => EmpleadoHorarioDialog(empleado: empleado),
+      builder: (BuildContext context) => EmpleadoHorarioDialog(empleado: empleado),
     );
   }
   
@@ -639,18 +670,20 @@ class EmpleadosUtils {
     bool barrierDismissible = false,
   }) async {
     // Verificar si el contexto es seguro de usar antes de mostrar el diálogo
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      return;
+    }
     
     await showDialog(
       context: context,
       barrierDismissible: barrierDismissible,
-      builder: (context) => Dialog(
+      builder: (BuildContext context) => Dialog(
         backgroundColor: const Color(0xFF1A1A1A),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
+            children: <Widget>[
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
               Text(
@@ -668,7 +701,7 @@ class EmpleadosUtils {
   static void mostrarMensaje(
     BuildContext context, {
     required String mensaje,
-    bool esError = false,
+    required bool esError,
     VoidCallback? accion,
     String? textoAccion,
   }) {
@@ -693,7 +726,7 @@ class EmpleadosUtils {
   }
   
   /// Genera un mensaje descriptivo para estados de empleado activo/inactivo
-  static String getDescripcionEstado(bool activo) {
+  static String getDescripcionEstado({required bool activo}) {
     return activo 
         ? 'El colaborador está trabajando actualmente en la empresa'
         : 'El colaborador no está trabajando actualmente en la empresa';
@@ -701,8 +734,8 @@ class EmpleadosUtils {
   
   /// Obtiene un texto formateado con la información de horario
   static String getHorarioFormateado(Empleado empleado) {
-    final horaInicio = formatearHora(empleado.horaInicioJornada);
-    final horaFin = formatearHora(empleado.horaFinJornada);
+    final String horaInicio = formatearHora(empleado.horaInicioJornada);
+    final String horaFin = formatearHora(empleado.horaFinJornada);
     return '$horaInicio - $horaFin';
   }
   
@@ -739,9 +772,9 @@ class EmpleadosUtils {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             const Row(
-              children: [
+              children: <Widget>[
                 FaIcon(
                   FontAwesomeIcons.userShield,
                   color: Color(0xFFE31E24),
@@ -760,7 +793,7 @@ class EmpleadosUtils {
             ),
             const SizedBox(height: 8),
             Row(
-              children: [
+              children: <Widget>[
                 Expanded(
                   child: buildInfoItem('Usuario', '@$usuarioActual'),
                 ),
@@ -770,11 +803,11 @@ class EmpleadosUtils {
                   ),
               ],
             ),
-            if (onGestionarCuenta != null) ...[
+            if (onGestionarCuenta != null) ...<Widget>[
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
+                children: <Widget>[
                   TextButton.icon(
                     icon: const FaIcon(
                       FontAwesomeIcons.key,

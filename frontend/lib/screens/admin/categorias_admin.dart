@@ -1,6 +1,6 @@
+import 'package:condorsmotors/main.dart' show api;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../main.dart' show api;
 
 class CategoriasAdminScreen extends StatefulWidget {
   const CategoriasAdminScreen({super.key});
@@ -10,16 +10,16 @@ class CategoriasAdminScreen extends StatefulWidget {
 }
 
 class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nombreController = TextEditingController();
-  final _descripcionController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _nombreController = TextEditingController();
+  final TextEditingController _descripcionController = TextEditingController();
 
   bool _isLoading = false;
   bool _isCreating = false;
   String _errorMessage = '';
 
   // Lista de categorías obtenidas de la API
-  List<Map<String, dynamic>> _categorias = [];
+  List<Map<String, dynamic>> _categorias = <Map<String, dynamic>>[];
 
   @override
   void initState() {
@@ -36,15 +36,17 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
 
     try {
       debugPrint('Cargando categorías desde la API...');
-      final categoriasList = await api.categorias.getCategorias();
+      final List categoriasList = await api.categorias.getCategorias();
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       // Convertir la lista de categorías a un formato más manejable
-      final List<Map<String, dynamic>> categoriasFormateadas = [];
+      final List<Map<String, dynamic>> categoriasFormateadas = <Map<String, dynamic>>[];
 
       for (var categoria in categoriasList) {
-        categoriasFormateadas.add({
+        categoriasFormateadas.add(<String, dynamic>{
           'id': categoria['id'],
           'nombre': categoria['nombre'] ?? 'Sin nombre',
           'descripcion': categoria['descripcion'] ?? 'Sin descripción',
@@ -59,7 +61,9 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
 
       debugPrint('${_categorias.length} categorías cargadas correctamente');
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       debugPrint('Error al cargar categorías: $e');
       setState(() {
@@ -67,26 +71,26 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
         _errorMessage = 'Error al cargar categorías: $e';
 
         // En caso de error, usar datos de ejemplo para desarrollo
-        _categorias = [
-          {
+        _categorias = <Map<String, dynamic>>[
+          <String, dynamic>{
             'id': 1,
             'nombre': 'Cascos',
             'descripcion': 'Cascos de seguridad para motociclistas',
             'totalProductos': 45,
           },
-          {
+          <String, dynamic>{
             'id': 2,
             'nombre': 'Lubricantes',
             'descripcion': 'Aceites y lubricantes para motocicletas',
             'totalProductos': 32,
           },
-          {
+          <String, dynamic>{
             'id': 3,
             'nombre': 'Llantas',
             'descripcion': 'Llantas y neumáticos para motocicletas',
             'totalProductos': 28,
           },
-          {
+          <String, dynamic>{
             'id': 4,
             'nombre': 'Repuestos',
             'descripcion': 'Repuestos y partes para motocicletas',
@@ -100,10 +104,12 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
   // Método para crear o actualizar una categoría
   Future<void> _guardarCategoria(
       [Map<String, dynamic>? categoriaExistente]) async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-    final nombre = _nombreController.text.trim();
-    final descripcion = _descripcionController.text.trim();
+    final String nombre = _nombreController.text.trim();
+    final String descripcion = _descripcionController.text.trim();
 
     setState(() {
       _isCreating = true;
@@ -119,7 +125,9 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
           descripcion: descripcion.isNotEmpty ? descripcion : null,
         );
 
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -139,7 +147,9 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
           descripcion: descripcion.isNotEmpty ? descripcion : null,
         );
 
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -152,7 +162,9 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
         await _cargarCategorias();
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       debugPrint('Error al guardar categoría: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -177,7 +189,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
+      builder: (BuildContext context) => Dialog(
         backgroundColor: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -190,9 +202,9 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 Row(
-                  children: [
+                  children: <Widget>[
                     const FaIcon(
                       FontAwesomeIcons.folderPlus,
                       color: Colors.red,
@@ -227,7 +239,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                           BorderSide(color: Color(0xFFE31E24), width: 2),
                     ),
                   ),
-                  validator: (value) {
+                  validator: (String? value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor ingrese un nombre';
                     }
@@ -255,7 +267,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
+                  children: <Widget>[
                     TextButton(
                       onPressed:
                           _isCreating ? null : () => Navigator.pop(context),
@@ -305,13 +317,13 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+              children: <Widget>[
                 Row(
-                  children: [
+                  children: <Widget>[
                     const FaIcon(
                       FontAwesomeIcons.folderTree,
                       color: Colors.white,
@@ -320,7 +332,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                     const SizedBox(width: 16),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: <Widget>[
                         const Text(
                           'INVENTARIO',
                           style: TextStyle(
@@ -341,12 +353,12 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                   ],
                 ),
                 Row(
-                  children: [
+                  children: <Widget>[
                     if (_isLoading)
                       Padding(
                         padding: const EdgeInsets.only(right: 16),
                         child: Row(
-                          children: [
+                          children: <Widget>[
                             const SizedBox(
                               width: 16,
                               height: 16,
@@ -406,7 +418,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                   border: Border.all(color: Colors.red.withOpacity(0.3)),
                 ),
                 child: Row(
-                  children: [
+                  children: <Widget>[
                     const Icon(Icons.error_outline, color: Colors.red),
                     const SizedBox(width: 16),
                     Expanded(
@@ -445,7 +457,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
+                              children: <Widget>[
                                 const FaIcon(
                                   FontAwesomeIcons.folderOpen,
                                   color: Colors.grey,
@@ -475,14 +487,14 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                         : SingleChildScrollView(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
+                              children: <Widget>[
                                 // Encabezado de la tabla
                                 Container(
                                   color: const Color(0xFF2D2D2D),
                                   padding: const EdgeInsets.symmetric(
                                       vertical: 16, horizontal: 20),
                                   child: const Row(
-                                    children: [
+                                    children: <Widget>[
                                       // Categorías (30% del ancho)
                                       Expanded(
                                         flex: 30,
@@ -534,7 +546,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                 ),
 
                                 // Filas de categorías
-                                ..._categorias.map((categoria) => Container(
+                                ..._categorias.map((Map<String, dynamic> categoria) => Container(
                                       decoration: BoxDecoration(
                                         border: Border(
                                           bottom: BorderSide(
@@ -546,12 +558,12 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 12, horizontal: 20),
                                       child: Row(
-                                        children: [
+                                        children: <Widget>[
                                           // Categoría
                                           Expanded(
                                             flex: 30,
                                             child: Row(
-                                              children: [
+                                              children: <Widget>[
                                                 Container(
                                                   width: 32,
                                                   height: 32,
@@ -608,7 +620,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                                 ),
                                                 child: Row(
                                                   mainAxisSize: MainAxisSize.min,
-                                                  children: [
+                                                  children: <Widget>[
                                                     const FaIcon(
                                                       FontAwesomeIcons.box,
                                                       size: 12,
@@ -634,7 +646,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                             child: Row(
                                               mainAxisAlignment:
                                                   MainAxisAlignment.center,
-                                              children: [
+                                              children: <Widget>[
                                                 IconButton(
                                                   icon: const FaIcon(
                                                     FontAwesomeIcons

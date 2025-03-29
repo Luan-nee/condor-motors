@@ -1,3 +1,5 @@
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/screens/computer/widgets/ventas_pendientes_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -11,10 +13,11 @@ class InventarioColabScreen extends StatefulWidget {
 class _InventarioColabScreenState extends State<InventarioColabScreen> {
   String _searchQuery = '';
   String _selectedCategory = 'Todos';
+  String? _sucursalId;
 
   // Datos de ejemplo para productos
-  final List<Map<String, dynamic>> _productos = [
-    {
+  final List<Map<String, dynamic>> _productos = <Map<String, dynamic>>[
+    <String, dynamic>{
       'id': 1,
       'codigo': 'CAS001',
       'nombre': 'Casco MT Thunder',
@@ -30,7 +33,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
       'ubicacion': 'Estante A-1',
       'ultimoConteo': '2024-03-10',
     },
-    {
+    <String, dynamic>{
       'id': 2,
       'codigo': 'ACE001',
       'nombre': 'Aceite Motul 5100',
@@ -46,7 +49,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
       'ubicacion': 'Estante B-2',
       'ultimoConteo': '2024-03-11',
     },
-    {
+    <String, dynamic>{
       'id': 3,
       'codigo': 'LLA001',
       'nombre': 'Llanta Pirelli Diablo',
@@ -62,7 +65,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
       'ubicacion': 'Estante C-3',
       'ultimoConteo': '2024-03-09',
     },
-    {
+    <String, dynamic>{
       'id': 4,
       'codigo': 'FRE001',
       'nombre': 'Kit de Frenos Brembo',
@@ -78,7 +81,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
       'ubicacion': 'Estante D-1',
       'ultimoConteo': '2024-03-12',
     },
-    {
+    <String, dynamic>{
       'id': 5,
       'codigo': 'AMO001',
       'nombre': 'Amortiguador YSS',
@@ -97,7 +100,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
   ];
 
   // Categorías disponibles
-  final List<String> _categorias = [
+  final List<String> _categorias = <String>[
     'Todos',
     'Cascos',
     'Lubricantes',
@@ -106,19 +109,166 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
     'Suspensión'
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _inicializarDatos();
+  }
+
+  Future<void> _inicializarDatos() async {
+    try {
+      // Obtener el ID de sucursal usando la utilidad
+      final int? sucId = await VentasPendientesUtils.obtenerSucursalId();
+      if (!mounted) {
+        return;
+      }
+      
+      setState(() {
+        _sucursalId = sucId?.toString();
+      });
+      await _cargarProductos();
+    } catch (e) {
+      debugPrint('Error al inicializar datos: $e');
+    }
+  }
+
+  Future<void> _cargarProductos() async {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+    });
+    
+    try {
+      // Obtener productos usando la API
+      final productos = await api.productos.getProductos(
+        sucursalId: _sucursalId ?? '1',
+        useCache: false,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _productos
+          ..clear()
+          ..addAll(productos.items.map((producto) => producto.toJson()));
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      
+      setState(() {
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar productos: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _realizarConteoInventario(Map<String, dynamic> producto) async {
+    if (!mounted) {
+      return;
+    }
+    
+    try {
+      // Usar la API de stocks para actualizar el inventario
+      await api.stocks.updateStock(
+        _sucursalId ?? '1',
+        producto['id'].toString(),
+        producto['stock'] as int,
+        'incremento',
+      );
+      
+      // Recargar productos después del conteo
+      await _cargarProductos();
+      
+      if (!mounted) {
+        return;
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Conteo de inventario realizado correctamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al realizar el conteo: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _ajustarInventario(Map<String, dynamic> producto) async {
+    if (!mounted) {
+      return;
+    }
+    
+    try {
+      // Usar la API de stocks para ajustar el inventario
+      await api.stocks.registrarMovimientoStock(
+        _sucursalId ?? '1',
+        producto['id'].toString(),
+        producto['stock'] as int,
+        'entrada',
+        motivo: 'Ajuste de inventario',
+      );
+      
+      // Recargar productos después del ajuste
+      await _cargarProductos();
+      
+      if (!mounted) {
+        return;
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ajuste de inventario realizado correctamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al realizar el ajuste: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   List<Map<String, dynamic>> _getProductosFiltrados() {
     if (_searchQuery.isEmpty && _selectedCategory == 'Todos') {
       return _productos;
     }
 
-    return _productos.where((producto) {
-      final matchesSearch = 
+    return _productos.where((Map<String, dynamic> producto) {
+      final bool matchesSearch = 
           producto['codigo'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
           producto['nombre'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
           producto['marca'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
           producto['ubicacion'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
       
-      final matchesCategory = _selectedCategory == 'Todos' || 
+      final bool matchesCategory = _selectedCategory == 'Todos' || 
           producto['categoria'] == _selectedCategory;
       
       return matchesSearch && matchesCategory;
@@ -140,16 +290,16 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final productosFiltrados = _getProductosFiltrados();
+    final List<Map<String, dynamic>> productosFiltrados = _getProductosFiltrados();
     
     return Scaffold(
       body: Column(
-        children: [
+        children: <Widget>[
           // Header con título
           Container(
             padding: const EdgeInsets.all(16),
             child: Row(
-              children: [
+              children: <Widget>[
                 const FaIcon(
                   FontAwesomeIcons.boxesStacked,
                   size: 24,
@@ -157,7 +307,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                 const SizedBox(width: 16),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     const Text(
                       'INVENTARIO',
                       style: TextStyle(
@@ -182,7 +332,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
-              children: [
+              children: <Widget>[
                 // Buscador
                 Expanded(
                   child: TextField(
@@ -197,7 +347,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                         vertical: 12,
                       ),
                     ),
-                    onChanged: (value) {
+                    onChanged: (String value) {
                       setState(() {
                         _searchQuery = value;
                       });
@@ -231,8 +381,8 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: productosFiltrados.length,
-              itemBuilder: (context, index) {
-                final producto = productosFiltrados[index];
+              itemBuilder: (BuildContext context, int index) {
+                final Map<String, dynamic> producto = productosFiltrados[index];
                 return Card(
                   margin: const EdgeInsets.only(bottom: 16),
                   child: ExpansionTile(
@@ -253,7 +403,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                       ),
                     ),
                     title: Row(
-                      children: [
+                      children: <Widget>[
                         Text(
                           producto['codigo'],
                           style: const TextStyle(
@@ -270,7 +420,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                       ],
                     ),
                     subtitle: Row(
-                      children: [
+                      children: <Widget>[
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -301,7 +451,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                     trailing: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
+                      children: <Widget>[
                         Text(
                           'Stock: ${producto['stock']}',
                           style: TextStyle(
@@ -318,13 +468,13 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                         ),
                       ],
                     ),
-                    children: [
+                    children: <Widget>[
                       // Detalles del producto
                       Container(
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          children: <Widget>[
                             const Text(
                               'Detalles del Producto',
                               style: TextStyle(
@@ -337,10 +487,10 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                             const SizedBox(height: 16),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
+                              children: <Widget>[
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                                  children: <Widget>[
                                     Text(
                                       'Categoría: ${producto['categoria']}',
                                       style: const TextStyle(
@@ -357,14 +507,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                                 ),
                                 ElevatedButton.icon(
                                   onPressed: () {
-                                    // TODO: Implementar conteo de inventario
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Función de conteo en desarrollo',
-                                        ),
-                                      ),
-                                    );
+                                    _realizarConteoInventario(producto);
                                   },
                                   icon: const FaIcon(
                                     FontAwesomeIcons.listCheck,
@@ -387,12 +530,9 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: Implementar ajuste de inventario
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Función de ajuste en desarrollo'),
-            ),
-          );
+          if (productosFiltrados.isNotEmpty) {
+            _ajustarInventario(productosFiltrados[0]);
+          }
         },
         child: const FaIcon(FontAwesomeIcons.penToSquare),
       ),

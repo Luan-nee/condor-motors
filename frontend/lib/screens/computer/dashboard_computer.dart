@@ -1,7 +1,8 @@
+import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/main.dart' show api;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../api/index.api.dart';
-import '../../main.dart' show api;
 
 // Definición de la clase Venta para manejar los datos
 class Venta {
@@ -86,15 +87,21 @@ class DashboardComputerScreen extends StatefulWidget {
 
   @override
   State<DashboardComputerScreen> createState() => _DashboardComputerScreenState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties..add(IntProperty('sucursalId', sucursalId))
+    ..add(StringProperty('nombreSucursal', nombreSucursal));
+  }
 }
 
 class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
   late final VentasApi _ventasApi;
   late final StocksApi _stocksApi;
   bool _isLoading = false;
-  List<Venta> _ultimasVentas = [];
-  List<ProductoStockBajo> _productosBajos = [];
-  List<Map<String, dynamic>> _colaboradoresConectados = [];
+  List<Venta> _ultimasVentas = <Venta>[];
+  List<ProductoStockBajo> _productosBajos = <ProductoStockBajo>[];
   bool _mostrandoTodosProductos = false;
   
   @override
@@ -114,14 +121,16 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
       debugPrint('Cargando datos para sucursal ID: $sucursalIdString');
       
       // Cargar últimas ventas
-      final ventasResponse = await _ventasApi.getVentas(
+      final Map<String, dynamic> ventasResponse = await _ventasApi.getVentas(
         sucursalId: sucursalIdString,
       );
       
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
       // Convertir los datos de la API a objetos Venta
-      final List<Venta> ventasList = [];
+      final List<Venta> ventasList = <Venta>[];
       if (ventasResponse['data'] != null && ventasResponse['data'] is List) {
         for (var item in ventasResponse['data']) {
           ventasList.add(Venta.fromJson(item));
@@ -129,7 +138,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
       }
       
       // Ordenar por fecha y tomar las últimas 5
-      ventasList.sort((a, b) => 
+      ventasList.sort((Venta a, Venta b) => 
         (b.fechaCreacion ?? DateTime.now())
             .compareTo(a.fechaCreacion ?? DateTime.now())
       );
@@ -140,14 +149,16 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
       try {
         debugPrint('Obteniendo productos con stock bajo para sucursal ID: $sucursalIdString');
         
-        final stocksResponse = await _stocksApi.getStockBySucursal(
+        final List stocksResponse = await _stocksApi.getStockBySucursal(
           sucursalId: sucursalIdString,
           stockBajo: true,
         );
         
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
         
-        final List<ProductoStockBajo> productosBajosList = [];
+        final List<ProductoStockBajo> productosBajosList = <ProductoStockBajo>[];
         for (var item in stocksResponse) {
           productosBajosList.add(ProductoStockBajo.fromJson(item));
         }
@@ -161,7 +172,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
         debugPrint('Detalles del error: $stockError');
         
         // Si hay error, mantener los datos demo
-        _productosBajos = [
+        _productosBajos = <ProductoStockBajo>[
           ProductoStockBajo(
             id: '1',
             nombre: 'Casco MT Thunder',
@@ -177,25 +188,11 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
         ];
       }
       
-      // TODO: Cargar colaboradores conectados
-      _colaboradoresConectados = [
-        {
-          'id': 1,
-          'nombre': 'Juan Pérez',
-          'rol': 'Vendedor',
-          'ultimaActividad': DateTime.now().subtract(const Duration(minutes: 5)),
-        },
-        {
-          'id': 2,
-          'nombre': 'María García',
-          'rol': 'Vendedor',
-          'ultimaActividad': DateTime.now().subtract(const Duration(minutes: 15)),
-        },
-      ];
-      
       setState(() {});
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       // Mostrar más detalles del error para depuración
       debugPrint('Error detallado al cargar datos: $e');
       
@@ -223,7 +220,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
           style: const TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
+        actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _cargarDatos,
@@ -236,17 +233,13 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   // Resumen de ventas
                   _buildVentasCard(),
                   const SizedBox(height: 16),
                   
                   // Productos con stock bajo
                   _buildStockBajoCard(),
-                  const SizedBox(height: 16),
-                  
-                  // Colaboradores conectados
-                  _buildColaboradoresCard(),
                 ],
               ),
             ),
@@ -263,9 +256,9 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             Row(
-              children: [
+              children: <Widget>[
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -302,8 +295,8 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _ultimasVentas.length,
-                itemBuilder: (context, index) {
-                  final venta = _ultimasVentas[index];
+                itemBuilder: (BuildContext context, int index) {
+                  final Venta venta = _ultimasVentas[index];
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(
@@ -340,12 +333,12 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+              children: <Widget>[
                 Row(
-                  children: [
+                  children: <Widget>[
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
@@ -382,14 +375,16 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                       final String sucursalIdString = widget.sucursalId?.toString() ?? '7';
                       
                       // Si ya estamos mostrando todos los productos, volver a stock bajo
-                      final stocksResponse = await _stocksApi.getStockBySucursal(
+                      final List stocksResponse = await _stocksApi.getStockBySucursal(
                         sucursalId: sucursalIdString,
                         stockBajo: !_mostrandoTodosProductos, // Si estábamos mostrando todos, ahora filtramos para stock bajo
                       );
                       
-                      if (!mounted) return;
+                      if (!mounted) {
+                        return;
+                      }
                       
-                      final List<ProductoStockBajo> productosList = [];
+                      final List<ProductoStockBajo> productosList = <ProductoStockBajo>[];
                       for (var item in stocksResponse) {
                         productosList.add(ProductoStockBajo.fromJson(item));
                       }
@@ -412,7 +407,9 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                         ),
                       );
                     } catch (e) {
-                      if (!mounted) return;
+                      if (!mounted) {
+                        return;
+                      }
                       setState(() => _isLoading = false);
                       
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -446,7 +443,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
-                  children: [
+                  children: <Widget>[
                     Text(
                       'Mostrando ${_productosBajos.length} productos',
                       style: TextStyle(
@@ -454,10 +451,10 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                         fontSize: 12,
                       ),
                     ),
-                    if (_mostrandoTodosProductos) ...[
+                    if (_mostrandoTodosProductos) ...<Widget>[
                       const SizedBox(width: 4),
                       Text(
-                        '(${_productosBajos.where((p) => p.stock < p.stockMinimo).length} con stock bajo)',
+                        '(${_productosBajos.where((ProductoStockBajo p) => p.stock < p.stockMinimo).length} con stock bajo)',
                         style: const TextStyle(
                           color: Color(0xFFE31E24),
                           fontSize: 12,
@@ -477,7 +474,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
               Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                  children: <Widget>[
                     const Icon(
                       Icons.inventory_2_outlined,
                       size: 48,
@@ -504,13 +501,13 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
               )
             else
               Column(
-                children: [
+                children: <Widget>[
                   ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: _productosBajos.length,
-                    itemBuilder: (context, index) {
-                      final producto = _productosBajos[index];
+                    itemBuilder: (BuildContext context, int index) {
+                      final ProductoStockBajo producto = _productosBajos[index];
                       final bool tieneStockBajo = producto.stock < producto.stockMinimo;
                       
                       return ListTile(
@@ -523,12 +520,12 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                           ),
                         ),
                         subtitle: Row(
-                          children: [
+                          children: <Widget>[
                             Text(
                               'Stock mínimo: ${producto.stockMinimo}',
                               style: TextStyle(color: Colors.grey[400]),
                             ),
-                            if (producto.categoria != null) ...[
+                            if (producto.categoria != null) ...<Widget>[
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -582,98 +579,10 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
     );
   }
 
-  Widget _buildColaboradoresCard() {
-    return Card(
-      color: const Color(0xFF2D2D2D),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2196F3).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const FaIcon(
-                    FontAwesomeIcons.users,
-                    size: 16,
-                    color: Color(0xFF2196F3),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Colaboradores Conectados',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (_colaboradoresConectados.isEmpty)
-              Center(
-                child: Text(
-                  'No hay colaboradores conectados',
-                  style: TextStyle(color: Colors.grey[400]),
-                ),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _colaboradoresConectados.length,
-                itemBuilder: (context, index) {
-                  final colaborador = _colaboradoresConectados[index];
-                  final ultimaActividad = colaborador['ultimaActividad'] as DateTime;
-                  final diferencia = DateTime.now().difference(ultimaActividad);
-                  final minutos = diferencia.inMinutes;
-                  
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(
-                      backgroundColor: Color(0xFF2196F3),
-                      child: FaIcon(
-                        FontAwesomeIcons.user,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                    title: Text(
-                      colaborador['nombre'] as String,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    subtitle: Text(
-                      '${colaborador['rol']} • Activo hace $minutos min',
-                      style: TextStyle(color: Colors.grey[400]),
-                    ),
-                    trailing: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF4CAF50),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  );
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   String _formatDateTime(DateTime? date) {
-    if (date == null) return 'No disponible';
+    if (date == null) {
+      return 'No disponible';
+    }
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
   }
 }

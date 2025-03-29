@@ -1,12 +1,12 @@
+import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/proforma.model.dart' as models;
+import 'package:condorsmotors/screens/computer/widgets/form_sales_computer.dart' show NumericKeypad, ProcessingDialog, ProformaSaleDialog;
+import 'package:condorsmotors/screens/computer/widgets/ventas_pendientes_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/ventas_pendientes_widget.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import '../../api/index.api.dart';
-import '../../main.dart' show api;
-import '../../models/proforma.model.dart' as models;
-import 'widgets/form_sales_computer.dart' show NumericKeypad, ProcessingDialog, ProformaSaleDialog;
-import 'widgets/ventas_pendientes_utils.dart';
-import 'widgets/ventas_pendientes_widget.dart';
 
 /// Clase utilitaria para operaciones con ventas y formateo de montos
 /// 
@@ -21,8 +21,8 @@ class VentasUtils {
   /// 
   /// Retorna el subtotal formateado a 2 decimales
   static double calcularSubtotal(Map<String, dynamic> producto) {
-    final precio = producto['precio'] as double;
-    final cantidad = producto['cantidad'] as int;
+    final double precio = producto['precio'] as double;
+    final int cantidad = producto['cantidad'] as int;
     return formatearMonto(precio * cantidad);
   }
   
@@ -88,7 +88,7 @@ class Venta {
           : null,
       detalles: (json['detalles'] as List<dynamic>?)
           ?.map((detalle) => DetalleVenta.fromJson(detalle))
-          .toList() ?? [],
+          .toList() ?? <DetalleVenta>[],
     );
   }
 }
@@ -132,18 +132,25 @@ class SalesComputerScreen extends StatefulWidget {
 
   @override
   State<SalesComputerScreen> createState() => _SalesComputerScreenState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties..add(IntProperty('sucursalId', sucursalId))
+    ..add(StringProperty('nombreSucursal', nombreSucursal));
+  }
 }
 
 class _SalesComputerScreenState extends State<SalesComputerScreen> {
   late final VentasApi _ventasApi;
   late final ProformaVentaApi _proformasApi;
   bool _isLoading = false;
-  List<Venta> _ventas = [];
-  List<models.Proforma> _proformasObj = [];
-  List<Map<String, dynamic>> _proformasFormateadas = [];
+  List<Venta> _ventas = <Venta>[];
+  List<models.Proforma> _proformasObj = <models.Proforma>[];
+  List<Map<String, dynamic>> _proformasFormateadas = <Map<String, dynamic>>[];
   
   // Datos de prueba para ventas pendientes - Será reemplazado con proformas reales
-  final List<Map<String, dynamic>> _ventasPendientes = [];
+  final List<Map<String, dynamic>> _ventasPendientes = <Map<String, dynamic>>[];
 
   // Variables para el procesamiento de ventas pendientes
   Map<String, dynamic>? _ventaSeleccionada;
@@ -212,17 +219,19 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       if (widget.sucursalId != null) {
         sucursalIdParam = widget.sucursalId?.toString();
       } else {
-        final sucId = await VentasPendientesUtils.obtenerSucursalId();
+        final int? sucId = await VentasPendientesUtils.obtenerSucursalId();
         sucursalIdParam = sucId?.toString();
       }
       
-      final ventasResponse = await _ventasApi.getVentas(
+      final Map<String, dynamic> ventasResponse = await _ventasApi.getVentas(
         sucursalId: sucursalIdParam,
       );
       
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
-      final List<Venta> ventasList = [];
+      final List<Venta> ventasList = <Venta>[];
       if (ventasResponse['data'] != null && ventasResponse['data'] is List) {
         for (var item in ventasResponse['data']) {
           ventasList.add(Venta.fromJson(item));
@@ -233,7 +242,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         _ventas = ventasList;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cargar ventas: $e'),
@@ -254,7 +265,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         'Anulado por el usuario',
       );
       
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Venta anulada exitosamente'),
@@ -264,7 +277,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       
       await _cargarVentas();
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al anular venta: $e'),
@@ -279,17 +294,17 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     debugPrint('Venta seleccionada: $venta');
     
     // Verificar si es una proforma
-    final esProforma = VentasPendientesUtils.esProforma(
+    final bool esProforma = VentasPendientesUtils.esProforma(
       venta['id'].toString(),
       tipoVenta: venta['tipoVenta'] as String?,
     );
     
     if (esProforma) {
       // Buscar la proforma en la lista de objetos
-      final proformaId = VentasPendientesUtils.extraerIdProforma(venta['id'].toString());
+      final int? proformaId = VentasPendientesUtils.extraerIdProforma(venta['id'].toString());
       if (proformaId != null) {
-        final proformaObj = _proformasObj.firstWhere(
-          (p) => p.id == proformaId,
+        final models.Proforma proformaObj = _proformasObj.firstWhere(
+          (models.Proforma p) => p.id == proformaId,
           orElse: () => throw Exception('Proforma no encontrada: $proformaId'),
         );
         
@@ -297,9 +312,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => ProformaSaleDialog(
+          builder: (BuildContext context) => ProformaSaleDialog(
             proforma: proformaObj,
-            onConfirm: (ventaData) {
+            onConfirm: (Map<String, dynamic> ventaData) {
               Navigator.of(context).pop();
               setState(() {
                 _ventaSeleccionada = ventaData;
@@ -332,7 +347,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Dialog(
+      builder: (BuildContext context) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(24),
         child: Container(
@@ -341,7 +356,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
           decoration: BoxDecoration(
             color: const Color(0xFF1A1A1A),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
+            boxShadow: <BoxShadow>[
               BoxShadow(
                 color: Colors.black.withOpacity(0.3),
                 blurRadius: 10,
@@ -350,7 +365,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
             ],
           ),
           child: Column(
-            children: [
+            children: <Widget>[
               // Cabecera del popup
               Container(
                 padding: const EdgeInsets.all(16),
@@ -362,7 +377,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                   ),
                 ),
                 child: Row(
-                  children: [
+                  children: <Widget>[
                     const FaIcon(
                       FontAwesomeIcons.fileInvoiceDollar,
                       color: Color(0xFFE31E24),
@@ -400,7 +415,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: <Widget>[
                       // Columna izquierda: Detalles de la venta
                       Expanded(
                         flex: 3,
@@ -412,9 +427,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                            children: <Widget>[
                               Row(
-                                children: [
+                                children: <Widget>[
                                   const CircleAvatar(
                                     backgroundColor: Color(0xFF4CAF50),
                                     child: FaIcon(
@@ -426,7 +441,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
+                                      children: <Widget>[
                                         Text(
                                           venta['cliente']['nombre'],
                                           style: const TextStyle(
@@ -483,9 +498,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                               Expanded(
                                 child: ListView.builder(
                                   itemCount: (venta['productos'] as List<dynamic>).length,
-                                  itemBuilder: (context, index) {
+                                  itemBuilder: (BuildContext context, int index) {
                                     final producto = venta['productos'][index];
-                                    final subtotal = VentasUtils.calcularSubtotal(producto);
+                                    final double subtotal = VentasUtils.calcularSubtotal(producto);
                                     return Padding(
                                       padding: const EdgeInsets.symmetric(vertical: 4.0),
                                       child: Container(
@@ -495,7 +510,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                           border: Border.all(color: Colors.white12),
                                         ),
                                         child: Row(
-                                          children: [
+                                          children: <Widget>[
                                             // Icono del producto
                                             Container(
                                               width: 40,
@@ -519,7 +534,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                                                 child: Column(
                                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
+                                                  children: <Widget>[
                                                     Text(
                                                       producto['nombre'] as String,
                                                       style: const TextStyle(
@@ -528,7 +543,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                                       ),
                                                     ),
                                                     Row(
-                                                      children: [
+                                                      children: <Widget>[
                                                         Text(
                                                           'Precio: S/ ${(producto['precio'] as double).toStringAsFixed(2)}',
                                                           style: TextStyle(color: Colors.grey[400], fontSize: 12),
@@ -559,7 +574,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                               child: Row(
-                                                children: [
+                                                children: <Widget>[
                                                   // Botón disminuir
                                                   _buildQuantityButton(
                                                     icon: Icons.remove,
@@ -618,7 +633,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                               // Total
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
+                                children: <Widget>[
                                   const Text(
                                     'TOTAL',
                                     style: TextStyle(
@@ -628,7 +643,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                   ),
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
+                                    children: <Widget>[
                                       Text(
                                         VentasUtils.formatearMontoTexto(venta['total']),
                                         key: ValueKey('total-${venta['total']}'),
@@ -678,7 +693,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                           onDocumentTypeChanged: _changeDocumentType,
                           isProcessing: _procesandoPago,
                           minAmount: venta['total'],
-                          onCharge: (monto) {
+                          onCharge: (double monto) {
                             debugPrint('Monto recibido para cobrar: $monto');
                             Navigator.pop(context);
                             _procesarPago();
@@ -698,21 +713,23 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   
   // Método para procesar el pago de una venta
   Future<void> _procesarPago() async {
-    if (_ventaSeleccionada == null) return;
+    if (_ventaSeleccionada == null) {
+      return;
+    }
     
     debugPrint('Procesando pago para venta: ${_ventaSeleccionada!['id']} con monto: $_montoIngresado');
     setState(() => _procesandoPago = true);
     
     try {
       // Determinar si es una proforma que debemos convertir
-      final esProforma = VentasPendientesUtils.esProforma(
+      final bool esProforma = VentasPendientesUtils.esProforma(
         _ventaSeleccionada!['id'].toString(),
         tipoVenta: _ventaSeleccionada!['tipoVenta'] as String?,
       );
       
       if (esProforma) {
         // Extraer ID numérico de la proforma
-        final proformaId = VentasPendientesUtils.extraerIdProforma(_ventaSeleccionada!['id'].toString());
+        final int? proformaId = VentasPendientesUtils.extraerIdProforma(_ventaSeleccionada!['id'].toString());
         if (proformaId != null) {
           await _convertirProformaAVenta(proformaId, _ventaSeleccionada!);
         }
@@ -725,7 +742,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
           await showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (context) => ProcessingDialog(documentType: _tipoDocumento),
+            builder: (BuildContext context) => ProcessingDialog(documentType: _tipoDocumento),
           );
         }
         
@@ -767,7 +784,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       if (mounted) {
         // Cerrar dialog de procesamiento si está abierto
         Navigator.of(context, rootNavigator: true).popUntil(
-          (route) => route.isFirst || route.settings.name == 'ventas_dialog'
+          (Route route) => route.isFirst || route.settings.name == 'ventas_dialog'
         );
         
         // Mostrar mensaje de error
@@ -785,15 +802,17 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   
   // Método para actualizar productos de la venta (cantidades modificadas)
   Future<void> _actualizarProductosVenta() async {
-    if (_ventaSeleccionada == null) return;
+    if (_ventaSeleccionada == null) {
+      return;
+    }
     
     try {
       debugPrint('Actualizando cantidades de productos para venta: ${_ventaSeleccionada!['id']}');
       
       // Crear estructura de datos para enviar a la API
-      final Map<String, dynamic> ventaData = {
+      final Map<String, dynamic> ventaData = <String, dynamic>{
         'productos': _ventaSeleccionada!['productos'].map((producto) {
-          return {
+          return <String, dynamic>{
             'id': producto['id'],
             'cantidad': producto['cantidad'],
             'precio': producto['precio'],
@@ -828,8 +847,8 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   void _actualizarCantidadProducto(Map<String, dynamic> venta, int index, int cambio) {
     setState(() {
       final producto = venta['productos'][index];
-      final cantidadActual = producto['cantidad'] as int;
-      final nuevaCantidad = cantidadActual + cambio;
+      final int cantidadActual = producto['cantidad'] as int;
+      final int nuevaCantidad = cantidadActual + cambio;
       
       // Asegurar que la cantidad no sea menor que 1
       if (nuevaCantidad >= 1) {
@@ -850,12 +869,14 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     
     // Forzar una actualización más explícita
     // Usamos una variable local para capturar el estado actual
-    final ventaSeleccionadaActual = _ventaSeleccionada;
+    final Map<String, dynamic>? ventaSeleccionadaActual = _ventaSeleccionada;
     
     if (mounted) {
       Future.delayed(Duration.zero, () {
         // Verificar si el widget sigue montado después del delay
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
         
         // Forzar una reconstrucción completa del widget actual
         setState(() {});
@@ -904,20 +925,22 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         _isLoading = true;
       });
       
-      final sucursalId = await VentasPendientesUtils.obtenerSucursalId();
+      final int? sucursalId = await VentasPendientesUtils.obtenerSucursalId();
       if (sucursalId == null) {
         debugPrint('Error: No se pudo obtener el ID de sucursal');
         return;
       }
       
-      final proformasResponse = await _proformasApi.getProformasVenta(
+      final Map<String, dynamic> proformasResponse = await _proformasApi.getProformasVenta(
         sucursalId: sucursalId.toString(),
       );
       
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
-      final proformasObj = _proformasApi.parseProformasVenta(proformasResponse);
-      final proformasFormateadas = VentasPendientesUtils.convertirProformasAVentasPendientes(proformasObj);
+      final List<models.Proforma> proformasObj = _proformasApi.parseProformasVenta(proformasResponse);
+      final List<Map<String, dynamic>> proformasFormateadas = VentasPendientesUtils.convertirProformasAVentasPendientes(proformasObj);
       
       setState(() {
         _proformasObj = proformasObj;
@@ -961,14 +984,14 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       );
       
       // Obtener sucursalId
-      final sucursalId = await VentasPendientesUtils.obtenerSucursalId();
+      final int? sucursalId = await VentasPendientesUtils.obtenerSucursalId();
       if (sucursalId == null) {
         debugPrint('Error: No se pudo obtener el ID de sucursal');
         return;
       }
       
       // Preparar datos para la conversión
-      final datosVenta = {
+      final Map<String, dynamic> datosVenta = <String, dynamic>{
         'metodoPago': ventaData['metodoPago'] ?? 'EFECTIVO',
         'tipoDocumento': ventaData['tipoDocumento'] ?? 'BOLETA',
         'cliente': ventaData['cliente'],
@@ -1027,21 +1050,21 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   List<Map<String, dynamic>> _convertirDetallesAProductos(List<dynamic> detalles) {
     return detalles.map<Map<String, dynamic>>((detalle) {
       if (detalle is models.DetalleProforma) {
-        return {
+        return <String, dynamic>{
           'id': detalle.productoId,
           'nombre': detalle.nombre,
           'precio': detalle.precioUnitario,
           'cantidad': detalle.cantidad,
         };
       } else if (detalle is Map<String, dynamic>) {
-        return {
+        return <String, dynamic>{
           'id': detalle['productoId'],
           'nombre': detalle['nombre'],
           'precio': detalle['precioUnitario'],
           'cantidad': detalle['cantidad'],
         };
       }
-      return {};
+      return <String, dynamic>{};
     }).toList();
   }
 
@@ -1059,7 +1082,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF2D2D2D),
         title: Row(
-          children: [
+          children: <Widget>[
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -1084,7 +1107,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
           ],
         ),
         iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
+        actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Recargar ventas',
@@ -1098,7 +1121,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         ],
       ),
       body: Row(
-        children: [
+        children: <Widget>[
           // Panel izquierdo: Ventas pendientes y proformas
           Expanded(
             flex: 3,
@@ -1106,7 +1129,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
               padding: const EdgeInsets.all(16),
               child: PendingSalesWidget(
                 onSaleSelected: _seleccionarVenta,
-                ventasPendientes: [..._ventasPendientes, ..._proformasFormateadas],
+                ventasPendientes: <Map<String, dynamic>>[..._ventasPendientes, ..._proformasFormateadas],
                 onReload: _cargarProformas,
               ),
             ),
@@ -1119,7 +1142,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   const Text(
                     'HISTORIAL DE VENTAS',
                     style: TextStyle(
@@ -1134,8 +1157,8 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                       ? const Center(child: CircularProgressIndicator())
                       : ListView.builder(
                           itemCount: _ventas.length,
-                          itemBuilder: (context, index) {
-                            final venta = _ventas[index];
+                          itemBuilder: (BuildContext context, int index) {
+                            final Venta venta = _ventas[index];
                             return Card(
                               margin: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -1154,7 +1177,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                 ),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                                  children: <Widget>[
                                     Text(
                                       'Fecha: ${_formatDateTime(venta.fechaCreacion)}',
                                       style: TextStyle(color: Colors.grey[400]),
@@ -1178,12 +1201,12 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                     ),
                                   ],
                                 ),
-                                children: [
+                                children: <Widget>[
                                   Padding(
                                     padding: const EdgeInsets.all(16),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
+                                      children: <Widget>[
                                         const Text(
                                           'Detalles de la Venta',
                                           style: TextStyle(
@@ -1193,7 +1216,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 8),
-                                        ...venta.detalles.map((detalle) => ListTile(
+                                        ...venta.detalles.map((DetalleVenta detalle) => ListTile(
                                           title: Text(
                                             'Producto #${detalle.productoId}',
                                             style: const TextStyle(color: Colors.white),
@@ -1213,7 +1236,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                         const Divider(color: Colors.white24),
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
+                                          children: <Widget>[
                                             const Text(
                                               'Subtotal:',
                                               style: TextStyle(
@@ -1230,7 +1253,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                         const SizedBox(height: 4),
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
+                                          children: <Widget>[
                                             const Text(
                                               'IGV:',
                                               style: TextStyle(
@@ -1244,11 +1267,11 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                             ),
                                           ],
                                         ),
-                                        if (venta.descuentoTotal != null) ...[
+                                        if (venta.descuentoTotal != null) ...<Widget>[
                                           const SizedBox(height: 4),
                                           Row(
                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
+                                            children: <Widget>[
                                               const Text(
                                                 'Descuento:',
                                                 style: TextStyle(
@@ -1266,7 +1289,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                         const SizedBox(height: 8),
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
+                                          children: <Widget>[
                                             const Text(
                                               'Total:',
                                               style: TextStyle(
@@ -1288,10 +1311,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                         const SizedBox(height: 16),
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                          children: [
+                                          children: <Widget>[
                                             ElevatedButton.icon(
                                               onPressed: () {
-                                                // TODO: Implementar generación de boleta
                                               },
                                               icon: const Icon(Icons.receipt),
                                               label: const Text('Generar Boleta'),
@@ -1301,7 +1323,6 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                             ),
                                             ElevatedButton.icon(
                                               onPressed: () {
-                                                // TODO: Implementar generación de factura
                                               },
                                               icon: const Icon(Icons.description),
                                               label: const Text('Generar Factura'),
@@ -1339,7 +1360,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   }
 
   String _formatDateTime(DateTime? date) {
-    if (date == null) return 'No disponible';
+    if (date == null) {
+      return 'No disponible';
+    }
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
   }
 } 

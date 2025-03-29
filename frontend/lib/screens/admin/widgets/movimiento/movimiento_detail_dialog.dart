@@ -1,9 +1,9 @@
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/movimiento.model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-
-import '../../../../main.dart' show api;
-import '../../../../models/movimiento.model.dart';
 
 /// Widget para mostrar el detalle de un movimiento de inventario
 /// Este widget maneja internamente los estados de carga, error y visualización
@@ -17,6 +17,13 @@ class MovimientoDetailDialog extends StatefulWidget {
 
   @override
   State<MovimientoDetailDialog> createState() => _MovimientoDetailDialogState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      .add(DiagnosticsProperty<Movimiento>('movimiento', movimiento));
+  }
 }
 
 class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
@@ -33,7 +40,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   }
   
   Future<void> _cargarDetalles() async {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     
     setState(() {
       _isLoading = true;
@@ -44,15 +53,17 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       debugPrint('⏳ [MovimientoDetailDialog] Cargando detalles del movimiento #${widget.movimiento.id}');
       
       // Cargar detalles desde la API
-      final id = widget.movimiento.id.toString();
+      final String id = widget.movimiento.id.toString();
       
       // Usar useCache: false para forzar una nueva solicitud
-      final detalleMovimiento = await api.movimientos.getMovimiento(
+      final Movimiento detalleMovimiento = await api.movimientos.getMovimiento(
         id, 
         useCache: false,
       );
       
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
       setState(() {
         _detalleMovimiento = detalleMovimiento;
@@ -66,7 +77,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       debugPrint('❌ [MovimientoDetailDialog] Error al cargar detalles: $e');
       debugPrint('📋 [MovimientoDetailDialog] StackTrace: $stackTrace');
       
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
       // Si hay un error, usamos los datos que ya tenemos
       setState(() {
@@ -80,9 +93,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   @override
   Widget build(BuildContext context) {
     // Obtener tamaño de pantalla
-    final screenSize = MediaQuery.of(context).size;
-    final isWideScreen = screenSize.width > 1200;
-    final isMediumScreen = screenSize.width > 800 && screenSize.width <= 1200;
+    final Size screenSize = MediaQuery.of(context).size;
+    final bool isWideScreen = screenSize.width > 1200;
+    final bool isMediumScreen = screenSize.width > 800 && screenSize.width <= 1200;
     
     // Calcular ancho apropiado basado en el tamaño de pantalla
     double dialogWidth;
@@ -135,7 +148,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
+        children: <Widget>[
           const SizedBox(height: 24),
           const CircularProgressIndicator(
             color: Color(0xFFE31E24),
@@ -172,7 +185,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
+          children: <Widget>[
             const Icon(Icons.error_outline, color: Colors.red, size: 48),
             const SizedBox(height: 24),
             Text(
@@ -212,7 +225,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+              children: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
                   child: const Text('Cancelar', style: TextStyle(color: Color(0xFFE31E24))),
@@ -261,7 +274,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           _buildHeader(context),
           const Divider(color: Colors.white24),
           const SizedBox(height: 16),
@@ -277,7 +290,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                 border: Border.all(color: Colors.orange.withOpacity(0.5)),
               ),
               child: Row(
-                children: [
+                children: <Widget>[
                   const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
@@ -295,7 +308,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
             // En pantallas anchas, mostrar todo en una fila
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 // Información general
                 Expanded(
                   flex: 3,
@@ -307,7 +320,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: <Widget>[
                         const Text(
                           'Información General',
                           style: TextStyle(
@@ -334,7 +347,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: <Widget>[
                         const Text(
                           'Sucursales',
                           style: TextStyle(
@@ -355,7 +368,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
             // En pantallas medianas y pequeñas, apilar en columnas
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 // Información general
                 Container(
                   width: double.infinity,
@@ -366,7 +379,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: <Widget>[
                       const Text(
                         'Información General',
                         style: TextStyle(
@@ -391,7 +404,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: <Widget>[
                       const Text(
                         'Sucursales',
                         style: TextStyle(
@@ -415,7 +428,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
             // En pantallas anchas, mostrar productos y observaciones en una fila
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 // Productos
                 Expanded(
                   flex: 3,
@@ -433,7 +446,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
             // En pantallas medianas y pequeñas, apilar en columnas
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 _buildProductosSectionCard(movimiento),
                 const SizedBox(height: 16),
                 _buildObservacionesSectionCard(movimiento),
@@ -463,9 +476,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
+      children: <Widget>[
         Row(
-          children: [
+          children: <Widget>[
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -502,7 +515,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   // Información general del movimiento
   Widget _buildGeneralInfoRow(Movimiento movimiento) {
     return Row(
-      children: [
+      children: <Widget>[
         Expanded(
           child: _buildInfoItem(
             'ID', 
@@ -531,7 +544,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   // Información de sucursales
   Widget _buildSucursalesInfoRow(Movimiento movimiento) {
     return Row(
-      children: [
+      children: <Widget>[
         Expanded(
           child: _buildInfoItem(
             'Sucursal Origen', 
@@ -560,9 +573,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           Row(
-            children: [
+            children: <Widget>[
               const FaIcon(
                 FontAwesomeIcons.box,
                 size: 16,
@@ -626,16 +639,16 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           Row(
-            children: [
-              const FaIcon(
+            children: const <Widget>[
+              FaIcon(
                 FontAwesomeIcons.fileLines,
                 size: 16,
                 color: Color(0xFFE31E24),
               ),
-              const SizedBox(width: 12),
-              const Text(
+              SizedBox(width: 12),
+              Text(
                 'Observaciones',
                 style: TextStyle(
                   color: Colors.white,
@@ -659,10 +672,10 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
             ),
           ),
           // Si hay solicitante, mostrarlo
-          if (movimiento.solicitante != null) ...[
+          if (movimiento.solicitante != null) ...<Widget>[
             const SizedBox(height: 16),
             Row(
-              children: [
+              children: <Widget>[
                 const FaIcon(
                   FontAwesomeIcons.user,
                   size: 16,
@@ -710,12 +723,12 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
         child: ListView.separated(
           shrinkWrap: true,
           itemCount: movimiento.productos!.length,
-          separatorBuilder: (context, index) => const Divider(
+          separatorBuilder: (BuildContext context, int index) => const Divider(
             color: Colors.white10,
             height: 1,
           ),
-          itemBuilder: (context, index) {
-            final producto = movimiento.productos![index];
+          itemBuilder: (BuildContext context, int index) {
+            final DetalleProducto producto = movimiento.productos![index];
             return ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               leading: Container(
@@ -771,9 +784,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   Widget _buildInfoItem(String titulo, String valor, IconData icono) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         Row(
-          children: [
+          children: <Widget>[
             FaIcon(
               icono,
               size: 14,
@@ -807,7 +820,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
 
   // Formato de fecha
   String _formatFecha(DateTime? fecha) {
-    if (fecha == null) return 'N/A';
+    if (fecha == null) {
+      return 'N/A';
+    }
     try {
       return DateFormat('dd/MM/yyyy').format(fecha);
     } catch (e) {

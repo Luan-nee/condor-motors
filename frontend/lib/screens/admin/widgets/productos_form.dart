@@ -1,11 +1,14 @@
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/categoria.model.dart';
+import 'package:condorsmotors/models/color.model.dart';
+import 'package:condorsmotors/models/marca.model.dart';
+import 'package:condorsmotors/models/paginacion.model.dart';
+import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/utils/productos_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import '../../../main.dart' show api;
-import '../../../models/color.model.dart';
-import '../../../models/producto.model.dart';
-import '../../../models/sucursal.model.dart';
-import '../../../utils/productos_utils.dart';
 
 class ProductosFormDialogAdmin extends StatefulWidget {
   final Producto? producto;
@@ -24,10 +27,20 @@ class ProductosFormDialogAdmin extends StatefulWidget {
   @override
   State<ProductosFormDialogAdmin> createState() =>
       _ProductosFormDialogAdminState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty<Producto?>('producto', producto))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has('onSave', onSave))
+      ..add(IterableProperty<Sucursal>('sucursales', sucursales))
+      ..add(DiagnosticsProperty<Sucursal?>('sucursalSeleccionada', sucursalSeleccionada));
+  }
 }
 
 class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
-  final _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late TextEditingController _nombreController;
   late TextEditingController _descripcionController;
   late TextEditingController _precioVentaController;
@@ -48,20 +61,25 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   bool _isLoadingMarcas = false;
   bool _isLoadingColores = false;
   bool _isLoadingSucursalesCompartidas = false;
-  List<ProductoEnSucursal> _sucursalesCompartidas = [];
+  List<ProductoEnSucursal> _sucursalesCompartidas = <ProductoEnSucursal>[];
+
+  // Gestión de liquidación (independiente de otras promociones)
+
+  // Tipo de promoción seleccionada
 
   // Listas para categorías, marcas y colores
-  List<String> _categorias = [];
-  List<String> _marcas = [];
-  List<ColorApp> _colores = [];
+  List<String> _categorias = <String>[];
+  List<String> _marcas = <String>[];
+  List<ColorApp> _colores = <ColorApp>[];
+  
   // Mapas para almacenar los IDs correspondientes a los nombres
-  Map<String, dynamic> _categoriasMap = {};
-  Map<String, dynamic> _marcasMap = {};
+  Map<String, Map<String, dynamic>> _categoriasMap = <String, Map<String, dynamic>>{};
+  Map<String, Map<String, dynamic>> _marcasMap = <String, Map<String, dynamic>>{};
 
   @override
   void initState() {
     super.initState();
-    final producto = widget.producto;
+    final Producto? producto = widget.producto;
     _nombreController = TextEditingController(text: producto?.nombre);
     _descripcionController = TextEditingController(text: producto?.descripcion);
     _precioVentaController = TextEditingController(
@@ -110,22 +128,22 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
     try {
       // Obtenemos las categorías como objetos tipados
-      final categoriasList =
+      final List<Categoria> categoriasList =
           await api.categorias.getCategoriasObjetos(useCache: false);
 
       if (mounted) {
         setState(() {
           // Extraer nombres para la lista desplegable
           _categorias = categoriasList
-              .map<String>((cat) => cat.nombre)
-              .where((nombre) => nombre.isNotEmpty)
+              .map<String>((Categoria cat) => cat.nombre)
+              .where((String nombre) => nombre.isNotEmpty)
               .toList();
           _categorias.sort(); // Mantener orden alfabético
 
           // Crear un mapa para fácil acceso a los IDs por nombre
-          _categoriasMap = {
-            for (var cat in categoriasList)
-              cat.nombre: {'id': cat.id, 'nombre': cat.nombre}
+          _categoriasMap = <String, Map<String, dynamic>>{
+            for (Categoria cat in categoriasList)
+              cat.nombre: <String, dynamic>{'id': cat.id, 'nombre': cat.nombre}
           };
 
           _isLoadingCategorias = false;
@@ -154,24 +172,24 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
     try {
       // Obtenemos las marcas como objetos tipados
-      final marcasResult = await api.marcas.getMarcasPaginadas(useCache: false);
+      final ResultadoPaginado<Marca> marcasResult = await api.marcas.getMarcasPaginadas(useCache: false);
 
       // Extraemos la lista de marcas del resultado paginado
-      final marcasList = marcasResult.items;
+      final List<Marca> marcasList = marcasResult.items;
 
       if (mounted) {
         setState(() {
           // Extraer nombres para la lista desplegable
           _marcas = marcasList
-              .map<String>((marca) => marca.nombre)
-              .where((nombre) => nombre.isNotEmpty)
+              .map<String>((Marca marca) => marca.nombre)
+              .where((String nombre) => nombre.isNotEmpty)
               .toList();
           _marcas.sort(); // Mantener orden alfabético
 
           // Crear un mapa para fácil acceso a los IDs por nombre
-          _marcasMap = {
-            for (var marca in marcasList)
-              marca.nombre: {'id': marca.id, 'nombre': marca.nombre}
+          _marcasMap = <String, Map<String, dynamic>>{
+            for (Marca marca in marcasList)
+              marca.nombre: <String, dynamic>{'id': marca.id, 'nombre': marca.nombre}
           };
 
           _isLoadingMarcas = false;
@@ -181,8 +199,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               !_marcas.contains(widget.producto!.marca) &&
               _marcaController.text.isNotEmpty) {
             // Añadir la marca actual a la lista para evitar problemas
-            _marcas.add(widget.producto!.marca);
-            _marcas.sort(); // Mantener orden alfabético
+            _marcas..add(widget.producto!.marca)
+            ..sort(); // Mantener orden alfabético
           }
         });
       }
@@ -200,7 +218,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     setState(() => _isLoadingColores = true);
 
     try {
-      final colores = await api.colores.getColores();
+      final List<ColorApp> colores = await api.colores.getColores();
 
       if (mounted) {
         setState(() {
@@ -213,7 +231,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             // Buscar el color por nombre
             try {
               _colorSeleccionado = _colores.firstWhere(
-                (color) =>
+                (ColorApp color) =>
                     color.nombre.toLowerCase() ==
                     widget.producto!.color!.toLowerCase(),
               );
@@ -241,7 +259,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     setState(() => _isLoadingSucursalesCompartidas = true);
 
     try {
-      final sucursalesCompartidas =
+      final List<ProductoEnSucursal> sucursalesCompartidas =
           await ProductosUtils.obtenerProductoEnSucursales(
         productoId: productoId,
         sucursales: widget.sucursales,
@@ -264,9 +282,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final isHorizontal = screenSize.width > screenSize.height;
-    final isWideScreen = screenSize.width > 600;
+    final Size screenSize = MediaQuery.of(context).size;
+    final bool isHorizontal = screenSize.width > screenSize.height;
+    final bool isWideScreen = screenSize.width > 600;
 
     return Dialog(
       backgroundColor: const Color(0xFF1A1A1A),
@@ -289,7 +307,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               isHorizontal ? screenSize.height * 0.9 : screenSize.height * 0.8,
         ),
         child: Column(
-          children: [
+          children: <Widget>[
             // Header
             Container(
               padding: const EdgeInsets.all(16),
@@ -298,7 +316,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(12),
                 ),
-                boxShadow: [
+                boxShadow: <BoxShadow>[
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
                     offset: const Offset(0, 2),
@@ -307,7 +325,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 ],
               ),
               child: Row(
-                children: [
+                children: <Widget>[
                   const FaIcon(
                     FontAwesomeIcons.boxOpen,
                     color: Color(0xFFE31E24),
@@ -355,7 +373,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
+                children: <Widget>[
                   TextButton(
                     onPressed: () => Navigator.pop(context),
                     style: TextButton.styleFrom(
@@ -392,7 +410,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   Widget _buildOneColumnLayout() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         _buildBasicInfoSection(),
         const SizedBox(height: 32),
         _buildPricingSection(),
@@ -402,7 +420,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         _buildDiscountSection(),
         const SizedBox(height: 32),
         // Mostrar sección de sucursales compartidas solo si estamos editando un producto existente
-        if (widget.producto != null) ...[
+        if (widget.producto != null) ...<Widget>[
           const SizedBox(height: 32),
           _buildSharedBranchesSection(),
         ],
@@ -413,16 +431,16 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   Widget _buildTwoColumnLayout() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               _buildBasicInfoSection(),
               const SizedBox(height: 32),
               _buildPricingSection(),
               // Mostrar sección de sucursales compartidas solo si estamos editando un producto existente
-              if (widget.producto != null) ...[
+              if (widget.producto != null) ...<Widget>[
                 const SizedBox(height: 32),
                 _buildSharedBranchesSection(),
               ],
@@ -433,7 +451,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               _buildCategorySection(),
               const SizedBox(height: 32),
               _buildDiscountSection(),
@@ -447,7 +465,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
   Widget _buildSectionTitle(String title, IconData icon) {
     return Row(
-      children: [
+      children: <Widget>[
         FaIcon(
           icon,
           color: const Color(0xFFE31E24),
@@ -495,14 +513,14 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   Widget _buildBasicInfoSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         _buildSectionTitle('Información Básica', FontAwesomeIcons.circleInfo),
         const SizedBox(height: 16),
         TextFormField(
           controller: _nombreController,
           decoration: _getInputDecoration('Nombre'),
           style: const TextStyle(color: Colors.white),
-          validator: (value) =>
+          validator: (String? value) =>
               value?.isEmpty ?? true ? 'Campo requerido' : null,
         ),
         const SizedBox(height: 16),
@@ -536,14 +554,14 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   border: Border.all(color: Colors.blue.withOpacity(0.3)),
                 ),
                 child: Row(
-                  children: [
+                  children: <Widget>[
                     const Icon(Icons.info_outline,
                         color: Colors.blue, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           const Text(
                             'SKU generado automáticamente',
                             style: TextStyle(
@@ -576,7 +594,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         _buildSectionTitle('Precios y Stock', FontAwesomeIcons.moneyBill),
         const SizedBox(height: 16),
         TextFormField(
@@ -585,7 +603,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               _getInputDecoration('Precio de Compra', prefixText: 'S/ '),
           style: const TextStyle(color: Colors.white),
           keyboardType: TextInputType.number,
-          validator: (value) =>
+          validator: (String? value) =>
               value?.isEmpty ?? true ? 'Campo requerido' : null,
         ),
         const SizedBox(height: 16),
@@ -594,10 +612,12 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           decoration: _getInputDecoration('Precio de Venta', prefixText: 'S/ '),
           style: const TextStyle(color: Colors.white),
           keyboardType: TextInputType.number,
-          validator: (value) {
-            if (value?.isEmpty ?? true) return 'Campo requerido';
-            final venta = double.tryParse(value!) ?? 0;
-            final compra = double.tryParse(_precioCompraController.text) ?? 0;
+          validator: (String? value) {
+            if (value?.isEmpty ?? true) {
+              return 'Campo requerido';
+            }
+            final double venta = double.tryParse(value!) ?? 0;
+            final double compra = double.tryParse(_precioCompraController.text) ?? 0;
             if (venta <= compra) {
               return 'El precio de venta debe ser mayor al de compra';
             }
@@ -641,12 +661,12 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           keyboardType: TextInputType.number,
           readOnly: esEdicion, // Deshabilitar edición para productos existentes
           enabled: !esEdicion, // Solo habilitado para nuevos productos
-          validator: (value) =>
+          validator: (String? value) =>
               value?.isEmpty ?? true ? 'Campo requerido' : null,
         ),
 
         // Mensaje informativo sobre gestión de stock
-        if (esEdicion) ...[
+        if (esEdicion) ...<Widget>[
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(12),
@@ -658,7 +678,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               ),
             ),
             child: Row(
-              children: [
+              children: <Widget>[
                 const FaIcon(
                   FontAwesomeIcons.triangleExclamation,
                   color: Colors.amber,
@@ -668,7 +688,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: <Widget>[
                       const Text(
                         'Gestión de Stock',
                         style: TextStyle(
@@ -702,14 +722,14 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         const SizedBox(height: 16),
         ValueListenableBuilder(
           valueListenable: _precioVentaController,
-          builder: (context, precioVentaText, child) {
+          builder: (BuildContext context, TextEditingValue precioVentaText, Widget? child) {
             return ValueListenableBuilder(
                 valueListenable: _precioCompraController,
-                builder: (context, precioCompraText, _) {
-                  final venta = double.tryParse(precioVentaText.text) ?? 0;
-                  final compra = double.tryParse(precioCompraText.text) ?? 0;
-                  final ganancia = venta - compra;
-                  final porcentaje = compra > 0 ? (ganancia / compra) * 100 : 0;
+                builder: (BuildContext context, TextEditingValue precioCompraText, _) {
+                  final double venta = double.tryParse(precioVentaText.text) ?? 0;
+                  final double compra = double.tryParse(precioCompraText.text) ?? 0;
+                  final double ganancia = venta - compra;
+                  final num porcentaje = compra > 0 ? (ganancia / compra) * 100 : 0;
 
                   return Container(
                     padding: const EdgeInsets.all(16),
@@ -722,7 +742,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
+                      children: <Widget>[
                         const Text(
                           'Ganancia:',
                           style: TextStyle(color: Colors.white),
@@ -749,7 +769,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   Widget _buildCategorySection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         _buildSectionTitle('Categorización', FontAwesomeIcons.tag),
         const SizedBox(height: 16),
         // Dropdown de Marca
@@ -774,7 +794,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   dropdownColor: const Color(0xFF2D2D2D),
                   style: const TextStyle(color: Colors.white),
                   isExpanded: true,
-                  items: _marcas.map((marca) {
+                  items: _marcas.map((String marca) {
                     return DropdownMenuItem(
                       value: marca,
                       child: Text(
@@ -784,21 +804,21 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       ),
                     );
                   }).toList(),
-                  onChanged: (value) {
+                  onChanged: (String? value) {
                     if (value != null) {
                       setState(() {
                         _marcaController.text = value;
                       });
                     }
                   },
-                  validator: (value) =>
+                  validator: (String? value) =>
                       value?.isEmpty ?? true ? 'Seleccione una marca' : null,
                 )
               : TextFormField(
                   controller: _marcaController,
                   decoration: _getInputDecoration('Marca'),
                   style: const TextStyle(color: Colors.white),
-                  validator: (value) =>
+                  validator: (String? value) =>
                       value?.isEmpty ?? true ? 'Campo requerido' : null,
                 ),
         const SizedBox(height: 16),
@@ -824,7 +844,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   dropdownColor: const Color(0xFF2D2D2D),
                   style: const TextStyle(color: Colors.white),
                   isExpanded: true,
-                  items: _categorias.map((category) {
+                  items: _categorias.map((String category) {
                     return DropdownMenuItem(
                       value: category,
                       child: Text(
@@ -834,14 +854,14 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       ),
                     );
                   }).toList(),
-                  onChanged: (value) {
+                  onChanged: (String? value) {
                     if (value != null) {
                       setState(() {
                         _categoriaSeleccionada = value;
                       });
                     }
                   },
-                  validator: (value) => value?.isEmpty ?? true
+                  validator: (String? value) => value?.isEmpty ?? true
                       ? 'Seleccione una categoría'
                       : null,
                 )
@@ -855,7 +875,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     ),
                   ),
                   child: Row(
-                    children: [
+                    children: <Widget>[
                       const Icon(
                         Icons.error_outline,
                         color: Colors.red,
@@ -901,11 +921,11 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             dropdownColor: const Color(0xFF2D2D2D),
             style: const TextStyle(color: Colors.white),
             isExpanded: true,
-            items: _colores.map((color) {
+            items: _colores.map((ColorApp color) {
               return DropdownMenuItem(
                 value: color,
                 child: Row(
-                  children: [
+                  children: <Widget>[
                     // Muestra una vista previa del color
                     Container(
                       width: 24,
@@ -953,7 +973,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               ),
             ),
             child: Row(
-              children: [
+              children: <Widget>[
                 const Icon(
                   Icons.warning_amber_outlined,
                   color: Colors.orange,
@@ -987,7 +1007,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   Widget _buildDiscountSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         _buildSectionTitle('Descuentos', FontAwesomeIcons.percent),
         const SizedBox(height: 16),
         TextFormField(
@@ -1005,23 +1025,14 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           style: const TextStyle(color: Colors.white),
           keyboardType: TextInputType.number,
         ),
-      ],
-    );
-  }
-
-  Widget _buildSharedBranchesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle(
-            'Sucursales que Comparten este Producto', FontAwesomeIcons.sitemap),
         const SizedBox(height: 16),
+        // Sección de sucursales compartidas
         if (_isLoadingSucursalesCompartidas)
           const Center(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
               child: Column(
-                children: [
+                children: <Widget>[
                   CircularProgressIndicator(
                     color: Color(0xFFE31E24),
                     strokeWidth: 3,
@@ -1043,7 +1054,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Row(
-              children: [
+              children: <Widget>[
                 Icon(Icons.info_outline, color: Colors.white54),
                 SizedBox(width: 12),
                 Expanded(
@@ -1066,13 +1077,13 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 // Encabezado con contadores
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
+                    children: <Widget>[
                       _buildCounter(
                         'Total Sucursales',
                         _sucursalesCompartidas.length.toString(),
@@ -1082,7 +1093,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       _buildCounter(
                         'Con Stock',
                         _sucursalesCompartidas
-                            .where((s) => s.disponible && s.producto.stock > 0)
+                            .where((ProductoEnSucursal s) => s.disponible && s.producto.stock > 0)
                             .length
                             .toString(),
                         FontAwesomeIcons.boxOpen,
@@ -1091,7 +1102,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       _buildCounter(
                         'Stock Bajo',
                         _sucursalesCompartidas
-                            .where((s) =>
+                            .where((ProductoEnSucursal s) =>
                                 s.disponible && s.producto.tieneStockBajo())
                             .length
                             .toString(),
@@ -1102,7 +1113,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                         'Agotados',
                         _sucursalesCompartidas
                             .where(
-                                (s) => !s.disponible || s.producto.stock <= 0)
+                                (ProductoEnSucursal s) => !s.disponible || s.producto.stock <= 0)
                             .length
                             .toString(),
                         FontAwesomeIcons.ban,
@@ -1117,8 +1128,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _sucursalesCompartidas.length,
-                  itemBuilder: (context, index) {
-                    final productoEnSucursal = _sucursalesCompartidas[index];
+                  itemBuilder: (BuildContext context, int index) {
+                    final ProductoEnSucursal productoEnSucursal = _sucursalesCompartidas[index];
                     return _buildSucursalItem(productoEnSucursal);
                   },
                 ),
@@ -1131,7 +1142,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
   Widget _buildCounter(String label, String count, IconData icon, Color color) {
     return Column(
-      children: [
+      children: <Widget>[
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -1188,7 +1199,6 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       statusIcon = FontAwesomeIcons.triangleExclamation;
     }
 
-    // Versión compacta del tile
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -1216,15 +1226,18 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           ),
         ),
         subtitle: Text(
-          item.sucursal.direccion,
+          item.sucursal.direccion ?? 'Sin dirección registrada',
           style: TextStyle(
             color: Colors.white.withOpacity(0.5),
             fontSize: 12,
+            fontStyle: item.sucursal.direccion != null 
+                ? FontStyle.normal 
+                : FontStyle.italic,
           ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
-          children: [
+          children: <Widget>[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -1236,7 +1249,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
+                children: <Widget>[
                   FaIcon(
                     statusIcon,
                     color: statusColor,
@@ -1258,12 +1271,12 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             const Icon(Icons.keyboard_arrow_down, color: Colors.white54),
           ],
         ),
-        children: [
+        children: <Widget>[
           if (item.disponible)
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
-                children: [
+                children: <Widget>[
                   _buildProductInfoRow(
                       'Stock',
                       '${item.producto.stock} unidades',
@@ -1283,7 +1296,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       'Precio venta',
                       item.producto.getPrecioVentaFormateado(),
                       FontAwesomeIcons.tag),
-                  if (item.producto.estaEnOferta()) ...[
+                  if (item.producto.estaEnOferta()) ...<Widget>[
                     const SizedBox(height: 8),
                     _buildProductInfoRow(
                         'Precio de liquidación',
@@ -1306,7 +1319,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   ),
                 ),
                 child: const Row(
-                  children: [
+                  children: <Widget>[
                     FaIcon(
                       FontAwesomeIcons.triangleExclamation,
                       color: Colors.red,
@@ -1330,7 +1343,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
   Widget _buildProductInfoRow(String label, String value, IconData icon) {
     return Row(
-      children: [
+      children: <Widget>[
         FaIcon(
           icon,
           size: 14,
@@ -1357,6 +1370,122 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     );
   }
 
+  Widget _buildSharedBranchesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _buildSectionTitle('Disponibilidad en Sucursales', FontAwesomeIcons.store),
+        const SizedBox(height: 16),
+        if (_isLoadingSucursalesCompartidas)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Column(
+                children: <Widget>[
+                  CircularProgressIndicator(
+                    color: Color(0xFFE31E24),
+                    strokeWidth: 3,
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'Consultando disponibilidad en otras sucursales...',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (_sucursalesCompartidas.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              children: <Widget>[
+                Icon(Icons.info_outline, color: Colors.white54),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Este producto no se comparte con otras sucursales',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF2D2D2D),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.1),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: <Widget>[
+                      _buildCounter(
+                        'Total Sucursales',
+                        _sucursalesCompartidas.length.toString(),
+                        FontAwesomeIcons.store,
+                        Colors.blue,
+                      ),
+                      _buildCounter(
+                        'Con Stock',
+                        _sucursalesCompartidas
+                            .where((ProductoEnSucursal s) => s.disponible && s.producto.stock > 0)
+                            .length
+                            .toString(),
+                        FontAwesomeIcons.boxOpen,
+                        Colors.green,
+                      ),
+                      _buildCounter(
+                        'Stock Bajo',
+                        _sucursalesCompartidas
+                            .where((ProductoEnSucursal s) =>
+                                s.disponible && s.producto.tieneStockBajo())
+                            .length
+                            .toString(),
+                        FontAwesomeIcons.triangleExclamation,
+                        const Color(0xFFE31E24),
+                      ),
+                      _buildCounter(
+                        'Agotados',
+                        _sucursalesCompartidas
+                            .where(
+                                (ProductoEnSucursal s) => !s.disponible || s.producto.stock <= 0)
+                            .length
+                            .toString(),
+                        FontAwesomeIcons.ban,
+                        Colors.red.shade800,
+                      ),
+                    ],
+                  ),
+                ),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _sucursalesCompartidas.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final ProductoEnSucursal productoEnSucursal = _sucursalesCompartidas[index];
+                    return _buildSucursalItem(productoEnSucursal);
+                  },
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
   void _handleSave() {
     if (_formKey.currentState?.validate() ?? false) {
       if (_sucursalSeleccionada == null) {
@@ -1373,7 +1502,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       final bool esNuevoProducto = widget.producto == null;
 
       // Construir el cuerpo de la solicitud
-      final productoData = <String, dynamic>{
+      final Map<String, dynamic> productoData = <String, dynamic>{
         if (widget.producto != null) 'id': widget.producto!.id,
         'nombre': _nombreController.text,
         'descripcion': _descripcionController.text,
@@ -1387,42 +1516,38 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
       // Buscar y añadir el ID de categoría si está disponible
       if (_categoriasMap.containsKey(_categoriaSeleccionada)) {
-        final categoriaInfo = _categoriasMap[_categoriaSeleccionada];
+        final Map<String, dynamic>? categoriaInfo = _categoriasMap[_categoriaSeleccionada];
         if (categoriaInfo != null && categoriaInfo['id'] != null) {
-          // Verificar que el ID sea un número válido
-          final idValue = categoriaInfo['id'];
-          if (idValue is int ||
-              (idValue is String && int.tryParse(idValue) != null)) {
-            // Convertir explícitamente a entero para evitar el error NaN
-            productoData['categoriaId'] =
-                idValue is int ? idValue : int.parse(idValue);
-            debugPrint(
-                'ProductosForm: Categoría $_categoriaSeleccionada con ID válido: ${productoData['categoriaId']}');
-          } else {
-            debugPrint(
-                'ProductosForm: Advertencia - ID de categoría no válido: $idValue');
+          final dynamic categoriaId = categoriaInfo['id'];
+          if (categoriaId is int) {
+            productoData['categoriaId'] = categoriaId;
+          } else if (categoriaId is String && int.tryParse(categoriaId) != null) {
+            productoData['categoriaId'] = int.parse(categoriaId);
           }
+          debugPrint(
+              'ProductosForm: Categoría $_categoriaSeleccionada con ID válido: ${productoData['categoriaId']}');
+        } else {
+          debugPrint(
+              'ProductosForm: Advertencia - ID de categoría no válido');
         }
       }
 
       // Buscar y añadir el ID de marca si está disponible
-      final marcaText = _marcaController.text;
+      final String marcaText = _marcaController.text;
       if (_marcasMap.containsKey(marcaText)) {
-        final marcaInfo = _marcasMap[marcaText];
+        final Map<String, dynamic>? marcaInfo = _marcasMap[marcaText];
         if (marcaInfo != null && marcaInfo['id'] != null) {
-          // Verificar que el ID sea un número válido
-          final idValue = marcaInfo['id'];
-          if (idValue is int ||
-              (idValue is String && int.tryParse(idValue) != null)) {
-            // Convertir explícitamente a entero para evitar el error NaN
-            productoData['marcaId'] =
-                idValue is int ? idValue : int.parse(idValue);
-            debugPrint(
-                'ProductosForm: Marca $marcaText con ID válido: ${productoData['marcaId']}');
-          } else {
-            debugPrint(
-                'ProductosForm: Advertencia - ID de marca no válido: $idValue');
+          final dynamic marcaId = marcaInfo['id'];
+          if (marcaId is int) {
+            productoData['marcaId'] = marcaId;
+          } else if (marcaId is String && int.tryParse(marcaId) != null) {
+            productoData['marcaId'] = int.parse(marcaId);
           }
+          debugPrint(
+              'ProductosForm: Marca $marcaText con ID válido: ${productoData['marcaId']}');
+        } else {
+          debugPrint(
+              'ProductosForm: Advertencia - ID de marca no válido');
         }
       }
 
@@ -1470,8 +1595,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
       // Mostrar datos completos para depuración
       debugPrint('ProductosForm: === DATOS COMPLETOS DEL PRODUCTO ===');
-      productoData.forEach((key, value) {
-        final tipo = value?.runtimeType.toString() ?? 'null';
+      productoData.forEach((String key, value) {
+        final String tipo = value?.runtimeType.toString() ?? 'null';
         debugPrint('ProductosForm:   - $key: $value (Tipo: $tipo)');
       });
       debugPrint('ProductosForm: === FIN DATOS PRODUCTO ===');

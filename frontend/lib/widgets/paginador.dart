@@ -1,5 +1,6 @@
+import 'package:condorsmotors/models/paginacion.model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../models/paginacion.model.dart';
 
 class Paginador extends StatelessWidget {
   final Paginacion paginacion;
@@ -25,12 +26,12 @@ class Paginador extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isCompactScreen = screenWidth < 600 || forceCompactMode;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isCompactScreen = screenWidth < 600 || forceCompactMode;
     
-    final bgColor = backgroundColor ?? const Color(0xFF2D2D2D);
-    final txtColor = textColor ?? Colors.white;
-    final accent = accentColor ?? const Color(0xFFE31E24);
+    final Color bgColor = backgroundColor ?? const Color(0xFF2D2D2D);
+    final Color txtColor = textColor ?? Colors.white;
+    final Color accent = accentColor ?? const Color(0xFFE31E24);
     
     // Si solo hay una página, no mostramos el paginador
     if (paginacion.totalPages <= 1) {
@@ -38,7 +39,7 @@ class Paginador extends StatelessWidget {
     }
 
     // Obtenemos las páginas visibles (menos en modo compacto)
-    final visiblePages = paginacion.getVisiblePages(
+    final List<int> visiblePages = paginacion.getVisiblePages(
       maxVisiblePages: isCompactScreen ? 3 : maxVisiblePages
     );
 
@@ -68,7 +69,7 @@ class Paginador extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
-      children: [
+      children: <Widget>[
         // Botón página anterior
         _buildPageButton(
           icon: Icons.chevron_left,
@@ -125,7 +126,7 @@ class Paginador extends StatelessWidget {
   ) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [
+      children: <Widget>[
         // Información de paginación
         Text(
           'Página ${paginacion.currentPage} de ${paginacion.totalPages}',
@@ -160,7 +161,7 @@ class Paginador extends StatelessWidget {
         
         // Números de página
         ...visiblePages.map(
-          (pageNum) => _buildNumberButton(
+          (int pageNum) => _buildNumberButton(
             pageNum: pageNum,
             isSelected: pageNum == paginacion.currentPage,
             onPressed: () => onPageChanged(pageNum),
@@ -255,5 +256,19 @@ class Paginador extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty<Paginacion>('paginacion', paginacion))
+      ..add(ObjectFlagProperty<Function(int)>.has('onPageChanged', onPageChanged))
+      ..add(ColorProperty('backgroundColor', backgroundColor))
+      ..add(ColorProperty('textColor', textColor))
+      ..add(ColorProperty('accentColor', accentColor))
+      ..add(DoubleProperty('radius', radius))
+      ..add(IntProperty('maxVisiblePages', maxVisiblePages))
+      ..add(DiagnosticsProperty<bool>('forceCompactMode', forceCompactMode));
   }
 } 

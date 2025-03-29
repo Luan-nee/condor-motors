@@ -1,6 +1,10 @@
+import 'package:condorsmotors/main.dart' as app_main;
+import 'package:condorsmotors/models/paginacion.model.dart';
+import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/screens/colabs/selector_colab.dart';
+import 'package:condorsmotors/utils/stock_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'selector_colab.dart'; // Importar la pantalla de selector
 
 class ProductosColabScreen extends StatefulWidget {
   const ProductosColabScreen({super.key});
@@ -12,125 +16,151 @@ class ProductosColabScreen extends StatefulWidget {
 class _ProductosColabScreenState extends State<ProductosColabScreen> {
   String _searchQuery = '';
   String _selectedCategory = 'Todos';
+  bool _isLoading = true;
+  String? _error;
+  
+  // Lista de productos
+  List<Producto> _productos = <Producto>[];
+  
+  // Información de paginación
+  late Paginacion _paginacion;
+  
+  // Categorías disponibles (se cargarán desde la API)
+  List<String> _categorias = <String>['Todos'];
 
-  // Datos de ejemplo para productos
-  final List<Map<String, dynamic>> _productos = [
-    {
-      'id': 1,
-      'codigo': 'CAS001',
-      'nombre': 'Casco MT Thunder',
-      'descripcion': 'Casco integral MT Thunder con sistema de ventilación avanzado',
-      'precio': 299.99,
-      'precioMayorista': 250.00,
-      'stock': 15,
-      'stockMinimo': 5,
-      'categoria': 'Cascos',
-      'marca': 'MT Helmets',
-      'estado': 'ACTIVO',
-      'imagen': 'assets/images/casco_mt.jpg'
-    },
-    {
-      'id': 2,
-      'codigo': 'ACE001',
-      'nombre': 'Aceite Motul 5100',
-      'descripcion': 'Aceite sintético 4T 15W-50 para motocicletas',
-      'precio': 89.99,
-      'precioMayorista': 75.00,
-      'stock': 3,
-      'stockMinimo': 10,
-      'categoria': 'Lubricantes',
-      'marca': 'Motul',
-      'estado': 'BAJO_STOCK',
-      'imagen': 'assets/images/aceite_motul.jpg'
-    },
-    {
-      'id': 3,
-      'codigo': 'LLA001',
-      'nombre': 'Llanta Pirelli Diablo',
-      'descripcion': 'Llanta deportiva Pirelli Diablo Rosso III 180/55 ZR17',
-      'precio': 450.00,
-      'precioMayorista': 380.00,
-      'stock': 0,
-      'stockMinimo': 4,
-      'categoria': 'Llantas',
-      'marca': 'Pirelli',
-      'estado': 'AGOTADO',
-      'imagen': 'assets/images/llanta_pirelli.jpg'
-    },
-    {
-      'id': 4,
-      'codigo': 'FRE001',
-      'nombre': 'Kit de Frenos Brembo',
-      'descripcion': 'Kit completo de frenos Brembo con pastillas y disco',
-      'precio': 850.00,
-      'precioMayorista': 720.00,
-      'stock': 8,
-      'stockMinimo': 3,
-      'categoria': 'Frenos',
-      'marca': 'Brembo',
-      'estado': 'ACTIVO',
-      'imagen': 'assets/images/frenos_brembo.jpg'
-    },
-    {
-      'id': 5,
-      'codigo': 'AMO001',
-      'nombre': 'Amortiguador YSS',
-      'descripcion': 'Amortiguador trasero YSS ajustable en compresión y rebote',
-      'precio': 599.99,
-      'precioMayorista': 520.00,
-      'stock': 6,
-      'stockMinimo': 4,
-      'categoria': 'Suspensión',
-      'marca': 'YSS',
-      'estado': 'ACTIVO',
-      'imagen': 'assets/images/amortiguador_yss.jpg'
-    }
-  ];
+  // Tamaño de página para la paginación
+  static const int _pageSize = 20;
 
-  // Categorías disponibles
-  final List<String> _categorias = [
-    'Todos',
-    'Cascos',
-    'Lubricantes',
-    'Llantas',
-    'Frenos',
-    'Suspensión'
-  ];
-
-  List<Map<String, dynamic>> _getProductosFiltrados() {
-    if (_searchQuery.isEmpty && _selectedCategory == 'Todos') {
-      return _productos;
-    }
-
-    return _productos.where((producto) {
-      final matchesSearch = 
-          producto['codigo'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          producto['nombre'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          producto['marca'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
-      
-      final matchesCategory = _selectedCategory == 'Todos' || 
-          producto['categoria'] == _selectedCategory;
-      
-      return matchesSearch && matchesCategory;
-    }).toList();
+  @override
+  void initState() {
+    super.initState();
+    _cargarDatos();
   }
 
-  Color _getEstadoColor(String estado) {
+  /// Carga los datos iniciales (productos y categorías)
+  Future<void> _cargarDatos() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Obtener el ID de la sucursal del usuario actual
+      final Map<String, dynamic>? userData = await app_main.api.authService.getUserData();
+      final String sucursalId = userData?['sucursalId']?.toString() ?? '';
+
+      if (sucursalId.isEmpty) {
+        throw Exception('No se pudo determinar la sucursal del usuario');
+      }
+
+      // Cargar productos con su información usando ProductosApi
+      final response = await app_main.api.productos.getProductos(
+        sucursalId: sucursalId,
+        search: _searchQuery.isNotEmpty ? _searchQuery : null,
+        filter: _selectedCategory != 'Todos' ? 'categoria' : null,
+        filterValue: _selectedCategory != 'Todos' ? _selectedCategory : null,
+        page: 1,
+        pageSize: _pageSize,
+        sortBy: 'nombre',
+        order: 'asc',
+        useCache: true,
+      );
+
+      // Extraer categorías únicas de los productos
+      final Set<String> categoriasSet = response.items
+          .map((Producto p) => p.categoria)
+          .where((String c) => c.isNotEmpty)
+          .toSet();
+
+      setState(() {
+        _productos = response.items;
+        _paginacion = response.paginacion;
+        _categorias = <String>['Todos', ...categoriasSet];
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// Carga la siguiente página de productos
+  Future<void> _cargarMasProductos() async {
+    if (!_paginacion.hasNext) return;
+
+    try {
+      final Map<String, dynamic>? userData = await app_main.api.authService.getUserData();
+      final String sucursalId = userData?['sucursalId']?.toString() ?? '';
+
+      final response = await app_main.api.productos.getProductos(
+        sucursalId: sucursalId,
+        search: _searchQuery.isNotEmpty ? _searchQuery : null,
+        filter: _selectedCategory != 'Todos' ? 'categoria' : null,
+        filterValue: _selectedCategory != 'Todos' ? _selectedCategory : null,
+        page: _paginacion.currentPage + 1,
+        pageSize: _pageSize,
+        sortBy: 'nombre',
+        order: 'asc',
+        useCache: true,
+      );
+
+      setState(() {
+        _productos.addAll(response.items);
+        _paginacion = response.paginacion;
+      });
+    } catch (e) {
+      // Mostrar error al cargar más productos
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar más productos: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  List<Producto> _getProductosFiltrados() {
+    return _productos;
+  }
+
+  Color _getEstadoColor(StockStatus estado) {
     switch (estado) {
-      case 'ACTIVO':
+      case StockStatus.disponible:
         return Colors.green;
-      case 'BAJO_STOCK':
+      case StockStatus.stockBajo:
         return Colors.orange;
-      case 'AGOTADO':
+      case StockStatus.agotado:
         return Colors.red;
-      default:
-        return Colors.grey;
+    }
+  }
+
+  IconData _getEstadoIcon(StockStatus estado) {
+    switch (estado) {
+      case StockStatus.disponible:
+        return FontAwesomeIcons.check;
+      case StockStatus.stockBajo:
+        return FontAwesomeIcons.exclamation;
+      case StockStatus.agotado:
+        return FontAwesomeIcons.xmark;
+    }
+  }
+
+  String _getEstadoText(StockStatus estado) {
+    switch (estado) {
+      case StockStatus.disponible:
+        return 'Disponible';
+      case StockStatus.stockBajo:
+        return 'Stock Bajo';
+      case StockStatus.agotado:
+        return 'Agotado';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final productosFiltrados = _getProductosFiltrados();
+    final List<Producto> productosFiltrados = _getProductosFiltrados();
     
     return Scaffold(
       appBar: AppBar(
@@ -143,16 +173,15 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
             color: Colors.white,
           ),
           onPressed: () {
-            // Navegar de regreso a la pantalla de Selector
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const SelectorColabScreen()),
+              MaterialPageRoute(builder: (BuildContext context) => const SelectorColabScreen()),
             );
           },
           tooltip: 'Volver al Selector',
         ),
         title: const Row(
-          children: [
+          children: <Widget>[
             FaIcon(
               FontAwesomeIcons.box,
               size: 20,
@@ -168,14 +197,22 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
             ),
           ],
         ),
+        actions: <Widget>[
+          // Botón para recargar datos
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _cargarDatos,
+            tooltip: 'Recargar datos',
+          ),
+        ],
       ),
       body: Column(
-        children: [
+        children: <Widget>[
           // Barra de búsqueda y filtros
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
-              children: [
+              children: <Widget>[
                 // Buscador
                 Expanded(
                   child: TextField(
@@ -190,10 +227,12 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                         vertical: 12,
                       ),
                     ),
-                    onChanged: (value) {
+                    onChanged: (String value) {
                       setState(() {
                         _searchQuery = value;
                       });
+                      // Recargar datos con el nuevo filtro
+                      _cargarDatos();
                     },
                   ),
                 ),
@@ -212,6 +251,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                       setState(() {
                         _selectedCategory = newValue;
                       });
+                      // Recargar datos con el nuevo filtro
+                      _cargarDatos();
                     }
                   },
                 ),
@@ -219,176 +260,285 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
             ),
           ),
 
-          // Lista de productos
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: productosFiltrados.length,
-              itemBuilder: (context, index) {
-                final producto = productosFiltrados[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: ExpansionTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _getEstadoColor(producto['estado']).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: FaIcon(
-                        producto['estado'] == 'AGOTADO'
-                            ? FontAwesomeIcons.xmark
-                            : producto['estado'] == 'BAJO_STOCK'
-                                ? FontAwesomeIcons.exclamation
-                                : FontAwesomeIcons.check,
-                        color: _getEstadoColor(producto['estado']),
-                        size: 24,
-                      ),
+          // Indicador de carga o error
+          if (_isLoading)
+            const Expanded(
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_error != null)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 48,
                     ),
-                    title: Row(
-                      children: [
-                        Text(
-                          producto['codigo'],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            producto['nombre'],
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error al cargar los productos:\n$_error',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red),
                     ),
-                    subtitle: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _cargarDatos,
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            // Lista de productos
+            Expanded(
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (ScrollNotification scrollInfo) {
+                  if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
+                    _cargarMasProductos();
+                  }
+                  return true;
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: productosFiltrados.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final Producto producto = productosFiltrados[index];
+                    final StockStatus estado = StockUtils.getStockStatus(
+                      producto.stock,
+                      producto.stockMinimo ?? 0,
+                    );
+                    
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: ExpansionTile(
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            color: _getEstadoColor(estado).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(
-                            producto['categoria'],
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontSize: 12,
-                            ),
+                          child: FaIcon(
+                            _getEstadoIcon(estado),
+                            color: _getEstadoColor(estado),
+                            size: 24,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          producto['marca'],
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'S/ ${producto['precio'].toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        Text(
-                          'Stock: ${producto['stock']}',
-                          style: TextStyle(
-                            color: _getEstadoColor(producto['estado']),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    children: [
-                      // Detalles del producto
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Detalles del Producto',
-                              style: TextStyle(
+                        title: Row(
+                          children: <Widget>[
+                            Text(
+                              producto.sku,
+                              style: const TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(producto['descripcion']),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Precio Normal: S/ ${producto['precio'].toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Precio Mayorista: S/ ${producto['precioMayorista'].toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      'Stock Actual: ${producto['stock']}',
-                                      style: TextStyle(
-                                        color: _getEstadoColor(producto['estado']),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Stock Mínimo: ${producto['stockMinimo']}',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                producto.nombre,
+                                // Aplicar estilo condicional para liquidación
+                                style: producto.liquidacion
+                                    ? const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)
+                                    : null,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
+                        subtitle: Row(
+                          children: <Widget>[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                producto.categoria,
+                                style: TextStyle(
+                                  color: Theme.of(context).primaryColor,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Envolver el texto de la marca con Flexible para evitar overflow
+                            Flexible(
+                              child: Text(
+                                producto.marca,
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis, // Añadir ellipsis si es muy largo
+                              ),
+                            ),
+                            // Chip de liquidación eliminado de aquí
+                          ],
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: <Widget>[
+                            if (producto.liquidacion && producto.precioOferta != null)
+                              Text(
+                                'S/ ${producto.precioVenta.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  decoration: TextDecoration.lineThrough,
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            Text(
+                              'S/ ${(producto.liquidacion && producto.precioOferta != null ? producto.precioOferta! : producto.precioVenta).toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: producto.liquidacion ? Colors.amber : null,
+                              ),
+                            ),
+                            Text(
+                              'Stock: ${producto.stock}',
+                              style: TextStyle(
+                                color: _getEstadoColor(estado),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        children: <Widget>[
+                          // Detalles del producto
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                const Text(
+                                  'Detalles del Producto',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(producto.descripcion ?? 'Sin descripción'),
+                                const SizedBox(height: 16),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: <Widget>[
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        if (producto.liquidacion && producto.precioOferta != null) ...<Widget>[
+                                          Text(
+                                            'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
+                                            style: const TextStyle(
+                                              decoration: TextDecoration.lineThrough,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Precio Liquidación: S/ ${producto.precioOferta!.toStringAsFixed(2)}',
+                                            style: const TextStyle(
+                                              color: Colors.amber,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ] else
+                                          Text(
+                                            'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        Text(
+                                          'Precio Compra: S/ ${producto.precioCompra.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: <Widget>[
+                                        Text(
+                                          'Stock Actual: ${producto.stock}',
+                                          style: TextStyle(
+                                            color: _getEstadoColor(estado),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Stock Mínimo: ${producto.stockMinimo ?? 0}',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                        Text(
+                                          'Estado: ${_getEstadoText(estado)}',
+                                          style: TextStyle(
+                                            color: _getEstadoColor(estado),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                if (producto.cantidadGratisDescuento != null || producto.porcentajeDescuento != null)
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 16),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.blue.withOpacity(0.3),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        const Text(
+                                          'Promociones Activas:',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        if (producto.cantidadGratisDescuento != null)
+                                          Text(
+                                            '• Lleva ${producto.cantidadMinimaDescuento}, paga ${producto.cantidadMinimaDescuento! - producto.cantidadGratisDescuento!}',
+                                            style: const TextStyle(color: Colors.blue),
+                                          ),
+                                        if (producto.porcentajeDescuento != null)
+                                          Text(
+                                            '• ${producto.porcentajeDescuento}% de descuento por ${producto.cantidadMinimaDescuento}+ unidades',
+                                            style: const TextStyle(color: Colors.blue),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              },
+                    );
+                  },
+                ),
+              ),
             ),
-          ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Implementar agregar nuevo producto
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Función de agregar producto en desarrollo'),
-            ),
-          );
-        },
-        child: const FaIcon(FontAwesomeIcons.plus),
       ),
     );
   }

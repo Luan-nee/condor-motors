@@ -1,8 +1,7 @@
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
-import '../../../main.dart' show api;
-import '../../../models/proforma.model.dart';
 
 /// Utilidades para manejar proformas y ventas pendientes
 class VentasPendientesUtils {
@@ -11,7 +10,7 @@ class VentasPendientesUtils {
   /// Retorna el ID como entero, o null si no se encuentra
   static Future<int?> obtenerSucursalId() async {
     try {
-      final userData = await api.authService.getUserData();
+      final Map<String, dynamic>? userData = await api.authService.getUserData();
       if (userData != null && userData.containsKey('sucursalId')) {
         try {
           return int.parse(userData['sucursalId'].toString());
@@ -35,7 +34,7 @@ class VentasPendientesUtils {
   static List<Map<String, dynamic>> convertirProformasAVentasPendientes(
     List<Proforma> proformas
   ) {
-    return proformas.map((proforma) {
+    return proformas.map((Proforma proforma) {
       return convertirProformaAVentaPendiente(proforma);
     }).toList();
   }
@@ -47,12 +46,12 @@ class VentasPendientesUtils {
   /// Retorna un mapa con el formato necesario para PendingSalesWidget
   static Map<String, dynamic> convertirProformaAVentaPendiente(Proforma proforma) {
     // Obtener datos del cliente, o crear uno genérico si no existe
-    final cliente = proforma.cliente ?? {
+    final Map<String, dynamic> cliente = proforma.cliente ?? <String, dynamic>{
       'id': 0,
       'nombre': 'Cliente sin nombre',
     };
 
-    return {
+    return <String, dynamic>{
       'id': proforma.id,
       'nombre': proforma.nombre ?? 'Proforma #${proforma.id}',
       'total': proforma.total,

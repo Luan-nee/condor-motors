@@ -20,7 +20,7 @@ class ReglaDescuento {
     );
   }
 
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toJson() => <String, dynamic>{
     'cantidad': quantity,
     'porcentaje_descuento': discountPercentage,
     if (daysWithoutSale != null) 'dias_sin_venta': daysWithoutSale,
@@ -98,7 +98,7 @@ class Producto {
     );
   }
 
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'sku': sku,
     'nombre': nombre,
@@ -122,17 +122,27 @@ class Producto {
   };
   
   /// Helper para convertir valores numéricos a double
-  static double _parseDouble(dynamic value) {
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is String) return double.parse(value);
+  static double _parseDouble(value) {
+    if (value is double) {
+      return value;
+    }
+    if (value is int) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.parse(value);
+    }
     return 0.0;
   }
   
   /// Helper para convertir valores a int de forma segura
-  static int _parseInt(dynamic value) {
-    if (value is int) return value;
-    if (value is double) return value.toInt();
+  static int _parseInt(value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is double) {
+      return value.toInt();
+    }
     if (value is String) {
       try {
         return int.parse(value);
@@ -165,7 +175,9 @@ class Producto {
 
   /// Calcula el margen de ganancia en porcentaje
   double getMargenPorcentaje() {
-    if (precioCompra <= 0) return 0;
+    if (precioCompra <= 0) {
+      return 0;
+    }
     return (getGanancia() / precioCompra) * 100;
   }
 
@@ -181,13 +193,15 @@ class Producto {
 
   /// Calcula el porcentaje de descuento de la oferta
   double? getPorcentajeDescuentoOferta() {
-    if (!estaEnOferta()) return null;
+    if (!estaEnOferta()) {
+      return null;
+    }
     return ((precioVenta - precioOferta!) / precioVenta) * 100;
   }
 
   /// Formatea el porcentaje de descuento de la oferta
   String? getPorcentajeDescuentoOfertaFormateado() {
-    final porcentaje = getPorcentajeDescuentoOferta();
+    final double? porcentaje = getPorcentajeDescuentoOferta();
     return porcentaje != null ? '${porcentaje.toStringAsFixed(0)}%' : null;
   }
 
@@ -219,7 +233,9 @@ class Producto {
 
   /// Calcula el margen de ganancia en porcentaje considerando la liquidación
   double getMargenPorcentajeActual() {
-    if (precioCompra <= 0) return 0;
+    if (precioCompra <= 0) {
+      return 0;
+    }
     return (getGananciaActual() / precioCompra) * 100;
   }
 

@@ -1,34 +1,67 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
-  errors:
-    # Mantener solo algunos errores críticos en analyzer
-    dead_null_aware_expression: warning
-    avoid_print: info
-    duplicate_ignore: warning
-    dead_code: warning
-    unused_local_variable: warning
-    unused_import: warning
-    sized_box_for_whitespace: warning
+  exclude:
+    - build/**
+    - lib/generated_plugin_registrant.dart
+    - unused_import: warning
+    - unused_local_variable: warning
+    - dead_code: warning
+    - prefer_null_aware_method_calls: warning
+    - prefer_null_aware_operators: warning
+    - unnecessary_null_aware_assignments: warning
+    - unnecessary_nullable_for_final_variable_declarations: warning
+    - use_super_parameters: warning
+    - dead_code: warning
+    - avoid_duplicate_case_values: warning
+    - avoid_unused_constructor_parameters: warning
+    - unnecessary_this: warning
+    - unnecessary_lambdas: warning
+    - prefer_const_constructors_in_immutables: warning
+    - prefer_const_literals_to_create_immutables: warning
+    - prefer_const_constructors: warning
+    - prefer_const_literals_to_create_immutables: warning
+    - prefer_const_constructors: warning
+    
 
 linter:
   rules:
-    - unnecessary_statements
-    - use_build_context_synchronously
-    - deprecated_member_use_from_same_package
-    - directives_ordering
-    - sized_box_for_whitespace
-    - prefer_foreach
-    - sort_child_properties_last
-    - prefer_single_quotes
-    - prefer_final_locals
-    - avoid_unused_constructor_parameters
-    - avoid_empty_else
     - always_declare_return_types
-    - avoid_classes_with_only_static_members
-    - prefer_constructors_over_static_methods
+    - always_put_control_body_on_new_line
+    - always_use_package_imports
+    - annotate_overrides
+    - avoid_annotating_with_dynamic
+    - avoid_double_and_int_checks
+    - avoid_empty_else
     - avoid_function_literals_in_foreach_calls
+    - avoid_init_to_null
+    - avoid_null_checks_in_equality_operators
+    - avoid_positional_boolean_parameters
+    - avoid_print
     - avoid_redundant_argument_values
-    - prefer_const_declarations
-    - prefer_final_fields
-    - unawaited_futures
+    - avoid_relative_lib_imports
+    - avoid_returning_null_for_void
+    - avoid_setters_without_getters
+    - avoid_types_as_parameter_names
+    - avoid_unnecessary_containers
+    - camel_case_types
+    - cancel_subscriptions
+    - cascade_invocations
+    - close_sinks
+    - comment_references
+    - constant_identifier_names
+    - control_flow_in_finally
+    - curly_braces_in_flow_control_structures
+    - depend_on_referenced_packages
+    - deprecated_consistency
+    - diagnostic_describe_all_properties
+    - directives_ordering
+    - empty_catches
+    - empty_constructor_bodies
+    - empty_statements
+    - file_names
+    - no_duplicate_case_values
+    - prefer_collection_literals
+    - prefer_conditional_assignment
+    - prefer_const_constructors_in_immutables
+    - prefer_const_literals_to_create_immutables

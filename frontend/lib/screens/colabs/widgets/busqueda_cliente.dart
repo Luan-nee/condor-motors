@@ -1,6 +1,7 @@
+import 'package:condorsmotors/models/cliente.model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../../models/cliente.model.dart';
 
 class BusquedaClienteWidget extends StatefulWidget {
   final List<Cliente> clientes;
@@ -18,11 +19,21 @@ class BusquedaClienteWidget extends StatefulWidget {
 
   @override
   State<BusquedaClienteWidget> createState() => _BusquedaClienteWidgetState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(IterableProperty<Cliente>('clientes', clientes))
+      ..add(ObjectFlagProperty<Function(Cliente)>.has('onClienteSeleccionado', onClienteSeleccionado))
+      ..add(ObjectFlagProperty<Function()>.has('onNuevoCliente', onNuevoCliente))
+      ..add(DiagnosticsProperty<bool>('isLoading', isLoading));
+  }
 }
 
 class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget> {
   final TextEditingController _searchController = TextEditingController();
-  List<Cliente> _clientesFiltrados = [];
+  List<Cliente> _clientesFiltrados = <Cliente>[];
   final bool _filtroFrecuentes = false;
 
   @override
@@ -40,38 +51,38 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget> {
   }
 
   void _filtrarClientes() {
-    final filtroTexto = _searchController.text.toLowerCase();
+    final String filtroTexto = _searchController.text.toLowerCase();
     
     setState(() {
-      _clientesFiltrados = widget.clientes.where((cliente) {
+      _clientesFiltrados = widget.clientes.where((Cliente cliente) {
         // Filtrar por texto (nombre o documento)
-        final coincideTexto = filtroTexto.isEmpty ||
+        final bool coincideTexto = filtroTexto.isEmpty ||
             cliente.denominacion.toLowerCase().contains(filtroTexto) ||
             cliente.numeroDocumento.toLowerCase().contains(filtroTexto);
             
         // Aquí se aplicaría el filtro de clientes frecuentes si tuvieras esa información
         // Por ahora, lo dejamos como si todos fueran frecuentes cuando el filtro está activo
-        final esFrecuente = !_filtroFrecuentes || true;
+        final bool esFrecuente = !_filtroFrecuentes || true;
         
         return coincideTexto && esFrecuente;
       }).toList();
       
       // Ordenar por nombre
-      _clientesFiltrados.sort((a, b) => a.denominacion.compareTo(b.denominacion));
+      _clientesFiltrados.sort((Cliente a, Cliente b) => a.denominacion.compareTo(b.denominacion));
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: [
+      children: <Widget>[
         // Barra de búsqueda con ícono
         Container(
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(8),
-            boxShadow: [
+            boxShadow: <BoxShadow>[
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
                 blurRadius: 4,
@@ -96,7 +107,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget> {
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
-            onChanged: (value) => _filtrarClientes(),
+            onChanged: (String value) => _filtrarClientes(),
             textInputAction: TextInputAction.search,
           ),
         ),
@@ -109,7 +120,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
-            children: [
+            children: <Widget>[
               // Filtro de clientes frecuentes (comentado por ahora)
               /*
               Row(
@@ -159,7 +170,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget> {
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
+                        children: <Widget>[
                           const Icon(
                             Icons.person_search,
                             size: 48,
@@ -198,8 +209,8 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget> {
                     )
                   : ListView.builder(
                       itemCount: _clientesFiltrados.length,
-                      itemBuilder: (context, index) {
-                        final cliente = _clientesFiltrados[index];
+                      itemBuilder: (BuildContext context, int index) {
+                        final Cliente cliente = _clientesFiltrados[index];
                         
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
@@ -210,7 +221,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget> {
                             child: Padding(
                               padding: const EdgeInsets.all(12.0),
                               child: Row(
-                                children: [
+                                children: <Widget>[
                                   // Avatar del cliente
                                   CircleAvatar(
                                     backgroundColor: Colors.blue.withOpacity(0.1),
@@ -231,7 +242,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget> {
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
+                                      children: <Widget>[
                                         Text(
                                           cliente.denominacion,
                                           style: const TextStyle(
@@ -243,10 +254,10 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget> {
                                         ),
                                         const SizedBox(height: 4),
                                         Row(
-                                          children: [
+                                          children: <Widget>[
                                             // Documento
                                             Row(
-                                              children: [
+                                              children: <Widget>[
                                                 const FaIcon(
                                                   FontAwesomeIcons.idCard,
                                                   size: 12,
@@ -266,7 +277,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget> {
                                             // Teléfono si existe
                                             if (cliente.telefono != null && cliente.telefono!.isNotEmpty)
                                               Row(
-                                                children: [
+                                                children: <Widget>[
                                                   const FaIcon(
                                                     FontAwesomeIcons.phone,
                                                     size: 12,

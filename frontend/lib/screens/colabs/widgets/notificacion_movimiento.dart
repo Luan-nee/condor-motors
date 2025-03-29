@@ -1,6 +1,7 @@
+import 'package:condorsmotors/api/protected/movimientos.api.dart';
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/movimiento.model.dart';
 import 'package:flutter/material.dart';
-import '../../../api/protected/movimientos.api.dart';
-import '../../../main.dart' show api;
 
 // Definición de la clase MovimientoStock para manejar los datos
 class MovimientoStock {
@@ -32,7 +33,7 @@ class MovimientoStock {
       detalles: (json['detalles'] as List<dynamic>?)
               ?.map((detalle) => DetalleMovimiento.fromJson(detalle))
               .toList() ??
-          [],
+          <DetalleMovimiento>[],
     );
   }
 }
@@ -75,7 +76,7 @@ class NotificacionMovimiento extends StatefulWidget {
 class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
   late final MovimientosApi _movimientosApi;
   bool _isLoading = false;
-  List<MovimientoStock> _notificaciones = [];
+  List<MovimientoStock> _notificaciones = <MovimientoStock>[];
   String? _error;
 
   @override
@@ -86,40 +87,48 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
   }
 
   Future<void> _cargarNotificaciones() async {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      final response = await _movimientosApi.getMovimientos(
+      final List<Movimiento> response = await _movimientosApi.getMovimientos(
         estado: EstadosMovimiento.pendiente,
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
-      final List<MovimientoStock> movimientosList = [];
-      for (var item in response) {
+      final List<MovimientoStock> movimientosList = <MovimientoStock>[];
+      for (Movimiento item in response) {
         movimientosList.add(MovimientoStock.fromJson(item.toJson()));
       }
 
       setState(() {
         _notificaciones = movimientosList
-            .where((m) =>
+            .where((MovimientoStock m) =>
                 m.estado == EstadosMovimiento.pendiente ||
                 m.estado == EstadosMovimiento.preparado)
             .toList();
         _isLoading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _error = e.toString();
         _isLoading = false;
       });
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
@@ -135,13 +144,13 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
   }
 
   List<MovimientoStock> get _movimientosPendientes => _notificaciones
-      .where((m) =>
+      .where((MovimientoStock m) =>
           m.estado == EstadosMovimiento.pendiente ||
           m.estado == EstadosMovimiento.preparado)
       .toList();
 
   List<MovimientoStock> get _movimientosParaAprobar => _notificaciones
-      .where((m) => m.estado == EstadosMovimiento.recibido)
+      .where((MovimientoStock m) => m.estado == EstadosMovimiento.recibido)
       .toList();
 
   @override
@@ -163,7 +172,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      itemBuilder: (context) => [
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
         if (_isLoading)
           const PopupMenuItem(
             enabled: false,
@@ -176,7 +185,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
             enabled: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
+              children: <Widget>[
                 const Icon(Icons.error_outline, color: Colors.red),
                 const SizedBox(height: 8),
                 Text(_error!, style: const TextStyle(color: Colors.red)),
@@ -192,8 +201,8 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
             enabled: false,
             child: Text('No hay notificaciones pendientes'),
           )
-        else ...[
-          if (_movimientosPendientes.isNotEmpty) ...[
+        else ...<PopupMenuEntry<String>>[
+          if (_movimientosPendientes.isNotEmpty) ...<PopupMenuEntry<String>>[
             const PopupMenuItem(
               enabled: false,
               child: Text(
@@ -201,12 +210,12 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
-            ..._movimientosPendientes.map((m) => PopupMenuItem(
+            ..._movimientosPendientes.map((MovimientoStock m) => PopupMenuItem(
                   child: _construirItemNotificacion(m),
                   onTap: () => _mostrarDetallesMovimiento(context, m),
                 )),
           ],
-          if (_movimientosParaAprobar.isNotEmpty) ...[
+          if (_movimientosParaAprobar.isNotEmpty) ...<PopupMenuEntry<String>>[
             const PopupMenuItem(
               enabled: false,
               child: Text(
@@ -214,7 +223,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
-            ..._movimientosParaAprobar.map((m) => PopupMenuItem(
+            ..._movimientosParaAprobar.map((MovimientoStock m) => PopupMenuItem(
                   child: _construirItemNotificacion(m, paraAprobar: true),
                   onTap: () => _mostrarDetallesMovimiento(context, m),
                 )),
@@ -224,7 +233,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
         PopupMenuItem(
           onTap: _cargarNotificaciones,
           child: const Row(
-            children: [
+            children: <Widget>[
               Icon(Icons.refresh),
               SizedBox(width: 8),
               Text('Actualizar'),
@@ -237,7 +246,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
 
   Widget _construirItemNotificacion(MovimientoStock movimiento,
       {bool paraAprobar = false}) {
-    final color =
+    final Color color =
         paraAprobar ? const Color(0xFF43A047) : const Color(0xFFD32F2F);
 
     return Container(
@@ -252,7 +261,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
-        children: [
+        children: <Widget>[
           Container(
             width: 40,
             height: 40,
@@ -270,7 +279,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 Text(
                   paraAprobar
                       ? 'Movimiento para aprobar'
@@ -311,7 +320,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
       BuildContext context, MovimientoStock movimiento) {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (BuildContext dialogContext) => AlertDialog(
         title: Text(
           movimiento.estado == EstadosMovimiento.pendiente
               ? 'Nueva Solicitud de Productos'
@@ -320,7 +329,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             Text('Detalles: ${movimiento.detalles.length} productos'),
             Text('Origen: Local #${movimiento.localOrigenId}'),
             Text('Destino: Local #${movimiento.localDestinoId}'),
@@ -330,7 +339,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
             ),
           ],
         ),
-        actions: [
+        actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cerrar'),
@@ -344,10 +353,12 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
                 try {
                   await _movimientosApi.updateMovimiento(
                     movimiento.id,
-                    {'estado': EstadosMovimiento.preparado},
+                    <String, dynamic>{'estado': EstadosMovimiento.preparado},
                   );
 
-                  if (!mounted) return;
+                  if (!mounted) {
+                    return;
+                  }
 
                   // Usar la referencia guardada del contexto
                   if (dialogContextCopy.mounted) {
@@ -356,7 +367,9 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
 
                   await _cargarNotificaciones();
                 } catch (e) {
-                  if (!mounted) return;
+                  if (!mounted) {
+                    return;
+                  }
 
                   // Usar la referencia guardada del contexto
                   if (dialogContextCopy.mounted) {

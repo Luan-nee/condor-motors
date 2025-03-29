@@ -1,7 +1,7 @@
+import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../models/producto.model.dart';
-import '../models/sucursal.model.dart';
 
 /// Clase de utilidades para funciones comunes relacionadas con stock e inventario
 class StockUtils {
@@ -41,7 +41,7 @@ class StockUtils {
       return productos;
     }
     
-    return productos.where((producto) => 
+    return productos.where((Map<String, dynamic> producto) => 
       producto['sucursalId']?.toString() == sucursalId || 
       producto['sucursal_id']?.toString() == sucursalId
     ).toList();
@@ -49,21 +49,21 @@ class StockUtils {
   
   /// Verifica si un producto tiene stock bajo
   static bool tieneStockBajo(Map<String, dynamic> producto) {
-    final stockActual = producto['stock_actual'] as int? ?? 0;
-    final stockMinimo = producto['stock_minimo'] as int? ?? 0;
+    final int stockActual = producto['stock_actual'] as int? ?? 0;
+    final int stockMinimo = producto['stock_minimo'] as int? ?? 0;
     return stockActual < stockMinimo && stockActual > 0;
   }
   
   /// Verifica si un producto está sin stock
   static bool sinStock(Map<String, dynamic> producto) {
-    final stockActual = producto['stock_actual'] as int? ?? 0;
+    final int stockActual = producto['stock_actual'] as int? ?? 0;
     return stockActual <= 0;
   }
   
   /// Verifica si un producto tiene stock bajo utilizando el modelo Producto
   static bool tieneStockBajoFromProducto(Producto producto) {
-    final stockActual = producto.stock;
-    final stockMinimo = producto.stockMinimo ?? 0;
+    final int stockActual = producto.stock;
+    final int stockMinimo = producto.stockMinimo ?? 0;
     return stockActual < stockMinimo && stockActual > 0;
   }
   
@@ -101,14 +101,14 @@ class StockUtils {
 
   /// Agrupa los productos por estado de stock (agotados, stock bajo, disponibles)
   static Map<StockStatus, List<Producto>> agruparProductosPorEstadoStock(List<Producto> productos) {
-    final Map<StockStatus, List<Producto>> grupos = {
-      StockStatus.agotado: [],
-      StockStatus.stockBajo: [],
-      StockStatus.disponible: [],
+    final Map<StockStatus, List<Producto>> grupos = <StockStatus, List<Producto>>{
+      StockStatus.agotado: <Producto>[],
+      StockStatus.stockBajo: <Producto>[],
+      StockStatus.disponible: <Producto>[],
     };
     
-    for (final producto in productos) {
-      final status = getStockStatus(producto.stock, producto.stockMinimo ?? 0);
+    for (final Producto producto in productos) {
+      final StockStatus status = getStockStatus(producto.stock, producto.stockMinimo ?? 0);
       grupos[status]!.add(producto);
     }
     
@@ -124,13 +124,13 @@ class StockUtils {
   }) {
     // Si no hay productos, retornar lista vacía
     if (productos.isEmpty) {
-      return [];
+      return <Producto>[];
     }
     
     // Si tenemos datos de stock por sucursal, podemos hacer una priorización más sofisticada
     if (stockPorSucursal != null && sucursales != null && sucursales.isNotEmpty) {
       // Crear una lista con puntuación de prioridad para cada producto
-      final productosConPuntuacion = productos.map((producto) {
+      final List<({Producto producto, int puntuacion})> productosConPuntuacion = productos.map((Producto producto) {
         // Inicializamos la puntuación
         int puntuacion = 0;
         int sucursalesAgotadas = 0;
@@ -138,11 +138,11 @@ class StockUtils {
         double porcentajeAgotado = 0.0;
         
         // Obtener el stock mínimo del producto
-        final stockMinimo = producto.stockMinimo ?? 0;
+        final int stockMinimo = producto.stockMinimo ?? 0;
         
         // Revisar el stock en cada sucursal
-        for (final sucursal in sucursales) {
-          final stock = stockPorSucursal[producto.id]?[sucursal.id] ?? 0;
+        for (final Sucursal sucursal in sucursales) {
+          final int stock = stockPorSucursal[producto.id]?[sucursal.id] ?? 0;
           
           // Asignar puntos según el estado del stock en cada sucursal
           if (stock <= 0) {
@@ -181,14 +181,14 @@ class StockUtils {
         }
         
         // Productos agotados en la sucursal principal (ID = 1) tienen prioridad adicional
-        final stockSucursalPrincipal = stockPorSucursal[producto.id]?['1'] ?? -1;
+        final int stockSucursalPrincipal = stockPorSucursal[producto.id]?['1'] ?? -1;
         if (stockSucursalPrincipal == 0) {
           puntuacion += 50; // Prioridad alta para productos agotados en la sucursal principal
         }
         
         // Para productos de alta rotación o críticos, se puede dar prioridad adicional
         // (aquí podríamos agregar lógica basada en categoría, marca u otras propiedades)
-        final esCategoriaImportante = producto.categoria.toLowerCase().contains('repuesto') || 
+        final bool esCategoriaImportante = producto.categoria.toLowerCase().contains('repuesto') || 
                                      producto.categoria.toLowerCase().contains('motor');
         if (esCategoriaImportante && (sucursalesAgotadas > 0 || sucursalesStockBajo > 0)) {
           puntuacion += 25;
@@ -204,17 +204,17 @@ class StockUtils {
       }).toList();
       
       // Ordenar por puntuación (mayor a menor)
-      productosConPuntuacion.sort((a, b) => b.puntuacion.compareTo(a.puntuacion));
+      productosConPuntuacion.sort((({Producto producto, int puntuacion}) a, ({Producto producto, int puntuacion}) b) => b.puntuacion.compareTo(a.puntuacion));
       
       // Retornar solo los productos, ya ordenados por prioridad
-      return productosConPuntuacion.map((p) => p.producto).toList();
+      return productosConPuntuacion.map((({Producto producto, int puntuacion}) p) => p.producto).toList();
     }
     
     // Si no tenemos datos de stock por sucursal, usar el método original
-    final grupos = agruparProductosPorEstadoStock(productos);
+    final Map<StockStatus, List<Producto>> grupos = agruparProductosPorEstadoStock(productos);
     
     // Unir las listas en el orden de prioridad: agotados primero, luego stock bajo, finalmente disponibles
-    return [
+    return <Producto>[
       ...grupos[StockStatus.agotado]!,
       ...grupos[StockStatus.stockBajo]!,
       ...grupos[StockStatus.disponible]!,
@@ -224,9 +224,9 @@ class StockUtils {
   /// Método para combinar productos con el mismo ID pero de diferentes sucursales
   /// Útil cuando se consolidan productos de múltiples consultas de paginación
   static List<Producto> consolidarProductosUnicos(List<Producto> productos) {
-    final Map<int, Producto> productosMap = {};
+    final Map<int, Producto> productosMap = <int, Producto>{};
     
-    for (final producto in productos) {
+    for (final Producto producto in productos) {
       if (!productosMap.containsKey(producto.id) || 
           tieneProblemasStock(producto)) {
         // Priorizamos productos con problemas de stock
@@ -239,14 +239,14 @@ class StockUtils {
   
   /// Filtra productos que tienen problemas de stock (agotados o stock bajo)
   static List<Producto> filtrarProductosConProblemasStock(List<Producto> productos) {
-    return productos.where((producto) => 
+    return productos.where((Producto producto) => 
       sinStockFromProducto(producto) || tieneStockBajoFromProducto(producto)
     ).toList();
   }
   
   /// Filtra productos por un estado específico de stock
   static List<Producto> filtrarPorEstadoStock(List<Producto> productos, StockStatus estado) {
-    return productos.where((producto) => 
+    return productos.where((Producto producto) => 
       getStockStatus(producto.stock, producto.stockMinimo ?? 0) == estado
     ).toList();
   }
@@ -258,11 +258,11 @@ class StockUtils {
     List<Producto> productos,
     List<Sucursal> sucursales
   ) {
-    final Map<String, Map<StockStatus, int>> resumen = {};
+    final Map<String, Map<StockStatus, int>> resumen = <String, Map<StockStatus, int>>{};
     
     // Inicializar el resumen para cada sucursal
-    for (final sucursal in sucursales) {
-      resumen[sucursal.id] = {
+    for (final Sucursal sucursal in sucursales) {
+      resumen[sucursal.id] = <StockStatus, int>{
         StockStatus.agotado: 0,
         StockStatus.stockBajo: 0,
         StockStatus.disponible: 0,
@@ -270,13 +270,13 @@ class StockUtils {
     }
     
     // Procesar cada producto
-    for (final producto in productos) {
-      final stockMinimo = producto.stockMinimo ?? 0;
+    for (final Producto producto in productos) {
+      final int stockMinimo = producto.stockMinimo ?? 0;
       
       // Revisar el stock en cada sucursal
-      for (final sucursal in sucursales) {
-        final stock = stockPorSucursal[producto.id]?[sucursal.id] ?? 0;
-        final estado = getStockStatus(stock, stockMinimo);
+      for (final Sucursal sucursal in sucursales) {
+        final int stock = stockPorSucursal[producto.id]?[sucursal.id] ?? 0;
+        final StockStatus estado = getStockStatus(stock, stockMinimo);
         
         // Incrementar el contador para este estado en esta sucursal
         resumen[sucursal.id]![estado] = (resumen[sucursal.id]![estado] ?? 0) + 1;
@@ -291,14 +291,14 @@ class StockUtils {
   static Map<String, double> calcularPorcentajeProblemasPorSucursal(
     Map<String, Map<StockStatus, int>> resumenStock
   ) {
-    final Map<String, double> porcentajes = {};
+    final Map<String, double> porcentajes = <String, double>{};
     
-    for (final entry in resumenStock.entries) {
-      final sucursalId = entry.key;
-      final estados = entry.value;
+    for (final MapEntry<String, Map<StockStatus, int>> entry in resumenStock.entries) {
+      final String sucursalId = entry.key;
+      final Map<StockStatus, int> estados = entry.value;
       
-      final totalProductos = estados.values.fold<int>(0, (sum, count) => sum + count);
-      final productosConProblemas = (estados[StockStatus.agotado] ?? 0) + 
+      final int totalProductos = estados.values.fold<int>(0, (int sum, int count) => sum + count);
+      final int productosConProblemas = (estados[StockStatus.agotado] ?? 0) + 
                                     (estados[StockStatus.stockBajo] ?? 0);
       
       if (totalProductos > 0) {
@@ -317,10 +317,10 @@ class StockUtils {
     Map<String, double> porcentajesProblemas,
     {int limite = 3}
   ) {
-    final entries = porcentajesProblemas.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final List<MapEntry<String, double>> entries = porcentajesProblemas.entries.toList()
+      ..sort((MapEntry<String, double> a, MapEntry<String, double> b) => b.value.compareTo(a.value));
     
-    return entries.take(limite).map((e) => e.key).toList();
+    return entries.take(limite).map((MapEntry<String, double> e) => e.key).toList();
   }
   
   /// Verifica si una sucursal tiene problemas críticos de stock
@@ -330,16 +330,20 @@ class StockUtils {
     Map<String, Map<StockStatus, int>> resumenStock,
     {double umbralPorcentaje = 30.0}
   ) {
-    final estados = resumenStock[sucursalId];
-    if (estados == null) return false;
+    final Map<StockStatus, int>? estados = resumenStock[sucursalId];
+    if (estados == null) {
+      return false;
+    }
     
-    final totalProductos = estados.values.fold<int>(0, (sum, count) => sum + count);
-    if (totalProductos == 0) return false;
+    final int totalProductos = estados.values.fold<int>(0, (int sum, int count) => sum + count);
+    if (totalProductos == 0) {
+      return false;
+    }
     
-    final productosConProblemas = (estados[StockStatus.agotado] ?? 0) + 
+    final int productosConProblemas = (estados[StockStatus.agotado] ?? 0) + 
                                   (estados[StockStatus.stockBajo] ?? 0);
     
-    final porcentaje = (productosConProblemas / totalProductos) * 100;
+    final double porcentaje = (productosConProblemas / totalProductos) * 100;
     return porcentaje >= umbralPorcentaje;
   }
 }

@@ -1,10 +1,11 @@
 import 'dart:math' as math;
+
+import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/services/token_service.dart';
+import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/token_service.dart';
-import '../utils/role_utils.dart' as role_utils;
-import 'main.api.dart';
 
 // Clase para representar los datos del usuario autenticado
 class UsuarioAutenticado {
@@ -39,14 +40,14 @@ class UsuarioAutenticado {
     
     debugPrint('Convirtiendo rol de "$rolCuentaEmpleadoCodigo" a "$rolNormalizado" para toMap');
     
-    return {
+    return <String, String>{
       'id': id,
       'usuario': usuario,
       'rol': rolNormalizado,
       'rolId': rolCuentaEmpleadoId,
       'empleadoId': empleadoId,
       'sucursal': sucursal,
-      'sucursalId': sucursalId,
+      'sucursalId': sucursalId.toString(),
       'token': token,
     };
   }
@@ -109,10 +110,10 @@ class AuthApi {
     try {
       // La solicitud a /auth/login configura automáticamente los tokens en TokenService
       // gracias a nuestro método _processTokenFromResponse modificado
-      final response = await _api.request(
+      final Map<String, dynamic> response = await _api.request(
         endpoint: '/auth/login',
         method: 'POST',
-        body: {
+        body: <String, String>{
           'usuario': usuario,
           'clave': clave,
         },
@@ -137,10 +138,10 @@ class AuthApi {
         );
       }
       
-      final userData = response['data'] as Map<String, dynamic>;
+      final Map<String, dynamic> userData = response['data'] as Map<String, dynamic>;
       
       // Obtener el token ya procesado por ApiClient
-      final token = TokenService.instance.accessToken;
+      final String? token = TokenService.instance.accessToken;
       
       if (token == null || token.isEmpty) {
         debugPrint('ADVERTENCIA: No se encontró token después del login');
@@ -162,7 +163,7 @@ class AuthApi {
       }
       
       // Crear y retornar el objeto de usuario autenticado
-      final usuarioAutenticado = UsuarioAutenticado.fromJson(userData, token);
+      final UsuarioAutenticado usuarioAutenticado = UsuarioAutenticado.fromJson(userData, token);
       
       debugPrint('Usuario autenticado creado: $usuarioAutenticado');
       return usuarioAutenticado;
@@ -179,7 +180,7 @@ class AuthApi {
   Future<UsuarioAutenticado> register(Map<String, dynamic> userData) async {
     debugPrint('Intentando registrar nuevo usuario: ${userData['usuario']}');
     try {
-      final response = await _api.request(
+      final Map<String, dynamic> response = await _api.request(
         endpoint: '/auth/register',
         method: 'POST',
         body: userData,
@@ -188,7 +189,7 @@ class AuthApi {
       debugPrint('Respuesta de registro recibida: ${response.toString()}');
       
       // El token se configuró automáticamente en TokenService
-      final token = TokenService.instance.accessToken;
+      final String? token = TokenService.instance.accessToken;
       
       if (token == null || token.isEmpty) {
         debugPrint('ADVERTENCIA: Token vacío después del registro');
@@ -200,7 +201,7 @@ class AuthApi {
       }
       
       // Crear y retornar el objeto de usuario autenticado
-      final usuarioAutenticado = UsuarioAutenticado.fromJson(response['data'], token);
+      final UsuarioAutenticado usuarioAutenticado = UsuarioAutenticado.fromJson(response['data'], token);
       debugPrint('Usuario registrado creado: $usuarioAutenticado');
       return usuarioAutenticado;
     } catch (e) {
@@ -218,7 +219,7 @@ class AuthApi {
       await Future.delayed(const Duration(milliseconds: 100));
       
       // Obtener el nuevo token
-      final token = TokenService.instance.accessToken;
+      final String? token = TokenService.instance.accessToken;
       
       if (token == null || token.isEmpty) {
         debugPrint('ADVERTENCIA: No se encontró token después del refresh');
@@ -252,12 +253,12 @@ class AuthApi {
     try {
       // Intentamos hacer una petición simple a la raíz del servidor
       // Este endpoint debería ser público y no requerir autenticación
-      final serverUrl = _api.baseUrl.replaceAll('/api', '');
+      final String serverUrl = _api.baseUrl.replaceAll('/api', '');
       debugPrint('AuthApi: Haciendo ping a $serverUrl');
       
-      final response = await http.get(
+      final http.Response response = await http.get(
         Uri.parse(serverUrl),
-        headers: {'Accept': 'application/json'},
+        headers: <String, String>{'Accept': 'application/json'},
       ).timeout(const Duration(seconds: 5));
       
       // Si la respuesta tiene código 200-299, el servidor está disponible
@@ -277,7 +278,7 @@ class AuthApi {
   Future<bool> verificarToken() async {
     try {
       // Si no hay token, fallar inmediatamente
-      final token = TokenService.instance.accessToken;
+      final String? token = TokenService.instance.accessToken;
       if (token == null) {
         debugPrint('AuthApi: No hay token para verificar');
         return false;
@@ -318,7 +319,7 @@ class AuthApi {
       // intentando obtener información desde el token mismo
       try {
         // Intentar decodificar el token para verificar si es válido
-        final tokenInfo = TokenService.instance.extractUserInfoFromToken();
+        final Map<String, dynamic> tokenInfo = TokenService.instance.extractUserInfoFromToken();
         if (tokenInfo.isEmpty) {
           debugPrint('AuthApi: Token no contiene información válida');
           return false;
@@ -397,7 +398,7 @@ class AuthService {
   Future<void> saveUserData(UsuarioAutenticado usuario) async {
     debugPrint('Guardando datos de usuario: $usuario');
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       
       await prefs.setString(_userIdKey, usuario.id);
       await prefs.setString(_usernameKey, usuario.usuario);
@@ -421,12 +422,12 @@ class AuthService {
   Future<Map<String, dynamic>?> getUserData() async {
     debugPrint('Obteniendo datos de usuario guardados');
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       
-      final userId = prefs.getString(_userIdKey);
-      final username = prefs.getString(_usernameKey);
-      final userRole = prefs.getString(_userRoleKey);
-      final token = _tokenService.accessToken;
+      final String? userId = prefs.getString(_userIdKey);
+      final String? username = prefs.getString(_usernameKey);
+      final String? userRole = prefs.getString(_userRoleKey);
+      final String? token = _tokenService.accessToken;
       
       if (userId != null && username != null && userRole != null && token != null) {
         // Normalizar el rol para que coincida con los roles de la aplicación
@@ -434,7 +435,7 @@ class AuthService {
         
         debugPrint('Rol normalizado de "$userRole" a "$rolNormalizado" en getUserData');
         
-        final userData = {
+        final Map<String, Object> userData = <String, Object>{
           'id': userId,
           'usuario': username,
           'rol': rolNormalizado,
@@ -458,7 +459,7 @@ class AuthService {
   Future<void> logout() async {
     debugPrint('Cerrando sesión, limpiando datos');
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       
       await prefs.remove(_userIdKey);
       await prefs.remove(_usernameKey);
@@ -491,24 +492,18 @@ class CuentasEmpleadosApi {
     try {
       debugPrint('CuentasEmpleadosApi: Obteniendo lista de cuentas de empleados');
       
-      final response = await _api.request(
+      final Map<String, dynamic> response = await _api.request(
         endpoint: '/cuentasempleados',
         method: 'GET',
         requiresAuth: true,
       );
       
       // Procesar la respuesta
-      List<dynamic> data;
-      if (response['data'] is List) {
-        data = response['data'];
-      } else if (response['data'] is Map && response['data']['data'] is List) {
-        data = response['data']['data'];
-      } else {
-        data = [];
-      }
+      final List<dynamic> data = response['data'];
+      final List<Map<String, dynamic>> items = data.map((item) => item as Map<String, dynamic>).toList();
       
-      debugPrint('CuentasEmpleadosApi: Total de cuentas encontradas: ${data.length}');
-      return data.map((item) => item as Map<String, dynamic>).toList();
+      debugPrint('CuentasEmpleadosApi: Total de cuentas encontradas: ${items.length}');
+      return items;
     } catch (e) {
       debugPrint('CuentasEmpleadosApi: ERROR al obtener cuentas de empleados: $e');
       rethrow;
@@ -522,7 +517,7 @@ class CuentasEmpleadosApi {
     try {
       debugPrint('CuentasEmpleadosApi: Obteniendo cuenta de empleado con ID $id');
       
-      final response = await _api.request(
+      final Map<String, dynamic> response = await _api.request(
         endpoint: '/cuentasempleados/$id',
         method: 'GET',
         requiresAuth: true,
@@ -566,12 +561,18 @@ class CuentasEmpleadosApi {
       }
       
       // Construir cuerpo de la solicitud
-      final Map<String, dynamic> body = {};
-      if (usuario != null) body['usuario'] = usuario;
-      if (clave != null) body['clave'] = clave;
-      if (rolCuentaEmpleadoId != null) body['rolCuentaEmpleadoId'] = rolCuentaEmpleadoId;
+      final Map<String, dynamic> body = <String, dynamic>{};
+      if (usuario != null) {
+        body['usuario'] = usuario;
+      }
+      if (clave != null) {
+        body['clave'] = clave;
+      }
+      if (rolCuentaEmpleadoId != null) {
+        body['rolCuentaEmpleadoId'] = rolCuentaEmpleadoId;
+      }
       
-      final response = await _api.request(
+      final Map<String, dynamic> response = await _api.request(
         endpoint: '/cuentasempleados/$id',
         method: 'PATCH',
         body: body,
@@ -620,7 +621,7 @@ class CuentasEmpleadosApi {
     try {
       debugPrint('CuentasEmpleadosApi: Obteniendo cuenta para empleado con ID $empleadoId');
       
-      final response = await _api.request(
+      final Map<String, dynamic> response = await _api.request(
         endpoint: '/cuentasempleados/empleado/$empleadoId',
         method: 'GET',
         requiresAuth: true,
@@ -651,7 +652,7 @@ class CuentasEmpleadosApi {
     try {
       debugPrint('CuentasEmpleadosApi: Obteniendo roles para cuentas');
       
-      final response = await _api.request(
+      final Map<String, dynamic> response = await _api.request(
         endpoint: '/rolescuentas',
         method: 'GET',
         requiresAuth: true,
@@ -663,10 +664,10 @@ class CuentasEmpleadosApi {
             .toList();
       }
       
-      return [];
+      return <Map<String, dynamic>>[];
     } catch (e) {
       debugPrint('CuentasEmpleadosApi: ERROR al obtener roles de cuentas: $e');
-      return [];
+      return <Map<String, dynamic>>[];
     }
   }
   
@@ -683,7 +684,7 @@ class CuentasEmpleadosApi {
       debugPrint('CuentasEmpleadosApi: Registrando cuenta para empleado con ID $empleadoId');
       
       // Preparar datos para la petición
-      final Map<String, dynamic> body = {
+      final Map<String, dynamic> body = <String, dynamic>{
         'empleadoId': empleadoId,
         'usuario': usuario,
         'clave': clave,
@@ -691,7 +692,7 @@ class CuentasEmpleadosApi {
       };
       
       // Hacer la petición al endpoint adecuado
-      final response = await _api.request(
+      final Map<String, dynamic> response = await _api.request(
         endpoint: '/cuentasempleados',
         method: 'POST',
         body: body,

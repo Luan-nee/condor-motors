@@ -1,5 +1,5 @@
+import 'package:condorsmotors/models/producto.model.dart';
 import 'package:flutter/foundation.dart';
-import 'producto.model.dart';
 
 /// Modelo para los detalles de una proforma de venta
 class DetalleProforma {
@@ -43,7 +43,7 @@ class DetalleProforma {
 
   /// Crea un objeto DetalleProforma a partir de un producto
   factory DetalleProforma.fromProducto(Producto producto, {required int cantidad}) {
-    final subtotal = producto.precioVenta * cantidad;
+    final double subtotal = producto.precioVenta * cantidad;
     
     return DetalleProforma(
       productoId: producto.id,
@@ -60,7 +60,7 @@ class DetalleProforma {
 
   /// Convierte el objeto a un mapa JSON
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'productoId': productoId,
       'nombre': nombre,
       'cantidad': cantidad,
@@ -122,7 +122,9 @@ extension EstadoProformaExtension on EstadoProforma {
   }
   
   static EstadoProforma fromText(String? text) {
-    if (text == null) return EstadoProforma.pendiente;
+    if (text == null) {
+      return EstadoProforma.pendiente;
+    }
     
     switch (text.toLowerCase()) {
       case 'convertida':
@@ -177,9 +179,13 @@ class Proforma {
   /// Crea un objeto Proforma desde un mapa JSON
   factory Proforma.fromJson(Map<String, dynamic> json) {
     // Procesar fechas con manejo de diferentes campos y formatos
-    DateTime parseFecha(dynamic value) {
-      if (value == null) return DateTime.now();
-      if (value is DateTime) return value;
+    DateTime parseFecha(value) {
+      if (value == null) {
+        return DateTime.now();
+      }
+      if (value is DateTime) {
+        return value;
+      }
       if (value is String) {
         try {
           return DateTime.parse(value);
@@ -191,19 +197,21 @@ class Proforma {
       return DateTime.now();
     }
 
-    final fechaCreacion = parseFecha(
+    final DateTime fechaCreacion = parseFecha(
       json['fechaCreacion'] ?? json['created_at'] ?? DateTime.now()
     );
     
-    final fechaActualizacion = parseFecha(
+    final DateTime fechaActualizacion = parseFecha(
       json['fechaActualizacion'] ?? json['updated_at']
     );
     
-    final fechaExpiracion = parseFecha(json['fechaExpiracion']);
+    final DateTime fechaExpiracion = parseFecha(json['fechaExpiracion']);
     
     // Obtener IDs directamente o desde objetos anidados
     int getIdFromObject(String field) {
-      if (json[field] is int) return json[field] as int;
+      if (json[field] is int) {
+        return json[field] as int;
+      }
       if (json[field] is Map<String, dynamic>) {
         return (json[field]['id'] as int?) ?? 0;
       }
@@ -211,7 +219,7 @@ class Proforma {
     }
     
     // Obtener los detalles
-    final List<DetalleProforma> detalles = [];
+    final List<DetalleProforma> detalles = <DetalleProforma>[];
     if (json['detalles'] != null) {
       detalles.addAll((json['detalles'] as List)
           .map((item) => DetalleProforma.fromJson(item as Map<String, dynamic>))
@@ -219,7 +227,7 @@ class Proforma {
     }
     
     // Obtener estado
-    final estado = EstadoProformaExtension.fromText(json['estado'] as String?);
+    final EstadoProforma estado = EstadoProformaExtension.fromText(json['estado'] as String?);
     
     return Proforma(
       id: json['id'] as int,
@@ -243,11 +251,11 @@ class Proforma {
 
   /// Convierte el objeto a un mapa JSON
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'id': id,
       if (nombre != null) 'nombre': nombre,
       'total': total,
-      'detalles': detalles.map((detalle) => detalle.toJson()).toList(),
+      'detalles': detalles.map((DetalleProforma detalle) => detalle.toJson()).toList(),
       'empleadoId': empleadoId,
       'sucursalId': sucursalId,
       'fechaCreacion': fechaCreacion.toIso8601String(),
@@ -270,14 +278,20 @@ class Proforma {
   
   /// Comprueba si la proforma ha expirado
   bool haExpirado() {
-    if (estado == EstadoProforma.expirada) return true;
-    if (fechaExpiracion == null) return false;
+    if (estado == EstadoProforma.expirada) {
+      return true;
+    }
+    if (fechaExpiracion == null) {
+      return false;
+    }
     return DateTime.now().isAfter(fechaExpiracion!);
   }
   
   /// Devuelve el nombre del cliente si está disponible
   String getNombreCliente() {
-    if (cliente == null) return 'Cliente no especificado';
+    if (cliente == null) {
+      return 'Cliente no especificado';
+    }
     
     if (cliente is Map<String, dynamic>) {
       return cliente['nombre'] ?? 'Cliente no especificado';
@@ -293,7 +307,9 @@ class Proforma {
   
   /// Devuelve el nombre del empleado si está disponible
   String getNombreEmpleado() {
-    if (empleado == null) return 'Empleado no especificado';
+    if (empleado == null) {
+      return 'Empleado no especificado';
+    }
     
     if (empleado is Map<String, dynamic>) {
       return empleado['nombre'] ?? 'Empleado no especificado';
@@ -309,7 +325,9 @@ class Proforma {
   
   /// Devuelve el nombre de la sucursal si está disponible
   String getNombreSucursal() {
-    if (sucursal == null) return 'Sucursal no especificada';
+    if (sucursal == null) {
+      return 'Sucursal no especificada';
+    }
     
     if (sucursal is Map<String, dynamic>) {
       return sucursal['nombre'] ?? 'Sucursal no especificada';
@@ -336,9 +354,9 @@ class Proforma {
     int? clienteId,
     EstadoProforma? estado,
     DateTime? fechaExpiracion,
-    dynamic cliente,
-    dynamic empleado,
-    dynamic sucursal,
+    cliente,
+    empleado,
+    sucursal,
   }) {
     return Proforma(
       id: id ?? this.id,

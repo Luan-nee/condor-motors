@@ -1,13 +1,13 @@
+import 'package:condorsmotors/api/main.api.dart' show ApiException;
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_detalles_dialog.dart';
+import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_form.dart';
+import 'package:condorsmotors/screens/admin/widgets/empleado/empleados_table.dart';
+import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import '../../../models/empleado.model.dart';
-import '../../api/main.api.dart' show ApiException;
-import '../../main.dart' show api;
-import '../../utils/empleados_utils.dart';
-import 'widgets/empleado/empleado_detalles_dialog.dart';
-import 'widgets/empleado/empleado_form.dart';
-import 'widgets/empleado/empleados_table.dart';
 
 class ColaboradoresAdminScreen extends StatefulWidget {
   const ColaboradoresAdminScreen({super.key});
@@ -20,11 +20,11 @@ class ColaboradoresAdminScreen extends StatefulWidget {
 class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
   bool _isLoading = false;
   String _errorMessage = '';
-  List<Empleado> _empleados = [];
-  Map<String, String> _nombresSucursales = {};
+  List<Empleado> _empleados = <Empleado>[];
+  Map<String, String> _nombresSucursales = <String, String>{};
 
   // Lista de roles disponibles
-  final List<String> _roles = ['Administrador', 'Vendedor', 'Computadora'];
+  final List<String> _roles = <String>['Administrador', 'Vendedor', 'Computadora'];
 
   @override
   void initState() {
@@ -39,11 +39,11 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
     });
     try {
       debugPrint('Cargando datos de colaboradores...');
-      final futureSucursales = _cargarSucursales();
-      final futureEmpleados = api.empleados.getEmpleados(useCache: false);
-      final results = await Future.wait([futureSucursales, futureEmpleados]);
-      final empleadosData = results[1] as List<dynamic>;
-      final List<Empleado> empleados = [];
+      final Future<Map<String, String>> futureSucursales = _cargarSucursales();
+      final Future<List<Empleado>> futureEmpleados = api.empleados.getEmpleados(useCache: false);
+      final List<Object> results = await Future.wait(<Future<Object>>[futureSucursales, futureEmpleados]);
+      final List empleadosData = results[1] as List<dynamic>;
+      final List<Empleado> empleados = <Empleado>[];
       for (var item in empleadosData) {
         try {
           final empleado = item;
@@ -53,14 +53,18 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
         }
       }
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _empleados = empleados;
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('Error al cargar datos: $e');
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _isLoading = false;
         _errorMessage = 'Error al cargar datos';
@@ -70,11 +74,11 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
 
   Future<Map<String, String>> _cargarSucursales() async {
     try {
-      final sucursalesData = await api.sucursales.getSucursales();
-      final Map<String, String> sucursales = {};
+      final List<Sucursal> sucursalesData = await api.sucursales.getSucursales();
+      final Map<String, String> sucursales = <String, String>{};
 
-      for (var sucursal in sucursalesData) {
-        final id = sucursal.id.toString();
+      for (Sucursal sucursal in sucursalesData) {
+        final String id = sucursal.id.toString();
         String nombre = sucursal.nombre;
         final bool esCentral = sucursal.sucursalCentral;
 
@@ -98,14 +102,14 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       return sucursales;
     } catch (e) {
       debugPrint('Error al cargar sucursales: $e');
-      return {}; // Devolver mapa vacío en caso de error
+      return <String, String>{}; // Devolver mapa vacío en caso de error
     }
   }
 
   Future<void> _eliminarEmpleado(Empleado empleado) async {
-    final confirmacion = await showDialog<bool>(
+    final bool? confirmacion = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (BuildContext context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A1A),
         title: const Text(
           '¿Eliminar colaborador?',
@@ -115,7 +119,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
           '¿Está seguro que desea eliminar a ${empleado.nombre} ${empleado.apellidos}? Esta acción no se puede deshacer.',
           style: const TextStyle(color: Colors.white70),
         ),
-        actions: [
+        actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text(
@@ -135,19 +139,25 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       ),
     );
 
-    if (confirmacion != true) return;
+    if (confirmacion != true) {
+      return;
+    }
 
     try {
       await api.empleados.deleteEmpleado(empleado.id);
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       // Actualizar localmente
       setState(() {
-        _empleados.removeWhere((e) => e.id == empleado.id);
+        _empleados.removeWhere((Empleado e) => e.id == empleado.id);
       });
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Colaborador eliminado correctamente'),
@@ -155,7 +165,9 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
         ),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       String mensajeError = 'Error al eliminar colaborador';
       if (e is ApiException) {
@@ -177,11 +189,11 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
     // Importar el widget EmpleadoForm
     showDialog(
       context: context,
-      builder: (context) => EmpleadoForm(
+      builder: (BuildContext context) => EmpleadoForm(
         empleado: empleado,
         sucursales: _nombresSucursales,
         roles: _roles,
-        onSave: (empleadoData) => _guardarEmpleado(empleado, empleadoData),
+        onSave: (Map<String, dynamic> empleadoData) => _guardarEmpleado(empleado, empleadoData),
         onCancel: () => Navigator.pop(context),
       ),
     );
@@ -194,24 +206,32 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
         // Actualizar empleado existente
         await api.empleados.updateEmpleado(empleadoExistente.id, empleadoData);
 
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
 
         _mostrarMensajeExito('Colaborador actualizado correctamente');
       } else {
         // Crear nuevo empleado
         await api.empleados.createEmpleado(empleadoData);
 
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
 
         _mostrarMensajeExito('Colaborador creado correctamente');
       }
 
       // Cerrar el diálogo y recargar datos
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       Navigator.pop(context);
       await _cargarDatos();
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       String mensajeError = 'Error al guardar colaborador';
       if (e is ApiException) {
@@ -241,7 +261,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
   void _mostrarDetallesEmpleado(Empleado empleado) {
     showDialog(
       context: context,
-      builder: (context) => EmpleadoDetallesDialog(
+      builder: (BuildContext context) => EmpleadoDetallesDialog(
         empleado: empleado,
         nombresSucursales: _nombresSucursales,
         obtenerRolDeEmpleado: EmpleadosUtils.obtenerRolDeEmpleado,
@@ -257,12 +277,12 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+              children: <Widget>[
                 Row(
-                  children: [
+                  children: <Widget>[
                     const FaIcon(
                       FontAwesomeIcons.users,
                       color: Colors.white,
@@ -271,7 +291,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                     const SizedBox(width: 16),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: <Widget>[
                         const Text(
                           'COLABORADORES',
                           style: TextStyle(
@@ -292,7 +312,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                   ],
                 ),
                 Row(
-                  children: [
+                  children: <Widget>[
                     ElevatedButton.icon(
                       icon: _isLoading 
                         ? const SizedBox(

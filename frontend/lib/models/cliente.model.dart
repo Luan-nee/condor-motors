@@ -29,7 +29,7 @@ class Cliente {
     debugPrint('🔄 Procesando datos de cliente: ${json.keys.join(', ')}');
     
     // Función auxiliar para parsear fechas con manejo de errores
-    DateTime parseDate(dynamic date) {
+    DateTime parseDate(date) {
       if (date == null) {
         return DateTime.now();
       }
@@ -52,17 +52,17 @@ class Cliente {
     final tipoDocumentoId = json['tipoDocumentoId'] is int 
         ? json['tipoDocumentoId'] 
         : int.parse((json['tipoDocumentoId'] ?? '1').toString());
-    final numeroDocumento = json['numeroDocumento']?.toString() ?? '';
-    final denominacion = json['denominacion']?.toString() ?? 'Cliente sin nombre';
+    final String numeroDocumento = json['numeroDocumento']?.toString() ?? '';
+    final String denominacion = json['denominacion']?.toString() ?? 'Cliente sin nombre';
     
     // Extraer campos opcionales
-    final direccion = json['direccion']?.toString();
-    final correo = json['correo']?.toString();
-    final telefono = json['telefono']?.toString();
+    final String? direccion = json['direccion']?.toString();
+    final String? correo = json['correo']?.toString();
+    final String? telefono = json['telefono']?.toString();
     
     // Parsear fechas
-    final createdAt = parseDate(json['createdAt']);
-    final updatedAt = parseDate(json['updatedAt']);
+    final DateTime createdAt = parseDate(json['createdAt']);
+    final DateTime updatedAt = parseDate(json['updatedAt']);
     
     return Cliente(
       id: id,
@@ -79,7 +79,7 @@ class Cliente {
 
   /// Convierte la instancia a un mapa JSON
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'id': id,
       'tipoDocumentoId': tipoDocumentoId,
       'numeroDocumento': numeroDocumento,

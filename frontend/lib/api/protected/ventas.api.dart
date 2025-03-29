@@ -1,6 +1,6 @@
+import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
 import 'package:flutter/foundation.dart';
-import '../main.api.dart';
-import 'cache/fast_cache.dart';
 
 class VentasApi {
   final ApiClient _api;
@@ -20,15 +20,15 @@ class VentasApi {
   void invalidateCache([String? sucursalId]) {
     if (sucursalId != null) {
       // Invalidar sólo las ventas de esta sucursal
-      _cache.invalidateByPattern('$_prefixListaVentas$sucursalId');
-      _cache.invalidateByPattern('$_prefixVenta$sucursalId');
-      _cache.invalidateByPattern('$_prefixEstadisticas$sucursalId');
+      _cache..invalidateByPattern('$_prefixListaVentas$sucursalId')
+      ..invalidateByPattern('$_prefixVenta$sucursalId')
+      ..invalidateByPattern('$_prefixEstadisticas$sucursalId');
       debugPrint('🔄 Caché de ventas invalidado para sucursal $sucursalId');
     } else {
       // Invalidar todas las ventas en caché
-      _cache.invalidateByPattern(_prefixListaVentas);
-      _cache.invalidateByPattern(_prefixVenta);
-      _cache.invalidateByPattern(_prefixEstadisticas);
+      _cache..invalidateByPattern(_prefixListaVentas)
+      ..invalidateByPattern(_prefixVenta)
+      ..invalidateByPattern(_prefixEstadisticas);
       debugPrint('🔄 Caché de ventas invalidado completamente');
     }
     debugPrint('📊 Entradas en caché después de invalidación: ${_cache.size}');
@@ -54,7 +54,7 @@ class VentasApi {
       final String searchStr = search ?? '';
       final String estadoStr = estado ?? '';
       
-      final cacheKey = '$_prefixListaVentas${sucursalKey}_p${page}_s${pageSize}_q${searchStr}_f${fechaInicioStr}_t${fechaFinStr}_e$estadoStr';
+      final String cacheKey = '$_prefixListaVentas${sucursalKey}_p${page}_s${pageSize}_q${searchStr}_f${fechaInicioStr}_t${fechaFinStr}_e$estadoStr';
       
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
@@ -68,14 +68,14 @@ class VentasApi {
       
       // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
           debugPrint('🔍 Usando ventas en caché para sucursal $sucursalId (clave: $cacheKey)');
           return cachedData;
         }
       }
       
-      final queryParams = <String, String>{
+      final Map<String, String> queryParams = <String, String>{
         'page': page.toString(),
         'page_size': pageSize.toString(),
       };
@@ -107,7 +107,7 @@ class VentasApi {
         debugPrint('Solicitando ventas globales: $endpoint');
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: endpoint,
         method: 'GET',
         queryParams: queryParams,
@@ -137,7 +137,7 @@ class VentasApi {
     try {
       // Generar clave de caché
       final String sucursalKey = sucursalId ?? 'global';
-      final cacheKey = '$_prefixVenta${sucursalKey}_$id';
+      final String cacheKey = '$_prefixVenta${sucursalKey}_$id';
       
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
@@ -146,7 +146,7 @@ class VentasApi {
       
       // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
           debugPrint('🔍 Usando venta en caché: $cacheKey');
           return cachedData;
@@ -159,7 +159,7 @@ class VentasApi {
         endpoint = '/$sucursalId/ventas';
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '$endpoint/$id',
         method: 'GET',
       );
@@ -188,7 +188,7 @@ class VentasApi {
         endpoint = '/$sucursalId/ventas';
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: endpoint,
         method: 'POST',
         body: ventaData,
@@ -217,7 +217,7 @@ class VentasApi {
         endpoint = '/$sucursalId/ventas';
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '$endpoint/$id',
         method: 'PATCH',
         body: ventaData,
@@ -225,7 +225,7 @@ class VentasApi {
       
       // Invalidar caché de esta venta específica
       final String sucursalKey = sucursalId ?? 'global';
-      final cacheKey = '$_prefixVenta${sucursalKey}_$id';
+      final String cacheKey = '$_prefixVenta${sucursalKey}_$id';
       _cache.invalidate(cacheKey);
       
       // También invalidar listas que podrían contener esta venta
@@ -250,7 +250,7 @@ class VentasApi {
       await _api.authenticatedRequest(
         endpoint: '$endpoint/$id/cancel',
         method: 'POST',
-        body: {
+        body: <String, String>{
           'motivo': motivo
         },
       );
@@ -277,7 +277,7 @@ class VentasApi {
       await _api.authenticatedRequest(
         endpoint: '$endpoint/$id/anular',
         method: 'POST',
-        body: {
+        body: <String, String>{
           'motivo': motivo,
           'fecha_anulacion': DateTime.now().toIso8601String(),
         },
@@ -306,7 +306,7 @@ class VentasApi {
       final String sucursalKey = sucursalId ?? 'global';
       final String fechaInicioStr = fechaInicio?.toIso8601String() ?? '';
       final String fechaFinStr = fechaFin?.toIso8601String() ?? '';
-      final cacheKey = '$_prefixEstadisticas${sucursalKey}_f${fechaInicioStr}_t$fechaFinStr';
+      final String cacheKey = '$_prefixEstadisticas${sucursalKey}_f${fechaInicioStr}_t$fechaFinStr';
       
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
@@ -315,14 +315,14 @@ class VentasApi {
       
       // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
           debugPrint('🔍 Usando estadísticas en caché: $cacheKey');
           return cachedData;
         }
       }
       
-      final queryParams = <String, String>{};
+      final Map<String, String> queryParams = <String, String>{};
       
       if (fechaInicio != null) {
         queryParams['fecha_inicio'] = fechaInicio.toIso8601String();
@@ -338,7 +338,7 @@ class VentasApi {
         endpoint = '/$sucursalId/ventas/estadisticas';
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: endpoint,
         method: 'GET',
         queryParams: queryParams,
@@ -353,7 +353,7 @@ class VentasApi {
       return response;
     } catch (e) {
       debugPrint('❌ Error al obtener estadísticas: $e');
-      return {};
+      return <String, dynamic>{};
     }
   }
 }

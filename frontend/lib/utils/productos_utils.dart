@@ -1,8 +1,8 @@
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/marca.model.dart';
+import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:flutter/material.dart';
-
-import '../main.dart' show api;
-import '../models/producto.model.dart';
-import '../models/sucursal.model.dart';
 
 /// Clase para representar el stock de un producto en una sucursal
 class ProductoEnSucursal {
@@ -22,11 +22,11 @@ class ProductosUtils {
   /// Obtiene la lista de categorías desde la API
   static Future<List<String>> obtenerCategorias() async {
     try {
-      final categorias = await api.categorias.getCategorias();
+      final List categorias = await api.categorias.getCategorias();
       // Extraer nombres de categorías 
-      final listaCategorias = categorias
+      final List<String> listaCategorias = categorias
           .map<String>((cat) => cat['nombre'] as String)
-          .where((nombre) => nombre.isNotEmpty)
+          .where((String nombre) => nombre.isNotEmpty)
           .toList();
       
       // Ordenar alfabéticamente
@@ -36,7 +36,7 @@ class ProductosUtils {
     } catch (e) {
       debugPrint('Error al obtener categorías: $e');
       // Si falla, retornar una lista predefinida
-      return const [
+      return const <String>[
         'Motor',
         'Cascos',
         'Accesorios',
@@ -50,12 +50,12 @@ class ProductosUtils {
   /// Obtiene la lista de marcas desde la API
   static Future<List<String>> obtenerMarcas() async {
     try {
-      final marcas = await api.marcas.getMarcas();
+      final List<Marca> marcas = await api.marcas.getMarcas();
       
       // Extraer nombres de marcas usando la notación de punto
-      final listaMarcas = marcas
-          .map<String>((marca) => marca.nombre)
-          .where((nombre) => nombre.isNotEmpty)
+      final List<String> listaMarcas = marcas
+          .map<String>((Marca marca) => marca.nombre)
+          .where((String nombre) => nombre.isNotEmpty)
           .toList();
       
       // Ordenar alfabéticamente
@@ -64,7 +64,7 @@ class ProductosUtils {
       return listaMarcas;
     } catch (e) {
       debugPrint('Error al obtener marcas: $e');
-      return const ['Genérico', 'Honda', 'Yamaha', 'Suzuki', 'Bajaj', 'TVS'];
+      return const <String>['Genérico', 'Honda', 'Yamaha', 'Suzuki', 'Bajaj', 'TVS'];
     }
   }
 
@@ -76,7 +76,7 @@ class ProductosUtils {
     bool debugMode = false,
   }) {
     if (productos.isEmpty) {
-      return [];
+      return <Producto>[];
     }
 
     final String query = searchQuery.toLowerCase().trim();
@@ -94,17 +94,17 @@ class ProductosUtils {
       debugPrint('   - Categoría: "$selectedCategory" (normalizada: ${mostrarTodos ? "TODOS" : categoryLower})');
       
       // Listar categorías únicas presentes en los productos
-      final categorias = productos.map((p) => p.categoria.toLowerCase()).toSet().toList();
+      final List<String> categorias = productos.map((Producto p) => p.categoria.toLowerCase()).toSet().toList();
       debugPrint('   - Categorías disponibles: $categorias');
     }
     
-    final resultados = productos.where((producto) {
+    final List<Producto> resultados = productos.where((Producto producto) {
       // Filtro por categoría (si no es 'Todos')
       bool coincideCategoria = mostrarTodos;
       
       if (!coincideCategoria) {
         // Normalizar la categoría del producto
-        final categoriaProducto = producto.categoria.toLowerCase().trim();
+        final String categoriaProducto = producto.categoria.toLowerCase().trim();
         coincideCategoria = categoriaProducto == categoryLower;
         
         if (debugMode && !coincideCategoria && 
@@ -153,7 +153,9 @@ class ProductosUtils {
 
   /// Calcula el margen de ganancia entre precio de compra y venta
   static double calcularMargen(double precioCompra, double precioVenta) {
-    if (precioCompra <= 0) return 0;
+    if (precioCompra <= 0) {
+      return 0;
+    }
     return ((precioVenta - precioCompra) / precioCompra) * 100;
   }
 
@@ -169,7 +171,7 @@ class ProductosUtils {
 
   /// Obtiene el color apropiado para mostrar el estado del stock
   static bool esStockCritico(Producto producto) {
-    final minimo = producto.stockMinimo ?? 0;
+    final int minimo = producto.stockMinimo ?? 0;
     // Stock crítico: menos del 50% del stock mínimo
     return producto.stock < (minimo * 0.5);
   }
@@ -192,7 +194,7 @@ class ProductosUtils {
     required int productoId,
     required List<Sucursal> sucursales,
   }) async {
-    final List<ProductoEnSucursal> resultados = [];
+    final List<ProductoEnSucursal> resultados = <ProductoEnSucursal>[];
     
     try {
       // Obtener todas las sucursales si no se proporcionaron
@@ -201,9 +203,9 @@ class ProductosUtils {
           : await api.sucursales.getSucursales();
           
       // Consultar en paralelo para mayor eficiencia
-      final futures = listaSucursales.map((sucursal) async {
+      final List<Future<ProductoEnSucursal>> futures = listaSucursales.map((Sucursal sucursal) async {
         try {
-          final producto = await api.productos.getProducto(
+          final Producto producto = await api.productos.getProducto(
             sucursalId: sucursal.id,
             productoId: productoId,
           );
@@ -237,10 +239,10 @@ class ProductosUtils {
       }).toList();
       
       // Esperar a que se completen todas las consultas
-      resultados.addAll(await Future.wait(futures));
+      resultados..addAll(await Future.wait(futures))
       
       // Ordenar: primero sucursales con producto disponible, luego las centrales
-      resultados.sort((a, b) {
+      ..sort((ProductoEnSucursal a, ProductoEnSucursal b) {
         // Primero por disponibilidad (disponibles primero)
         if (a.disponible != b.disponible) {
           return a.disponible ? -1 : 1;
@@ -264,13 +266,13 @@ class ProductosUtils {
   
   /// Agrupa los productos por su disponibilidad en: disponibles, stock bajo y agotados
   static Map<String, List<Producto>> agruparProductosPorDisponibilidad(List<Producto> productos) {
-    final Map<String, List<Producto>> resultado = {
-      'disponibles': [],
-      'stockBajo': [],
-      'agotados': [],
+    final Map<String, List<Producto>> resultado = <String, List<Producto>>{
+      'disponibles': <Producto>[],
+      'stockBajo': <Producto>[],
+      'agotados': <Producto>[],
     };
 
-    for (final producto in productos) {
+    for (final Producto producto in productos) {
       if (producto.stock <= 0) {
         resultado['agotados']!.add(producto);
       } else if (producto.tieneStockBajo()) {

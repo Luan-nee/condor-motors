@@ -1,8 +1,7 @@
+import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/models/color.model.dart';
 import 'package:flutter/foundation.dart';
-
-import '../../models/color.model.dart';
-import '../main.api.dart';
-import 'cache/fast_cache.dart';
 
 /// API para la gestión de colores
 class ColoresApi {
@@ -18,25 +17,25 @@ class ColoresApi {
   /// [useCache] Indica si se debe usar el caché (default: true)
   Future<List<ColorApp>> getColores({bool useCache = true}) async {
     try {
-      const cacheKey = 'colores_all';
+      const String cacheKey = 'colores_all';
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final cachedData = _cache.get<List<ColorApp>>(cacheKey);
+        final List<ColorApp>? cachedData = _cache.get<List<ColorApp>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Colores obtenidos desde caché');
           return cachedData;
         }
       }
       
-      final response = await _apiClient.authenticatedRequest(
+      final Map<String, dynamic> response = await _apiClient.authenticatedRequest(
         endpoint: '/colores',
         method: 'GET',
       );
 
       if (response.containsKey('data')) {
         final List<dynamic> jsonData = response['data'];
-        final colores = jsonData.map((json) => ColorApp.fromJson(json)).toList();
+        final List<ColorApp> colores = jsonData.map((json) => ColorApp.fromJson(json)).toList();
         
         // Guardar en caché si useCache es true
         if (useCache) {

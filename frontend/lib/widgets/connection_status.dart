@@ -40,13 +40,13 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
   Future<void> _checkConnection() async {
     try {
       // Obtener la URL del servidor desde preferencias
-      final prefs = await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       final String serverUrl = prefs.getString('server_url') ?? 'http://localhost:3000';
       
       // Hacer un ping simple al servidor
-      final response = await http.get(
+      final http.Response response = await http.get(
         Uri.parse(serverUrl),
-        headers: {'Accept': 'application/json'},
+        headers: <String, String>{'Accept': 'application/json'},
       ).timeout(const Duration(seconds: 5));
       
       // Considerar conectado si obtenemos cualquier respuesta
@@ -92,7 +92,7 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
     _retryTimer?.cancel();
     
     // Crear un nuevo temporizador para reintentar cada 5 segundos
-    _retryTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    _retryTimer = Timer.periodic(const Duration(seconds: 5), (Timer timer) {
       _retryCount++;
       _checkConnection();
       
@@ -127,7 +127,7 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
       child: Stack(
         // Especificar alineación explícita para evitar problemas con Directionality
         alignment: Alignment.center,
-        children: [
+        children: <Widget>[
           widget.child,
           if (!_isConnected)
             Positioned(
@@ -140,7 +140,7 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
                   color: Colors.red.withOpacity(0.8),
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   child: Row(
-                    children: [
+                    children: <Widget>[
                       Icon(
                         Icons.error_outline,
                         color: Colors.white,

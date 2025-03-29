@@ -1,9 +1,8 @@
+import 'package:condorsmotors/api/main.api.dart' show ApiException;
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/marca.model.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import '../../api/main.api.dart' show ApiException;
-import '../../main.dart' show api;
-import '../../models/marca.model.dart';
 
 class MarcasAdminScreen extends StatefulWidget {
   const MarcasAdminScreen({super.key});
@@ -13,14 +12,14 @@ class MarcasAdminScreen extends StatefulWidget {
 }
 
 class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nombreController = TextEditingController();
-  final _descripcionController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _nombreController = TextEditingController();
+  final TextEditingController _descripcionController = TextEditingController();
 
   bool _isLoading = false;
   String _errorMessage = '';
-  List<Marca> _marcas = [];
-  Map<int, int> _productosPorMarca = {};
+  List<Marca> _marcas = <Marca>[];
+  Map<int, int> _productosPorMarca = <int, int>{};
 
   @override
   void initState() {
@@ -36,22 +35,26 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
 
     try {
       // Obtenemos las marcas directamente como objetos Marca
-      final marcas = await api.marcas.getMarcas();
+      final List<Marca> marcas = await api.marcas.getMarcas();
 
       // Crear mapa de totalProductos usando el valor real que viene en el modelo
-      final tempProductosPorMarca = <int, int>{};
-      for (var marca in marcas) {
+      final Map<int, int> tempProductosPorMarca = <int, int>{};
+      for (Marca marca in marcas) {
         tempProductosPorMarca[marca.id] = marca.totalProductos;
       }
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _marcas = marcas;
         _productosPorMarca = tempProductosPorMarca;
         _isLoading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _isLoading = false;
         _errorMessage = 'Error al cargar marcas: $e';
@@ -72,12 +75,14 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
   }
 
   Future<void> _guardarMarca([Marca? marca]) async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     try {
       setState(() => _isLoading = true);
 
-      final marcaData = {
+      final Map<String, String> marcaData = <String, String>{
         'nombre': _nombreController.text,
         'descripcion': _descripcionController.text,
       };
@@ -90,7 +95,9 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
         await api.marcas.createMarca(marcaData);
       }
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -102,7 +109,9 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
       );
       await _cargarMarcas(); // Recargar la lista
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _isLoading = false;
       });
@@ -122,7 +131,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
+      builder: (BuildContext context) => Dialog(
         backgroundColor: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -135,9 +144,9 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 Row(
-                  children: [
+                  children: <Widget>[
                     const FaIcon(
                       FontAwesomeIcons.trademark,
                       color: Colors.white,
@@ -170,7 +179,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                           BorderSide(color: Color(0xFFE31E24), width: 2),
                     ),
                   ),
-                  validator: (value) {
+                  validator: (String? value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor ingrese un nombre';
                     }
@@ -198,7 +207,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
+                  children: <Widget>[
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: const Text(
@@ -245,13 +254,13 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+              children: <Widget>[
                 Row(
-                  children: [
+                  children: <Widget>[
                     const FaIcon(
                       FontAwesomeIcons.tags,
                       color: Colors.white,
@@ -260,7 +269,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                     const SizedBox(width: 16),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: <Widget>[
                         const Text(
                           'INVENTARIO',
                           style: TextStyle(
@@ -315,7 +324,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
+                              children: <Widget>[
                                 Text(
                                   _errorMessage,
                                   style: const TextStyle(color: Colors.red),
@@ -343,14 +352,14 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                 child: Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
-                                  children: [
+                                  children: <Widget>[
                                     // Encabezado de la tabla
                                     Container(
                                       color: const Color(0xFF2D2D2D),
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 16, horizontal: 20),
                                       child: const Row(
-                                        children: [
+                                        children: <Widget>[
                                           // Marca (35% del ancho)
                                           Expanded(
                                             flex: 35,
@@ -402,7 +411,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                     ),
 
                                     // Filas de marcas
-                                    ..._marcas.map((marca) => Container(
+                                    ..._marcas.map((Marca marca) => Container(
                                           decoration: BoxDecoration(
                                             border: Border(
                                               bottom: BorderSide(
@@ -414,12 +423,12 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                           padding: const EdgeInsets.symmetric(
                                               vertical: 12, horizontal: 20),
                                           child: Row(
-                                            children: [
+                                            children: <Widget>[
                                               // Marca
                                               Expanded(
                                                 flex: 35,
                                                 child: Row(
-                                                  children: [
+                                                  children: <Widget>[
                                                     Container(
                                                       width: 32,
                                                       height: 32,
@@ -499,7 +508,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                                 child: Row(
                                                   mainAxisAlignment:
                                                       MainAxisAlignment.center,
-                                                  children: [
+                                                  children: <Widget>[
                                                     IconButton(
                                                       icon: const FaIcon(
                                                         FontAwesomeIcons

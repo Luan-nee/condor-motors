@@ -33,9 +33,9 @@ class ColorApp {
       
       // Si es #RGB, convertirlo a #RRGGBB
       if (hexColor.length == 4) {
-        final r = hexColor[1];
-        final g = hexColor[2];
-        final b = hexColor[3];
+        final String r = hexColor[1];
+        final String g = hexColor[2];
+        final String b = hexColor[3];
         hexColor = '#$r$r$g$g$b$b';
       }
       
@@ -55,7 +55,7 @@ class ColorApp {
 
   /// Convierte este objeto a JSON
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'id': id,
       'nombre': nombre,
       'hex': hex,

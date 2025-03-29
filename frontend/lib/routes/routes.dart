@@ -1,11 +1,10 @@
+import 'package:condorsmotors/main.dart' show navigatorKey;
+import 'package:condorsmotors/screens/admin/slides_admin.dart';
+import 'package:condorsmotors/screens/colabs/selector_colab.dart';  // Vista para vendedores
+import 'package:condorsmotors/screens/computer/slides_computer.dart';
+import 'package:condorsmotors/screens/login.dart';
+import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/material.dart';
-
-import '../main.dart' show navigatorKey;
-import '../screens/admin/slides_admin.dart';
-import '../screens/colabs/selector_colab.dart';  // Vista para vendedores
-import '../screens/computer/slides_computer.dart';
-import '../screens/login.dart';
-import '../utils/role_utils.dart' as role_utils;
 
 // Re-exportar las constantes de rutas desde role_utils para compatibilidad
 // Esto permite que el código existente siga funcionando sin cambios
@@ -70,7 +69,7 @@ Route<dynamic> generateRoute(
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+              children: <Widget>[
                 const Icon(Icons.error_outline, size: 64, color: Colors.red),
                 const SizedBox(height: 16),
                 Text('Rol no reconocido: $rol', style: const TextStyle(fontSize: 18)),
@@ -102,7 +101,7 @@ Route<dynamic> generateRoute(
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+              children: <Widget>[
                 const Icon(Icons.lock, size: 64, color: Colors.red),
                 const SizedBox(height: 16),
                 Text('No tienes permiso para acceder a esta ruta: $effectiveRoute'),
@@ -150,7 +149,7 @@ Route<dynamic> generateRoute(
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+              children: <Widget>[
                 const Icon(Icons.error_outline, size: 64, color: Colors.amber),
                 const SizedBox(height: 16),
                 Text('Ruta no encontrada: $effectiveRoute'),

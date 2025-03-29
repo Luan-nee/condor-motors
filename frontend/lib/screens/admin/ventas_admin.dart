@@ -1,5 +1,5 @@
+import 'package:condorsmotors/main.dart' show api;
 import 'package:flutter/material.dart';
-import '../../main.dart' show api;
 
 // Definición de la clase Venta para manejar los datos
 class Venta {
@@ -83,7 +83,7 @@ class VentasAdminScreen extends StatefulWidget {
 
 class _VentasAdminScreenState extends State<VentasAdminScreen> {
   bool _isLoading = false;
-  List<Venta> _ventas = [];
+  List<Venta> _ventas = <Venta>[];
 
   @override
   void initState() {
@@ -92,15 +92,19 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
   }
 
   Future<void> _cargarVentas() async {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() => _isLoading = true);
     
     try {
-      final response = await api.ventas.getVentas();
+      final Map<String, dynamic> response = await api.ventas.getVentas();
       
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
-      final List<Venta> ventasList = [];
+      final List<Venta> ventasList = <Venta>[];
       if (response['data'] != null && response['data'] is List) {
         for (var item in response['data']) {
           ventasList.add(Venta.fromJson(item));
@@ -111,7 +115,9 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
         _ventas = ventasList;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cargar ventas: $e'),
@@ -135,8 +141,8 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
               itemCount: _ventas.length,
-              itemBuilder: (context, index) {
-                final venta = _ventas[index];
+              itemBuilder: (BuildContext context, int index) {
+                final Venta venta = _ventas[index];
                 return Card(
                   margin: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -148,7 +154,7 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                     trailing: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
+                      children: <Widget>[
                         Text(
                           'Total: S/ ${venta.total.toStringAsFixed(2)}',
                           style: const TextStyle(

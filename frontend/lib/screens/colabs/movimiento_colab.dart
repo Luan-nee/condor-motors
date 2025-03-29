@@ -1,9 +1,9 @@
+import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/movimiento.model.dart';
+import 'package:condorsmotors/screens/colabs/widgets/movimiento_request_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../api/index.api.dart';
-import '../../main.dart' show api;
-import '../../models/movimiento.model.dart';
-import 'widgets/movimiento_request_dialog.dart';
 
 class MovimientosColabScreen extends StatefulWidget {
   const MovimientosColabScreen({super.key});
@@ -16,12 +16,12 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
   bool _isLoading = false;
   String _selectedFilter = 'Todos';
   late final MovimientosApi _movimientosApi;
-  List<Movimiento> _movimientos = [];
+  List<Movimiento> _movimientos = <Movimiento>[];
   String? _sucursalId;
   int? _empleadoId;
 
   // Filtros disponibles
-  final List<String> _filters = [
+  final List<String> _filters = <String>[
     'Todos',
     'Pendientes',
     'Preparados',
@@ -45,7 +45,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
     
     try {
       // Obtener datos del usuario autenticado
-      final userData = await api.authService.getUserData();
+      final Map<String, dynamic>? userData = await api.authService.getUserData();
       if (userData != null) {
         setState(() {
           _sucursalId = userData['sucursalId']?.toString();
@@ -84,13 +84,15 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
       }
       
       // Obtener movimientos desde la API
-      final movimientosData = await _movimientosApi.getMovimientos(
+      final List<Movimiento> movimientosData = await _movimientosApi.getMovimientos(
         sucursalId: _sucursalId,
         estado: estadoFiltro,
         forceRefresh: true, // Forzar actualización desde el servidor
       );
       
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
       setState(() {
         _movimientos = movimientosData;
@@ -120,15 +122,15 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
       return _movimientos;
     }
     
-    final estadoFiltro = _selectedFilter.toUpperCase().replaceAll('ES', '');
-    return _movimientos.where((m) => m.estado == estadoFiltro).toList();
+    final String estadoFiltro = _selectedFilter.toUpperCase().replaceAll('ES', '');
+    return _movimientos.where((Movimiento m) => m.estado == estadoFiltro).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final movimientosFiltrados = _getMovimientosFiltrados();
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
+    final List<Movimiento> movimientosFiltrados = _getMovimientosFiltrados();
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isMobile = screenWidth < 600;
     
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
@@ -139,7 +141,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
           style: TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
+        actions: <Widget>[
           // Filtro desplegable
           Theme(
             data: Theme.of(context).copyWith(
@@ -153,7 +155,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
             ),
             child: PopupMenuButton<String>(
               icon: Stack(
-                children: [
+                children: <Widget>[
                   const Icon(Icons.filter_list, color: Colors.white),
                   if (_selectedFilter != 'Todos')
                     Positioned(
@@ -174,8 +176,8 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                 ],
               ),
               tooltip: 'Filtrar por estado',
-              itemBuilder: (context) => _filters.map((filter) {
-                final isSelected = _selectedFilter == filter;
+              itemBuilder: (BuildContext context) => _filters.map((String filter) {
+                final bool isSelected = _selectedFilter == filter;
                 Color? stateColor;
                 if (filter != 'Todos') {
                   stateColor = _getEstadoColor(
@@ -186,7 +188,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                 return PopupMenuItem<String>(
                   value: filter,
                   child: Row(
-                    children: [
+                    children: <Widget>[
                       if (isSelected)
                         const Padding(
                           padding: EdgeInsets.only(right: 8),
@@ -209,7 +211,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                   ),
                 );
               }).toList(),
-              onSelected: (filter) {
+              onSelected: (String filter) {
                 setState(() {
                   _selectedFilter = filter;
                 });
@@ -231,7 +233,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
         ],
       ),
       body: Column(
-        children: [
+        children: <Widget>[
           // Header con título y estado actual
           Container(
             padding: EdgeInsets.all(isMobile ? 12 : 16),
@@ -244,12 +246,12 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+                  children: <Widget>[
                     Row(
-                      children: [
+                      children: <Widget>[
                         const FaIcon(
                           FontAwesomeIcons.truck,
                           size: 20,
@@ -258,7 +260,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                         const SizedBox(width: 12),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          children: <Widget>[
                             const Text(
                               'MOVIMIENTOS',
                               style: TextStyle(
@@ -297,7 +299,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
+                          children: <Widget>[
                             FaIcon(
                               _getEstadoIcon(
                                 _selectedFilter.toUpperCase().replaceAll('ES', '')
@@ -339,7 +341,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                          children: <Widget>[
                             FaIcon(
                               FontAwesomeIcons.boxOpen,
                               size: 48,
@@ -359,8 +361,8 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                     : ListView.builder(
                         padding: EdgeInsets.all(isMobile ? 8 : 16),
                         itemCount: movimientosFiltrados.length,
-                        itemBuilder: (context, index) {
-                          final movimiento = movimientosFiltrados[index];
+                        itemBuilder: (BuildContext context, int index) {
+                          final Movimiento movimiento = movimientosFiltrados[index];
                           return _buildMovimientoCard(movimiento, isMobile);
                         },
                       ),
@@ -381,8 +383,8 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
           
           showDialog(
             context: context,
-            builder: (context) => MovimientoRequestDialog(
-              onSave: (movimientoData) async {
+            builder: (BuildContext context) => MovimientoRequestDialog(
+              onSave: (MovimientoStock movimientoData) async {
                 try {
                   setState(() => _isLoading = true);
                   
@@ -432,12 +434,12 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
-        children: [
+        children: <Widget>[
           // Encabezado del movimiento
           Padding(
             padding: EdgeInsets.all(isMobile ? 12 : 16),
             child: Row(
-              children: [
+              children: <Widget>[
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -454,11 +456,11 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: <Widget>[
                       Wrap(
                         spacing: 8,
                         crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
+                        children: <Widget>[
                           Text(
                             'MOV${movimiento.id}',
                             style: TextStyle(
@@ -542,14 +544,14 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                   fontSize: isMobile ? 14 : 16,
                 ),
               ),
-              children: [
+              children: <Widget>[
                 if (movimiento.productos != null && movimiento.productos!.isNotEmpty)
                   ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: movimiento.productos!.length,
-                    itemBuilder: (context, index) {
-                      final detalle = movimiento.productos![index];
+                    itemBuilder: (BuildContext context, int index) {
+                      final DetalleProducto detalle = movimiento.productos![index];
                       return Container(
                         margin: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -561,7 +563,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
-                          children: [
+                          children: <Widget>[
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
@@ -578,7 +580,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                                children: <Widget>[
                                   Text(
                                     detalle.nombre,
                                     style: const TextStyle(
@@ -599,7 +601,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                             Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
+                              children: <Widget>[
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 8,
@@ -663,14 +665,14 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
   }
 
   Widget _buildTimeline(Movimiento movimiento, bool isMobile) {
-    final steps = [
-      {
+    final List<Map<String, Object?>> steps = <Map<String, Object?>>[
+      <String, Object?>{
         'title': 'Solicitado',
         'icon': FontAwesomeIcons.fileLines,
         'date': movimiento.salidaOrigen,
         'isCompleted': true,
       },
-      {
+      <String, Object?>{
         'title': 'Preparado',
         'icon': FontAwesomeIcons.boxOpen,
         'date': null,
@@ -678,14 +680,14 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                        movimiento.estado == 'DESPACHADO' || 
                        movimiento.estado == 'RECIBIDO',
       },
-      {
+      <String, Object?>{
         'title': 'Despachado',
         'icon': FontAwesomeIcons.truckFast,
         'date': null,
         'isCompleted': movimiento.estado == 'DESPACHADO' || 
                        movimiento.estado == 'RECIBIDO',
       },
-      {
+      <String, Object?>{
         'title': 'Recibido',
         'icon': FontAwesomeIcons.check,
         'date': movimiento.llegadaDestino,
@@ -694,21 +696,21 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
     ];
 
     return Row(
-      children: steps.asMap().entries.map((entry) {
-        final index = entry.key;
-        final step = entry.value;
-        final isLast = index == steps.length - 1;
-        final date = step['date'] as DateTime?;
-        final formattedDate = date != null 
+      children: steps.asMap().entries.map((MapEntry<int, Map<String, Object?>> entry) {
+        final int index = entry.key;
+        final Map<String, Object?> step = entry.value;
+        final bool isLast = index == steps.length - 1;
+        final DateTime? date = step['date'] as DateTime?;
+        final String? formattedDate = date != null 
             ? '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}'
             : null;
 
         return Expanded(
           child: Row(
-            children: [
+            children: <Widget>[
               Expanded(
                 child: Column(
-                  children: [
+                  children: <Widget>[
                     Container(
                       width: isMobile ? 24 : 32,
                       height: isMobile ? 24 : 32,
@@ -809,14 +811,14 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
   void _showValidationDialog(Movimiento movimiento) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
+      builder: (BuildContext context) => Dialog(
         backgroundColor: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
+          children: <Widget>[
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
@@ -827,7 +829,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                 ),
               ),
               child: Row(
-                children: [
+                children: <Widget>[
                   const FaIcon(
                     FontAwesomeIcons.clipboardCheck,
                     size: 20,
@@ -858,7 +860,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     // Información del movimiento
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -868,10 +870,10 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
+                            children: <Widget>[
                               Text(
                                 'Movimiento: MOV${movimiento.id}',
                                 style: const TextStyle(
@@ -927,7 +929,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                     const SizedBox(height: 8),
                     // Lista de productos
                     if (movimiento.productos != null && movimiento.productos!.isNotEmpty)
-                      ...movimiento.productos!.map<Widget>((detalle) {
+                      ...movimiento.productos!.map<Widget>((DetalleProducto detalle) {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(12),
@@ -936,7 +938,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
-                            children: [
+                            children: <Widget>[
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
@@ -953,7 +955,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                                  children: <Widget>[
                                     Text(
                                       detalle.nombre,
                                       style: const TextStyle(
@@ -1016,7 +1018,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
+                children: <Widget>[
                   TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text(

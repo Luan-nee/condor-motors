@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class AdminNavigation extends StatelessWidget {
@@ -17,7 +18,7 @@ class AdminNavigation extends StatelessWidget {
       selectedIndex: selectedIndex,
       labelType: NavigationRailLabelType.all,
       onDestinationSelected: onDestinationSelected,
-      destinations: const [
+      destinations: const <NavigationRailDestination>[
         NavigationRailDestination(
           icon: Icon(Icons.dashboard_outlined),
           selectedIcon: Icon(Icons.dashboard),
@@ -40,5 +41,13 @@ class AdminNavigation extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(IntProperty('selectedIndex', selectedIndex))
+      ..add(ObjectFlagProperty<Function(int)>.has('onDestinationSelected', onDestinationSelected));
   }
 } 

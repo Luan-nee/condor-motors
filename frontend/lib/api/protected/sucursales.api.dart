@@ -1,8 +1,7 @@
+import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:flutter/foundation.dart';
-
-import '../../models/sucursal.model.dart';
-import '../main.api.dart';
-import 'cache/fast_cache.dart';
 
 class SucursalesApi {
   final ApiClient _api;
@@ -13,6 +12,8 @@ class SucursalesApi {
   static const String _prefixSucursales = 'sucursales';
   static const String _prefixProformas = 'proformas_sucursal_';
   static const String _prefixNotificaciones = 'notificaciones_sucursal_';
+  static const String _prefixProductos = 'productos_sucursal_';
+  static const String _prefixVentas = 'ventas_sucursal_';
   
   SucursalesApi(this._api);
   
@@ -22,16 +23,20 @@ class SucursalesApi {
   void invalidateCache([String? sucursalId]) {
     if (sucursalId != null) {
       // Invalidar sólo los datos de esta sucursal
-      _cache.invalidate('$_prefixSucursal$sucursalId');
-      _cache.invalidateByPattern('$_prefixProformas$sucursalId');
-      _cache.invalidateByPattern('$_prefixNotificaciones$sucursalId');
+      _cache..invalidate('$_prefixSucursal$sucursalId')
+      ..invalidateByPattern('$_prefixProformas$sucursalId')
+      ..invalidateByPattern('$_prefixNotificaciones$sucursalId')
+      ..invalidateByPattern('$_prefixProductos$sucursalId')
+      ..invalidateByPattern('$_prefixVentas$sucursalId');
       debugPrint('🔄 Caché invalidado para sucursal $sucursalId');
     } else {
       // Invalidar todas las sucursales en caché
-      _cache.invalidateByPattern(_prefixSucursal);
-      _cache.invalidate(_prefixSucursales);
-      _cache.invalidateByPattern(_prefixProformas);
-      _cache.invalidateByPattern(_prefixNotificaciones);
+      _cache..invalidateByPattern(_prefixSucursal)
+      ..invalidate(_prefixSucursales)
+      ..invalidateByPattern(_prefixProformas)
+      ..invalidateByPattern(_prefixNotificaciones)
+      ..invalidateByPattern(_prefixProductos)
+      ..invalidateByPattern(_prefixVentas);
       debugPrint('🔄 Caché de sucursales invalidado completamente');
     }
     debugPrint('📊 Entradas en caché después de invalidación: ${_cache.size}');
@@ -46,7 +51,7 @@ class SucursalesApi {
     bool forceRefresh = false,
   }) async {
     try {
-      final cacheKey = '$_prefixSucursal$sucursalId';
+      final String cacheKey = '$_prefixSucursal$sucursalId';
       
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
@@ -55,7 +60,7 @@ class SucursalesApi {
       
       // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<Sucursal>(cacheKey);
+        final Sucursal? cachedData = _cache.get<Sucursal>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
           debugPrint('🔍 Usando datos en caché para sucursal $sucursalId');
           return cachedData;
@@ -63,12 +68,12 @@ class SucursalesApi {
       }
       
       debugPrint('SucursalesApi: Obteniendo datos de sucursal con ID: $sucursalId');
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/sucursales/$sucursalId',
         method: 'GET',
       );
       
-      final sucursal = Sucursal.fromJson(response['data']);
+      final Sucursal sucursal = Sucursal.fromJson(response['data']);
       
       // Guardar en caché
       if (useCache) {
@@ -89,7 +94,7 @@ class SucursalesApi {
     bool forceRefresh = false,
   }) async {
     try {
-      const cacheKey = _prefixSucursales;
+      const String cacheKey = _prefixSucursales;
       
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
@@ -98,7 +103,7 @@ class SucursalesApi {
       
       // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<List<Sucursal>>(cacheKey);
+        final List<Sucursal>? cachedData = _cache.get<List<Sucursal>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
           debugPrint('🔍 Usando lista de sucursales en caché');
           return cachedData;
@@ -106,7 +111,7 @@ class SucursalesApi {
       }
       
       debugPrint('SucursalesApi: Obteniendo lista de sucursales');
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/sucursales',
         method: 'GET',
       );
@@ -118,13 +123,13 @@ class SucursalesApi {
       
       // Manejar estructura anidada si es necesario
       if (response['data'] is Map && response['data'].containsKey('data')) {
-        rawData = response['data']['data'] ?? [];
+        rawData = response['data']['data'] ?? <dynamic>[];
       } else {
-        rawData = response['data'] ?? [];
+        rawData = response['data'] ?? <dynamic>[];
       }
       
       // Convertir cada elemento en un objeto Sucursal
-      final sucursales = rawData.map((item) => Sucursal.fromJson(item)).toList();
+      final List<Sucursal> sucursales = rawData.map((item) => Sucursal.fromJson(item)).toList();
       
       // Guardar en caché
       if (useCache) {
@@ -148,7 +153,7 @@ class SucursalesApi {
     bool forceRefresh = false,
   }) async {
     try {
-      final cacheKey = '$_prefixProformas$sucursalId';
+      final String cacheKey = '$_prefixProformas$sucursalId';
       
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
@@ -157,19 +162,19 @@ class SucursalesApi {
       
       // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<List<dynamic>>(cacheKey);
+        final List? cachedData = _cache.get<List<dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
           debugPrint('🔍 Usando proformas en caché para sucursal $sucursalId');
           return cachedData;
         }
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa',
         method: 'GET',
       );
       
-      final proformas = response['data'] ?? [];
+      final proformas = response['data'] ?? <dynamic>[];
       
       // Guardar en caché
       if (useCache) {
@@ -187,7 +192,7 @@ class SucursalesApi {
   /// Crea una nueva proforma de venta
   Future<Map<String, dynamic>> createProformaVenta(String sucursalId, Map<String, dynamic> proformaData) async {
     try {
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa',
         method: 'POST',
         body: proformaData,
@@ -207,7 +212,7 @@ class SucursalesApi {
   /// Actualiza una proforma de venta existente
   Future<Map<String, dynamic>> updateProformaVenta(String sucursalId, String proformaId, Map<String, dynamic> proformaData) async {
     try {
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
         method: 'PATCH',
         body: proformaData,
@@ -250,7 +255,7 @@ class SucursalesApi {
     bool forceRefresh = false,
   }) async {
     try {
-      final cacheKey = '$_prefixNotificaciones$sucursalId';
+      final String cacheKey = '$_prefixNotificaciones$sucursalId';
       
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
@@ -259,19 +264,19 @@ class SucursalesApi {
       
       // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<List<dynamic>>(cacheKey);
+        final List? cachedData = _cache.get<List<dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
           debugPrint('🔍 Usando notificaciones en caché para sucursal $sucursalId');
           return cachedData;
         }
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/notificaciones',
         method: 'GET',
       );
       
-      final notificaciones = response['data'] ?? [];
+      final notificaciones = response['data'] ?? <dynamic>[];
       
       // Guardar en caché
       if (useCache) {
@@ -318,18 +323,32 @@ class SucursalesApi {
   Future<Sucursal> createSucursal(Map<String, dynamic> sucursalData) async {
     try {
       debugPrint('SucursalesApi: Creando nueva sucursal: ${sucursalData['nombre']}');
-      final response = await _api.authenticatedRequest(
+      
+      // Validar campos requeridos
+      if (!sucursalData.containsKey('nombre') || !sucursalData.containsKey('sucursalCentral')) {
+        throw Exception('Nombre y sucursalCentral son campos requeridos');
+      }
+      
+      // Validar formato de series si están presentes
+      if (sucursalData.containsKey('serieFactura') && 
+          (!sucursalData['serieFactura'].toString().startsWith('F') || 
+           sucursalData['serieFactura'].toString().length != 4)) {
+        throw Exception('Serie de factura debe empezar con F y tener 4 caracteres');
+      }
+      
+      if (sucursalData.containsKey('serieBoleta') && 
+          (!sucursalData['serieBoleta'].toString().startsWith('B') || 
+           sucursalData['serieBoleta'].toString().length != 4)) {
+        throw Exception('Serie de boleta debe empezar con B y tener 4 caracteres');
+      }
+      
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/sucursales',
         method: 'POST',
         body: sucursalData,
       );
       
-      debugPrint('SucursalesApi: Respuesta de createSucursal recibida');
-      
-      // Convertir la respuesta en un objeto Sucursal
-      final sucursal = Sucursal.fromJson(response['data']);
-      
-      // Invalidar caché de sucursales
+      final Sucursal sucursal = Sucursal.fromJson(response['data']);
       invalidateCache();
       
       return sucursal;
@@ -343,20 +362,28 @@ class SucursalesApi {
   Future<Sucursal> updateSucursal(String sucursalId, Map<String, dynamic> sucursalData) async {
     try {
       debugPrint('SucursalesApi: Actualizando sucursal con ID: $sucursalId');
-      final response = await _api.authenticatedRequest(
+      
+      // Validar formato de series si están presentes
+      if (sucursalData.containsKey('serieFactura') && 
+          (!sucursalData['serieFactura'].toString().startsWith('F') || 
+           sucursalData['serieFactura'].toString().length != 4)) {
+        throw Exception('Serie de factura debe empezar con F y tener 4 caracteres');
+      }
+      
+      if (sucursalData.containsKey('serieBoleta') && 
+          (!sucursalData['serieBoleta'].toString().startsWith('B') || 
+           sucursalData['serieBoleta'].toString().length != 4)) {
+        throw Exception('Serie de boleta debe empezar con B y tener 4 caracteres');
+      }
+      
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/sucursales/$sucursalId',
         method: 'PATCH',
         body: sucursalData,
       );
       
-      debugPrint('SucursalesApi: Respuesta de updateSucursal recibida');
-      
-      // Convertir la respuesta en un objeto Sucursal
-      final sucursal = Sucursal.fromJson(response['data']);
-      
-      // Invalidar caché de esta sucursal y lista de sucursales
+      final Sucursal sucursal = Sucursal.fromJson(response['data']);
       invalidateCache(sucursalId);
-      _cache.invalidate(_prefixSucursales);
       
       return sucursal;
     } catch (e) {
@@ -374,13 +401,123 @@ class SucursalesApi {
         method: 'DELETE',
       );
       
-      debugPrint('SucursalesApi: Sucursal eliminada correctamente');
-      
-      // Invalidar caché de sucursales
       invalidateCache();
-      
+      debugPrint('✅ SucursalesApi: Sucursal eliminada correctamente');
     } catch (e) {
       debugPrint('❌ SucursalesApi: ERROR al eliminar sucursal #$sucursalId: $e');
+      rethrow;
+    }
+  }
+  
+  // ENDPOINTS ESPECÍFICOS POR SUCURSAL
+  
+  /// Obtiene los productos de una sucursal
+  Future<List<dynamic>> getProductosSucursal(
+    String sucursalId, {
+    bool useCache = true,
+    bool forceRefresh = false,
+  }) async {
+    try {
+      final String cacheKey = '$_prefixProductos$sucursalId';
+      
+      if (forceRefresh) {
+        _cache.invalidate(cacheKey);
+      }
+      
+      if (useCache && !forceRefresh) {
+        final List? cachedData = _cache.get<List<dynamic>>(cacheKey);
+        if (cachedData != null && !_cache.isStale(cacheKey)) {
+          return cachedData;
+        }
+      }
+      
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/productos',
+        method: 'GET',
+      );
+      
+      final productos = response['data'] ?? <dynamic>[];
+      
+      if (useCache) {
+        _cache.set(cacheKey, productos);
+      }
+      
+      return productos;
+    } catch (e) {
+      debugPrint('❌ Error al obtener productos de sucursal: $e');
+      rethrow;
+    }
+  }
+  
+  /// Registra entrada de inventario
+  Future<Map<String, dynamic>> registrarEntradaInventario(
+    String sucursalId, 
+    Map<String, dynamic> entradaData
+  ) async {
+    try {
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/inventarios/entradas',
+        method: 'POST',
+        body: entradaData,
+      );
+      
+      _cache.invalidate('$_prefixProductos$sucursalId');
+      return response['data'];
+    } catch (e) {
+      debugPrint('❌ Error al registrar entrada de inventario: $e');
+      rethrow;
+    }
+  }
+  
+  /// Obtiene información de ventas
+  Future<Map<String, dynamic>> getInformacionVentas(String sucursalId) async {
+    try {
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/ventas/informacion',
+        method: 'GET',
+      );
+      
+      return response['data'];
+    } catch (e) {
+      debugPrint('❌ Error al obtener información de ventas: $e');
+      rethrow;
+    }
+  }
+  
+  /// Declara facturación
+  Future<Map<String, dynamic>> declararFacturacion(
+    String sucursalId, 
+    Map<String, dynamic> declaracionData
+  ) async {
+    try {
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/facturacion/declarar',
+        method: 'POST',
+        body: declaracionData,
+      );
+      
+      return response['data'];
+    } catch (e) {
+      debugPrint('❌ Error al declarar facturación: $e');
+      rethrow;
+    }
+  }
+  
+  /// Sincroniza facturación
+  Future<Map<String, dynamic>> sincronizarFacturacion(
+    String sucursalId, 
+    Map<String, dynamic> sincronizacionData
+  ) async {
+    try {
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
+        endpoint: '/$sucursalId/facturacion/consultar',
+        method: 'POST',
+        body: sincronizacionData,
+      );
+      
+      return response['data'];
+    } catch (e) {
+      debugPrint('❌ Error al sincronizar facturación: $e');
       rethrow;
     }
   }

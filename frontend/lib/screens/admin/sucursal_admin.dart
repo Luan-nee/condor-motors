@@ -1,7 +1,8 @@
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../main.dart' show api;
-import '../../models/sucursal.model.dart';
 
 // La clase Sucursal ha sido reemplazada por la importación de '../../models/sucursal.model.dart'
 
@@ -18,7 +19,7 @@ class SucursalRequest {
   });
 
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'nombre': nombre,
       'direccion': direccion,
       'sucursalCentral': sucursalCentral,
@@ -35,9 +36,9 @@ class SucursalAdminScreen extends StatefulWidget {
 
 class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
   bool _isLoading = false;
-  List<Sucursal> _sucursales = [];
+  List<Sucursal> _sucursales = <Sucursal>[];
   String _errorMessage = '';
-  List<Sucursal> _todasLasSucursales = [];
+  List<Sucursal> _todasLasSucursales = <Sucursal>[];
   String _terminoBusqueda = '';
 
   @override
@@ -53,15 +54,19 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
     });
 
     try {
-      final sucursales = await api.sucursales.getSucursales();
+      final List<Sucursal> sucursales = await api.sucursales.getSucursales();
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _todasLasSucursales = sucursales;
         _aplicarFiltroBusqueda();
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() => _errorMessage = 'Error al cargar sucursales: $e');
     } finally {
       if (mounted) {
@@ -76,18 +81,20 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
       return;
     }
 
-    final termino = _terminoBusqueda.toLowerCase();
-    _sucursales = _todasLasSucursales.where((sucursal) {
-      return sucursal.nombre.toLowerCase().contains(termino) ||
-          sucursal.direccion.toLowerCase().contains(termino);
+    final String termino = _terminoBusqueda.toLowerCase();
+    _sucursales = _todasLasSucursales.where((Sucursal sucursal) {
+      final bool nombreMatch = sucursal.nombre.toLowerCase().contains(termino);
+      final bool direccionMatch = sucursal.direccion?.toLowerCase().contains(termino) ?? false;
+      return nombreMatch || direccionMatch;
     }).toList();
   }
 
   Future<void> _guardarSucursal(Map<String, dynamic> data) async {
+    setState(() => _isLoading = true);
     try {
-      final request = SucursalRequest(
+      final SucursalRequest request = SucursalRequest(
         nombre: data['nombre'],
-        direccion: data['direccion'],
+        direccion: data['direccion'] ?? '',
         sucursalCentral: data['sucursalCentral'] ?? false,
       );
 
@@ -98,8 +105,15 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
         await api.sucursales.createSucursal(request.toJson());
       }
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
+      
       await _cargarSucursales();
+      
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Sucursal guardada exitosamente'),
@@ -107,20 +121,26 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
         ),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al guardar sucursal: $e'),
-          backgroundColor: Color(0xFFE31E24),
+          backgroundColor: const Color(0xFFE31E24),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   void _showSucursalDialog([Sucursal? sucursal]) {
     showDialog(
       context: context,
-      builder: (context) => SucursalFormDialog(
+      builder: (BuildContext context) => SucursalFormDialog(
         sucursal: sucursal,
         onSave: _guardarSucursal,
       ),
@@ -129,12 +149,12 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
 
   // Agrupar sucursales por tipo (central/no central)
   Map<String, List<Sucursal>> _agruparSucursales() {
-    final Map<String, List<Sucursal>> grupos = {
-      'centrales': [],
-      'noCentrales': [],
+    final Map<String, List<Sucursal>> grupos = <String, List<Sucursal>>{
+      'centrales': <Sucursal>[],
+      'noCentrales': <Sucursal>[],
     };
 
-    for (final sucursal in _sucursales) {
+    for (final Sucursal sucursal in _sucursales) {
       if (sucursal.sucursalCentral) {
         grupos['centrales']!.add(sucursal);
       } else {
@@ -147,17 +167,17 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final gruposSucursales = _agruparSucursales();
-    final sucursalesCentrales = gruposSucursales['centrales'] ?? [];
-    final sucursalesNoCentrales = gruposSucursales['noCentrales'] ?? [];
-    final totalSucursales = _sucursales.length;
+    final Map<String, List<Sucursal>> gruposSucursales = _agruparSucursales();
+    final List<Sucursal> sucursalesCentrales = gruposSucursales['centrales'] ?? <Sucursal>[];
+    final List<Sucursal> sucursalesNoCentrales = gruposSucursales['noCentrales'] ?? <Sucursal>[];
+    final int totalSucursales = _sucursales.length;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF212121),
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             Text(
               'Gestión de Sucursales',
               style: TextStyle(
@@ -175,7 +195,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
             ),
           ],
         ),
-        actions: [
+        actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Actualizar datos',
@@ -189,13 +209,13 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
         ],
       ),
       body: Column(
-        children: [
+        children: <Widget>[
           // Encabezado con estadísticas
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: const Color(0xFF212121),
-              boxShadow: [
+              boxShadow: <BoxShadow>[
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
                   blurRadius: 4,
@@ -204,7 +224,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
               ],
             ),
             child: Row(
-              children: [
+              children: <Widget>[
                 Expanded(
                   child: TextField(
                     decoration: InputDecoration(
@@ -222,7 +242,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                           TextStyle(color: Colors.white.withOpacity(0.7)),
                     ),
                     style: const TextStyle(color: Colors.white),
-                    onChanged: (value) {
+                    onChanged: (String value) {
                       setState(() {
                         _terminoBusqueda = value;
                         _aplicarFiltroBusqueda();
@@ -240,7 +260,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                    children: <Widget>[
                       const FaIcon(
                         FontAwesomeIcons.buildingUser,
                         color: Color(0xFFE31E24),
@@ -265,7 +285,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                 ? const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                      children: <Widget>[
                         CircularProgressIndicator(
                           valueColor:
                               AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
@@ -282,7 +302,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                          children: <Widget>[
                             const FaIcon(
                               FontAwesomeIcons.circleExclamation,
                               color: Color(0xFFE31E24),
@@ -315,7 +335,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
+                              children: <Widget>[
                                 const FaIcon(
                                   FontAwesomeIcons.building,
                                   color: Colors.white24,
@@ -357,15 +377,15 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                         : SingleChildScrollView(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
+                              children: <Widget>[
                                 // Sucursales Centrales
-                                if (sucursalesCentrales.isNotEmpty) ...[
+                                if (sucursalesCentrales.isNotEmpty) ...<Widget>[
                                   Container(
                                     color: const Color(0xFF2D2D2D),
                                     padding: const EdgeInsets.symmetric(
                                         vertical: 12, horizontal: 20),
                                     child: Row(
-                                      children: [
+                                      children: <Widget>[
                                         const FaIcon(
                                           FontAwesomeIcons.building,
                                           color: Color(0xFFE31E24),
@@ -382,18 +402,18 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                                       ],
                                     ),
                                   ),
-                                  ...sucursalesCentrales.map((sucursal) =>
+                                  ...sucursalesCentrales.map((Sucursal sucursal) =>
                                       _buildSucursalRow(sucursal)),
                                 ],
 
                                 // Sucursales No Centrales
-                                if (sucursalesNoCentrales.isNotEmpty) ...[
+                                if (sucursalesNoCentrales.isNotEmpty) ...<Widget>[
                                   Container(
                                     color: const Color(0xFF2D2D2D),
                                     padding: const EdgeInsets.symmetric(
                                         vertical: 12, horizontal: 20),
                                     child: Row(
-                                      children: [
+                                      children: <Widget>[
                                         const FaIcon(
                                           FontAwesomeIcons.store,
                                           color: Colors.white70,
@@ -410,7 +430,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
                                       ],
                                     ),
                                   ),
-                                  ...sucursalesNoCentrales.map((sucursal) =>
+                                  ...sucursalesNoCentrales.map((Sucursal sucursal) =>
                                       _buildSucursalRow(sucursal)),
                                 ],
                               ],
@@ -448,14 +468,15 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
           ),
         ),
         subtitle: Text(
-          sucursal.direccion,
+          sucursal.direccion ?? 'Sin dirección registrada',
           style: TextStyle(
             color: Colors.white.withOpacity(0.7),
+            fontStyle: sucursal.direccion != null ? FontStyle.normal : FontStyle.italic,
           ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
-          children: [
+          children: <Widget>[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -489,57 +510,68 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
               tooltip: 'Eliminar sucursal',
-              onPressed: () async {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Confirmar eliminación'),
-                    content: Text(
-                        '¿Está seguro de eliminar la sucursal "${sucursal.nombre}"?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancelar'),
-                      ),
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.red,
-                        ),
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Eliminar'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirm == true) {
-                  try {
-                    await api.sucursales.deleteSucursal(sucursal.id.toString());
-                    await _cargarSucursales();
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            'Sucursal "${sucursal.nombre}" eliminada correctamente'),
-                        backgroundColor: const Color(0xFF4CAF50),
-                      ),
-                    );
-                  } catch (e) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error al eliminar sucursal: $e'),
-                        backgroundColor: const Color(0xFFE31E24),
-                      ),
-                    );
-                  }
-                }
-              },
+              onPressed: () => _confirmarEliminarSucursal(sucursal),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _confirmarEliminarSucursal(Sucursal sucursal) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content: Text(
+            '¿Está seguro de eliminar la sucursal "${sucursal.nombre}"?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (confirm == true) {
+      try {
+        await api.sucursales.deleteSucursal(sucursal.id.toString());
+        await _cargarSucursales();
+        
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Sucursal "${sucursal.nombre}" eliminada correctamente'),
+            backgroundColor: const Color(0xFF4CAF50),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al eliminar sucursal: $e'),
+            backgroundColor: const Color(0xFFE31E24),
+          ),
+        );
+      }
+    }
   }
 }
 
@@ -555,12 +587,20 @@ class SucursalFormDialog extends StatefulWidget {
 
   @override
   State<SucursalFormDialog> createState() => _SucursalFormDialogState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty<Sucursal?>('sucursal', sucursal))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has('onSave', onSave));
+  }
 }
 
 class _SucursalFormDialogState extends State<SucursalFormDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _nombreController = TextEditingController();
-  final _direccionController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _nombreController = TextEditingController();
+  final TextEditingController _direccionController = TextEditingController();
   bool _sucursalCentral = false;
 
   @override
@@ -568,7 +608,7 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
     super.initState();
     if (widget.sucursal != null) {
       _nombreController.text = widget.sucursal!.nombre;
-      _direccionController.text = widget.sucursal!.direccion;
+      _direccionController.text = widget.sucursal!.direccion ?? '';
       _sucursalCentral = widget.sucursal!.sucursalCentral;
     }
   }
@@ -590,7 +630,7 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
+            children: <Widget>[
               TextFormField(
                 controller: _nombreController,
                 decoration: const InputDecoration(
@@ -598,7 +638,7 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
                   hintText: 'Ej: Sucursal Principal',
                   prefixIcon: Icon(Icons.business),
                 ),
-                validator: (value) {
+                validator: (String? value) {
                   if (value == null || value.isEmpty) {
                     return 'El nombre es requerido';
                   }
@@ -613,7 +653,7 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
                   hintText: 'Ej: Av. Principal 123',
                   prefixIcon: Icon(Icons.location_on),
                 ),
-                validator: (value) {
+                validator: (String? value) {
                   if (value == null || value.isEmpty) {
                     return 'La dirección es requerida';
                   }
@@ -627,13 +667,13 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
                     'Las sucursales centrales tienen permisos especiales'),
                 value: _sucursalCentral,
                 activeColor: const Color(0xFFE31E24),
-                onChanged: (value) => setState(() => _sucursalCentral = value),
+                onChanged: (bool value) => setState(() => _sucursalCentral = value),
               ),
             ],
           ),
         ),
       ),
-      actions: [
+      actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancelar'),
@@ -645,7 +685,7 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
           ),
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              final data = {
+              final Map<String, Object> data = <String, Object>{
                 if (widget.sucursal != null) 'id': widget.sucursal!.id,
                 'nombre': _nombreController.text,
                 'direccion': _direccionController.text,

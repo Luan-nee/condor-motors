@@ -1,8 +1,7 @@
+import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/models/movimiento.model.dart';
 import 'package:flutter/foundation.dart';
-
-import '../../models/movimiento.model.dart';
-import '../main.api.dart';
-import 'cache/fast_cache.dart';
 
 class MovimientosApi {
   final ApiClient _api;
@@ -16,7 +15,7 @@ class MovimientosApi {
   MovimientosApi(this._api);
   
   // Estados de movimientos para mostrar en la UI
-  static const Map<String, String> estadosDetalle = {
+  static const Map<String, String> estadosDetalle = <String, String>{
     'PENDIENTE': 'Pendiente',
     'EN_PROCESO': 'En Proceso',
     'EN_TRANSITO': 'En Tránsito',
@@ -28,13 +27,13 @@ class MovimientosApi {
   void invalidateCache([String? sucursalId]) {
     if (sucursalId != null) {
       // Invalidar sólo las transferencias de esta sucursal
-      _cache.invalidateByPattern('$_prefixListaMovimientos$sucursalId');
-      _cache.invalidateByPattern('$_prefixMovimiento$sucursalId');
+      _cache..invalidateByPattern('$_prefixListaMovimientos$sucursalId')
+      ..invalidateByPattern('$_prefixMovimiento$sucursalId');
       debugPrint('🔄 Caché de transferencias invalidado para sucursal $sucursalId');
     } else {
       // Invalidar todas las transferencias en caché
-      _cache.invalidateByPattern(_prefixListaMovimientos);
-      _cache.invalidateByPattern(_prefixMovimiento);
+      _cache..invalidateByPattern(_prefixListaMovimientos)
+      ..invalidateByPattern(_prefixMovimiento);
       debugPrint('🔄 Caché de transferencias invalidado completamente');
     }
     debugPrint('📊 Entradas en caché después de invalidación: ${_cache.size}');
@@ -51,7 +50,7 @@ class MovimientosApi {
   }) async {
     try {
       // Generar clave única para este conjunto de parámetros
-      final cacheKey = _prefixListaMovimientos + [
+      final String cacheKey = _prefixListaMovimientos + <String>[
         sucursalId ?? 'all',
         estado ?? 'all',
         fechaInicio?.toIso8601String().split('T')[0] ?? 'all',
@@ -65,14 +64,14 @@ class MovimientosApi {
       
       // Intentar obtener desde caché si useCache es true
       if (useCache && !forceRefresh) {
-        final cachedData = _cache.get<List<Movimiento>>(cacheKey);
+        final List<Movimiento>? cachedData = _cache.get<List<Movimiento>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Transferencias obtenidas desde caché: $cacheKey');
           return cachedData;
         }
       }
       
-      final queryParams = <String, String>{};
+      final Map<String, String> queryParams = <String, String>{};
       
       if (sucursalId != null) {
         queryParams['sucursal_id'] = sucursalId;
@@ -93,7 +92,7 @@ class MovimientosApi {
       debugPrint('🔄 [MovimientosApi] Obteniendo lista de transferencias: $_endpoint');
 
       // Añadir un timeout a la solicitud para evitar esperas indefinidas
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: _endpoint,
         method: 'GET',
         queryParams: queryParams,
@@ -110,13 +109,13 @@ class MovimientosApi {
       
       debugPrint('🔄 [MovimientosApi] Respuesta recibida, procesando datos...');
       
-      final List<dynamic> rawData = response['data'] ?? [];
-      final List<Movimiento> movimientos = [];
+      final List<dynamic> rawData = response['data'] ?? <dynamic>[];
+      final List<Movimiento> movimientos = <Movimiento>[];
       
       // Procesar cada movimiento con manejo de errores
       for (final item in rawData) {
         try {
-          final movimiento = Movimiento.fromJson(item);
+          final Movimiento movimiento = Movimiento.fromJson(item);
           movimientos.add(movimiento);
         } catch (e) {
           debugPrint('⚠️ [MovimientosApi] Error al procesar transferencia: $e');
@@ -142,13 +141,13 @@ class MovimientosApi {
   // Obtener una transferencia específica
   Future<Movimiento> getMovimiento(String id, {bool useCache = true}) async {
     try {
-      final cacheKey = '$_prefixMovimiento$id';
+      final String cacheKey = '$_prefixMovimiento$id';
       
       debugPrint('🔍 [MovimientosApi] Inicio de getMovimiento para ID: $id (useCache: $useCache)');
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final cachedData = _cache.get<Movimiento>(cacheKey);
+        final Movimiento? cachedData = _cache.get<Movimiento>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ [MovimientosApi] Transferencia obtenida desde caché: $cacheKey');
           return cachedData;
@@ -158,7 +157,7 @@ class MovimientosApi {
       debugPrint('🔄 [MovimientosApi] Obteniendo transferencia desde API: $_endpoint/$id');
       
       // Añadir un timeout a la solicitud para evitar esperas indefinidas
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
         method: 'GET',
       ).timeout(
@@ -193,13 +192,13 @@ class MovimientosApi {
       
       // Verificar si la respuesta tiene productos o itemsVenta
       if (responseData.containsKey('productos')) {
-        final productos = responseData['productos'] as List?;
+        final List? productos = responseData['productos'] as List?;
         debugPrint('📦 [MovimientosApi] Respuesta contiene campo "productos": ${productos?.length ?? 0} items');
         if (productos != null && productos.isNotEmpty) {
           debugPrint('📦 [MovimientosApi] Primer producto: ${productos.first}');
         }
       } else if (responseData.containsKey('itemsVenta')) {
-        final itemsVenta = responseData['itemsVenta'] as List?;
+        final List? itemsVenta = responseData['itemsVenta'] as List?;
         debugPrint('📦 [MovimientosApi] Respuesta contiene campo "itemsVenta": ${itemsVenta?.length ?? 0} items');
         if (itemsVenta != null && itemsVenta.isNotEmpty) {
           debugPrint('📦 [MovimientosApi] Primer itemVenta: ${itemsVenta.first}');
@@ -241,7 +240,7 @@ class MovimientosApi {
   // Crear una nueva transferencia de inventario
   Future<Movimiento> createMovimiento(Map<String, dynamic> movimientoData) async {
     try {
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: _endpoint,
         method: 'POST',
         body: movimientoData,
@@ -261,7 +260,7 @@ class MovimientosApi {
   // Actualizar una transferencia existente
   Future<Movimiento> updateMovimiento(String id, Map<String, dynamic> movimientoData) async {
     try {
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
         method: 'PATCH',
         body: movimientoData,
@@ -282,18 +281,18 @@ class MovimientosApi {
   // Cambiar el estado de una transferencia
   Future<Movimiento> cambiarEstado(String id, String nuevoEstado, {String? observacion}) async {
     try {
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id/estado',
         method: 'PATCH',
-        body: {
+        body: <String, String>{
           'estado': nuevoEstado,
           if (observacion != null) 'observacion': observacion,
         },
       );
       
       // Invalidar el caché después de cambiar el estado
-      _cache.invalidate('$_prefixMovimiento$id');
-      _cache.invalidateByPattern(_prefixListaMovimientos);
+      _cache..invalidate('$_prefixMovimiento$id')
+      ..invalidateByPattern(_prefixListaMovimientos);
       
       return Movimiento.fromJson(response['data']);
     } catch (e) {
@@ -308,14 +307,14 @@ class MovimientosApi {
       await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id/cancelar',
         method: 'POST',
-        body: {
+        body: <String, String>{
           'motivo': motivo,
         },
       );
       
       // Invalidar el caché después de cancelar
-      _cache.invalidate('$_prefixMovimiento$id');
-      _cache.invalidateByPattern(_prefixListaMovimientos);
+      _cache..invalidate('$_prefixMovimiento$id')
+      ..invalidateByPattern(_prefixListaMovimientos);
       
       return true;
     } catch (e) {

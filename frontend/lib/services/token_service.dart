@@ -49,10 +49,12 @@ class TokenService {
   
   /// Verifica si el token está expirado o a punto de expirar
   bool get isTokenExpired {
-    if (_accessToken == null || _expiryTime == null) return true;
+    if (_accessToken == null || _expiryTime == null) {
+      return true;
+    }
     
     // Considerar expirado solo si ya ha expirado realmente
-    final now = DateTime.now();
+    final DateTime now = DateTime.now();
     return now.isAfter(_expiryTime!);
   }
   
@@ -67,12 +69,12 @@ class TokenService {
     try {
       debugPrint('TokenService: Cargando tokens desde SharedPreferences');
       
-      final prefs = await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       
       _accessToken = prefs.getString(_accessTokenKey);
       _refreshToken = prefs.getString(_refreshTokenKey);
       
-      final expiryTimeStr = prefs.getString(_expiryTimeKey);
+      final String? expiryTimeStr = prefs.getString(_expiryTimeKey);
       if (expiryTimeStr != null) {
         _expiryTime = DateTime.parse(expiryTimeStr);
       }
@@ -101,9 +103,9 @@ class TokenService {
   /// Intenta hacer login automático con credenciales guardadas
   Future<bool> _attemptAutoLogin() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final username = prefs.getString(_lastUsernameKey);
-      final password = prefs.getString(_lastPasswordKey);
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? username = prefs.getString(_lastUsernameKey);
+      final String? password = prefs.getString(_lastPasswordKey);
       
       if (username == null || password == null || username.isEmpty || password.isEmpty) {
         debugPrint('TokenService: No hay credenciales guardadas para login automático');
@@ -118,13 +120,13 @@ class TokenService {
       debugPrint('TokenService: Intentando login automático para usuario: $username');
       
       // Construir URL completa para login
-      final loginUrl = '$_baseUrl/auth/login';
+      final String loginUrl = '$_baseUrl/auth/login';
       
       // Realizar solicitud de login
-      final response = await http.post(
+      final http.Response response = await http.post(
         Uri.parse(loginUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
+        headers: <String, String>{'Content-Type': 'application/json'},
+        body: json.encode(<String, String>{
           'usuario': username,
           'clave': password,
         }),
@@ -146,7 +148,7 @@ class TokenService {
           } else if (responseData.containsKey('access_token')) {
             accessToken = responseData['access_token']?.toString();
           } else if (responseData.containsKey('data') && responseData['data'] is Map) {
-            final data = responseData['data'] as Map<String, dynamic>;
+            final Map<String, dynamic> data = responseData['data'] as Map<String, dynamic>;
             if (data.containsKey('token')) {
               accessToken = data['token']?.toString();
             } else if (data.containsKey('access_token')) {
@@ -160,7 +162,7 @@ class TokenService {
           } else if (responseData.containsKey('refreshToken')) {
             refreshToken = responseData['refreshToken']?.toString();
           } else if (responseData.containsKey('data') && responseData['data'] is Map) {
-            final data = responseData['data'] as Map<String, dynamic>;
+            final Map<String, dynamic> data = responseData['data'] as Map<String, dynamic>;
             if (data.containsKey('refresh_token')) {
               refreshToken = data['refresh_token']?.toString();
             } else if (data.containsKey('refreshToken')) {
@@ -220,7 +222,7 @@ class TokenService {
       _expiryTime = DateTime.now().add(Duration(seconds: expiryInSeconds));
       
       // Guardar en SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       
       await prefs.setString(_accessTokenKey, accessToken);
       if (refreshToken != null) {
@@ -239,7 +241,7 @@ class TokenService {
     try {
       debugPrint('TokenService: Guardando credenciales para login automático');
       
-      final prefs = await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString(_lastUsernameKey, username);
       await prefs.setString(_lastPasswordKey, password);
       
@@ -260,7 +262,7 @@ class TokenService {
       _expiryTime = null;
       
       // Limpiar SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.remove(_accessTokenKey);
       await prefs.remove(_refreshTokenKey);
       await prefs.remove(_expiryTimeKey);
@@ -276,16 +278,16 @@ class TokenService {
   Map<String, dynamic>? decodeToken(String token) {
     try {
       // Dividir el token en partes
-      final parts = token.split('.');
+      final List<String> parts = token.split('.');
       if (parts.length < 2) {
         debugPrint('TokenService: Formato de token inválido');
         return null;
       }
       
       // Decodificar la parte del payload (segunda parte)
-      final payload = parts[1];
-      final normalized = base64Url.normalize(payload);
-      final decodedPayload = utf8.decode(base64Url.decode(normalized));
+      final String payload = parts[1];
+      final String normalized = base64Url.normalize(payload);
+      final String decodedPayload = utf8.decode(base64Url.decode(normalized));
       
       return json.decode(decodedPayload) as Map<String, dynamic>;
     } catch (e) {
@@ -317,10 +319,14 @@ class TokenService {
   
   /// Extraer información específica del usuario del token
   Map<String, dynamic> extractUserInfoFromToken() {
-    if (_accessToken == null) return {};
+    if (_accessToken == null) {
+      return <String, dynamic>{};
+    }
     
-    final decodedToken = decodeToken(_accessToken!);
-    if (decodedToken == null) return {};
+    final Map<String, dynamic>? decodedToken = decodeToken(_accessToken!);
+    if (decodedToken == null) {
+      return <String, dynamic>{};
+    }
     
     // Normalizar el rol
     final String? rolOriginal = decodedToken['rolCuentaEmpleadoCodigo'];
@@ -348,7 +354,7 @@ class TokenService {
       }
     }
     
-    return {
+    return <String, dynamic>{
       'id': decodedToken['id']?.toString() ?? '',
       'usuario': decodedToken['usuario']?.toString() ?? '',
       'rol': rolNormalizado,
@@ -367,7 +373,7 @@ class TokenService {
       _refreshToken = refreshToken;
       
       // Guardar en SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString(_refreshTokenKey, refreshToken);
       
       debugPrint('TokenService: Refresh token actualizado correctamente');
@@ -400,8 +406,8 @@ class TokenService {
     
     // Agregar parámetros de consulta si existen
     if (queryParams != null && queryParams.isNotEmpty) {
-      final queryString = queryParams.entries
-          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+      final String queryString = queryParams.entries
+          .map((MapEntry<String, String> e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
           .join('&');
       url = '$url${url.contains('?') ? '&' : '?'}$queryString';
     }
@@ -418,7 +424,7 @@ class TokenService {
     }
     
     // Preparar encabezados
-    final requestHeaders = {
+    final Map<String, String> requestHeaders = <String, String>{
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       if (headers != null) ...headers,
@@ -486,7 +492,7 @@ class TokenService {
       }
       
       // Procesar la respuesta
-      final statusCode = response.statusCode;
+      final int statusCode = response.statusCode;
       
       // Extraer token de la respuesta si existe
       _processTokenFromResponse(response);
@@ -494,7 +500,7 @@ class TokenService {
       if (statusCode >= 200 && statusCode < 300) {
         // Respuesta exitosa
         if (response.body.isEmpty) {
-          return {'status': 'success'};
+          return <String, dynamic>{'status': 'success'};
         }
         
         try {
@@ -502,10 +508,10 @@ class TokenService {
           if (responseData is Map<String, dynamic>) {
             return responseData;
           } else {
-            return {'status': 'success', 'data': responseData};
+            return <String, dynamic>{'status': 'success', 'data': responseData};
           }
         } catch (e) {
-          return {'status': 'success', 'data': response.body};
+          return <String, dynamic>{'status': 'success', 'data': response.body};
         }
       } else if (statusCode == 401 && _accessToken != null && _requestRetryCount < _maxRetryCount) {
         // Token rechazado, verificar si debemos intentar refrescar el token
@@ -533,7 +539,7 @@ class TokenService {
           await _refreshTokenRequest();
           
           // Reintentar la solicitud original con el nuevo token
-          final retriedResponse = await authenticatedRequest(
+          final Map<String, dynamic> retriedResponse = await authenticatedRequest(
             endpoint: endpoint,
             method: method,
             body: body,
@@ -567,23 +573,23 @@ class TokenService {
   /// Procesa y extrae tokens de la respuesta HTTP si existen
   void _processTokenFromResponse(http.Response response) {
     try {
-      final headers = response.headers;
+      final Map<String, String> headers = response.headers;
       final body = response.body.isNotEmpty ? json.decode(response.body) : null;
       
       // Verificar si hay token en los encabezados
-      final authHeader = headers['authorization'] ?? '';
+      final String authHeader = headers['authorization'] ?? '';
       if (authHeader.startsWith('Bearer ')) {
-        final token = authHeader.substring(7);
+        final String token = authHeader.substring(7);
         if (token.isNotEmpty) {
           debugPrint('TokenService: Token encontrado en encabezados de respuesta');
           
           // Decodificar token para obtener tiempo de expiración
-          final decodedToken = decodeToken(token);
+          final Map<String, dynamic>? decodedToken = decodeToken(token);
           int expiryInSeconds = 3600; // 1 hora por defecto
           
           if (decodedToken != null && decodedToken.containsKey('exp')) {
-            final expTimestamp = decodedToken['exp'] as int;
-            final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+            final int expTimestamp = decodedToken['exp'] as int;
+            final int now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
             expiryInSeconds = expTimestamp - now;
           }
           
@@ -607,7 +613,7 @@ class TokenService {
         } else if (body.containsKey('access_token')) {
           accessToken = body['access_token']?.toString();
         } else if (body.containsKey('data') && body['data'] is Map) {
-          final data = body['data'] as Map<String, dynamic>;
+          final Map<String, dynamic> data = body['data'] as Map<String, dynamic>;
           if (data.containsKey('token')) {
             accessToken = data['token']?.toString();
           } else if (data.containsKey('access_token')) {
@@ -621,7 +627,7 @@ class TokenService {
         } else if (body.containsKey('refreshToken')) {
           refreshToken = body['refreshToken']?.toString();
         } else if (body.containsKey('data') && body['data'] is Map) {
-          final data = body['data'] as Map<String, dynamic>;
+          final Map<String, dynamic> data = body['data'] as Map<String, dynamic>;
           if (data.containsKey('refresh_token')) {
             refreshToken = data['refresh_token']?.toString();
           } else if (data.containsKey('refreshToken')) {
@@ -645,10 +651,10 @@ class TokenService {
           debugPrint('TokenService: Token encontrado en cuerpo de respuesta');
           
           // Decodificar token para verificar/ajustar tiempo de expiración
-          final decodedToken = decodeToken(accessToken);
+          final Map<String, dynamic>? decodedToken = decodeToken(accessToken);
           if (decodedToken != null && decodedToken.containsKey('exp')) {
-            final expTimestamp = decodedToken['exp'] as int;
-            final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+            final int expTimestamp = decodedToken['exp'] as int;
+            final int now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
             expiryInSeconds = expTimestamp - now;
           }
           
@@ -681,7 +687,9 @@ class TokenService {
       }
       
       // Si ya no estamos refrescando y el token es válido, regresar
-      if (!isTokenExpired) return;
+      if (!isTokenExpired) {
+        return;
+      }
     }
     
     // Verificar que tenemos un refresh token
@@ -696,27 +704,27 @@ class TokenService {
       debugPrint('TokenService: Intentando refrescar token con endpoint /auth/refresh');
       
       // Construir URL para refresh
-      final url = '$_baseUrl/auth/refresh';
+      final String url = '$_baseUrl/auth/refresh';
       
       // Preparar encabezados con el refresh token
-      final headers = {
+      final Map<String, String> headers = <String, String>{
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       };
       
       // Incluir refresh token en body
-      final body = {
+      final Map<String, String?> body = <String, String?>{
         'refresh_token': _refreshToken,
       };
       
       // Realizar solicitud POST
-      final response = await http.post(
+      final http.Response response = await http.post(
         Uri.parse(url),
         headers: headers,
         body: json.encode(body),
       ).timeout(const Duration(seconds: 30));
       
-      final statusCode = response.statusCode;
+      final int statusCode = response.statusCode;
       
       if (statusCode >= 200 && statusCode < 300) {
         // Procesar tokens de la respuesta

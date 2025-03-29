@@ -1,5 +1,6 @@
+import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../../../../models/sucursal.model.dart';
 
 class ProductosList extends StatelessWidget {
   final List<Sucursal> sucursales;
@@ -19,12 +20,12 @@ class ProductosList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: <Widget>[
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+            children: <Widget>[
               const Text(
                 'Sucursales',
                 style: TextStyle(
@@ -48,9 +49,9 @@ class ProductosList extends StatelessWidget {
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: sucursales.length,
-            itemBuilder: (context, index) {
-              final sucursal = sucursales[index];
-              final isSelected = sucursalSeleccionada?.id == sucursal.id;
+            itemBuilder: (BuildContext context, int index) {
+              final Sucursal sucursal = sucursales[index];
+              final bool isSelected = sucursalSeleccionada?.id == sucursal.id;
               
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -70,9 +71,9 @@ class ProductosList extends StatelessWidget {
                   onTap: () => onSucursalSelected(sucursal),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: <Widget>[
                       Row(
-                        children: [
+                        children: <Widget>[
                           Icon(
                             sucursal.sucursalCentral
                                 ? Icons.star
@@ -100,10 +101,13 @@ class ProductosList extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        sucursal.direccion,
+                        sucursal.direccion ?? 'Sin dirección registrada',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.7),
                           fontSize: 12,
+                          fontStyle: sucursal.direccion != null 
+                              ? FontStyle.normal 
+                              : FontStyle.italic,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 2,
@@ -117,5 +121,15 @@ class ProductosList extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(IterableProperty<Sucursal>('sucursales', sucursales))
+      ..add(DiagnosticsProperty<Sucursal?>('sucursalSeleccionada', sucursalSeleccionada))
+      ..add(ObjectFlagProperty<Function(Sucursal)>.has('onSucursalSelected', onSucursalSelected))
+      ..add(ObjectFlagProperty<VoidCallback>.has('onRecargarSucursales', onRecargarSucursales));
   }
 }

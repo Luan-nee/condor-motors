@@ -1,7 +1,7 @@
-import '../services/token_service.dart';
-import 'auth.api.dart';
-import 'main.api.dart';
-import 'protected/index.protected.dart';
+import 'package:condorsmotors/api/auth.api.dart';
+import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/api/protected/index.protected.dart';
+import 'package:condorsmotors/services/token_service.dart';
 
 export 'auth.api.dart';
 export 'main.api.dart';

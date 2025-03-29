@@ -14,8 +14,8 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
   String _selectedFilter = 'Todos';
 
   // Datos de ejemplo para ventas
-  final List<Map<String, dynamic>> _ventas = [
-    {
+  final List<Map<String, dynamic>> _ventas = <Map<String, dynamic>>[
+    <String, dynamic>{
       'id': 1,
       'codigo': 'V001',
       'fecha': '2024-03-12 10:00:00',
@@ -23,14 +23,14 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
       'total': 460.18,
       'estado': 'COMPLETADA',
       'metodoPago': 'EFECTIVO',
-      'productos': [
-        {
+      'productos': <Map<String, dynamic>>[
+        <String, dynamic>{
           'nombre': 'Casco MT Thunder',
           'cantidad': 1,
           'precio': 299.99,
           'subtotal': 299.99
         },
-        {
+        <String, dynamic>{
           'nombre': 'Aceite Motul 5100',
           'cantidad': 1,
           'precio': 89.99,
@@ -38,7 +38,7 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
         }
       ]
     },
-    {
+    <String, dynamic>{
       'id': 2,
       'codigo': 'V002',
       'fecha': '2024-03-12 11:30:00',
@@ -46,8 +46,8 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
       'total': 850.00,
       'estado': 'PENDIENTE',
       'metodoPago': 'TARJETA',
-      'productos': [
-        {
+      'productos': <Map<String, dynamic>>[
+        <String, dynamic>{
           'nombre': 'Kit de Frenos Brembo',
           'cantidad': 1,
           'precio': 850.00,
@@ -55,7 +55,7 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
         }
       ]
     },
-    {
+    <String, dynamic>{
       'id': 3,
       'codigo': 'V003',
       'fecha': '2024-03-12 12:15:00',
@@ -63,8 +63,8 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
       'total': 599.99,
       'estado': 'ANULADA',
       'metodoPago': 'EFECTIVO',
-      'productos': [
-        {
+      'productos': <Map<String, dynamic>>[
+        <String, dynamic>{
           'nombre': 'Amortiguador YSS',
           'cantidad': 1,
           'precio': 599.99,
@@ -75,7 +75,7 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
   ];
 
   // Filtros disponibles
-  final List<String> _filters = [
+  final List<String> _filters = <String>[
     'Todos',
     'Completadas',
     'Pendientes',
@@ -87,12 +87,12 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
       return _ventas;
     }
 
-    return _ventas.where((venta) {
-      final matchesSearch = 
+    return _ventas.where((Map<String, dynamic> venta) {
+      final bool matchesSearch = 
           venta['codigo'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
           venta['cliente'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
       
-      final matchesFilter = _selectedFilter == 'Todos' || 
+      final bool matchesFilter = _selectedFilter == 'Todos' || 
           venta['estado'] == _selectedFilter.toUpperCase().replaceAll('S', '');
       
       return matchesSearch && matchesFilter;
@@ -101,9 +101,9 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
 
   @override
   Widget build(BuildContext context) {
-    final ventasFiltradas = _getVentasFiltradas();
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
+    final List<Map<String, dynamic>> ventasFiltradas = _getVentasFiltradas();
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isMobile = screenWidth < 600;
     
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
@@ -111,7 +111,7 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
         backgroundColor: const Color(0xFF2D2D2D),
         elevation: 0,
         title: Row(
-          children: [
+          children: <Widget>[
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -141,12 +141,12 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
         ),
       ),
       body: Column(
-        children: [
+        children: <Widget>[
           // Barra de búsqueda y filtros
           Container(
             padding: const EdgeInsets.all(16),
             child: Row(
-              children: [
+              children: <Widget>[
                 // Buscador
                 Expanded(
                   child: TextField(
@@ -174,7 +174,7 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
                         vertical: 12,
                       ),
                     ),
-                    onChanged: (value) {
+                    onChanged: (String value) {
                       setState(() {
                         _searchQuery = value;
                       });
@@ -228,7 +228,7 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                          children: <Widget>[
                             FaIcon(
                               FontAwesomeIcons.receipt,
                               size: 48,
@@ -248,8 +248,8 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
                     : ListView.builder(
                         padding: EdgeInsets.all(isMobile ? 8 : 16),
                         itemCount: ventasFiltradas.length,
-                        itemBuilder: (context, index) {
-                          final venta = ventasFiltradas[index];
+                        itemBuilder: (BuildContext context, int index) {
+                          final Map<String, dynamic> venta = ventasFiltradas[index];
                           return Container(
                             margin: const EdgeInsets.only(bottom: 16),
                             decoration: BoxDecoration(
@@ -259,7 +259,7 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
                             child: ExpansionTile(
                               leading: _buildEstadoIcon(venta['estado']),
                               title: Row(
-                                children: [
+                                children: <Widget>[
                                   Text(
                                     venta['codigo'],
                                     style: const TextStyle(
@@ -277,7 +277,7 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
                                 ],
                               ),
                               subtitle: Row(
-                                children: [
+                                children: <Widget>[
                                   Text(
                                     venta['fecha'],
                                     style: TextStyle(
@@ -313,13 +313,13 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
                                   fontSize: 16,
                                 ),
                               ),
-                              children: [
+                              children: <Widget>[
                                 // Detalles de la venta
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
+                                    children: <Widget>[
                                       const Text(
                                         'Productos',
                                         style: TextStyle(
@@ -338,7 +338,7 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
                                             borderRadius: BorderRadius.circular(8),
                                           ),
                                           child: Row(
-                                            children: [
+                                            children: <Widget>[
                                               Container(
                                                 padding: const EdgeInsets.all(8),
                                                 decoration: BoxDecoration(
@@ -355,7 +355,7 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
                                               Expanded(
                                                 child: Column(
                                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
+                                                  children: <Widget>[
                                                     Text(
                                                       producto['nombre'],
                                                       style: const TextStyle(
@@ -396,7 +396,7 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
                                         ),
                                         child: Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
+                                          children: <Widget>[
                                             const Text(
                                               'Total:',
                                               style: TextStyle(
@@ -420,7 +420,7 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
                                         padding: const EdgeInsets.only(top: 16),
                                         child: Row(
                                           mainAxisAlignment: MainAxisAlignment.end,
-                                          children: [
+                                          children: <Widget>[
                                             OutlinedButton.icon(
                                               icon: const FaIcon(
                                                 FontAwesomeIcons.print,
@@ -436,7 +436,6 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
                                                 ),
                                               ),
                                               onPressed: () {
-                                                // TODO: Implementar impresión
                                               },
                                             ),
                                             const SizedBox(width: 8),
@@ -455,7 +454,6 @@ class _HistorialVentasColabScreenState extends State<HistorialVentasColabScreen>
                                                 ),
                                               ),
                                               onPressed: () {
-                                                // TODO: Implementar vista detallada
                                               },
                                             ),
                                           ],

@@ -1,8 +1,7 @@
+import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/models/categoria.model.dart';
 import 'package:flutter/foundation.dart';
-
-import '../../models/categoria.model.dart';
-import '../main.api.dart';
-import 'cache/fast_cache.dart';
 
 class CategoriasApi {
   final ApiClient _api;
@@ -21,11 +20,11 @@ class CategoriasApi {
   /// productos asociados a cada categoría.
   Future<List<dynamic>> getCategorias({bool useCache = true}) async {
     try {
-      const cacheKey = 'categorias_all';
+      const String cacheKey = 'categorias_all';
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final cachedData = _cache.get<List<dynamic>>(cacheKey);
+        final List? cachedData = _cache.get<List<dynamic>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Categorías obtenidas desde caché');
           return cachedData;
@@ -34,11 +33,11 @@ class CategoriasApi {
       
       debugPrint('CategoriasApi: Obteniendo categorías');
       
-      final queryParams = <String, String>{
+      final Map<String, String> queryParams = <String, String>{
         'sort_by': 'nombre',
       };
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: _endpoint,
         method: 'GET',
         queryParams: queryParams,
@@ -49,19 +48,19 @@ class CategoriasApi {
       // Verificar estructura de respuesta
       if (response['data'] == null) {
         debugPrint('CategoriasApi: La respuesta no contiene datos');
-        return [];
+        return <List<dynamic>>[];
       }
       
       if (response['data'] is! List) {
         debugPrint('CategoriasApi: Formato de datos inesperado. Recibido: ${response['data'].runtimeType}');
-        return [];
+        return <List<dynamic>>[];
       }
       
-      final categorias = response['data'] as List;
+      final List categorias = response['data'] as List;
       debugPrint('CategoriasApi: ${categorias.length} categorías encontradas');
       
       // Información adicional sobre totalProductos
-      var totalProductosGlobal = 0;
+      int totalProductosGlobal = 0;
       for (final cat in categorias) {
         if (cat is Map && cat.containsKey('totalProductos')) {
           totalProductosGlobal += (cat['totalProductos'] as int? ?? 0);
@@ -98,11 +97,11 @@ class CategoriasApi {
   /// productos asociados a cada categoría.
   Future<List<Categoria>> getCategoriasObjetos({bool useCache = true}) async {
     try {
-      final categoriasRaw = await getCategorias(useCache: useCache);
-      final categorias = categoriasRaw.map((data) => Categoria.fromJson(data)).toList();
+      final List categoriasRaw = await getCategorias(useCache: useCache);
+      final List<Categoria> categorias = categoriasRaw.map((data) => Categoria.fromJson(data)).toList();
       
       // Ordenar categorías por nombre (extra)
-      categorias.sort((a, b) => a.nombre.compareTo(b.nombre));
+      categorias.sort((Categoria a, Categoria b) => a.nombre.compareTo(b.nombre));
       
       return categorias;
     } catch (e) {
@@ -122,7 +121,7 @@ class CategoriasApi {
     try {
       debugPrint('CategoriasApi: Creando nueva categoría: $nombre');
       
-      final body = <String, dynamic>{
+      final Map<String, dynamic> body = <String, dynamic>{
         'nombre': nombre,
       };
       
@@ -130,7 +129,7 @@ class CategoriasApi {
         body['descripcion'] = descripcion;
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: _endpoint,
         method: 'POST',
         body: body,
@@ -158,7 +157,7 @@ class CategoriasApi {
   /// Crea una nueva categoría usando un objeto [Categoria]
   Future<Categoria> createCategoriaObjeto(Categoria categoria) async {
     try {
-      final data = await createCategoria(
+      final Map<String, dynamic> data = await createCategoria(
         nombre: categoria.nombre,
         descripcion: categoria.descripcion,
       );
@@ -183,7 +182,7 @@ class CategoriasApi {
       debugPrint('CategoriasApi: Actualizando categoría con ID: $id');
       
       // Construir el cuerpo de la solicitud solo con los campos que se van a actualizar
-      final body = <String, dynamic>{};
+      final Map<String, dynamic> body = <String, dynamic>{};
       
       if (nombre != null) {
         body['nombre'] = nombre;
@@ -198,7 +197,7 @@ class CategoriasApi {
         throw Exception('Debe proporcionar al menos un campo para actualizar');
       }
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
         method: 'PATCH', // Usar PATCH para actualización parcial
         body: body,
@@ -227,7 +226,7 @@ class CategoriasApi {
   /// Actualiza una categoría existente usando un objeto [Categoria]
   Future<Categoria> updateCategoriaObjeto(Categoria categoria) async {
     try {
-      final data = await updateCategoria(
+      final Map<String, dynamic> data = await updateCategoria(
         id: categoria.id.toString(),
         nombre: categoria.nombre,
         descripcion: categoria.descripcion,
@@ -277,11 +276,11 @@ class CategoriasApi {
   /// [useCache] Indica si se debe usar el caché (default: true)
   Future<Map<String, dynamic>> getCategoria(String id, {bool useCache = true}) async {
     try {
-      final cacheKey = 'categoria_$id';
+      final String cacheKey = 'categoria_$id';
       
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Categoría obtenida desde caché: $cacheKey');
           return cachedData;
@@ -290,14 +289,14 @@ class CategoriasApi {
       
       debugPrint('CategoriasApi: Obteniendo categoría con ID: $id');
       
-      final response = await _api.authenticatedRequest(
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
         method: 'GET',
       );
       
       debugPrint('CategoriasApi: Categoría obtenida con éxito');
       
-      final categoria = response['data'] as Map<String, dynamic>;
+      final Map<String, dynamic> categoria = response['data'] as Map<String, dynamic>;
       
       // Guardar en caché si useCache es true
       if (useCache) {
@@ -322,7 +321,7 @@ class CategoriasApi {
   /// Obtiene una categoría específica por su ID como objeto [Categoria]
   Future<Categoria> getCategoriaObjeto(String id, {bool useCache = true}) async {
     try {
-      final categoriaData = await getCategoria(id, useCache: useCache);
+      final Map<String, dynamic> categoriaData = await getCategoria(id, useCache: useCache);
       return Categoria.fromJson(categoriaData);
     } catch (e) {
       debugPrint('CategoriasApi: ERROR al obtener categoría como objeto: $e');

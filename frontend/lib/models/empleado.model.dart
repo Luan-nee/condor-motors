@@ -43,7 +43,7 @@ class Empleado {
     bool sucursalCentral = false;
     
     if (json['sucursal'] is Map<String, dynamic>) {
-      final sucursal = json['sucursal'] as Map<String, dynamic>;
+      final Map<String, dynamic> sucursal = json['sucursal'] as Map<String, dynamic>;
       sucursalId = sucursal['id']?.toString();
       sucursalNombre = sucursal['nombre']?.toString();
       sucursalCentral = sucursal['sucursalCentral'] == true;
@@ -55,7 +55,7 @@ class Empleado {
     // Extraer ID de cuenta de empleado si está disponible
     String? cuentaEmpleadoId;
     if (json['cuentaEmpleado'] is Map<String, dynamic>) {
-      final cuenta = json['cuentaEmpleado'] as Map<String, dynamic>;
+      final Map<String, dynamic> cuenta = json['cuentaEmpleado'] as Map<String, dynamic>;
       cuentaEmpleadoId = cuenta['id']?.toString();
     }
 
@@ -81,7 +81,7 @@ class Empleado {
 
   /// Convierte el modelo a un mapa JSON
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'nombre': nombre,
       'apellidos': apellidos,
       'ubicacionFoto': ubicacionFoto,
@@ -156,7 +156,7 @@ class EmpleadosPaginados {
 
   /// Crea una instancia de EmpleadosPaginados a partir de una respuesta JSON
   factory EmpleadosPaginados.fromJson(Map<String, dynamic> json) {
-    List<dynamic> items = [];
+    List<dynamic> items = <dynamic>[];
     
     if (json['data'] is List) {
       items = json['data'];
@@ -164,11 +164,11 @@ class EmpleadosPaginados {
       items = json['data']['data'];
     }
     
-    final empleados = items
+    final List<Empleado> empleados = items
         .map((item) => Empleado.fromJson(item as Map<String, dynamic>))
         .toList();
     
-    Map<String, dynamic> paginacion = {};
+    Map<String, dynamic> paginacion = <String, dynamic>{};
     if (json['pagination'] is Map) {
       paginacion = json['pagination'] as Map<String, dynamic>;
     } else if (json['data'] is Map && json['data']['pagination'] is Map) {
@@ -185,16 +185,16 @@ class EmpleadosPaginados {
 /// Extensión con métodos útiles para listas de empleados
 extension EmpleadoListExtension on List<Empleado> {
   /// Filtra los empleados activos
-  List<Empleado> get activos => where((e) => e.activo).toList();
+  List<Empleado> get activos => where((Empleado e) => e.activo).toList();
   
   /// Filtra por sucursal
   List<Empleado> porSucursal(String sucursalId) => 
-      where((e) => e.sucursalId == sucursalId).toList();
+      where((Empleado e) => e.sucursalId == sucursalId).toList();
       
   /// Busca empleados por término en nombre o apellidos
   List<Empleado> buscar(String termino) {
-    final terminoLower = termino.toLowerCase();
-    return where((e) => 
+    final String terminoLower = termino.toLowerCase();
+    return where((Empleado e) => 
       e.nombre.toLowerCase().contains(terminoLower) || 
       e.apellidos.toLowerCase().contains(terminoLower) ||
       e.dni?.toLowerCase() == terminoLower

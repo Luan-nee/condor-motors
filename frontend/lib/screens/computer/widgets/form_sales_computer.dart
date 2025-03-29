@@ -1,12 +1,12 @@
 import 'dart:developer' as developer;
 
+import 'package:condorsmotors/models/proforma.model.dart';
+import 'package:condorsmotors/screens/computer/ventas_computer.dart' show VentasUtils;
+import 'package:condorsmotors/screens/computer/widgets/ventas_pendientes_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import '../../../models/proforma.model.dart';
-import '../ventas_computer.dart' show VentasUtils;
-import 'ventas_pendientes_utils.dart';
 
 class ProcessingDialog extends StatelessWidget {
   final String documentType;
@@ -27,7 +27,7 @@ class ProcessingDialog extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
+          children: <Widget>[
             const SizedBox(
               width: 48,
               height: 48,
@@ -56,6 +56,12 @@ class ProcessingDialog extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(StringProperty('documentType', documentType));
   }
 }
 
@@ -91,12 +97,30 @@ class NumericKeypad extends StatefulWidget {
 
   @override
   State<NumericKeypad> createState() => _NumericKeypadState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(StringProperty('customerName', customerName))
+      ..add(ObjectFlagProperty<VoidCallback>.has('onSubmit', onSubmit))
+      ..add(ObjectFlagProperty<Function(String)>.has('onKeyPressed', onKeyPressed))
+      ..add(ObjectFlagProperty<VoidCallback>.has('onClear', onClear))
+      ..add(StringProperty('currentAmount', currentAmount))
+      ..add(StringProperty('paymentAmount', paymentAmount))
+      ..add(StringProperty('documentType', documentType))
+      ..add(ObjectFlagProperty<Function(String)>.has('onCustomerNameChanged', onCustomerNameChanged))
+      ..add(ObjectFlagProperty<Function(String)>.has('onDocumentTypeChanged', onDocumentTypeChanged))
+      ..add(DiagnosticsProperty<bool>('isProcessing', isProcessing))
+      ..add(DoubleProperty('minAmount', minAmount))
+      ..add(ObjectFlagProperty<Function(double)>.has('onCharge', onCharge));
+  }
 }
 
 class _NumericKeypadState extends State<NumericKeypad> {
-  final _focusNode = FocusNode();
-  final _customerNameController = TextEditingController();
-  final _changeController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  final TextEditingController _customerNameController = TextEditingController();
+  final TextEditingController _changeController = TextEditingController();
   final bool _isManualChange = false;
   String _enteredAmount = '';
 
@@ -137,8 +161,8 @@ class _NumericKeypadState extends State<NumericKeypad> {
     if (_isManualChange) {
       return double.tryParse(_changeController.text) ?? 0;
     }
-    final total = double.tryParse(widget.currentAmount) ?? 0;
-    final payment = double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
+    final double total = double.tryParse(widget.currentAmount) ?? 0;
+    final double payment = double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
     return VentasUtils.formatearMonto(payment - total);
   }
 
@@ -147,7 +171,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
     
     if (key == 'Enter') {
       developer.log('Intentando ejecutar onCharge - Monto ingresado: $_enteredAmount');
-      final montoIngresado = double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
+      final double montoIngresado = double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
       if (_enteredAmount.isNotEmpty && montoIngresado >= widget.minAmount) {
         developer.log('Ejecutando onCharge con monto: $montoIngresado');
         widget.onCharge(montoIngresado);
@@ -206,9 +230,11 @@ class _NumericKeypadState extends State<NumericKeypad> {
     return KeyboardListener(
       focusNode: _focusNode,
       onKeyEvent: (KeyEvent event) {
-        if (event is! KeyDownEvent) return;
+        if (event is! KeyDownEvent) {
+          return;
+        }
 
-        final key = event.logicalKey;
+        final LogicalKeyboardKey key = event.logicalKey;
         developer.log('Tecla física presionada: ${key.keyLabel}');
         
         if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.numpadEnter) {
@@ -247,7 +273,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+          children: <Widget>[
             // Información del cliente
             Container(
               padding: const EdgeInsets.all(16),
@@ -257,10 +283,10 @@ class _NumericKeypadState extends State<NumericKeypad> {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   // Campo de nombre del cliente
                   Row(
-                    children: [
+                    children: <Widget>[
                       const FaIcon(
                         FontAwesomeIcons.user, 
                         color: Color(0xFFE31E24), 
@@ -291,7 +317,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                   
                   // Selector de tipo de documento
                   Row(
-                    children: [
+                    children: <Widget>[
                       Expanded(
                         child: Material(
                           color: Colors.transparent,
@@ -315,7 +341,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                                 ),
                               ),
                               child: Column(
-                                children: [
+                                children: <Widget>[
                                   FaIcon(
                                     FontAwesomeIcons.receipt,
                                     color: widget.documentType == 'Boleta' 
@@ -364,7 +390,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                                 ),
                               ),
                               child: Column(
-                                children: [
+                                children: <Widget>[
                                   FaIcon(
                                     FontAwesomeIcons.fileInvoiceDollar,
                                     color: widget.documentType == 'Factura' 
@@ -404,11 +430,11 @@ class _NumericKeypadState extends State<NumericKeypad> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
-                children: [
+                children: <Widget>[
                   // Total a pagar
                   Expanded(
                     child: Column(
-                      children: [
+                      children: <Widget>[
                         const Text(
                           'TOTAL A PAGAR',
                           style: TextStyle(
@@ -432,7 +458,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                   // Monto recibido
                   Expanded(
                     child: Column(
-                      children: [
+                      children: <Widget>[
                         const Text(
                           'MONTO RECIBIDO',
                           style: TextStyle(
@@ -459,7 +485,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                   if (_esMontoSuficiente())
                     Expanded(
                       child: Column(
-                        children: [
+                        children: <Widget>[
                           const Text(
                             'CAMBIO A DEVOLVER',
                             style: TextStyle(
@@ -490,11 +516,11 @@ class _NumericKeypadState extends State<NumericKeypad> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+                children: <Widget>[
                   // Fila 1: 1, 2, 3
                   Expanded(
                     child: Row(
-                      children: [
+                      children: <Widget>[
                         _buildNumberKeyButton('1'),
                         _buildNumberKeyButton('2'),
                         _buildNumberKeyButton('3'),
@@ -504,7 +530,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                   // Fila 2: 4, 5, 6
                   Expanded(
                     child: Row(
-                      children: [
+                      children: <Widget>[
                         _buildNumberKeyButton('4'),
                         _buildNumberKeyButton('5'),
                         _buildNumberKeyButton('6'),
@@ -514,7 +540,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                   // Fila 3: 7, 8, 9
                   Expanded(
                     child: Row(
-                      children: [
+                      children: <Widget>[
                         _buildNumberKeyButton('7'),
                         _buildNumberKeyButton('8'),
                         _buildNumberKeyButton('9'),
@@ -524,7 +550,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                   // Fila 4: ., 0, Borrar
                   Expanded(
                     child: Row(
-                      children: [
+                      children: <Widget>[
                         _buildNumberKeyButton('.'),
                         _buildNumberKeyButton('0'),
                         _buildActionButton(
@@ -626,7 +652,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                  children: <Widget>[
                     icon,
                     const SizedBox(height: 2),
                     Text(
@@ -656,9 +682,17 @@ class _NumericKeypadState extends State<NumericKeypad> {
   /// 
   /// Retorna true si el monto es suficiente, false en caso contrario.
   bool _esMontoSuficiente() {
-    if (_enteredAmount.isEmpty) return false;
-    final montoIngresado = double.tryParse(_enteredAmount) ?? 0;
+    if (_enteredAmount.isEmpty) {
+      return false;
+    }
+    final double montoIngresado = double.tryParse(_enteredAmount) ?? 0;
     return montoIngresado >= widget.minAmount;
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DoubleProperty('change', change));
   }
 }
 
@@ -687,9 +721,9 @@ class ProformaSaleDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             Row(
-              children: [
+              children: <Widget>[
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -724,9 +758,7 @@ class ProformaSaleDialog extends StatelessWidget {
             
             // Detalles de la proforma
             Text(
-              'Proforma #${proforma.id} - ${proforma.fechaCreacion != null 
-                ? '${proforma.fechaCreacion.day}/${proforma.fechaCreacion.month}/${proforma.fechaCreacion.year}'
-                : 'Fecha no disponible'}',
+              'Proforma #${proforma.id} - ${VentasPendientesUtils.formatearFecha(proforma.fechaCreacion)}',
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.white70,
@@ -766,12 +798,12 @@ class ProformaSaleDialog extends StatelessWidget {
               ),
               padding: const EdgeInsets.all(12),
               child: Column(
-                children: [
-                  for (var detalle in proforma.detalles)
+                children: <Widget>[
+                  for (DetalleProforma detalle in proforma.detalles)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
-                        children: [
+                        children: <Widget>[
                           Expanded(
                             flex: 5,
                             child: Text(
@@ -816,7 +848,7 @@ class ProformaSaleDialog extends StatelessWidget {
                     ),
                   const Divider(color: Colors.white24),
                   Row(
-                    children: [
+                    children: <Widget>[
                       const Spacer(),
                       const Text(
                         'Total:',
@@ -844,7 +876,7 @@ class ProformaSaleDialog extends StatelessWidget {
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
-              children: [
+              children: <Widget>[
                 OutlinedButton(
                   onPressed: onCancel,
                   style: OutlinedButton.styleFrom(
@@ -860,7 +892,7 @@ class ProformaSaleDialog extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: () {
                     // Convertir proforma a formato para procesar venta
-                    final ventaData = VentasPendientesUtils.convertirProformaAVentaPendiente(proforma);
+                    final Map<String, dynamic> ventaData = VentasPendientesUtils.convertirProformaAVentaPendiente(proforma);
                     onConfirm(ventaData);
                   },
                   style: ElevatedButton.styleFrom(
@@ -876,5 +908,14 @@ class ProformaSaleDialog extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty<Proforma>('proforma', proforma))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has('onConfirm', onConfirm))
+      ..add(ObjectFlagProperty<VoidCallback>.has('onCancel', onCancel));
   }
 }

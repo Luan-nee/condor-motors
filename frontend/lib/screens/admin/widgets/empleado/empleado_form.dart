@@ -1,10 +1,10 @@
+import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_horario_dialog.dart';
+import 'package:condorsmotors/utils/empleados_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import '../../../../models/empleado.model.dart';
-import '../../../../utils/empleados_utils.dart';
-import 'empleado_horario_dialog.dart';
 
 class EmpleadoForm extends StatefulWidget {
   final Empleado? empleado;
@@ -24,23 +24,34 @@ class EmpleadoForm extends StatefulWidget {
 
   @override
   State<EmpleadoForm> createState() => _EmpleadoFormState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty<Empleado?>('empleado', empleado))
+      ..add(DiagnosticsProperty<Map<String, String>>('sucursales', sucursales))
+      ..add(IterableProperty<String>('roles', roles))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic> p1)>.has('onSave', onSave))
+      ..add(ObjectFlagProperty<VoidCallback>.has('onCancel', onCancel));
+  }
 }
 
 class _EmpleadoFormState extends State<EmpleadoForm> {
-  final _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   // Controladores para los campos del formulario
-  final _nombreController = TextEditingController();
-  final _apellidosController = TextEditingController();
-  final _dniController = TextEditingController();
-  final _sueldoController = TextEditingController();
-  final _celularController = TextEditingController();
+  final TextEditingController _nombreController = TextEditingController();
+  final TextEditingController _apellidosController = TextEditingController();
+  final TextEditingController _dniController = TextEditingController();
+  final TextEditingController _sueldoController = TextEditingController();
+  final TextEditingController _celularController = TextEditingController();
 
   // Controladores para el horario
-  final _horaInicioHoraController = TextEditingController();
-  final _horaInicioMinutoController = TextEditingController();
-  final _horaFinHoraController = TextEditingController();
-  final _horaFinMinutoController = TextEditingController();
+  final TextEditingController _horaInicioHoraController = TextEditingController();
+  final TextEditingController _horaInicioMinutoController = TextEditingController();
+  final TextEditingController _horaFinHoraController = TextEditingController();
+  final TextEditingController _horaFinMinutoController = TextEditingController();
 
   String? _selectedSucursalId;
   String? _selectedRol;
@@ -91,7 +102,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   }
 
   void _inicializarFormularioEmpleadoExistente() {
-    final empleado = widget.empleado!;
+    final Empleado empleado = widget.empleado!;
 
     // Datos personales
     _nombreController.text = empleado.nombre;
@@ -133,7 +144,9 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   }
 
   Future<void> _cargarInformacionCuenta() async {
-    if (widget.empleado == null) return;
+    if (widget.empleado == null) {
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -143,7 +156,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
 
     try {
       // Usar la función de utilidad para cargar la información de la cuenta
-      final resultado =
+      final Map<String, dynamic> resultado =
           await EmpleadosUtils.cargarInformacionCuenta(widget.empleado!);
 
       if (mounted) {
@@ -172,7 +185,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
 
   void _actualizarEsSucursalCentral() {
     if (_selectedSucursalId != null) {
-      final nombreSucursal = widget.sucursales[_selectedSucursalId] ?? '';
+      final String nombreSucursal = widget.sucursales[_selectedSucursalId] ?? '';
       setState(() {
         _esSucursalCentral = nombreSucursal.contains('(Central)');
       });
@@ -203,9 +216,9 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              children: <Widget>[
                 Row(
-                  children: [
+                  children: <Widget>[
                     const FaIcon(
                       FontAwesomeIcons.userPlus,
                       color: Colors.white,
@@ -243,11 +256,11 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                 // Formulario organizado en 2 columnas
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     // Columna izquierda
                     Expanded(
                       child: Column(
-                        children: [
+                        children: <Widget>[
                           TextFormField(
                             controller: _nombreController,
                             style: const TextStyle(color: Colors.white),
@@ -257,7 +270,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                               prefixIcon: Icon(Icons.person,
                                   color: Colors.white54, size: 20),
                             ),
-                            validator: (value) {
+                            validator: (String? value) {
                               if (value == null || value.isEmpty) {
                                 return 'El nombre es requerido';
                               }
@@ -270,7 +283,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                             style: const TextStyle(color: Colors.white),
                             keyboardType: TextInputType.number,
                             maxLength: 8,
-                            inputFormatters: [
+                            inputFormatters: <TextInputFormatter>[
                               FilteringTextInputFormatter.digitsOnly,
                             ],
                             decoration: const InputDecoration(
@@ -280,7 +293,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                   color: Colors.white54, size: 20),
                               counterText: '',
                             ),
-                            validator: (value) {
+                            validator: (String? value) {
                               if (value != null &&
                                   value.isNotEmpty &&
                                   value.length != 8) {
@@ -295,7 +308,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                             style: const TextStyle(color: Colors.white),
                             keyboardType: TextInputType.phone,
                             maxLength: 9,
-                            inputFormatters: [
+                            inputFormatters: <TextInputFormatter>[
                               FilteringTextInputFormatter.digitsOnly,
                             ],
                             decoration: const InputDecoration(
@@ -305,7 +318,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                   color: Colors.white54, size: 20),
                               counterText: '',
                             ),
-                            validator: (value) {
+                            validator: (String? value) {
                               if (value != null &&
                                   value.isNotEmpty &&
                                   value.length != 9) {
@@ -323,7 +336,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                     // Columna derecha
                     Expanded(
                       child: Column(
-                        children: [
+                        children: <Widget>[
                           TextFormField(
                             controller: _apellidosController,
                             style: const TextStyle(color: Colors.white),
@@ -333,7 +346,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                               prefixIcon: Icon(Icons.person_outline,
                                   color: Colors.white54, size: 20),
                             ),
-                            validator: (value) {
+                            validator: (String? value) {
                               if (value == null || value.isEmpty) {
                                 return 'Los apellidos son requeridos';
                               }
@@ -354,7 +367,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                   style: const TextStyle(color: Colors.white),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
+                  inputFormatters: <TextInputFormatter>[
                     FilteringTextInputFormatter.allow(
                         RegExp(r'^\d+\.?\d{0,2}')),
                   ],
@@ -365,9 +378,9 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                     prefixIcon: Icon(Icons.attach_money,
                         color: Colors.white54, size: 20),
                   ),
-                  validator: (value) {
+                  validator: (String? value) {
                     if (value != null && value.isNotEmpty) {
-                      final sueldo = double.tryParse(value);
+                      final double? sueldo = double.tryParse(value);
                       if (sueldo == null) {
                         return 'Ingrese un monto válido';
                       }
@@ -396,7 +409,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
 
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     // Rol
                     Expanded(
                       child: DropdownButtonFormField<String>(
@@ -407,7 +420,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                           labelText: 'Rol',
                           labelStyle: TextStyle(color: Colors.white70),
                         ),
-                        items: widget.roles.map((rol) {
+                        items: widget.roles.map((String rol) {
                           IconData iconData;
                           switch (rol.toLowerCase()) {
                             case 'administrador':
@@ -426,7 +439,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                           return DropdownMenuItem<String>(
                             value: rol,
                             child: Row(
-                              children: [
+                              children: <Widget>[
                                 FaIcon(iconData,
                                     size: 14, color: const Color(0xFFE31E24)),
                                 const SizedBox(width: 8),
@@ -435,7 +448,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                             ),
                           );
                         }).toList(),
-                        onChanged: (value) {
+                        onChanged: (String? value) {
                           setState(() {
                             _selectedRol = value;
                           });
@@ -449,7 +462,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           DropdownButtonFormField<String>(
                             value: _selectedSucursalId,
                             style: const TextStyle(color: Colors.white),
@@ -468,13 +481,13 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                 size: 20,
                               ),
                             ),
-                            items: widget.sucursales.entries.map((entry) {
+                            items: widget.sucursales.entries.map((MapEntry<String, String> entry) {
                               final bool esCentral =
                                   entry.value.contains('(Central)');
                               return DropdownMenuItem<String>(
                                 value: entry.key,
                                 child: Row(
-                                  children: [
+                                  children: <Widget>[
                                     const SizedBox(width: 8),
                                     Text(
                                       entry.value,
@@ -488,7 +501,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                 ),
                               );
                             }).toList(),
-                            onChanged: (value) {
+                            onChanged: (String? value) {
                               setState(() {
                                 _selectedSucursalId = value;
                                 _actualizarEsSucursalCentral();
@@ -499,7 +512,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                             Padding(
                               padding: const EdgeInsets.only(top: 8.0),
                               child: Row(
-                                children: [
+                                children: <Widget>[
                                   const Icon(
                                     Icons.info_outline,
                                     color: Color(0xFF4CAF50),
@@ -547,7 +560,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                     ),
                   ),
                   child: Row(
-                    children: [
+                    children: <Widget>[
                       Container(
                         width: 40,
                         height: 40,
@@ -571,7 +584,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          children: <Widget>[
                             Text(
                               _isEmpleadoActivo
                                   ? 'Colaborador Activo'
@@ -600,7 +613,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                       const SizedBox(width: 16),
                       Switch(
                         value: _isEmpleadoActivo,
-                        onChanged: (value) {
+                        onChanged: (bool value) {
                           setState(() => _isEmpleadoActivo = value);
                         },
                         activeColor: const Color(0xFF4CAF50),
@@ -633,7 +646,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                   // Usar EmpleadoHorarioViewer para un empleado existente
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: <Widget>[
                       EmpleadoHorarioViewer(
                         empleado: widget.empleado!,
                         showTitle: false,
@@ -669,15 +682,15 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                 else
                   // Campos de entrada de tiempo para un nuevo empleado
                   Column(
-                    children: [
+                    children: <Widget>[
                       // Horario de inicio
                       Row(
-                        children: [
+                        children: <Widget>[
                           // Etiqueta
                           SizedBox(
                             width: 120,
                             child: Row(
-                              children: [
+                              children: <Widget>[
                                 const Icon(
                                   Icons.access_time,
                                   color: Colors.white54,
@@ -709,12 +722,12 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
 
                       // Horario de fin
                       Row(
-                        children: [
+                        children: <Widget>[
                           // Etiqueta
                           SizedBox(
                             width: 120,
                             child: Row(
-                              children: [
+                              children: <Widget>[
                                 const Icon(
                                   Icons.access_time_filled,
                                   color: Colors.white54,
@@ -749,7 +762,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                 // Botones de acción
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
+                  children: <Widget>[
                     TextButton(
                       onPressed: widget.onCancel,
                       child: const Text(
@@ -819,7 +832,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
         border: Border.all(color: Colors.red.withOpacity(0.5)),
       ),
       child: Row(
-        children: [
+        children: <Widget>[
           const Icon(
             Icons.error_outline,
             color: Colors.red,
@@ -846,15 +859,15 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           Row(
-            children: [
-              const FaIcon(
+            children: const <Widget>[
+              FaIcon(
                 FontAwesomeIcons.triangleExclamation,
                 color: Colors.amber,
                 size: 18,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Este colaborador no tiene una cuenta para acceder al sistema',
@@ -893,16 +906,18 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   }
 
   void _guardar() {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     // Formatear horarios en formato hh:mm:ss
-    final horaInicio =
+    final String horaInicio =
         '${_horaInicioHoraController.text.padLeft(2, '0')}:${_horaInicioMinutoController.text.padLeft(2, '0')}:00';
-    final horaFin =
+    final String horaFin =
         '${_horaFinHoraController.text.padLeft(2, '0')}:${_horaFinMinutoController.text.padLeft(2, '0')}:00';
 
     // Construir datos del empleado
-    final empleadoData = {
+    final Map<String, Object?> empleadoData = <String, Object?>{
       'nombre': _nombreController.text,
       'apellidos': _apellidosController.text,
       'dni': _dniController.text,
@@ -920,27 +935,34 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
 
     // Remover valores nulos
     empleadoData.removeWhere(
-        (key, value) => value == null || (value is String && value.isEmpty));
+        (String key, Object? value) => value == null || (value is String && value.isEmpty));
 
     widget.onSave(empleadoData);
   }
 
   Future<void> _gestionarCuenta(BuildContext context) async {
-    if (widget.empleado == null || !mounted) return;
+    if (widget.empleado == null || !mounted) {
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
       // Usar la función de utilidad para gestionar la cuenta
-      final cuentaActualizada =
+      final bool cuentaActualizada =
           await EmpleadosUtils.gestionarCuenta(context, widget.empleado!);
 
       // Si el widget ya no está montado, salir temprano
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       if (cuentaActualizada && context.mounted) {
-        EmpleadosUtils.mostrarMensaje(context,
-            mensaje: 'Cuenta actualizada correctamente');
+        EmpleadosUtils.mostrarMensaje(
+          context,
+          mensaje: 'Cuenta actualizada correctamente',
+          esError: false,
+        );
 
         // Recargar información de cuenta
         await _cargarInformacionCuenta();
@@ -950,17 +972,24 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
         }
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       // Actualizar estado de carga
       setState(() => _isLoading = false);
 
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        return;
+      }
 
       // Mostrar mensaje de error
       final String errorMsg = e.toString().replaceAll('Exception: ', '');
-      EmpleadosUtils.mostrarMensaje(context,
-          mensaje: 'Error al gestionar cuenta: $errorMsg', esError: true);
+      EmpleadosUtils.mostrarMensaje(
+        context,
+        mensaje: 'Error al gestionar cuenta: $errorMsg',
+        esError: true,
+      );
     } finally {
       // Asegurarse de actualizar el estado solo si el widget sigue montado
       if (mounted) {
@@ -975,7 +1004,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     required TextEditingController minutoController,
   }) {
     return Row(
-      children: [
+      children: <Widget>[
         // Horas
         Expanded(
           child: TextFormField(
@@ -992,27 +1021,27 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            validator: (value) {
+            validator: (String? value) {
               if (value == null || value.isEmpty) {
                 return 'Requerido';
               }
-              final hora = int.tryParse(value);
+              final int? hora = int.tryParse(value);
               if (hora == null || hora < 0 || hora > 23) {
                 return 'Inválido';
               }
               return null;
             },
-            onChanged: (value) {
+            onChanged: (String value) {
               // Formatear a 2 dígitos
               if (value.length > 2) {
-                horaController.text = value.substring(0, 2);
-                horaController.selection = TextSelection.fromPosition(
+                horaController..text = value.substring(0, 2)
+                ..selection = TextSelection.fromPosition(
                   const TextPosition(offset: 2),
                 );
               }
 
               // Validar rango
-              final hora = int.tryParse(value);
+              final int? hora = int.tryParse(value);
               if (hora != null && (hora < 0 || hora > 23)) {
                 horaController.text = '00';
               }
@@ -1054,27 +1083,27 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            validator: (value) {
+            validator: (String? value) {
               if (value == null || value.isEmpty) {
                 return 'Requerido';
               }
-              final minuto = int.tryParse(value);
+              final int? minuto = int.tryParse(value);
               if (minuto == null || minuto < 0 || minuto > 59) {
                 return 'Inválido';
               }
               return null;
             },
-            onChanged: (value) {
+            onChanged: (String value) {
               // Formatear a 2 dígitos
               if (value.length > 2) {
-                minutoController.text = value.substring(0, 2);
-                minutoController.selection = TextSelection.fromPosition(
+                minutoController..text = value.substring(0, 2)
+                ..selection = TextSelection.fromPosition(
                   const TextPosition(offset: 2),
                 );
               }
 
               // Validar rango
-              final minuto = int.tryParse(value);
+              final int? minuto = int.tryParse(value);
               if (minuto != null && (minuto < 0 || minuto > 59)) {
                 minutoController.text = '00';
               }
@@ -1087,14 +1116,14 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
 
   void _editarHorario() {
     // Guardar los valores actuales por si el usuario cancela
-    final horaInicioHoraOriginal = _horaInicioHoraController.text;
-    final horaInicioMinutoOriginal = _horaInicioMinutoController.text;
-    final horaFinHoraOriginal = _horaFinHoraController.text;
-    final horaFinMinutoOriginal = _horaFinMinutoController.text;
+    final String horaInicioHoraOriginal = _horaInicioHoraController.text;
+    final String horaInicioMinutoOriginal = _horaInicioMinutoController.text;
+    final String horaFinHoraOriginal = _horaFinHoraController.text;
+    final String horaFinMinutoOriginal = _horaFinMinutoController.text;
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
+      builder: (BuildContext context) => Dialog(
         backgroundColor: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -1105,16 +1134,16 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               Row(
-                children: [
-                  const FaIcon(
+                children: const <Widget>[
+                  FaIcon(
                     FontAwesomeIcons.clock,
                     color: Colors.white,
                     size: 20,
                   ),
-                  const SizedBox(width: 12),
-                  const Text(
+                  SizedBox(width: 12),
+                  Text(
                     'Editar Horario',
                     style: TextStyle(
                       fontSize: 18,
@@ -1128,12 +1157,12 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
 
               // Horario de inicio
               Row(
-                children: [
+                children: <Widget>[
                   // Etiqueta
                   SizedBox(
                     width: 120,
                     child: Row(
-                      children: [
+                      children: <Widget>[
                         const Icon(
                           Icons.access_time,
                           color: Colors.white54,
@@ -1165,12 +1194,12 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
 
               // Horario de fin
               Row(
-                children: [
+                children: <Widget>[
                   // Etiqueta
                   SizedBox(
                     width: 120,
                     child: Row(
-                      children: [
+                      children: <Widget>[
                         const Icon(
                           Icons.access_time_filled,
                           color: Colors.white54,
@@ -1203,7 +1232,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
               // Botones de acción
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
+                children: <Widget>[
                   TextButton(
                     onPressed: () {
                       // Restaurar valores originales si cancela
@@ -1231,12 +1260,12 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                     ),
                     onPressed: () {
                       // Validar campos de hora
-                      final horaInicio =
+                      final int? horaInicio =
                           int.tryParse(_horaInicioHoraController.text);
-                      final minutoInicio =
+                      final int? minutoInicio =
                           int.tryParse(_horaInicioMinutoController.text);
-                      final horaFin = int.tryParse(_horaFinHoraController.text);
-                      final minutoFin =
+                      final int? horaFin = int.tryParse(_horaFinHoraController.text);
+                      final int? minutoFin =
                           int.tryParse(_horaFinMinutoController.text);
 
                       if (horaInicio == null ||

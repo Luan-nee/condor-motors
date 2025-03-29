@@ -1,16 +1,15 @@
+import 'package:condorsmotors/main.dart' show api; // API global
+import 'package:condorsmotors/models/paginacion.model.dart';
+import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
+import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalle_sucursal.dart';
+import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalles_dialog.dart';
+import 'package:condorsmotors/screens/admin/widgets/stock/stock_list.dart';
+import 'package:condorsmotors/utils/stock_utils.dart';
+import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import '../../main.dart' show api; // API global
-import '../../models/paginacion.model.dart';
-import '../../models/producto.model.dart';
-import '../../models/sucursal.model.dart';
-import '../../utils/stock_utils.dart';
-import '../../widgets/paginador.dart';
-import 'widgets/slide_sucursal.dart';
-import 'widgets/stock/stock_detalle_sucursal.dart';
-import 'widgets/stock/stock_detalles_dialog.dart';
-import 'widgets/stock/stock_list.dart';
 
 class InventarioAdminScreen extends StatefulWidget {
   const InventarioAdminScreen({super.key});
@@ -23,10 +22,10 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   // Estado
   String _selectedSucursalId = '';
   String _selectedSucursalNombre = '';
-  List<Sucursal> _sucursales = [];
+  List<Sucursal> _sucursales = <Sucursal>[];
   Sucursal? _selectedSucursal;
   PaginatedResponse<Producto>? _paginatedProductos;
-  List<Producto> _productosFiltrados = [];
+  List<Producto> _productosFiltrados = <Producto>[];
   bool _isLoadingSucursales = true;
   bool _isLoadingProductos = false;
   String? _errorProductos;
@@ -36,9 +35,9 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
 
   // Nuevo: Productos consolidados de todas las sucursales
   final Map<int, Map<String, int>> _stockPorSucursal =
-      {}; // productoId -> {sucursalId -> stock}
+      <int, Map<String, int>>{}; // productoId -> {sucursalId -> stock}
   List<Producto> _productosBajoStock =
-      []; // Productos con problemas en cualquier sucursal
+      <Producto>[]; // Productos con problemas en cualquier sucursal
 
   // Parámetros de paginación y filtrado
   String _searchQuery = '';
@@ -72,7 +71,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     });
 
     try {
-      final sucursales = await api.sucursales.getSucursales();
+      final List<Sucursal> sucursales = await api.sucursales.getSucursales();
       setState(() {
         _sucursales = sucursales;
         _isLoadingSucursales = false;
@@ -94,7 +93,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     if (sucursalId.isEmpty) {
       setState(() {
         _paginatedProductos = null;
-        _productosFiltrados = [];
+        _productosFiltrados = <Producto>[];
       });
       return;
     }
@@ -106,11 +105,11 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
 
     try {
       // Aplicar la búsqueda del servidor sólo si la búsqueda es mayor a 3 caracteres
-      final searchQuery = _searchQuery.length >= 3 ? _searchQuery : null;
+      final String? searchQuery = _searchQuery.length >= 3 ? _searchQuery : null;
 
       // Si está seleccionado el filtro de stock bajo, usar el método específico
       if (_filtroEstadoStock == StockStatus.stockBajo) {
-        final paginatedProductos = await api.productos.getProductosConStockBajo(
+        final PaginatedResponse<Producto> paginatedProductos = await api.productos.getProductosConStockBajo(
           sucursalId: sucursalId,
           page: _currentPage,
           pageSize: _pageSize,
@@ -133,7 +132,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       
       // Si está seleccionado el filtro de agotados, usamos el método específico
       if (_filtroEstadoStock == StockStatus.agotado) {
-        final paginatedProductos = await api.productos.getProductosAgotados(
+        final PaginatedResponse<Producto> paginatedProductos = await api.productos.getProductosAgotados(
           sucursalId: sucursalId,
           page: _currentPage,
           pageSize: _pageSize,
@@ -155,7 +154,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       }
       
       // Para otros casos, usar el método general
-      final paginatedProductos = await api.productos.getProductos(
+      final PaginatedResponse<Producto> paginatedProductos = await api.productos.getProductos(
         sucursalId: sucursalId,
         search: searchQuery,
         page: _currentPage,
@@ -196,7 +195,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
-            children: [
+            children: <Widget>[
               const Icon(Icons.info_outline, color: Colors.white),
               const SizedBox(width: 10),
               Expanded(
@@ -231,7 +230,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   Future<void> _cargarProductosTodasSucursales() async {
     if (_sucursales.isEmpty) {
       setState(() {
-        _productosBajoStock = [];
+        _productosBajoStock = <Producto>[];
       });
       return;
     }
@@ -243,12 +242,12 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     });
 
     try {
-      final List<Producto> todosProductos = [];
+      final List<Producto> todosProductos = <Producto>[];
       
       // Cargar productos de cada sucursal utilizando el nuevo método getProductosConStockBajo
-      final futures = <Future>[];
+      final List<Future> futures = <Future>[];
       
-      for (final sucursal in _sucursales) {
+      for (final Sucursal sucursal in _sucursales) {
         futures.add(_cargarProductosConBajoStockDeSucursal(sucursal, todosProductos));
       }
       
@@ -256,10 +255,10 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       await Future.wait(futures);
       
       // Consolidar productos para evitar duplicados
-      final productosUnicos = StockUtils.consolidarProductosUnicos(todosProductos);
+      final List<Producto> productosUnicos = StockUtils.consolidarProductosUnicos(todosProductos);
       
       // Priorizar productos con problemas más graves
-      final productosPrioritarios = StockUtils.reorganizarProductosPorPrioridad(
+      final List<Producto> productosPrioritarios = StockUtils.reorganizarProductosPorPrioridad(
         productosUnicos,
         stockPorSucursal: _stockPorSucursal,
         sucursales: _sucursales,
@@ -312,7 +311,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     int paginaActual = 1;
     const int tamanioPagina = 100;
     bool hayMasPaginas = true;
-    final List<Producto> productosObtenidos = [];
+    final List<Producto> productosObtenidos = <Producto>[];
     
     try {
       // Iteramos mientras haya más páginas
@@ -371,10 +370,10 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   // Procesar productos por sucursal y almacenar en mapa consolidado
   void _procesarProductosPorSucursal(
       List<Producto> productos, Sucursal sucursal) {
-    for (final producto in productos) {
+    for (final Producto producto in productos) {
       // Si es la primera vez que vemos este producto, inicializamos su mapa
       if (!_stockPorSucursal.containsKey(producto.id)) {
-        _stockPorSucursal[producto.id] = {};
+        _stockPorSucursal[producto.id] = <String, int>{};
       }
 
       // Guardamos el stock de este producto en esta sucursal
@@ -447,7 +446,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   void _verDetallesProducto(Producto producto) {
     showDialog(
       context: context,
-      builder: (context) => StockDetalleSucursalDialog(
+      builder: (BuildContext context) => StockDetalleSucursalDialog(
         producto: producto,
       ),
     ).then((_) {
@@ -467,7 +466,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   void _verStockDetalles(Producto producto) {
     showDialog(
       context: context,
-      builder: (context) => StockDetallesDialog(
+      builder: (BuildContext context) => StockDetallesDialog(
         producto: producto,
         sucursalId: _selectedSucursalId,
         sucursalNombre: _selectedSucursalNombre,
@@ -600,7 +599,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
         scrolledUnderElevation: 0,
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        actions: [
+        actions: <Widget>[
           // Botón para activar/desactivar vista consolidada
           IconButton(
             icon: Icon(
@@ -637,23 +636,23 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             // Área principal (75% del ancho)
             Expanded(
               flex: 75,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   // Título y estadísticas
                   Row(
-                    children: [
+                    children: <Widget>[
                       // Título
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          children: <Widget>[
                             Row(
-                              children: [
+                              children: <Widget>[
                                 const FaIcon(
                                   FontAwesomeIcons.warehouse,
                                   size: 18,
@@ -712,7 +711,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                               contentPadding: const EdgeInsets.symmetric(),
                             ),
                             style: const TextStyle(color: Colors.white),
-                            onChanged: (value) {
+                            onChanged: (String value) {
                               setState(() {
                                 _searchQuery = value;
 
@@ -734,12 +733,12 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                   // Filtros rápidos para el estado del stock (solo en vista individual)
                   if (_selectedSucursalId.isNotEmpty &&
                       _productosFiltrados.isNotEmpty &&
-                      !_mostrarVistaConsolidada) ...[
+                      !_mostrarVistaConsolidada) ...<Widget>[
                     const SizedBox(height: 16),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: [
+                        children: <Widget>[
                           const Text(
                             'Filtrar por: ',
                             style: TextStyle(
@@ -789,12 +788,12 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                   ],
                   
                   // Botones de acción rápida en vista consolidada
-                  if (_mostrarVistaConsolidada && _productosBajoStock.isNotEmpty) ...[
+                  if (_mostrarVistaConsolidada && _productosBajoStock.isNotEmpty) ...<Widget>[
                     const SizedBox(height: 16),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: [
+                        children: <Widget>[
                           const Text(
                             'Acciones rápidas: ',
                             style: TextStyle(
@@ -829,7 +828,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                   ],
 
                   // Resumen del inventario
-                  if (productosAMostrar.isNotEmpty) ...[
+                  if (productosAMostrar.isNotEmpty) ...<Widget>[
                     const SizedBox(height: 16),
                     InventarioResumen(
                       productos: productosAMostrar,
@@ -843,7 +842,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                   const SizedBox(height: 16),
                   Expanded(
                     child: Column(
-                      children: [
+                      children: <Widget>[
                         Expanded(
                           child: _mostrarVistaConsolidada
                               ? TableProducts(
@@ -888,10 +887,10 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                             padding: const EdgeInsets.only(top: 16.0),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
+                              children: <Widget>[
                                 // Info de cantidad
                                 Row(
-                                  children: [
+                                  children: <Widget>[
                                     const FaIcon(
                                       FontAwesomeIcons.layerGroup,
                                       size: 14,
@@ -917,7 +916,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                 // Selector de tamaño de página
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: [
+                                  children: <Widget>[
                                     const FaIcon(
                                       FontAwesomeIcons.tableList,
                                       size: 14,
@@ -989,7 +988,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: [
+          children: <Widget>[
             FaIcon(
               icon,
               color: selected ? color : Colors.white70,
@@ -1011,7 +1010,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   }
 
   Widget _buildPageSizeDropdown() {
-    final options = [10, 20, 50, 100];
+    final List<int> options = <int>[10, 20, 50, 100];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1025,7 +1024,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
           value: _pageSize,
-          items: options.map((size) {
+          items: options.map((int size) {
             return DropdownMenuItem<int>(
               value: size,
               child: Text(
@@ -1034,7 +1033,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
               ),
             );
           }).toList(),
-          onChanged: (value) {
+          onChanged: (int? value) {
             if (value != null) {
               _cambiarTamanioPagina(value);
             }

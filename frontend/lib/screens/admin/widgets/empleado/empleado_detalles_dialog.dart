@@ -1,8 +1,9 @@
+import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_horario_dialog.dart';
+import 'package:condorsmotors/utils/empleados_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../../models/empleado.model.dart';
-import '../../../../utils/empleados_utils.dart';
-import 'empleado_horario_dialog.dart';
 
 /// Widget para mostrar los detalles de un empleado
 ///
@@ -27,6 +28,17 @@ class EmpleadoDetallesViewer extends StatefulWidget {
 
   @override
   State<EmpleadoDetallesViewer> createState() => _EmpleadoDetallesViewerState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties..add(DiagnosticsProperty<Empleado>('empleado', empleado))
+    ..add(DiagnosticsProperty<Map<String, String>>('nombresSucursales', nombresSucursales))
+    ..add(ObjectFlagProperty<String Function(Empleado p1)>.has('obtenerRolDeEmpleado', obtenerRolDeEmpleado))
+    ..add(ObjectFlagProperty<Function(Empleado p1)?>.has('onEdit', onEdit))
+    ..add(ObjectFlagProperty<Function(BuildContext p1, Empleado p2)?>.has('onGestionarCuenta', onGestionarCuenta))
+    ..add(DiagnosticsProperty<bool>('showActions', showActions));
+  }
 }
 
 class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
@@ -48,7 +60,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
 
     try {
       // Usar la función de utilidad para cargar la información de la cuenta
-      final resultado =
+      final Map<String, dynamic> resultado =
           await EmpleadosUtils.cargarInformacionCuenta(widget.empleado);
 
       if (mounted) {
@@ -102,21 +114,21 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
   @override
   Widget build(BuildContext context) {
     // Usar los nuevos métodos para obtener información de sucursal
-    final esCentral = EmpleadosUtils.esSucursalCentralEmpleado(
+    final bool esCentral = EmpleadosUtils.esSucursalCentralEmpleado(
         widget.empleado, widget.nombresSucursales);
-    final nombreSucursal = EmpleadosUtils.getNombreSucursalEmpleado(
+    final String nombreSucursal = EmpleadosUtils.getNombreSucursalEmpleado(
         widget.empleado, widget.nombresSucursales);
-    final rol = widget.obtenerRolDeEmpleado(widget.empleado);
-    final nombreCompleto = EmpleadosUtils.getNombreCompleto(widget.empleado);
+    final String rol = widget.obtenerRolDeEmpleado(widget.empleado);
+    final String nombreCompleto = EmpleadosUtils.getNombreCompleto(widget.empleado);
 
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           // Encabezado con foto y nombre
           Row(
-            children: [
+            children: <Widget>[
               // Foto o avatar
               Container(
                 width: 64,
@@ -134,7 +146,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                             width: 64,
                             height: 64,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
+                            errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) =>
                                 const FaIcon(
                               FontAwesomeIcons.user,
                               color: Color(0xFFE31E24),
@@ -154,7 +166,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     Text(
                       nombreCompleto,
                       style: const TextStyle(
@@ -178,7 +190,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
-                        children: [
+                        children: <Widget>[
                           FaIcon(
                             EmpleadosUtils.getRolIcon(rol),
                             color: const Color(0xFFE31E24),
@@ -195,10 +207,10 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                         ],
                       ),
                     ),
-                    if (_usuarioEmpleado != null) ...[
+                    if (_usuarioEmpleado != null) ...<Widget>[
                       const SizedBox(height: 8),
                       Row(
-                        children: [
+                        children: <Widget>[
                           const FaIcon(
                             FontAwesomeIcons.userTag,
                             color: Colors.white54,
@@ -236,12 +248,12 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
           // Dos columnas para la información
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               // Columna izquierda
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     EmpleadosUtils.buildInfoItem(
                         'DNI', widget.empleado.dni ?? 'No especificado'),
                     const SizedBox(height: 12),
@@ -255,7 +267,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: <Widget>[
                     EmpleadosUtils.buildInfoItem('Estado',
                         widget.empleado.activo ? 'Activo' : 'Inactivo'),
                     const SizedBox(height: 12),
@@ -294,7 +306,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
               ),
             ),
             child: Row(
-              children: [
+              children: <Widget>[
                 Container(
                   width: 40,
                   height: 40,
@@ -318,7 +330,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: <Widget>[
                       Text(
                         nombreSucursal,
                         style: TextStyle(
@@ -362,8 +374,8 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
           // Información laboral y Gestión de cuenta
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
+            children: const <Widget>[
+              Text(
                 'INFORMACIÓN LABORAL',
                 style: TextStyle(
                   fontSize: 16,
@@ -377,7 +389,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
           // Información de sueldo
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               Expanded(
                 child: EmpleadosUtils.buildInfoItem('Sueldo',
                     EmpleadosUtils.formatearSueldo(widget.empleado.sueldo)),
@@ -405,11 +417,11 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
           ),
 
           // Botones de acción al final
-          if (widget.showActions && widget.onEdit != null) ...[
+          if (widget.showActions && widget.onEdit != null) ...<Widget>[
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
-              children: [
+              children: <Widget>[
                 ElevatedButton.icon(
                   icon: const FaIcon(
                     FontAwesomeIcons.penToSquare,
@@ -434,102 +446,6 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
     );
   }
 
-  Widget _buildCrearCuentaContainer() {
-    if (widget.onGestionarCuenta == null) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.amber.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.amber.withOpacity(0.5)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const FaIcon(
-                  FontAwesomeIcons.triangleExclamation,
-                  color: Colors.amber,
-                  size: 18,
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Este colaborador no tiene una cuenta para acceder al sistema',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.amber.withOpacity(0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const FaIcon(
-                FontAwesomeIcons.triangleExclamation,
-                color: Colors.amber,
-                size: 18,
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Este colaborador no tiene una cuenta para acceder al sistema',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Para permitir que este colaborador inicie sesión en el sistema, necesita crear una cuenta de usuario con un rol asignado.',
-            style: TextStyle(color: Colors.white70),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: ElevatedButton.icon(
-              onPressed: () =>
-                  widget.onGestionarCuenta!(context, widget.empleado),
-              icon: const FaIcon(
-                FontAwesomeIcons.userPlus,
-                size: 16,
-              ),
-              label: const Text('Crear Cuenta de Usuario'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
-                foregroundColor: Colors.black87,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Diálogo para mostrar los detalles de un empleado
@@ -549,6 +465,15 @@ class EmpleadoDetallesDialog extends StatefulWidget {
 
   @override
   State<EmpleadoDetallesDialog> createState() => _EmpleadoDetallesDialogState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties..add(DiagnosticsProperty<Empleado>('empleado', empleado))
+    ..add(DiagnosticsProperty<Map<String, String>>('nombresSucursales', nombresSucursales))
+    ..add(ObjectFlagProperty<String Function(Empleado p1)>.has('obtenerRolDeEmpleado', obtenerRolDeEmpleado))
+    ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onEdit', onEdit));
+  }
 }
 
 class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
@@ -569,7 +494,7 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             // Contenido principal usando el nuevo viewer
             Flexible(
               child: EmpleadoDetallesViewer(
@@ -585,7 +510,7 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
 
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
-              children: [
+              children: <Widget>[
                 TextButton.icon(
                   icon: const FaIcon(
                     FontAwesomeIcons.arrowLeft,
@@ -631,7 +556,9 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
   Future<void> _gestionarCuentaEmpleado(
       BuildContext context, Empleado empleado) async {
     try {
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        return;
+      }
       await EmpleadosUtils.mostrarDialogoCarga(context,
           mensaje: 'Cargando información de cuenta...',
           barrierDismissible:
@@ -639,15 +566,21 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
           );
 
       // Verificar si el contexto sigue montado después del diálogo de carga
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        return;
+      }
 
       // Usar la función de utilidad para gestionar la cuenta
-      final cuentaActualizada =
+      final bool cuentaActualizada =
           await EmpleadosUtils.gestionarCuenta(context, empleado);
 
       // Verificar si el widget y el contexto siguen montados después de la operación asíncrona
-      if (!mounted) return;
-      if (!context.mounted) return;
+      if (!mounted) {
+        return;
+      }
+      if (!context.mounted) {
+        return;
+      }
 
       // Cerrar diálogo de carga (si sigue abierto)
       if (Navigator.of(context).canPop()) {
@@ -657,7 +590,8 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
       // Si se realizó algún cambio, actualizar la información
       if (cuentaActualizada) {
         EmpleadosUtils.mostrarMensaje(context,
-            mensaje: 'Cuenta actualizada correctamente');
+            mensaje: 'Cuenta actualizada correctamente',
+            esError: false);
 
         setState(() {
           // Forzar reconstrucción para actualizar los datos
@@ -665,8 +599,12 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
       }
     } catch (e) {
       // Verificar si el widget y el contexto siguen montados después de la operación asíncrona
-      if (!mounted) return;
-      if (!context.mounted) return;
+      if (!mounted) {
+        return;
+      }
+      if (!context.mounted) {
+        return;
+      }
 
       // Cerrar diálogo de carga si está abierto
       if (Navigator.of(context).canPop()) {

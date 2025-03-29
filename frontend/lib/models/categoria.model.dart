@@ -56,7 +56,7 @@ class Categoria {
   /// Convierte esta categoría a un mapa JSON
   /// No incluye el ID para operaciones de creación o actualización
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'nombre': nombre,
       'descripcion': descripcion,
       'activo': activo,
@@ -65,7 +65,7 @@ class Categoria {
   
   /// Convierte esta categoría a un mapa JSON incluyendo el ID
   Map<String, dynamic> toFullJson() {
-    return {
+    return <String, dynamic>{
       'id': id,
       ...toJson(),
       if (fechaCreacion != null) 'fechaCreacion': fechaCreacion!.toIso8601String(),

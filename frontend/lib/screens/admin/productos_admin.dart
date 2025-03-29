@@ -1,17 +1,16 @@
+import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/paginacion.model.dart';
+import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/screens/admin/widgets/producto/producto_detalle_dialog.dart';
+import 'package:condorsmotors/screens/admin/widgets/producto/productos_form.dart';
+import 'package:condorsmotors/screens/admin/widgets/producto/productos_table.dart';
+import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
+import 'package:condorsmotors/utils/productos_utils.dart';
+import 'package:condorsmotors/widgets/dialogs/confirm_dialog.dart';
+import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
-import '../../main.dart' show api;
-import '../../models/paginacion.model.dart';
-import '../../models/producto.model.dart';
-import '../../models/sucursal.model.dart';
-import '../../utils/productos_utils.dart';
-import '../../widgets/dialogs/confirm_dialog.dart';
-import '../../widgets/paginador.dart';
-import 'widgets/producto/producto_detalle_dialog.dart';
-import 'widgets/producto/productos_form.dart';
-import 'widgets/producto/productos_table.dart';
-import 'widgets/slide_sucursal.dart';
 
 class ProductosAdminScreen extends StatefulWidget {
   const ProductosAdminScreen({super.key});
@@ -25,8 +24,8 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   bool _isLoadingProductos = false;
   bool _isLoadingCategorias = false;
   PaginatedResponse<Producto>? _paginatedProductos;
-  List<Producto> _productosFiltrados = [];
-  List<Sucursal> _sucursales = [];
+  List<Producto> _productosFiltrados = <Producto>[];
+  List<Sucursal> _sucursales = <Sucursal>[];
   Sucursal? _sucursalSeleccionada;
 
   // Parámetros de paginación y filtrado
@@ -43,7 +42,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   final ValueNotifier<String> _productosKey = ValueNotifier<String>('productos_inicial');
   
   // Lista de categorías para el filtro (incluye 'Todos')
-  final List<String> _categories = ['Todos'];
+  final List<String> _categories = <String>['Todos'];
 
   @override
   void initState() {
@@ -61,7 +60,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   void _filtrarProductos() {
     if (_paginatedProductos == null) {
       setState(() {
-        _productosFiltrados = [];
+        _productosFiltrados = <Producto>[];
       });
       return;
     }
@@ -79,14 +78,14 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     setState(() => _isLoadingCategorias = true);
     
     try {
-      final categorias = await ProductosUtils.obtenerCategorias();
+      final List<String> categorias = await ProductosUtils.obtenerCategorias();
       
       if (mounted) {
         setState(() {
           // Actualizar la lista de categorías para el filtro, manteniendo 'Todos' al inicio
-          _categories.clear();
-          _categories.add('Todos');
-          _categories.addAll(categorias);
+          _categories..clear()
+          ..add('Todos')
+          ..addAll(categorias);
           _isLoadingCategorias = false;
         });
       }
@@ -102,9 +101,11 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   Future<void> _cargarSucursales() async {
     setState(() => _isLoadingSucursales = true);
     try {
-      final sucursalesList = await api.sucursales.getSucursales();
+      final List<Sucursal> sucursalesList = await api.sucursales.getSucursales();
       
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _sucursales = sucursalesList;
         _isLoadingSucursales = false;
@@ -115,7 +116,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         }
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cargar sucursales: $e'),
@@ -127,19 +130,21 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   }
 
   Future<void> _cargarProductos() async {
-    if (_sucursalSeleccionada == null) return;
+    if (_sucursalSeleccionada == null) {
+      return;
+    }
     
     setState(() => _isLoadingProductos = true);
     try {
-      final sucursalId = _sucursalSeleccionada!.id.toString();
+      final String sucursalId = _sucursalSeleccionada!.id.toString();
       
       // Aplicar la búsqueda del servidor sólo si la búsqueda es mayor a 3 caracteres
-      final searchQuery = _searchQuery.length >= 3 ? _searchQuery : null;
+      final String? searchQuery = _searchQuery.length >= 3 ? _searchQuery : null;
       
       debugPrint('ProductosAdmin: Cargando productos de sucursal $sucursalId (página $_currentPage)');
       
       // Forzar actualización desde servidor (sin caché) después de editar un producto
-      final paginatedProductos = await api.productos.getProductos(
+      final PaginatedResponse<Producto> paginatedProductos = await api.productos.getProductos(
         sucursalId: sucursalId,
         search: searchQuery,
         page: _currentPage,
@@ -151,7 +156,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         forceRefresh: true, // Forzar refresco ignorando completamente la caché
       );
       
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _paginatedProductos = paginatedProductos;
         _productosFiltrados = paginatedProductos.items;
@@ -169,7 +176,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         debugPrint('ProductosAdmin: Productos cargados desde servidor: ${_productosFiltrados.length} items');
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cargar productos: $e'),
@@ -217,9 +226,11 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   }
 
   Future<void> _guardarProducto(Map<String, dynamic> productoData, bool esNuevo) async {
-    if (_sucursalSeleccionada == null) return;
+    if (_sucursalSeleccionada == null) {
+      return;
+    }
     
-    final sucursalId = _sucursalSeleccionada!.id.toString();
+    final String sucursalId = _sucursalSeleccionada!.id.toString();
     
     try {
       // Añadir logging para diagnóstico
@@ -266,7 +277,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         api.productos.invalidateCache(sucursalId);
       }
       
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
       // Recargar productos forzando ignorar caché
       await _cargarProductos();
@@ -279,7 +292,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         _isLoadingProductos = false;
       });
       
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Producto guardado exitosamente'),
@@ -288,7 +303,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       );
     } catch (e) {
       debugPrint('ProductosAdmin: ERROR al guardar producto: $e');
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       
       // Ocultar indicador de carga
       setState(() => _isLoadingProductos = false);
@@ -303,11 +320,13 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   }
 
   Future<void> _eliminarProducto(Producto producto) async {
-    if (_sucursalSeleccionada == null) return;
+    if (_sucursalSeleccionada == null) {
+      return;
+    }
     
-    final confirmed = await showDialog<bool>(
+    final bool? confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => ConfirmDialog(
+      builder: (BuildContext context) => ConfirmDialog(
         title: 'Eliminar Producto',
         message: '¿Está seguro que desea eliminar el producto "${producto.nombre}"?',
         confirmText: 'Eliminar',
@@ -318,13 +337,15 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     if (confirmed ?? false) {
       setState(() => _isLoadingProductos = true);
       try {
-        final sucursalId = _sucursalSeleccionada!.id.toString();
+        final String sucursalId = _sucursalSeleccionada!.id.toString();
         await api.productos.deleteProducto(
           sucursalId: sucursalId,
           productoId: producto.id,
         );
         
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Producto eliminado exitosamente'),
@@ -333,7 +354,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         );
         await _cargarProductos();
       } catch (e) {
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al eliminar producto: $e'),
@@ -348,14 +371,16 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   void _showProductDialog(Producto? producto) {
     final bool esNuevo = producto == null;
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     showDialog(
       context: context,
-      builder: (dialogContext) => ProductosFormDialogAdmin(
+      builder: (BuildContext dialogContext) => ProductosFormDialogAdmin(
         producto: producto,
         sucursales: _sucursales,
         sucursalSeleccionada: _sucursalSeleccionada,
-        onSave: (productoData) => _guardarProducto(productoData, esNuevo),
+        onSave: (Map<String, dynamic> productoData) => _guardarProducto(productoData, esNuevo),
       ),
     );
   }
@@ -365,7 +390,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       context: context,
       producto: producto,
       sucursales: _sucursales,
-      onSave: (productoActualizado) => _guardarProducto({
+      onSave: (Producto productoActualizado) => _guardarProducto(<String, dynamic>{
         'id': productoActualizado.id,
         'precioOferta': productoActualizado.precioOferta,
         'liquidacion': productoActualizado.liquidacion,
@@ -385,7 +410,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   }
   
   Future<void> _exportarProductos() async {
-    if (_sucursalSeleccionada == null) return;
+    if (_sucursalSeleccionada == null) {
+      return;
+    }
     
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -398,7 +425,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       // Implementación de ejemplo (mostrar que la función fue ejecutada)
       await Future.delayed(const Duration(seconds: 2));
       
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Productos exportados exitosamente'),
@@ -406,7 +435,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         ),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al exportar productos: $e'),
@@ -420,13 +451,13 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
-        children: [
+        children: <Widget>[
           // Panel principal (75% del ancho)
           Expanded(
             flex: 75,
               child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+                children: <Widget>[
                 // Header con nombre y acciones
                 _buildHeader(),
                 // Barra de búsqueda y filtros
@@ -450,7 +481,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                 key: const ValueKey<String>('loading_products'),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
+                                  children: <Widget>[
                                     const CircularProgressIndicator(
                                       color: Color(0xFFE31E24),
                                     ),
@@ -465,12 +496,12 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                   ),
                               )
                             : Column(
-                    children: [
+                    children: <Widget>[
                                   // Tabla de productos
                       Expanded(
                                     child: ValueListenableBuilder<String>(
                                       valueListenable: _productosKey,
-                                      builder: (context, key, child) {
+                                      builder: (BuildContext context, String key, Widget? child) {
                                         return ProductosTable(
                                           key: ValueKey<String>(key),
                                           productos: _productosFiltrados,
@@ -492,7 +523,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                       padding: const EdgeInsets.all(16.0),
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
+                                        children: <Widget>[
                                           // Info de cantidad
                                           Text(
                                             'Mostrando ${_productosFiltrados.length} de ${_paginatedProductos!.paginacion.totalItems} productos',
@@ -511,7 +542,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                           // Selector de tamaño de página
                                           Row(
                                             mainAxisSize: MainAxisSize.min,
-                    children: [
+                    children: <Widget>[
                                               Text(
                                                 'Mostrar:',
                                                 style: TextStyle(
@@ -545,7 +576,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                   color: Colors.white.withOpacity(0.1),
                 ),
               ),
-              boxShadow: [
+              boxShadow: <BoxShadow>[
                 BoxShadow(
                   color: Colors.black.withOpacity(0.2),
                   blurRadius: 8,
@@ -569,7 +600,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   }
 
   Widget _buildPageSizeDropdown() {
-    final options = [10, 20, 50, 100];
+    final List<int> options = <int>[10, 20, 50, 100];
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -583,7 +614,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
           value: _pageSize,
-          items: options.map((size) {
+          items: options.map((int size) {
             return DropdownMenuItem<int>(
               value: size,
               child: Text(
@@ -592,7 +623,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
               ),
             );
           }).toList(),
-          onChanged: (value) {
+          onChanged: (int? value) {
             if (value != null) {
               _cambiarTamanioPagina(value);
             }
@@ -618,10 +649,10 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
+        children: <Widget>[
           Expanded(
             child: Row(
-              children: [
+              children: <Widget>[
                 const FaIcon(
                   FontAwesomeIcons.boxesStacked,
                   color: Colors.white,
@@ -636,7 +667,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                     color: Colors.white,
                   ),
                 ),
-                if (_sucursalSeleccionada != null) ...[
+                if (_sucursalSeleccionada != null) ...<Widget>[
                   const Text(
                     ' / ',
                     style: TextStyle(
@@ -659,7 +690,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
             ),
           ),
           Row(
-            children: [
+            children: <Widget>[
               // Botón para mostrar/ocultar el panel de sucursales
               IconButton(
                 icon: Icon(
@@ -674,7 +705,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                 tooltip: 'Selector de sucursal',
               ),
               const SizedBox(width: 12),
-              if (_sucursalSeleccionada != null) ...[
+              if (_sucursalSeleccionada != null) ...<Widget>[
                 ElevatedButton.icon(
                   icon: const FaIcon(
                     FontAwesomeIcons.fileExport,
@@ -728,7 +759,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                   padding: const EdgeInsets.all(16),
         color: const Color(0xFF222222),
                   child: Row(
-                    children: [
+                    children: <Widget>[
                       Expanded(
                         child: TextField(
                 enabled: _sucursalSeleccionada != null,
@@ -752,7 +783,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                   fillColor: const Color(0xFF2D2D2D),
                 ),
                 style: const TextStyle(color: Colors.white),
-                          onChanged: (value) {
+                          onChanged: (String value) {
                             setState(() {
                               _searchQuery = value;
                     
@@ -795,7 +826,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                   : DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _selectedCategory,
-                        items: _categories.map((category) {
+                        items: _categories.map((String category) {
                           return DropdownMenuItem(
                             value: category,
                             child: Text(
@@ -806,7 +837,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                         }).toList(),
                         onChanged: _sucursalSeleccionada == null
                             ? null
-                            : (value) {
+                            : (String? value) {
                           if (value != null) {
                             setState(() {
                               _selectedCategory = value;
