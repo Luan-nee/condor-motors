@@ -17,6 +17,7 @@ import { AddItemTransferenciaInv } from '@/domain/use-cases/entities/transferenc
 import { DoubleNumericIdDto } from '@/domain/dtos/query-params/double-numeric.-id.dto'
 import { UpdateItemTransferenciaInv } from '@/domain/use-cases/entities/transferencias-inventario/update-item-transferencia-inventario.use-case'
 import { UpdateItemTransferenciaInvDto } from '@/domain/dtos/entities/transferencias-inventario/update-item-transferencia-inventario.dto'
+import { RemoveItemTransferenciaInv } from '@/domain/use-cases/entities/transferencias-inventario/remove-item-transferencia-inventario.use-case'
 
 export class TransferenciasInventarioController {
   create = (req: Request, res: Response) => {
@@ -262,7 +263,28 @@ export class TransferenciasInventarioController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    const [paramErrors, doubleNumericIdDto] = DoubleNumericIdDto.create(
+      req.params
+    )
+    if (paramErrors !== undefined || doubleNumericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
+    const { authPayload } = req
+
+    const removeItemTransferenciaInv = new RemoveItemTransferenciaInv(
+      authPayload
+    )
+
+    removeItemTransferenciaInv
+      .execute(doubleNumericIdDto)
+      .then((transferenciaInv) => {
+        CustomResponse.success({ res, data: transferenciaInv })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
   delete = (req: Request, res: Response) => {
