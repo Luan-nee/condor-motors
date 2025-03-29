@@ -115,6 +115,7 @@ export class GetProductos {
       queriesProductoDto.search.length > 0
         ? or(
             ilike(productosTable.nombre, `%${queriesProductoDto.search}%`),
+            ilike(productosTable.sku, `%${queriesProductoDto.search}%`),
             ilike(coloresTable.nombre, `%${queriesProductoDto.search}%`),
             ilike(categoriasTable.nombre, `%${queriesProductoDto.search}%`),
             ilike(marcasTable.nombre, `%${queriesProductoDto.search}%`)
