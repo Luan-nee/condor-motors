@@ -110,8 +110,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
     try {
       // Obtenemos las categorías como objetos tipados
-      final categoriasList = await api.categorias.getCategoriasObjetos(useCache: false);
-      
+      final categoriasList =
+          await api.categorias.getCategoriasObjetos(useCache: false);
+
       if (mounted) {
         setState(() {
           // Extraer nombres para la lista desplegable
@@ -120,13 +121,13 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               .where((nombre) => nombre.isNotEmpty)
               .toList();
           _categorias.sort(); // Mantener orden alfabético
-          
+
           // Crear un mapa para fácil acceso a los IDs por nombre
           _categoriasMap = {
             for (var cat in categoriasList)
               cat.nombre: {'id': cat.id, 'nombre': cat.nombre}
           };
-          
+
           _isLoadingCategorias = false;
 
           // Establecer la categoría seleccionada
@@ -154,7 +155,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     try {
       // Obtenemos las marcas como objetos tipados
       final marcasResult = await api.marcas.getMarcasPaginadas(useCache: false);
-      
+
       // Extraemos la lista de marcas del resultado paginado
       final marcasList = marcasResult.items;
 
@@ -166,13 +167,13 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               .where((nombre) => nombre.isNotEmpty)
               .toList();
           _marcas.sort(); // Mantener orden alfabético
-          
+
           // Crear un mapa para fácil acceso a los IDs por nombre
           _marcasMap = {
             for (var marca in marcasList)
               marca.nombre: {'id': marca.id, 'nombre': marca.nombre}
           };
-          
+
           _isLoadingMarcas = false;
 
           // Si la marca actual no está en la lista y hay una marca seleccionada
@@ -207,11 +208,14 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           _isLoadingColores = false;
 
           // Si estamos editando un producto con color, seleccionarlo
-          if (widget.producto?.color != null && widget.producto!.color!.isNotEmpty) {
+          if (widget.producto?.color != null &&
+              widget.producto!.color!.isNotEmpty) {
             // Buscar el color por nombre
             try {
               _colorSeleccionado = _colores.firstWhere(
-                (color) => color.nombre.toLowerCase() == widget.producto!.color!.toLowerCase(),
+                (color) =>
+                    color.nombre.toLowerCase() ==
+                    widget.producto!.color!.toLowerCase(),
               );
             } catch (e) {
               // Si no encuentra coincidencia, usar el primer color disponible
@@ -462,7 +466,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     );
   }
 
-  InputDecoration _getInputDecoration(String label, {String? prefixText, String? helperText, Widget? suffixIcon}) {
+  InputDecoration _getInputDecoration(String label,
+      {String? prefixText, String? helperText, Widget? suffixIcon}) {
     return InputDecoration(
       labelText: label,
       labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
@@ -510,55 +515,57 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         const SizedBox(height: 16),
         // Cuando es un producto existente, el SKU es de solo lectura
         // Cuando es un producto nuevo, el campo no aparece (el backend lo generará)
-        widget.producto != null 
-          ? TextFormField(
-              controller: _skuController,
-              decoration: _getInputDecoration('SKU (no editable)').copyWith(
-                filled: true,
-                fillColor: const Color(0xFF222222),
-                prefixIcon: const Icon(Icons.lock_outline, color: Colors.white54, size: 20),
-              ),
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
-              enabled: false, // Campo deshabilitado para edición
-              readOnly: true, // Solo lectura
-            )
-          : Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'SKU generado automáticamente',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+        widget.producto != null
+            ? TextFormField(
+                controller: _skuController,
+                decoration: _getInputDecoration('SKU (no editable)').copyWith(
+                  filled: true,
+                  fillColor: const Color(0xFF222222),
+                  prefixIcon: const Icon(Icons.lock_outline,
+                      color: Colors.white54, size: 20),
+                ),
+                style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                enabled: false, // Campo deshabilitado para edición
+                readOnly: true, // Solo lectura
+              )
+            : Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline,
+                        color: Colors.blue, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'SKU generado automáticamente',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'El código SKU será asignado por el sistema automáticamente al guardar el producto.',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 12,
+                          const SizedBox(height: 4),
+                          Text(
+                            'El código SKU será asignado por el sistema automáticamente al guardar el producto.',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-        ),
       ],
     );
   }
@@ -566,7 +573,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   Widget _buildPricingSection() {
     // Verificar si estamos en modo edición (producto ya existe)
     final bool esEdicion = widget.producto != null;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -598,6 +605,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           },
         ),
         const SizedBox(height: 16),
+        //precio de liquidación
         TextFormField(
           controller: _precioOfertaController,
           decoration:
@@ -606,18 +614,19 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           keyboardType: TextInputType.number,
         ),
         const SizedBox(height: 16),
-        
+
         // Campo de stock con manejo especial para edición
         TextFormField(
           controller: _stockController,
           decoration: _getInputDecoration(
-            'Stock', 
-            helperText: esEdicion 
+            'Stock',
+            helperText: esEdicion
                 ? 'Para modificar el stock, utilice la gestión de inventario'
                 : null,
-            suffixIcon: esEdicion 
+            suffixIcon: esEdicion
                 ? const Tooltip(
-                    message: 'El stock solo puede ser modificado mediante entradas de inventario',
+                    message:
+                        'El stock solo puede ser modificado mediante entradas de inventario',
                     child: Icon(
                       FontAwesomeIcons.circleInfo,
                       size: 16,
@@ -669,7 +678,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'El stock no puede editarse directamente. Para modificar el stock de este producto, por favor use la "Gestión de Inventario" desde la pantalla de Inventario.',
+                        'El stock no puede editarse directamente. Para modificar el stock de este producto, por favor use la "Control de stock" desde la pantalla de Inventario.',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.9),
                           fontSize: 12,
@@ -682,7 +691,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             ),
           ),
         ],
-        
+
         const SizedBox(height: 16),
         TextFormField(
           controller: _stockMinimoController,
@@ -699,37 +708,37 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 builder: (context, precioCompraText, _) {
                   final venta = double.tryParse(precioVentaText.text) ?? 0;
                   final compra = double.tryParse(precioCompraText.text) ?? 0;
-            final ganancia = venta - compra;
-            final porcentaje = compra > 0 ? (ganancia / compra) * 100 : 0;
-            
-            return Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
+                  final ganancia = venta - compra;
+                  final porcentaje = compra > 0 ? (ganancia / compra) * 100 : 0;
+
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
                       color: const Color(0xFF2D2D2D),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: Colors.white.withOpacity(0.1),
                       ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
                         const Text(
                           'Ganancia:',
                           style: TextStyle(color: Colors.white),
                         ),
-                  Text(
-                    'S/ ${ganancia.toStringAsFixed(2)} (${porcentaje.toStringAsFixed(1)}%)',
-                    style: TextStyle(
+                        Text(
+                          'S/ ${ganancia.toStringAsFixed(2)} (${porcentaje.toStringAsFixed(1)}%)',
+                          style: TextStyle(
                             color: ganancia > 0
                                 ? Colors.green[400]
                                 : const Color(0xFFE31E24),
-                      fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            );
+                  );
                 });
           },
         ),
@@ -789,9 +798,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   controller: _marcaController,
                   decoration: _getInputDecoration('Marca'),
                   style: const TextStyle(color: Colors.white),
-          validator: (value) =>
-              value?.isEmpty ?? true ? 'Campo requerido' : null,
-        ),
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? 'Campo requerido' : null,
+                ),
         const SizedBox(height: 16),
         // Dropdown de Categoría
         if (_isLoadingCategorias)
@@ -816,18 +825,18 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   style: const TextStyle(color: Colors.white),
                   isExpanded: true,
                   items: _categorias.map((category) {
-            return DropdownMenuItem(
-              value: category,
+                    return DropdownMenuItem(
+                      value: category,
                       child: Text(
                         category,
                         style: const TextStyle(color: Colors.white),
                         overflow: TextOverflow.ellipsis,
                       ),
-            );
-          }).toList(),
-          onChanged: (value) {
+                    );
+                  }).toList(),
+                  onChanged: (value) {
                     if (value != null) {
-            setState(() {
+                      setState(() {
                         _categoriaSeleccionada = value;
                       });
                     }
@@ -846,7 +855,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     ),
                   ),
                   child: Row(
-      children: [
+                    children: [
                       const Icon(
                         Icons.error_outline,
                         color: Colors.red,
@@ -855,7 +864,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       Expanded(
                         child: Text(
                           'No se pudieron cargar las categorías. Por favor, intente nuevamente.',
-              style: TextStyle(
+                          style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                           ),
                         ),
@@ -866,13 +875,13 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                           'Reintentar',
                           style: TextStyle(
                             color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            ),
-          ],
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-        ),
+                ),
         const SizedBox(height: 16),
         // Dropdown de Color (reemplazando el campo de texto)
         if (_isLoadingColores)
@@ -895,8 +904,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             items: _colores.map((color) {
               return DropdownMenuItem(
                 value: color,
-              child: Row(
-                children: [
+                child: Row(
+                  children: [
                     // Muestra una vista previa del color
                     Container(
                       width: 24,
@@ -911,7 +920,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     ),
                     const SizedBox(width: 12),
                     // Nombre del color
-                  Expanded(
+                    Expanded(
                       child: Text(
                         color.nombre,
                         style: const TextStyle(color: Colors.white),
@@ -930,8 +939,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 } else {
                   _colorController.text = '';
                 }
-                        });
-                      },
+              });
+            },
           )
         else
           Container(
@@ -962,11 +971,11 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   onPressed: _cargarColores,
                   child: const Text(
                     'Reintentar',
-          style: TextStyle(
+                    style: TextStyle(
                       color: Colors.orange,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -980,7 +989,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle('Descuentos', FontAwesomeIcons.percent),
-          const SizedBox(height: 16),
+        const SizedBox(height: 16),
         TextFormField(
           controller: _cantidadMinimaDescuentoController,
           decoration:
@@ -1003,7 +1012,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   Widget _buildSharedBranchesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      children: [
         _buildSectionTitle(
             'Sucursales que Comparten este Producto', FontAwesomeIcons.sitemap),
         const SizedBox(height: 16),
@@ -1011,20 +1020,20 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           const Center(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
-                child: Column(
-                  children: [
+              child: Column(
+                children: [
                   CircularProgressIndicator(
                     color: Color(0xFFE31E24),
                     strokeWidth: 3,
                   ),
                   SizedBox(height: 12),
-                    Text(
+                  Text(
                     'Consultando disponibilidad en otras sucursales...',
                     style: TextStyle(color: Colors.white70),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
           )
         else if (_sucursalesCompartidas.isEmpty)
           Container(
@@ -1037,7 +1046,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               children: [
                 Icon(Icons.info_outline, color: Colors.white54),
                 SizedBox(width: 12),
-              Expanded(
+                Expanded(
                   child: Text(
                     'Este producto no se comparte con otras sucursales',
                     style: TextStyle(color: Colors.white70),
@@ -1055,9 +1064,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 color: Colors.white.withOpacity(0.1),
               ),
             ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 // Encabezado con contadores
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -1098,10 +1107,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                             .toString(),
                         FontAwesomeIcons.ban,
                         Colors.red.shade800,
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
                 // Lista de sucursales
                 ListView.builder(
@@ -1145,12 +1154,12 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           ),
         ),
         const SizedBox(height: 4),
-                  Text(
+        Text(
           label,
-                    style: TextStyle(
+          style: TextStyle(
             color: Colors.white.withOpacity(0.7),
-                      fontSize: 12,
-                    ),
+            fontSize: 12,
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -1201,7 +1210,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         ),
         title: Text(
           item.sucursal.nombre,
-                    style: TextStyle(
+          style: TextStyle(
             color: isCurrentBranch ? const Color(0xFFE31E24) : Colors.white,
             fontWeight: isCurrentBranch ? FontWeight.bold : FontWeight.normal,
           ),
@@ -1210,9 +1219,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           item.sucursal.direccion,
           style: TextStyle(
             color: Colors.white.withOpacity(0.5),
-                      fontSize: 12,
-                    ),
-                  ),
+            fontSize: 12,
+          ),
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1375,23 +1384,27 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         // Solo incluir stock para productos nuevos
         if (esNuevoProducto) 'stock': int.parse(_stockController.text),
       };
-      
+
       // Buscar y añadir el ID de categoría si está disponible
       if (_categoriasMap.containsKey(_categoriaSeleccionada)) {
         final categoriaInfo = _categoriasMap[_categoriaSeleccionada];
         if (categoriaInfo != null && categoriaInfo['id'] != null) {
           // Verificar que el ID sea un número válido
           final idValue = categoriaInfo['id'];
-          if (idValue is int || (idValue is String && int.tryParse(idValue) != null)) {
+          if (idValue is int ||
+              (idValue is String && int.tryParse(idValue) != null)) {
             // Convertir explícitamente a entero para evitar el error NaN
-            productoData['categoriaId'] = idValue is int ? idValue : int.parse(idValue);
-            debugPrint('ProductosForm: Categoría $_categoriaSeleccionada con ID válido: ${productoData['categoriaId']}');
+            productoData['categoriaId'] =
+                idValue is int ? idValue : int.parse(idValue);
+            debugPrint(
+                'ProductosForm: Categoría $_categoriaSeleccionada con ID válido: ${productoData['categoriaId']}');
           } else {
-            debugPrint('ProductosForm: Advertencia - ID de categoría no válido: $idValue');
+            debugPrint(
+                'ProductosForm: Advertencia - ID de categoría no válido: $idValue');
           }
         }
       }
-      
+
       // Buscar y añadir el ID de marca si está disponible
       final marcaText = _marcaController.text;
       if (_marcasMap.containsKey(marcaText)) {
@@ -1399,22 +1412,27 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         if (marcaInfo != null && marcaInfo['id'] != null) {
           // Verificar que el ID sea un número válido
           final idValue = marcaInfo['id'];
-          if (idValue is int || (idValue is String && int.tryParse(idValue) != null)) {
+          if (idValue is int ||
+              (idValue is String && int.tryParse(idValue) != null)) {
             // Convertir explícitamente a entero para evitar el error NaN
-            productoData['marcaId'] = idValue is int ? idValue : int.parse(idValue);
-            debugPrint('ProductosForm: Marca $marcaText con ID válido: ${productoData['marcaId']}');
+            productoData['marcaId'] =
+                idValue is int ? idValue : int.parse(idValue);
+            debugPrint(
+                'ProductosForm: Marca $marcaText con ID válido: ${productoData['marcaId']}');
           } else {
-            debugPrint('ProductosForm: Advertencia - ID de marca no válido: $idValue');
+            debugPrint(
+                'ProductosForm: Advertencia - ID de marca no válido: $idValue');
           }
         }
       }
-      
+
       // Manejar el color correctamente
       if (_colorSeleccionado != null) {
         // ColorApp.id ya es int según la definición del modelo
         productoData['colorId'] = _colorSeleccionado!.id;
-        debugPrint('ProductosForm: Color ${_colorSeleccionado!.nombre} con ID: ${_colorSeleccionado!.id}');
-        
+        debugPrint(
+            'ProductosForm: Color ${_colorSeleccionado!.nombre} con ID: ${_colorSeleccionado!.id}');
+
         // Incluir también el nombre para claridad
         productoData['color'] = _colorSeleccionado!.nombre;
       } else if (_colorController.text.isNotEmpty) {
@@ -1422,30 +1440,34 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         productoData['color'] = _colorController.text;
         // No enviar colorId si no tenemos un ID válido
       }
-            
+
       // Campos opcionales
       if (_precioOfertaController.text.isNotEmpty) {
-        productoData['precioOferta'] = double.parse(_precioOfertaController.text);
+        productoData['precioOferta'] =
+            double.parse(_precioOfertaController.text);
       }
-      
+
       if (_stockMinimoController.text.isNotEmpty) {
         productoData['stockMinimo'] = int.parse(_stockMinimoController.text);
       }
-      
+
       if (_cantidadMinimaDescuentoController.text.isNotEmpty) {
-        productoData['cantidadMinimaDescuento'] = int.parse(_cantidadMinimaDescuentoController.text);
+        productoData['cantidadMinimaDescuento'] =
+            int.parse(_cantidadMinimaDescuentoController.text);
       }
-      
+
       if (_porcentajeDescuentoController.text.isNotEmpty) {
-        productoData['porcentajeDescuento'] = int.parse(_porcentajeDescuentoController.text);
+        productoData['porcentajeDescuento'] =
+            int.parse(_porcentajeDescuentoController.text);
       }
 
       // Añadir mensajes de depuración para rastrear los datos
       debugPrint('ProductosForm: Datos preparados para guardar:');
-      debugPrint('ProductosForm: Sucursal seleccionada: ${_sucursalSeleccionada?.id}');
+      debugPrint(
+          'ProductosForm: Sucursal seleccionada: ${_sucursalSeleccionada?.id}');
       debugPrint('ProductosForm: Producto ID: ${widget.producto?.id}');
       debugPrint('ProductosForm: Es nuevo producto: $esNuevoProducto');
-      
+
       // Mostrar datos completos para depuración
       debugPrint('ProductosForm: === DATOS COMPLETOS DEL PRODUCTO ===');
       productoData.forEach((key, value) {
@@ -1453,11 +1475,11 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         debugPrint('ProductosForm:   - $key: $value (Tipo: $tipo)');
       });
       debugPrint('ProductosForm: === FIN DATOS PRODUCTO ===');
-      
+
       // Llamar al callback onSave proporcionado por el componente padre
       widget.onSave(productoData);
       debugPrint('ProductosForm: Callback onSave ejecutado');
-      
+
       Navigator.pop(context);
     }
   }
@@ -1478,4 +1500,4 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     _porcentajeDescuentoController.dispose();
     super.dispose();
   }
-} 
+}
