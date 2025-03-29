@@ -1,12 +1,12 @@
 import 'dart:developer' as developer;
 
 import 'package:condorsmotors/models/proforma.model.dart';
-import 'package:condorsmotors/screens/computer/ventas_computer.dart' show VentasUtils;
-import 'package:condorsmotors/screens/computer/widgets/ventas_pendientes_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:condorsmotors/utils/ventas_utils.dart';
 
 class ProcessingDialog extends StatelessWidget {
   final String documentType;
@@ -163,7 +163,11 @@ class _NumericKeypadState extends State<NumericKeypad> {
     }
     final double total = double.tryParse(widget.currentAmount) ?? 0;
     final double payment = double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
-    return VentasUtils.formatearMonto(payment - total);
+    return payment - total;
+  }
+
+  String get formattedChange {
+    return VentasUtils.formatearMonto(change);
   }
 
   void _handleKeyEvent(String key) {
@@ -496,7 +500,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            VentasUtils.formatearMontoTexto(change),
+                            formattedChange,
                             style: const TextStyle(
                               color: Color(0xFF4CAF50),
                               fontSize: 24,

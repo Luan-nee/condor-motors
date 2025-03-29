@@ -1,5 +1,5 @@
 import 'package:condorsmotors/main.dart' show api;
-import 'package:condorsmotors/screens/computer/widgets/ventas_pendientes_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 

@@ -1,9 +1,10 @@
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' as models;
-import 'package:condorsmotors/screens/computer/widgets/form_sales_computer.dart' show NumericKeypad, ProcessingDialog, ProformaSaleDialog;
-import 'package:condorsmotors/screens/computer/widgets/ventas_pendientes_utils.dart';
-import 'package:condorsmotors/screens/computer/widgets/ventas_pendientes_widget.dart';
+import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart' show NumericKeypad, ProcessingDialog;
+import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart' as form_widget show ProformaSaleDialog;
+import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -305,14 +306,16 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       if (proformaId != null) {
         final models.Proforma proformaObj = _proformasObj.firstWhere(
           (models.Proforma p) => p.id == proformaId,
-          orElse: () => throw Exception('Proforma no encontrada: $proformaId'),
+          orElse: () {
+            throw Exception('No se encontró la proforma con ID: $proformaId');
+          },
         );
         
         // Mostrar diálogo especializado para proformas
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (BuildContext context) => ProformaSaleDialog(
+          builder: (BuildContext context) => form_widget.ProformaSaleDialog(
             proforma: proformaObj,
             onConfirm: (Map<String, dynamic> ventaData) {
               Navigator.of(context).pop();
@@ -757,12 +760,14 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
           Navigator.of(context).pop();
           
           // Mostrar mensaje de éxito
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Pago procesado exitosamente'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Pago procesado exitosamente'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
         }
       }
       
@@ -933,6 +938,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       
       final Map<String, dynamic> proformasResponse = await _proformasApi.getProformasVenta(
         sucursalId: sucursalId.toString(),
+        forceRefresh: true, // Forzar actualización para obtener datos frescos
       );
       
       if (!mounted) {
@@ -940,21 +946,48 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       }
       
       final List<models.Proforma> proformasObj = _proformasApi.parseProformasVenta(proformasResponse);
-      final List<Map<String, dynamic>> proformasFormateadas = VentasPendientesUtils.convertirProformasAVentasPendientes(proformasObj);
+      
+      // Filtrar solo proformas pendientes
+      final List<models.Proforma> proformasFiltradas = proformasObj
+          .where((models.Proforma p) => p.estado == models.EstadoProforma.pendiente)
+          .toList();
+      
+      debugPrint('Proformas cargadas: ${proformasObj.length}, pendientes: ${proformasFiltradas.length}');
+      
+      // Convertir proformas a formato para mostrar en la UI
+      final List<Map<String, dynamic>> proformasFormateadas = 
+          VentasPendientesUtils.convertirProformasAVentasPendientes(proformasFiltradas);
+      
+      // Registrar información sobre promociones en las proformas
+      int proformasConPromociones = 0;
+      for (final models.Proforma proforma in proformasFiltradas) {
+        final List<models.DetalleProforma> detallesConPromociones = proforma.detalles
+            .where((models.DetalleProforma d) => _tienePromocion(d))
+            .toList();
+        
+        if (detallesConPromociones.isNotEmpty) {
+          proformasConPromociones++;
+          debugPrint('Proforma #${proforma.id} tiene ${detallesConPromociones.length} productos con promociones');
+        }
+      }
+      
+      debugPrint('Proformas con promociones: $proformasConPromociones');
       
       setState(() {
-        _proformasObj = proformasObj;
+        _proformasObj = proformasFiltradas;
         _proformasFormateadas = proformasFormateadas;
       });
     } catch (e) {
       debugPrint('Error al cargar proformas: $e');
       // Mostrar mensaje de error en un snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cargar proformas: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar proformas: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -962,6 +995,38 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         });
       }
     }
+  }
+  
+  // Verificar si un detalle de proforma tiene promociones
+  bool _tienePromocion(models.DetalleProforma detalle) {
+    if (detalle.producto == null) {
+      return false;
+    }
+    
+    final Producto producto = detalle.producto!;
+    
+    // Verificar si tiene liquidación
+    if (producto.liquidacion && producto.precioOferta != null) {
+      return true;
+    }
+    
+    // Verificar promoción de unidades gratis
+    if (producto.cantidadMinimaDescuento != null && 
+        producto.cantidadMinimaDescuento! > 0 &&
+        producto.cantidadGratisDescuento != null && 
+        producto.cantidadGratisDescuento! > 0) {
+      return true;
+    }
+    
+    // Verificar descuento porcentual
+    if (producto.cantidadMinimaDescuento != null && 
+        producto.cantidadMinimaDescuento! > 0 &&
+        producto.porcentajeDescuento != null && 
+        producto.porcentajeDescuento! > 0) {
+      return true;
+    }
+    
+    return false;
   }
   
   // Método para convertir proforma a venta
@@ -975,13 +1040,15 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       });
       
       // Mostrar diálogo de procesamiento
-      await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) => const ProcessingDialog(
-          documentType: 'venta',
-        ),
-      );
+      if (mounted) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) => const ProcessingDialog(
+            documentType: 'venta',
+          ),
+        );
+      }
       
       // Obtener sucursalId
       final int? sucursalId = await VentasPendientesUtils.obtenerSucursalId();
@@ -989,6 +1056,14 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         debugPrint('Error: No se pudo obtener el ID de sucursal');
         return;
       }
+      
+      // Buscar la proforma completa en _proformasObj para tener toda la información
+      final models.Proforma proformaCompleta = _proformasObj.firstWhere(
+        (models.Proforma p) => p.id == proformaId,
+        orElse: () {
+          throw Exception('No se encontró la proforma con ID: $proformaId');
+        },
+      );
       
       // Preparar datos para la conversión
       final Map<String, dynamic> datosVenta = <String, dynamic>{
@@ -1000,6 +1075,19 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         'productos': _convertirDetallesAProductos(ventaData['detalles']),
       };
       
+      // Agregar información sobre promociones si la proforma está disponible
+      datosVenta['observaciones'] = 'Convertida de Proforma #${proformaCompleta.id}';
+      
+      // Contar productos con promociones
+      final List<models.DetalleProforma> detallesConPromociones = proformaCompleta.detalles
+          .where((models.DetalleProforma d) => _tienePromocion(d))
+          .toList();
+      
+      if (detallesConPromociones.isNotEmpty) {
+        datosVenta['tienePromociones'] = true;
+        debugPrint('La venta incluye ${detallesConPromociones.length} productos con promociones');
+      }
+          
       // Llamar a la API para convertir la proforma en venta
       await _proformasApi.convertirProformaAVenta(
         sucursalId: sucursalId.toString(),
@@ -1013,12 +1101,18 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       }
       
       // Mostrar mensaje de éxito
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Proforma convertida a venta exitosamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Proforma convertida a venta exitosamente'),
+            action: SnackBarAction(
+              label: 'Ver Ventas',
+              onPressed: _cargarVentas,
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
       
       // Recargar datos
       await _cargarVentasPendientes();
@@ -1055,6 +1149,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
           'nombre': detalle.nombre,
           'precio': detalle.precioUnitario,
           'cantidad': detalle.cantidad,
+          'sku': detalle.sku,
+          'marca': detalle.marca,
+          'categoria': detalle.categoria,
         };
       } else if (detalle is Map<String, dynamic>) {
         return <String, dynamic>{
@@ -1062,6 +1159,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
           'nombre': detalle['nombre'],
           'precio': detalle['precioUnitario'],
           'cantidad': detalle['cantidad'],
+          'sku': detalle['sku'],
+          'marca': detalle['marca'],
+          'categoria': detalle['categoria'],
         };
       }
       return <String, dynamic>{};
@@ -1364,5 +1464,181 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       return 'No disponible';
     }
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
+  }
+}
+
+/// Widget para mostrar ventas pendientes y proformas
+class PendingSalesWidget extends StatelessWidget {
+  final List<Map<String, dynamic>> ventasPendientes;
+  final Function(Map<String, dynamic>) onSaleSelected;
+  final VoidCallback onReload;
+
+  const PendingSalesWidget({
+    Key? key,
+    required this.ventasPendientes,
+    required this.onSaleSelected,
+    required this.onReload,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        // Encabezado con título y botón de recarga
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            const Text(
+              'VENTAS PENDIENTES',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              onPressed: onReload,
+              tooltip: 'Recargar',
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        
+        // Lista de ventas pendientes
+        Expanded(
+          child: ventasPendientes.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No hay ventas pendientes',
+                    style: TextStyle(color: Colors.white54),
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: ventasPendientes.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final Map<String, dynamic> venta = ventasPendientes[index];
+                    final String tipoVenta = venta['tipoVenta'] as String? ?? 'Venta';
+                    final bool esProforma = tipoVenta.toLowerCase() == 'proforma';
+                    
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      color: const Color(0xFF2D2D2D),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: esProforma ? const Color(0xFFE31E24) : Colors.transparent,
+                          width: esProforma ? 1 : 0,
+                        ),
+                      ),
+                      child: InkWell(
+                        onTap: () => onSaleSelected(venta),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              // Encabezado de la venta
+                              Row(
+                                children: <Widget>[
+                                  Icon(
+                                    esProforma 
+                                        ? Icons.file_copy_outlined 
+                                        : Icons.shopping_cart,
+                                    color: esProforma 
+                                        ? const Color(0xFFE31E24) 
+                                        : Colors.green,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      '${esProforma ? 'Proforma' : 'Venta'} #${venta['id']}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, 
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: esProforma 
+                                          ? const Color(0xFFE31E24).withOpacity(0.2) 
+                                          : Colors.green.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'S/ ${venta['total']}',
+                                      style: TextStyle(
+                                        color: esProforma 
+                                            ? const Color(0xFFE31E24) 
+                                            : Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              
+                              // Información del cliente
+                              if (venta.containsKey('cliente') && venta['cliente'] != null)
+                                Text(
+                                  'Cliente: ${venta['cliente']['nombre'] ?? 'Sin nombre'}',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              
+                              // Fecha de creación
+                              if (venta.containsKey('fechaCreacion') && venta['fechaCreacion'] != null)
+                                Text(
+                                  'Fecha: ${venta['fechaCreacion']}',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                
+                              // Etiquetas o información adicional
+                              const SizedBox(height: 8),
+                              Row(
+                                children: <Widget>[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, 
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      esProforma ? 'Pendiente de conversión' : 'Pendiente de pago',
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
   }
 } 

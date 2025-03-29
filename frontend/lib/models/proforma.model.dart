@@ -29,16 +29,67 @@ class DetalleProforma {
 
   /// Crea un objeto DetalleProforma desde un mapa JSON
   factory DetalleProforma.fromJson(Map<String, dynamic> json) {
-    return DetalleProforma(
-      productoId: json['productoId'] as int,
-      nombre: json['nombre'] as String,
-      cantidad: json['cantidad'] as int,
-      subtotal: (json['subtotal'] as num).toDouble(),
-      precioUnitario: (json['precioUnitario'] as num?)?.toDouble() ?? 0.0,
-      sku: json['sku'] as String?,
-      marca: json['marca'] as String?,
-      categoria: json['categoria'] as String?,
-    );
+    try {
+      // Funciones auxiliares para parsear valores de forma segura
+      int parseEntero(valor) {
+        if (valor == null) {
+          return 0;
+        }
+        if (valor is int) {
+          return valor;
+        }
+        if (valor is double) {
+          return valor.toInt();
+        }
+        if (valor is String) {
+          return int.tryParse(valor) ?? 0;
+        }
+        if (valor is num) {
+          return valor.toInt();
+        }
+        return 0;
+      }
+      
+      double parseDouble(valor) {
+        if (valor == null) {
+          return 0.0;
+        }
+        if (valor is double) {
+          return valor;
+        }
+        if (valor is int) {
+          return valor.toDouble();
+        }
+        if (valor is String) {
+          return double.tryParse(valor) ?? 0.0;
+        }
+        if (valor is num) {
+          return valor.toDouble();
+        }
+        return 0.0;
+      }
+      
+      return DetalleProforma(
+        productoId: parseEntero(json['productoId']),
+        nombre: json['nombre']?.toString() ?? 'Producto desconocido',
+        cantidad: parseEntero(json['cantidad']),
+        subtotal: parseDouble(json['subtotal']),
+        precioUnitario: parseDouble(json['precioUnitario']),
+        sku: json['sku']?.toString(),
+        marca: json['marca']?.toString(),
+        categoria: json['categoria']?.toString(),
+      );
+    } catch (e) {
+      debugPrint('Error al parsear DetalleProforma: $e');
+      // En caso de error, retornar un objeto básico para evitar nulos
+      return DetalleProforma(
+        productoId: 0,
+        nombre: 'Error en datos',
+        cantidad: 0,
+        subtotal: 0.0,
+        precioUnitario: 0.0,
+      );
+    }
   }
 
   /// Crea un objeto DetalleProforma a partir de un producto
@@ -178,75 +229,134 @@ class Proforma {
 
   /// Crea un objeto Proforma desde un mapa JSON
   factory Proforma.fromJson(Map<String, dynamic> json) {
-    // Procesar fechas con manejo de diferentes campos y formatos
-    DateTime parseFecha(value) {
-      if (value == null) {
-        return DateTime.now();
+    try {
+      // Función auxiliar para extraer IDs de forma segura, maneja diferentes formatos y nulos
+      int getIdSafely(value) {
+        if (value == null) {
+          return 0;
+        }
+        if (value is int) {
+          return value;
+        }
+        if (value is String) {
+          return int.tryParse(value) ?? 0;
+        }
+        if (value is Map<String, dynamic> && value.containsKey('id')) {
+          final dynamic id = value['id'];
+          if (id is int) {
+            return id;
+          }
+          if (id is String) {
+            return int.tryParse(id) ?? 0;
+          }
+          if (id is num) {
+            return id.toInt();
+          }
+        }
+        return 0;
       }
-      if (value is DateTime) {
-        return value;
-      }
-      if (value is String) {
-        try {
-          return DateTime.parse(value);
-        } catch (e) {
-          debugPrint('Error al parsear fecha: $e');
+      
+      // Procesar fechas con manejo de diferentes campos y formatos
+      DateTime parseFecha(value) {
+        if (value == null) {
           return DateTime.now();
         }
+        if (value is DateTime) {
+          return value;
+        }
+        if (value is String) {
+          try {
+            return DateTime.parse(value);
+          } catch (e) {
+            debugPrint('Error al parsear fecha: $e');
+            return DateTime.now();
+          }
+        }
+        return DateTime.now();
       }
-      return DateTime.now();
-    }
 
-    final DateTime fechaCreacion = parseFecha(
-      json['fechaCreacion'] ?? json['created_at'] ?? DateTime.now()
-    );
-    
-    final DateTime fechaActualizacion = parseFecha(
-      json['fechaActualizacion'] ?? json['updated_at']
-    );
-    
-    final DateTime fechaExpiracion = parseFecha(json['fechaExpiracion']);
-    
-    // Obtener IDs directamente o desde objetos anidados
-    int getIdFromObject(String field) {
-      if (json[field] is int) {
-        return json[field] as int;
+      final DateTime fechaCreacion = parseFecha(
+        json['fechaCreacion'] ?? json['created_at'] ?? DateTime.now()
+      );
+      
+      final DateTime fechaActualizacion = parseFecha(
+        json['fechaActualizacion'] ?? json['updated_at']
+      );
+      
+      final DateTime? fechaExpiracion = json['fechaExpiracion'] != null 
+          ? parseFecha(json['fechaExpiracion'])
+          : null;
+      
+      // Obtener los detalles con manejo de errores
+      final List<DetalleProforma> detalles = <DetalleProforma>[];
+      if (json['detalles'] != null) {
+        for (final dynamic item in json['detalles'] as List) {
+          try {
+            if (item is Map<String, dynamic>) {
+              detalles.add(DetalleProforma.fromJson(item));
+            }
+          } catch (e) {
+            debugPrint('Error al procesar detalle de proforma: $e');
+            // Continuar con el siguiente detalle en caso de error
+          }
+        }
       }
-      if (json[field] is Map<String, dynamic>) {
-        return (json[field]['id'] as int?) ?? 0;
+      
+      // Obtener estado con valor por defecto
+      final EstadoProforma estado = EstadoProformaExtension.fromText(
+        json['estado'] as String?
+      );
+      
+      // Parsear total de forma segura
+      double parseTotal(value) {
+        if (value == null) {
+          return 0.0;
+        }
+        if (value is double) {
+          return value;
+        }
+        if (value is int) {
+          return value.toDouble();
+        }
+        if (value is String) {
+          return double.tryParse(value) ?? 0.0;
+        }
+        if (value is num) {
+          return value.toDouble();
+        }
+        return 0.0;
       }
-      return 0;
+      
+      return Proforma(
+        id: json['id'] is int ? json['id'] : (int.tryParse(json['id'].toString()) ?? 0),
+        nombre: json['nombre'] as String?,
+        total: parseTotal(json['total']),
+        detalles: detalles,
+        empleadoId: getIdSafely(json['empleadoId'] ?? json['empleado']),
+        sucursalId: getIdSafely(json['sucursalId'] ?? json['sucursal']),
+        fechaCreacion: fechaCreacion,
+        fechaActualizacion: fechaActualizacion,
+        clienteId: json['clienteId'] != null ? getIdSafely(json['clienteId']) : null,
+        estado: estado,
+        fechaExpiracion: fechaExpiracion,
+        cliente: json['cliente'],
+        empleado: json['empleado'],
+        sucursal: json['sucursal'],
+      );
+    } catch (e) {
+      debugPrint('Error general al procesar proforma: $e');
+      // Crear proforma básica en caso de error general
+      return Proforma(
+        id: 0,
+        nombre: 'Error en datos',
+        total: 0.0,
+        detalles: <DetalleProforma>[],
+        empleadoId: 0,
+        sucursalId: 0,
+        fechaCreacion: DateTime.now(),
+        estado: EstadoProforma.pendiente,
+      );
     }
-    
-    // Obtener los detalles
-    final List<DetalleProforma> detalles = <DetalleProforma>[];
-    if (json['detalles'] != null) {
-      detalles.addAll((json['detalles'] as List)
-          .map((item) => DetalleProforma.fromJson(item as Map<String, dynamic>))
-          .toList());
-    }
-    
-    // Obtener estado
-    final EstadoProforma estado = EstadoProformaExtension.fromText(json['estado'] as String?);
-    
-    return Proforma(
-      id: json['id'] as int,
-      nombre: json['nombre'] as String?,
-      total: json['total'] is String 
-          ? double.parse(json['total']) 
-          : (json['total'] as num).toDouble(),
-      detalles: detalles,
-      empleadoId: getIdFromObject('empleadoId'),
-      sucursalId: getIdFromObject('sucursalId'),
-      fechaCreacion: fechaCreacion,
-      fechaActualizacion: fechaActualizacion,
-      clienteId: json['clienteId'] as int?,
-      estado: estado,
-      fechaExpiracion: fechaExpiracion,
-      cliente: json['cliente'],
-      empleado: json['empleado'],
-      sucursal: json['sucursal'],
-    );
   }
 
   /// Convierte el objeto a un mapa JSON

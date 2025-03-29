@@ -1,6 +1,6 @@
 import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/screens/computer/dashboard_computer.dart';
-import 'package:condorsmotors/screens/computer/ventas_computer.dart';
+import 'package:condorsmotors/screens/computer/proforma_computer.dart';
 import 'package:condorsmotors/services/token_service.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/material.dart';
@@ -37,7 +37,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
       <String, dynamic>{
         'title': 'Aprobar Ventas',
         'icon': FontAwesomeIcons.cashRegister,
-        'screen': const SalesComputerScreen(),
+        'screen': const ProformaComputerScreen(),
         'description': 'Procesar ventas pendientes',
       },
     ];
@@ -126,7 +126,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
         <String, dynamic>{
           'title': 'Aprobar Ventas',
           'icon': FontAwesomeIcons.cashRegister,
-          'screen': SalesComputerScreen(sucursalId: _sucursalId, nombreSucursal: _nombreSucursal),
+          'screen': ProformaComputerScreen(sucursalId: _sucursalId, nombreSucursal: _nombreSucursal),
           'description': 'Procesar ventas pendientes',
         },
       ];

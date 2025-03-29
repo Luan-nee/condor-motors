@@ -131,9 +131,15 @@ class BusquedaProductoUtils {
       int conDescuentoPorcentual = 0;
       
       for (final Map<String, dynamic> producto in productos) {
-        if (producto['enLiquidacion'] == true) conLiquidacion++;
-        if (producto['tienePromocionGratis'] == true) conPromoGratis++;
-        if (producto['tieneDescuentoPorcentual'] == true) conDescuentoPorcentual++;
+        if (producto['enLiquidacion'] == true) {
+          conLiquidacion++;
+        }
+        if (producto['tienePromocionGratis'] == true) {
+          conPromoGratis++;
+        }
+        if (producto['tieneDescuentoPorcentual'] == true) {
+          conDescuentoPorcentual++;
+        }
       }
       
       debugPrint('📊 Productos con cada tipo de descuento:');
