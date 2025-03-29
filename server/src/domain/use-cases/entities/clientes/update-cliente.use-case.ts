@@ -24,6 +24,7 @@ export class UpdateCliente {
     const updateClienteResult = await db
       .update(clientesTable)
       .set({
+        numeroDocumento: updateClienteDto.numeroDocumento,
         denominacion: updateClienteDto.denominacion,
         direccion: updateClienteDto.direccion,
         correo: updateClienteDto.correo,

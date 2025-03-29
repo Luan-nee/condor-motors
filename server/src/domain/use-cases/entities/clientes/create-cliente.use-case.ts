@@ -2,7 +2,7 @@ import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import { clientesTable, tiposDocumentoClienteTable } from '@/db/schema'
 import type { CreateClienteDto } from '@/domain/dtos/entities/clientes/create-cliente.dto'
-import { count, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 export class CreateCliente {
   private async createCliente(createClienteDto: CreateClienteDto) {
@@ -16,23 +16,12 @@ export class CreateCliente {
       )
 
     if (tiposDocumentos.length < 1) {
-      throw CustomError.badRequest('El tipo de documento enviado no existe')
-    }
-
-    const clienteDni = await db
-      .select({ count: count(clientesTable.id) })
-      .from(clientesTable)
-      .where(
-        eq(clientesTable.numeroDocumento, createClienteDto.numeroDocumento)
-      )
-
-    if (clienteDni[0].count > 0) {
       throw CustomError.badRequest(
-        `El numero de documento ingresado ya esta en uso : ${createClienteDto.numeroDocumento} `
+        'El tipo de documento de cliente enviado no existe'
       )
     }
 
-    const InsertValuesCliente = await db
+    const clientes = await db
       .insert(clientesTable)
       .values({
         tipoDocumentoId: createClienteDto.tipoDocumentoId,
@@ -44,10 +33,10 @@ export class CreateCliente {
       })
       .returning()
 
-    if (InsertValuesCliente.length <= 0) {
+    if (clientes.length <= 0) {
       throw CustomError.internalServer('Ocurrio un error al agregar al cliente')
     }
-    const [cliente] = InsertValuesCliente
+    const [cliente] = clientes
     return cliente
   }
 

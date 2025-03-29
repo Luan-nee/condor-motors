@@ -14,6 +14,7 @@ export const createClienteValidator = (object: unknown) =>
   createClienteSchema.safeParse(object)
 
 const updateClienteSchema = z.object({
+  numeroDocumento: ClienteSchema.numeroDocumento,
   denominacion: ClienteSchema.denominacion,
   direccion: ClienteSchema.direccion,
   correo: ClienteSchema.correo,

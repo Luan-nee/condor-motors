@@ -1,17 +1,20 @@
 import { updateClienteValidator } from '@/domain/validators/entities/clientes/cliente.validator'
 
 export class UpdateClienteDto {
+  public numeroDocumento?: string
   public denominacion?: string
   public direccion?: string
   public correo?: string
   public telefono?: string
 
   private constructor({
+    numeroDocumento,
     denominacion,
     direccion,
     correo,
     telefono
   }: UpdateClienteDto) {
+    this.numeroDocumento = numeroDocumento
     this.denominacion = denominacion
     this.direccion = direccion
     this.correo = correo
