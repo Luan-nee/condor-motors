@@ -4,7 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../main.dart' show api;
 import '../../../../models/producto.model.dart';
 import '../../../../models/sucursal.model.dart';
-import '../../utils/stock_utils.dart';
+import '../../../../utils/stock_utils.dart';
 import 'stock_detalles_dialog.dart';
 
 /// Diálogo que muestra el stock de un producto en todas las sucursales

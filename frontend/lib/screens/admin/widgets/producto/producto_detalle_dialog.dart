@@ -4,7 +4,7 @@ import '../../../../main.dart' show api;
 import '../../../../models/color.model.dart';
 import '../../../../models/producto.model.dart';
 import '../../../../models/sucursal.model.dart';
-import '../../utils/productos_utils.dart';
+import '../../../../utils/productos_utils.dart';
 
 class ProductoDetalleDialog extends StatefulWidget {
   final Producto producto;
@@ -62,7 +62,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     super.initState();
     _cargarDetallesProducto();
     _cargarColores();
-
+    
     // Inicializar controlador de pestañas
     _atributosTabController = TabController(length: 3, vsync: this);
   }
@@ -607,14 +607,14 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   // Nueva función para mostrar el resumen de las promociones en la pestaña de precios
   Widget _buildPromocionesInfo() {
     final producto = widget.producto;
-    bool enLiquidacion = producto.liquidacion;
-    bool tienePromocionGratis = producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0;
-    bool tieneDescuentoPorcentual = producto.cantidadMinimaDescuento != null && producto.cantidadMinimaDescuento! > 0 &&
+    final bool enLiquidacion = producto.liquidacion;
+    final bool tienePromocionGratis = producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0;
+    final bool tieneDescuentoPorcentual = producto.cantidadMinimaDescuento != null && producto.cantidadMinimaDescuento! > 0 &&
                                     producto.porcentajeDescuento != null && producto.porcentajeDescuento! > 0;
     
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
         // Mostrar resumen de cada promoción activa
         if (enLiquidacion)
           _buildResumenPromocion(
@@ -644,7 +644,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           ),
         ],
         
-        const SizedBox(height: 16),
+                        const SizedBox(height: 16),
         TextButton.icon(
           onPressed: () {
             // Volver al inicio del diálogo para ver la promoción destacada
@@ -660,55 +660,55 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           label: const Text('Ver detalles completos'),
           style: TextButton.styleFrom(
             foregroundColor: Colors.white70,
-          ),
-        ),
-      ],
+                              ),
+                            ),
+                          ],
     );
   }
   
   // Método auxiliar para construir el resumen de cada promoción
   Widget _buildResumenPromocion(String titulo, String descripcion, Color color, IconData icono) {
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
           color: color.withOpacity(0.3),
         ),
       ),
       child: Row(
-        children: [
-          FaIcon(
+                      children: [
+                        FaIcon(
             icono,
-            size: 16,
+                          size: 16,
             color: color,
-          ),
-          const SizedBox(width: 8),
+                        ),
+                        const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                        Text(
                   titulo,
-                  style: TextStyle(
+                          style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                     color: color,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                        Text(
                   descripcion,
-                  style: TextStyle(
+                          style: TextStyle(
                     fontSize: 13,
                     color: Colors.white.withOpacity(0.8),
-                  ),
+                          ),
+                        ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        ],
+              ),
+          ],
       ),
     );
   }
@@ -716,15 +716,15 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   // Métodos para la pestaña de precios
   Widget _buildPreciosRow() {
     return Row(
-      children: [
-        Expanded(
+            children: [
+              Expanded(
             child: _buildAtributo(
                 'Precio compra', widget.producto.getPrecioCompraFormateado())),
-        Expanded(
+              Expanded(
             child: _buildAtributo(
                 'Precio venta', widget.producto.getPrecioVentaFormateado())),
         if (widget.producto.estaEnOferta())
-          Expanded(
+              Expanded(
               child: _buildAtributo('Precio de liquidación',
                   widget.producto.getPrecioOfertaFormateado() ?? '',
                   color: Colors.amber)),
@@ -745,7 +745,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       child: Wrap(
         spacing: 16,
         runSpacing: 12,
-        children: [
+                children: [
           SizedBox(
               width: 150,
               child: _buildAtributo('Precio compra',
@@ -1195,38 +1195,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   }
 
   // Métodos para la pestaña de descuentos
-  Widget _buildDescuentosRow() {
-    return Row(
-      children: [
-        if (widget.producto.cantidadMinimaDescuento != null)
-          Expanded(
-              child: _buildAtributo('Cant. mín. descuento',
-                  '${widget.producto.cantidadMinimaDescuento}')),
-        if (widget.producto.cantidadGratisDescuento != null)
-          Expanded(
-              child: _buildAtributo('Cant. gratis',
-                  '${widget.producto.cantidadGratisDescuento}')),
-        if (widget.producto.porcentajeDescuento != null)
-          Expanded(
-              child: _buildAtributo(
-                  '% descuento', '${widget.producto.porcentajeDescuento}%')),
-        if (widget.producto.estaEnOferta())
-          Expanded(
-              child: _buildAtributo(
-                  'Descuento oferta',
-                  widget.producto.getPorcentajeDescuentoOfertaFormateado() ??
-                      '',
-                  color: Colors.amber)),
-        // Expandir para llenar espacio si hay pocos elementos
-        if ((widget.producto.cantidadMinimaDescuento != null ? 1 : 0) +
-                (widget.producto.cantidadGratisDescuento != null ? 1 : 0) +
-                (widget.producto.porcentajeDescuento != null ? 1 : 0) +
-                (widget.producto.estaEnOferta() ? 1 : 0) <
-            4)
-          Expanded(child: Container()),
-      ],
-    );
-  }
 
   Widget _buildDescuentosWrap() {
     return SingleChildScrollView(
@@ -1400,9 +1368,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   // Método que muestra las promociones de forma destacada
   Widget _buildPromocionesDestacadas(Producto producto) {
     // Determinar los tipos de promoción activas
-    bool enLiquidacion = producto.liquidacion;
-    bool tienePromocionGratis = producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0;
-    bool tieneDescuentoPorcentual = producto.cantidadMinimaDescuento != null && producto.cantidadMinimaDescuento! > 0 &&
+    final bool enLiquidacion = producto.liquidacion;
+    final bool tienePromocionGratis = producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0;
+    final bool tieneDescuentoPorcentual = producto.cantidadMinimaDescuento != null && producto.cantidadMinimaDescuento! > 0 &&
                                    producto.porcentajeDescuento != null && producto.porcentajeDescuento! > 0;
     
     // Si no hay promociones, no mostrar nada

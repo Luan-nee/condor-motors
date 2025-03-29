@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../models/producto.model.dart';
-import '../../../models/sucursal.model.dart';
+import '../models/producto.model.dart';
+import '../models/sucursal.model.dart';
 
 /// Clase de utilidades para funciones comunes relacionadas con stock e inventario
 class StockUtils {
@@ -196,8 +196,7 @@ class StockUtils {
         
         // Log de depuración para verificar puntuaciones
         if (puntuacion > 100) {
-          debugPrint('Producto ${producto.nombre} (ID ${producto.id}) tiene puntuación alta: $puntuacion. ' +
-                   'Agotado en $sucursalesAgotadas sucursales (${porcentajeAgotado.round()}%)');
+          debugPrint('Producto ${producto.nombre} (ID ${producto.id}) tiene puntuación alta: $puntuacion. ' 'Agotado en $sucursalesAgotadas sucursales (${porcentajeAgotado.round()}%)');
         }
         
         // Retornar el producto y su puntuación

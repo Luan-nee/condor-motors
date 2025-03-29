@@ -3,7 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../../main.dart' show api;
 import '../../../../models/empleado.model.dart';
-import '../../utils/empleados_utils.dart';
+import '../../../../utils/empleados_utils.dart';
 
 class EmpleadoListItem extends StatefulWidget {
   final Empleado empleado;

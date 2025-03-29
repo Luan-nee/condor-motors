@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../main.dart' show api;
-import '../../../models/producto.model.dart';
-import '../../../models/sucursal.model.dart';
+import '../main.dart' show api;
+import '../models/producto.model.dart';
+import '../models/sucursal.model.dart';
 
 /// Clase para representar el stock de un producto en una sucursal
 class ProductoEnSucursal {
@@ -73,17 +73,49 @@ class ProductosUtils {
     required List<Producto> productos,
     required String searchQuery,
     required String selectedCategory,
+    bool debugMode = false,
   }) {
     if (productos.isEmpty) {
       return [];
     }
 
     final String query = searchQuery.toLowerCase().trim();
+    final String categoryLower = selectedCategory.toLowerCase().trim();
     
-    return productos.where((producto) {
+    // Verificar si es la categoría "todos/todas" (normalizar)
+    final bool mostrarTodos = categoryLower == 'todos' || 
+                             categoryLower == 'todas' || 
+                             categoryLower.isEmpty;
+    
+    if (debugMode) {
+      debugPrint('🔍 ProductosUtils.filtrarProductos:');
+      debugPrint('   - Productos totales: ${productos.length}');
+      debugPrint('   - Query: "$query"');
+      debugPrint('   - Categoría: "$selectedCategory" (normalizada: ${mostrarTodos ? "TODOS" : categoryLower})');
+      
+      // Listar categorías únicas presentes en los productos
+      final categorias = productos.map((p) => p.categoria.toLowerCase()).toSet().toList();
+      debugPrint('   - Categorías disponibles: $categorias');
+    }
+    
+    final resultados = productos.where((producto) {
       // Filtro por categoría (si no es 'Todos')
-      if (selectedCategory != 'Todos' && 
-          producto.categoria.toLowerCase() != selectedCategory.toLowerCase()) {
+      bool coincideCategoria = mostrarTodos;
+      
+      if (!coincideCategoria) {
+        // Normalizar la categoría del producto
+        final categoriaProducto = producto.categoria.toLowerCase().trim();
+        coincideCategoria = categoriaProducto == categoryLower;
+        
+        if (debugMode && !coincideCategoria && 
+            (categoriaProducto.contains(categoryLower) || 
+             categoryLower.contains(categoriaProducto))) {
+          debugPrint('⚠️ Posible coincidencia parcial: "$categoriaProducto" vs "$categoryLower"');
+        }
+      }
+      
+      // Si no coincide la categoría, salir temprano
+      if (!coincideCategoria) {
         return false;
       }
       
@@ -93,11 +125,25 @@ class ProductosUtils {
       }
       
       // Buscar en nombre, SKU, marca y descripción
-      return producto.nombre.toLowerCase().contains(query) ||
-             (producto.sku.toLowerCase().contains(query)) ||
-             (producto.marca.toLowerCase().contains(query)) ||
-             (producto.descripcion != null && producto.descripcion!.toLowerCase().contains(query));
+      final bool coincideTexto = 
+             producto.nombre.toLowerCase().contains(query) ||
+             producto.sku.toLowerCase().contains(query) ||
+             producto.marca.toLowerCase().contains(query) ||
+             (producto.descripcion != null && 
+              producto.descripcion!.toLowerCase().contains(query));
+      
+      return coincideTexto;
     }).toList();
+    
+    if (debugMode) {
+      debugPrint('   - Productos filtrados: ${resultados.length}');
+      
+      if (!mostrarTodos && resultados.isEmpty) {
+        debugPrint('❌ No se encontraron coincidencias para la categoría "$selectedCategory"');
+      }
+    }
+    
+    return resultados;
   }
 
   /// Verifica si un producto tiene stock bajo

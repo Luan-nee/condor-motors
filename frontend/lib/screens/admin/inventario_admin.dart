@@ -5,8 +5,8 @@ import '../../main.dart' show api; // API global
 import '../../models/paginacion.model.dart';
 import '../../models/producto.model.dart';
 import '../../models/sucursal.model.dart';
+import '../../utils/stock_utils.dart';
 import '../../widgets/paginador.dart';
-import 'utils/stock_utils.dart';
 import 'widgets/slide_sucursal.dart';
 import 'widgets/stock/stock_detalle_sucursal.dart';
 import 'widgets/stock/stock_detalles_dialog.dart';

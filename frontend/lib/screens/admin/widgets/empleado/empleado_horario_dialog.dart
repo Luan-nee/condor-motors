@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../models/empleado.model.dart';
-import '../../utils/empleados_utils.dart';
+import '../../../../utils/empleados_utils.dart';
 
 /// Widget para mostrar información del horario del empleado
 /// 

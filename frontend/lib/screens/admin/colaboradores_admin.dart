@@ -4,7 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../models/empleado.model.dart';
 import '../../api/main.api.dart' show ApiException;
 import '../../main.dart' show api;
-import 'utils/empleados_utils.dart';
+import '../../utils/empleados_utils.dart';
 import 'widgets/empleado/empleado_detalles_dialog.dart';
 import 'widgets/empleado/empleado_form.dart';
 import 'widgets/empleado/empleados_table.dart';

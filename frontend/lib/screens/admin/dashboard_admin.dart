@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../main.dart' show api;
-import '../../models/color.model.dart';
 import '../../models/producto.model.dart';
 import '../../models/sucursal.model.dart';
 
@@ -61,14 +60,10 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
 
   // Datos para mostrar en el dashboard
   List<Sucursal> _sucursales = [];
-  List<Sucursal> _centrales = [];
   List<Producto> _productos = [];
-  List<ColorApp> _colores = [];
-  Map<int, int> _stockPorProducto = {};
   double _totalVentas = 0;
   double _totalGanancias = 0;
   int _totalEmpleados = 0;
-  int _totalCategorias = 0;
   int _productosAgotados = 0;
 
   // Mapa para agrupar productos por sucursal
@@ -135,7 +130,6 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
         setState(() {
           _isLoading = false;
           _sucursales = sucursalesList;
-          _centrales = centralesList;
         });
       }
     } catch (e) {
@@ -202,7 +196,6 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
       if (mounted) {
         setState(() {
           _productos = paginatedProductos.items;
-          _stockPorProducto = newExistencias;
           _productosAgotados = agotados;
           _productosPorSucursal = productosBySucursal;
         });
@@ -227,10 +220,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
 
   Future<void> _loadCategorias() async {
     try {
-      final categorias = await api.categorias.getCategorias();
       if (mounted) {
         setState(() {
-          _totalCategorias = categorias.length;
         });
       }
     } catch (e) {
@@ -240,10 +231,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
 
   Future<void> _loadColores() async {
     try {
-      final colores = await api.colores.getColores();
       if (mounted) {
         setState(() {
-          _colores = colores;
         });
       }
     } catch (e) {

@@ -9,6 +9,7 @@ class Paginador extends StatelessWidget {
   final Color? accentColor;
   final double radius;
   final int maxVisiblePages;
+  final bool forceCompactMode;
 
   const Paginador({
     super.key,
@@ -19,11 +20,14 @@ class Paginador extends StatelessWidget {
     this.accentColor,
     this.radius = 4.0,
     this.maxVisiblePages = 5,
+    this.forceCompactMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompactScreen = screenWidth < 600 || forceCompactMode;
+    
     final bgColor = backgroundColor ?? const Color(0xFF2D2D2D);
     final txtColor = textColor ?? Colors.white;
     final accent = accentColor ?? const Color(0xFFE31E24);
@@ -33,85 +37,161 @@ class Paginador extends StatelessWidget {
       return const SizedBox();
     }
 
-    // Obtenemos las páginas visibles
-    final visiblePages = paginacion.getVisiblePages(maxVisiblePages: maxVisiblePages);
+    // Obtenemos las páginas visibles (menos en modo compacto)
+    final visiblePages = paginacion.getVisiblePages(
+      maxVisiblePages: isCompactScreen ? 3 : maxVisiblePages
+    );
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      padding: EdgeInsets.symmetric(
+        vertical: 8, 
+        horizontal: isCompactScreen ? 8 : 16
+      ),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(radius),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Información de paginación
-          Text(
-            'Página ${paginacion.currentPage} de ${paginacion.totalPages}',
+      child: isCompactScreen 
+        ? _buildCompactLayout(context, visiblePages, bgColor, txtColor, accent)
+        : _buildFullLayout(context, visiblePages, bgColor, txtColor, accent),
+    );
+  }
+  
+  // Diseño compacto para pantallas pequeñas
+  Widget _buildCompactLayout(
+    BuildContext context, 
+    List<int> visiblePages,
+    Color bgColor,
+    Color txtColor,
+    Color accentColor,
+  ) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Botón página anterior
+        _buildPageButton(
+          icon: Icons.chevron_left,
+          onPressed: paginacion.hasPrevPage
+              ? () => onPageChanged(paginacion.currentPage - 1)
+              : null,
+          bgColor: bgColor,
+          txtColor: txtColor,
+          accentColor: accentColor,
+        ),
+        
+        const SizedBox(width: 4),
+        
+        // Indicador de página actual / total (pequeño)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: bgColor.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '${paginacion.currentPage}/${paginacion.totalPages}',
             style: TextStyle(
-              color: txtColor.withOpacity(0.8),
-              fontSize: 14,
+              color: txtColor,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(width: 16),
-          
-          // Botón ir a primera página
-          _buildPageButton(
-            icon: Icons.first_page,
-            onPressed: paginacion.hasPrevPage
-                ? () => onPageChanged(1)
-                : null,
+        ),
+        
+        const SizedBox(width: 4),
+        
+        // Botón página siguiente
+        _buildPageButton(
+          icon: Icons.chevron_right,
+          onPressed: paginacion.hasNextPage
+              ? () => onPageChanged(paginacion.currentPage + 1)
+              : null,
+          bgColor: bgColor,
+          txtColor: txtColor,
+          accentColor: accentColor,
+        ),
+      ],
+    );
+  }
+  
+  // Diseño completo para pantallas más grandes
+  Widget _buildFullLayout(
+    BuildContext context, 
+    List<int> visiblePages,
+    Color bgColor,
+    Color txtColor,
+    Color accentColor,
+  ) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Información de paginación
+        Text(
+          'Página ${paginacion.currentPage} de ${paginacion.totalPages}',
+          style: TextStyle(
+            color: txtColor.withOpacity(0.8),
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(width: 16),
+        
+        // Botón ir a primera página
+        _buildPageButton(
+          icon: Icons.first_page,
+          onPressed: paginacion.hasPrevPage
+              ? () => onPageChanged(1)
+              : null,
+          bgColor: bgColor,
+          txtColor: txtColor,
+          accentColor: accentColor,
+        ),
+        
+        // Botón página anterior
+        _buildPageButton(
+          icon: Icons.chevron_left,
+          onPressed: paginacion.hasPrevPage
+              ? () => onPageChanged(paginacion.currentPage - 1)
+              : null,
+          bgColor: bgColor,
+          txtColor: txtColor,
+          accentColor: accentColor,
+        ),
+        
+        // Números de página
+        ...visiblePages.map(
+          (pageNum) => _buildNumberButton(
+            pageNum: pageNum,
+            isSelected: pageNum == paginacion.currentPage,
+            onPressed: () => onPageChanged(pageNum),
             bgColor: bgColor,
             txtColor: txtColor,
-            accentColor: accent,
+            accentColor: accentColor,
           ),
-          
-          // Botón página anterior
-          _buildPageButton(
-            icon: Icons.chevron_left,
-            onPressed: paginacion.hasPrevPage
-                ? () => onPageChanged(paginacion.currentPage - 1)
-                : null,
-            bgColor: bgColor,
-            txtColor: txtColor,
-            accentColor: accent,
-          ),
-          
-          // Números de página
-          ...visiblePages.map(
-            (pageNum) => _buildNumberButton(
-              pageNum: pageNum,
-              isSelected: pageNum == paginacion.currentPage,
-              onPressed: () => onPageChanged(pageNum),
-              bgColor: bgColor,
-              txtColor: txtColor,
-              accentColor: accent,
-            ),
-          ),
-          
-          // Botón página siguiente
-          _buildPageButton(
-            icon: Icons.chevron_right,
-            onPressed: paginacion.hasNextPage
-                ? () => onPageChanged(paginacion.currentPage + 1)
-                : null,
-            bgColor: bgColor,
-            txtColor: txtColor,
-            accentColor: accent,
-          ),
-          
-          // Botón ir a última página
-          _buildPageButton(
-            icon: Icons.last_page,
-            onPressed: paginacion.hasNextPage
-                ? () => onPageChanged(paginacion.totalPages)
-                : null,
-            bgColor: bgColor,
-            txtColor: txtColor,
-            accentColor: accent,
-          ),
-        ],
-      ),
+        ),
+        
+        // Botón página siguiente
+        _buildPageButton(
+          icon: Icons.chevron_right,
+          onPressed: paginacion.hasNextPage
+              ? () => onPageChanged(paginacion.currentPage + 1)
+              : null,
+          bgColor: bgColor,
+          txtColor: txtColor,
+          accentColor: accentColor,
+        ),
+        
+        // Botón ir a última página
+        _buildPageButton(
+          icon: Icons.last_page,
+          onPressed: paginacion.hasNextPage
+              ? () => onPageChanged(paginacion.totalPages)
+              : null,
+          bgColor: bgColor,
+          txtColor: txtColor,
+          accentColor: accentColor,
+        ),
+      ],
     );
   }
 
@@ -134,6 +214,11 @@ class Paginador extends StatelessWidget {
         splashRadius: 20,
         tooltip: onPressed == null ? null : 'Ir a la página',
         visualDensity: VisualDensity.compact,
+        constraints: const BoxConstraints(
+          minWidth: 32,
+          minHeight: 32,
+        ),
+        padding: EdgeInsets.zero,
       ),
     );
   }
