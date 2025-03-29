@@ -26,6 +26,9 @@ class ProformaConversionManager {
       Logger.debug('Convirtiendo proforma a venta: '
           'ProformaID: $proformaId, Tipo: $tipoDocumento');
       
+      // Invalidar cache al inicio para asegurar que tenemos datos actualizados
+      _recargarDatos(sucursalId);
+      
       // Mostrar diálogo de procesamiento
       if (context.mounted) {
         showDialog(
@@ -63,8 +66,10 @@ class ProformaConversionManager {
             }
           }
           
-          // Invalidar la caché
+          // Invalidar la caché completamente
           api.proformas.invalidateCache(sucursalId);
+          // Forzar recarga de lista de proformas 
+          _recargarProformasSucursal(sucursalId);
           
           return false;
         }
@@ -162,12 +167,20 @@ class ProformaConversionManager {
         
         // Ejecutar callback de éxito
         onSuccess();
+        
+        // Forzar recarga de proformas para actualizar UI
+        _recargarProformasSucursal(sucursalId);
+        
         return true;
         
       } catch (apiError) {
         // Manejar específicamente el caso donde la proforma no existe (404)
         if (apiError.toString().contains('404') || 
             apiError.toString().contains('Not found')) {
+          
+          // Invalidar caché
+          api.proformas.invalidateCache(sucursalId);
+          _recargarProformasSucursal(sucursalId);
           
           if (context.mounted) {
             _cerrarDialogoProcesamiento(context);
@@ -191,6 +204,30 @@ class ProformaConversionManager {
         _mostrarError(context, 'Error en la conversión: ${e.toString()}');
       }
       return false;
+    }
+  }
+  
+  /// Recarga los datos de proformas y sucursales para asegurar sincronización
+  static Future<void> _recargarDatos(String sucursalId) async {
+    try {
+      // Invalidar caché de proformas para la sucursal específica
+      api.proformas.invalidateCache(sucursalId);
+      Logger.debug('Caché de proformas invalidado para sucursal $sucursalId');
+      
+      // Recargar datos de la sucursal para mantener coherencia
+      await api.sucursales.getSucursalData(sucursalId, forceRefresh: true);
+      Logger.debug('Datos de sucursal recargados: $sucursalId');
+      
+      // Recargar proformas específicas para esta sucursal
+      await api.proformas.getProformasVenta(
+        sucursalId: sucursalId,
+        useCache: false,
+        forceRefresh: true,
+      );
+      Logger.debug('Lista de proformas recargada para sucursal $sucursalId');
+    } catch (e) {
+      Logger.error('Error al recargar datos: $e');
+      // No propagamos el error para no interrumpir el flujo principal
     }
   }
   
@@ -286,5 +323,33 @@ class ProformaConversionManager {
         ),
       ),
     );
+  }
+  
+  /// Recarga la lista de proformas de una sucursal para mantener datos actualizados
+  static Future<void> _recargarProformasSucursal(String sucursalId) async {
+    try {
+      // Invalidar caché de proformas
+      api.proformas.invalidateCache(sucursalId);
+      // Invalidar caché de la sucursal
+      api.sucursales.invalidateCache(sucursalId);
+      
+      // Forzar recarga de la lista de proformas
+      await api.proformas.getProformasVenta(
+        sucursalId: sucursalId,
+        useCache: false,
+        forceRefresh: true,
+      );
+      
+      // También recargar desde la API de sucursales para mantener sincronización
+      await api.sucursales.getProformasVenta(
+        sucursalId,
+        useCache: false,
+        forceRefresh: true,
+      );
+      
+      Logger.debug('Lista de proformas recargada para sucursal $sucursalId');
+    } catch (e) {
+      Logger.error('Error al recargar lista de proformas: $e');
+    }
   }
 } 

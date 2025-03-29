@@ -77,27 +77,26 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen> {
         
         // Extraer información de paginación
         final Map<String, dynamic>? paginacionJson = response['pagination'];
-        Paginacion? paginacionLocal;
+        Paginacion? paginacionObj;
         
         // Crear un objeto Paginacion compatible con ProformaListWidget
         if (paginacionJson != null) {
-          final totalItems = paginacionJson['total'] as int? ?? 0;
-          final currentPage = paginacionJson['page'] as int? ?? 1;
-          final totalPages = paginacionJson['totalPages'] as int? ?? 1;
-          final itemsPerPage = paginacionJson['pageSize'] as int? ?? 10;
+          final total = paginacionJson['total'] as int? ?? 0;
+          final page = paginacionJson['page'] as int? ?? 1;
+          final pageSize = paginacionJson['pageSize'] as int? ?? 10;
           
-          paginacionLocal = Paginacion(
-            totalItems: totalItems,
-            currentPage: currentPage,
-            totalPages: totalPages,
-            itemsPerPage: itemsPerPage,
+          // Crear objeto de paginación específico para ProformaListWidget
+          paginacionObj = Paginacion(
+            total: total,
+            page: page,
+            pageSize: pageSize,
           );
         }
         
         if (mounted) {
           setState(() {
             _proformas = proformas;
-            _paginacion = paginacionLocal;
+            _paginacion = paginacionObj;
             _isLoading = false;
             
             // Si la proforma seleccionada ya no está en la lista, deseleccionarla

@@ -1,9 +1,24 @@
+import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_conversion_utils.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/proforma_widget.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+// Definición de clase local para paginación
+class Paginacion {
+  final int total;
+  final int page;
+  final int pageSize;
+  
+  Paginacion({
+    required this.total,
+    required this.page,
+    required this.pageSize,
+  });
+}
 
 /// Widget para mostrar una lista paginada de proformas
 class ProformaListWidget extends StatefulWidget {
@@ -54,14 +69,21 @@ class ProformaListWidget extends StatefulWidget {
 
 class _ProformaListWidgetState extends State<ProformaListWidget> {
   String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
+  late TextEditingController _searchController;
   List<Proforma> _filteredProformas = [];
   bool _procesandoConversion = false;
   
   @override
   void initState() {
     super.initState();
-    _filterProformas();
+    _searchController = TextEditingController();
+    _filteredProformas = widget.proformas;
+    
+    // Suscribirse a cambios en el sistema de proformas
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Recargar datos automáticamente al iniciar
+      _recargarDatosProformas();
+    });
   }
   
   @override
@@ -76,6 +98,33 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+  
+  /// Recarga los datos de proformas para mantener la lista actualizada
+  Future<void> _recargarDatosProformas() async {
+    try {
+      // Verificar si estamos procesando
+      if (_procesandoConversion) {
+        return;
+      }
+      
+      // Obtener sucursalId
+      final int? sucursalId = await VentasPendientesUtils.obtenerSucursalId();
+      if (sucursalId == null) {
+        debugPrint('Error: No se pudo obtener el ID de sucursal');
+        return;
+      }
+      
+      // Invalidar caché de proformas y recargar
+      api.proformas.invalidateCache(sucursalId.toString());
+      
+      // Si hay un método de recarga, utilizarlo
+      if (widget.onRefresh != null) {
+        await widget.onRefresh!();
+      }
+    } catch (e) {
+      debugPrint('Error al recargar datos de proformas: $e');
+    }
   }
   
   // Filtra las proformas según el término de búsqueda
@@ -151,6 +200,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
             return;
           }
           
+          // Invalidar caché antes de la conversión
+          api.proformas.invalidateCache(sucursalId.toString());
+          
           // Convertir proforma usando el método directo
           final bool exito = await ProformaConversionManager.convertirProformaAVenta(
             context: context,
@@ -181,6 +233,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
               _procesandoConversion = false;
             });
           }
+          
+          // Recargar datos siempre después de intentar la conversión
+          _recargarDatosProformas();
         },
         onCancel: () => Navigator.of(context).pop(),
       ),
@@ -441,8 +496,8 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
   }
   
   Widget _buildPagination() {
-    final int currentPage = widget.paginacion?.currentPage ?? 1;
-    final int totalPages = widget.paginacion?.totalPages ?? 1;
+    final int currentPage = widget.paginacion?.page ?? 1;
+    final int totalPages = widget.paginacion?.total ?? 1;
     
     if (totalPages <= 1) {
       return const SizedBox.shrink();
@@ -475,30 +530,6 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Clase para la paginación
-class Paginacion {
-  final int totalItems;
-  final int itemsPerPage;
-  final int currentPage;
-  final int totalPages;
-
-  Paginacion({
-    required this.totalItems,
-    required this.itemsPerPage,
-    required this.currentPage,
-    required this.totalPages,
-  });
-
-  factory Paginacion.fromJson(Map<String, dynamic> json) {
-    return Paginacion(
-      totalItems: json['totalItems'] ?? 0,
-      itemsPerPage: json['itemsPerPage'] ?? 10,
-      currentPage: json['currentPage'] ?? 1,
-      totalPages: json['totalPages'] ?? 1,
     );
   }
 }

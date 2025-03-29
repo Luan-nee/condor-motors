@@ -332,6 +332,9 @@ class VentasPendientesUtils {
         };
       }
       
+      // Recargar los datos antes de intentar la conversión
+      _recargarDatos(sucursalId.toString());
+      
       try {
         debugPrint('Iniciando conversión de proforma #$proformaId a venta...');
         
@@ -426,6 +429,9 @@ class VentasPendientesUtils {
           estado: 'convertida',
         );
         
+        // Recargar datos después de la conversión
+        _recargarDatos(sucursalId.toString());
+        
         return <String, dynamic>{
           'exito': true,
           'mensaje': 'Proforma convertida exitosamente',
@@ -460,6 +466,30 @@ class VentasPendientesUtils {
         'exito': false,
         'mensaje': 'Error al finalizar la proforma: $e',
       };
+    }
+  }
+
+  /// Recarga los datos de proformas y sucursales para asegurar sincronización
+  static Future<void> _recargarDatos(String sucursalId) async {
+    try {
+      // Invalidar caché de proformas para la sucursal específica
+      api.proformas.invalidateCache(sucursalId);
+      debugPrint('🔄 Caché de proformas invalidado para sucursal $sucursalId');
+      
+      // Recargar datos de la sucursal para mantener coherencia
+      await api.sucursales.getSucursalData(sucursalId, forceRefresh: true);
+      debugPrint('🔄 Datos de sucursal recargados: $sucursalId');
+      
+      // Recargar proformas específicas para esta sucursal
+      await api.proformas.getProformasVenta(
+        sucursalId: sucursalId,
+        useCache: false,
+        forceRefresh: true,
+      );
+      debugPrint('🔄 Lista de proformas recargada para sucursal $sucursalId');
+    } catch (e) {
+      debugPrint('❌ Error al recargar datos: $e');
+      // No propagamos el error para no interrumpir el flujo principal
     }
   }
 

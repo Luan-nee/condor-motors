@@ -1,6 +1,7 @@
 import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_conversion_utils.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -550,14 +551,11 @@ class ProformaWidget extends StatelessWidget {
         onConfirm: (Map<String, dynamic> ventaData) async {
           Navigator.of(dialogContext).pop();
           
-          // Obtener tipo de documento de los datos
-          final String tipoDocumento = ventaData['tipoDocumento'] as String? ?? 'BOLETA';
-          
           // Mostrar diálogo de procesamiento
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (BuildContext context) => _buildProcessingDialog(tipoDocumento.toLowerCase()),
+            builder: (BuildContext context) => _buildProcessingDialog(ventaData['tipoDocumento'].toLowerCase()),
           );
           
           // Intentar la conversión
@@ -565,7 +563,7 @@ class ProformaWidget extends StatelessWidget {
             context: context,
             sucursalId: await _obtenerSucursalId(),
             proformaId: proforma.id,
-            tipoDocumento: tipoDocumento,
+            tipoDocumento: ventaData['tipoDocumento'],
             onSuccess: () {
               if (onConvert != null) {
                 onConvert!(proforma);
@@ -618,7 +616,7 @@ class ProformaWidget extends StatelessWidget {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (BuildContext context) => _buildProcessingDialog(tipoDocumento.toLowerCase()),
+                  builder: (BuildContext context) => _buildProcessingDialog(ventaData['tipoDocumento'].toLowerCase()),
                 );
                 
                 // Intentar nuevamente
@@ -626,7 +624,7 @@ class ProformaWidget extends StatelessWidget {
                   context: context,
                   sucursalId: sucursalId.toString(),
                   proformaId: proforma.id,
-                  tipoDocumento: tipoDocumento,
+                  tipoDocumento: ventaData['tipoDocumento'],
                   onSuccess: () {
                     if (onConvert != null) {
                       onConvert!(proforma);
@@ -723,9 +721,22 @@ class ProformaSaleDialog extends StatefulWidget {
 
 class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
   String _tipoDocumento = 'BOLETA';
+  String _customerName = '';
+  String _paymentAmount = '';
+  bool _isProcessing = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    // Inicializar con el nombre del cliente de la proforma
+    _customerName = widget.proforma.getNombreCliente();
+  }
   
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final bool isLargeScreen = screenSize.width > 1200;
+    
     return Dialog(
       backgroundColor: const Color(0xFF2D2D2D),
       shape: RoundedRectangleBorder(
@@ -733,236 +744,241 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
       ),
       child: Container(
         padding: const EdgeInsets.all(24),
-        constraints: const BoxConstraints(maxWidth: 500),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        constraints: BoxConstraints(
+          maxWidth: isLargeScreen ? 1100 : 900,
+          maxHeight: isLargeScreen ? 700 : 600,
+        ),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                const Icon(
-                  Icons.shopping_cart,
-                  color: Color(0xFF4CAF50),
-                  size: 24,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Convertir Proforma #${widget.proforma.id} a Venta',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            
-            // Selector de tipo de documento
-            const Text(
-              'Tipo de Documento:',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white70,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: <Widget>[
-                _buildDocumentTypeButton('BOLETA'),
-                const SizedBox(width: 16),
-                _buildDocumentTypeButton('FACTURA'),
-              ],
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Resumen de la proforma
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(8),
-              ),
+          children: [
+            // Detalles de la proforma (lado izquierdo)
+            Expanded(
+              flex: 5,
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
-                      const Text(
-                        'Cliente:',
-                        style: TextStyle(
-                          color: Colors.white70,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        widget.proforma.getNombreCliente(),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Detalles:',
-                    style: TextStyle(
-                      color: Colors.white70,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  for (final detalle in widget.proforma.detalles)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: <Widget>[
-                          Expanded(
-                            flex: 5,
-                            child: Text(
-                              detalle.nombre,
-                              style: const TextStyle(
-                                color: Colors.white,
-                              ),
-                            ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.shopping_cart,
+                            color: Color(0xFF4CAF50),
+                            size: 24,
                           ),
-                          Expanded(
-                            child: Text(
-                              '${detalle.cantidad}x',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                              ),
-                              textAlign: TextAlign.right,
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Text(
-                              VentasUtils.formatearMontoTexto(detalle.precioUnitario),
-                              style: const TextStyle(
-                                color: Colors.white70,
-                              ),
-                              textAlign: TextAlign.right,
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Text(
-                              VentasUtils.formatearMontoTexto(detalle.subtotal),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.right,
+                          const SizedBox(width: 8),
+                          Text(
+                            'Convertir Proforma #${widget.proforma.id}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  const Divider(color: Colors.white24),
-                  Row(
-                    children: <Widget>[
-                      const Spacer(),
-                      const Text(
-                        'Total:',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        VentasUtils.formatearMontoTexto(widget.proforma.total),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4CAF50),
-                        ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white54),
+                        onPressed: widget.onCancel,
+                        tooltip: 'Cancelar',
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Resumen de la proforma
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A1A1A),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Row(
+                            children: <Widget>[
+                              const Text(
+                                'Cliente:',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                widget.proforma.getNombreCliente(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Detalles:',
+                            style: TextStyle(
+                              color: Colors.white70,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          
+                          // Lista de productos (con scroll)
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: widget.proforma.detalles.length,
+                              itemBuilder: (context, index) {
+                                final detalle = widget.proforma.detalles[index];
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: Row(
+                                    children: <Widget>[
+                                      Expanded(
+                                        flex: 5,
+                                        child: Text(
+                                          detalle.nombre,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          '${detalle.cantidad}x',
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                          ),
+                                          textAlign: TextAlign.right,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Text(
+                                          VentasUtils.formatearMontoTexto(detalle.precioUnitario),
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                          ),
+                                          textAlign: TextAlign.right,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Text(
+                                          VentasUtils.formatearMontoTexto(detalle.subtotal),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          textAlign: TextAlign.right,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                            ),
+                          ),
+                          
+                          const Divider(color: Colors.white24),
+                          Row(
+                            children: <Widget>[
+                              const Spacer(),
+                              const Text(
+                                'Total:',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                VentasUtils.formatearMontoTexto(widget.proforma.total),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF4CAF50),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
             
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: <Widget>[
-                OutlinedButton(
-                  onPressed: widget.onCancel,
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.white54),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    final Map<String, dynamic> ventaData = {
-                      'tipoDocumento': _tipoDocumento,
-                      'productos': widget.proforma.detalles.map((detalle) => {
-                        'productoId': detalle.productoId,
-                        'cantidad': detalle.cantidad,
-                        'precio': detalle.precioUnitario,
-                        'subtotal': detalle.subtotal,
-                      }).toList(),
-                      'cliente': widget.proforma.cliente ?? {'nombre': widget.proforma.getNombreCliente()},
-                      'metodoPago': 'EFECTIVO', // Por defecto
-                      'total': widget.proforma.total,
-                    };
-                    widget.onConfirm(ventaData);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  icon: const Icon(Icons.check),
-                  label: const Text('Confirmar'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildDocumentTypeButton(String tipo) {
-    final bool isSelected = _tipoDocumento == tipo;
-    
-    return Expanded(
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            _tipoDocumento = tipo;
-          });
-        },
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF4CAF50).withOpacity(0.1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isSelected ? const Color(0xFF4CAF50) : Colors.white24,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              tipo,
-              style: TextStyle(
-                color: isSelected ? const Color(0xFF4CAF50) : Colors.white,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            // Separador vertical
+            const SizedBox(width: 20),
+            Container(width: 1, height: double.infinity, color: Colors.white24),
+            const SizedBox(width: 20),
+            
+            // Teclado numérico para cálculo de vuelto (lado derecho)
+            Expanded(
+              flex: 4,
+              child: NumericKeypad(
+                onKeyPressed: (value) {
+                  setState(() {
+                    _paymentAmount = value;
+                  });
+                },
+                onClear: () {
+                  setState(() {
+                    _paymentAmount = '';
+                  });
+                },
+                onSubmit: () {
+                  // Método vacío, la acción se maneja en onCharge
+                },
+                currentAmount: widget.proforma.total.toString(),
+                paymentAmount: _paymentAmount,
+                customerName: _customerName,
+                documentType: _tipoDocumento == 'BOLETA' ? 'Boleta' : 'Factura',
+                onCustomerNameChanged: (String value) {
+                  setState(() {
+                    _customerName = value;
+                  });
+                },
+                onDocumentTypeChanged: (String value) {
+                  setState(() {
+                    _tipoDocumento = value == 'Boleta' ? 'BOLETA' : 'FACTURA';
+                  });
+                },
+                isProcessing: _isProcessing,
+                minAmount: widget.proforma.total,
+                onCharge: (montoRecibido) {
+                  // Crear los datos de venta y llamar a onConfirm
+                  final Map<String, dynamic> ventaData = {
+                    'tipoDocumento': _tipoDocumento,
+                    'productos': widget.proforma.detalles.map((detalle) => {
+                      'productoId': detalle.productoId,
+                      'cantidad': detalle.cantidad,
+                      'precio': detalle.precioUnitario,
+                      'subtotal': detalle.subtotal,
+                    }).toList(),
+                    'cliente': widget.proforma.cliente ?? {'nombre': _customerName},
+                    'metodoPago': 'EFECTIVO', // Por defecto
+                    'total': widget.proforma.total,
+                    'montoRecibido': montoRecibido,
+                    'vuelto': montoRecibido - widget.proforma.total,
+                  };
+                  
+                  // Iniciar procesamiento
+                  setState(() {
+                    _isProcessing = true;
+                  });
+                  
+                  // Invocar callback con los datos de venta
+                  widget.onConfirm(ventaData);
+                },
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -972,5 +988,8 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(StringProperty('_tipoDocumento', _tipoDocumento));
+    properties.add(StringProperty('_customerName', _customerName));
+    properties.add(StringProperty('_paymentAmount', _paymentAmount));
+    properties.add(DiagnosticsProperty<bool>('_isProcessing', _isProcessing));
   }
 }
