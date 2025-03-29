@@ -559,6 +559,15 @@ export class CreateVenta {
         'Solo se pueden emitir facturas para clientes con RUC, no se permiten otros tipos de documentos'
       )
     }
+
+    if (
+      data.tipoDocCodigo === tiposDocFacturacionCodes.boleta &&
+      data.tipoDocClienteCodigo === tiposDocClienteCodes.ruc
+    ) {
+      throw CustomError.badRequest(
+        'No se pueden emitir boletas para clientes con RUC, solo se permiten otros tipos de documentos'
+      )
+    }
   }
 
   private getSerieDocument(data: {
