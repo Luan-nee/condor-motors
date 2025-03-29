@@ -32,7 +32,8 @@ class EmpleadoForm extends StatefulWidget {
       ..add(DiagnosticsProperty<Empleado?>('empleado', empleado))
       ..add(DiagnosticsProperty<Map<String, String>>('sucursales', sucursales))
       ..add(IterableProperty<String>('roles', roles))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic> p1)>.has('onSave', onSave))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic> p1)>.has(
+          'onSave', onSave))
       ..add(ObjectFlagProperty<VoidCallback>.has('onCancel', onCancel));
   }
 }
@@ -48,10 +49,13 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   final TextEditingController _celularController = TextEditingController();
 
   // Controladores para el horario
-  final TextEditingController _horaInicioHoraController = TextEditingController();
-  final TextEditingController _horaInicioMinutoController = TextEditingController();
+  final TextEditingController _horaInicioHoraController =
+      TextEditingController();
+  final TextEditingController _horaInicioMinutoController =
+      TextEditingController();
   final TextEditingController _horaFinHoraController = TextEditingController();
-  final TextEditingController _horaFinMinutoController = TextEditingController();
+  final TextEditingController _horaFinMinutoController =
+      TextEditingController();
 
   String? _selectedSucursalId;
   String? _selectedRol;
@@ -185,7 +189,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
 
   void _actualizarEsSucursalCentral() {
     if (_selectedSucursalId != null) {
-      final String nombreSucursal = widget.sucursales[_selectedSucursalId] ?? '';
+      final String nombreSucursal =
+          widget.sucursales[_selectedSucursalId] ?? '';
       setState(() {
         _esSucursalCentral = nombreSucursal.contains('(Central)');
       });
@@ -274,6 +279,11 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                               if (value == null || value.isEmpty) {
                                 return 'El nombre es requerido';
                               }
+                              // Validar que solo contenga letras, tildes y espacios
+                              if (!RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$")
+                                  .hasMatch(value)) {
+                                return 'El nombre solo puede contener letras y espacios';
+                              }
                               return null;
                             },
                           ),
@@ -294,9 +304,10 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                               counterText: '',
                             ),
                             validator: (String? value) {
-                              if (value != null &&
-                                  value.isNotEmpty &&
-                                  value.length != 8) {
+                              if (value == null || value.isEmpty) {
+                                return 'El DNI es requerido';
+                              }
+                              if (value.length != 8) {
                                 return 'El DNI debe tener 8 dígitos';
                               }
                               return null;
@@ -319,10 +330,14 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                               counterText: '',
                             ),
                             validator: (String? value) {
-                              if (value != null &&
-                                  value.isNotEmpty &&
-                                  value.length != 9) {
+                              if (value == null || value.isEmpty) {
+                                return 'El numero de celular es requerido';
+                              }
+                              if (value.length != 9) {
                                 return 'El celular debe tener 9 dígitos';
+                              }
+                              if (!RegExp(r'^9\d{8}$').hasMatch(value)) {
+                                return 'El celular debe comenzar con el número 9';
                               }
                               return null;
                             },
@@ -348,7 +363,12 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                             ),
                             validator: (String? value) {
                               if (value == null || value.isEmpty) {
-                                return 'Los apellidos son requeridos';
+                                return 'El nombre es requerido';
+                              }
+                              // Validar que solo contenga letras, tildes y espacios
+                              if (!RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$")
+                                  .hasMatch(value)) {
+                                return 'El nombre solo puede contener letras y espacios';
                               }
                               return null;
                             },
@@ -370,6 +390,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                   inputFormatters: <TextInputFormatter>[
                     FilteringTextInputFormatter.allow(
                         RegExp(r'^\d+\.?\d{0,2}')),
+                    LengthLimitingTextInputFormatter(6),
                   ],
                   decoration: const InputDecoration(
                     labelText: 'Sueldo',
@@ -387,11 +408,13 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                       if (sueldo < 0) {
                         return 'El sueldo no puede ser negativo';
                       }
+                      if (sueldo > 9999.99) {
+                        return 'El sueldo no puede exceder S/ 9999.99';
+                      }
                     }
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 24),
 
                 // Información laboral
@@ -481,7 +504,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                 size: 20,
                               ),
                             ),
-                            items: widget.sucursales.entries.map((MapEntry<String, String> entry) {
+                            items: widget.sucursales.entries
+                                .map((MapEntry<String, String> entry) {
                               final bool esCentral =
                                   entry.value.contains('(Central)');
                               return DropdownMenuItem<String>(
@@ -506,6 +530,12 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                 _selectedSucursalId = value;
                                 _actualizarEsSucursalCentral();
                               });
+                            },
+                            validator: (String? value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Seleccione en donde va trabajar';
+                              }
+                              return null;
                             },
                           ),
                           if (_esSucursalCentral)
@@ -780,8 +810,19 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                           vertical: 12,
                         ),
                       ),
-                      onPressed: _guardar,
-                      child: const Text('Guardar'),
+                      onPressed: _isLoading
+                          ? null
+                          : _guardar, // Deshabilitar botón si está cargando
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 13,
+                              height: 13,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Guardar'),
                     ),
                   ],
                 ),
@@ -934,8 +975,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     };
 
     // Remover valores nulos
-    empleadoData.removeWhere(
-        (String key, Object? value) => value == null || (value is String && value.isEmpty));
+    empleadoData.removeWhere((String key, Object? value) =>
+        value == null || (value is String && value.isEmpty));
 
     widget.onSave(empleadoData);
   }
@@ -1034,10 +1075,11 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
             onChanged: (String value) {
               // Formatear a 2 dígitos
               if (value.length > 2) {
-                horaController..text = value.substring(0, 2)
-                ..selection = TextSelection.fromPosition(
-                  const TextPosition(offset: 2),
-                );
+                horaController
+                  ..text = value.substring(0, 2)
+                  ..selection = TextSelection.fromPosition(
+                    const TextPosition(offset: 2),
+                  );
               }
 
               // Validar rango
@@ -1096,10 +1138,11 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
             onChanged: (String value) {
               // Formatear a 2 dígitos
               if (value.length > 2) {
-                minutoController..text = value.substring(0, 2)
-                ..selection = TextSelection.fromPosition(
-                  const TextPosition(offset: 2),
-                );
+                minutoController
+                  ..text = value.substring(0, 2)
+                  ..selection = TextSelection.fromPosition(
+                    const TextPosition(offset: 2),
+                  );
               }
 
               // Validar rango
@@ -1264,7 +1307,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                           int.tryParse(_horaInicioHoraController.text);
                       final int? minutoInicio =
                           int.tryParse(_horaInicioMinutoController.text);
-                      final int? horaFin = int.tryParse(_horaFinHoraController.text);
+                      final int? horaFin =
+                          int.tryParse(_horaFinHoraController.text);
                       final int? minutoFin =
                           int.tryParse(_horaFinMinutoController.text);
 
