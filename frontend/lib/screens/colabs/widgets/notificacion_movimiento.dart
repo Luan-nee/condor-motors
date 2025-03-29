@@ -26,12 +26,13 @@ class MovimientoStock {
       localOrigenId: json['local_origen_id'] ?? '',
       localDestinoId: json['local_destino_id'] ?? '',
       estado: json['estado'] ?? 'PENDIENTE',
-      fechaCreacion: json['fecha_creacion'] != null 
-          ? DateTime.parse(json['fecha_creacion']) 
+      fechaCreacion: json['fecha_creacion'] != null
+          ? DateTime.parse(json['fecha_creacion'])
           : DateTime.now(),
       detalles: (json['detalles'] as List<dynamic>?)
-          ?.map((detalle) => DetalleMovimiento.fromJson(detalle))
-          .toList() ?? [],
+              ?.map((detalle) => DetalleMovimiento.fromJson(detalle))
+              .toList() ??
+          [],
     );
   }
 }
@@ -86,7 +87,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
 
   Future<void> _cargarNotificaciones() async {
     if (!mounted) return;
-    setState(() { 
+    setState(() {
       _isLoading = true;
       _error = null;
     });
@@ -95,18 +96,19 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
       final response = await _movimientosApi.getMovimientos(
         estado: EstadosMovimiento.pendiente,
       );
-      
+
       if (!mounted) return;
-      
+
       final List<MovimientoStock> movimientosList = [];
       for (var item in response) {
-        movimientosList.add(MovimientoStock.fromJson(item));
+        movimientosList.add(MovimientoStock.fromJson(item.toJson()));
       }
-      
+
       setState(() {
         _notificaciones = movimientosList
-            .where((m) => m.estado == EstadosMovimiento.pendiente || 
-                        m.estado == EstadosMovimiento.preparado)
+            .where((m) =>
+                m.estado == EstadosMovimiento.pendiente ||
+                m.estado == EstadosMovimiento.preparado)
             .toList();
         _isLoading = false;
       });
@@ -116,7 +118,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
         _error = e.toString();
         _isLoading = false;
       });
-      
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -132,13 +134,15 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
     }
   }
 
+  List<MovimientoStock> get _movimientosPendientes => _notificaciones
+      .where((m) =>
+          m.estado == EstadosMovimiento.pendiente ||
+          m.estado == EstadosMovimiento.preparado)
+      .toList();
 
-  List<MovimientoStock> get _movimientosPendientes => _notificaciones.where((m) => 
-      m.estado == EstadosMovimiento.pendiente || 
-      m.estado == EstadosMovimiento.preparado).toList();
-
-  List<MovimientoStock> get _movimientosParaAprobar => _notificaciones.where((m) => 
-      m.estado == EstadosMovimiento.recibido).toList();
+  List<MovimientoStock> get _movimientosParaAprobar => _notificaciones
+      .where((m) => m.estado == EstadosMovimiento.recibido)
+      .toList();
 
   @override
   Widget build(BuildContext context) {
@@ -188,35 +192,34 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
             enabled: false,
             child: Text('No hay notificaciones pendientes'),
           )
-        else
-          ...[
-            if (_movimientosPendientes.isNotEmpty) ...[
-              const PopupMenuItem(
-                enabled: false,
-                child: Text(
-                  'Pendientes',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+        else ...[
+          if (_movimientosPendientes.isNotEmpty) ...[
+            const PopupMenuItem(
+              enabled: false,
+              child: Text(
+                'Pendientes',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              ..._movimientosPendientes.map((m) => PopupMenuItem(
-                child: _construirItemNotificacion(m),
-                onTap: () => _mostrarDetallesMovimiento(context, m),
-              )),
-            ],
-            if (_movimientosParaAprobar.isNotEmpty) ...[
-              const PopupMenuItem(
-                enabled: false,
-                child: Text(
-                  'Para Aprobar',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-              ..._movimientosParaAprobar.map((m) => PopupMenuItem(
-                child: _construirItemNotificacion(m, paraAprobar: true),
-                onTap: () => _mostrarDetallesMovimiento(context, m),
-              )),
-            ],
+            ),
+            ..._movimientosPendientes.map((m) => PopupMenuItem(
+                  child: _construirItemNotificacion(m),
+                  onTap: () => _mostrarDetallesMovimiento(context, m),
+                )),
           ],
+          if (_movimientosParaAprobar.isNotEmpty) ...[
+            const PopupMenuItem(
+              enabled: false,
+              child: Text(
+                'Para Aprobar',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            ..._movimientosParaAprobar.map((m) => PopupMenuItem(
+                  child: _construirItemNotificacion(m, paraAprobar: true),
+                  onTap: () => _mostrarDetallesMovimiento(context, m),
+                )),
+          ],
+        ],
         const PopupMenuDivider(),
         PopupMenuItem(
           onTap: _cargarNotificaciones,
@@ -232,9 +235,11 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
     );
   }
 
-  Widget _construirItemNotificacion(MovimientoStock movimiento, {bool paraAprobar = false}) {
-    final color = paraAprobar ? const Color(0xFF43A047) : const Color(0xFFD32F2F);
-    
+  Widget _construirItemNotificacion(MovimientoStock movimiento,
+      {bool paraAprobar = false}) {
+    final color =
+        paraAprobar ? const Color(0xFF43A047) : const Color(0xFFD32F2F);
+
     return Container(
       decoration: BoxDecoration(
         color: color.withOpacity(0.04),
@@ -267,7 +272,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  paraAprobar 
+                  paraAprobar
                       ? 'Movimiento para aprobar'
                       : movimiento.estado == EstadosMovimiento.pendiente
                           ? 'Nueva solicitud de productos'
@@ -302,7 +307,8 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
     );
   }
 
-  void _mostrarDetallesMovimiento(BuildContext context, MovimientoStock movimiento) {
+  void _mostrarDetallesMovimiento(
+      BuildContext context, MovimientoStock movimiento) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -334,24 +340,24 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
               onPressed: () async {
                 // Guardar una referencia al contexto del diálogo antes de la operación asíncrona
                 final BuildContext dialogContextCopy = dialogContext;
-                
+
                 try {
                   await _movimientosApi.updateMovimiento(
                     movimiento.id,
                     {'estado': EstadosMovimiento.preparado},
                   );
-                  
+
                   if (!mounted) return;
-                  
+
                   // Usar la referencia guardada del contexto
                   if (dialogContextCopy.mounted) {
                     Navigator.of(dialogContextCopy).pop();
                   }
-                  
+
                   await _cargarNotificaciones();
                 } catch (e) {
                   if (!mounted) return;
-                  
+
                   // Usar la referencia guardada del contexto
                   if (dialogContextCopy.mounted) {
                     ScaffoldMessenger.of(dialogContextCopy).showSnackBar(
@@ -373,4 +379,4 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
   String _formatearFecha(DateTime fecha) {
     return '${fecha.day}/${fecha.month}/${fecha.year}';
   }
-} 
+}
