@@ -1145,9 +1145,6 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 onChanged: (value) {
                   setState(() {
                     _liquidacionActiva = value;
-                    if (!value) {
-                      _precioOfertaController.text = '';
-                    }
                   });
                 },
                 activeColor: Colors.amber,
