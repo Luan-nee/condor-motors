@@ -36,6 +36,8 @@ export class RegisterUser {
     const empleados = await db
       .select({
         id: empleadosTable.id,
+        nombres: empleadosTable.nombre,
+        apellidos: empleadosTable.apellidos,
         nombreSucursal: sucursalesTable.nombre,
         sucursalId: sucursalesTable.id
       })
@@ -104,7 +106,11 @@ export class RegisterUser {
       ...user,
       rolCuentaEmpleadoCodigo: selectedRol.codigo,
       sucursal: empleado.nombreSucursal,
-      sucursalId: empleado.sucursalId
+      sucursalId: empleado.sucursalId,
+      empleado: {
+        nombres: empleado.nombres,
+        apellidos: empleado.apellidos
+      }
     }
   }
 
@@ -163,6 +169,7 @@ export class RegisterUser {
         rolCuentaEmpleadoId: user.rolId,
         rolCuentaEmpleadoCodigo: user.rolCuentaEmpleadoCodigo,
         empleadoId: user.empleadoId,
+        empleado: user.empleado,
         fechaCreacion: user.fechaCreacion,
         fechaActualizacion: user.fechaActualizacion,
         sucursal: user.sucursal,

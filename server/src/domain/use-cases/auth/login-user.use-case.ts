@@ -20,6 +20,10 @@ export class LoginUser {
     rolCuentaEmpleadoId: cuentasEmpleadosTable.rolId,
     rolCuentaEmpleadoCodigo: rolesTable.codigo,
     empleadoId: cuentasEmpleadosTable.empleadoId,
+    empleado: {
+      nombres: empleadosTable.nombre,
+      apellidos: empleadosTable.apellidos
+    },
     fechaCreacion: cuentasEmpleadosTable.fechaCreacion,
     fechaActualizacion: cuentasEmpleadosTable.fechaActualizacion,
     sucursal: sucursalesTable.nombre,
