@@ -9,7 +9,7 @@ export class ProformasVentaRoutes {
 
     router.post('/', proformasVentaController.create)
 
-    // router.get('/:id', proformasVentaController.getById)
+    router.get('/:id', proformasVentaController.getById)
 
     router.get('/', proformasVentaController.getAll)
 
