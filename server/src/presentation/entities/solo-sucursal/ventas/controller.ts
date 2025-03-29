@@ -110,6 +110,20 @@ export class VentasController {
     CustomResponse.notImplemented({ res })
   }
 
+  cancelar = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    if (req.sucursalId === undefined) {
+      CustomResponse.badRequest({ res, error: 'Id de sucursal inválido' })
+      return
+    }
+
+    CustomResponse.notImplemented({ res })
+  }
+
   getInformacion = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
       CustomResponse.unauthorized({ res })
