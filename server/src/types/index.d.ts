@@ -116,3 +116,41 @@ interface CancelDoc {
   numero: string
   motivo: string
 }
+
+interface ConsultApiSuccessResponse {
+  tipoDocumento: string
+  numeroDocumento: string
+  denominacion: string
+  direccion: string
+}
+
+// interface ConsultApiDniSuccessResponse {
+//   nombres: string
+// }
+
+// interface ConsultApiRucSuccessResponse {
+//   ruc: string
+//   nombre: string
+//   estado: string
+//   condicion: string
+//   direccion: string
+//   direccion_completa: string
+//   ubigeo: string
+//   departamento: string
+//   provincia: string
+//   distrito: string
+//   tipo_via: string
+//   nombre_via: string
+//   codigo_zona: string
+//   tipo_zona: string
+//   numero: string
+//   interior: string
+//   lote: string
+//   dpto: string
+//   manzana: string
+//   kilometro: string
+// }
+
+interface ConsultApiErrorResponse {
+  detail: string
+}
