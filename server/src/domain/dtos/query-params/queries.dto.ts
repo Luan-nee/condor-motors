@@ -16,6 +16,8 @@ export class QueriesDto {
   filter: QueriesDtoType['filter']
   filter_value?: QueriesDtoType['filter_value']
   filter_type: FilterTypeValuesType
+  startDate: QueriesDtoType['startDate']
+  endDate: QueriesDtoType['endDate']
 
   private constructor({
     sort_by: sortBy,
@@ -25,7 +27,9 @@ export class QueriesDto {
     page_size: pageSize,
     filter,
     filter_value: filterValue,
-    filter_type: filterType
+    filter_type: filterType,
+    startDate,
+    endDate
   }: QueriesDto) {
     this.sort_by = sortBy
     this.order = order
@@ -35,6 +39,8 @@ export class QueriesDto {
     this.filter = filter
     this.filter_value = filterValue
     this.filter_type = filterType
+    this.startDate = startDate
+    this.endDate = endDate
   }
 
   private static isValidFilterType(
@@ -74,7 +80,9 @@ export class QueriesDto {
         page_size: result.data.page_size,
         filter: result.data.filter,
         filter_value: result.data.filter_value,
-        filter_type: result.data.filter_type
+        filter_type: result.data.filter_type,
+        startDate: result.data.startDate,
+        endDate: result.data.endDate
       })
     ]
   }

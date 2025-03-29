@@ -11,6 +11,7 @@ import { ColoresRoutes } from '@/presentation/entities/colores/routes'
 import { ClientesRoutes } from './clientes/routes'
 import { ReservasProductoRoutes } from '@/presentation/entities/reservas-producto/routes'
 import { TransferenciasInventarioRoutes } from '@/presentation/entities/transeferenciasInventario/routes'
+import { EstadisticaRouter } from './estadisticas/routes'
 
 export class EntitiesRoutes {
   static get routes() {
@@ -25,6 +26,7 @@ export class EntitiesRoutes {
     router.use('/reservasproductos', ReservasProductoRoutes.routes)
     router.use('/cuentasempleados', CuentasEmpleadosRoutes.routes)
     router.use('/colores', ColoresRoutes.routes)
+    router.use('/estadistica', EstadisticaRouter.routes)
     router.use(
       '/transferenciasinventario',
       TransferenciasInventarioRoutes.routes

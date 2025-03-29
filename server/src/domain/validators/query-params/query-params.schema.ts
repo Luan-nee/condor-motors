@@ -64,5 +64,7 @@ export const queriesBaseSchema = {
       }
 
       return defaultQueries.filter_type
-    })
+    }),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional()
 }
