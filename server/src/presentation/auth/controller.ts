@@ -44,16 +44,9 @@ export class AuthController {
     registerUser
       .execute(registerUserDto)
       .then((user) => {
-        const serializedTokens = this.authSerializer.refreshAccessToken({
-          accessToken: user.accessToken,
-          refreshToken: user.refreshToken
-        })
-
         CustomResponse.success({
           res,
-          data: user.data,
-          cookie: serializedTokens.refresTokenCookie,
-          authorization: serializedTokens.bearerAccessToken
+          data: user.data
         })
       })
       .catch((error: unknown) => {
