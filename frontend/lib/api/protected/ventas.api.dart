@@ -1,6 +1,8 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
-import 'package:flutter/foundation.dart';
+import 'package:condorsmotors/models/paginacion.model.dart';
+import 'package:condorsmotors/models/ventas.model.dart';
+import 'package:condorsmotors/utils/logger.dart' as logger;
 
 class VentasApi {
   final ApiClient _api;
@@ -23,18 +25,20 @@ class VentasApi {
       _cache..invalidateByPattern('$_prefixListaVentas$sucursalId')
       ..invalidateByPattern('$_prefixVenta$sucursalId')
       ..invalidateByPattern('$_prefixEstadisticas$sucursalId');
-      debugPrint('🔄 Caché de ventas invalidado para sucursal $sucursalId');
+      logger.logDebug('Caché de ventas invalidado para sucursal $sucursalId');
     } else {
       // Invalidar todas las ventas en caché
       _cache..invalidateByPattern(_prefixListaVentas)
       ..invalidateByPattern(_prefixVenta)
       ..invalidateByPattern(_prefixEstadisticas);
-      debugPrint('🔄 Caché de ventas invalidado completamente');
+      logger.logDebug('Caché de ventas invalidado completamente');
     }
-    debugPrint('📊 Entradas en caché después de invalidación: ${_cache.size}');
+    logger.logDebug('Entradas en caché después de invalidación: ${_cache.size}');
   }
   
-  // Listar ventas con paginación y filtros
+  /// Listar ventas con paginación y filtros
+  /// 
+  /// Retorna un mapa con las ventas y la paginación
   Future<Map<String, dynamic>> getVentas({
     int page = 1,
     int pageSize = 10,
@@ -58,7 +62,7 @@ class VentasApi {
       
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
-        debugPrint('🔄 Forzando recarga de ventas para sucursal $sucursalId');
+        logger.logDebug('Forzando recarga de ventas para sucursal $sucursalId');
         if (sucursalId != null) {
           _cache.invalidate(cacheKey);
         } else {
@@ -70,7 +74,7 @@ class VentasApi {
       if (useCache && !forceRefresh) {
         final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
-          debugPrint('🔍 Usando ventas en caché para sucursal $sucursalId (clave: $cacheKey)');
+          logger.logDebug('Usando ventas en caché para sucursal $sucursalId (clave: $cacheKey)');
           return cachedData;
         }
       }
@@ -101,10 +105,10 @@ class VentasApi {
       if (sucursalId != null && sucursalId.isNotEmpty) {
         // Ruta con sucursal: /api/{sucursalId}/ventas
         endpoint = '/$sucursalId/ventas';
-        debugPrint('Solicitando ventas para sucursal específica: $endpoint');
+        logger.logDebug('Solicitando ventas para sucursal específica: $endpoint');
       } else {
         // Ruta general: /api/ventas (sin sucursal específica)
-        debugPrint('Solicitando ventas globales: $endpoint');
+        logger.logDebug('Solicitando ventas globales: $endpoint');
       }
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
@@ -116,19 +120,71 @@ class VentasApi {
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, response);
-        debugPrint('💾 Guardadas ventas en caché (clave: $cacheKey)');
+        logger.logDebug('Guardadas ventas en caché (clave: $cacheKey)');
       }
       
-      debugPrint('Respuesta de getVentas recibida: ${response.keys.toString()}');
+      logger.logDebug('Respuesta de getVentas recibida: ${response.keys.toString()}');
+      
+      // Procesar la respuesta para añadir objetos Venta
+      if (response.containsKey('data') && response['data'] is List) {
+        final List<dynamic> ventasData = response['data'] as List;
+        final List<Venta> ventas = ventasData.map((ventaData) {
+          try {
+            return Venta.fromJson(ventaData);
+          } catch (e) {
+            logger.logError('Error al parsear venta', e);
+            // Retornar un objeto venta vacío en caso de error
+            return Venta(
+              id: 0,
+              tipoDocumentoId: 0,
+              serieDocumento: '',
+              numeroDocumento: '',
+              monedaId: 0,
+              metodoPagoId: 0,
+              clienteId: 0,
+              empleadoId: 0,
+              sucursalId: 0,
+              fechaEmision: DateTime.now(),
+              horaEmision: '00:00:00',
+              fechaCreacion: DateTime.now(),
+              fechaActualizacion: DateTime.now(),
+              detalles: [],
+            );
+          }
+        }).toList();
+        
+        // Procesar paginación si existe
+        Paginacion? paginacion;
+        if (response.containsKey('pagination') && response['pagination'] is Map) {
+          paginacion = Paginacion.fromJson(response['pagination']);
+        }
+        
+        // Devolver datos procesados
+        return {
+          'data': ventas,
+          'ventasRaw': response['data'], // Mantener datos originales
+          'pagination': paginacion,
+          'status': response['status'] ?? 'error',
+          'message': response['message'] ?? '',
+        };
+      }
+      
       return response;
     } catch (e) {
-      debugPrint('❌ Error al obtener ventas: $e');
+      logger.logError('Error al obtener ventas', e);
       rethrow;
     }
   }
   
-  // Obtener una venta específica
-  Future<Map<String, dynamic>> getVenta(
+  /// Obtener una venta específica
+  /// 
+  /// [id] - ID de la venta
+  /// [sucursalId] - ID de la sucursal
+  /// [useCache] - Usar caché
+  /// [forceRefresh] - Forzar recarga
+  /// 
+  /// Retorna un objeto Venta
+  Future<Venta?> getVenta(
     String id, {
     String? sucursalId,
     bool useCache = true,
@@ -148,8 +204,12 @@ class VentasApi {
       if (useCache && !forceRefresh) {
         final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
-          debugPrint('🔍 Usando venta en caché: $cacheKey');
-          return cachedData;
+          logger.logDebug('Usando venta en caché: $cacheKey');
+          try {
+            return Venta.fromJson(cachedData);
+          } catch (e) {
+            logger.logError('Error al parsear venta desde caché', e);
+          }
         }
       }
       
@@ -164,24 +224,43 @@ class VentasApi {
         method: 'GET',
       );
       
-      final data = response['data'];
-      
-      // Guardar en caché
-      if (useCache) {
-        _cache.set(cacheKey, data);
-        debugPrint('💾 Guardada venta en caché: $cacheKey');
+      Map<String, dynamic> ventaData;
+      if (response.containsKey('data') && response['data'] != null) {
+        ventaData = response['data'];
+      } else {
+        ventaData = response;
       }
       
-      return data;
+      try {
+        final Venta venta = Venta.fromJson(ventaData);
+        
+        // Guardar en caché
+        if (useCache) {
+          _cache.set(cacheKey, ventaData);
+          logger.logDebug('Guardada venta en caché: $cacheKey');
+        }
+        
+        return venta;
+      } catch (e) {
+        logger.logError('Error al parsear datos de venta', e);
+        return null;
+      }
     } catch (e) {
-      debugPrint('❌ Error al obtener venta: $e');
+      logger.logError('Error al obtener venta', e);
       rethrow;
     }
   }
   
-  // Crear una nueva venta
+  /// Crear una nueva venta
+  /// 
+  /// [ventaData] - Datos de la venta
+  /// [sucursalId] - ID de la sucursal
+  /// 
+  /// Retorna los datos de la venta creada
   Future<Map<String, dynamic>> createVenta(Map<String, dynamic> ventaData, {String? sucursalId}) async {
     try {
+      logger.logDebug('Creando venta con datos: $ventaData');
+      
       // Construir el endpoint según si hay sucursal o no
       String endpoint = _endpoint;
       if (sucursalId != null && sucursalId.isNotEmpty) {
@@ -201,14 +280,31 @@ class VentasApi {
         invalidateCache();
       }
       
-      return response['data'];
+      logger.logDebug('Venta creada correctamente: ${response['data'] ?? response}');
+      
+      Map<String, dynamic> resultData;
+      if (response.containsKey('data') && response['data'] != null) {
+        resultData = response['data'];
+      } else {
+        resultData = response;
+      }
+      
+      return {
+        'data': resultData,
+        'status': response['status'] ?? 'success',
+        'message': response['message'] ?? 'Venta creada correctamente',
+      };
     } catch (e) {
-      debugPrint('❌ Error al crear venta: $e');
+      logger.logError('Error al crear venta', e);
       rethrow;
     }
   }
   
-  // Actualizar una venta existente
+  /// Actualizar una venta existente
+  /// 
+  /// [id] - ID de la venta
+  /// [ventaData] - Datos a actualizar
+  /// [sucursalId] - ID de la sucursal
   Future<Map<String, dynamic>> updateVenta(String id, Map<String, dynamic> ventaData, {String? sucursalId}) async {
     try {
       // Construir el endpoint según si hay sucursal o no
@@ -231,14 +327,22 @@ class VentasApi {
       // También invalidar listas que podrían contener esta venta
       invalidateCache(sucursalId);
       
-      return response['data'];
+      return {
+        'data': response['data'] ?? response,
+        'status': response['status'] ?? 'success',
+        'message': response['message'] ?? 'Venta actualizada correctamente',
+      };
     } catch (e) {
-      debugPrint('❌ Error al actualizar venta: $e');
+      logger.logError('Error al actualizar venta', e);
       rethrow;
     }
   }
   
-  // Cancelar una venta
+  /// Cancelar una venta
+  /// 
+  /// [id] - ID de la venta
+  /// [motivo] - Motivo de la cancelación
+  /// [sucursalId] - ID de la sucursal
   Future<bool> cancelarVenta(String id, String motivo, {String? sucursalId}) async {
     try {
       // Construir el endpoint según si hay sucursal o no
@@ -260,12 +364,16 @@ class VentasApi {
       
       return true;
     } catch (e) {
-      debugPrint('❌ Error al cancelar venta: $e');
+      logger.logError('Error al cancelar venta', e);
       return false;
     }
   }
   
-  // Anular una venta
+  /// Anular una venta
+  /// 
+  /// [id] - ID de la venta
+  /// [motivo] - Motivo de la anulación
+  /// [sucursalId] - ID de la sucursal
   Future<bool> anularVenta(String id, String motivo, {String? sucursalId}) async {
     try {
       // Construir el endpoint según si hay sucursal o no
@@ -288,12 +396,18 @@ class VentasApi {
       
       return true;
     } catch (e) {
-      debugPrint('❌ Error al anular venta: $e');
+      logger.logError('Error al anular venta', e);
       return false;
     }
   }
   
-  // Obtener estadísticas
+  /// Obtener estadísticas de ventas
+  /// 
+  /// [fechaInicio] - Fecha de inicio
+  /// [fechaFin] - Fecha de fin
+  /// [sucursalId] - ID de la sucursal
+  /// [useCache] - Usar caché
+  /// [forceRefresh] - Forzar recarga
   Future<Map<String, dynamic>> getEstadisticas({
     DateTime? fechaInicio,
     DateTime? fechaFin,
@@ -317,7 +431,7 @@ class VentasApi {
       if (useCache && !forceRefresh) {
         final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
-          debugPrint('🔍 Usando estadísticas en caché: $cacheKey');
+          logger.logDebug('Usando estadísticas en caché: $cacheKey');
           return cachedData;
         }
       }
@@ -347,13 +461,64 @@ class VentasApi {
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, response);
-        debugPrint('💾 Guardadas estadísticas en caché: $cacheKey');
+        logger.logDebug('Guardadas estadísticas en caché: $cacheKey');
       }
       
       return response;
     } catch (e) {
-      debugPrint('❌ Error al obtener estadísticas: $e');
-      return <String, dynamic>{};
+      logger.logError('Error al obtener estadísticas', e);
+      return <String, dynamic>{
+        'status': 'error',
+        'message': 'Error al obtener estadísticas: $e',
+      };
     }
+  }
+  
+  /// Parsea una lista de ventas desde datos JSON
+  List<Venta> parseVentas(dynamic data) {
+    if (data == null) {
+      return [];
+    }
+    
+    // Determinar si los datos están en un arreglo o dentro de un objeto
+    List<dynamic> ventasData;
+    if (data is List) {
+      ventasData = data;
+    } else if (data is Map && data.containsKey('data') && data['data'] is List) {
+      ventasData = data['data'] as List;
+    } else {
+      logger.logWarning('Formato inesperado de respuesta de ventas: $data');
+      return [];
+    }
+    
+    // Convertir cada elemento a un objeto Venta
+    return ventasData.map((item) {
+      if (item is Map<String, dynamic>) {
+        try {
+          return Venta.fromJson(item);
+        } catch (e) {
+          logger.logError('Error al parsear venta', e);
+          // Retornar un objeto venta vacío en caso de error
+          return Venta(
+            id: 0,
+            tipoDocumentoId: 0,
+            serieDocumento: '',
+            numeroDocumento: '',
+            monedaId: 0,
+            metodoPagoId: 0,
+            clienteId: 0,
+            empleadoId: 0,
+            sucursalId: 0,
+            fechaEmision: DateTime.now(),
+            horaEmision: '00:00:00',
+            fechaCreacion: DateTime.now(),
+            fechaActualizacion: DateTime.now(),
+            detalles: [],
+          );
+        }
+      }
+      
+      throw FormatException('Formato de venta inválido: $item');
+    }).toList();
   }
 }

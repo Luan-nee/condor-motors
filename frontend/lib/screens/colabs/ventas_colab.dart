@@ -234,12 +234,12 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       
       debugPrint('Error al cargar productos: $e');
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cargar productos: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar productos: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
     }
   }
   
@@ -426,60 +426,49 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
     bool descuentoAplicado = false;
     String mensajeDescuento = '';
     
-    // 1. Verificar si aplica descuento porcentual por cantidad mínima
-    final bool tieneDescuentoPorcentual = producto['tieneDescuentoPorcentual'] ?? false;
-    if (tieneDescuentoPorcentual) {
-      final int cantidadMinima = producto['cantidadMinima'] ?? 0;
-      final int porcentaje = producto['descuentoPorcentaje'] ?? 0;
-      
-      if (cantidad >= cantidadMinima && cantidadMinima > 0 && porcentaje > 0) {
-        // Aplicar descuento porcentual
-        final double descuento = precioBase * (porcentaje / 100);
-        precioFinal = precioBase - descuento;
-        descuentoAplicado = true;
-        mensajeDescuento = '$porcentaje% de descuento aplicado por comprar $cantidadMinima o más unidades';
-      }
+    // Verificar si está en liquidación
+    final bool enLiquidacion = producto['enLiquidacion'] ?? false;
+    if (enLiquidacion && producto['precioLiquidacion'] != null) {
+      final double precioLiquidacion = (producto['precioLiquidacion'] as num).toDouble();
+      // Usar el precio de liquidación
+      precioFinal = precioLiquidacion;
+      descuentoAplicado = true;
+      mensajeDescuento = 'Precio de liquidación aplicado';
     }
     
-    // 2. Verificar si aplica promoción de unidades gratis
+    // Verificar si tiene promoción de unidades gratis (solo para información visual)
     final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
-    if (tienePromocionGratis && !descuentoAplicado) { // Solo aplicar si no se aplicó otro descuento
+    if (tienePromocionGratis) {
       final int cantidadMinima = producto['cantidadMinima'] ?? 0;
       final int cantidadGratis = producto['cantidadGratis'] ?? 0;
       
       if (cantidad >= cantidadMinima && cantidadMinima > 0 && cantidadGratis > 0) {
-        // Calcular cuántas promociones completas aplican
-        final int promocionesCompletas = cantidad ~/ cantidadMinima;
+        // Solo marcar como que la promoción está activada para visualización
+        producto['promocionActivada'] = true;
         
-        if (promocionesCompletas > 0) {
-          // Informar sobre las unidades gratis que se aplicarán al finalizar la venta
+        // Solo actualizar el mensaje si no hay otro descuento aplicado o es más relevante
+        if (!descuentoAplicado) {
+          final int promocionesCompletas = cantidad ~/ cantidadMinima;
           final int unidadesGratis = promocionesCompletas * cantidadGratis;
-          
-          // Marcar que la promoción está activada
-          if (producto['promocionActivada'] != true) {
-            producto['promocionActivada'] = true;
-            
-            descuentoAplicado = true;
-            mensajeDescuento = '$unidadesGratis unidades gratis serán incluidas al finalizar (procesado por el sistema)';
-          }
+          mensajeDescuento = '$unidadesGratis unidades gratis serán incluidas por el servidor';
+          descuentoAplicado = true;
         }
       } else {
         // Si ya no cumple con la cantidad mínima, desactivar la promoción
-        if (producto['promocionActivada'] == true) {
-          producto['promocionActivada'] = false;
-        }
+        producto['promocionActivada'] = false;
       }
     }
     
-    // 3. Verificar si está en liquidación (tiene prioridad si ya está en liquidación)
-    final bool enLiquidacion = producto['enLiquidacion'] ?? false;
-    if (enLiquidacion && producto['precioLiquidacion'] != null) {
-      final double precioLiquidacion = (producto['precioLiquidacion'] as num).toDouble();
-      // Si el precio de liquidación es menor que el precio con descuento, usar el de liquidación
-      if (precioLiquidacion < precioFinal) {
-        precioFinal = precioLiquidacion;
+    // Verificar si tiene descuento porcentual (solo para información visual)
+    final bool tieneDescuentoPorcentual = producto['tieneDescuentoPorcentual'] ?? false;
+    if (tieneDescuentoPorcentual && !descuentoAplicado) {
+      final int cantidadMinima = producto['cantidadMinima'] ?? 0;
+      final int porcentaje = producto['descuentoPorcentaje'] ?? 0;
+      
+      if (cantidad >= cantidadMinima && cantidadMinima > 0 && porcentaje > 0) {
+        // El server aplicará este descuento, solo mostrar el mensaje
+        mensajeDescuento = '$porcentaje% de descuento será aplicado por el servidor';
         descuentoAplicado = true;
-        mensajeDescuento = 'Precio de liquidación aplicado';
       }
     }
     
@@ -747,9 +736,9 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
             width: MediaQuery.of(context).size.width * 0.9,
             height: MediaQuery.of(context).size.height * 0.8,
             padding: const EdgeInsets.all(16),
-            child: Column(
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
+            children: <Widget>[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
@@ -767,7 +756,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                   ],
                 ),
                 const SizedBox(height: 8),
-                Expanded(
+              Expanded(
                   child: BusquedaProductoWidget(
                     productos: _productos,
                     categorias: _categorias,
@@ -787,7 +776,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
     );
   }
   
-  // Nuevo método para mostrar detalles de promoción
+  // Mostrar detalles de promoción
   void _mostrarDetallesPromocion(Map<String, dynamic> producto) {
     final bool enLiquidacion = producto['enLiquidacion'] ?? false;
     final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
@@ -806,13 +795,28 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: const Color(0xFF222222),
-          title: Text(
-            producto['nombre'],
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                producto['nombre'],
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Todas las promociones son aplicadas automáticamente por el servidor',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -862,7 +866,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Este producto tiene múltiples promociones que el cliente puede aprovechar.',
+                            'Este producto tiene múltiples promociones. El servidor aplicará la más beneficiosa para el cliente.',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 14,
@@ -921,11 +925,11 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.amber.withOpacity(0.3)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
               const Icon(
                 Icons.local_offer,
                 color: Colors.amber,
@@ -942,9 +946,9 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                   ),
                 ),
               ),
-              Container(
+                Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                   color: Colors.amber.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -962,10 +966,10 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
           const SizedBox(height: 8),
           Row(
             children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
                     const Text(
                       'Precio regular',
                       style: TextStyle(
@@ -973,10 +977,10 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                         fontSize: 12,
                       ),
                     ),
-                    Text(
+                      Text(
                       'S/ ${precioOriginal.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        color: Colors.white,
+                        style: const TextStyle(
+                          color: Colors.white,
                         decoration: TextDecoration.lineThrough,
                         fontSize: 14,
                       ),
@@ -988,26 +992,26 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
+                        children: <Widget>[
                     const Text(
                       'Precio liquidación',
-                      style: TextStyle(
+                              style: TextStyle(
                         color: Colors.white70,
                         fontSize: 12,
-                      ),
-                    ),
-                    Text(
+                              ),
+                            ),
+                            Text(
                       'S/ ${precioLiquidacion.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        color: Colors.amber,
-                        fontWeight: FontWeight.bold,
+                              style: const TextStyle(
+                                color: Colors.amber,
+                                fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                   ],
-                ),
-              ),
-            ],
+                              ),
+                            ),
+                          ],
           ),
         ],
       ),
@@ -1068,7 +1072,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
             ),
             const SizedBox(height: 8),
             const Text(
-              'Esta promoción se aplicará automáticamente al finalizar la venta',
+              'Esta promoción se aplicará automáticamente por el servidor',
               style: TextStyle(
                 fontStyle: FontStyle.italic,
                 fontSize: 12,
@@ -1122,6 +1126,15 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Este descuento será aplicado automáticamente por el servidor',
+            style: TextStyle(
+              fontStyle: FontStyle.italic,
+              fontSize: 12,
+              color: Colors.white70,
             ),
           ),
         ],
@@ -1213,14 +1226,14 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _eliminarProducto(index),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _eliminarProducto(index),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                 ),
-              ],
-            ),
             if (promocionActivada && tienePromocionGratis)
               Padding(
                 padding: const EdgeInsets.only(top: 4.0),
@@ -1234,17 +1247,17 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        'Incluye unidades gratis al finalizar la venta',
+                        'El servidor aplicará las unidades gratis automáticamente',
                         style: TextStyle(
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
                           color: Colors.grey[600],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
+            ),
+          ],
+        ),
+      ),
             const SizedBox(height: 8),
             Row(
               children: <Widget>[
@@ -1487,12 +1500,6 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                 : (producto['precio'] as num).toDouble());
         
         final double subtotal = precioUnitario * producto['cantidad'];
-        
-        // Guardar información adicional para el backend (opcional)
-        // El backend decidirá en base a sus propias reglas qué promociones aplicar
-        if (producto['promocionActivada'] == true) {
-          debugPrint('Producto con promoción: ${producto['nombre']} - Cantidad: ${producto['cantidad']}');
-        }
             
         return DetalleProforma(
           productoId: productoId,
@@ -1539,7 +1546,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
         setState(() {
           _loadingMessage = 'Actualizando inventario...';
         });
-        _cargarProductos();
+      _cargarProductos();
       }
       
       if (!mounted) {
@@ -1583,6 +1590,16 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
               const Text(
                 'La proforma ha sido creada y podrá ser procesada en caja.',
                 textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Nota: Los descuentos y promociones serán aplicados automáticamente por el servidor.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
               ),
             ],
           ),
@@ -1628,10 +1645,10 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
   // Mostrar overlay de carga para operaciones asíncronas
   Widget _buildLoadingOverlay(Widget child) {
     return Stack(
-      children: <Widget>[
+          children: <Widget>[
         child,
         if (_isLoading)
-          Container(
+            Container(
             color: Colors.black.withOpacity(0.7),
             width: double.infinity,
             height: double.infinity,
@@ -1666,15 +1683,15 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 8),
-                            const Text(
+            const Text(
                               'Por favor espere...',
-                              style: TextStyle(
+              style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
+              ),
+            ),
+          ],
+        ),
                     ],
                   ),
                 ),
@@ -1715,7 +1732,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       if (productoEncontrado.isNotEmpty) {
         _agregarProducto(productoEncontrado);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+              ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Producto agregado: ${productoEncontrado['nombre']}'),
               backgroundColor: Colors.green,
@@ -1748,15 +1765,15 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
         appBar: AppBar(
           title: const Text('Ventas'),
           actions: <Widget>[
-            IconButton(
+          IconButton(
               icon: const FaIcon(FontAwesomeIcons.clockRotateLeft),
-              tooltip: 'Historial de Ventas',
-              onPressed: _irAHistorial,
-            ),
-          ],
-        ),
-        body: Column(
-          children: <Widget>[
+            tooltip: 'Historial de Ventas',
+            onPressed: _irAHistorial,
+          ),
+        ],
+      ),
+      body: Column(
+        children: <Widget>[
             // Sección de cliente
             Card(
               margin: EdgeInsets.zero,
@@ -1785,81 +1802,81 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
-                children: <Widget>[
-                  Expanded(
+              children: <Widget>[
+                Expanded(
                     flex: 1,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6A1B9A), // Morado
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                      foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                       ),
-                      icon: const FaIcon(FontAwesomeIcons.barcode),
-                      label: const Text('Escanear'),
-                      onPressed: _escanearProducto,
                     ),
+                      icon: const FaIcon(FontAwesomeIcons.barcode),
+                        label: const Text('Escanear'),
+                      onPressed: _escanearProducto,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                      flex: 2,
+                  child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1976D2), // Azul
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                      ),
                       icon: const FaIcon(FontAwesomeIcons.magnifyingGlass),
                       label: const Text('Buscar Productos'),
                       onPressed: _mostrarDialogoProductos,
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
-            
+          ),
+
             // Contenido principal (lista de productos)
-            Expanded(
+          Expanded(
               child: Stack(
                 children: <Widget>[
                   _productosVenta.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
                               const FaIcon(
-                                FontAwesomeIcons.cartShopping,
+                          FontAwesomeIcons.cartShopping,
                                 size: 64,
                                 color: Colors.grey,
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
                                 'No hay productos en la venta',
-                                style: TextStyle(
+                        style: TextStyle(
                                   fontSize: 18,
                                   color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
                                 'Busca o escanea productos para agregarlos',
-                                style: TextStyle(
+                        style: TextStyle(
                                   color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
                           padding: const EdgeInsets.only(bottom: 100), // Espacio para el botón de finalizar
-                          itemCount: _productosVenta.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final Map<String, dynamic> producto = _productosVenta[index];
+                  itemCount: _productosVenta.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final Map<String, dynamic> producto = _productosVenta[index];
                             return _buildProductoVentaItem(producto, index);
                           },
                         ),
@@ -1875,13 +1892,13 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                         child: Center(
                           child: Material(
                             elevation: 4,
-                            borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8),
                             color: const Color(0xFF2E7D32), // Verde oscuro
-                            child: Padding(
+                      child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                              child: Column(
+                        child: Column(
                                 mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
+                          children: <Widget>[
                                   Text(
                                     _nombreProductoPromocion,
                                     style: const TextStyle(
@@ -1890,15 +1907,15 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(
+                                Text(
                                     _mensajePromocion,
-                                    style: const TextStyle(
+                                  style: const TextStyle(
                                       color: Colors.white,
                                     ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ),
+                                ),
                           ),
                         ),
                       ),
@@ -1908,7 +1925,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
             ),
             
             // Barra inferior con total y botón de finalizar
-            Container(
+          Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 boxShadow: <BoxShadow>[
@@ -1920,9 +1937,9 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                 ],
               ),
               padding: const EdgeInsets.all(16),
-              child: Column(
+            child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
+              children: <Widget>[
                   // Información del total
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1940,27 +1957,27 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                           color: const Color(0xFF1E88E5),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Column(
+                  child: Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
-                          children: <Widget>[
-                            const Text(
-                              'TOTAL',
-                              style: TextStyle(
-                                color: Colors.white70,
+                    children: <Widget>[
+                      const Text(
+                        'TOTAL',
+                        style: TextStyle(
+                          color: Colors.white70,
                                 fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              'S/ ${total.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                              ),
-                            ),
-                          ],
                         ),
                       ),
+                      Text(
+                              'S/ ${total.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -1971,9 +1988,9 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                       Expanded(
                         flex: 1,
                         child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
+                  style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF424242),
-                            foregroundColor: Colors.white,
+                    foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -1995,23 +2012,23 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                             backgroundColor: const Color(0xFF4CAF50),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          icon: const FaIcon(FontAwesomeIcons.check, size: 16),
-                          label: const Text('Finalizar Venta'),
-                          onPressed: _productosVenta.isEmpty || _clienteSeleccionado == null 
-                              ? null 
-                              : _finalizarVenta,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                      icon: const FaIcon(FontAwesomeIcons.check, size: 16),
+                      label: const Text('Finalizar Venta'),
+                      onPressed: _productosVenta.isEmpty || _clienteSeleccionado == null 
+                          ? null 
+                          : _finalizarVenta,
+                        ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
+        ],
         ),
       ),
     );
