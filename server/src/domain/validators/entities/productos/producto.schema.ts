@@ -21,18 +21,19 @@ export const productoSchema = {
       message:
         'La descripción solo puede contener este set de caracteres: a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ.,¡!¿?-()[]{}$%&*\'_"@#+'
     })
-    .optional(),
-  maxDiasSinReabastecer: z.number().positive().optional(),
-  stockMinimo: z.number().min(0).optional(),
-  cantidadMinimaDescuento: z.number().min(1).optional(),
-  cantidadGratisDescuento: z.number().min(1).optional(),
-  porcentajeDescuento: z.number().min(0).max(100).optional(),
+    .optional()
+    .nullable(),
+  maxDiasSinReabastecer: z.number().positive().optional().nullable(),
+  stockMinimo: z.number().min(0).optional().nullable(),
+  cantidadMinimaDescuento: z.number().min(1).optional().nullable(),
+  cantidadGratisDescuento: z.number().min(1).optional().nullable(),
+  porcentajeDescuento: z.number().min(0).max(100).optional().nullable(),
   colorId: idTypeBaseSchema.numericId,
   categoriaId: idTypeBaseSchema.numericId,
   marcaId: idTypeBaseSchema.numericId,
   precioCompra: z.number().min(0),
   precioVenta: z.number().min(0),
-  precioOferta: z.number().min(0).optional(),
+  precioOferta: z.number().min(0).optional().nullable(),
   stock: z.number().min(0).default(0),
   liquidacion: z.boolean().default(false)
 }
