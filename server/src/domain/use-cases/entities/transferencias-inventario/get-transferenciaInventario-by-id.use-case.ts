@@ -27,13 +27,12 @@ export class GetTransferenciasInventariosById {
     llegadaDestino: transferenciasInventariosTable.llegadaDestino
   }
   private readonly selectFieldsItems = {
+    id: itemsTransferenciaInventarioTable.id,
     cantidad: itemsTransferenciaInventarioTable.cantidad,
     nombreProducto: productosTable.nombre
   }
 
   private async getTransferenciaInventario(numericIdDto: NumericIdDto) {
-    // const transventas = await
-
     const transVenta = await db
       .select(this.selectFields)
       .from(transferenciasInventariosTable)

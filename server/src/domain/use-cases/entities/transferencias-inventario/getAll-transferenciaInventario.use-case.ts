@@ -6,7 +6,7 @@ import {
   transferenciasInventariosTable
 } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
-import { aliasedTable, asc, desc, eq, ilike, or } from 'drizzle-orm'
+import { aliasedTable, asc, desc, eq } from 'drizzle-orm'
 
 export class GetTransferenciasInventarios {
   private readonly sucursalOrigen = aliasedTable(
@@ -55,16 +55,6 @@ export class GetTransferenciasInventarios {
         ? asc(sortByColumn)
         : desc(sortByColumn)
 
-    const whereCondition =
-      queriesDto.search.length > 0
-        ? or(
-            ilike(
-              estadosTransferenciasInventarios.nombre,
-              `%${queriesDto.search}%`
-            )
-          )
-        : undefined
-
     const TransferenciasInventario = await db
       .select(this.selectFields)
       .from(transferenciasInventariosTable)
@@ -89,7 +79,6 @@ export class GetTransferenciasInventarios {
           transferenciasInventariosTable.estadoTransferenciaId
         )
       )
-      .where(whereCondition)
       .orderBy(order)
       .limit(queriesDto.page_size)
       .offset(queriesDto.page_size * (queriesDto.page - 1))
