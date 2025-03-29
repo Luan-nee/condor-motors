@@ -876,10 +876,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
           Center(
             child: ElevatedButton.icon(
               onPressed: () => _gestionarCuenta(context),
-              icon: const FaIcon(
-                FontAwesomeIcons.userPlus,
-                size: 16,
-              ),
               label: const Text('Crear Cuenta de Usuario'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.amber,
