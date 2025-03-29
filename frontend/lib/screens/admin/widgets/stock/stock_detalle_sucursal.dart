@@ -10,62 +10,64 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 /// Diálogo que muestra el stock de un producto en todas las sucursales
 class StockDetalleSucursalDialog extends StatefulWidget {
   final Producto producto;
-  
+
   const StockDetalleSucursalDialog({
     super.key,
     required this.producto,
   });
-  
+
   @override
-  State<StockDetalleSucursalDialog> createState() => _StockDetalleSucursalDialogState();
+  State<StockDetalleSucursalDialog> createState() =>
+      _StockDetalleSucursalDialogState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties
-      .add(DiagnosticsProperty<Producto>('producto', producto));
+    properties.add(DiagnosticsProperty<Producto>('producto', producto));
   }
 }
 
-class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog> {
+class _StockDetalleSucursalDialogState
+    extends State<StockDetalleSucursalDialog> {
   bool _isLoading = true;
   String? _error;
   List<Sucursal> _sucursales = <Sucursal>[];
   Map<String, int> _stockPorSucursal = <String, int>{};
   Map<String, bool> _productoDisponibleEnSucursal = <String, bool>{};
   bool _dataLoaded = false;
-  
+
   @override
   void initState() {
     super.initState();
     _cargarSucursales();
   }
-  
+
   Future<void> _cargarSucursales() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
-    
+
     try {
       // Cargar las sucursales
       final List<Sucursal> sucursales = await api.sucursales.getSucursales();
-      
+
       // Para cada sucursal, cargar el stock del producto
       final Map<String, int> stockMap = <String, int>{};
       final Map<String, bool> disponibilidadMap = <String, bool>{};
-      
+
       // Utilizamos Future.wait para cargar todos los datos en paralelo
       final List<Future> futures = <Future>[];
-      
+
       for (final Sucursal sucursal in sucursales) {
         // Añadir un Future para cada sucursal
-        futures.add(_cargarStockPorSucursal(sucursal.id, stockMap, disponibilidadMap));
+        futures.add(
+            _cargarStockPorSucursal(sucursal.id, stockMap, disponibilidadMap));
       }
-      
+
       // Esperar a que todas las cargas se completen
       await Future.wait(futures);
-      
+
       if (mounted) {
         setState(() {
           _sucursales = sucursales;
@@ -84,30 +86,27 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
       }
     }
   }
-  
-  Future<void> _cargarStockPorSucursal(
-    String sucursalId, 
-    Map<String, int> stockMap, 
-    Map<String, bool> disponibilidadMap
-  ) async {
+
+  Future<void> _cargarStockPorSucursal(String sucursalId,
+      Map<String, int> stockMap, Map<String, bool> disponibilidadMap) async {
     try {
       // Obtener el stock específico para esta sucursal
       final Producto response = await api.productos.getProducto(
         productoId: widget.producto.id,
         sucursalId: sucursalId,
       );
-      
+
       // Si la respuesta existe, almacenar el stock
       stockMap[sucursalId] = response.stock;
       disponibilidadMap[sucursalId] = true;
-        } catch (e) {
+    } catch (e) {
       // En caso de error, marcamos el producto como no disponible
       debugPrint('Error obteniendo stock para sucursal $sucursalId: $e');
       stockMap[sucursalId] = 0;
       disponibilidadMap[sucursalId] = false;
     }
   }
-  
+
   Future<void> _verStockDetalle(Sucursal sucursal) async {
     // Crear una copia del producto con el stock de la sucursal seleccionada
     final Producto productoSucursal = Producto(
@@ -125,7 +124,7 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
       liquidacion: widget.producto.liquidacion,
       fechaCreacion: widget.producto.fechaCreacion,
     );
-    
+
     // Mostrar el diálogo de detalles de stock para la sucursal seleccionada
     final Producto? result = await showDialog<Producto>(
       context: context,
@@ -137,13 +136,13 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
         );
       },
     );
-    
+
     // Si hubo cambios en el stock o liquidación, recargar las sucursales para actualizar la información
     if (result != null) {
       await _cargarSucursales();
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -178,18 +177,18 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             Divider(color: Colors.white.withOpacity(0.2)),
-            
+
             const SizedBox(height: 16),
-            
+
             // Información del producto
             _buildProductoInfo(),
-            
+
             const SizedBox(height: 16),
-            
+
             // Título para la lista de sucursales
             Row(
               children: <Widget>[
@@ -219,9 +218,9 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                 ],
               ],
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Estado de carga
             if (_isLoading)
               const Center(
@@ -288,28 +287,33 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                   itemCount: _sucursales.length,
                   itemBuilder: (BuildContext context, int index) {
                     final Sucursal sucursal = _sucursales[index];
-                    final int stockEnSucursal = _stockPorSucursal[sucursal.id] ?? 0;
+                    final int stockEnSucursal =
+                        _stockPorSucursal[sucursal.id] ?? 0;
                     final int stockMinimo = widget.producto.stockMinimo ?? 0;
-                    final bool disponible = _productoDisponibleEnSucursal[sucursal.id] ?? false;
-                    
-                    final Color statusColor = disponible 
-                        ? StockUtils.getStockStatusColor(stockEnSucursal, stockMinimo)
+                    final bool disponible =
+                        _productoDisponibleEnSucursal[sucursal.id] ?? false;
+
+                    final Color statusColor = disponible
+                        ? StockUtils.getStockStatusColor(
+                            stockEnSucursal, stockMinimo)
                         : Colors.grey;
                     final IconData statusIcon = disponible
-                        ? StockUtils.getStockStatusIcon(stockEnSucursal, stockMinimo)
+                        ? StockUtils.getStockStatusIcon(
+                            stockEnSucursal, stockMinimo)
                         : FontAwesomeIcons.ban;
                     final String statusText = disponible
-                        ? StockUtils.getStockStatusText(stockEnSucursal, stockMinimo)
+                        ? StockUtils.getStockStatusText(
+                            stockEnSucursal, stockMinimo)
                         : 'No disponible';
-                    
+
                     return Card(
                       margin: const EdgeInsets.only(bottom: 8),
                       color: const Color(0xFF2D2D2D),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                         side: BorderSide(
-                          color: disponible 
-                              ? statusColor.withOpacity(0.5) 
+                          color: disponible
+                              ? statusColor.withOpacity(0.5)
                               : Colors.white.withOpacity(0.1),
                         ),
                       ),
@@ -331,8 +335,8 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                                     Row(
                                       children: <Widget>[
                                         FaIcon(
-                                          sucursal.sucursalCentral 
-                                              ? FontAwesomeIcons.buildingFlag 
+                                          sucursal.sucursalCentral
+                                              ? FontAwesomeIcons.buildingFlag
                                               : FontAwesomeIcons.store,
                                           size: 14,
                                           color: sucursal.sucursalCentral
@@ -348,7 +352,8 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                                             fontSize: 16,
                                           ),
                                         ),
-                                        if (sucursal.sucursalCentral) ...<Widget>[
+                                        if (sucursal
+                                            .sucursalCentral) ...<Widget>[
                                           const SizedBox(width: 8),
                                           Container(
                                             padding: const EdgeInsets.symmetric(
@@ -356,8 +361,10 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: Colors.amber.withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(4),
+                                              color:
+                                                  Colors.amber.withOpacity(0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
                                             ),
                                             child: const Text(
                                               'CENTRAL',
@@ -373,12 +380,13 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      sucursal.direccion ?? 'Sin dirección registrada',
+                                      sucursal.direccion ??
+                                          'Sin dirección registrada',
                                       style: TextStyle(
                                         color: Colors.white.withOpacity(0.7),
                                         fontSize: 14,
-                                        fontStyle: sucursal.direccion != null 
-                                            ? FontStyle.normal 
+                                        fontStyle: sucursal.direccion != null
+                                            ? FontStyle.normal
                                             : FontStyle.italic,
                                       ),
                                       maxLines: 2,
@@ -387,7 +395,7 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                                   ],
                                 ),
                               ),
-                              
+
                               // Estado del stock
                               Expanded(
                                 flex: 2,
@@ -395,7 +403,8 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: <Widget>[
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
                                         color: statusColor.withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(12),
@@ -422,7 +431,7 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                                   ],
                                 ),
                               ),
-                              
+
                               // Stock en la sucursal
                               Expanded(
                                 flex: 2,
@@ -437,47 +446,23 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                                     ),
                                     const SizedBox(height: 4),
                                     disponible
-                                      ? Text(
-                                          stockEnSucursal.toString(),
-                                          style: TextStyle(
-                                            color: statusColor,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18,
+                                        ? Text(
+                                            stockEnSucursal.toString(),
+                                            style: TextStyle(
+                                              color: statusColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                            ),
+                                          )
+                                        : const Text(
+                                            '—',
+                                            style: TextStyle(
+                                              color: Colors.grey,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                            ),
                                           ),
-                                        )
-                                      : const Text(
-                                          '—',
-                                          style: TextStyle(
-                                            color: Colors.grey,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18,
-                                          ),
-                                        ),
                                   ],
-                                ),
-                              ),
-                              
-                              // Botón para editar el stock
-                              Expanded(
-                                flex: 2,
-                                child: Center(
-                                  child: ElevatedButton.icon(
-                                    icon: FaIcon(
-                                      disponible
-                                          ? FontAwesomeIcons.chartLine
-                                          : FontAwesomeIcons.plus,
-                                      size: 14,
-                                    ),
-                                    label: Text(disponible ? 'Gestionar' : 'Añadir'),
-                                    onPressed: () => _verStockDetalle(sucursal),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: disponible
-                                          ? const Color(0xFF3E3E3E)
-                                          : const Color(0xFF1E631E), // Verde para añadir
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                    ),
-                                  ),
                                 ),
                               ),
                             ],
@@ -493,7 +478,7 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
       ),
     );
   }
-  
+
   Widget _buildLeyenda(String texto, Color color) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -517,7 +502,7 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
       ],
     );
   }
-  
+
   Widget _buildProductoInfo() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -551,7 +536,8 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
               if (widget.producto.liquidacion) ...<Widget>[
                 const SizedBox(width: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.orange.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(4),
@@ -580,9 +566,9 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
               ],
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Información básica en forma de rejilla (2 columnas)
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -596,28 +582,37 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
                     _buildInfoRow('Categoría', widget.producto.categoria),
                     _buildInfoRow('Marca', widget.producto.marca),
                     if (widget.producto.stockMinimo != null)
-                      _buildInfoRow('Stock Mínimo', widget.producto.stockMinimo.toString()),
+                      _buildInfoRow('Stock Mínimo',
+                          widget.producto.stockMinimo.toString()),
                   ],
                 ),
               ),
-              
+
               // Columna 2 - Precios
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    _buildInfoRow('Precio Compra', widget.producto.getPrecioCompraFormateado()),
-                    _buildInfoRow('Precio Venta', widget.producto.getPrecioVentaFormateado()),
+                    _buildInfoRow('Precio Compra',
+                        widget.producto.getPrecioCompraFormateado()),
+                    _buildInfoRow('Precio Venta',
+                        widget.producto.getPrecioVentaFormateado()),
                     if (widget.producto.precioOferta != null)
                       _buildInfoRow(
-                        widget.producto.liquidacion ? 'Precio Liquidación' : 'Precio Oferta', 
+                        widget.producto.liquidacion
+                            ? 'Precio Liquidación'
+                            : 'Precio Oferta',
                         widget.producto.getPrecioOfertaFormateado()!,
-                        textColor: widget.producto.liquidacion ? Colors.orange : Colors.green,
+                        textColor: widget.producto.liquidacion
+                            ? Colors.orange
+                            : Colors.green,
                       ),
                     if (widget.producto.liquidacion)
                       _buildInfoRow(
-                        'Descuento', 
-                        widget.producto.getPorcentajeDescuentoOfertaFormateado() ?? '0%',
+                        'Descuento',
+                        widget.producto
+                                .getPorcentajeDescuentoOfertaFormateado() ??
+                            '0%',
                         textColor: Colors.orange,
                       ),
                   ],
@@ -625,9 +620,10 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
               ),
             ],
           ),
-          
+
           // Descripción (si existe)
-          if (widget.producto.descripcion != null && widget.producto.descripcion!.isNotEmpty) ...<Widget>[
+          if (widget.producto.descripcion != null &&
+              widget.producto.descripcion!.isNotEmpty) ...<Widget>[
             const SizedBox(height: 16),
             const Text(
               'Descripción:',
@@ -650,7 +646,7 @@ class _StockDetalleSucursalDialogState extends State<StockDetalleSucursalDialog>
       ),
     );
   }
-  
+
   // Helper para crear filas de información
   Widget _buildInfoRow(String label, String value, {Color? textColor}) {
     return Padding(
