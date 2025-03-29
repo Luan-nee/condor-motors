@@ -19,7 +19,17 @@ export class TransferenciasInventarioRoutes {
 
     router.get('/', transferenciaInventarioController.getAll)
 
-    router.patch('/:id', transferenciaInventarioController.update)
+    router.post('/:id/items', transferenciaInventarioController.addItems)
+
+    router.patch(
+      '/:id/items/:itemId',
+      transferenciaInventarioController.updateItems
+    )
+
+    router.delete(
+      '/:id/items/:itemId',
+      transferenciaInventarioController.removeItems
+    )
 
     router.delete('/:id', transferenciaInventarioController.delete)
 

@@ -3,7 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../../main.dart' show api; // Importamos el API global
 import '../../../../models/producto.model.dart';
-import '../../utils/stock_utils.dart';
+import '../../../../utils/stock_utils.dart';
 
 /// Diálogo para mostrar los detalles de stock de un producto
 class StockDetallesDialog extends StatefulWidget {
@@ -130,7 +130,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   Future<void> _gestionarLiquidacion() async {
     // Validación de precio de liquidación
     if (_enLiquidacion) {
-      double? precioLiquidacion = double.tryParse(_precioLiquidacionController.text);
+      final double? precioLiquidacion = double.tryParse(_precioLiquidacionController.text);
       if (precioLiquidacion == null || precioLiquidacion <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

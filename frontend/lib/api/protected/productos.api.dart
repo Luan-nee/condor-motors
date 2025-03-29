@@ -789,4 +789,246 @@ class ProductosApi {
     
     return _cache.isStale(cacheKey);
   }
+
+  /// Obtiene productos por filtros combinados
+  /// 
+  /// Método helper que permite combinar múltiples filtros para búsquedas avanzadas
+  /// 
+  /// [sucursalId] ID de la sucursal
+  /// [categoria] Categoría de productos (opcional)
+  /// [marca] Marca de productos (opcional)
+  /// [precioMinimo] Precio mínimo (opcional)
+  /// [precioMaximo] Precio máximo (opcional)
+  /// [stockPositivo] Mostrar solo productos con stock > 0 (opcional)
+  /// [conPromocion] Mostrar solo productos con alguna promoción activa (opcional)
+  /// [page] Número de página para paginación (opcional)
+  /// [pageSize] Número de elementos por página (opcional)
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<PaginatedResponse<Producto>> getProductosPorFiltros({
+    required String sucursalId,
+    String? categoria,
+    String? marca,
+    double? precioMinimo,
+    double? precioMaximo,
+    bool? stockPositivo,
+    bool? conPromocion,
+    int? page,
+    int? pageSize,
+    bool useCache = true,
+  }) async {
+    // Construir parámetros base
+    final Map<String, String> queryParams = {};
+    
+    if (categoria != null && categoria.isNotEmpty) {
+      queryParams['filter'] = 'categoria';
+      queryParams['filter_value'] = categoria;
+      queryParams['filter_type'] = 'eq';
+    }
+    
+    if (marca != null && marca.isNotEmpty) {
+      // Nota: Este es un caso especial ya que filter solo permite un valor a la vez
+      // Para aplicar múltiples filtros, el backend necesitaría soporte especial
+      // Por ahora, damos prioridad a la categoría sobre la marca si ambos están presentes
+      if (!queryParams.containsKey('filter')) {
+        queryParams['filter'] = 'marca';
+        queryParams['filter_value'] = marca;
+        queryParams['filter_type'] = 'eq';
+      }
+    }
+    
+    // Para precio, podemos usar search como alternativa
+    String searchTerm = '';
+    if (precioMinimo != null || precioMaximo != null) {
+      if (precioMinimo != null) {
+        searchTerm += 'precio>${precioMinimo.toStringAsFixed(2)} ';
+      }
+      if (precioMaximo != null) {
+        searchTerm += 'precio<${precioMaximo.toStringAsFixed(2)} ';
+      }
+    }
+    
+    // Obtenemos resultados base
+    final resultados = await getProductos(
+      sucursalId: sucursalId,
+      page: page ?? 1,
+      pageSize: pageSize ?? 20,
+      sortBy: 'nombre', // Default
+      order: 'asc',
+      search: searchTerm.isNotEmpty ? searchTerm : null,
+      useCache: useCache,
+    );
+    
+    // Si no hay filtros adicionales, devolvemos los resultados directamente
+    if ((stockPositivo != true && conPromocion != true) || resultados.items.isEmpty) {
+      return resultados;
+    }
+    
+    // Filtros post-proceso (porque el backend no soporta estos filtros directamente)
+    final List<Producto> productosFiltrados = resultados.items.where((producto) {
+      // Filtrar por stock positivo
+      if (stockPositivo == true && (producto.stock <= 0)) {
+        return false;
+      }
+      
+      // Filtrar por promoción activa
+      if (conPromocion == true) {
+        final bool tienePromocion = producto.liquidacion || // Liquidación
+                             (producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0) || // Promo gratis
+                             (producto.cantidadMinimaDescuento != null && producto.porcentajeDescuento != null && 
+                              producto.cantidadMinimaDescuento! > 0 && producto.porcentajeDescuento! > 0); // Descuento por cantidad
+        
+        if (!tienePromocion) {
+          return false;
+        }
+      }
+      
+      return true;
+    }).toList();
+    
+    // Ajustar paginación para reflejar los resultados filtrados
+    final paginacionAjustada = Paginacion(
+      currentPage: resultados.paginacion.currentPage,
+      totalPages: (productosFiltrados.length / (pageSize ?? 20)).ceil(),
+      totalItems: productosFiltrados.length,
+      hasNext: (page ?? 1) < ((productosFiltrados.length / (pageSize ?? 20)).ceil()),
+      hasPrev: (page ?? 1) > 1,
+    );
+    
+    return PaginatedResponse<Producto>(
+      items: productosFiltrados,
+      paginacion: paginacionAjustada,
+      metadata: resultados.metadata,
+    );
+  }
+
+  /// Obtiene productos con alguna promoción activa
+  /// 
+  /// [sucursalId] ID de la sucursal
+  /// [tipoPromocion] Tipo de promoción: 'cualquiera', 'liquidacion', 'gratis', 'porcentaje' (opcional)
+  /// [page] Número de página para paginación (opcional)
+  /// [pageSize] Número de elementos por página (opcional)
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<PaginatedResponse<Producto>> getProductosConPromocion({
+    required String sucursalId,
+    String tipoPromocion = 'cualquiera',
+    int? page,
+    int? pageSize,
+    bool useCache = true,
+  }) async {
+    // Para liquidación, usar el endpoint directo
+    if (tipoPromocion == 'liquidacion') {
+      return getProductosEnLiquidacion(
+        sucursalId: sucursalId,
+        page: page,
+        pageSize: pageSize,
+        useCache: useCache,
+      );
+    }
+    
+    // Para otros tipos, obtenemos todos y filtramos
+    final resultados = await getProductos(
+      sucursalId: sucursalId,
+      page: page ?? 1,
+      pageSize: 100, // Obtenemos más para poder filtrar adecuadamente
+      sortBy: 'nombre',
+      order: 'asc',
+      useCache: useCache,
+    );
+    
+    if (resultados.items.isEmpty) {
+      return resultados;
+    }
+    
+    // Filtrar según el tipo de promoción
+    List<Producto> productosFiltrados;
+    
+    switch (tipoPromocion) {
+      case 'gratis':
+        productosFiltrados = resultados.items.where((p) => 
+          p.cantidadGratisDescuento != null && p.cantidadGratisDescuento! > 0
+        ).toList();
+        break;
+      case 'porcentaje':
+        productosFiltrados = resultados.items.where((p) => 
+          p.cantidadMinimaDescuento != null && p.porcentajeDescuento != null &&
+          p.cantidadMinimaDescuento! > 0 && p.porcentajeDescuento! > 0
+        ).toList();
+        break;
+      case 'cualquiera':
+      default:
+        productosFiltrados = resultados.items.where((p) => 
+          p.liquidacion || // Liquidación
+          (p.cantidadGratisDescuento != null && p.cantidadGratisDescuento! > 0) || // Promo gratis
+          (p.cantidadMinimaDescuento != null && p.porcentajeDescuento != null && 
+           p.cantidadMinimaDescuento! > 0 && p.porcentajeDescuento! > 0) // Descuento por cantidad
+        ).toList();
+        break;
+    }
+    
+    // Paginar los resultados manualmente
+    final int pageNumber = page ?? 1;
+    final int itemsPerPage = pageSize ?? 20;
+    final int startIndex = (pageNumber - 1) * itemsPerPage;
+    final int endIndex = startIndex + itemsPerPage < productosFiltrados.length 
+        ? startIndex + itemsPerPage 
+        : productosFiltrados.length;
+    
+    // Asegurarnos de no ir fuera de rango
+    final List<Producto> paginatedResults = startIndex < productosFiltrados.length 
+        ? productosFiltrados.sublist(startIndex, endIndex)
+        : [];
+    
+    // Ajustar paginación
+    final totalPages = (productosFiltrados.length / itemsPerPage).ceil();
+    final paginacionAjustada = Paginacion(
+      currentPage: pageNumber,
+      totalPages: totalPages > 0 ? totalPages : 1,
+      totalItems: productosFiltrados.length,
+      hasNext: pageNumber < totalPages,
+      hasPrev: pageNumber > 1,
+    );
+    
+    return PaginatedResponse<Producto>(
+      items: paginatedResults,
+      paginacion: paginacionAjustada,
+      metadata: resultados.metadata,
+    );
+  }
+
+  /// Obtiene productos ordenados por más vendidos
+  /// 
+  /// Este método simula la funcionalidad ya que el backend aún no provee estadísticas directas
+  /// En una implementación real, se debería consultar un endpoint específico en el servidor
+  /// 
+  /// [sucursalId] ID de la sucursal
+  /// [dias] Días a considerar para el cálculo (7=semana, 30=mes, etc.)
+  /// [page] Número de página para paginación (opcional)
+  /// [pageSize] Número de elementos por página (opcional)
+  /// [useCache] Indica si se debe usar el caché (default: false - no recomendado para datos estadísticos)
+  Future<PaginatedResponse<Producto>> getProductosMasVendidos({
+    required String sucursalId,
+    int dias = 30,
+    int? page,
+    int? pageSize,
+    bool useCache = false,
+  }) async {
+    // En una implementación completa, consultaríamos un endpoint específico con estadísticas
+    // Por ahora, obtenemos productos normales y simulamos la ordenación
+    
+    debugPrint('Obteniendo productos más vendidos en la sucursal $sucursalId durante los últimos $dias días');
+    
+    final productos = await getProductos(
+      sucursalId: sucursalId,
+      page: page ?? 1,
+      pageSize: pageSize ?? 20,
+      sortBy: 'fechaCreacion', // Esto es lo más cercano a "popularidad" sin tener estadísticas reales
+      order: 'desc', // Más recientes primero como aproximación
+      useCache: useCache,
+    );
+    
+    // Nota: Aquí deberíamos aplicar la lógica real de ventas
+    // Por ahora solo devolvemos los resultados como están
+    
+    return productos;
+  }
 }

@@ -1,3 +1,4 @@
+import { getDateTimeString, getOffsetDateTime } from '@/core/lib/utils'
 import { db } from '@/db/connection'
 import { sucursalesTable, totalesVentaTable, ventasTable } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
@@ -5,16 +6,29 @@ import { and, count, eq, gte, lte, sum } from 'drizzle-orm'
 
 export class GetReporteVentas {
   private async getventasReporte(queriesDto: QueriesDto) {
-    const fechaActual = new Date()
-    fechaActual.setDate(fechaActual.getDate() - 5)
+    const fechaActual = getOffsetDateTime(new Date(), -5)
+    if (fechaActual === undefined) {
+      return []
+    }
+    const fecha = getDateTimeString(fechaActual)
+    const hoy = getOffsetDateTime(new Date(fecha.date), 5)
+    if (hoy === undefined) {
+      return []
+    }
+    const valoresPrueba = {
+      startDate: fecha,
+      hoy
+    }
 
     const whereCondition =
       queriesDto.startDate instanceof Date && queriesDto.endDate instanceof Date
         ? and(
-            gte(ventasTable.fechaCreacion, new Date(queriesDto.page)),
-            lte(ventasTable.fechaCreacion, new Date(queriesDto.page_size))
+            gte(ventasTable.fechaCreacion, new Date(queriesDto.startDate)),
+            lte(ventasTable.fechaCreacion, new Date(queriesDto.endDate))
           )
-        : undefined
+        : queriesDto.startDate instanceof Date
+          ? gte(ventasTable.fechaCreacion, new Date(queriesDto.startDate))
+          : undefined
 
     const dataTotal = await db
       .select({
@@ -24,6 +38,11 @@ export class GetReporteVentas {
       .from(totalesVentaTable)
       .innerJoin(ventasTable, eq(totalesVentaTable.ventaId, ventasTable.id))
       .where(whereCondition)
+
+    const getVentaHoy = await db
+      .select({ ventaDelDia: count(ventasTable.id) })
+      .from(ventasTable)
+      .where(gte(ventasTable.fechaCreacion, hoy))
 
     const getVentas = await db
       .select({
@@ -47,7 +66,9 @@ export class GetReporteVentas {
 
     return {
       ...data,
-      getVentas
+      getVentaHoy,
+      getVentas,
+      valoresPrueba
     }
   }
 

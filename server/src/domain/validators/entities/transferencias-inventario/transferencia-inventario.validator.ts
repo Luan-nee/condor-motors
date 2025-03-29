@@ -15,3 +15,10 @@ const enviarTransferenciaInvSchema = z.object({
 
 export const enviarTransferenciaInvValidator = (object: unknown) =>
   enviarTransferenciaInvSchema.safeParse(object)
+
+const addItemTransferenciaInv = z.object({
+  items: transferenciaInvSchema.items
+})
+
+export const addItemTransferenciaInvValidator = (object: unknown) =>
+  addItemTransferenciaInv.safeParse(object)

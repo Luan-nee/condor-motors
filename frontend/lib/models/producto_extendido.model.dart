@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../screens/admin/utils/productos_utils.dart';
+import '../utils/productos_utils.dart';
 import 'producto.model.dart';
 import 'sucursal.model.dart';
 

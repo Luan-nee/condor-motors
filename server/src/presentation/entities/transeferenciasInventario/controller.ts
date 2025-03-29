@@ -12,6 +12,8 @@ import { EnviarTransferenciaInventario } from '@/domain/use-cases/entities/trans
 import { RecibirTransferenciaInventario } from '@/domain/use-cases/entities/transferencias-inventario/recibir-transferencia-inventario.use-case'
 import { DeleteTransferenciaInventario } from '@/domain/use-cases/entities/transferencias-inventario/delete-transferencia-inventario.use-case'
 import { CancelarTransferenciaInventario } from '@/domain/use-cases/entities/transferencias-inventario/cancelar-transferencia-inventario.use-case'
+import { AddItemTransferenciaInvDto } from '@/domain/dtos/entities/transferencias-inventario/add-item-transferencia-inventario.dto'
+import { AddItemTransferenciaInv } from '@/domain/use-cases/entities/transferencias-inventario/add-item-transferencia-inventario.use-case'
 
 export class TransferenciasInventarioController {
   create = (req: Request, res: Response) => {
@@ -181,7 +183,49 @@ export class TransferenciasInventarioController {
       })
   }
 
-  update = (req: Request, res: Response) => {
+  addItems = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
+    const [error, addItemTransferenciaInvDto] =
+      AddItemTransferenciaInvDto.create(req.body)
+    if (error !== undefined || addItemTransferenciaInvDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload } = req
+
+    const addItemTransferenciaInv = new AddItemTransferenciaInv(authPayload)
+
+    addItemTransferenciaInv
+      .execute(numericIdDto, addItemTransferenciaInvDto)
+      .then((transferenciaInv) => {
+        CustomResponse.success({ res, data: transferenciaInv })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
+
+  updateItems = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    CustomResponse.notImplemented({ res })
+  }
+
+  removeItems = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
       CustomResponse.unauthorized({ res })
       return

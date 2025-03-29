@@ -3,9 +3,10 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../api/index.api.dart';
 import '../../main.dart' show api;
 import '../../models/cliente.model.dart'; // Importamos el modelo de Cliente
-import '../../api/protected/proforma.api.dart'; // Importamos la API de proformas para usar DetalleProforma
+// Importamos la API de proformas para usar DetalleProforma
 import 'barcode_colab.dart';
 import 'historial_ventas_colab.dart';
+import 'widgets/busqueda_producto.dart';
 
 class VentasColabScreen extends StatefulWidget {
   const VentasColabScreen({super.key});
@@ -39,6 +40,10 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
   
   // Controlador para el campo de búsqueda de clientes
   final TextEditingController _clienteSearchController = TextEditingController();
+  
+  // Agregar las variables faltantes
+  List<String> _categorias = ['Todas']; // Lista de categorías de productos
+  bool _isLoadingProductos = false; // Flag para indicar si se están cargando productos
   
   @override
   void initState() {
@@ -91,34 +96,42 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
   Future<void> _cargarProductos() async {
     if (_productosLoaded) return; // Evitar cargar múltiples veces
     
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _isLoadingProductos = true;
+    });
     
     try {
       debugPrint('Cargando productos para sucursal ID: $_sucursalId (Sucursal del vendedor)');
       
-      // Usar el método getProductos de ProductosApi
-      final response = await _productosApi.getProductos(
+      // Usar el método mejorado getProductosPorFiltros para obtener datos más relevantes
+      final response = await _productosApi.getProductosPorFiltros(
         sucursalId: _sucursalId,
+        stockPositivo: true, // Mostrar solo productos con stock disponible
         pageSize: 100, // Obtener más productos por página
-        sortBy: 'nombre', // Ordenar por nombre
-        order: 'asc', // Orden ascendente
       );
       
       if (!mounted) return;
       
       final List<Map<String, dynamic>> productosFormateados = [];
+      final Set<String> categoriasSet = {};
       
       // Procesar la lista de productos obtenida
       for (var producto in response.items) {
+        // Extraer categorías únicas
+        if (producto.categoria.isNotEmpty) {
+          categoriasSet.add(producto.categoria);
+        }
+        
         // Calcular el precio actual considerando liquidación
-        double precioActual = producto.liquidacion && producto.precioOferta != null
+        final double precioActual = producto.liquidacion && producto.precioOferta != null
             ? producto.precioOferta!
             : producto.precioVenta;
         
         // Verificar promociones disponibles
-        bool enLiquidacion = producto.liquidacion;
-        bool tienePromocionGratis = producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0;
-        bool tieneDescuentoPorcentual = producto.cantidadMinimaDescuento != null && 
+        final bool enLiquidacion = producto.liquidacion;
+        final bool tienePromocionGratis = producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0;
+        final bool tieneDescuentoPorcentual = producto.cantidadMinimaDescuento != null && 
                                        producto.cantidadMinimaDescuento! > 0 &&
                                        producto.porcentajeDescuento != null && 
                                        producto.porcentajeDescuento! > 0;
@@ -150,22 +163,30 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
         _productos = productosFormateados;
         _productosLoaded = true;
         _isLoading = false;
+        _isLoadingProductos = false;
+        _categorias = ['Todas', ...categoriasSet.toList()..sort()];
       });
       
       debugPrint('Productos cargados: ${_productos.length}');
+      debugPrint('Categorías cargadas: ${_categorias.length - 1}');
     } catch (e) {
       if (!mounted) return;
       
       debugPrint('Error al cargar productos: $e');
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cargar productos: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar productos: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _isLoadingProductos = false;
+      });
     }
   }
   
@@ -489,173 +510,53 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Buscar Producto'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            height: MediaQuery.of(context).size.height * 0.8,
+            padding: const EdgeInsets.all(16),
           child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextField(
-                controller: _searchController,
-                decoration: const InputDecoration(
-                  labelText: 'Buscar por nombre o código',
-                  prefixIcon: Icon(Icons.search),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Buscar Producto',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
-                onChanged: (value) {
-                  // Actualizar la búsqueda en tiempo real
-                  setState(() {});
-                },
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 8),
               Expanded(
-                child: _isLoading && !_productosLoaded
-                    ? const Center(
-                        child: CircularProgressIndicator(),
-                      )
-                    : _productos.isEmpty
-                        ? const Center(
-                            child: Text('No hay productos disponibles'),
-                          )
-                        : ListView.builder(
-                            itemCount: _productos.length,
-                            itemBuilder: (context, index) {
-                              final producto = _productos[index];
-                              // Filtrar por búsqueda
-                              if (_searchController.text.isNotEmpty &&
-                                  !producto['nombre'].toString().toLowerCase().contains(_searchController.text.toLowerCase()) &&
-                                  !producto['codigo'].toString().toLowerCase().contains(_searchController.text.toLowerCase())) {
-                                return const SizedBox.shrink();
-                              }
-                              
-                              // Verificar las promociones del producto
-                              bool enLiquidacion = producto['enLiquidacion'] ?? false;
-                              bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
-                              bool tieneDescuentoPorcentual = producto['tieneDescuentoPorcentual'] ?? false;
-                              
-                              return Card(
-                                margin: const EdgeInsets.symmetric(vertical: 4),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              producto['nombre'],
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                          ),
-                                          // Botón para agregar
-                                          IconButton(
-                                            icon: const Icon(Icons.add_circle, color: Color(0xFF4CAF50)),
-                                            onPressed: () {
-                                              _agregarProducto(producto);
-                                              Navigator.pop(context);
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                      
-                                      // Información básica
-                                      Text(
-                                        'Código: ${producto['codigo']} - Stock: ${producto['stock']}',
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                      
-                                      const SizedBox(height: 6),
-                                      
-                                      // Información de precios
-                                      Row(
-                                        children: [
-                                          if (enLiquidacion && producto['precioLiquidacion'] != null) ...[
-                                            Text(
-                                              'S/ ${producto['precio'].toStringAsFixed(2)}',
-                                              style: const TextStyle(
-                                                decoration: TextDecoration.lineThrough,
-                                                color: Colors.grey,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'S/ ${producto['precioLiquidacion'].toStringAsFixed(2)}',
-                                              style: const TextStyle(
-                                                color: Colors.amber,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                          ] else ...[
-                                            Text(
-                                              'S/ ${producto['precio'].toStringAsFixed(2)}',
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                          ],
-                                          
-                                          const Spacer(),
-                                          
-                                          // Chips de promociones
-                                          if (enLiquidacion)
-                                            _buildPromoChip('Liquidación', Colors.amber),
-                                        ],
-                                      ),
-                                      
-                                      // Mostrar chips de promociones adicionales
-                                      if (tienePromocionGratis || tieneDescuentoPorcentual)
-                                        const SizedBox(height: 6),
-                                        
-                                      Row(
-                                        children: [
-                                          if (tienePromocionGratis)
-                                            _buildPromoChip(
-                                              'Lleva ${producto['cantidadMinima']}, paga ${producto['cantidadMinima'] - producto['cantidadGratis']}',
-                                              Colors.green
-                                            ),
-                                            
-                                          if (tienePromocionGratis && tieneDescuentoPorcentual)
-                                            const SizedBox(width: 6),
-                                            
-                                          if (tieneDescuentoPorcentual)
-                                            _buildPromoChip(
-                                              '${producto['descuentoPorcentaje']}% x ${producto['cantidadMinima']}+ unid.', 
-                                              Colors.blue
-                                            ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          if (!_productosLoaded || _isLoading)
-            TextButton(
-              onPressed: _cargarProductos,
-              child: const Text('Recargar'),
+                  child: BusquedaProductoWidget(
+                    productos: _productos,
+                    categorias: _categorias,
+                    isLoading: _isLoadingProductos,
+                    sucursalId: _sucursalId,
+                    onProductoSeleccionado: (producto) {
+                                  Navigator.pop(context);
+                      _agregarProducto(producto);
+                    },
+                  ),
+                ),
+              ],
             ),
-        ],
-      ),
+          ),
+        );
+      },
     );
   }
   
@@ -682,9 +583,9 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
   // Método para construir la información de promociones de un producto
   Widget _buildPromocionesInfo(Map<String, dynamic> producto) {
     // Verificar las promociones del producto
-    bool enLiquidacion = producto['enLiquidacion'] ?? false;
-    bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
-    bool tieneDescuentoPorcentual = producto['tieneDescuentoPorcentual'] ?? false;
+    final bool enLiquidacion = producto['enLiquidacion'] ?? false;
+    final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
+    final bool tieneDescuentoPorcentual = producto['tieneDescuentoPorcentual'] ?? false;
     
     // Si no hay promociones, no mostrar nada
     if (!enLiquidacion && !tienePromocionGratis && !tieneDescuentoPorcentual) {
@@ -707,9 +608,9 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
             _buildPromoChip(
               '${producto['descuentoPorcentaje']}% x ${producto['cantidadMinima']}+ unid.', 
               Colors.blue
-            ),
-        ],
-      ),
+              ),
+            ],
+          ),
     );
   }
   
@@ -719,7 +620,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
     final subtotal = producto['precio'] * producto['cantidad'];
     
     // Verificar si tiene liquidación para mostrar precio tachado
-    bool enLiquidacion = producto['enLiquidacion'] ?? false;
+    final bool enLiquidacion = producto['enLiquidacion'] ?? false;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -886,20 +787,24 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       
       if (productoEncontrado.isNotEmpty) {
         _agregarProducto(productoEncontrado);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Producto agregado: ${productoEncontrado['nombre']}'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Producto agregado: ${productoEncontrado['nombre']}'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } else {
         // Si no se encuentra el producto, mostrar mensaje de error
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Producto no encontrado: $codigoBarras'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Producto no encontrado: $codigoBarras'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -939,6 +844,8 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
           useCache: false, // No usar caché para obtener datos actualizados
         );
         
+        if (!mounted) return;
+        
         if (productoActual.stock < cantidad) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -955,12 +862,14 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       
     } catch (e) {
       debugPrint('Error al verificar stock: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al verificar disponibilidad de productos: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al verificar disponibilidad de productos: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
   
@@ -997,6 +906,8 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       
       // Actualizar stock de productos involucrados en la proforma
       await _actualizarStockProductos();
+      
+      if (!mounted) return;
       
       // Mostrar diálogo de confirmación
       await showDialog(
@@ -1180,7 +1091,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       ),
       body: Column(
         children: [
-          // Información del cliente y método de pago
+          // Información del cliente y acciones principales
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
@@ -1190,11 +1101,10 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                 bottomRight: Radius.circular(16),
               ),
             ),
-            child: Row(
+            child: Column(
               children: [
                 // Selección de cliente
-                Expanded(
-                  child: InkWell(
+                GestureDetector(
                     onTap: _mostrarDialogoClientes,
                     child: Container(
                       padding: const EdgeInsets.all(12),
@@ -1214,7 +1124,17 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: Text(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Cliente',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
                               _clienteSeleccionado != null
                                   ? _clienteSeleccionado!.denominacion
                                   : 'Seleccionar Cliente',
@@ -1222,92 +1142,72 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                                 color: _clienteSeleccionado != null
                                     ? Colors.white
                                     : Colors.white70,
+                                  fontWeight: _clienteSeleccionado != null
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
                               ),
                               overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                             ),
                           ),
                           const Icon(
-                            Icons.arrow_drop_down,
+                          Icons.person_search,
                             color: Colors.white70,
                           ),
                         ],
                       ),
-                    ),
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          // Botones de acción
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+                
+                const SizedBox(height: 12),
+                
+                // Botones de acción principales
+                Row(
               children: [
-                // Botón para escanear producto
+                    // Botón para escanear
                 Expanded(
                   child: ElevatedButton.icon(
-                    icon: const FaIcon(
-                      FontAwesomeIcons.barcode,
-                      size: 16,
-                    ),
-                    label: const Text('Escanear'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF9C27B0),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                       ),
                     ),
+                        icon: const FaIcon(FontAwesomeIcons.barcode, size: 16),
+                        label: const Text('Escanear'),
                     onPressed: _isLoading ? null : _escanearProducto,
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Botón para buscar producto
+                    // Botón para buscar
                 Expanded(
+                      flex: 2,
                   child: ElevatedButton.icon(
-                    icon: _isLoading && !_productosLoaded
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2196F3),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        icon: _isLoadingProductos
                         ? const SizedBox(
-                            width: 16,
-                            height: 16,
+                                width: 16, height: 16,
                             child: CircularProgressIndicator(
                               color: Colors.white,
                               strokeWidth: 2,
                             ),
                           )
-                        : const FaIcon(
-                            FontAwesomeIcons.magnifyingGlass,
-                            size: 16,
-                          ),
-                    label: Text(_isLoading && !_productosLoaded ? 'Cargando...' : 'Buscar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2196F3),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                      ),
-                    ),
+                            : const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 16),
+                        label: Text(_isLoadingProductos ? 'Cargando...' : 'Buscar Productos'),
                     onPressed: _isLoading ? null : _mostrarDialogoProductos,
                   ),
                 ),
-                const SizedBox(width: 8),
-                // Botón para limpiar venta
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const FaIcon(
-                      FontAwesomeIcons.trash,
-                      size: 16,
-                    ),
-                    label: const Text('Limpiar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE31E24),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                      ),
-                    ),
-                    onPressed: _limpiarVenta,
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -1347,17 +1247,33 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                                 fontSize: 14,
                               ),
                             ),
-                          ],
-                        ),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2196F3),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              icon: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 16),
+                              label: const Text('Buscar Productos'),
+                              onPressed: _mostrarDialogoProductos,
+                                      ),
+                                    ],
+                                  ),
                       )
                     : ListView.builder(
                         padding: EdgeInsets.all(isMobile ? 8 : 16),
                         itemCount: _productosVenta.length,
-                        itemBuilder: (context, index) => _buildProductoVentaItem(context, index),
+                        itemBuilder: _buildProductoVentaItem,
                       ),
           ),
 
-          // Total y botón de finalizar venta
+          // Total y botones de acción
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
@@ -1367,7 +1283,32 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                 topRight: Radius.circular(16),
               ),
             ),
-            child: Row(
+            child: Column(
+              children: [
+                // Acciones secundarias
+                if (_productosVenta.isNotEmpty)
+                  Row(
+                    children: [
+                      // Botón para limpiar venta
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF424242),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          icon: const FaIcon(FontAwesomeIcons.trash, size: 14),
+                          label: const Text('Limpiar'),
+                          onPressed: _limpiarVenta,
+                        ),
+                      ),
+                    ],
+                  ),
+                
+                const SizedBox(height: 12),
+                
+                // Total y botón finalizar
+                Row(
               children: [
                 // Total
                 Expanded(
@@ -1394,11 +1335,6 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                 ),
                 // Botón de finalizar venta
                 ElevatedButton.icon(
-                  icon: const FaIcon(
-                    FontAwesomeIcons.check,
-                    size: 16,
-                  ),
-                  label: const Text('Finalizar Venta'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4CAF50),
                     foregroundColor: Colors.white,
@@ -1406,8 +1342,17 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                       horizontal: 24,
                       vertical: 16,
                     ),
-                  ),
-                  onPressed: _finalizarVenta,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const FaIcon(FontAwesomeIcons.check, size: 16),
+                      label: const Text('Finalizar Venta'),
+                      onPressed: _productosVenta.isEmpty || _clienteSeleccionado == null 
+                          ? null 
+                          : _finalizarVenta,
+                    ),
+                  ],
                 ),
               ],
             ),

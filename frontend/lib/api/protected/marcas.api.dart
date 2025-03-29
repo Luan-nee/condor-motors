@@ -150,7 +150,6 @@ class MarcasApi {
       // Obtener todas las marcas a través de la paginación
       // Usando un tamaño de página grande para reducir peticiones
       final resultado = await getMarcasPaginadas(
-        page: 1,
         pageSize: 100, // Tamaño grande para obtener más marcas en una sola petición
         useCache: false, // No usar caché para la paginación interna
       );

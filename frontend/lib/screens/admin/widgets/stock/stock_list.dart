@@ -3,7 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../../models/producto.model.dart';
 import '../../../../models/sucursal.model.dart';
-import '../../utils/stock_utils.dart';
+import '../../../../utils/stock_utils.dart';
 import 'stock_detalle_sucursal.dart';
 
 class TableProducts extends StatelessWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../models/empleado.model.dart';
-import '../../utils/empleados_utils.dart';
+import '../../../../utils/empleados_utils.dart';
 import 'empleado_horario_dialog.dart';
 
 /// Widget para mostrar los detalles de un empleado
@@ -30,9 +30,7 @@ class EmpleadoDetallesViewer extends StatefulWidget {
 }
 
 class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
-  bool _isLoadingCuenta = false;
   String? _usuarioEmpleado;
-  String? _rolCuentaEmpleado;
   bool _cuentaNoEncontrada = false;
 
   @override
@@ -45,7 +43,6 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
 
   Future<void> _cargarInformacionCuenta() async {
     setState(() {
-      _isLoadingCuenta = true;
       _cuentaNoEncontrada = false;
     });
 
@@ -57,7 +54,6 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
       if (mounted) {
         setState(() {
           _usuarioEmpleado = resultado['usuarioActual'] as String?;
-          _rolCuentaEmpleado = resultado['rolCuentaActual'] as String?;
           _cuentaNoEncontrada = resultado['cuentaNoEncontrada'] as bool;
         });
 
@@ -80,7 +76,6 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
           setState(() {
             _cuentaNoEncontrada = true;
             _usuarioEmpleado = null;
-            _rolCuentaEmpleado = null;
           });
         }
         debugPrint(
@@ -100,7 +95,6 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoadingCuenta = false);
       }
     }
   }
