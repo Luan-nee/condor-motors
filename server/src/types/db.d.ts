@@ -80,6 +80,11 @@ interface SeedConfig {
     porcentaje: number
     codigoSunat: string
   }>
+  estadosDocFacturacion: Array<{
+    nombre: string
+    codigo: string
+    codigoSunat: string
+  }>
   sucursalesCount: number
   empleadosCount: number
   productosCount: number

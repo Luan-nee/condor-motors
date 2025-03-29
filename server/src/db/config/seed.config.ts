@@ -1,5 +1,6 @@
 import { envs } from '@/config/envs'
 import {
+  estadosDocFacturacion,
   estadosTransferenciasInvCodes,
   permissionCodes,
   tiposDocClienteCodes,
@@ -130,6 +131,43 @@ export const seedConfig: SeedConfig = {
       codigoSunat: '21',
       porcentaje: 0,
       codigo: tiposTaxCodes.gratuito
+    }
+  ],
+  estadosDocFacturacion: [
+    {
+      nombre: 'Registrado en el servicio de facturacion',
+      codigoSunat: '01',
+      codigo: estadosDocFacturacion.registrado
+    },
+    {
+      nombre: 'Enviado pero sin respuesta de la sunat',
+      codigoSunat: '03',
+      codigo: estadosDocFacturacion.enviadoSinRespuesta
+    },
+    {
+      nombre: 'Aceptado ante la sunat',
+      codigoSunat: '05',
+      codigo: estadosDocFacturacion.aceptadoSunat
+    },
+    {
+      nombre: 'Rechazado ante la sunat',
+      codigoSunat: '09',
+      codigo: estadosDocFacturacion.rechazadoSunat
+    },
+    {
+      nombre: 'Anulado ante la sunat',
+      codigoSunat: '11',
+      codigo: estadosDocFacturacion.anuladoSunat
+    },
+    {
+      nombre: 'Por anular ',
+      codigoSunat: '13',
+      codigo: estadosDocFacturacion.porAnular
+    },
+    {
+      nombre: 'Sin respuesta de la sunat',
+      codigoSunat: '19',
+      codigo: estadosDocFacturacion.sinRespuestaSunat
     }
   ],
   sucursalesCount: 3,

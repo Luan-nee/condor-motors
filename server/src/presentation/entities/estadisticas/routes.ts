@@ -6,11 +6,8 @@ export class EstadisticaRouter {
     const router = Router()
     const estadisticasController = new EstadisticasController()
 
-    router.get('/', estadisticasController.getReporteVentas)
-    router.get(
-      '/stockBajoLiquidacion',
-      estadisticasController.getStockBajoLiquidacion
-    )
+    router.get('/ventas', estadisticasController.getReporteVentas)
+    router.get('/productos', estadisticasController.getStockBajoLiquidacion)
     return router
   }
 }

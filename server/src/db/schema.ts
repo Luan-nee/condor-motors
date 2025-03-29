@@ -493,7 +493,7 @@ export const reservasProductosTable = pgTable('reservas_productos', {
  * Facturación
  */
 
-export const estadosDocFacturacion = pgTable('estados_doc_facturacion', {
+export const estadosDocFacturacionTable = pgTable('estados_doc_facturacion', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
   codigoSunat: text('codigo_sunat').notNull().unique(),
@@ -511,7 +511,9 @@ export const docsFacturacionTable = pgTable('docs_facturacion', {
   linkCdr: text('link_cdr'),
   estadoRawId: text('estado_raw_id'),
   informacionSunat: jsonb('informacion_sunat'),
-  estadoId: integer('estado_id').references(() => estadosDocFacturacion.id),
+  estadoId: integer('estado_id').references(
+    () => estadosDocFacturacionTable.id
+  ),
   ventaId: integer('venta_id')
     .notNull()
     .references(() => ventasTable.id)
