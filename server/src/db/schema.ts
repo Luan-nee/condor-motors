@@ -173,7 +173,8 @@ export const empleadosTable = pgTable('empleados', {
 export const tiposDocumentoClienteTable = pgTable('tipos_documento_cliente', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull().unique(),
-  codigoSunat: text('codigo_sunat').notNull().unique()
+  codigoSunat: text('codigo_sunat').notNull().unique(),
+  codigo: text('codigo').notNull().unique()
 })
 
 export const clientesTable = pgTable('clientes', {

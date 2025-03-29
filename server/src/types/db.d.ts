@@ -57,6 +57,7 @@ interface SeedConfig {
   tiposDocumentoClienteDefault: Array<{
     nombre: string
     codigoSunat: string
+    codigo: string
   }>
   tiposDocumentoFacturacionDefault: Array<{
     nombre: string

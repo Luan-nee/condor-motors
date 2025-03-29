@@ -2,6 +2,7 @@ import { envs } from '@/config/envs'
 import {
   estadosTransferenciasInvCodes,
   permissionCodes,
+  tiposDocClienteCodes,
   tiposDocFacturacionCodes,
   tiposTaxCodes
 } from '@/consts'
@@ -61,27 +62,33 @@ export const seedConfig: SeedConfig = {
   tiposDocumentoClienteDefault: [
     {
       nombre: 'RUC',
-      codigoSunat: '6'
+      codigoSunat: '6',
+      codigo: tiposDocClienteCodes.ruc
     },
     {
       nombre: 'DNI',
-      codigoSunat: '1'
+      codigoSunat: '1',
+      codigo: tiposDocClienteCodes.dni
     },
     {
       nombre: 'CARNET DE EXTRANJERÍA',
-      codigoSunat: '4'
+      codigoSunat: '4',
+      codigo: tiposDocClienteCodes.carnetExtranjeria
     },
     {
       nombre: 'PASAPORTE',
-      codigoSunat: '7'
+      codigoSunat: '7',
+      codigo: tiposDocClienteCodes.pasaporte
     },
     {
       nombre: 'CÉDULA DIPLOMÁTICA DE IDENTIDAD',
-      codigoSunat: 'A'
+      codigoSunat: 'A',
+      codigo: tiposDocClienteCodes.cedulaDiplomáticaIdentidad
     },
     {
       nombre: 'NO DOMICILIADO, SIN RUC',
-      codigoSunat: '0'
+      codigoSunat: '0',
+      codigo: tiposDocClienteCodes.noDomiciliadoSinRuc
     }
   ],
   tiposDocumentoFacturacionDefault: [
@@ -107,19 +114,19 @@ export const seedConfig: SeedConfig = {
   ],
   tiposTaxDefault: [
     {
-      nombre: 'Con impuestos... not stonks 📉📉📉',
+      nombre: 'Gravado (Con 18% de impuestos)',
       codigoSunat: '10',
       porcentaje: 18,
       codigo: tiposTaxCodes.gravado
     },
     {
-      nombre: 'Sin impuestos STONKS 📈📈📈',
+      nombre: 'Exonerado (Sin impuestos)',
       codigoSunat: '20',
       porcentaje: 0,
       codigo: tiposTaxCodes.exonerado
     },
     {
-      nombre: 'Gratis y sin impuestos stonks? 📉📈❔',
+      nombre: 'Gratuito (Producto gratuito)',
       codigoSunat: '21',
       porcentaje: 0,
       codigo: tiposTaxCodes.gratuito
