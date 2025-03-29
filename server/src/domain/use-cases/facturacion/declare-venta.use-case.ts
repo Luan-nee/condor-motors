@@ -6,7 +6,7 @@ import {
   clientesTable,
   detallesVentaTable,
   docsFacturacionTable,
-  estadosDocFacturacion,
+  estadosDocFacturacionTable,
   metodosPagoTable,
   monedasFacturacionTable,
   sucursalesTable,
@@ -224,11 +224,11 @@ export class DeclareVenta {
     }
 
     const estados = await db
-      .select({ id: estadosDocFacturacion.id })
-      .from(estadosDocFacturacion)
+      .select({ id: estadosDocFacturacionTable.id })
+      .from(estadosDocFacturacionTable)
       .where(
         eq(
-          estadosDocFacturacion.codigoSunat,
+          estadosDocFacturacionTable.codigoSunat,
           documentDataResponse.data.state_type_id
         )
       )

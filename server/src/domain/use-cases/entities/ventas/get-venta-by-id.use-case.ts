@@ -14,7 +14,8 @@ import {
   tiposDocFacturacionTable,
   tiposTaxTable,
   totalesVentaTable,
-  ventasTable
+  ventasTable,
+  estadosDocFacturacionTable
 } from '@/db/schema'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import type { SucursalIdType } from '@/types/schemas'
@@ -58,7 +59,9 @@ export class GetVentaById {
       totalTax: totalesVentaTable.totalTax,
       totalVenta: totalesVentaTable.totalVenta
     },
+    estado: estadosDocFacturacionTable.nombre,
     documentoFacturacion: {
+      id: docsFacturacionTable.id,
       factproDocumentId: docsFacturacionTable.factproDocumentId,
       hash: docsFacturacionTable.hash,
       qr: docsFacturacionTable.qr,
@@ -122,6 +125,10 @@ export class GetVentaById {
       .leftJoin(
         docsFacturacionTable,
         eq(ventasTable.id, docsFacturacionTable.ventaId)
+      )
+      .leftJoin(
+        estadosDocFacturacionTable,
+        eq(docsFacturacionTable.estadoId, estadosDocFacturacionTable.id)
       )
       .where(
         and(

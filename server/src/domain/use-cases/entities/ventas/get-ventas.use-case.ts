@@ -5,6 +5,7 @@ import { db } from '@/db/connection'
 import {
   docsFacturacionTable,
   empleadosTable,
+  estadosDocFacturacionTable,
   sucursalesTable,
   tiposDocFacturacionTable,
   totalesVentaTable,
@@ -42,9 +43,12 @@ export class GetVentas {
       totalTax: totalesVentaTable.totalTax,
       totalVenta: totalesVentaTable.totalVenta
     },
+    estado: estadosDocFacturacionTable.nombre,
     documentoFacturacion: {
+      id: docsFacturacionTable.id,
       qr: docsFacturacionTable.qr,
-      linkPdf: docsFacturacionTable.linkPdf
+      linkPdf: docsFacturacionTable.linkPdf,
+      estadoSunat: docsFacturacionTable.estadoRawId
     }
   }
 
@@ -72,6 +76,10 @@ export class GetVentas {
       .leftJoin(
         docsFacturacionTable,
         eq(ventasTable.id, docsFacturacionTable.ventaId)
+      )
+      .leftJoin(
+        estadosDocFacturacionTable,
+        eq(docsFacturacionTable.estadoId, estadosDocFacturacionTable.id)
       )
       .where(eq(ventasTable.sucursalId, sucursalId))
 
