@@ -4,6 +4,7 @@ import { CreateVentaDto } from '@/domain/dtos/entities/ventas/create-venta.dto'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { CreateVenta } from '@/domain/use-cases/entities/ventas/create-venta.use-case'
 import { GetVentaById } from '@/domain/use-cases/entities/ventas/get-venta-by-id.use-case'
+import { GetVentas } from '@/domain/use-cases/entities/ventas/get-ventas.use-case'
 import { GetInformacion } from '@/domain/use-cases/entities/ventas/getInformacion.use-case'
 import type { Request, Response } from 'express'
 
@@ -81,7 +82,18 @@ export class VentasController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    const { authPayload, sucursalId } = req
+
+    const getVentas = new GetVentas(authPayload)
+
+    getVentas
+      .execute(sucursalId)
+      .then((ventas) => {
+        CustomResponse.success({ res, data: ventas })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
   update = (req: Request, res: Response) => {

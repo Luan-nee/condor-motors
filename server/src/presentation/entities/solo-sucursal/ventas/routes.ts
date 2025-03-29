@@ -9,13 +9,14 @@ export class VentasRoutes {
 
     router.post('/', ventasController.create)
 
+    router.get('/informacion', ventasController.getInformacion)
+
     router.get('/:id', ventasController.getById)
 
     router.get('/', ventasController.getAll)
 
     router.patch('/:id', ventasController.update)
 
-    router.get('/informacion', ventasController.getInformacion)
     // router.delete('/:id', ventasController.delete)
 
     return router
