@@ -15,3 +15,10 @@ const syncDocumentSchema = z.object({
 
 export const syncDocumentValidator = (object: unknown) =>
   syncDocumentSchema.safeParse(object)
+
+const cancelDocumentSchema = z.object({
+  ventaId: facturacionSchema.ventaId
+})
+
+export const cancelDocumentValidator = (object: unknown) =>
+  cancelDocumentSchema.safeParse(object)

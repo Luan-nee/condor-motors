@@ -358,6 +358,8 @@ export const ventasTable = pgTable(
     }).notNull(),
     horaEmision: time('hora_emision').notNull(),
     declarada: boolean('declarada').notNull().default(false),
+    anulada: boolean('anulada').notNull().default(false),
+    motivoAnulado: text('motivo_anulado'),
     ...timestampsColumns
   },
   (t) => [unique().on(t.serieDocumento, t.numeroDocumento)]
