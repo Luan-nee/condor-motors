@@ -14,11 +14,27 @@ export class GetReporteVentas {
     if (hoy === undefined) {
       return []
     }
-    const valoresPrueba = {
-      startDate: fecha,
-      hoy
+    const primerDiaMes = new Date(fechaActual.getDate())
+    primerDiaMes.setDate(1)
+    const inicioMes = getOffsetDateTime(primerDiaMes, 5)
+
+    if (inicioMes === undefined) {
+      return []
     }
 
+    const ultimoDiaMes = new Date(fechaActual.getDate())
+    ultimoDiaMes.setMonth(ultimoDiaMes.getMonth() + 1, 0)
+    const finMes = getOffsetDateTime(ultimoDiaMes, 5)
+
+    if (finMes === undefined) {
+      return []
+    }
+
+    const getVentasMes = await db
+      .select({ ventasDelMes: count(ventasTable.id) })
+      .from(ventasTable)
+      .where(gte(ventasTable.fechaCreacion, inicioMes))
+    const [ventasMes] = getVentasMes
     const whereCondition = undefined
     // queriesDto.startDate instanceof Date && queriesDto.endDate instanceof Date
     //   ? and(
@@ -43,7 +59,7 @@ export class GetReporteVentas {
       .from(ventasTable)
       .where(gte(ventasTable.fechaCreacion, hoy))
 
-    const getVentas = await db
+    const getVentasSucursal = await db
       .select({
         nombreSucursal: sucursalesTable.nombre,
         totalVentas: count(),
@@ -62,12 +78,12 @@ export class GetReporteVentas {
       .groupBy(ventasTable.sucursalId, sucursalesTable.nombre)
 
     const [data] = dataTotal
-
+    const [ventasHoy] = getVentaHoy
     return {
       ...data,
-      getVentaHoy,
-      getVentas,
-      valoresPrueba
+      ...ventasMes,
+      ...ventasHoy,
+      getVentasSucursal
     }
   }
 
