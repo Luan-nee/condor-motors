@@ -6,6 +6,7 @@ import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { CreateProformaVenta } from '@/domain/use-cases/entities/proformas-venta/create-proforma-venta.use-case'
 import { DeleteProformaVenta } from '@/domain/use-cases/entities/proformas-venta/delete-proforma-venta.use-case'
+import { GetProformaVentaById } from '@/domain/use-cases/entities/proformas-venta/get-proforma-venta-by-id.use-case'
 import { GetProformasVenta } from '@/domain/use-cases/entities/proformas-venta/get-proformas-venta.use-case'
 import { UpdateProformaVenta } from '@/domain/use-cases/entities/proformas-venta/update-proforma-venta.use-case'
 import type { Request, Response } from 'express'
@@ -69,6 +70,37 @@ export class ProformasVentaController {
       .execute(queriesDto, sucursalId)
       .then((proformasVenta) => {
         CustomResponse.success({ res, data: proformasVenta })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
+
+  getById = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    if (req.sucursalId === undefined) {
+      CustomResponse.badRequest({ res, error: 'Id de sucursal inválido' })
+      return
+    }
+
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
+    const { authPayload, sucursalId } = req
+
+    const getProformaVentaById = new GetProformaVentaById(authPayload)
+
+    getProformaVentaById
+      .execute(numericIdDto, sucursalId)
+      .then((proformaVenta) => {
+        CustomResponse.success({ res, data: proformaVenta })
       })
       .catch((error: unknown) => {
         handleError(error, res)

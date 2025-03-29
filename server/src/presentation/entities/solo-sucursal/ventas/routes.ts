@@ -9,6 +9,8 @@ export class VentasRoutes {
 
     router.post('/', ventasController.create)
 
+    router.post('/:id/cancelar', ventasController.cancelar)
+
     router.get('/informacion', ventasController.getInformacion)
 
     router.get('/:id', ventasController.getById)
@@ -16,8 +18,6 @@ export class VentasRoutes {
     router.get('/', ventasController.getAll)
 
     router.patch('/:id', ventasController.update)
-
-    // router.delete('/:id', ventasController.delete)
 
     return router
   }

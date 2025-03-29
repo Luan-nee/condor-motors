@@ -1,14 +1,16 @@
 import { updateProformaVentaValidator } from '@/domain/validators/entities/proformas-venta/proforma-venta.validator'
 
 export class UpdateProformaVentaDto {
-  public nombre?: string
+  public nombre?: string | null
+  public clienteId?: number | null
   public detalles?: Array<{
     productoId: number
     cantidad: number
   }>
 
-  constructor({ nombre, detalles }: UpdateProformaVentaDto) {
+  constructor({ nombre, clienteId, detalles }: UpdateProformaVentaDto) {
     this.nombre = nombre
+    this.clienteId = clienteId
     this.detalles = detalles
   }
 

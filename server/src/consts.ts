@@ -22,7 +22,7 @@ export const defaultQueries = {
   sort_by: '',
   order: orderValues.desc,
   page: 1,
-  page_size: 10,
+  page_size: 50,
   filter: '',
   filter_value: undefined,
   filter_type: filterTypeValues.eq
@@ -79,7 +79,9 @@ export const permissionCodes = {
     declareAny: 'facturacion:declare_any',
     declareRelated: 'facturacion:declare_related',
     syncAny: 'facturacion:sync_any',
-    syncRelated: 'facturacion:sync_related'
+    syncRelated: 'facturacion:sync_related',
+    cancelAny: 'facturacion:cancel_any',
+    cancelRelated: 'facturacion:cancel_related'
   },
   categorias: {
     createAny: 'categorias:create_any'

@@ -6,10 +6,13 @@ export class FacturacionRoutes {
   static get routes() {
     const router = Router()
 
-    const ventasController = new FacturacionController(ServicioFacturacion)
+    const facturacionController = new FacturacionController(ServicioFacturacion)
 
-    router.post('/declarar', ventasController.declare)
-    router.post('/consultar', ventasController.sync)
+    router.post('/declarar', facturacionController.declare)
+
+    router.post('/consultar', facturacionController.sync)
+
+    router.post('/anular', facturacionController.anular)
 
     return router
   }

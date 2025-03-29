@@ -1,17 +1,24 @@
 import { createProformaVentaValidator } from '@/domain/validators/entities/proformas-venta/proforma-venta.validator'
 
 export class CreateProformaVentaDto {
-  public nombre?: string
+  public nombre?: string | null
   public empleadoId: number
+  public clienteId?: number | null
   public detalles: Array<{
     productoId: number
     cantidad: number
   }>
 
-  constructor({ nombre, detalles, empleadoId }: CreateProformaVentaDto) {
+  constructor({
+    nombre,
+    detalles,
+    empleadoId,
+    clienteId
+  }: CreateProformaVentaDto) {
     this.nombre = nombre
     this.detalles = detalles
     this.empleadoId = empleadoId
+    this.clienteId = clienteId
   }
 
   static validate(input: any): [string?, CreateProformaVentaDto?] {

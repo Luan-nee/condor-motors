@@ -1,13 +1,17 @@
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' as models;
 import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart' show NumericKeypad, ProcessingDialog;
 import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart' as form_widget show ProformaSaleDialog;
+import 'package:condorsmotors/screens/computer/widgets/proforma_conversion_utils.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
+import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 
 /// Clase utilitaria para operaciones con ventas y formateo de montos
 /// 
@@ -1039,98 +1043,71 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         _isLoading = true;
       });
       
-      // Mostrar diálogo de procesamiento
-      if (mounted) {
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) => const ProcessingDialog(
-            documentType: 'venta',
-          ),
-        );
-      }
-      
       // Obtener sucursalId
       final int? sucursalId = await VentasPendientesUtils.obtenerSucursalId();
       if (sucursalId == null) {
         debugPrint('Error: No se pudo obtener el ID de sucursal');
+        setState(() {
+          _isLoading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se pudo obtener el ID de sucursal'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         return;
       }
       
-      // Buscar la proforma completa en _proformasObj para tener toda la información
-      final models.Proforma proformaCompleta = _proformasObj.firstWhere(
-        (models.Proforma p) => p.id == proformaId,
-        orElse: () {
-          throw Exception('No se encontró la proforma con ID: $proformaId');
+      // Preparar tipo de documento (BOLETA o FACTURA)
+      final String tipoDocumento = ventaData['tipoDocumento'] as String? ?? 'BOLETA';
+      
+      // Procesar la conversión usando la clase de utilidad
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => ProcessingDialog(documentType: tipoDocumento.toLowerCase()),
+      );
+      
+      final bool exito = await ProformaConversionManager.convertirProformaAVenta(
+        context: context,
+        sucursalId: sucursalId.toString(),
+        proformaId: proformaId,
+        tipoDocumento: tipoDocumento,
+        onSuccess: () {
+          debugPrint('Proforma #$proformaId convertida exitosamente a $tipoDocumento');
+          _cargarVentas();
+          _cargarProformas();
         },
       );
       
-      // Preparar datos para la conversión
-      final Map<String, dynamic> datosVenta = <String, dynamic>{
-        'metodoPago': ventaData['metodoPago'] ?? 'EFECTIVO',
-        'tipoDocumento': ventaData['tipoDocumento'] ?? 'BOLETA',
-        'cliente': ventaData['cliente'],
-        'total': ventaData['total'],
-        // Convertir detalles a formato esperado por la API
-        'productos': _convertirDetallesAProductos(ventaData['detalles']),
-      };
-      
-      // Agregar información sobre promociones si la proforma está disponible
-      datosVenta['observaciones'] = 'Convertida de Proforma #${proformaCompleta.id}';
-      
-      // Contar productos con promociones
-      final List<models.DetalleProforma> detallesConPromociones = proformaCompleta.detalles
-          .where((models.DetalleProforma d) => _tienePromocion(d))
-          .toList();
-      
-      if (detallesConPromociones.isNotEmpty) {
-        datosVenta['tienePromociones'] = true;
-        debugPrint('La venta incluye ${detallesConPromociones.length} productos con promociones');
-      }
-          
-      // Llamar a la API para convertir la proforma en venta
-      await _proformasApi.convertirProformaAVenta(
-        sucursalId: sucursalId.toString(),
-        proformaId: proformaId,
-        datosVenta: datosVenta,
-      );
-      
-      // Cerrar diálogo de procesamiento
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
+      // Cerrar diálogo de procesamiento (la clase ProformaConversionManager ya se encarga de esto)
+      if (context.mounted && Navigator.canPop(context)) {
+        Navigator.of(context, rootNavigator: true).pop();
       }
       
-      // Mostrar mensaje de éxito
+      if (!exito) {
+        debugPrint('No se pudo convertir la proforma #$proformaId a venta');
+      }
+      
+    } catch (e) {
+      debugPrint('Error al convertir proforma a venta: $e');
+      
+      // Cerrar diálogo de procesamiento si está abierto
+      if (context.mounted && Navigator.canPop(context)) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Proforma convertida a venta exitosamente'),
-            action: SnackBarAction(
-              label: 'Ver Ventas',
-              onPressed: _cargarVentas,
-            ),
-            backgroundColor: Colors.green,
+            content: Text('Error al convertir proforma a venta: $e'),
+            backgroundColor: Colors.red,
           ),
         );
       }
-      
-      // Recargar datos
-      await _cargarVentasPendientes();
-      await _cargarProformas();
-    } catch (e) {
-      debugPrint('Error al convertir proforma a venta: $e');
-      // Cerrar diálogo de procesamiento
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      
-      // Mostrar mensaje de error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al convertir proforma a venta: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
     } finally {
       if (mounted) {
         setState(() {
@@ -1140,40 +1117,6 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     }
   }
 
-  /// Convierte detalles de proforma a formato de productos esperado por la API
-  List<Map<String, dynamic>> _convertirDetallesAProductos(List<dynamic> detalles) {
-    return detalles.map<Map<String, dynamic>>((detalle) {
-      if (detalle is models.DetalleProforma) {
-        return <String, dynamic>{
-          'id': detalle.productoId,
-          'nombre': detalle.nombre,
-          'precio': detalle.precioUnitario,
-          'cantidad': detalle.cantidad,
-          'sku': detalle.sku,
-          'marca': detalle.marca,
-          'categoria': detalle.categoria,
-        };
-      } else if (detalle is Map<String, dynamic>) {
-        return <String, dynamic>{
-          'id': detalle['productoId'],
-          'nombre': detalle['nombre'],
-          'precio': detalle['precioUnitario'],
-          'cantidad': detalle['cantidad'],
-          'sku': detalle['sku'],
-          'marca': detalle['marca'],
-          'categoria': detalle['categoria'],
-        };
-      }
-      return <String, dynamic>{};
-    }).toList();
-  }
-
-  /// Carga las ventas pendientes para mostrarlas en la interfaz
-  Future<void> _cargarVentasPendientes() async {
-    // Recargar las ventas normales y proformas
-    await _cargarProformas();
-    await _cargarVentas();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1474,11 +1417,11 @@ class PendingSalesWidget extends StatelessWidget {
   final VoidCallback onReload;
 
   const PendingSalesWidget({
-    Key? key,
+    super.key,
     required this.ventasPendientes,
     required this.onSaleSelected,
     required this.onReload,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1640,5 +1583,13 @@ class PendingSalesWidget extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties..add(ObjectFlagProperty<VoidCallback>.has('onReload', onReload))
+    ..add(IterableProperty<Map<String, dynamic>>('ventasPendientes', ventasPendientes))
+  ..add(ObjectFlagProperty<Function(Map<String, dynamic> p1)>.has('onSaleSelected', onSaleSelected));
   }
 } 
