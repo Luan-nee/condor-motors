@@ -18,17 +18,17 @@ class TableProducts extends StatelessWidget {
   final Function(String)? onSort;
   final String? sortBy;
   final String? sortOrder;
-  
+
   // Nuevos parámetros para la vista consolidada
   final Map<int, Map<String, int>>? stockPorSucursal;
   final List<Sucursal>? sucursales;
   final bool esVistaGlobal;
-  
+
   // Nuevo parámetro para indicar si hay filtros activos
   final bool filtrosActivos;
-  
+
   const TableProducts({
-    super.key, 
+    super.key,
     required this.selectedSucursalId,
     this.productos,
     this.isLoading = false,
@@ -55,7 +55,7 @@ class TableProducts extends StatelessWidget {
     'Estado',
     'Acciones',
   ];
-  
+
   // Encabezados para la vista global
   final List<String> _globalColumnHeaders = const <String>[
     'Producto',
@@ -76,7 +76,7 @@ class TableProducts extends StatelessWidget {
         ),
       );
     }
-    
+
     // Mostrar mensaje de error si ocurrió alguno
     if (error != null) {
       return Center(
@@ -110,7 +110,7 @@ class TableProducts extends StatelessWidget {
         ),
       );
     }
-    
+
     // Si no hay sucursal seleccionada y no estamos en vista global, mostrar mensaje
     if (selectedSucursalId.isEmpty && !esVistaGlobal) {
       return const Center(
@@ -120,22 +120,24 @@ class TableProducts extends StatelessWidget {
         ),
       );
     }
-    
+
     // Si no hay productos para esta sucursal o vista
     if (productos == null || productos!.isEmpty) {
       // Determinar si es probable que haya filtros aplicados
-      final bool hayFiltrosAplicados = 
-          filtrosActivos || esVistaGlobal; // La vista global o cuando hay filtros explícitos
-      
+      final bool hayFiltrosAplicados = filtrosActivos ||
+          esVistaGlobal; // La vista global o cuando hay filtros explícitos
+
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             // Usar un icono diferente cuando no hay productos por filtros
             Icon(
-              hayFiltrosAplicados 
-                  ? FontAwesomeIcons.filter // Icono de filtro cuando hay filtros aplicados
-                  : FontAwesomeIcons.boxOpen, // Icono de caja vacía para otros casos
+              hayFiltrosAplicados
+                  ? FontAwesomeIcons
+                      .filter // Icono de filtro cuando hay filtros aplicados
+                  : FontAwesomeIcons
+                      .boxOpen, // Icono de caja vacía para otros casos
               color: hayFiltrosAplicados ? Colors.amber : Colors.white54,
               size: 64,
             ),
@@ -143,7 +145,7 @@ class TableProducts extends StatelessWidget {
             Text(
               hayFiltrosAplicados
                   ? 'No se encontraron productos'
-                  : (esVistaGlobal 
+                  : (esVistaGlobal
                       ? 'No hay productos con problemas de stock'
                       : 'No hay productos en esta sucursal'),
               style: const TextStyle(
@@ -157,7 +159,7 @@ class TableProducts extends StatelessWidget {
             Text(
               hayFiltrosAplicados
                   ? 'Ningún producto coincide con los filtros o criterios de búsqueda aplicados'
-                  : (esVistaGlobal 
+                  : (esVistaGlobal
                       ? 'Todos los productos tienen niveles de stock adecuados en las sucursales'
                       : 'Considera agregar productos a esta sucursal'),
               style: TextStyle(
@@ -169,15 +171,18 @@ class TableProducts extends StatelessWidget {
             if (hayFiltrosAplicados) ...<Widget>[
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: onRetry ?? () {
-                        debugPrint('No se configuró un manejador para reiniciar filtros');
-                      },
+                onPressed: onRetry ??
+                    () {
+                      debugPrint(
+                          'No se configuró un manejador para reiniciar filtros');
+                    },
                 icon: const Icon(FontAwesomeIcons.arrowsRotate, size: 16),
                 label: const Text('Reiniciar filtros'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2D2D2D),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   textStyle: const TextStyle(fontSize: 16),
                 ),
               ),
@@ -198,13 +203,15 @@ class TableProducts extends StatelessWidget {
     }
 
     // Agrupar productos por estado de stock
-    final Map<StockStatus, List<Producto>> productosAgrupados = 
+    final Map<StockStatus, List<Producto>> productosAgrupados =
         StockUtils.agruparProductosPorEstadoStock(productos!);
-    
+
     // Contadores para cada grupo
     final int agotadosCount = productosAgrupados[StockStatus.agotado]!.length;
-    final int stockBajoCount = productosAgrupados[StockStatus.stockBajo]!.length;
-    final int disponiblesCount = productosAgrupados[StockStatus.disponible]!.length;
+    final int stockBajoCount =
+        productosAgrupados[StockStatus.stockBajo]!.length;
+    final int disponiblesCount =
+        productosAgrupados[StockStatus.disponible]!.length;
 
     return Container(
       width: double.infinity,
@@ -220,57 +227,46 @@ class TableProducts extends StatelessWidget {
             color: const Color(0xFF2D2D2D),
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             child: Row(
-              children: esVistaGlobal 
-                  ? _buildGlobalHeaders() 
+              children: esVistaGlobal
+                  ? _buildGlobalHeaders()
                   : _buildStandardHeaders(),
             ),
           ),
-          
+
           // Lista de productos agrupados por estado
           Expanded(
             child: ListView(
               children: <Widget>[
                 // Grupo 1: Productos agotados (muestro primero los más críticos)
                 if (agotadosCount > 0) ...<Widget>[
-                  _buildGroupHeader(
-                    'Productos agotados', 
-                    agotadosCount, 
-                    Colors.red.shade800, 
-                    FontAwesomeIcons.ban
-                  ),
-                  ...productosAgrupados[StockStatus.agotado]!.map((Producto producto) => 
-                    esVistaGlobal
-                        ? _buildGlobalProductRow(context, producto)
-                        : _buildProductRow(context, producto)
-                  ),
+                  _buildGroupHeader('Productos agotados', agotadosCount,
+                      Colors.red.shade800, FontAwesomeIcons.ban),
+                  ...productosAgrupados[StockStatus.agotado]!.map(
+                      (Producto producto) => esVistaGlobal
+                          ? _buildGlobalProductRow(context, producto)
+                          : _buildProductRow(context, producto)),
                 ],
-                
+
                 // Grupo 2: Productos con stock bajo
                 if (stockBajoCount > 0) ...<Widget>[
                   _buildGroupHeader(
-                    'Productos con stock bajo', 
-                    stockBajoCount, 
-                    const Color(0xFFE31E24), 
-                    FontAwesomeIcons.triangleExclamation
-                  ),
-                  ...productosAgrupados[StockStatus.stockBajo]!.map((Producto producto) => 
-                    esVistaGlobal
-                        ? _buildGlobalProductRow(context, producto)
-                        : _buildProductRow(context, producto)
-                  ),
+                      'Productos con stock bajo',
+                      stockBajoCount,
+                      const Color(0xFFE31E24),
+                      FontAwesomeIcons.triangleExclamation),
+                  ...productosAgrupados[StockStatus.stockBajo]!.map(
+                      (Producto producto) => esVistaGlobal
+                          ? _buildGlobalProductRow(context, producto)
+                          : _buildProductRow(context, producto)),
                 ],
-                
+
                 // Grupo 3: Productos disponibles (solo si no estamos en vista global)
                 if (disponiblesCount > 0 && !esVistaGlobal) ...<Widget>[
-                  _buildGroupHeader(
-                    'Productos disponibles', 
-                    disponiblesCount, 
-                    Colors.green, 
-                    FontAwesomeIcons.check
-                  ),
-                  ...productosAgrupados[StockStatus.disponible]!.map((Producto producto) => 
-                    _buildProductRow(context, producto)
-                  ),
+                  _buildGroupHeader('Productos disponibles', disponiblesCount,
+                      Colors.green, FontAwesomeIcons.check),
+                  ...productosAgrupados[StockStatus.disponible]!.map(
+                      (Producto producto) =>
+                          _buildProductRow(context, producto)),
                 ],
               ],
             ),
@@ -279,7 +275,7 @@ class TableProducts extends StatelessWidget {
       ),
     );
   }
-  
+
   // Método para construir los encabezados en vista estándar
   List<Widget> _buildStandardHeaders() {
     return <Widget>[
@@ -366,7 +362,7 @@ class TableProducts extends StatelessWidget {
       ),
     ];
   }
-  
+
   // Método para construir los encabezados en vista global
   List<Widget> _buildGlobalHeaders() {
     return <Widget>[
@@ -441,8 +437,9 @@ class TableProducts extends StatelessWidget {
       ),
     ];
   }
-  
-  Widget _buildGroupHeader(String title, int count, Color color, IconData icon) {
+
+  Widget _buildGroupHeader(
+      String title, int count, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       color: color.withOpacity(0.15),
@@ -487,12 +484,15 @@ class TableProducts extends StatelessWidget {
   Widget _buildProductRow(BuildContext context, Producto producto) {
     final int stockActual = producto.stock;
     final int stockMinimo = producto.stockMinimo ?? 0;
-    
+
     // Determinar color e icono según el estado
-    final Color statusColor = StockUtils.getStockStatusColor(stockActual, stockMinimo);
-    final IconData statusIcon = StockUtils.getStockStatusIcon(stockActual, stockMinimo);
-    final String statusText = StockUtils.getStockStatusText(stockActual, stockMinimo);
-    
+    final Color statusColor =
+        StockUtils.getStockStatusColor(stockActual, stockMinimo);
+    final IconData statusIcon =
+        StockUtils.getStockStatusIcon(stockActual, stockMinimo);
+    final String statusText =
+        StockUtils.getStockStatusText(stockActual, stockMinimo);
+
     return Container(
       decoration: BoxDecoration(
         border: Border(
@@ -536,11 +536,13 @@ class TableProducts extends StatelessWidget {
                           if (producto.liquidacion)
                             Container(
                               margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.orange.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                                border: Border.all(
+                                    color: Colors.orange.withOpacity(0.5)),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -564,7 +566,8 @@ class TableProducts extends StatelessWidget {
                             ),
                         ],
                       ),
-                      if (producto.descripcion != null && producto.descripcion!.isNotEmpty) ...<Widget>[
+                      if (producto.descripcion != null &&
+                          producto.descripcion!.isNotEmpty) ...<Widget>[
                         const SizedBox(height: 4),
                         Text(
                           producto.descripcion!,
@@ -577,7 +580,8 @@ class TableProducts extends StatelessWidget {
                         ),
                       ],
                       // Mostrar precio de liquidación si aplica
-                      if (producto.liquidacion && producto.precioOferta != null) ...<Widget>[
+                      if (producto.liquidacion &&
+                          producto.precioOferta != null) ...<Widget>[
                         const SizedBox(height: 4),
                         Row(
                           children: <Widget>[
@@ -653,7 +657,8 @@ class TableProducts extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -742,26 +747,31 @@ class TableProducts extends StatelessWidget {
       ),
     );
   }
-  
+
   // Método para construir una fila de producto en vista global (todas las sucursales)
   Widget _buildGlobalProductRow(BuildContext context, Producto producto) {
     final int stockActual = producto.stock;
     final int stockMinimo = producto.stockMinimo ?? 0;
-    
+
     // Determinar color e icono según el estado
-    final Color statusColor = StockUtils.getStockStatusColor(stockActual, stockMinimo);
-    final IconData statusIcon = StockUtils.getStockStatusIcon(stockActual, stockMinimo);
-    final String statusText = StockUtils.getStockStatusText(stockActual, stockMinimo);
-    
+    final Color statusColor =
+        StockUtils.getStockStatusColor(stockActual, stockMinimo);
+    final IconData statusIcon =
+        StockUtils.getStockStatusIcon(stockActual, stockMinimo);
+    final String statusText =
+        StockUtils.getStockStatusText(stockActual, stockMinimo);
+
     // Obtener datos de stock por sucursal
-    final Map<String, int> stocks = stockPorSucursal?[producto.id] ?? <String, int>{};
-    
+    final Map<String, int> stocks =
+        stockPorSucursal?[producto.id] ?? <String, int>{};
+
     // Calcular cuántas sucursales tienen stock bajo o agotado para este producto
     final int sucursalesConProblemas = stocks.entries
-        .where((MapEntry<String, int> entry) => entry.value <= 0 || // Agotado
-                         (entry.value < (producto.stockMinimo ?? 0))) // Stock bajo
+        .where((MapEntry<String, int> entry) =>
+            entry.value <= 0 || // Agotado
+            (entry.value < (producto.stockMinimo ?? 0))) // Stock bajo
         .length;
-    
+
     return Container(
       decoration: BoxDecoration(
         border: Border(
@@ -805,11 +815,13 @@ class TableProducts extends StatelessWidget {
                           if (producto.liquidacion)
                             Container(
                               margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.orange.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                                border: Border.all(
+                                    color: Colors.orange.withOpacity(0.5)),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -833,7 +845,8 @@ class TableProducts extends StatelessWidget {
                             ),
                         ],
                       ),
-                      if (producto.descripcion != null && producto.descripcion!.isNotEmpty) ...<Widget>[
+                      if (producto.descripcion != null &&
+                          producto.descripcion!.isNotEmpty) ...<Widget>[
                         const SizedBox(height: 4),
                         Text(
                           producto.descripcion!,
@@ -846,7 +859,8 @@ class TableProducts extends StatelessWidget {
                         ),
                       ],
                       // Mostrar precio de liquidación si aplica
-                      if (producto.liquidacion && producto.precioOferta != null) ...<Widget>[
+                      if (producto.liquidacion &&
+                          producto.precioOferta != null) ...<Widget>[
                         const SizedBox(height: 4),
                         Row(
                           children: <Widget>[
@@ -874,7 +888,8 @@ class TableProducts extends StatelessWidget {
                       if (sucursalesConProblemas > 0) ...<Widget>[
                         const SizedBox(height: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: const Color(0xFFE31E24).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
@@ -920,7 +935,8 @@ class TableProducts extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -995,7 +1011,7 @@ class TableProducts extends StatelessWidget {
       ),
     );
   }
-  
+
   // Widget para mostrar indicadores de stock para cada sucursal
   Widget _buildSucursalesStockIndicators(Map<String, int> stocks) {
     if (sucursales == null || sucursales!.isEmpty || stocks.isEmpty) {
@@ -1006,63 +1022,61 @@ class TableProducts extends StatelessWidget {
         ),
       );
     }
-    
+
     // Determinar qué sucursales tienen problemas de stock para este producto
     final List<Sucursal> sucursalesConProblemas = <Sucursal>[];
     final List<Sucursal> sucursalesNormales = <Sucursal>[];
     final List<Sucursal> sucursalesAgotadas = <Sucursal>[];
-    
+
     for (final Sucursal sucursal in sucursales!) {
       final int stock = stocks[sucursal.id] ?? 0;
-      if (stock <= 0) { 
+      if (stock <= 0) {
         // Si el stock es nulo o cero (agotado)
         sucursalesAgotadas.add(sucursal);
-      } else if (stock < 5) { 
+      } else if (stock < 5) {
         // Si el stock es bajo (usar producto.stockMinimo sería mejor)
         sucursalesConProblemas.add(sucursal);
       } else {
         sucursalesNormales.add(sucursal);
       }
     }
-    
+
     // Calcular porcentajes para mostrar estadística
     final int totalSucursales = sucursales!.length;
-    final int porcentajeAgotadas = (sucursalesAgotadas.length / totalSucursales * 100).round();
-    final int porcentajeBajo = (sucursalesConProblemas.length / totalSucursales * 100).round();
-    
+    final int porcentajeAgotadas =
+        (sucursalesAgotadas.length / totalSucursales * 100).round();
+    final int porcentajeBajo =
+        (sucursalesConProblemas.length / totalSucursales * 100).round();
+
     // Si hay más de 50% de sucursales con problemas, mostrar un indicador de alerta global
     final bool mostrarAlertaGlobal = (porcentajeAgotadas + porcentajeBajo) > 50;
-    
+
     // Mostrar primero las sucursales con problemas y luego otras (si hay espacio)
     final List<Sucursal> sucursalesMostradas = <Sucursal>[];
-    
+
     // Priorizar mostrar las sucursales agotadas primero
     if (sucursalesAgotadas.isNotEmpty) {
-      sucursalesMostradas.addAll(
-        sucursalesAgotadas.length > 2 ? sucursalesAgotadas.sublist(0, 2) : sucursalesAgotadas
-      );
+      sucursalesMostradas.addAll(sucursalesAgotadas.length > 2
+          ? sucursalesAgotadas.sublist(0, 2)
+          : sucursalesAgotadas);
     }
-    
+
     // Luego las que tienen stock bajo
     if (sucursalesMostradas.length < 3 && sucursalesConProblemas.isNotEmpty) {
       final int espacioRestante = 3 - sucursalesMostradas.length;
-      sucursalesMostradas.addAll(
-        sucursalesConProblemas.length > espacioRestante 
-            ? sucursalesConProblemas.sublist(0, espacioRestante) 
-            : sucursalesConProblemas
-      );
+      sucursalesMostradas.addAll(sucursalesConProblemas.length > espacioRestante
+          ? sucursalesConProblemas.sublist(0, espacioRestante)
+          : sucursalesConProblemas);
     }
-    
+
     // Por último, si queda espacio, mostrar alguna sucursal normal
     if (sucursalesMostradas.length < 3 && sucursalesNormales.isNotEmpty) {
       final int espacioRestante = 3 - sucursalesMostradas.length;
-      sucursalesMostradas.addAll(
-        sucursalesNormales.length > espacioRestante 
-            ? sucursalesNormales.sublist(0, espacioRestante) 
-            : sucursalesNormales
-      );
+      sucursalesMostradas.addAll(sucursalesNormales.length > espacioRestante
+          ? sucursalesNormales.sublist(0, espacioRestante)
+          : sucursalesNormales);
     }
-    
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -1086,7 +1100,7 @@ class TableProducts extends StatelessWidget {
             ),
           ),
         ],
-        
+
         // Mostrar los indicadores de sucursales
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1096,7 +1110,7 @@ class TableProducts extends StatelessWidget {
               final Color color = stock <= 0
                   ? Colors.red.shade800
                   : (stock < 5 ? const Color(0xFFE31E24) : Colors.green);
-              
+
               return Tooltip(
                 message: '${sucursal.nombre}: $stock unidades',
                 child: Container(
@@ -1132,18 +1146,20 @@ class TableProducts extends StatelessWidget {
                 ),
               );
             }),
-            
+
             // Mostrar cuántas sucursales con problemas hay si no pudimos mostrarlas todas
             if (sucursalesAgotadas.length + sucursalesConProblemas.length > 3)
               Tooltip(
-                message: 'Hay ${(sucursalesAgotadas.length + sucursalesConProblemas.length) - sucursalesMostradas.length} sucursales más con problemas de stock',
+                message:
+                    'Hay ${(sucursalesAgotadas.length + sucursalesConProblemas.length) - sucursalesMostradas.length} sucursales más con problemas de stock',
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE31E24).withOpacity(0.2),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: const Color(0xFFE31E24).withOpacity(0.3)),
+                    border: Border.all(
+                        color: const Color(0xFFE31E24).withOpacity(0.3)),
                   ),
                   child: Text(
                     '+${(sucursalesAgotadas.length + sucursalesConProblemas.length) - sucursalesMostradas.length}',
@@ -1170,13 +1186,17 @@ class TableProducts extends StatelessWidget {
       ..add(DiagnosticsProperty<bool>('isLoading', isLoading))
       ..add(StringProperty('error', error))
       ..add(ObjectFlagProperty<VoidCallback?>.has('onRetry', onRetry))
-      ..add(ObjectFlagProperty<Function(Producto)?>.has('onEditProducto', onEditProducto))
-      ..add(ObjectFlagProperty<Function(Producto)?>.has('onVerDetalles', onVerDetalles))
-      ..add(ObjectFlagProperty<Function(Producto)?>.has('onVerStockDetalles', onVerStockDetalles))
+      ..add(ObjectFlagProperty<Function(Producto)?>.has(
+          'onEditProducto', onEditProducto))
+      ..add(ObjectFlagProperty<Function(Producto)?>.has(
+          'onVerDetalles', onVerDetalles))
+      ..add(ObjectFlagProperty<Function(Producto)?>.has(
+          'onVerStockDetalles', onVerStockDetalles))
       ..add(ObjectFlagProperty<Function(String)?>.has('onSort', onSort))
       ..add(StringProperty('sortBy', sortBy))
       ..add(StringProperty('sortOrder', sortOrder))
-      ..add(DiagnosticsProperty<Map<int, Map<String, int>>?>('stockPorSucursal', stockPorSucursal))
+      ..add(DiagnosticsProperty<Map<int, Map<String, int>>?>(
+          'stockPorSucursal', stockPorSucursal))
       ..add(IterableProperty<Sucursal>('sucursales', sucursales))
       ..add(DiagnosticsProperty<bool>('esVistaGlobal', esVistaGlobal))
       ..add(DiagnosticsProperty<bool>('filtrosActivos', filtrosActivos));
@@ -1184,98 +1204,118 @@ class TableProducts extends StatelessWidget {
 }
 
 /// Widget para mostrar un resumen del inventario
-class InventarioResumen extends StatelessWidget {
+class InventarioResumen extends StatefulWidget {
   final List<Producto> productos;
   final String? sucursalNombre;
-  
+
   const InventarioResumen({
     super.key,
     required this.productos,
     this.sucursalNombre,
   });
-  
+
+  @override
+  _InventarioResumenState createState() => _InventarioResumenState();
+}
+
+class _InventarioResumenState extends State<InventarioResumen> {
+  bool _isExpanded = false;
+
   @override
   Widget build(BuildContext context) {
-    if (productos.isEmpty) {
+    if (widget.productos.isEmpty) {
       return const SizedBox.shrink();
     }
-    
+
     // Agrupar productos por disponibilidad usando la nueva función
-    final Map<StockStatus, List<Producto>> agrupados = StockUtils.agruparProductosPorEstadoStock(productos);
-    
+    final Map<StockStatus, List<Producto>> agrupados =
+        StockUtils.agruparProductosPorEstadoStock(widget.productos);
+
     // Obtener contadores
     final int agotadosCount = agrupados[StockStatus.agotado]!.length;
     final int stockBajoCount = agrupados[StockStatus.stockBajo]!.length;
     final int disponiblesCount = agrupados[StockStatus.disponible]!.length;
-    
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: const Color(0xFF2D2D2D),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            sucursalNombre != null ? 'Resumen de $sucursalNombre' : 'Resumen del Inventario',
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent, // Elimina las líneas divisoras
+        ),
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.zero, // Elimina el padding interno
+          title: Text(
+            widget.sucursalNombre != null
+                ? 'Resumen de ${widget.sucursalNombre}'
+                : 'Resumen del Inventario',
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: _buildStatCard(
-                  'Productos agotados', 
-                  agotadosCount.toString(),
-                  FontAwesomeIcons.ban,
-                  Colors.red.shade800,
-                  'Requieren atención urgente',
-                  agotadosCount > 0,
+          initiallyExpanded: _isExpanded,
+          onExpansionChanged: (bool expanded) {
+            setState(() {
+              _isExpanded = expanded;
+            });
+          },
+          children: <Widget>[
+            const SizedBox(height: 16),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: _buildStatCard(
+                    'Productos agotados',
+                    agotadosCount.toString(),
+                    FontAwesomeIcons.ban,
+                    Colors.red.shade800,
+                    'Requieren atención urgente',
+                    agotadosCount > 0,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  'Stock bajo', 
-                  stockBajoCount.toString(),
-                  FontAwesomeIcons.triangleExclamation,
-                  const Color(0xFFE31E24),
-                  'Necesitan reabastecimiento',
-                  stockBajoCount > 0,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStatCard(
+                    'Stock bajo',
+                    stockBajoCount.toString(),
+                    FontAwesomeIcons.triangleExclamation,
+                    const Color(0xFFE31E24),
+                    'Necesitan reabastecimiento',
+                    stockBajoCount > 0,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  'Disponibles', 
-                  disponiblesCount.toString(),
-                  FontAwesomeIcons.check,
-                  Colors.green,
-                  'Productos con stock suficiente',
-                  false,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStatCard(
+                    'Disponibles',
+                    disponiblesCount.toString(),
+                    FontAwesomeIcons.check,
+                    Colors.green,
+                    'Productos con stock suficiente',
+                    false,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
-  
-  Widget _buildStatCard(String title, String value, IconData icon, Color color, String subtitle, bool highlight) {
+
+  Widget _buildStatCard(String title, String value, IconData icon, Color color,
+      String subtitle, bool highlight) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(7),
       decoration: BoxDecoration(
         color: highlight ? color.withOpacity(0.15) : const Color(0xFF333333),
         borderRadius: BorderRadius.circular(8),
-        border: highlight 
-            ? Border.all(color: color.withOpacity(0.3)) 
-            : null,
+        border: highlight ? Border.all(color: color.withOpacity(0.3)) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1326,7 +1366,9 @@ class InventarioResumen extends StatelessWidget {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties
-      ..add(IterableProperty<Producto>('productos', productos))
-      ..add(StringProperty('sucursalNombre', sucursalNombre));
+      ..add(IterableProperty<Producto>(
+          'productos', widget.productos)) // Accede a productos desde widget
+      ..add(StringProperty('sucursalNombre',
+          widget.sucursalNombre)); // Accede a sucursalNombre desde widget
   }
 }
