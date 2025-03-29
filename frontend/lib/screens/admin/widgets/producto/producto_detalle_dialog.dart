@@ -57,21 +57,12 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   // Controlador para pestañas
   late TabController _atributosTabController;
 
-  bool _isEditingPrecio = false;
-  TextEditingController _precioOfertaController = TextEditingController();
-  bool _liquidacionModificada = false;
-  bool _enLiquidacion = false;
-
   @override
   void initState() {
     super.initState();
     _cargarDetallesProducto();
     _cargarColores();
 
-    // Inicializar estado de liquidación
-    _enLiquidacion = widget.producto.liquidacion;
-    _precioOfertaController.text = widget.producto.precioOferta?.toString() ?? '';
-    
     // Inicializar controlador de pestañas
     _atributosTabController = TabController(length: 3, vsync: this);
   }
@@ -79,7 +70,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   @override
   void dispose() {
     _atributosTabController.dispose();
-    _precioOfertaController.dispose();
     super.dispose();
   }
 
@@ -158,6 +148,11 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           children: [
             _buildHeader(context),
             const SizedBox(height: 16),
+            
+            // Sección para mostrar promociones de forma destacada
+            _buildPromocionesDestacadas(widget.producto),
+            const SizedBox(height: 16),
+            
             // Información básica del producto
             _buildProductoBasicInfo(isPantallaReducida),
             const SizedBox(height: 16),
@@ -565,7 +560,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     );
   }
 
-  // Pestaña de Precios (ahora con descuentos integrados)
+  // Pestaña de Precios - Quitar la edición de liquidación
   Widget _buildPreciosTab(bool isPantallaReducida) {
     return SingleChildScrollView(
       child: Padding(
@@ -597,370 +592,11 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               ),
             ),
 
-            // Sección de liquidación
-            if (widget.onSave != null) ...[
+            // Mostrar sección de liquidación en modo solo visualización
+            if (widget.producto.liquidacion || widget.producto.cantidadMinimaDescuento != null || widget.producto.porcentajeDescuento != null) ...[
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: _enLiquidacion 
-                    ? Colors.amber.withOpacity(0.08) 
-                    : Colors.grey.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _enLiquidacion 
-                      ? Colors.amber.withOpacity(0.3) 
-                      : Colors.white.withOpacity(0.1),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            FaIcon(
-                              FontAwesomeIcons.tag,
-                              size: 16,
-                              color: _enLiquidacion ? Colors.amber : Colors.white60,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Liquidación',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: _enLiquidacion ? Colors.amber : Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Switch(
-                          value: _enLiquidacion,
-                          onChanged: (value) {
-                            setState(() {
-                              _enLiquidacion = value;
-                              _liquidacionModificada = true;
-                              if (!value) {
-                                _precioOfertaController.text = '';
-                              }
-                            });
-                          },
-                          activeColor: Colors.amber,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    if (_enLiquidacion) ...[
-                      _isEditingPrecio 
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            TextFormField(
-                              controller: _precioOfertaController,
-                              decoration: InputDecoration(
-                                labelText: 'Precio de liquidación',
-                                labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                                prefixText: 'S/ ',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-                                ),
-                                filled: true,
-                                fillColor: const Color(0xFF2D2D2D),
-                              ),
-                              style: const TextStyle(color: Colors.white),
-                              keyboardType: TextInputType.number,
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                TextButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _isEditingPrecio = false;
-                                      _precioOfertaController.text = widget.producto.precioOferta?.toString() ?? '';
-                                    });
-                                  },
-                                  child: const Text('Cancelar'),
-                                ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _isEditingPrecio = false;
-                                      _liquidacionModificada = true;
-                                    });
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.amber,
-                                    foregroundColor: Colors.black,
-                                  ),
-                                  child: const Text('Guardar'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Precio de venta:',
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(0.7),
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        widget.producto.getPrecioVentaFormateado(),
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          decoration: TextDecoration.lineThrough,
-                                          decorationColor: Colors.red.withOpacity(0.7),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Precio de liquidación:',
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(0.7),
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Text(
-                                            _precioOfertaController.text.isNotEmpty
-                                              ? 'S/ ${double.parse(_precioOfertaController.text).toStringAsFixed(2)}'
-                                              : widget.producto.getPrecioOfertaFormateado() ?? 'No definido',
-                                            style: const TextStyle(
-                                              color: Colors.amber,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.edit, size: 16, color: Colors.amber),
-                                            onPressed: () {
-                                              setState(() {
-                                                _isEditingPrecio = true;
-                                              });
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // Mostrar descuento
-                            if (widget.producto.precioOferta != null && widget.producto.precioOferta! > 0) ...[
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Ahorro:',
-                                          style: TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'S/ ${(widget.producto.precioVenta - (widget.producto.precioOferta ?? 0)).toStringAsFixed(2)}',
-                                          style: const TextStyle(
-                                            color: Colors.amber,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.amber.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Text(
-                                        '${widget.producto.getPorcentajeDescuentoOfertaFormateado()} descuento',
-                                        style: const TextStyle(
-                                          color: Colors.amber,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      
-                      if (_liquidacionModificada && widget.onSave != null) ...[
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: _guardarLiquidacion,
-                              icon: const FaIcon(FontAwesomeIcons.floppyDisk, size: 16),
-                              label: const Text('Guardar Cambios'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ] else ...[
-                      Text(
-                        'Active esta opción para establecer un precio especial de liquidación. '
-                        'El producto se mostrará como "En liquidación" en todas las vistas.',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 14,
-                        ),
-                      ),
-                      if (_liquidacionModificada && widget.onSave != null) ...[
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: _guardarLiquidacion,
-                              icon: const FaIcon(FontAwesomeIcons.floppyDisk, size: 16),
-                              label: const Text('Guardar Cambios'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ],
-                ),
-              ),
-            ],
-
-            // Sección de descuentos (si aplica)
-            if (widget.producto.cantidadMinimaDescuento != null ||
-                widget.producto.cantidadGratisDescuento != null ||
-                widget.producto.porcentajeDescuento != null ||
-                widget.producto.estaEnOferta()) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: Colors.amber.withOpacity(0.3)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        FaIcon(
-                          FontAwesomeIcons.tags,
-                          size: 16,
-                          color: Colors.amber,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Descuentos y Promociones',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.amber,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    isPantallaReducida
-                        ? _buildDescuentosWrap()
-                        : _buildDescuentosRow(),
-                  ],
-                ),
-              ),
-            ],
-
-            // Nueva sección: Precios por sucursal
-            if (_sucursalesCompartidas.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border:
-                      Border.all(color: Colors.blue.withOpacity(0.3)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        FaIcon(
-                          FontAwesomeIcons.store,
-                          size: 16,
-                          color: Colors.blue,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Precios por local',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildPreciosPorSucursal(),
-                  ],
-                ),
-              ),
+              // Llamamos a nuestra función de visualización de promociones
+              _buildPromocionesInfo(),
             ],
           ],
         ),
@@ -968,170 +604,180 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     );
   }
 
-  // Nuevo widget para mostrar precios por sucursal
-  Widget _buildPreciosPorSucursal() {
-    final sucursalesDisponibles =
-        _sucursalesCompartidas.where((s) => s.disponible).toList();
-
-    if (sucursalesDisponibles.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(
-            'No hay información de precios disponible en sucursales',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      );
-    }
-
+  // Nueva función para mostrar el resumen de las promociones en la pestaña de precios
+  Widget _buildPromocionesInfo() {
+    final producto = widget.producto;
+    bool enLiquidacion = producto.liquidacion;
+    bool tienePromocionGratis = producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0;
+    bool tieneDescuentoPorcentual = producto.cantidadMinimaDescuento != null && producto.cantidadMinimaDescuento! > 0 &&
+                                    producto.porcentajeDescuento != null && producto.porcentajeDescuento! > 0;
+    
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Encabezado
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: Text(
-                  'Local',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  'Precio de venta',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  'Precio de liquidación',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
+        // Mostrar resumen de cada promoción activa
+        if (enLiquidacion)
+          _buildResumenPromocion(
+            'Liquidación Activa', 
+            'Precio de liquidación: ${producto.getPrecioOfertaFormateado() ?? "N/A"}', 
+            Colors.amber, 
+            FontAwesomeIcons.tag
           ),
-        ),
-
-        // Divisor
-        Divider(color: Colors.white24, height: 1),
-
-        // Lista de sucursales con precios
-        ListView.builder(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          itemCount: sucursalesDisponibles.length,
-          itemBuilder: (context, index) {
-            final item = sucursalesDisponibles[index];
-            return Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.white10,
-                    width: 0.5,
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Nombre de la sucursal
-                  Expanded(
-                    flex: 3,
-                    child: Row(
-                      children: [
-                        FaIcon(
-                          item.sucursal.sucursalCentral
-                              ? FontAwesomeIcons.building
-                              : FontAwesomeIcons.store,
-                          size: 12,
-                          color: item.sucursal.sucursalCentral
-                              ? Colors.blue
-                              : Colors.white54,
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            item.sucursal.nombre,
-                            style: TextStyle(
-                              color: item.sucursal.sucursalCentral
-                                  ? Colors.blue
-                                  : Colors.white,
-                              fontSize: 14,
-                              fontWeight: item.sucursal.sucursalCentral
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Precio de venta
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      item.producto.getPrecioVentaFormateado(),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-
-                  // Precio de oferta
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      item.producto.estaEnOferta()
-                          ? item.producto.getPrecioOfertaFormateado() ?? '-'
-                          : '-',
-                      style: TextStyle(
-                        color: item.producto.estaEnOferta()
-                            ? Colors.amber
-                            : Colors.white54,
-                        fontSize: 14,
-                        fontWeight: item.producto.estaEnOferta()
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
+          
+        if (tienePromocionGratis) ...[
+          if (enLiquidacion) const SizedBox(height: 8),
+          _buildResumenPromocion(
+            'Promoción: Lleva y Paga', 
+            'Lleva ${producto.cantidadMinimaDescuento}, paga ${producto.cantidadMinimaDescuento! - producto.cantidadGratisDescuento!}', 
+            Colors.green, 
+            FontAwesomeIcons.gift
+          ),
+        ],
+          
+        if (tieneDescuentoPorcentual) ...[
+          if (enLiquidacion || tienePromocionGratis) const SizedBox(height: 8),
+          _buildResumenPromocion(
+            'Descuento por Cantidad', 
+            '${producto.porcentajeDescuento}% al comprar ${producto.cantidadMinimaDescuento} o más', 
+            Colors.blue, 
+            FontAwesomeIcons.percent
+          ),
+        ],
+        
+        const SizedBox(height: 16),
+        TextButton.icon(
+          onPressed: () {
+            // Volver al inicio del diálogo para ver la promoción destacada
+            Navigator.of(context).pop();
+            ProductoDetalleDialog.show(
+              context: context, 
+              producto: widget.producto,
+              sucursales: widget.sucursales,
+              onSave: widget.onSave,
             );
           },
+          icon: const Icon(Icons.arrow_back),
+          label: const Text('Ver detalles completos'),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white70,
+          ),
         ),
       ],
     );
   }
+  
+  // Método auxiliar para construir el resumen de cada promoción
+  Widget _buildResumenPromocion(String titulo, String descripcion, Color color, IconData icono) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          FaIcon(
+            icono,
+            size: 16,
+            color: color,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titulo,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  descripcion,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.white.withOpacity(0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-  // Método para mostrar la pestaña de Stock con sucursales
+  // Métodos para la pestaña de precios
+  Widget _buildPreciosRow() {
+    return Row(
+      children: [
+        Expanded(
+            child: _buildAtributo(
+                'Precio compra', widget.producto.getPrecioCompraFormateado())),
+        Expanded(
+            child: _buildAtributo(
+                'Precio venta', widget.producto.getPrecioVentaFormateado())),
+        if (widget.producto.estaEnOferta())
+          Expanded(
+              child: _buildAtributo('Precio de liquidación',
+                  widget.producto.getPrecioOfertaFormateado() ?? '',
+                  color: Colors.amber)),
+        Expanded(
+            child: _buildAtributo('Ganancia',
+                ProductosUtils.formatearPrecio(widget.producto.getGanancia()))),
+        Expanded(
+            child: _buildAtributo(
+                'Margen',
+                ProductosUtils.formatearPorcentaje(
+                    widget.producto.getMargenPorcentaje()))),
+      ],
+    );
+  }
+
+  Widget _buildPreciosWrap() {
+    return SingleChildScrollView(
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 12,
+        children: [
+          SizedBox(
+              width: 150,
+              child: _buildAtributo('Precio compra',
+                  widget.producto.getPrecioCompraFormateado())),
+          SizedBox(
+              width: 150,
+              child: _buildAtributo(
+                  'Precio venta', widget.producto.getPrecioVentaFormateado())),
+          if (widget.producto.estaEnOferta())
+            SizedBox(
+                width: 150,
+                child: _buildAtributo('Precio oferta',
+                    widget.producto.getPrecioOfertaFormateado() ?? '',
+                    color: Colors.amber)),
+          SizedBox(
+              width: 150,
+              child: _buildAtributo(
+                  'Ganancia',
+                  ProductosUtils.formatearPrecio(
+                      widget.producto.getGanancia()))),
+          SizedBox(
+              width: 150,
+              child: _buildAtributo(
+                  'Margen',
+                  ProductosUtils.formatearPorcentaje(
+                      widget.producto.getMargenPorcentaje()))),
+        ],
+      ),
+    );
+  }
+
+  // Métodos para la pestaña de stock
   Widget _buildStockConSucursales(bool isPantallaReducida) {
     return SingleChildScrollView(
       child: Column(
@@ -1476,70 +1122,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     );
   }
 
-  // Métodos para la pestaña de precios
-  Widget _buildPreciosRow() {
-    return Row(
-      children: [
-        Expanded(
-            child: _buildAtributo(
-                'Precio compra', widget.producto.getPrecioCompraFormateado())),
-        Expanded(
-            child: _buildAtributo(
-                'Precio venta', widget.producto.getPrecioVentaFormateado())),
-        if (widget.producto.estaEnOferta())
-          Expanded(
-              child: _buildAtributo('Precio de liquidación',
-                  widget.producto.getPrecioOfertaFormateado() ?? '',
-                  color: Colors.amber)),
-        Expanded(
-            child: _buildAtributo('Ganancia',
-                ProductosUtils.formatearPrecio(widget.producto.getGanancia()))),
-        Expanded(
-            child: _buildAtributo(
-                'Margen',
-                ProductosUtils.formatearPorcentaje(
-                    widget.producto.getMargenPorcentaje()))),
-      ],
-    );
-  }
-
-  Widget _buildPreciosWrap() {
-    return SingleChildScrollView(
-      child: Wrap(
-        spacing: 16,
-        runSpacing: 12,
-        children: [
-          SizedBox(
-              width: 150,
-              child: _buildAtributo('Precio compra',
-                  widget.producto.getPrecioCompraFormateado())),
-          SizedBox(
-              width: 150,
-              child: _buildAtributo(
-                  'Precio venta', widget.producto.getPrecioVentaFormateado())),
-          if (widget.producto.estaEnOferta())
-            SizedBox(
-                width: 150,
-                child: _buildAtributo('Precio oferta',
-                    widget.producto.getPrecioOfertaFormateado() ?? '',
-                    color: Colors.amber)),
-          SizedBox(
-              width: 150,
-              child: _buildAtributo(
-                  'Ganancia',
-                  ProductosUtils.formatearPrecio(
-                      widget.producto.getGanancia()))),
-          SizedBox(
-              width: 150,
-              child: _buildAtributo(
-                  'Margen',
-                  ProductosUtils.formatearPorcentaje(
-                      widget.producto.getMargenPorcentaje()))),
-        ],
-      ),
-    );
-  }
-
   // Métodos para la pestaña de stock
   Widget _buildStockRow() {
     return Row(
@@ -1815,51 +1397,365 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     );
   }
 
-  // Método para guardar los cambios en la liquidación
-  void _guardarLiquidacion() {
-    if (widget.onSave == null) return;
+  // Método que muestra las promociones de forma destacada
+  Widget _buildPromocionesDestacadas(Producto producto) {
+    // Determinar los tipos de promoción activas
+    bool enLiquidacion = producto.liquidacion;
+    bool tienePromocionGratis = producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0;
+    bool tieneDescuentoPorcentual = producto.cantidadMinimaDescuento != null && producto.cantidadMinimaDescuento! > 0 &&
+                                   producto.porcentajeDescuento != null && producto.porcentajeDescuento! > 0;
     
-    try {
-      double? precioOferta;
-      if (_enLiquidacion && _precioOfertaController.text.isNotEmpty) {
-        precioOferta = double.tryParse(_precioOfertaController.text);
-        if (precioOferta == null || precioOferta <= 0 || precioOferta >= widget.producto.precioVenta) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('El precio de liquidación debe ser mayor a 0 y menor al precio de venta'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
-      
-      // Crear copia del producto con los valores modificados
-      final productoActualizado = widget.producto.copyWith(
-        liquidacion: _enLiquidacion,
-        precioOferta: _enLiquidacion ? precioOferta : null,
-      );
-      
-      // Llamar al callback onSave
-      widget.onSave!(productoActualizado);
-      
-      setState(() {
-        _liquidacionModificada = false;
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cambios guardados correctamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al guardar cambios: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    // Si no hay promociones, no mostrar nada
+    if (!enLiquidacion && !tienePromocionGratis && !tieneDescuentoPorcentual) {
+      return Container(); // Widget vacío
     }
+    
+    return Card(
+      color: const Color(0xFF2A2A2A),
+      elevation: 4,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const FaIcon(
+                  FontAwesomeIcons.tags,
+                  color: Colors.amber,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Promociones Activas',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+            if ((enLiquidacion && tienePromocionGratis) || 
+                (enLiquidacion && tieneDescuentoPorcentual) ||
+                (tienePromocionGratis && tieneDescuentoPorcentual)) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const FaIcon(
+                      FontAwesomeIcons.circleInfo,
+                      color: Colors.blue,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: const Text(
+                        'Este producto tiene múltiples promociones activas que se pueden aplicar conjuntamente.',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            
+            // Mostrar todas las promociones activas
+            if (enLiquidacion) ...[
+              _buildPromocionLiquidacion(producto),
+              if (tienePromocionGratis || tieneDescuentoPorcentual)
+                const SizedBox(height: 16),
+            ],
+            
+            if (tienePromocionGratis) ...[
+              _buildPromocionGratis(producto),
+              if (tieneDescuentoPorcentual)
+                const SizedBox(height: 16),
+            ],
+            
+            if (tieneDescuentoPorcentual)
+              _buildPromocionDescuentoPorcentual(producto),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  // Método para mostrar la promoción de liquidación
+  Widget _buildPromocionLiquidacion(Producto producto) {
+    // Mostrar promoción de liquidación
+    final ahorro = producto.precioVenta - (producto.precioOferta ?? 0);
+    final porcentaje = producto.precioVenta > 0 ? (ahorro / producto.precioVenta) * 100 : 0;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const FaIcon(
+                  FontAwesomeIcons.tag,
+                  color: Colors.amber,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Liquidación',
+                  style: TextStyle(
+                    color: Colors.amber,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${porcentaje.toStringAsFixed(0)}% OFF',
+                  style: const TextStyle(
+                    color: Colors.amber,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Precio regular',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      producto.getPrecioVentaFormateado(),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        decoration: TextDecoration.lineThrough,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                height: 40,
+                width: 1,
+                color: Colors.white.withOpacity(0.1),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Precio de liquidación',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      producto.getPrecioOfertaFormateado() ?? 'N/A',
+                      style: const TextStyle(
+                        color: Colors.amber,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Método para mostrar la promoción de productos gratis
+  Widget _buildPromocionGratis(Producto producto) {
+    // Mostrar promoción de productos gratis
+    final cantidadMinima = producto.cantidadMinimaDescuento!;
+    final cantidadGratis = producto.cantidadGratisDescuento!;
+    final cantidadPago = cantidadMinima - cantidadGratis;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const FaIcon(
+                  FontAwesomeIcons.gift,
+                  color: Colors.green,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Lleva $cantidadMinima, Paga $cantidadPago',
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const FaIcon(
+                  FontAwesomeIcons.circleInfo,
+                  color: Colors.green,
+                  size: 16,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'El cliente recibe $cantidadGratis ${cantidadGratis == 1 ? 'unidad gratis' : 'unidades gratis'} al comprar $cantidadMinima unidades.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Método para mostrar la promoción de descuento porcentual
+  Widget _buildPromocionDescuentoPorcentual(Producto producto) {
+    // Mostrar promoción de descuento porcentual
+    final cantidadMinima = producto.cantidadMinimaDescuento!;
+    final porcentaje = producto.porcentajeDescuento!;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const FaIcon(
+                  FontAwesomeIcons.percent,
+                  color: Colors.blue,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '$porcentaje% de descuento',
+                  style: const TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const FaIcon(
+                  FontAwesomeIcons.circleInfo,
+                  color: Colors.blue,
+                  size: 16,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Se aplica un $porcentaje% de descuento al comprar $cantidadMinima o más unidades.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

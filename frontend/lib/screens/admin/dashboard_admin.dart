@@ -270,6 +270,9 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -297,115 +300,41 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
                 color: Color(0xFFE31E24),
               ),
             )
-          : _DashboardContent(
-              animation: _animation,
-              productos: _productos,
-              totalVentas: _totalVentas,
-              totalGanancias: _totalGanancias,
-              existencias: _stockPorProducto,
-              sucursales: _sucursales,
-              centrales: _centrales,
-              colores: _colores,
-              totalEmpleados: _totalEmpleados,
-              totalCategorias: _totalCategorias,
-              productosAgotados: _productosAgotados,
-              productosPorSucursal: _productosPorSucursal,
-            ),
-    );
-  }
-}
+          : Container(
+              color: const Color(0xFF111111),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ListView(
+                  children: [
+                    // Sección de estadísticas principales
+                    FadeTransition(
+                      opacity: _animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, -0.1),
+                          end: Offset.zero,
+                        ).animate(_animation),
+                        child: _buildMainStatsSection(isMobile),
+                      ),
+                    ),
 
-class _DashboardContent extends StatelessWidget {
-  final Animation<double> animation;
-  final List<Producto> productos;
-  final double totalVentas;
-  final double totalGanancias;
-  final Map<int, int> existencias;
-  final List<Sucursal> sucursales;
-  final List<Sucursal> centrales;
-  final List<ColorApp> colores;
-  final int totalEmpleados;
-  final int totalCategorias;
-  final int productosAgotados;
-  final Map<String, List<Producto>> productosPorSucursal;
+                    const SizedBox(height: 24),
 
-  const _DashboardContent({
-    required this.animation,
-    required this.productos,
-    required this.totalVentas,
-    required this.totalGanancias,
-    required this.existencias,
-    required this.sucursales,
-    required this.centrales,
-    required this.colores,
-    required this.totalEmpleados,
-    required this.totalCategorias,
-    required this.productosAgotados,
-    required this.productosPorSucursal,
-  });
-
-  Color _getColorForProducto(Producto producto) {
-    final colorApp = colores
-        .where((c) =>
-            c.nombre.toLowerCase() == (producto.color?.toLowerCase() ?? ''))
-        .firstOrNull;
-
-    return colorApp?.toColor() ?? Colors.grey;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 768;
-
-    return Container(
-      color: const Color(0xFF111111),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            // Sección de estadísticas principales
-            FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, -0.1),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: _buildMainStatsSection(isMobile),
+                    // Distribución geográfica de sucursales
+                    FadeTransition(
+                      opacity: _animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.1),
+                          end: Offset.zero,
+                        ).animate(_animation),
+                        child: _buildSucursalesDistribution(isMobile),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-
-            const SizedBox(height: 24),
-
-            // Distribución geográfica de sucursales
-            FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.1),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: _buildSucursalesDistribution(isMobile),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Sección de productos con stock bajo
-            FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0.1, 0),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: _buildLowStockProductsSection(isMobile),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -414,42 +343,42 @@ class _DashboardContent extends StatelessWidget {
       DashboardItemInfo(
         icon: FontAwesomeIcons.boxesStacked,
         title: 'Productos',
-        value: productos.length.toString(),
+        value: _productos.length.toString(),
         color: Colors.blue,
         bgColor: Colors.blue.withOpacity(0.15),
       ),
       DashboardItemInfo(
         icon: FontAwesomeIcons.moneyBillWave,
         title: 'Ventas',
-        value: 'S/ ${totalVentas.toStringAsFixed(2)}',
+        value: 'S/ ${_totalVentas.toStringAsFixed(2)}',
         color: Colors.green,
         bgColor: Colors.green.withOpacity(0.15),
       ),
       DashboardItemInfo(
         icon: FontAwesomeIcons.chartLine,
         title: 'Ganancias',
-        value: 'S/ ${totalGanancias.toStringAsFixed(2)}',
+        value: 'S/ ${_totalGanancias.toStringAsFixed(2)}',
         color: Colors.purple,
         bgColor: Colors.purple.withOpacity(0.15),
       ),
       DashboardItemInfo(
         icon: FontAwesomeIcons.store,
         title: 'Locales',
-        value: sucursales.length.toString(),
+        value: _sucursales.length.toString(),
         color: Colors.orange,
         bgColor: Colors.orange.withOpacity(0.15),
       ),
       DashboardItemInfo(
         icon: FontAwesomeIcons.userTie,
         title: 'Colaboradores',
-        value: totalEmpleados.toString(),
+        value: _totalEmpleados.toString(),
         color: Colors.teal,
         bgColor: Colors.teal.withOpacity(0.15),
       ),
       DashboardItemInfo(
         icon: FontAwesomeIcons.circleExclamation,
         title: 'Productos agotados',
-        value: productosAgotados.toString(),
+        value: _productosAgotados.toString(),
         color: const Color(0xFFE31E24),
         bgColor: const Color(0xFFE31E24).withOpacity(0.15),
       ),
@@ -620,9 +549,9 @@ class _DashboardContent extends StatelessWidget {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
             ),
-            itemCount: sucursales.length,
+            itemCount: _sucursales.length,
             itemBuilder: (context, index) {
-              final sucursal = sucursales[index];
+              final sucursal = _sucursales[index];
               return _buildSucursalCard(sucursal);
             },
           ),
@@ -740,7 +669,7 @@ class _DashboardContent extends StatelessWidget {
               _buildMiniStat(
                 FontAwesomeIcons.boxesStacked,
                 'Productos',
-                '${productosPorSucursal[sucursal.id.toString()]?.length ?? 0}',
+                '${_productosPorSucursal[sucursal.id.toString()]?.length ?? 0}',
                 Colors.blue,
               ),
               const SizedBox(width: 12),
@@ -789,218 +718,6 @@ class _DashboardContent extends StatelessWidget {
               fontSize: 11,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLowStockProductsSection(bool isMobile) {
-    final lowStockProducts =
-        productos.where((producto) => producto.stockBajo).toList();
-
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              FaIcon(
-                FontAwesomeIcons.triangleExclamation,
-                color: Color(0xFFE31E24),
-                size: 20,
-              ),
-              SizedBox(width: 10),
-              Text(
-                'Productos con stock bajo',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          if (lowStockProducts.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    const FaIcon(
-                      FontAwesomeIcons.thumbsUp,
-                      color: Colors.green,
-                      size: 40,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '¡Excelente! No hay productos con stock bajo',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(
-                  const Color(0xFF2D2D2D),
-                ),
-                columnSpacing: 20,
-                horizontalMargin: 12,
-                columns: const [
-                  DataColumn(
-                    label: Text(
-                      'Producto',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'SKU',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'Color',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'Stock Actual',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'Stock Mínimo',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'Precio de venta',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-                rows: lowStockProducts
-                    .map(
-                      (producto) => DataRow(
-                        cells: [
-                          DataCell(Row(
-                            children: [
-                              Container(
-                                width: 24,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF2D2D2D),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Center(
-                                  child: FaIcon(
-                                    FontAwesomeIcons.box,
-                                    color: Colors.white70,
-                                    size: 14,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                producto.nombre,
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            ],
-                          )),
-                          DataCell(Text(
-                            producto.sku,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontFamily: 'monospace',
-                            ),
-                          )),
-                          DataCell(producto.color != null &&
-                                  producto.color!.isNotEmpty
-                              ? Row(
-                                  children: [
-                                    Container(
-                                      width: 16,
-                                      height: 16,
-                                      decoration: BoxDecoration(
-                                        color: _getColorForProducto(producto),
-                                        borderRadius: BorderRadius.circular(3),
-                                        border: Border.all(
-                                          color: Colors.white.withOpacity(0.3),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      producto.color!,
-                                      style:
-                                          const TextStyle(color: Colors.white),
-                                    ),
-                                  ],
-                                )
-                              : const Text(
-                                  'N/A',
-                                  style: TextStyle(color: Colors.white70),
-                                )),
-                          DataCell(Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE31E24).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: const Color(0xFFE31E24).withOpacity(0.3),
-                              ),
-                            ),
-                            child: Text(
-                              producto.stock.toString(),
-                              style: const TextStyle(
-                                color: Color(0xFFE31E24),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          )),
-                          DataCell(Text(
-                            producto.stockMinimo?.toString() ?? 'N/A',
-                            style: const TextStyle(color: Colors.white),
-                          )),
-                          DataCell(Text(
-                            'S/ ${producto.precioVenta.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )),
-                        ],
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
         ],
       ),
     );

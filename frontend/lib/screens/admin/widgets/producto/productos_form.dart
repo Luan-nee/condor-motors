@@ -40,6 +40,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   late TextEditingController _precioOfertaController;
   late TextEditingController _cantidadMinimaDescuentoController;
   late TextEditingController _porcentajeDescuentoController;
+  late TextEditingController _cantidadGratisDescuentoController;
 
   String _categoriaSeleccionada = '';
   Sucursal? _sucursalSeleccionada;
@@ -49,7 +50,14 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   bool _isLoadingColores = false;
   bool _isLoadingSucursalesCompartidas = false;
   List<ProductoEnSucursal> _sucursalesCompartidas = [];
-  bool _estaEnLiquidacion = false;
+  
+  // Gestión de liquidación (independiente de otras promociones)
+  bool _liquidacionActiva = false;
+  
+  // Tipo de promoción seleccionada
+  String _tipoPromocionSeleccionada = 'ninguna'; // 'ninguna', 'descuentoPorcentual', 'gratis'
+  bool get _tienePromocionGratis => _tipoPromocionSeleccionada == 'gratis';
+  bool get _tieneDescuentoPorcentual => _tipoPromocionSeleccionada == 'descuentoPorcentual';
 
   // Listas para categorías, marcas y colores
   List<String> _categorias = [];
@@ -89,9 +97,22 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     _porcentajeDescuentoController = TextEditingController(
       text: producto?.porcentajeDescuento?.toString() ?? '',
     );
+    _cantidadGratisDescuentoController = TextEditingController(
+      text: producto?.cantidadGratisDescuento?.toString() ?? '',
+    );
     
-    // Inicializar estado de liquidación
-    _estaEnLiquidacion = producto?.liquidacion ?? false;
+    // Inicializar liquidación (independiente)
+    _liquidacionActiva = producto?.liquidacion ?? false;
+    
+    // Inicializar tipo de promoción según datos del producto
+    if (producto?.cantidadGratisDescuento != null && producto!.cantidadGratisDescuento! > 0) {
+      _tipoPromocionSeleccionada = 'gratis';
+    } else if (producto?.cantidadMinimaDescuento != null && producto!.cantidadMinimaDescuento! > 0 && 
+              producto.porcentajeDescuento != null && producto.porcentajeDescuento! > 0) {
+      _tipoPromocionSeleccionada = 'descuentoPorcentual';
+    } else {
+      _tipoPromocionSeleccionada = 'ninguna';
+    }
 
     // Inicializar la sucursal seleccionada
     _sucursalSeleccionada = widget.sucursalSeleccionada ??
@@ -983,25 +1004,107 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('Descuentos', FontAwesomeIcons.percent),
+        _buildSectionTitle('Promociones y Descuentos', FontAwesomeIcons.percent),
         const SizedBox(height: 16),
         
-        // Sección de liquidación
+        // Sección de liquidación (siempre visible)
+        _buildLiquidacionSection(),
+        
+        const SizedBox(height: 24),
+        
+        // Selector de tipo de promoción adicional
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _estaEnLiquidacion 
-              ? Colors.amber.withOpacity(0.08) 
-              : Colors.grey.withOpacity(0.05),
+            color: const Color(0xFF2D2D2D),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: _estaEnLiquidacion 
-                ? Colors.amber.withOpacity(0.3) 
-                : Colors.white.withOpacity(0.1),
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const FaIcon(
+                    FontAwesomeIcons.bullhorn,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Promoción adicional',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Además de la liquidación, puede aplicar uno de estos tipos de promoción:',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 10),
+              
+              // Opciones de tipo de promoción
+              _buildPromoTypeOption(
+                'ninguna',
+                'Sin promoción adicional',
+                'El producto no tendrá descuentos adicionales a la liquidación.',
+                FontAwesomeIcons.ban,
+                Colors.grey,
+              ),
+              const SizedBox(height: 8),
+              _buildPromoTypeOption(
+                'gratis',
+                'Productos gratis',
+                'Tipo: "Lleva X, Y gratis" - Ejemplo: Lleva 5, paga 4.',
+                FontAwesomeIcons.gift,
+                Colors.green,
+              ),
+              const SizedBox(height: 8),
+              _buildPromoTypeOption(
+                'descuentoPorcentual',
+                'Descuento porcentual',
+                'Aplica un porcentaje de descuento al comprar cierta cantidad.',
+                FontAwesomeIcons.percent,
+                Colors.blue,
+              ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Campos específicos según el tipo de promoción seleccionado
+        if (_tipoPromocionSeleccionada == 'gratis') _buildProductosGratisFields(),
+        if (_tipoPromocionSeleccionada == 'descuentoPorcentual') _buildDescuentoPorcentualFields(),
+      ],
+    );
+  }
+
+  // Sección de liquidación separada (siempre visible)
+  Widget _buildLiquidacionSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _liquidacionActiva 
+          ? Colors.amber.withOpacity(0.08) 
+          : Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _liquidacionActiva 
+            ? Colors.amber.withOpacity(0.3) 
+            : Colors.white.withOpacity(0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
@@ -1016,166 +1119,542 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Colors.amber,
                     ),
-                  ),
-                  const Spacer(),
-                  Switch(
-                    value: _estaEnLiquidacion,
-                    onChanged: (value) {
-                      setState(() {
-                        _estaEnLiquidacion = value;
-                        if (!value) {
-                          // Si se desactiva la liquidación, limpiar el precio de oferta
-                          _precioOfertaController.text = '';
-                        }
-                      });
-                    },
-                    activeColor: Colors.amber,
                   ),
                 ],
               ),
-              if (_estaEnLiquidacion) ...[
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _precioOfertaController,
-                  decoration: _getInputDecoration(
-                    'Precio de liquidación', 
-                    prefixText: 'S/ ',
-                    helperText: 'Precio especial para liquidar este producto',
-                  ),
-                  style: const TextStyle(color: Colors.white),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'El precio de liquidación es obligatorio';
+              Switch(
+                value: _liquidacionActiva,
+                onChanged: (value) {
+                  setState(() {
+                    _liquidacionActiva = value;
+                    if (!value) {
+                      _precioOfertaController.text = '';
                     }
-                    try {
-                      final precio = double.parse(value);
-                      if (precio <= 0) {
-                        return 'El precio debe ser mayor a cero';
-                      }
-                      final precioVenta = double.tryParse(_precioVentaController.text) ?? 0;
-                      if (precio >= precioVenta) {
-                        return 'El precio de liquidación debe ser menor al precio de venta';
-                      }
-                    } catch (e) {
-                      return 'Ingrese un número válido';
+                  });
+                },
+                activeColor: Colors.amber,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          if (_liquidacionActiva) ...[
+            TextFormField(
+              controller: _precioOfertaController,
+              decoration: _getInputDecoration(
+                'Precio de liquidación', 
+                prefixText: 'S/ ',
+                helperText: 'Precio especial para liquidar este producto',
+              ),
+              style: const TextStyle(color: Colors.white),
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (_liquidacionActiva) {
+                  if (value == null || value.isEmpty) {
+                    return 'El precio de liquidación es obligatorio';
+                  }
+                  try {
+                    final precio = double.parse(value);
+                    if (precio <= 0) {
+                      return 'El precio debe ser mayor a cero';
                     }
-                    return null;
-                  },
-                ),
-                
-                // Mostrar comparación de precios
-                const SizedBox(height: 12),
-                ValueListenableBuilder(
-                  valueListenable: _precioOfertaController,
-                  builder: (context, precioOfertaText, _) {
-                    return ValueListenableBuilder(
-                      valueListenable: _precioVentaController,
-                      builder: (context, precioVentaText, _) {
-                        final precioVenta = double.tryParse(precioVentaText.text) ?? 0;
-                        final precioOferta = double.tryParse(precioOfertaText.text) ?? 0;
-                        
-                        if (precioOferta <= 0 || precioVenta <= 0) {
-                          return Container();
-                        }
-                        
-                        final ahorro = precioVenta - precioOferta;
-                        final porcentaje = precioVenta > 0 
-                          ? (ahorro / precioVenta) * 100 
-                          : 0;
-                          
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.amber.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Precio original: S/ ${precioVenta.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.7),
-                                        decoration: TextDecoration.lineThrough,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Precio liquidación: S/ ${precioOferta.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        color: Colors.amber,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
+                    final precioVenta = double.tryParse(_precioVentaController.text) ?? 0;
+                    if (precio >= precioVenta) {
+                      return 'El precio de liquidación debe ser menor al precio de venta';
+                    }
+                  } catch (e) {
+                    return 'Ingrese un número válido';
+                  }
+                }
+                return null;
+              },
+            ),
+            
+            // Mostrar comparación de precios
+            const SizedBox(height: 12),
+            ValueListenableBuilder(
+              valueListenable: _precioOfertaController,
+              builder: (context, precioOfertaText, _) {
+                return ValueListenableBuilder(
+                  valueListenable: _precioVentaController,
+                  builder: (context, precioVentaText, _) {
+                    final precioVenta = double.tryParse(precioVentaText.text) ?? 0;
+                    final precioOferta = double.tryParse(precioOfertaText.text) ?? 0;
+                    
+                    if (precioOferta <= 0 || precioVenta <= 0) {
+                      return Container();
+                    }
+                    
+                    final ahorro = precioVenta - precioOferta;
+                    final porcentaje = precioVenta > 0 
+                      ? (ahorro / precioVenta) * 100 
+                      : 0;
+                      
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.amber.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Precio original: S/ ${precioVenta.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
                                 ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  '${porcentaje.toStringAsFixed(0)}% descuento',
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Precio liquidación: S/ ${precioOferta.toStringAsFixed(2)}',
                                   style: const TextStyle(
                                     color: Colors.amber,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        );
-                      },
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${porcentaje.toStringAsFixed(0)}% descuento',
+                              style: const TextStyle(
+                                color: Colors.amber,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   },
-                ),
-              ],
-              const SizedBox(height: 16),
-              Text(
-                _estaEnLiquidacion
-                  ? 'Este producto estará marcado como "En Liquidación". '
-                    'Se mostrará con el precio especial destacado en todas las vistas.'
-                  : 'Active esta opción para establecer un precio especial de liquidación.',
+                );
+              },
+            ),
+          ] else ...[
+            Text(
+              'Active esta opción para establecer un precio especial de liquidación. '
+              'El producto se mostrará como "En liquidación" en todas las vistas.',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromoTypeOption(
+    String value, 
+    String title, 
+    String description, 
+    IconData icon, 
+    Color color
+  ) {
+    final bool isSelected = _tipoPromocionSeleccionada == value;
+    
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _tipoPromocionSeleccionada = value;
+          
+          // Si seleccionamos una opción diferente, resetear los campos
+          if (value != 'gratis') {
+            _cantidadGratisDescuentoController.text = '';
+          }
+          
+          if (value != 'descuentoPorcentual') {
+            _porcentajeDescuentoController.text = '';
+          }
+          
+          if (value == 'ninguna') {
+            _cantidadMinimaDescuentoController.text = '';
+          }
+        });
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.2) : Colors.black.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? color : Colors.white.withOpacity(0.1),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 24,
+              child: Radio<String>(
+                value: value,
+                groupValue: _tipoPromocionSeleccionada,
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _tipoPromocionSeleccionada = newValue;
+                    });
+                  }
+                },
+                activeColor: color,
+                fillColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
+                  return states.contains(MaterialState.selected) ? color : Colors.white70;
+                }),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      FaIcon(
+                        icon,
+                        size: 14,
+                        color: isSelected ? color : Colors.white70,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? color : Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductosGratisFields() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.green.withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const FaIcon(
+                FontAwesomeIcons.gift,
+                size: 16,
+                color: Colors.green,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Configuración de Productos Gratis',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 13,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _cantidadMinimaDescuentoController,
+                  decoration: _getInputDecoration(
+                    'Cantidad mínima a comprar',
+                    helperText: 'Ejemplo: 5 unidades',
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (_tipoPromocionSeleccionada == 'gratis') {
+                      if (value == null || value.isEmpty) {
+                        return 'Campo requerido';
+                      }
+                      final cantidad = int.tryParse(value);
+                      if (cantidad == null || cantidad <= 0) {
+                        return 'Cantidad inválida';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: TextFormField(
+                  controller: _cantidadGratisDescuentoController,
+                  decoration: _getInputDecoration(
+                    'Cantidad gratis',
+                    helperText: 'Ejemplo: 1 unidad',
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (_tipoPromocionSeleccionada == 'gratis') {
+                      if (value == null || value.isEmpty) {
+                        return 'Campo requerido';
+                      }
+                      final cantidadGratis = int.tryParse(value);
+                      if (cantidadGratis == null || cantidadGratis <= 0) {
+                        return 'Cantidad inválida';
+                      }
+                      
+                      final cantidadMinima = int.tryParse(_cantidadMinimaDescuentoController.text) ?? 0;
+                      if (cantidadGratis >= cantidadMinima) {
+                        return 'Debe ser menor a la cantidad mínima';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Vista previa de la promoción
+          ValueListenableBuilder(
+            valueListenable: _cantidadMinimaDescuentoController,
+            builder: (context, cantidadMinimaText, _) {
+              return ValueListenableBuilder(
+                valueListenable: _cantidadGratisDescuentoController,
+                builder: (context, cantidadGratisText, _) {
+                  final cantidadMinima = int.tryParse(cantidadMinimaText.text) ?? 0;
+                  final cantidadGratis = int.tryParse(cantidadGratisText.text) ?? 0;
+                  
+                  if (cantidadMinima > 0 && cantidadGratis > 0 && cantidadGratis < cantidadMinima) {
+                    final cantidadPago = cantidadMinima - cantidadGratis;
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const FaIcon(FontAwesomeIcons.circleInfo, 
+                            size: 16, 
+                            color: Colors.green,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Promoción: Lleva $cantidadMinima, paga $cantidadPago',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'El cliente obtendrá $cantidadGratis ${cantidadGratis == 1 ? 'unidad gratis' : 'unidades gratis'} por la compra de $cantidadMinima unidades.',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return Container();
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _cantidadMinimaDescuentoController,
-          decoration:
-              _getInputDecoration('Cantidad mínima para descuento (opcional)'),
-          style: const TextStyle(color: Colors.white),
-          keyboardType: TextInputType.number,
+  Widget _buildDescuentoPorcentualFields() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.blue.withOpacity(0.3),
         ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _porcentajeDescuentoController,
-          decoration:
-              _getInputDecoration('Porcentaje de descuento (%) (opcional)'),
-          style: const TextStyle(color: Colors.white),
-          keyboardType: TextInputType.number,
-        ),
-      ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const FaIcon(
+                FontAwesomeIcons.percent,
+                size: 16,
+                color: Colors.blue,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Configuración de Descuento Porcentual',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _cantidadMinimaDescuentoController,
+                  decoration: _getInputDecoration(
+                    'Cantidad mínima a comprar',
+                    helperText: 'Ejemplo: 3 unidades',
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (_tipoPromocionSeleccionada == 'descuentoPorcentual') {
+                      if (value == null || value.isEmpty) {
+                        return 'Campo requerido';
+                      }
+                      final cantidad = int.tryParse(value);
+                      if (cantidad == null || cantidad <= 0) {
+                        return 'Cantidad inválida';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: TextFormField(
+                  controller: _porcentajeDescuentoController,
+                  decoration: _getInputDecoration(
+                    'Porcentaje de descuento',
+                    helperText: 'Ejemplo: 10%',
+                    suffixIcon: const Padding(
+                      padding: EdgeInsets.all(12.0),
+                      child: Text('%', style: TextStyle(color: Colors.white70)),
+                    ),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (_tipoPromocionSeleccionada == 'descuentoPorcentual') {
+                      if (value == null || value.isEmpty) {
+                        return 'Campo requerido';
+                      }
+                      final porcentaje = int.tryParse(value);
+                      if (porcentaje == null || porcentaje <= 0 || porcentaje >= 100) {
+                        return 'Porcentaje inválido (1-99)';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Vista previa de la promoción
+          ValueListenableBuilder(
+            valueListenable: _cantidadMinimaDescuentoController,
+            builder: (context, cantidadMinimaText, _) {
+              return ValueListenableBuilder(
+                valueListenable: _porcentajeDescuentoController,
+                builder: (context, porcentajeText, _) {
+                  final cantidadMinima = int.tryParse(cantidadMinimaText.text) ?? 0;
+                  final porcentaje = int.tryParse(porcentajeText.text) ?? 0;
+                  
+                  if (cantidadMinima > 0 && porcentaje > 0 && porcentaje < 100) {
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const FaIcon(FontAwesomeIcons.circleInfo, 
+                            size: 16, 
+                            color: Colors.blue,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Promoción: $porcentaje% de descuento al comprar $cantidadMinima o más unidades',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return Container();
+                },
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -1553,9 +2032,47 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         'precioCompra': double.parse(_precioCompraController.text),
         // Solo incluir stock para productos nuevos
         if (esNuevoProducto) 'stock': int.parse(_stockController.text),
-        // Incluir el estado de liquidación
-        'liquidacion': _estaEnLiquidacion,
+        
+        // Liquidación (campo independiente)
+        'liquidacion': _liquidacionActiva,
+        
+        // Por defecto, valores nulos para los campos opcionales
+        'cantidadMinimaDescuento': null,
+        'cantidadGratisDescuento': null,
+        'porcentajeDescuento': null,
+        'precioOferta': null,
       };
+      
+      // Si está en liquidación, incluir precio de oferta
+      if (_liquidacionActiva && _precioOfertaController.text.isNotEmpty) {
+        productoData['precioOferta'] = double.parse(_precioOfertaController.text);
+      }
+      
+      // Aplicar configuración según el tipo de promoción seleccionada
+      switch (_tipoPromocionSeleccionada) {
+        case 'gratis':
+          if (_cantidadMinimaDescuentoController.text.isNotEmpty) {
+            productoData['cantidadMinimaDescuento'] = int.parse(_cantidadMinimaDescuentoController.text);
+          }
+          if (_cantidadGratisDescuentoController.text.isNotEmpty) {
+            productoData['cantidadGratisDescuento'] = int.parse(_cantidadGratisDescuentoController.text);
+          }
+          break;
+          
+        case 'descuentoPorcentual':
+          if (_cantidadMinimaDescuentoController.text.isNotEmpty) {
+            productoData['cantidadMinimaDescuento'] = int.parse(_cantidadMinimaDescuentoController.text);
+          }
+          if (_porcentajeDescuentoController.text.isNotEmpty) {
+            productoData['porcentajeDescuento'] = int.parse(_porcentajeDescuentoController.text);
+          }
+          break;
+      }
+
+      // Stock mínimo (opcional)
+      if (_stockMinimoController.text.isNotEmpty) {
+        productoData['stockMinimo'] = int.parse(_stockMinimoController.text);
+      }
       
       // Buscar y añadir el ID de categoría si está disponible
       if (_categoriasMap.containsKey(_categoriaSeleccionada)) {
@@ -1604,23 +2121,6 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         // No enviar colorId si no tenemos un ID válido
       }
             
-      // Campos opcionales
-      if (_precioOfertaController.text.isNotEmpty) {
-        productoData['precioOferta'] = double.parse(_precioOfertaController.text);
-      }
-      
-      if (_stockMinimoController.text.isNotEmpty) {
-        productoData['stockMinimo'] = int.parse(_stockMinimoController.text);
-      }
-      
-      if (_cantidadMinimaDescuentoController.text.isNotEmpty) {
-        productoData['cantidadMinimaDescuento'] = int.parse(_cantidadMinimaDescuentoController.text);
-      }
-      
-      if (_porcentajeDescuentoController.text.isNotEmpty) {
-        productoData['porcentajeDescuento'] = int.parse(_porcentajeDescuentoController.text);
-      }
-
       // Añadir mensajes de depuración para rastrear los datos
       debugPrint('ProductosForm: Datos preparados para guardar:');
       debugPrint('ProductosForm: Sucursal seleccionada: ${_sucursalSeleccionada?.id}');
@@ -1657,6 +2157,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     _precioOfertaController.dispose();
     _cantidadMinimaDescuentoController.dispose();
     _porcentajeDescuentoController.dispose();
+    _cantidadGratisDescuentoController.dispose();
     super.dispose();
   }
 } 
