@@ -1,9 +1,27 @@
 import { db } from '@/db/connection'
-import { detallesProductoTable } from '@/db/schema'
-import { count, eq } from 'drizzle-orm'
+import { detallesProductoTable, sucursalesTable } from '@/db/schema'
+import { count, eq, sql, sum } from 'drizzle-orm'
 
 export class GetStockBajoLiquidacion {
   private async getStockLiquidacionColumn() {
+    const sucursales = await db
+      .select({
+        id: detallesProductoTable.sucursalId,
+        nombre: sucursalesTable.nombre,
+        stockBajo: sum(
+          sql<number>`CASE WHEN ${detallesProductoTable.stockBajo} = true THEN 1 ELSE 0 END`
+        ),
+        liquidacion: sum(
+          sql<number>`CASE WHEN ${detallesProductoTable.liquidacion} = true THEN 1 ELSE 0 END`
+        )
+      })
+      .from(detallesProductoTable)
+      .innerJoin(
+        sucursalesTable,
+        eq(detallesProductoTable.sucursalId, sucursalesTable.id)
+      )
+      .groupBy(detallesProductoTable.sucursalId, sucursalesTable.nombre)
+
     const getStockBajo = await db
       .select({ stockBajo: count() })
       .from(detallesProductoTable)
@@ -17,7 +35,7 @@ export class GetStockBajoLiquidacion {
     const [stockBajo] = getStockBajo
     const [liquidacion] = getLiquidacion
 
-    return { ...stockBajo, ...liquidacion }
+    return { ...stockBajo, ...liquidacion, sucursales }
   }
 
   async execute() {
