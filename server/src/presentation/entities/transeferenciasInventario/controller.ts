@@ -14,6 +14,9 @@ import { DeleteTransferenciaInventario } from '@/domain/use-cases/entities/trans
 import { CancelarTransferenciaInventario } from '@/domain/use-cases/entities/transferencias-inventario/cancelar-transferencia-inventario.use-case'
 import { AddItemTransferenciaInvDto } from '@/domain/dtos/entities/transferencias-inventario/add-item-transferencia-inventario.dto'
 import { AddItemTransferenciaInv } from '@/domain/use-cases/entities/transferencias-inventario/add-item-transferencia-inventario.use-case'
+import { DoubleNumericIdDto } from '@/domain/dtos/query-params/double-numeric.-id.dto'
+import { UpdateItemTransferenciaInv } from '@/domain/use-cases/entities/transferencias-inventario/update-item-transferencia-inventario.use-case'
+import { UpdateItemTransferenciaInvDto } from '@/domain/dtos/entities/transferencias-inventario/update-item-transferencia-inventario.dto'
 
 export class TransferenciasInventarioController {
   create = (req: Request, res: Response) => {
@@ -222,7 +225,35 @@ export class TransferenciasInventarioController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    const [paramErrors, doubleNumericIdDto] = DoubleNumericIdDto.create(
+      req.params
+    )
+    if (paramErrors !== undefined || doubleNumericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
+    const [error, updateItemTransferenciaInvDto] =
+      UpdateItemTransferenciaInvDto.create(req.body)
+    if (error !== undefined || updateItemTransferenciaInvDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload } = req
+
+    const updateItemTransferenciaInv = new UpdateItemTransferenciaInv(
+      authPayload
+    )
+
+    updateItemTransferenciaInv
+      .execute(doubleNumericIdDto, updateItemTransferenciaInvDto)
+      .then((transferenciaInv) => {
+        CustomResponse.success({ res, data: transferenciaInv })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
   removeItems = (req: Request, res: Response) => {

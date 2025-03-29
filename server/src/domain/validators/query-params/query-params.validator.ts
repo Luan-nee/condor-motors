@@ -32,6 +32,14 @@ const ParamsDocSchema = z.object({
 export const paramsDocValidator = (object: unknown) =>
   ParamsDocSchema.safeParse(object)
 
+const ParamsDoubleNumericIdSchema = z.object({
+  id: paramsBaseSchema.numericId,
+  secondId: paramsBaseSchema.numericId
+})
+
+export const paramsDoubleNumericIdValidator = (object: unknown) =>
+  ParamsDoubleNumericIdSchema.safeParse(object)
+
 export const QueriesSchema = z.object({
   sort_by: queriesBaseSchema.sort_by,
   order: queriesBaseSchema.order,

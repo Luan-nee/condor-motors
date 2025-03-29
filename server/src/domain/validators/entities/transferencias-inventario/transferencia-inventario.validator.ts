@@ -22,3 +22,10 @@ const addItemTransferenciaInv = z.object({
 
 export const addItemTransferenciaInvValidator = (object: unknown) =>
   addItemTransferenciaInv.safeParse(object)
+
+const updateItemTransferenciaInv = z.object({
+  cantidad: transferenciaInvSchema.cantidad
+})
+
+export const updateItemTransferenciaInvValidator = (object: unknown) =>
+  updateItemTransferenciaInv.safeParse(object)

@@ -22,12 +22,12 @@ export class TransferenciasInventarioRoutes {
     router.post('/:id/items', transferenciaInventarioController.addItems)
 
     router.patch(
-      '/:id/items/:itemId',
+      '/:id/items/:secondId',
       transferenciaInventarioController.updateItems
     )
 
     router.delete(
-      '/:id/items/:itemId',
+      '/:id/items/:secondId',
       transferenciaInventarioController.removeItems
     )
 

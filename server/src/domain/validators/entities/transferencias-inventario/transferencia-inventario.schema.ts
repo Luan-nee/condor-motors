@@ -10,5 +10,6 @@ export const transferenciaInvSchema = {
       cantidad: z.number().min(1)
     })
     .array()
-    .min(1)
+    .min(1),
+  cantidad: z.number().min(1)
 }
