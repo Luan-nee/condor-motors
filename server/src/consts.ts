@@ -22,7 +22,7 @@ export const defaultQueries = {
   sort_by: '',
   order: orderValues.desc,
   page: 1,
-  page_size: 10,
+  page_size: 50,
   filter: '',
   filter_value: undefined,
   filter_type: filterTypeValues.eq

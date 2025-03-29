@@ -42,8 +42,8 @@ export const queriesBaseSchema = {
       switch (true) {
         case value < 1:
           return 1
-        case value > 100:
-          return 100
+        case value > 200:
+          return 200
         default:
           return value
       }
