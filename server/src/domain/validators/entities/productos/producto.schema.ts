@@ -7,7 +7,7 @@ export const productoSchema = {
     .string()
     .trim()
     .min(2)
-    .max(255)
+    .max(250)
     .refine((val) => Validator.isValidGeneralName(val), {
       message:
         'El nombre solo puede contener este set de caracteres: a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ-_'

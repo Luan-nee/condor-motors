@@ -14,8 +14,8 @@ export const clienteSchema = {
     })
     .optional()
     .nullable(),
-  denominacion: z.string().trim(),
-  direccion: z.string().trim().min(3).optional().nullable(),
+  denominacion: z.string().trim().max(100),
+  direccion: z.string().trim().max(100).optional().nullable(),
   correo: z.string().trim().email().optional().nullable(),
   telefono: z
     .string()

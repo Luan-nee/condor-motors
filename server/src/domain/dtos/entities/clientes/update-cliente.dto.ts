@@ -34,7 +34,7 @@ export class UpdateClienteDto {
     }
 
     if (this.isEmptyUpdate(result.data)) {
-      return ['No se recibio Informacion requerida para actualizar', undefined]
+      return ['No se recibio informacion para actualizar', undefined]
     }
 
     return [undefined, new UpdateClienteDto(result.data)]

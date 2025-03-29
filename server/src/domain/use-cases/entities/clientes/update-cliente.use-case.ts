@@ -67,7 +67,17 @@ export class UpdateCliente {
       tipoDocumentoCodigo === tiposDocClienteCodes.ruc ||
       tipoDocumentoCodigo === tiposDocClienteCodes.noDomiciliadoSinRuc
     ) {
-      if (updateClienteDto.numeroDocumento == null) {
+      if (updateClienteDto.numeroDocumento === undefined) {
+        if (tipoDocumentoCodigo === tiposDocClienteCodes.ruc) {
+          if (updateClienteDto.direccion == null) {
+            throw CustomError.badRequest('La dirección es requerida')
+          }
+        }
+
+        return
+      }
+
+      if (updateClienteDto.numeroDocumento === null) {
         throw CustomError.badRequest('El numero de documento es requerido')
       }
 
