@@ -1509,7 +1509,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Promoción: Lleva $cantidadMinima, paga $cantidadPago',
+                                  'Promoción: Compra ${cantidadMinima + cantidadGratis} al precio de $cantidadMinima',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -1665,7 +1665,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Promoción: $porcentaje% de descuento al comprar $cantidadMinima o más unidades',
+                              'Promoción: Al comprar $cantidadMinima tendras $porcentaje% de descuento',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -1700,7 +1700,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               child: Column(
                 children: [
                   CircularProgressIndicator(
-                    color: Color(0xFFE31E24),
+                    color: Color(0xFF1C7AC7),
                     strokeWidth: 3,
                   ),
                   SizedBox(height: 12),
@@ -1870,12 +1870,12 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isCurrentBranch
-            ? const Color(0xFFE31E24).withOpacity(0.1)
+            ? const Color.fromARGB(255, 30, 155, 227).withOpacity(0.1)
             : const Color(0xFF222222),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isCurrentBranch
-              ? const Color(0xFFE31E24)
+              ? const Color.fromARGB(255, 30, 197, 227).withOpacity(0.1)
               : Colors.white.withOpacity(0.1),
           width: isCurrentBranch ? 2 : 1,
         ),
@@ -1888,7 +1888,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         title: Text(
           item.sucursal.nombre,
           style: TextStyle(
-            color: isCurrentBranch ? const Color(0xFFE31E24) : Colors.white,
+            color: isCurrentBranch
+                ? const Color.fromARGB(255, 139, 207, 230)
+                : Colors.white,
             fontWeight: isCurrentBranch ? FontWeight.bold : FontWeight.normal,
           ),
         ),
