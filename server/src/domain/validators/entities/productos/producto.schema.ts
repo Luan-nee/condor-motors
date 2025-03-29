@@ -26,8 +26,19 @@ export const productoSchema = {
   maxDiasSinReabastecer: z.number().positive().optional().nullable(),
   stockMinimo: z.number().min(0).optional().nullable(),
   cantidadMinimaDescuento: z.number().min(1).optional().nullable(),
-  cantidadGratisDescuento: z.number().min(1).optional().nullable(),
-  porcentajeDescuento: z.number().min(0).max(100).optional().nullable(),
+  cantidadGratisDescuento: z
+    .number()
+    .min(0)
+    .transform((val) => (val < 1 ? null : val))
+    .optional()
+    .nullable(),
+  porcentajeDescuento: z
+    .number()
+    .min(0)
+    .max(100)
+    .transform((val) => (val < 1 ? null : val))
+    .optional()
+    .nullable(),
   colorId: idTypeBaseSchema.numericId,
   categoriaId: idTypeBaseSchema.numericId,
   marcaId: idTypeBaseSchema.numericId,

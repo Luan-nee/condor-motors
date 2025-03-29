@@ -65,6 +65,19 @@ export class UpdateProductoDto {
       return ['No se recibio informacion para actualizar', undefined]
     }
 
-    return [undefined, new UpdateProductoDto(result.data)]
+    const { data } = result
+
+    if (
+      data.cantidadGratisDescuento != null &&
+      data.cantidadGratisDescuento > 0
+    ) {
+      data.porcentajeDescuento = null
+    }
+
+    if (data.porcentajeDescuento != null && data.porcentajeDescuento > 0) {
+      data.cantidadGratisDescuento = null
+    }
+
+    return [undefined, new UpdateProductoDto(data)]
   }
 }

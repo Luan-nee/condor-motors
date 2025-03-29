@@ -60,6 +60,17 @@ export class CreateProductoDto {
 
     const { data } = result
 
+    if (
+      data.cantidadGratisDescuento != null &&
+      data.cantidadGratisDescuento > 0
+    ) {
+      data.porcentajeDescuento = null
+    }
+
+    if (data.porcentajeDescuento != null && data.porcentajeDescuento > 0) {
+      data.cantidadGratisDescuento = null
+    }
+
     return [undefined, new CreateProductoDto(data)]
   }
 }
