@@ -11,7 +11,7 @@ export const paramsBaseSchema = {
     .string()
     .trim()
     .min(8)
-    .max(15)
+    .max(11)
     .refine((val) => Validator.isOnlyNumbers(val))
 }
 
