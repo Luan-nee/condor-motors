@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import { ClientesController } from './controller'
+import { ServicioConsulta } from '@/config/consultas'
 
 export class ClientesRoutes {
   static get routes() {
     const router = Router()
 
-    const clientesController = new ClientesController()
+    const clientesController = new ClientesController(ServicioConsulta)
 
     router.post('/', clientesController.create)
 

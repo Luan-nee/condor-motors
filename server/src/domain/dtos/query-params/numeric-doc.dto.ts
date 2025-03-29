@@ -11,7 +11,10 @@ export class NumericDocDto {
     const result = paramsDocValidator(input)
 
     if (!result.success) {
-      return ['Id inválido', undefined]
+      return [
+        `No se encontró ninguna persona con ese número de documento`,
+        undefined
+      ]
     }
 
     return [undefined, new NumericDocDto(result.data)]
