@@ -35,7 +35,7 @@ export class CreateProducto {
     }
 
     const detalleProductoStockBajo =
-      createProductoDto.stockMinimo !== undefined && createProductoDto.stock > 0
+      createProductoDto.stockMinimo != null && createProductoDto.stock > 0
         ? createProductoDto.stock < createProductoDto.stockMinimo
         : false
 
