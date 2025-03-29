@@ -1,24 +1,24 @@
 import z from 'zod'
-import { ClienteSchema } from './cliente.schema'
+import { clienteSchema } from '@/domain/validators/entities/clientes/cliente.schema'
 
 const createClienteSchema = z.object({
-  tipoDocumentoId: ClienteSchema.tipoDocumentoId,
-  numeroDocumento: ClienteSchema.numeroDocumento,
-  denominacion: ClienteSchema.denominacion,
-  direccion: ClienteSchema.direccion,
-  correo: ClienteSchema.correo,
-  telefono: ClienteSchema.telefono
+  tipoDocumentoId: clienteSchema.tipoDocumentoId,
+  numeroDocumento: clienteSchema.numeroDocumento,
+  denominacion: clienteSchema.denominacion,
+  direccion: clienteSchema.direccion,
+  correo: clienteSchema.correo,
+  telefono: clienteSchema.telefono
 })
 
 export const createClienteValidator = (object: unknown) =>
   createClienteSchema.safeParse(object)
 
 const updateClienteSchema = z.object({
-  numeroDocumento: ClienteSchema.numeroDocumento,
-  denominacion: ClienteSchema.denominacion,
-  direccion: ClienteSchema.direccion,
-  correo: ClienteSchema.correo,
-  telefono: ClienteSchema.telefono
+  numeroDocumento: clienteSchema.numeroDocumento,
+  denominacion: clienteSchema.denominacion,
+  direccion: clienteSchema.direccion,
+  correo: clienteSchema.correo,
+  telefono: clienteSchema.telefono
 })
 
 export const updateClienteValidator = (object: unknown) =>

@@ -1,11 +1,11 @@
 import { updateClienteValidator } from '@/domain/validators/entities/clientes/cliente.validator'
 
 export class UpdateClienteDto {
-  public numeroDocumento?: string
+  public numeroDocumento?: string | null
   public denominacion?: string
-  public direccion?: string
-  public correo?: string
-  public telefono?: string
+  public direccion?: string | null
+  public correo?: string | null
+  public telefono?: string | null
 
   private constructor({
     numeroDocumento,

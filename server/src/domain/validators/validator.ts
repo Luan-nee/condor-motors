@@ -6,6 +6,9 @@ export class Validator {
 
   static isOnlyNumbers = (val: string) => /^\d+$/.test(val)
 
+  static isOnlyNumbersLetters = (val: string) =>
+    /^[0-9a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/.test(val)
+
   static isOnlyLettersSpaces = (val: string) =>
     /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+( [a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+)*$/.test(val)
 
@@ -24,7 +27,6 @@ export class Validator {
   static isValidFullName = (val: string) =>
     /^[A-Za-zÁÉÍÓÚáéíóúÑñ]+(?: [A-Za-zÁÉÍÓÚáéíóúÑñ]+)*$/.test(val)
 
-  static isValidDni = (letra: string) => /^\d{7,8}$/.test(letra)
-
-  static isValidRuc = (ruc: string) => /^(10|20)\d{9}$/.test(ruc)
+  static isValidPhoneNumber = (val: string) =>
+    /^\+? ?[\d]+(?:[- ][\d]+)*$/.test(val)
 }
