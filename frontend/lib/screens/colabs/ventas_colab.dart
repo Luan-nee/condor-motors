@@ -110,14 +110,39 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       
       // Procesar la lista de productos obtenida
       for (var producto in response.items) {
+        // Calcular el precio actual considerando liquidación
+        double precioActual = producto.liquidacion && producto.precioOferta != null
+            ? producto.precioOferta!
+            : producto.precioVenta;
+        
+        // Verificar promociones disponibles
+        bool enLiquidacion = producto.liquidacion;
+        bool tienePromocionGratis = producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0;
+        bool tieneDescuentoPorcentual = producto.cantidadMinimaDescuento != null && 
+                                       producto.cantidadMinimaDescuento! > 0 &&
+                                       producto.porcentajeDescuento != null && 
+                                       producto.porcentajeDescuento! > 0;
+        
         // Convertir cada producto al formato esperado por la UI
         productosFormateados.add({
           'id': producto.id.toString(),
           'codigo': producto.sku,
           'nombre': producto.nombre,
           'precio': producto.precioVenta,
+          'precioOriginal': producto.precioVenta,
+          'precioActual': precioActual,
           'stock': producto.stock,
           'categoria': producto.categoria,
+          // Añadir datos de promociones
+          'liquidacion': enLiquidacion,
+          'precioLiquidacion': producto.precioOferta,
+          'descuentoPorcentaje': producto.porcentajeDescuento,
+          'cantidadMinima': producto.cantidadMinimaDescuento,
+          'cantidadGratis': producto.cantidadGratisDescuento,
+          // Flags para saber qué promociones tiene
+          'enLiquidacion': enLiquidacion,
+          'tienePromocionGratis': tienePromocionGratis,
+          'tieneDescuentoPorcentual': tieneDescuentoPorcentual,
         });
       }
           
@@ -503,14 +528,115 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                                 return const SizedBox.shrink();
                               }
                               
-                              return ListTile(
-                                title: Text(producto['nombre']),
-                                subtitle: Text('Código: ${producto['codigo']} - Stock: ${producto['stock']}'),
-                                trailing: Text('S/ ${producto['precio'].toStringAsFixed(2)}'),
-                                onTap: () {
-                                  _agregarProducto(producto);
-                                  Navigator.pop(context);
-                                },
+                              // Verificar las promociones del producto
+                              bool enLiquidacion = producto['enLiquidacion'] ?? false;
+                              bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
+                              bool tieneDescuentoPorcentual = producto['tieneDescuentoPorcentual'] ?? false;
+                              
+                              return Card(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              producto['nombre'],
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ),
+                                          // Botón para agregar
+                                          IconButton(
+                                            icon: const Icon(Icons.add_circle, color: Color(0xFF4CAF50)),
+                                            onPressed: () {
+                                              _agregarProducto(producto);
+                                              Navigator.pop(context);
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                      
+                                      // Información básica
+                                      Text(
+                                        'Código: ${producto['codigo']} - Stock: ${producto['stock']}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      
+                                      const SizedBox(height: 6),
+                                      
+                                      // Información de precios
+                                      Row(
+                                        children: [
+                                          if (enLiquidacion && producto['precioLiquidacion'] != null) ...[
+                                            Text(
+                                              'S/ ${producto['precio'].toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                decoration: TextDecoration.lineThrough,
+                                                color: Colors.grey,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'S/ ${producto['precioLiquidacion'].toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                color: Colors.amber,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ] else ...[
+                                            Text(
+                                              'S/ ${producto['precio'].toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ],
+                                          
+                                          const Spacer(),
+                                          
+                                          // Chips de promociones
+                                          if (enLiquidacion)
+                                            _buildPromoChip('Liquidación', Colors.amber),
+                                        ],
+                                      ),
+                                      
+                                      // Mostrar chips de promociones adicionales
+                                      if (tienePromocionGratis || tieneDescuentoPorcentual)
+                                        const SizedBox(height: 6),
+                                        
+                                      Row(
+                                        children: [
+                                          if (tienePromocionGratis)
+                                            _buildPromoChip(
+                                              'Lleva ${producto['cantidadMinima']}, paga ${producto['cantidadMinima'] - producto['cantidadGratis']}',
+                                              Colors.green
+                                            ),
+                                            
+                                          if (tienePromocionGratis && tieneDescuentoPorcentual)
+                                            const SizedBox(width: 6),
+                                            
+                                          if (tieneDescuentoPorcentual)
+                                            _buildPromoChip(
+                                              '${producto['descuentoPorcentaje']}% x ${producto['cantidadMinima']}+ unid.', 
+                                              Colors.blue
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               );
                             },
                           ),
@@ -532,6 +658,209 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
       ),
     );
   }
+  
+  // Widget auxiliar para mostrar chips de promociones
+  Widget _buildPromoChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+  
+  // Método para construir la información de promociones de un producto
+  Widget _buildPromocionesInfo(Map<String, dynamic> producto) {
+    // Verificar las promociones del producto
+    bool enLiquidacion = producto['enLiquidacion'] ?? false;
+    bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
+    bool tieneDescuentoPorcentual = producto['tieneDescuentoPorcentual'] ?? false;
+    
+    // Si no hay promociones, no mostrar nada
+    if (!enLiquidacion && !tienePromocionGratis && !tieneDescuentoPorcentual) {
+      return const SizedBox.shrink();
+    }
+    
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Wrap(
+        spacing: 6,
+        children: [
+          if (enLiquidacion)
+            _buildPromoChip('Liquidación', Colors.amber),
+          if (tienePromocionGratis)
+            _buildPromoChip(
+              'Lleva ${producto['cantidadMinima']}, paga ${producto['cantidadMinima'] - producto['cantidadGratis']}',
+              Colors.green
+            ),
+          if (tieneDescuentoPorcentual)
+            _buildPromoChip(
+              '${producto['descuentoPorcentaje']}% x ${producto['cantidadMinima']}+ unid.', 
+              Colors.blue
+            ),
+        ],
+      ),
+    );
+  }
+  
+  // Método para construir un elemento de la lista de productos en venta
+  Widget _buildProductoVentaItem(BuildContext context, int index) {
+    final producto = _productosVenta[index];
+    final subtotal = producto['precio'] * producto['cantidad'];
+    
+    // Verificar si tiene liquidación para mostrar precio tachado
+    bool enLiquidacion = producto['enLiquidacion'] ?? false;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2D2D2D),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icono del producto
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const FaIcon(
+                    FontAwesomeIcons.box,
+                    color: Color(0xFF4CAF50),
+                    size: 16,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                
+                // Información del producto
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        producto['nombre'],
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      
+                      // Mostrar precio (con precio de liquidación si aplica)
+                      Row(
+                        children: [
+                          if (enLiquidacion && producto['precioLiquidacion'] != null) ...[
+                            Text(
+                              'S/ ${producto['precio'].toStringAsFixed(2)}',
+                              style: TextStyle(
+                                decoration: TextDecoration.lineThrough,
+                                color: Colors.grey[400],
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'S/ ${producto['precioLiquidacion'].toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: Colors.amber,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ] else ...[
+                            Text(
+                              'S/ ${producto['precio'].toStringAsFixed(2)}',
+                              style: TextStyle(
+                                color: Colors.grey[300],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      
+                      // Mostrar información de promociones
+                      _buildPromocionesInfo(producto),
+                    ],
+                  ),
+                ),
+                
+                // Controles de cantidad y eliminación
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Controles de cantidad
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle_outline),
+                          color: Colors.white70,
+                          onPressed: () => _cambiarCantidad(index, producto['cantidad'] - 1),
+                          iconSize: 20,
+                        ),
+                        Text(
+                          '${producto['cantidad']}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          color: Colors.white70,
+                          onPressed: () => _cambiarCantidad(index, producto['cantidad'] + 1),
+                          iconSize: 20,
+                        ),
+                      ],
+                    ),
+                    
+                    // Subtotal
+                    Text(
+                      'S/ ${subtotal.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 8),
+                    
+                    // Botón eliminar
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _eliminarProducto(index),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
   // Escanear producto con código de barras
   Future<void> _escanearProducto() async {
     // Asegurarse de que los productos estén cargados
@@ -1024,91 +1353,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> {
                     : ListView.builder(
                         padding: EdgeInsets.all(isMobile ? 8 : 16),
                         itemCount: _productosVenta.length,
-                        itemBuilder: (context, index) {
-                          final producto = _productosVenta[index];
-                          final subtotal = producto['precio'] * producto['cantidad'];
-                          
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2D2D2D),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.all(12),
-                              leading: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF4CAF50).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const FaIcon(
-                                  FontAwesomeIcons.box,
-                                  color: Color(0xFF4CAF50),
-                                  size: 16,
-                                ),
-                              ),
-                              title: Text(
-                                producto['nombre'],
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              subtitle: Text(
-                                'Precio: S/ ${producto['precio'].toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 12,
-                                ),
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Controles de cantidad
-                                  IconButton(
-                                    icon: const Icon(Icons.remove_circle_outline),
-                                    color: Colors.white70,
-                                    onPressed: () => _cambiarCantidad(index, producto['cantidad'] - 1),
-                                  ),
-                                  Text(
-                                    '${producto['cantidad']}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.add_circle_outline),
-                                    color: Colors.white70,
-                                    onPressed: () => _cambiarCantidad(index, producto['cantidad'] + 1),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  // Subtotal
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        'S/ ${subtotal.toStringAsFixed(2)}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                                        onPressed: () => _eliminarProducto(index),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                        itemBuilder: (context, index) => _buildProductoVentaItem(context, index),
                       ),
           ),
 
