@@ -4,6 +4,7 @@ import { CustomError } from '@/core/errors/custom.error'
 import { fixedTwoDecimals, productWithTwoDecimals } from '@/core/lib/utils'
 import { db } from '@/db/connection'
 import {
+  clientesTable,
   detallesProductoTable,
   empleadosTable,
   productosTable,
@@ -54,6 +55,17 @@ export class CreateProformaVenta {
       detallesMap
     )
 
+    if (createProformaVentaDto.clienteId != null) {
+      const clientes = await db
+        .select({ id: clientesTable.id })
+        .from(clientesTable)
+        .where(eq(clientesTable.id, createProformaVentaDto.clienteId))
+
+      if (clientes.length < 1) {
+        throw CustomError.badRequest('El cliente especificado no existe')
+      }
+    }
+
     const now = new Date()
 
     const results = await db
@@ -62,6 +74,7 @@ export class CreateProformaVenta {
         nombre: createProformaVentaDto.nombre,
         total: fixedTwoDecimals(total),
         detalles: detallesCalculados,
+        clienteId: createProformaVentaDto.clienteId,
         empleadoId: createProformaVentaDto.empleadoId,
         sucursalId,
         fechaCreacion: now,

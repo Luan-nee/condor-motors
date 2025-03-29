@@ -449,6 +449,7 @@ export const proformasVentaTable = pgTable('proformas_venta', {
       subtotal: number
     }>
   >(),
+  clienteId: integer('cliente_id').references(() => clientesTable.id),
   empleadoId: integer('empleado_id')
     .notNull()
     .references(() => empleadosTable.id),

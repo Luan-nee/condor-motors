@@ -12,13 +12,15 @@ export const proformaVentaSchema = {
     .string()
     .trim()
     .min(2)
-    .max(255)
+    .max(512)
     .refine((val) => Validator.isValidDescription(val), {
       message:
         'El nombre solo puede contener este set de caracteres: a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ.,¡!¿?-()[]{}$%&*\'_"@#+'
     })
-    .optional(),
+    .optional()
+    .nullable(),
   empleadoId: idTypeBaseSchema.numericId,
+  clienteId: idTypeBaseSchema.numericId.optional().nullable(),
   detalles: z
     .object({
       productoId: detalleProformaVentaSchema.productoId,

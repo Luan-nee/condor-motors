@@ -4,6 +4,7 @@ import z from 'zod'
 const createProformaVentaSchema = z.object({
   nombre: proformaVentaSchema.nombre,
   empleadoId: proformaVentaSchema.empleadoId,
+  clienteId: proformaVentaSchema.empleadoId,
   detalles: proformaVentaSchema.detalles
 })
 
@@ -12,6 +13,7 @@ export const createProformaVentaValidator = (object: unknown) =>
 
 const updateProformaVentaSchema = z.object({
   nombre: proformaVentaSchema.nombre,
+  clienteId: proformaVentaSchema.clienteId,
   detalles: proformaVentaSchema.detalles
 })
 

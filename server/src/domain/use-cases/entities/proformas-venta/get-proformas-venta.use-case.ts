@@ -3,6 +3,7 @@ import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import {
+  clientesTable,
   empleadosTable,
   proformasVentaTable,
   sucursalesTable
@@ -19,6 +20,11 @@ export class GetProformasVenta {
     id: proformasVentaTable.id,
     nombre: proformasVentaTable.nombre,
     total: proformasVentaTable.total,
+    cliente: {
+      id: clientesTable.id,
+      nombre: clientesTable.denominacion,
+      numeroDocumento: clientesTable.numeroDocumento
+    },
     empleado: {
       id: empleadosTable.id,
       nombre: empleadosTable.nombre
@@ -84,6 +90,10 @@ export class GetProformasVenta {
       .innerJoin(
         sucursalesTable,
         eq(proformasVentaTable.sucursalId, sucursalesTable.id)
+      )
+      .leftJoin(
+        clientesTable,
+        eq(proformasVentaTable.clienteId, clientesTable.id)
       )
       .where(
         and(eq(proformasVentaTable.sucursalId, sucursalId), whereCondition)
