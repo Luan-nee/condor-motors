@@ -1,7 +1,7 @@
 import { db } from '@/db/connection'
-import { ventasTable } from '@/db/schema'
+import { sucursalesTable, totalesVentaTable, ventasTable } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
-import { and, count, gte, lte } from 'drizzle-orm'
+import { and, count, eq, gte, lte, sum } from 'drizzle-orm'
 
 export class GetReporteVentas {
   private async getventasReporte(queriesDto: QueriesDto) {
@@ -16,16 +16,39 @@ export class GetReporteVentas {
           )
         : undefined
 
+    const dataTotal = await db
+      .select({
+        ventasTotales: count(),
+        totalVendido: sum(totalesVentaTable.totalVenta)
+      })
+      .from(totalesVentaTable)
+      .innerJoin(ventasTable, eq(totalesVentaTable.ventaId, ventasTable.id))
+      .where(whereCondition)
+
     const getVentas = await db
       .select({
-        sucursalId: ventasTable.sucursalId,
-        totalVentas: count()
+        nombreSucursal: sucursalesTable.nombre,
+        totalVentas: count(),
+        sumaVenta: sum(totalesVentaTable.totalVenta)
       })
       .from(ventasTable)
+      .innerJoin(
+        sucursalesTable,
+        eq(sucursalesTable.id, ventasTable.sucursalId)
+      )
+      .innerJoin(
+        totalesVentaTable,
+        eq(totalesVentaTable.ventaId, ventasTable.id)
+      )
       .where(whereCondition)
-      .groupBy(ventasTable.sucursalId)
+      .groupBy(ventasTable.sucursalId, sucursalesTable.nombre)
 
-    return getVentas
+    const [data] = dataTotal
+
+    return {
+      ...data,
+      getVentas
+    }
   }
 
   async execute(queriesDto: QueriesDto) {
