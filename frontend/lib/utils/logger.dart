@@ -26,6 +26,7 @@ class ConsoleColor {
   // Estilos de texto
   static const String bold = '\x1B[1m';
   static const String underline = '\x1B[4m';
+  static const String dim = '\x1B[2m'; // Texto tenue (opacidad 50%)
   
   // Fondos
   static const String bgBlack = '\x1B[40m';
@@ -43,6 +44,9 @@ class ConsoleColor {
   static const String put = brightYellow;
   static const String patch = brightMagenta;
   static const String delete = brightRed;
+  
+  // Colores para funcionalidades específicas
+  static const String cache = '$dim$brightBlack'; // Gris con opacidad 50%
   
   /// Obtiene el color para un método HTTP específico
   static String getHttpMethodColor(String method) {
@@ -106,6 +110,13 @@ class Logger {
   static void error(String message) {
     if (_currentLevel.index <= LogLevel.error.index) {
       _log('ERROR', message, ConsoleColor.red);
+    }
+  }
+  
+  /// Registra un mensaje relacionado con caché (con color gris y opacidad 50%)
+  static void cache(String message) {
+    if (_currentLevel.index <= LogLevel.info.index) {
+      _log('CACHE', message, ConsoleColor.cache);
     }
   }
   
@@ -190,6 +201,11 @@ void logError(String message, [error, StackTrace? stackTrace]) {
       print(ConsoleColor.colorize('  └─ $stackTrace', ConsoleColor.brightRed));
     }
   }
+}
+
+/// Registra un mensaje relacionado con caché
+void logCache(String message) {
+  Logger.cache(message);
 }
 
 /// Registra un mensaje para operaciones de API

@@ -1,5 +1,5 @@
 import 'package:condorsmotors/api/main.api.dart';
-import 'package:flutter/foundation.dart';
+import 'package:condorsmotors/utils/logger.dart';
 
 class StocksApi {
   final ApiClient _api;
@@ -21,11 +21,11 @@ class StocksApi {
     try {
       // Validar el ID de sucursal
       if (sucursalId.isEmpty) {
-        debugPrint('ERROR: Se requiere un ID de sucursal válido');
+        Logger.error('Se requiere un ID de sucursal válido');
         throw Exception('ID de sucursal no válido');
       }
       
-      debugPrint('StocksApi: Obteniendo productos para sucursal $sucursalId');
+      Logger.debug('Obteniendo productos para sucursal $sucursalId');
       
       final Map<String, String> queryParams = <String, String>{};
       
@@ -43,7 +43,7 @@ class StocksApi {
       
       // Construir el endpoint correcto
       final String endpoint = '/stocks/$sucursalId/productos';
-      debugPrint('StocksApi: Solicitando a endpoint: $endpoint con parámetros: $queryParams');
+      Logger.debug('Solicitando a endpoint: $endpoint con parámetros: $queryParams');
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: endpoint,
@@ -51,30 +51,30 @@ class StocksApi {
         queryParams: queryParams,
       );
       
-      debugPrint('StocksApi: Respuesta recibida, status: ${response['status']}');
+      Logger.debug('Respuesta recibida, status: ${response['status']}');
       
       // Verificar estructura de respuesta
       if (response['data'] == null) {
-        debugPrint('StocksApi: La respuesta no contiene datos');
+        Logger.warn('La respuesta no contiene datos');
         return <dynamic>[];
       }
       
       if (response['data'] is! List) {
-        debugPrint('StocksApi: Formato de datos inesperado. Recibido: ${response['data'].runtimeType}');
+        Logger.warn('Formato de datos inesperado. Recibido: ${response['data'].runtimeType}');
         return <dynamic>[];
       }
       
       final List productos = response['data'] as List;
-      debugPrint('StocksApi: ${productos.length} productos encontrados');
+      Logger.debug('${productos.length} productos encontrados');
       
       return productos;
     } catch (e) {
-      debugPrint('StocksApi: Error al obtener stock por sucursal: $e');
+      Logger.error('Error al obtener stock por sucursal: $e');
       // Capturar más detalles sobre el error
       if (e is ApiException) {
-        debugPrint('StocksApi: Código de error: ${e.statusCode}, Mensaje: ${e.message}');
+        Logger.error('Código de error: ${e.statusCode}, Mensaje: ${e.message}');
         if (e.data != null) {
-          debugPrint('StocksApi: Datos adicionales del error: ${e.data}');
+          Logger.error('Datos adicionales del error: ${e.data}');
         }
       }
       rethrow;
@@ -92,7 +92,7 @@ class StocksApi {
         throw Exception('Se requieren IDs de sucursal y producto válidos');
       }
       
-      debugPrint('StocksApi: Obteniendo stock del producto $productoId en sucursal $sucursalId');
+      Logger.debug('Obteniendo stock del producto $productoId en sucursal $sucursalId');
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
@@ -101,7 +101,7 @@ class StocksApi {
       
       return response['data'];
     } catch (e) {
-      debugPrint('Error al obtener stock de producto: $e');
+      Logger.error('Error al obtener stock de producto: $e');
       rethrow;
     }
   }
@@ -127,8 +127,8 @@ class StocksApi {
         throw Exception('Tipo de operación no válido. Debe ser "incremento" o "decremento"');
       }
       
-      debugPrint('StocksApi: Actualizando stock del producto $productoId en sucursal $sucursalId');
-      debugPrint('StocksApi: Operación: $tipo, Cantidad: $cantidad');
+      Logger.debug('Actualizando stock del producto $productoId en sucursal $sucursalId');
+      Logger.debug('Operación: $tipo, Cantidad: $cantidad');
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId/stock',
@@ -141,7 +141,7 @@ class StocksApi {
       
       return response['data'];
     } catch (e) {
-      debugPrint('Error al actualizar stock: $e');
+      Logger.error('Error al actualizar stock: $e');
       rethrow;
     }
   }
@@ -184,7 +184,7 @@ class StocksApi {
       
       return response['data'];
     } catch (e) {
-      debugPrint('Error al registrar movimiento de stock: $e');
+      Logger.error('Error al registrar movimiento de stock: $e');
       rethrow;
     }
   }
@@ -224,7 +224,7 @@ class StocksApi {
       
       return response['data'] ?? <dynamic>[];
     } catch (e) {
-      debugPrint('Error al obtener historial de stock: $e');
+      Logger.error('Error al obtener historial de stock: $e');
       rethrow;
     }
   }
@@ -251,7 +251,7 @@ class StocksApi {
       
       return response['data'];
     } catch (e) {
-      debugPrint('Error al transferir stock: $e');
+      Logger.error('Error al transferir stock: $e');
       rethrow;
     }
   }
@@ -275,7 +275,7 @@ class StocksApi {
       
       return response['data']['url'] ?? '';
     } catch (e) {
-      debugPrint('Error al generar reporte de stock: $e');
+      Logger.error('Error al generar reporte de stock: $e');
       rethrow;
     }
   }
@@ -284,7 +284,7 @@ class StocksApi {
   /// 
   /// Este método es una versión simplificada de getStockBySucursal específica para stock bajo
   Future<List<dynamic>> getProductosStockBajo(String sucursalId) async {
-    debugPrint('StocksApi: Obteniendo productos con stock bajo para sucursal $sucursalId');
+    Logger.debug('Obteniendo productos con stock bajo para sucursal $sucursalId');
     return await getStockBySucursal(
       sucursalId: sucursalId,
       stockBajo: true,

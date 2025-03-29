@@ -40,7 +40,7 @@ class EmpleadosApi {
       if (useCache) {
         final List<Empleado>? cachedData = _cache.get<List<Empleado>>(cacheKey);
         if (cachedData != null) {
-          Logger.info('Empleados obtenidos desde caché: $cacheKey');
+          logCache('Empleados obtenidos desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -106,7 +106,7 @@ class EmpleadosApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, empleados);
-        Logger.info('Empleados guardados en caché: $cacheKey');
+        logCache('Empleados guardados en caché: $cacheKey');
       }
 
       return empleados;
@@ -138,7 +138,7 @@ class EmpleadosApi {
       if (useCache) {
         final Empleado? cachedData = _cache.get<Empleado>(cacheKey);
         if (cachedData != null) {
-          Logger.info('Empleado obtenido desde caché: $cacheKey');
+          logCache('Empleado obtenido desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -164,7 +164,7 @@ class EmpleadosApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, empleado);
-        Logger.info('Empleado guardado en caché: $cacheKey');
+        logCache('Empleado guardado en caché: $cacheKey');
       }
 
       return empleado;
@@ -517,7 +517,7 @@ class EmpleadosApi {
         final Map<String, dynamic>? cachedData =
             _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null) {
-          Logger.info('Cuenta obtenida desde caché: $cacheKey');
+          logCache('Cuenta obtenida desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -534,7 +534,7 @@ class EmpleadosApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, cuenta);
-        Logger.info('Cuenta guardada en caché: $cacheKey');
+        logCache('Cuenta guardada en caché: $cacheKey');
       }
 
       Logger.debug('Información de cuenta obtenida correctamente');
@@ -556,7 +556,7 @@ class EmpleadosApi {
       if (useCache) {
         final List? cachedData = _cache.get<List<dynamic>>(cacheKey);
         if (cachedData != null) {
-          Logger.info('Cuentas de empleados obtenidas desde caché: $cacheKey');
+          logCache('Cuentas de empleados obtenidas desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -581,7 +581,7 @@ class EmpleadosApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, data);
-        Logger.info('Cuentas de empleados guardadas en caché: $cacheKey');
+        logCache('Cuentas de empleados guardadas en caché: $cacheKey');
       }
 
       Logger.debug('Total de cuentas encontradas: ${data.length}');
@@ -627,7 +627,7 @@ class EmpleadosApi {
         final List<Map<String, dynamic>>? cachedData =
             _cache.get<List<Map<String, dynamic>>>(cacheKey);
         if (cachedData != null) {
-          Logger.info('Roles de cuentas obtenidos desde caché: $cacheKey');
+          logCache('Roles de cuentas obtenidos desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -646,7 +646,7 @@ class EmpleadosApi {
         // Guardar en caché si useCache es true
         if (useCache) {
           _cache.set(cacheKey, roles);
-          Logger.info('Roles de cuentas guardados en caché: $cacheKey');
+          logCache('Roles de cuentas guardados en caché: $cacheKey');
         }
       }
 
@@ -668,7 +668,7 @@ class EmpleadosApi {
         final Map<String, dynamic>? cachedData =
             _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null) {
-          Logger.info('Cuenta por empleado obtenida desde caché: $cacheKey');
+          logCache('Cuenta por empleado obtenida desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -690,7 +690,7 @@ class EmpleadosApi {
         // Guardar en caché si useCache es true
         if (useCache) {
           _cache.set(cacheKey, cuenta);
-          Logger.info('Cuenta por empleado guardada en caché: $cacheKey');
+          logCache('Cuenta por empleado guardada en caché: $cacheKey');
         }
 
         return cuenta;
@@ -766,7 +766,7 @@ class EmpleadosApi {
   /// Invalida caché por patrón de clave
   void _invalidateCacheByPattern(String pattern) {
     _cache.invalidateByPattern(pattern);
-    Logger.debug('Caché invalidada para patrón: $pattern');
+    logCache('Caché invalidada para patrón: $pattern');
   }
 
   /// Método público para forzar refresco de caché
@@ -776,11 +776,11 @@ class EmpleadosApi {
       _cache
         ..invalidate('empleado_$empleadoId')
         ..invalidate('cuenta_empleado_$empleadoId');
-      Logger.info('Caché invalidada para empleado: $empleadoId');
+      logCache('Caché invalidada para empleado: $empleadoId');
     } else {
       // Invalidar toda la caché relacionada con empleados
       _cache.clear();
-      Logger.info('Caché completamente invalidada');
+      logCache('Caché completamente invalidada');
     }
   }
 

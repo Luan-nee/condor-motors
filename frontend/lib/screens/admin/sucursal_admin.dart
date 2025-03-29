@@ -11,11 +11,21 @@ class SucursalRequest {
   final String nombre;
   final String direccion;
   final bool sucursalCentral;
+  final String? serieFactura;
+  final int? numeroFacturaInicial;
+  final String? serieBoleta;
+  final int? numeroBoletaInicial;
+  final String? codigoEstablecimiento;
 
   SucursalRequest({
     required this.nombre,
     required this.direccion,
     required this.sucursalCentral,
+    this.serieFactura,
+    this.numeroFacturaInicial,
+    this.serieBoleta,
+    this.numeroBoletaInicial,
+    this.codigoEstablecimiento,
   });
 
   Map<String, dynamic> toJson() {
@@ -23,6 +33,11 @@ class SucursalRequest {
       'nombre': nombre,
       'direccion': direccion,
       'sucursalCentral': sucursalCentral,
+      if (serieFactura != null && serieFactura!.isNotEmpty) 'serieFactura': serieFactura,
+      if (numeroFacturaInicial != null) 'numeroFacturaInicial': numeroFacturaInicial,
+      if (serieBoleta != null && serieBoleta!.isNotEmpty) 'serieBoleta': serieBoleta,
+      if (numeroBoletaInicial != null) 'numeroBoletaInicial': numeroBoletaInicial,
+      if (codigoEstablecimiento != null && codigoEstablecimiento!.isNotEmpty) 'codigoEstablecimiento': codigoEstablecimiento,
     };
   }
 }
@@ -96,6 +111,11 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
         nombre: data['nombre'],
         direccion: data['direccion'] ?? '',
         sucursalCentral: data['sucursalCentral'] ?? false,
+        serieFactura: data['serieFactura'] as String?,
+        numeroFacturaInicial: data['numeroFacturaInicial'] as int?,
+        serieBoleta: data['serieBoleta'] as String?,
+        numeroBoletaInicial: data['numeroBoletaInicial'] as int?,
+        codigoEstablecimiento: data['codigoEstablecimiento'] as String?,
       );
 
       if (data['id'] != null) {
@@ -459,7 +479,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
           ),
         ),
       ),
-      child: ListTile(
+      child: ExpansionTile(
         title: Text(
           sucursal.nombre,
           style: const TextStyle(
@@ -514,6 +534,122 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen> {
             ),
           ],
         ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Divider(color: Colors.grey),
+                const SizedBox(height: 8),
+                Text(
+                  'Configuración de Facturación',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildInfoSection(
+                        'Factura', 
+                        'Serie: ${sucursal.serieFactura ?? 'No configurada'}',
+                        'Inicio: ${sucursal.numeroFacturaInicial ?? 1}',
+                        sucursal.serieFactura != null,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildInfoSection(
+                        'Boleta', 
+                        'Serie: ${sucursal.serieBoleta ?? 'No configurada'}',
+                        'Inicio: ${sucursal.numeroBoletaInicial ?? 1}',
+                        sucursal.serieBoleta != null,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildInfoSection(
+                  'Código de Establecimiento', 
+                  sucursal.codigoEstablecimiento ?? 'No configurado',
+                  '',
+                  sucursal.codigoEstablecimiento != null,
+                ),
+                const SizedBox(height: 8),
+                const Divider(color: Colors.grey),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      icon: const Icon(Icons.edit, size: 16),
+                      label: const Text('Editar configuración'),
+                      onPressed: () => _showSucursalDialog(sucursal),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildInfoSection(String title, String primaryInfo, String secondaryInfo, bool isConfigured) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isConfigured 
+            ? const Color(0xFF2D2D2D) 
+            : Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isConfigured 
+              ? Colors.grey.withOpacity(0.3) 
+              : Colors.red.withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isConfigured ? Icons.check_circle : Icons.error_outline,
+                color: isConfigured ? Colors.green : Colors.red,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            primaryInfo,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+            ),
+          ),
+          if (secondaryInfo.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              secondaryInfo,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -601,6 +737,11 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _direccionController = TextEditingController();
+  final TextEditingController _serieFacturaController = TextEditingController();
+  final TextEditingController _numeroFacturaInicialController = TextEditingController();
+  final TextEditingController _serieBoletaController = TextEditingController();
+  final TextEditingController _numeroBoletaInicialController = TextEditingController();
+  final TextEditingController _codigoEstablecimientoController = TextEditingController();
   bool _sucursalCentral = false;
 
   @override
@@ -610,6 +751,15 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
       _nombreController.text = widget.sucursal!.nombre;
       _direccionController.text = widget.sucursal!.direccion ?? '';
       _sucursalCentral = widget.sucursal!.sucursalCentral;
+      _serieFacturaController.text = widget.sucursal!.serieFactura ?? '';
+      _numeroFacturaInicialController.text = widget.sucursal!.numeroFacturaInicial?.toString() ?? '1';
+      _serieBoletaController.text = widget.sucursal!.serieBoleta ?? '';
+      _numeroBoletaInicialController.text = widget.sucursal!.numeroBoletaInicial?.toString() ?? '1';
+      _codigoEstablecimientoController.text = widget.sucursal!.codigoEstablecimiento ?? '';
+    } else {
+      // Valores predeterminados para nuevas sucursales
+      _numeroFacturaInicialController.text = '1';
+      _numeroBoletaInicialController.text = '1';
     }
   }
 
@@ -661,6 +811,118 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
                 },
               ),
               const SizedBox(height: 16),
+              
+              // Configuración de facturación - Sección
+              Container(
+                margin: const EdgeInsets.only(top: 8, bottom: 8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Configuración de Facturación',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    // Serie de Factura
+                    TextFormField(
+                      controller: _serieFacturaController,
+                      decoration: const InputDecoration(
+                        labelText: 'Serie de Factura',
+                        hintText: 'Ej: F001',
+                        prefixIcon: Icon(Icons.receipt_long),
+                        helperText: 'Debe empezar con F y tener 4 caracteres',
+                      ),
+                      validator: (String? value) {
+                        if (value != null && value.isNotEmpty) {
+                          if (!value.startsWith('F') || value.length != 4) {
+                            return 'La serie debe empezar con F y tener 4 caracteres';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    // Número de Factura Inicial
+                    TextFormField(
+                      controller: _numeroFacturaInicialController,
+                      decoration: const InputDecoration(
+                        labelText: 'Número de Factura Inicial',
+                        hintText: 'Ej: 1',
+                        prefixIcon: Icon(Icons.format_list_numbered),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (String? value) {
+                        if (value != null && value.isNotEmpty) {
+                          if (int.tryParse(value) == null || int.parse(value) < 1) {
+                            return 'Debe ser un número positivo';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Serie de Boleta
+                    TextFormField(
+                      controller: _serieBoletaController,
+                      decoration: const InputDecoration(
+                        labelText: 'Serie de Boleta',
+                        hintText: 'Ej: B001',
+                        prefixIcon: Icon(Icons.receipt),
+                        helperText: 'Debe empezar con B y tener 4 caracteres',
+                      ),
+                      validator: (String? value) {
+                        if (value != null && value.isNotEmpty) {
+                          if (!value.startsWith('B') || value.length != 4) {
+                            return 'La serie debe empezar con B y tener 4 caracteres';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    // Número de Boleta Inicial
+                    TextFormField(
+                      controller: _numeroBoletaInicialController,
+                      decoration: const InputDecoration(
+                        labelText: 'Número de Boleta Inicial',
+                        hintText: 'Ej: 1',
+                        prefixIcon: Icon(Icons.format_list_numbered),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (String? value) {
+                        if (value != null && value.isNotEmpty) {
+                          if (int.tryParse(value) == null || int.parse(value) < 1) {
+                            return 'Debe ser un número positivo';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Código de Establecimiento
+                    TextFormField(
+                      controller: _codigoEstablecimientoController,
+                      decoration: const InputDecoration(
+                        labelText: 'Código de Establecimiento',
+                        hintText: 'Ej: EST001',
+                        prefixIcon: Icon(Icons.store),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 16),
               SwitchListTile(
                 title: const Text('Sucursal Central'),
                 subtitle: const Text(
@@ -690,6 +952,14 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
                 'nombre': _nombreController.text,
                 'direccion': _direccionController.text,
                 'sucursalCentral': _sucursalCentral,
+                if (_serieFacturaController.text.isNotEmpty) 'serieFactura': _serieFacturaController.text,
+                if (_numeroFacturaInicialController.text.isNotEmpty) 
+                  'numeroFacturaInicial': int.parse(_numeroFacturaInicialController.text),
+                if (_serieBoletaController.text.isNotEmpty) 'serieBoleta': _serieBoletaController.text,
+                if (_numeroBoletaInicialController.text.isNotEmpty) 
+                  'numeroBoletaInicial': int.parse(_numeroBoletaInicialController.text),
+                if (_codigoEstablecimientoController.text.isNotEmpty) 
+                  'codigoEstablecimiento': _codigoEstablecimientoController.text,
               };
               widget.onSave(data);
               Navigator.pop(context);

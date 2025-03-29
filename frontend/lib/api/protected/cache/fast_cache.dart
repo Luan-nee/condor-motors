@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:condorsmotors/utils/logger.dart';
 
 /// Implementación de un sistema de caché en memoria con:
 /// - Control de tamaño máximo
@@ -32,6 +32,7 @@ class FastCache {
     // Si ha expirado, eliminarlo y retornar null
     if (DateTime.now().difference(entry.timestamp) > expirePeriod) {
       _cache.remove(key);
+      logCache('Entrada expirada eliminada: $key');
       return null;
     }
 
@@ -61,21 +62,34 @@ class FastCache {
       timestamp: DateTime.now(),
       lastAccessed: DateTime.now(),
     );
+    
+    logCache('Dato guardado en caché: $key');
   }
 
   /// Invalida una entrada específica del caché
   void invalidate(String key) {
-    _cache.remove(key);
+    if (_cache.containsKey(key)) {
+      _cache.remove(key);
+      logCache('Entrada invalidada: $key');
+    }
   }
 
   /// Invalida todas las entradas que coincidan con un patrón
   void invalidateByPattern(String pattern) {
+    final int initialSize = _cache.length;
     _cache.removeWhere((String key, _) => key.startsWith(pattern));
+    final int removed = initialSize - _cache.length;
+    
+    if (removed > 0) {
+      logCache('$removed entradas invalidadas por patrón: $pattern');
+    }
   }
 
   /// Limpia completamente el caché
   void clear() {
+    final int initialSize = _cache.length;
     _cache.clear();
+    logCache('Caché completamente limpiado. Entradas eliminadas: $initialSize');
   }
 
   /// Elimina la entrada menos usada recientemente (LRU)
@@ -96,7 +110,7 @@ class FastCache {
 
     if (oldestKey != null) {
       _cache.remove(oldestKey);
-      debugPrint('🗑️ Eliminada entrada más antigua del caché: $oldestKey');
+      logCache('Eliminada entrada más antigua del caché: $oldestKey');
     }
   }
   

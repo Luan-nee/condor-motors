@@ -1216,6 +1216,13 @@ class InventarioResumen extends StatefulWidget {
 
   @override
   _InventarioResumenState createState() => _InventarioResumenState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(IterableProperty<Producto>('productos', productos));
+    properties.add(StringProperty('sucursalNombre', sucursalNombre));
+  }
 }
 
 class _InventarioResumenState extends State<InventarioResumen> {

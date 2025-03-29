@@ -2,7 +2,6 @@ import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_conversion_utils.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
-import 'package:condorsmotors/screens/computer/widgets/proforma_widget.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -775,7 +774,8 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
   Widget _buildDocumentTypeButton(String tipo) {
     final bool isSelected = _tipoDocumento == tipo;
     
-    return Expanded(
+    return Flexible(
+      fit: FlexFit.tight,
       child: InkWell(
         onTap: () {
           setState(() {

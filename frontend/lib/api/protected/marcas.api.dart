@@ -49,7 +49,7 @@ class MarcasApi {
       if (useCache && !forceRefresh) {
         final ResultadoPaginado<Marca>? cachedData = _cache.get<ResultadoPaginado<Marca>>(cacheKey);
         if (cachedData != null) {
-          Logger.info('[MarcasApi] Marcas paginadas obtenidas desde caché: $cacheKey');
+          logCache('[MarcasApi] Marcas paginadas obtenidas desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -114,7 +114,7 @@ class MarcasApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, resultado);
-        Logger.info('[MarcasApi] Marcas paginadas guardadas en caché: $cacheKey');
+        logCache('[MarcasApi] Marcas paginadas guardadas en caché: $cacheKey');
       }
       
       return resultado;
@@ -145,7 +145,7 @@ class MarcasApi {
       if (useCache && !forceRefresh) {
         final List<Marca>? cachedData = _cache.get<List<Marca>>(cacheKey);
         if (cachedData != null) {
-          Logger.info('[MarcasApi] Todas las marcas obtenidas desde caché');
+          logCache('[MarcasApi] Todas las marcas obtenidas desde caché');
           return cachedData;
         }
       }
@@ -162,7 +162,7 @@ class MarcasApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, marcas);
-        Logger.info('[MarcasApi] Todas las marcas guardadas en caché: ${marcas.length} elementos');
+        logCache('[MarcasApi] Todas las marcas guardadas en caché: ${marcas.length} elementos');
       }
       
       return marcas;
@@ -202,7 +202,7 @@ class MarcasApi {
       if (useCache && !forceRefresh) {
         final Marca? cachedData = _cache.get<Marca>(cacheKey);
         if (cachedData != null) {
-          Logger.info('[MarcasApi] Marca obtenida desde caché: $cacheKey');
+          logCache('[MarcasApi] Marca obtenida desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -230,7 +230,7 @@ class MarcasApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, marca);
-        Logger.info('[MarcasApi] Marca guardada en caché: $cacheKey');
+        logCache('[MarcasApi] Marca guardada en caché: $cacheKey');
       }
       
       return marca;
@@ -392,17 +392,17 @@ class MarcasApi {
   void invalidateCache([String? marcaId]) {
     if (marcaId != null) {
       _cache.invalidate('$_prefixMarca$marcaId');
-      Logger.info('[MarcasApi] Caché invalidada para marca: $marcaId');
+      logCache('[MarcasApi] Caché invalidada para marca: $marcaId');
     }
     
     // Invalidar todas las listas de marcas
     _cache.invalidateByPattern(_prefixListaMarcas);
-    Logger.info('[MarcasApi] Caché de listas de marcas invalidada');
+    logCache('[MarcasApi] Caché de listas de marcas invalidada');
   }
   
   /// Método público para limpiar completamente el caché
   void clearCache() {
     _cache.clear();
-    Logger.info('[MarcasApi] Caché completamente limpiada');
+    logCache('[MarcasApi] Caché completamente limpiada');
   }
 }

@@ -2,7 +2,7 @@ import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' as proforma_model;
-import 'package:flutter/foundation.dart';
+import 'package:condorsmotors/utils/logger.dart';
 
 /// Modelo para los detalles de una proforma de venta
 class DetalleProforma {
@@ -85,14 +85,14 @@ class ProformaVentaApi {
       // Invalidar sólo las proformas de esta sucursal
       _cache..invalidateByPattern('$_prefixListaProformas$sucursalId')
       ..invalidateByPattern('$_prefixProforma$sucursalId');
-      debugPrint('🔄 Caché de proformas invalidado para sucursal $sucursalId');
+      logCache('🔄 Caché de proformas invalidado para sucursal $sucursalId');
     } else {
       // Invalidar todas las proformas en caché
       _cache..invalidateByPattern(_prefixListaProformas)
       ..invalidateByPattern(_prefixProforma);
-      debugPrint('🔄 Caché de proformas invalidado completamente');
+      logCache('🔄 Caché de proformas invalidado completamente');
     }
-    debugPrint('📊 Entradas en caché después de invalidación: ${_cache.size}');
+    logCache('📊 Entradas en caché después de invalidación: ${_cache.size}');
   }
 
   /// Obtener lista de proformas de venta para una sucursal específica
@@ -149,13 +149,13 @@ class ProformaVentaApi {
       final String cacheKey = '$_prefixListaProformas${sucursalId}_p${page}_s${pageSize}_q${search ?? ""}';
       
       // Nuevo mensaje de debug para seguimiento detallado
-      debugPrint('📝 [ProformaVentaApi] Solicitando proformas de sucursal $sucursalId (page: $page, pageSize: $pageSize, useCache: $useCache, forceRefresh: $forceRefresh)');
+      logCache('📝 [ProformaVentaApi] Solicitando proformas de sucursal $sucursalId (page: $page, pageSize: $pageSize, useCache: $useCache, forceRefresh: $forceRefresh)');
       
       // Intentar obtener del caché si corresponde
       if (useCache && !forceRefresh) {
         final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
-          debugPrint('🔍 Usando proformas en caché para sucursal $sucursalId');
+          logCache('🔍 Usando proformas en caché para sucursal $sucursalId');
           return cachedData;
         }
       }
@@ -166,7 +166,7 @@ class ProformaVentaApi {
         if (search != null && search.isNotEmpty) 'search': search,
       };
       
-      debugPrint('🔄 [ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa');
+      logCache('🔄 [ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa');
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa',
@@ -175,21 +175,21 @@ class ProformaVentaApi {
       );
       
       // Nuevo mensaje de debug con información de respuesta
-      debugPrint('✅ [ProformaVentaApi] Respuesta recibida para proformas de sucursal $sucursalId');
+      logCache('✅ [ProformaVentaApi] Respuesta recibida para proformas de sucursal $sucursalId');
       if (response.containsKey('data')) {
         final int proformasCount = response['data'] is List ? (response['data'] as List).length : 0;
-        debugPrint('📊 [ProformaVentaApi] Proformas recibidas: $proformasCount');
+        logCache('📊 [ProformaVentaApi] Proformas recibidas: $proformasCount');
       }
       
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, response);
-        debugPrint('💾 Guardadas proformas en caché para sucursal $sucursalId');
+        logCache('💾 Guardadas proformas en caché para sucursal $sucursalId');
       }
       
       return response;
     } catch (e) {
-      debugPrint('❌ [ProformaVentaApi] ERROR al obtener proformas de venta: $e');
+      logCache('❌ [ProformaVentaApi] ERROR al obtener proformas de venta: $e');
       rethrow;
     }
   }
@@ -236,18 +236,18 @@ class ProformaVentaApi {
       final String cacheKey = '$_prefixProforma${sucursalId}_$proformaId';
       
       // Nuevo mensaje de debug para seguimiento detallado
-      debugPrint('📝 [ProformaVentaApi] Solicitando proforma #$proformaId de sucursal $sucursalId (useCache: $useCache, forceRefresh: $forceRefresh)');
+      logCache('📝 [ProformaVentaApi] Solicitando proforma #$proformaId de sucursal $sucursalId (useCache: $useCache, forceRefresh: $forceRefresh)');
       
       // Intentar obtener del caché si corresponde
       if (useCache && !forceRefresh) {
         final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
-          debugPrint('🔍 [ProformaVentaApi] Usando proforma en caché: $sucursalId/$proformaId');
+          logCache('🔍 [ProformaVentaApi] Usando proforma en caché: $sucursalId/$proformaId');
           return cachedData;
         }
       }
       
-      debugPrint('🔄 [ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa/$proformaId');
+      logCache('🔄 [ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa/$proformaId');
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
@@ -255,20 +255,20 @@ class ProformaVentaApi {
       );
       
       // Nuevo mensaje de debug con información de respuesta
-      debugPrint('✅ [ProformaVentaApi] Respuesta recibida para proforma #$proformaId');
+      logCache('✅ [ProformaVentaApi] Respuesta recibida para proforma #$proformaId');
       if (response.containsKey('status')) {
-        debugPrint('📊 [ProformaVentaApi] Status: ${response['status']}');
+        logCache('📊 [ProformaVentaApi] Status: ${response['status']}');
       }
       
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, response);
-        debugPrint('💾 [ProformaVentaApi] Guardada proforma en caché: $sucursalId/$proformaId');
+        logCache('💾 [ProformaVentaApi] Guardada proforma en caché: $sucursalId/$proformaId');
       }
       
       return response;
     } catch (e) {
-      debugPrint('❌ [ProformaVentaApi] ERROR al obtener proforma #$proformaId: $e');
+      logCache('❌ [ProformaVentaApi] ERROR al obtener proforma #$proformaId: $e');
       rethrow;
     }
   }
@@ -341,7 +341,7 @@ class ProformaVentaApi {
       
       return response;
     } catch (e) {
-      debugPrint('❌ Error al crear proforma de venta: $e');
+      logCache('❌ Error al crear proforma de venta: $e');
       rethrow;
     }
   }
@@ -362,21 +362,21 @@ class ProformaVentaApi {
   }) async {
     try {
       // Nuevo mensaje de debug para seguimiento
-      debugPrint('📝 [ProformaVentaApi] Actualizando proforma #$proformaId en sucursal $sucursalId');
+      logCache('📝 [ProformaVentaApi] Actualizando proforma #$proformaId en sucursal $sucursalId');
       
       // Si se especifica el estado, preparar los datos para actualizar
       if (estado != null) {
         data = data ?? <String, dynamic>{};
         data['estado'] = estado;
         
-        debugPrint('🔄 [ProformaVentaApi] Cambiando estado de proforma a: $estado');
+        logCache('🔄 [ProformaVentaApi] Cambiando estado de proforma a: $estado');
       }
       
       if (data == null || data.isEmpty) {
         throw Exception('Se deben proporcionar datos para actualizar la proforma');
       }
       
-      debugPrint('🔄 [ProformaVentaApi] Realizando petición API PATCH a /$sucursalId/proformasventa/$proformaId');
+      logCache('🔄 [ProformaVentaApi] Realizando petición API PATCH a /$sucursalId/proformasventa/$proformaId');
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
@@ -385,9 +385,9 @@ class ProformaVentaApi {
       );
       
       // Nuevo mensaje de debug con resultado
-      debugPrint('✅ [ProformaVentaApi] Respuesta de actualización de proforma #$proformaId recibida');
+      logCache('✅ [ProformaVentaApi] Respuesta de actualización de proforma #$proformaId recibida');
       if (response.containsKey('status')) {
-        debugPrint('📊 [ProformaVentaApi] Status: ${response['status']}');
+        logCache('📊 [ProformaVentaApi] Status: ${response['status']}');
       }
       
       // Invalidar caché para esta proforma
@@ -395,7 +395,7 @@ class ProformaVentaApi {
       
       return response;
     } catch (e) {
-      debugPrint('❌ [ProformaVentaApi] ERROR al actualizar proforma #$proformaId: $e');
+      logCache('❌ [ProformaVentaApi] ERROR al actualizar proforma #$proformaId: $e');
       rethrow;
     }
   }
@@ -426,9 +426,9 @@ class ProformaVentaApi {
       return response;
     } catch (e) {
       // Si el servidor retorna notImplemented, devolver una respuesta simulada
-      debugPrint('⚠️ Error al eliminar proforma: $e');
-      debugPrint('⚠️ El método deleteProformaVenta puede no estar implementado en el servidor.');
-      debugPrint('⚠️ Devolviendo respuesta simulada para propósitos de demostración.');
+      logCache('⚠️ Error al eliminar proforma: $e');
+      logCache('⚠️ El método deleteProformaVenta puede no estar implementado en el servidor.');
+      logCache('⚠️ Devolviendo respuesta simulada para propósitos de demostración.');
       
       // Invalidar caché de todos modos para consistencia
       invalidateCache(sucursalId);
@@ -462,7 +462,7 @@ class ProformaVentaApi {
     } else if (data is Map && data.containsKey('data') && data['data'] is List) {
       proformasData = data['data'] as List;
     } else {
-      debugPrint('⚠️ Formato inesperado de respuesta de proformas: $data');
+      logCache('⚠️ Formato inesperado de respuesta de proformas: $data');
       return <proforma_model.Proforma>[];
     }
 
@@ -472,7 +472,7 @@ class ProformaVentaApi {
         try {
           return proforma_model.Proforma.fromJson(item);
         } catch (e) {
-          debugPrint('⚠️ Error al parsear proforma $item: $e');
+          logCache('⚠️ Error al parsear proforma $item: $e');
           // Crear un objeto con datos mínimos para evitar errores en cascada
           return proforma_model.Proforma(
             id: item['id'] ?? 0,
@@ -511,7 +511,7 @@ class ProformaVentaApi {
       try {
         return proforma_model.Proforma.fromJson(proformaData);
       } catch (e) {
-        debugPrint('⚠️ Error al procesar datos de proforma: $e');
+        logCache('⚠️ Error al procesar datos de proforma: $e');
         return null;
       }
     }
