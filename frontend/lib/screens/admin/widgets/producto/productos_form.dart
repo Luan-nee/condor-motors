@@ -33,9 +33,11 @@ class ProductosFormDialogAdmin extends StatefulWidget {
     super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty<Producto?>('producto', producto))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has('onSave', onSave))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has(
+          'onSave', onSave))
       ..add(IterableProperty<Sucursal>('sucursales', sucursales))
-      ..add(DiagnosticsProperty<Sucursal?>('sucursalSeleccionada', sucursalSeleccionada));
+      ..add(DiagnosticsProperty<Sucursal?>(
+          'sucursalSeleccionada', sucursalSeleccionada));
   }
 }
 
@@ -69,18 +71,19 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
   // Tipo de promoción seleccionada
   String _tipoPromocionSeleccionada = 'ninguna';
-  
+
   // Verificar si tiene promoción de "lleva X, paga Y" (gratis)
-  
+
   // Verificar si tiene promoción de descuento porcentual
 
   // Listas para categorías, marcas y colores
   List<String> _categorias = <String>[];
   List<String> _marcas = <String>[];
   List<ColorApp> _colores = <ColorApp>[];
-  
+
   // Mapas para almacenar los IDs correspondientes a los nombres
-  Map<String, Map<String, Object>> _categoriasMap = <String, Map<String, Object>>{};
+  Map<String, Map<String, Object>> _categoriasMap =
+      <String, Map<String, Object>>{};
   Map<String, Map<String, Object>> _marcasMap = <String, Map<String, Object>>{};
 
   @override
@@ -96,7 +99,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       text: producto?.stock.toString() ?? '0',
     );
     _skuController = TextEditingController(text: producto?.sku);
-    _marcaController = TextEditingController(text: producto?.marca);
+    _marcaController = TextEditingController(
+      text: producto?.marca ?? '', // Inicialmente vacío
+    );
     _precioCompraController = TextEditingController(
       text: producto?.precioCompra.toString() ?? '0.00',
     );
@@ -156,7 +161,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       // Obtenemos las categorías como objetos tipados
       final List<Categoria> categoriasList =
           await api.categorias.getCategoriasObjetos(useCache: false);
-      
+
       if (mounted) {
         setState(() {
           // Extraer nombres para la lista desplegable
@@ -165,13 +170,13 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               .where((String nombre) => nombre.isNotEmpty)
               .toList();
           _categorias.sort(); // Mantener orden alfabético
-          
+
           // Crear un mapa para fácil acceso a los IDs por nombre
           _categoriasMap = <String, Map<String, Object>>{
             for (Categoria cat in categoriasList)
               cat.nombre: <String, Object>{'id': cat.id, 'nombre': cat.nombre}
           };
-          
+
           _isLoadingCategorias = false;
 
           // Establecer la categoría seleccionada
@@ -198,8 +203,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
     try {
       // Obtenemos las marcas como objetos tipados
-      final ResultadoPaginado<Marca> marcasResult = await api.marcas.getMarcasPaginadas(useCache: false);
-      
+      final ResultadoPaginado<Marca> marcasResult =
+          await api.marcas.getMarcasPaginadas(useCache: false);
+
       // Extraemos la lista de marcas del resultado paginado
       final List<Marca> marcasList = marcasResult.items;
 
@@ -211,13 +217,16 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               .where((String nombre) => nombre.isNotEmpty)
               .toList();
           _marcas.sort(); // Mantener orden alfabético
-          
+
           // Crear un mapa para fácil acceso a los IDs por nombre
           _marcasMap = <String, Map<String, Object>>{
             for (Marca marca in marcasList)
-              marca.nombre: <String, Object>{'id': marca.id, 'nombre': marca.nombre}
+              marca.nombre: <String, Object>{
+                'id': marca.id,
+                'nombre': marca.nombre
+              }
           };
-          
+
           _isLoadingMarcas = false;
 
           // Si la marca actual no está en la lista y hay una marca seleccionada
@@ -560,57 +569,57 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         const SizedBox(height: 16),
         // Cuando es un producto existente, el SKU es de solo lectura
         // Cuando es un producto nuevo, el campo no aparece (el backend lo generará)
-        widget.producto != null 
-          ? TextFormField(
-              controller: _skuController,
-              decoration: _getInputDecoration('SKU (no editable)').copyWith(
-                filled: true,
-                fillColor: const Color(0xFF222222),
+        widget.producto != null
+            ? TextFormField(
+                controller: _skuController,
+                decoration: _getInputDecoration('SKU (no editable)').copyWith(
+                  filled: true,
+                  fillColor: const Color(0xFF222222),
                   prefixIcon: const Icon(Icons.lock_outline,
                       color: Colors.white54, size: 20),
-              ),
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
-              enabled: false, // Campo deshabilitado para edición
-              readOnly: true, // Solo lectura
-            )
-          : Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: <Widget>[
+                ),
+                style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                enabled: false, // Campo deshabilitado para edición
+                readOnly: true, // Solo lectura
+              )
+            : Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: <Widget>[
                     const Icon(Icons.info_outline,
                         color: Colors.blue, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        const Text(
-                          'SKU generado automáticamente',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          const Text(
+                            'SKU generado automáticamente',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'El código SKU será asignado por el sistema automáticamente al guardar el producto.',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 12,
+                          const SizedBox(height: 4),
+                          Text(
+                            'El código SKU será asignado por el sistema automáticamente al guardar el producto.',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-        ),
       ],
     );
   }
@@ -618,7 +627,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   Widget _buildPricingSection() {
     // Verificar si estamos en modo edición (producto ya existe)
     final bool esEdicion = widget.producto != null;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -642,7 +651,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           validator: (String? value) {
             if (value?.isEmpty ?? true) return 'Campo requerido';
             final double venta = double.tryParse(value!) ?? 0;
-            final double compra = double.tryParse(_precioCompraController.text) ?? 0;
+            final double compra =
+                double.tryParse(_precioCompraController.text) ?? 0;
             if (venta <= compra) {
               return 'El precio de venta debe ser mayor al de compra';
             }
@@ -658,16 +668,16 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         //   keyboardType: TextInputType.number,
         // ),
         const SizedBox(height: 16),
-        
+
         // Campo de stock con manejo especial para edición
         TextFormField(
           controller: _stockController,
           decoration: _getInputDecoration(
-            'Stock', 
-            helperText: esEdicion 
+            'Stock',
+            helperText: esEdicion
                 ? 'Para modificar el stock, utilice la gestión de inventario'
                 : null,
-            suffixIcon: esEdicion 
+            suffixIcon: esEdicion
                 ? const Tooltip(
                     message:
                         'El stock solo puede ser modificado mediante entradas de inventario',
@@ -735,7 +745,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             ),
           ),
         ],
-        
+
         const SizedBox(height: 16),
         TextFormField(
           controller: _stockMinimoController,
@@ -746,43 +756,48 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         const SizedBox(height: 16),
         ValueListenableBuilder(
           valueListenable: _precioVentaController,
-          builder: (BuildContext context, TextEditingValue precioVentaText, Widget? child) {
+          builder: (BuildContext context, TextEditingValue precioVentaText,
+              Widget? child) {
             return ValueListenableBuilder(
                 valueListenable: _precioCompraController,
-                builder: (BuildContext context, TextEditingValue precioCompraText, _) {
-                  final double venta = double.tryParse(precioVentaText.text) ?? 0;
-                  final double compra = double.tryParse(precioCompraText.text) ?? 0;
-            final double ganancia = venta - compra;
-            final num porcentaje = compra > 0 ? (ganancia / compra) * 100 : 0;
-            
-            return Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
+                builder: (BuildContext context,
+                    TextEditingValue precioCompraText, _) {
+                  final double venta =
+                      double.tryParse(precioVentaText.text) ?? 0;
+                  final double compra =
+                      double.tryParse(precioCompraText.text) ?? 0;
+                  final double ganancia = venta - compra;
+                  final num porcentaje =
+                      compra > 0 ? (ganancia / compra) * 100 : 0;
+
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
                       color: const Color(0xFF2D2D2D),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: Colors.white.withOpacity(0.1),
                       ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
                         const Text(
                           'Ganancia:',
                           style: TextStyle(color: Colors.white),
                         ),
-                  Text(
-                    'S/ ${ganancia.toStringAsFixed(2)} (${porcentaje.toStringAsFixed(1)}%)',
-                    style: TextStyle(
+                        Text(
+                          'S/ ${ganancia.toStringAsFixed(2)} (${porcentaje.toStringAsFixed(1)}%)',
+                          style: TextStyle(
                             color: ganancia > 0
                                 ? Colors.green[400]
                                 : const Color(0xFFE31E24),
-                      fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            );
+                  );
                 });
           },
         ),
@@ -812,13 +827,14 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               ? DropdownButtonFormField<String>(
                   value: _marcaController.text.isEmpty ||
                           !_marcas.contains(_marcaController.text)
-                      ? _marcas.first
+                      ? 'Seleccione una marca' // Valor por defecto
                       : _marcaController.text,
                   decoration: _getInputDecoration('Marca'),
                   dropdownColor: const Color(0xFF2D2D2D),
                   style: const TextStyle(color: Colors.white),
                   isExpanded: true,
-                  items: _marcas.map((String marca) {
+                  items: <String>['Seleccione una marca', ..._marcas]
+                      .map((String marca) {
                     return DropdownMenuItem(
                       value: marca,
                       child: Text(
@@ -829,22 +845,25 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     );
                   }).toList(),
                   onChanged: (String? value) {
-                    if (value != null) {
+                    if (value != null && value != 'Seleccione una marca') {
                       setState(() {
                         _marcaController.text = value;
                       });
                     }
                   },
-                  validator: (String? value) =>
-                      value?.isEmpty ?? true ? 'Seleccione una marca' : null,
+                  validator: (String? value) => value == null ||
+                          value.isEmpty ||
+                          value == 'Seleccione una marca'
+                      ? 'Seleccione una marca'
+                      : null,
                 )
               : TextFormField(
                   controller: _marcaController,
                   decoration: _getInputDecoration('Marca'),
                   style: const TextStyle(color: Colors.white),
-          validator: (String? value) =>
-              value?.isEmpty ?? true ? 'Campo requerido' : null,
-        ),
+                  validator: (String? value) =>
+                      value?.isEmpty ?? true ? 'Campo requerido' : null,
+                ),
         const SizedBox(height: 16),
         // Dropdown de Categoría
         if (_isLoadingCategorias)
@@ -869,18 +888,18 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   style: const TextStyle(color: Colors.white),
                   isExpanded: true,
                   items: _categorias.map((String category) {
-            return DropdownMenuItem(
-              value: category,
+                    return DropdownMenuItem(
+                      value: category,
                       child: Text(
                         category,
                         style: const TextStyle(color: Colors.white),
                         overflow: TextOverflow.ellipsis,
                       ),
-            );
-          }).toList(),
-          onChanged: (String? value) {
+                    );
+                  }).toList(),
+                  onChanged: (String? value) {
                     if (value != null) {
-            setState(() {
+                      setState(() {
                         _categoriaSeleccionada = value;
                       });
                     }
@@ -899,7 +918,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     ),
                   ),
                   child: Row(
-      children: <Widget>[
+                    children: <Widget>[
                       const Icon(
                         Icons.error_outline,
                         color: Colors.red,
@@ -908,7 +927,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       Expanded(
                         child: Text(
                           'No se pudieron cargar las categorías. Por favor, intente nuevamente.',
-              style: TextStyle(
+                          style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                           ),
                         ),
@@ -919,13 +938,13 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                           'Reintentar',
                           style: TextStyle(
                             color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            ),
-          ],
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-        ),
+                ),
         const SizedBox(height: 16),
         // Dropdown de Color (reemplazando el campo de texto)
         if (_isLoadingColores)
@@ -948,8 +967,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             items: _colores.map((ColorApp color) {
               return DropdownMenuItem(
                 value: color,
-              child: Row(
-                children: <Widget>[
+                child: Row(
+                  children: <Widget>[
                     // Muestra una vista previa del color
                     Container(
                       width: 24,
@@ -964,7 +983,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     ),
                     const SizedBox(width: 12),
                     // Nombre del color
-                  Expanded(
+                    Expanded(
                       child: Text(
                         color.nombre,
                         style: const TextStyle(color: Colors.white),
@@ -983,8 +1002,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 } else {
                   _colorController.text = '';
                 }
-                        });
-                      },
+              });
+            },
           )
         else
           Container(
@@ -1015,11 +1034,11 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   onPressed: _cargarColores,
                   child: const Text(
                     'Reintentar',
-          style: TextStyle(
+                    style: TextStyle(
                       color: Colors.orange,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1035,7 +1054,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         _buildSectionTitle(
             'Promociones y Descuentos', FontAwesomeIcons.percent),
         const SizedBox(height: 16),
-        
+
         // Sección de liquidación (siempre visible)
         _buildLiquidacionSection(),
 
@@ -1122,17 +1141,17 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _liquidacionActiva
-              ? Colors.amber.withOpacity(0.08) 
-              : Colors.grey.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
+            ? Colors.amber.withOpacity(0.08)
+            : Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
           color: _liquidacionActiva
-                ? Colors.amber.withOpacity(0.3) 
-                : Colors.white.withOpacity(0.1),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+              ? Colors.amber.withOpacity(0.3)
+              : Colors.white.withOpacity(0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1155,129 +1174,131 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   ),
                 ],
               ),
-                  Switch(
+              Switch(
                 value: _liquidacionActiva,
-                    onChanged: (bool value) {
-                      setState(() {
+                onChanged: (bool value) {
+                  setState(() {
                     _liquidacionActiva = value;
-                      });
-                    },
-                    activeColor: Colors.amber,
-                  ),
-                ],
+                  });
+                },
+                activeColor: Colors.amber,
               ),
-                const SizedBox(height: 12),
+            ],
+          ),
+          const SizedBox(height: 12),
           if (_liquidacionActiva) ...<Widget>[
-                TextFormField(
-                  controller: _precioOfertaController,
-                  decoration: _getInputDecoration(
-                    'Precio de liquidación', 
-                    prefixText: 'S/ ',
-                    helperText: 'Precio especial para liquidar este producto',
-                  ),
-                  style: const TextStyle(color: Colors.white),
-                  keyboardType: TextInputType.number,
-                  validator: (String? value) {
+            TextFormField(
+              controller: _precioOfertaController,
+              decoration: _getInputDecoration(
+                'Precio de liquidación',
+                prefixText: 'S/ ',
+                helperText: 'Precio especial para liquidar este producto',
+              ),
+              style: const TextStyle(color: Colors.white),
+              keyboardType: TextInputType.number,
+              validator: (String? value) {
                 if (_liquidacionActiva) {
-                    if (value == null || value.isEmpty) {
-                      return 'El precio de liquidación es obligatorio';
+                  if (value == null || value.isEmpty) {
+                    return 'El precio de liquidación es obligatorio';
+                  }
+                  try {
+                    final double precio = double.parse(value);
+                    if (precio <= 0) {
+                      return 'El precio debe ser mayor a cero';
                     }
-                    try {
-                      final double precio = double.parse(value);
-                      if (precio <= 0) {
-                        return 'El precio debe ser mayor a cero';
-                      }
                     final double precioVenta =
                         double.tryParse(_precioVentaController.text) ?? 0;
-                      if (precio >= precioVenta) {
-                        return 'El precio de liquidación debe ser menor al precio de venta';
-                      }
-                    } catch (e) {
-                      return 'Ingrese un número válido';
-                  }
+                    if (precio >= precioVenta) {
+                      return 'El precio de liquidación debe ser menor al precio de venta';
                     }
-                    return null;
-                  },
-                ),
-                
-                // Mostrar comparación de precios
-                const SizedBox(height: 12),
-                ValueListenableBuilder(
-                  valueListenable: _precioOfertaController,
-                  builder: (BuildContext context, TextEditingValue precioOfertaText, _) {
-                    return ValueListenableBuilder(
-                      valueListenable: _precioVentaController,
-                      builder: (BuildContext context, TextEditingValue precioVentaText, _) {
+                  } catch (e) {
+                    return 'Ingrese un número válido';
+                  }
+                }
+                return null;
+              },
+            ),
+
+            // Mostrar comparación de precios
+            const SizedBox(height: 12),
+            ValueListenableBuilder(
+              valueListenable: _precioOfertaController,
+              builder:
+                  (BuildContext context, TextEditingValue precioOfertaText, _) {
+                return ValueListenableBuilder(
+                  valueListenable: _precioVentaController,
+                  builder: (BuildContext context,
+                      TextEditingValue precioVentaText, _) {
                     final double precioVenta =
                         double.tryParse(precioVentaText.text) ?? 0;
                     final double precioOferta =
                         double.tryParse(precioOfertaText.text) ?? 0;
-                        
-                        if (precioOferta <= 0 || precioVenta <= 0) {
-                          return Container();
-                        }
-                        
-                        final double ahorro = precioVenta - precioOferta;
+
+                    if (precioOferta <= 0 || precioVenta <= 0) {
+                      return Container();
+                    }
+
+                    final double ahorro = precioVenta - precioOferta;
                     final num porcentaje =
                         precioVenta > 0 ? (ahorro / precioVenta) * 100 : 0;
-                          
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.amber.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Text(
-                                      'Precio original: S/ ${precioVenta.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.7),
-                                        decoration: TextDecoration.lineThrough,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Precio liquidación: S/ ${precioOferta.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        color: Colors.amber,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
+
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.amber.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  'Precio original: S/ ${precioVenta.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
                                 ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  '${porcentaje.toStringAsFixed(0)}% descuento',
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Precio liquidación: S/ ${precioOferta.toStringAsFixed(2)}',
                                   style: const TextStyle(
                                     color: Colors.amber,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        );
-                      },
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${porcentaje.toStringAsFixed(0)}% descuento',
+                              style: const TextStyle(
+                                color: Colors.amber,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   },
-                ),
+                );
+              },
+            ),
           ] else ...<Widget>[
             Text(
               'Active esta opción para establecer un precio especial de liquidación. '
@@ -1365,9 +1386,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                         color: isSelected ? color : Colors.white70,
                       ),
                       const SizedBox(width: 8),
-              Text(
+                      Text(
                         title,
-                style: TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: isSelected ? color : Colors.white,
@@ -1423,20 +1444,20 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               ),
             ],
           ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(
                 child: TextFormField(
-          controller: _cantidadMinimaDescuentoController,
+                  controller: _cantidadMinimaDescuentoController,
                   decoration: _getInputDecoration(
                     'Cantidad mínima a comprar',
                     helperText: 'Ejemplo: 5 unidades',
                   ),
-          style: const TextStyle(color: Colors.white),
-          keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.number,
                   validator: (String? value) {
                     if (_tipoPromocionSeleccionada == 'gratis') {
                       if (value == null || value.isEmpty) {
@@ -1485,15 +1506,17 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             ],
           ),
 
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
           // Vista previa de la promoción
           ValueListenableBuilder(
             valueListenable: _cantidadMinimaDescuentoController,
-            builder: (BuildContext context, TextEditingValue cantidadMinimaText, _) {
+            builder:
+                (BuildContext context, TextEditingValue cantidadMinimaText, _) {
               return ValueListenableBuilder(
                 valueListenable: _cantidadGratisDescuentoController,
-                builder: (BuildContext context, TextEditingValue cantidadGratisText, _) {
+                builder: (BuildContext context,
+                    TextEditingValue cantidadGratisText, _) {
                   final int cantidadMinima =
                       int.tryParse(cantidadMinimaText.text) ?? 0;
                   final int cantidadGratis =
@@ -1651,10 +1674,12 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           // Vista previa de la promoción
           ValueListenableBuilder(
             valueListenable: _cantidadMinimaDescuentoController,
-            builder: (BuildContext context, TextEditingValue cantidadMinimaText, _) {
+            builder:
+                (BuildContext context, TextEditingValue cantidadMinimaText, _) {
               return ValueListenableBuilder(
                 valueListenable: _porcentajeDescuentoController,
-                builder: (BuildContext context, TextEditingValue porcentajeText, _) {
+                builder:
+                    (BuildContext context, TextEditingValue porcentajeText, _) {
                   final int cantidadMinima =
                       int.tryParse(cantidadMinimaText.text) ?? 0;
                   final int porcentaje = int.tryParse(porcentajeText.text) ?? 0;
@@ -1703,7 +1728,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   Widget _buildSharedBranchesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
+      children: <Widget>[
         _buildSectionTitle(
             'Sucursales que Comparten este Producto', FontAwesomeIcons.sitemap),
         const SizedBox(height: 16),
@@ -1711,20 +1736,20 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           const Center(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
-                child: Column(
-                  children: <Widget>[
+              child: Column(
+                children: <Widget>[
                   CircularProgressIndicator(
                     color: Color(0xFF1C7AC7),
                     strokeWidth: 3,
                   ),
                   SizedBox(height: 12),
-                    Text(
+                  Text(
                     'Consultando disponibilidad en otras sucursales...',
                     style: TextStyle(color: Colors.white70),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
           )
         else if (_sucursalesCompartidas.isEmpty)
           Container(
@@ -1737,7 +1762,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               children: <Widget>[
                 Icon(Icons.info_outline, color: Colors.white54),
                 SizedBox(width: 12),
-              Expanded(
+                Expanded(
                   child: Text(
                     'Este producto no se comparte con otras sucursales',
                     style: TextStyle(color: Colors.white70),
@@ -1755,9 +1780,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 color: Colors.white.withOpacity(0.1),
               ),
             ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
                 // Encabezado con contadores
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -1773,7 +1798,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       _buildCounter(
                         'Con Stock',
                         _sucursalesCompartidas
-                            .where((ProductoEnSucursal s) => s.disponible && s.producto.stock > 0)
+                            .where((ProductoEnSucursal s) =>
+                                s.disponible && s.producto.stock > 0)
                             .length
                             .toString(),
                         FontAwesomeIcons.boxOpen,
@@ -1792,16 +1818,16 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       _buildCounter(
                         'Agotados',
                         _sucursalesCompartidas
-                            .where(
-                                (ProductoEnSucursal s) => !s.disponible || s.producto.stock <= 0)
+                            .where((ProductoEnSucursal s) =>
+                                !s.disponible || s.producto.stock <= 0)
                             .length
                             .toString(),
                         FontAwesomeIcons.ban,
                         Colors.red.shade800,
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
                 // Lista de sucursales
                 ListView.builder(
@@ -1809,7 +1835,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _sucursalesCompartidas.length,
                   itemBuilder: (BuildContext context, int index) {
-                    final ProductoEnSucursal productoEnSucursal = _sucursalesCompartidas[index];
+                    final ProductoEnSucursal productoEnSucursal =
+                        _sucursalesCompartidas[index];
                     return _buildSucursalItem(productoEnSucursal);
                   },
                 ),
@@ -1845,12 +1872,12 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           ),
         ),
         const SizedBox(height: 4),
-                  Text(
+        Text(
           label,
-                    style: TextStyle(
+          style: TextStyle(
             color: Colors.white.withOpacity(0.7),
-                      fontSize: 12,
-                    ),
+            fontSize: 12,
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -1901,7 +1928,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         ),
         title: Text(
           item.sucursal.nombre,
-                    style: TextStyle(
+          style: TextStyle(
             color: isCurrentBranch
                 ? const Color.fromARGB(255, 139, 207, 230)
                 : Colors.white,
@@ -1913,8 +1940,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           style: TextStyle(
             color: Colors.white.withOpacity(0.5),
             fontSize: 12,
-            fontStyle: item.sucursal.direccion != null 
-                ? FontStyle.normal 
+            fontStyle: item.sucursal.direccion != null
+                ? FontStyle.normal
                 : FontStyle.italic,
           ),
         ),
@@ -2125,22 +2152,25 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       if (_stockMinimoController.text.isNotEmpty) {
         productoData['stockMinimo'] = int.parse(_stockMinimoController.text);
       }
-      
+
       // Buscar y añadir el ID de categoría si está disponible
       if (_categoriasMap.containsKey(_categoriaSeleccionada)) {
-        final Map<String, Object>? categoriaInfo = _categoriasMap[_categoriaSeleccionada];
+        final Map<String, Object>? categoriaInfo =
+            _categoriasMap[_categoriaSeleccionada];
         if (categoriaInfo != null && categoriaInfo['id'] != null) {
           final String idStr = categoriaInfo['id'].toString();
           final int? id = int.tryParse(idStr);
           if (id != null) {
             productoData['categoriaId'] = id;
-            debugPrint('ProductosForm: Categoría $_categoriaSeleccionada con ID válido: $id');
+            debugPrint(
+                'ProductosForm: Categoría $_categoriaSeleccionada con ID válido: $id');
           } else {
-            debugPrint('ProductosForm: Advertencia - ID de categoría no válido: $idStr');
+            debugPrint(
+                'ProductosForm: Advertencia - ID de categoría no válido: $idStr');
           }
         }
       }
-      
+
       // Buscar y añadir el ID de marca si está disponible
       final String marcaText = _marcaController.text;
       if (_marcasMap.containsKey(marcaText)) {
@@ -2152,18 +2182,19 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             productoData['marcaId'] = id;
             debugPrint('ProductosForm: Marca $marcaText con ID válido: $id');
           } else {
-            debugPrint('ProductosForm: Advertencia - ID de marca no válido: $idStr');
+            debugPrint(
+                'ProductosForm: Advertencia - ID de marca no válido: $idStr');
           }
         }
       }
-      
+
       // Manejar el color correctamente
       if (_colorSeleccionado != null) {
         // ColorApp.id ya es int según la definición del modelo
         productoData['colorId'] = _colorSeleccionado!.id;
         debugPrint(
             'ProductosForm: Color ${_colorSeleccionado!.nombre} con ID: ${_colorSeleccionado!.id}');
-        
+
         // Incluir también el nombre para claridad
         productoData['color'] = _colorSeleccionado!.nombre;
       } else if (_colorController.text.isNotEmpty) {
@@ -2178,7 +2209,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           'ProductosForm: Sucursal seleccionada: ${_sucursalSeleccionada?.id}');
       debugPrint('ProductosForm: Producto ID: ${widget.producto?.id}');
       debugPrint('ProductosForm: Es nuevo producto: $esNuevoProducto');
-      
+
       // Mostrar datos completos para depuración
       debugPrint('ProductosForm: === DATOS COMPLETOS DEL PRODUCTO ===');
       productoData.forEach((String key, value) {
@@ -2186,11 +2217,11 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         debugPrint('ProductosForm:   - $key: $value (Tipo: $tipo)');
       });
       debugPrint('ProductosForm: === FIN DATOS PRODUCTO ===');
-      
+
       // Llamar al callback onSave proporcionado por el componente padre
       widget.onSave(productoData);
       debugPrint('ProductosForm: Callback onSave ejecutado');
-      
+
       Navigator.pop(context);
     }
   }
@@ -2212,4 +2243,4 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     _cantidadGratisDescuentoController.dispose();
     super.dispose();
   }
-} 
+}
