@@ -10,7 +10,7 @@ import {
   sucursalesTable
 } from '@db/schema'
 import type { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
-import { AuthPayloadMapper } from '@domain/mappers/auth-payload.mapper'
+// import { AuthPayloadMapper } from '@domain/mappers/auth-payload.mapper'
 import { and, eq, ilike, notExists } from 'drizzle-orm'
 
 export class RegisterUser {
@@ -114,25 +114,25 @@ export class RegisterUser {
     }
   }
 
-  private readonly generateTokens = (payload: AuthPayload, secret: string) => {
-    const refreshToken = this.tokenAuthenticator.generateRefreshToken({
-      payload,
-      secret
-    })
+  // private readonly generateTokens = (payload: AuthPayload, secret: string) => {
+  //   const refreshToken = this.tokenAuthenticator.generateRefreshToken({
+  //     payload,
+  //     secret
+  //   })
 
-    const accessToken = this.tokenAuthenticator.generateAccessToken({ payload })
+  //   const accessToken = this.tokenAuthenticator.generateAccessToken({ payload })
 
-    if (
-      typeof refreshToken.token !== 'string' ||
-      typeof accessToken !== 'string'
-    ) {
-      throw CustomError.internalServer('Error generating token')
-    }
-    return {
-      accessToken,
-      refreshToken: refreshToken.token
-    }
-  }
+  //   if (
+  //     typeof refreshToken.token !== 'string' ||
+  //     typeof accessToken !== 'string'
+  //   ) {
+  //     throw CustomError.internalServer('Error generating token')
+  //   }
+  //   return {
+  //     accessToken,
+  //     refreshToken: refreshToken.token
+  //   }
+  // }
 
   private async validatePermissions() {
     const validPermissions = await AccessControl.verifyPermissions(
@@ -153,16 +153,16 @@ export class RegisterUser {
     await this.validatePermissions()
 
     const user = await this.register(registerUserDto)
-    const payload = AuthPayloadMapper.authPayloadFromObject(user)
+    // const payload = AuthPayloadMapper.authPayloadFromObject(user)
 
-    const { accessToken, refreshToken } = this.generateTokens(
-      payload,
-      user.secret
-    )
+    // const { accessToken, refreshToken } = this.generateTokens(
+    //   payload,
+    //   user.secret
+    // )
 
     return {
-      accessToken,
-      refreshToken,
+      // accessToken,
+      // refreshToken,
       data: {
         id: user.id,
         usuario: user.usuario,
