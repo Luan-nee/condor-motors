@@ -1,24 +1,22 @@
-import { createTransferenciaInvValidator } from '@/domain/validators/entities/transferencias-inventario/transferencia-inventario.validator'
+import { addItemTransferenciaInvValidator } from '@/domain/validators/entities/transferencias-inventario/transferencia-inventario.validator'
 
-export class CreateTransferenciaInvDto {
-  public sucursalDestinoId: number
+export class AddItemTransferenciaInvDto {
   public items: Array<{
     cantidad: number
     productoId: number
   }>
 
-  constructor({ sucursalDestinoId, items }: CreateTransferenciaInvDto) {
-    this.sucursalDestinoId = sucursalDestinoId
+  constructor({ items }: AddItemTransferenciaInvDto) {
     this.items = items
   }
 
   private static validateDuplicatedProducts(
-    createTransferenciaInvDto: CreateTransferenciaInvDto
+    addItemTransferenciaInvDto: AddItemTransferenciaInvDto
   ) {
     const productoIds = new Set<number>()
     const duplicateProductIds = new Set<number>()
 
-    for (const { productoId } of createTransferenciaInvDto.items) {
+    for (const { productoId } of addItemTransferenciaInvDto.items) {
       if (productoIds.has(productoId)) {
         duplicateProductIds.add(productoId)
       } else {
@@ -31,8 +29,8 @@ export class CreateTransferenciaInvDto {
     }
   }
 
-  static create(input: any): [string?, CreateTransferenciaInvDto?] {
-    const result = createTransferenciaInvValidator(input)
+  static create(input: any): [string?, AddItemTransferenciaInvDto?] {
+    const result = addItemTransferenciaInvValidator(input)
 
     if (!result.success) {
       return [result.error.message, undefined]
@@ -46,6 +44,6 @@ export class CreateTransferenciaInvDto {
       return [duplicatedProductsErrorMessage, undefined]
     }
 
-    return [undefined, new CreateTransferenciaInvDto(data)]
+    return [undefined, new AddItemTransferenciaInvDto(data)]
   }
 }
