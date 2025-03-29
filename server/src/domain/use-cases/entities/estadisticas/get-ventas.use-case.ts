@@ -12,6 +12,9 @@ export class GetReporteVentas {
     }
     const fecha = getDateTimeString(fechaActual)
     const hoy = getOffsetDateTime(new Date(fecha.date), 5)
+    if (hoy === undefined) {
+      return []
+    }
     const valoresPrueba = {
       startDate: fecha,
       hoy
@@ -36,6 +39,11 @@ export class GetReporteVentas {
       .innerJoin(ventasTable, eq(totalesVentaTable.ventaId, ventasTable.id))
       .where(whereCondition)
 
+    const getVentaHoy = await db
+      .select({ ventaDelDia: count(ventasTable.id) })
+      .from(ventasTable)
+      .where(gte(ventasTable.fechaCreacion, hoy))
+
     const getVentas = await db
       .select({
         nombreSucursal: sucursalesTable.nombre,
@@ -58,6 +66,7 @@ export class GetReporteVentas {
 
     return {
       ...data,
+      getVentaHoy,
       getVentas,
       valoresPrueba
     }
