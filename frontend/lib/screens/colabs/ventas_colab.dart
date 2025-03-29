@@ -1402,7 +1402,9 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
             _loadingMessage = '';
           });
           
-          if (!mounted) return;
+          if (!mounted) {
+            return;
+          }
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1778,7 +1780,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
             Card(
               margin: EdgeInsets.zero,
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
+                
               ),
               child: ListTile(
                 leading: const FaIcon(FontAwesomeIcons.user),
@@ -1804,8 +1806,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
               child: Row(
               children: <Widget>[
                 Expanded(
-                    flex: 1,
-                  child: ElevatedButton.icon(
+                    child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6A1B9A), // Morado
                       foregroundColor: Colors.white,
@@ -1848,22 +1849,22 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                              const FaIcon(
+                    children: const <Widget>[
+                              FaIcon(
                           FontAwesomeIcons.cartShopping,
                                 size: 64,
                                 color: Colors.grey,
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
+                      SizedBox(height: 16),
+                      Text(
                                 'No hay productos en la venta',
                         style: TextStyle(
                                   fontSize: 18,
                                   color: Colors.grey,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      SizedBox(height: 8),
+                      Text(
                                 'Busca o escanea productos para agregarlos',
                         style: TextStyle(
                                   color: Colors.grey,
@@ -1986,7 +1987,6 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                     children: <Widget>[
                       // Botón para limpiar la venta
                       Expanded(
-                        flex: 1,
                         child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF424242),

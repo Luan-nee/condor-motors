@@ -4,7 +4,6 @@ import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 /// Widget para mostrar una lista paginada de proformas
 class ProformaListWidget extends StatefulWidget {
@@ -20,7 +19,7 @@ class ProformaListWidget extends StatefulWidget {
   final bool compact;
 
   const ProformaListWidget({
-    Key? key,
+    super.key,
     required this.proformas,
     required this.onProformaSelected,
     this.onConvertToSale,
@@ -31,7 +30,7 @@ class ProformaListWidget extends StatefulWidget {
     this.paginacion,
     this.onPageChanged,
     this.compact = false,
-  }) : super(key: key);
+  });
 
   @override
   State<ProformaListWidget> createState() => _ProformaListWidgetState();
@@ -137,10 +136,26 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
           // Obtener tipo de documento de los datos
           final String tipoDocumento = ventaData['tipoDocumento'] as String? ?? 'BOLETA';
           
-          // Usar nuestro administrador de conversión mejorado
-          bool success = await ProformaConversionManager.convertirProformaAVenta(
+          // Obtener sucursalId
+          final sucursalId = await VentasPendientesUtils.obtenerSucursalId();
+          if (sucursalId == null) {
+            setState(() {
+              _procesandoConversion = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No se pudo obtener el ID de sucursal'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+          
+          // Convertir proforma usando el método directo
+          final bool exito = await ProformaConversionManager.convertirProformaAVenta(
             context: context,
-            proforma: proforma,
+            sucursalId: sucursalId.toString(),
+            proformaId: proforma.id,
             tipoDocumento: tipoDocumento,
             onSuccess: () {
               // Actualizar estado
@@ -160,93 +175,11 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
             },
           );
           
-          // Si falló el método principal, intentar con el alternativo
-          if (!success) {
-            final sucursalId = await VentasPendientesUtils.obtenerSucursalId();
-            if (sucursalId != null) {
-              // Mostrar diálogo preguntando si desea intentar el método alternativo
-              await showDialog(
-                context: context,
-                builder: (BuildContext context) => AlertDialog(
-                  backgroundColor: const Color(0xFF2D2D2D),
-                  title: Row(
-                    children: const [
-                      Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                      SizedBox(width: 10),
-                      Text(
-                        'Error en la conversión',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ],
-                  ),
-                  content: const Text(
-                    'La conversión normal falló. ¿Desea intentar el método alternativo?',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(false);
-                      },
-                      child: const Text('Cancelar'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(true);
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.blue,
-                        backgroundColor: Colors.blue.withOpacity(0.1),
-                      ),
-                      child: const Text('Intentar método alternativo'),
-                    ),
-                  ],
-                ),
-              ).then((intentarAlternativo) async {
-                if (intentarAlternativo == true) {
-                  // Mostrar diálogo de procesamiento nuevamente
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (BuildContext context) => ProcessingDialog(documentType: tipoDocumento.toLowerCase()),
-                  );
-                  
-                  // Intentar el método alternativo
-                  await ProformaConversionManager.convertirProformaAVentaAlternativa(
-                    context: context,
-                    sucursalId: sucursalId.toString(),
-                    proformaId: proforma.id,
-                    tipoDocumento: tipoDocumento,
-                    onSuccess: () {
-                      // Actualizar estado
-                      setState(() {
-                        _procesandoConversion = false;
-                      });
-                      
-                      // Llamar al callback externo si existe
-                      if (widget.onConvertToSale != null) {
-                        widget.onConvertToSale!(proforma);
-                      }
-                      
-                      // Recargar datos si hay un método de recarga disponible
-                      if (widget.onRefresh != null) {
-                        widget.onRefresh!();
-                      }
-                    },
-                  );
-                } else {
-                  // Usuario canceló, actualizar estado
-                  setState(() {
-                    _procesandoConversion = false;
-                  });
-                }
-              });
-            } else {
-              // No hay sucursalId disponible
-              setState(() {
-                _procesandoConversion = false;
-              });
-            }
+          if (!exito) {
+            // El error ya fue mostrado en el gestor
+            setState(() {
+              _procesandoConversion = false;
+            });
           }
         },
         onCancel: () => Navigator.of(context).pop(),
@@ -288,7 +221,7 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                      contentPadding: const EdgeInsets.symmetric(),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, color: Colors.white54),
@@ -577,14 +510,22 @@ class ProformaSaleDialog extends StatefulWidget {
   final VoidCallback onCancel;
 
   const ProformaSaleDialog({
-    Key? key,
+    super.key,
     required this.proforma,
     required this.onConfirm,
     required this.onCancel,
-  }) : super(key: key);
+  });
 
   @override
   State<ProformaSaleDialog> createState() => _ProformaSaleDialogState();
+  
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties..add(DiagnosticsProperty<Proforma>('proforma', proforma))
+    ..add(ObjectFlagProperty<Function(Map<String, dynamic> p1)>.has('onConfirm', onConfirm))
+    ..add(ObjectFlagProperty<VoidCallback>.has('onCancel', onCancel));
+  }
 }
 
 class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
@@ -850,9 +791,9 @@ class ProcessingDialog extends StatelessWidget {
   final String documentType;
 
   const ProcessingDialog({
-    Key? key,
+    super.key,
     required this.documentType,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

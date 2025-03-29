@@ -354,7 +354,6 @@ class Proforma {
         empleadoId: 0,
         sucursalId: 0,
         fechaCreacion: DateTime.now(),
-        estado: EstadoProforma.pendiente,
       );
     }
   }

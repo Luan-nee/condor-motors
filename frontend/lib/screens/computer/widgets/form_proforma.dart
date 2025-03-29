@@ -2,11 +2,11 @@ import 'dart:developer' as developer;
 
 import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
+import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:condorsmotors/utils/ventas_utils.dart';
 
 class ProcessingDialog extends StatelessWidget {
   final String documentType;
@@ -697,6 +697,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DoubleProperty('change', change));
+    properties.add(StringProperty('formattedChange', formattedChange));
   }
 }
 

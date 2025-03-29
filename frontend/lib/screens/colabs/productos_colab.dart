@@ -63,7 +63,6 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         pageSize: _pageSize,
         sortBy: 'nombre',
         order: 'asc',
-        useCache: true,
       );
 
       // Extraer categorías únicas de los productos
@@ -88,7 +87,9 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
 
   /// Carga la siguiente página de productos
   Future<void> _cargarMasProductos() async {
-    if (!_paginacion.hasNext) return;
+    if (!_paginacion.hasNext) {
+      return;
+    }
 
     try {
       final Map<String, dynamic>? userData = await app_main.api.authService.getUserData();
@@ -103,7 +104,6 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         pageSize: _pageSize,
         sortBy: 'nombre',
         order: 'asc',
-        useCache: true,
       );
 
       setState(() {

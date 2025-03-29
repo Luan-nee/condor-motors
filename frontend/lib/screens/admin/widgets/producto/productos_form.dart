@@ -640,7 +640,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           style: const TextStyle(color: Colors.white),
           keyboardType: TextInputType.number,
           validator: (String? value) {
-            if (value?.isEmpty ?? true) return 'Campo requerido';
+            if (value?.isEmpty ?? true) {
+              return 'Campo requerido';
+            }
             final double venta = double.tryParse(value!) ?? 0;
             final double compra = double.tryParse(_precioCompraController.text) ?? 0;
             if (venta <= compra) {

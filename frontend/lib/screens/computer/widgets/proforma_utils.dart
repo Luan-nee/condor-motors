@@ -3,7 +3,6 @@ import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:condorsmotors/utils/logger.dart';
 
 /// Utilidades para manejar proformas y ventas pendientes
 class VentasPendientesUtils {
@@ -291,19 +290,34 @@ class VentasPendientesUtils {
     };
   }
 
-  /// Convierte una proforma a venta utilizando la API
+  /// Finaliza una proforma convirtiéndola a venta
   /// 
-  /// [proformaId] - ID de la proforma a convertir
-  /// [datosVenta] - Datos adicionales para la venta
+  /// [proformaId] - ID de la proforma a finalizar
+  /// [datosVenta] - Datos adicionales para la venta (clienteId, tipoDocumento, etc.)
   /// 
-  /// Retorna un mapa con el resultado de la operación
+  /// Retorna un mapa con {exito: bool, mensaje: String} indicando el resultado
   static Future<Map<String, dynamic>> finalizarProforma(
     int proformaId, 
-    Map<String, dynamic> datosVenta
+    Map<String, dynamic> datosVenta,
   ) async {
     try {
-      // Obtener sucursalId
-      final int? sucursalId = await obtenerSucursalId();
+      // Obtener datos del usuario
+      final Map<String, dynamic>? userData = await api.authService.getUserData();
+      if (userData == null) {
+        return <String, dynamic>{
+          'exito': false,
+          'mensaje': 'No se pudo obtener los datos del usuario',
+        };
+      }
+      
+      // Obtener sucursalId y empleadoId del usuario actual
+      final int? sucursalId = userData['sucursalId'] != null 
+          ? int.tryParse(userData['sucursalId'].toString()) 
+          : null;
+      final int? empleadoId = userData['id'] != null 
+          ? int.tryParse(userData['id'].toString()) 
+          : null;
+          
       if (sucursalId == null) {
         return <String, dynamic>{
           'exito': false,
@@ -311,20 +325,137 @@ class VentasPendientesUtils {
         };
       }
       
-      // Llamar a la API para convertir la proforma
-      final Map<String, dynamic> respuesta = await api.proformas.convertirProformaAVenta(
-        sucursalId: sucursalId.toString(),
-        proformaId: proformaId,
-        datosVenta: datosVenta,
-      );
+      if (empleadoId == null) {
+        return <String, dynamic>{
+          'exito': false,
+          'mensaje': 'No se pudo obtener el ID del empleado',
+        };
+      }
       
-      return <String, dynamic>{
-        'exito': true,
-        'mensaje': 'Proforma convertida exitosamente',
-        'respuesta': respuesta,
-      };
+      try {
+        debugPrint('Iniciando conversión de proforma #$proformaId a venta...');
+        
+        // Primero, verificar si la proforma existe sin usar caché para evitar problemas
+        final Map<String, dynamic> proformaExistResponse = await api.proformas.getProformaVenta(
+          sucursalId: sucursalId.toString(),
+          proformaId: proformaId,
+          useCache: false,  // Evitar usar caché
+          forceRefresh: true,  // Forzar recarga desde el servidor
+        );
+        
+        // Verificar explícitamente si hay un error o respuesta vacía
+        if (proformaExistResponse.isEmpty || 
+            proformaExistResponse['status'] == 'fail' || 
+            !proformaExistResponse.containsKey('data') || 
+            proformaExistResponse['data'] == null) {
+          
+          // Invalidar la caché para esta proforma específica
+          api.proformas.invalidateCache(sucursalId.toString());
+          
+          String mensaje = 'La proforma #$proformaId no existe o fue eliminada';
+          if (proformaExistResponse.containsKey('error')) {
+            final errorMsg = proformaExistResponse['error'];
+            if (errorMsg != null && errorMsg.toString().contains('Not found')) {
+              mensaje = 'La proforma #$proformaId no existe o fue eliminada';
+            } else {
+              mensaje = 'Error: ${proformaExistResponse['error']}';
+            }
+          }
+          
+          debugPrint('Error: Proforma $proformaId no existe. Respuesta: $proformaExistResponse');
+          return <String, dynamic>{
+            'exito': false,
+            'mensaje': mensaje,
+          };
+        }
+        
+        // Si llegamos aquí, la proforma existe, obtener sus datos
+        final Map<String, dynamic> proformaData = proformaExistResponse['data'];
+        final List<dynamic> detalles = proformaData['detalles'] ?? [];
+        
+        // Verificar si hay detalles en la proforma
+        if (detalles.isEmpty) {
+          return <String, dynamic>{
+            'exito': false,
+            'mensaje': 'La proforma no tiene productos, no se puede convertir a venta',
+          };
+        }
+        
+        // Verificar el cliente
+        final dynamic clienteId = proformaData['clienteId'] ?? datosVenta['clienteId'];
+        if (clienteId == null) {
+          return <String, dynamic>{
+            'exito': false,
+            'mensaje': 'La venta requiere un cliente válido',
+          };
+        }
+        
+        // Preparar datos para la venta asegurando valores válidos
+        final Map<String, dynamic> ventaData = {
+          'observaciones': datosVenta['observaciones'] ?? 'Convertida desde Proforma #$proformaId',
+          'tipoDocumentoId': datosVenta['tipoDocumentoId'] ?? (datosVenta['tipoDocumento'] == 'BOLETA' ? 1 : 2),
+          'monedaId': datosVenta['monedaId'] ?? 1,
+          'metodoPagoId': datosVenta['metodoPagoId'] ?? 1,
+          'clienteId': int.tryParse(clienteId.toString()) ?? 0,
+          'empleadoId': empleadoId,
+          'detalles': detalles,
+        };
+        
+        debugPrint('Preparando datos para crear venta: $ventaData');
+        
+        // Crear la venta usando la API de ventas
+        final Map<String, dynamic> ventaResponse = await api.ventas.createVenta(
+          ventaData,
+          sucursalId: sucursalId.toString(),
+        );
+        
+        if (ventaResponse['status'] != 'success') {
+          final errorMsg = ventaResponse['error'] ?? ventaResponse['message'] ?? 'Error desconocido';
+          debugPrint('Error al crear venta desde proforma: $errorMsg');
+          return <String, dynamic>{
+            'exito': false,
+            'mensaje': 'Error al crear la venta: $errorMsg',
+            'detalles': ventaResponse
+          };
+        }
+        
+        // Actualizar el estado de la proforma a "convertida"
+        await api.proformas.updateProformaVenta(
+          sucursalId: sucursalId.toString(),
+          proformaId: proformaId,
+          estado: 'convertida',
+        );
+        
+        return <String, dynamic>{
+          'exito': true,
+          'mensaje': 'Proforma convertida exitosamente',
+          'respuesta': ventaResponse,
+        };
+      } catch (apiError) {
+        // Manejar específicamente el caso donde la proforma no existe (404)
+        if (apiError.toString().contains('404') || 
+            apiError.toString().contains('Not found')) {
+              
+          // Invalidar la caché para esta proforma
+          if (sucursalId != null) {
+            api.proformas.invalidateCache(sucursalId.toString());
+          }
+          
+          debugPrint('Error 404: Proforma $proformaId no existe. Error: $apiError');
+          return <String, dynamic>{
+            'exito': false,
+            'mensaje': 'La proforma #$proformaId no existe o fue eliminada',
+          };
+        }
+        // Otros errores de API
+        debugPrint('Error en petición API: $apiError');
+        return <String, dynamic>{
+          'exito': false,
+          'mensaje': 'Error al procesar la proforma: $apiError',
+        };
+      }
     } catch (e) {
-      debugPrint('Error al finalizar proforma: $e');
+      debugPrint('Error general al finalizar proforma: $e');
       return <String, dynamic>{
         'exito': false,
         'mensaje': 'Error al finalizar la proforma: $e',
@@ -393,7 +524,6 @@ class VentasPendientesUtils {
         content: Text(mensaje),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -405,7 +535,6 @@ class VentasPendientesUtils {
         content: Text(mensaje),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 4),
       ),
     );
   }

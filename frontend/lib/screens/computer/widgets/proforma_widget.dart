@@ -1,11 +1,9 @@
 import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_conversion_utils.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
-import 'package:condorsmotors/utils/logger.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 /// Widget para mostrar los detalles de una proforma individual
 class ProformaWidget extends StatelessWidget {
@@ -15,12 +13,12 @@ class ProformaWidget extends StatelessWidget {
   final VoidCallback? onDelete;
 
   const ProformaWidget({
-    Key? key,
+    super.key,
     required this.proforma,
     this.onConvert,
     this.onUpdate,
     this.onDelete,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -311,7 +309,6 @@ class ProformaWidget extends StatelessWidget {
                   ),
                 ),
                 const Expanded(
-                  flex: 1,
                   child: Text(
                     'Cantidad',
                     style: TextStyle(
@@ -381,7 +378,6 @@ class ProformaWidget extends StatelessWidget {
                               ),
                             ),
                             Expanded(
-                              flex: 1,
                               child: Text(
                                 '${detalle.cantidad}',
                                 style: const TextStyle(
@@ -567,7 +563,8 @@ class ProformaWidget extends StatelessWidget {
           // Intentar la conversión
           bool success = await ProformaConversionManager.convertirProformaAVenta(
             context: context,
-            proforma: proforma,
+            sucursalId: await _obtenerSucursalId(),
+            proformaId: proforma.id,
             tipoDocumento: tipoDocumento,
             onSuccess: () {
               if (onConvert != null) {
@@ -596,7 +593,7 @@ class ProformaWidget extends StatelessWidget {
                     ],
                   ),
                   content: const Text(
-                    'La conversión normal falló. ¿Desea intentar el método alternativo?',
+                    'La conversión normal falló. ¿Desea intentar de nuevo?',
                     style: TextStyle(color: Colors.white70),
                   ),
                   actions: [
@@ -610,7 +607,7 @@ class ProformaWidget extends StatelessWidget {
                         foregroundColor: Colors.blue,
                         backgroundColor: Colors.blue.withOpacity(0.1),
                       ),
-                      child: const Text('Intentar método alternativo'),
+                      child: const Text('Intentar de nuevo'),
                     ),
                   ],
                 ),
@@ -624,8 +621,8 @@ class ProformaWidget extends StatelessWidget {
                   builder: (BuildContext context) => _buildProcessingDialog(tipoDocumento.toLowerCase()),
                 );
                 
-                // Intentar el método alternativo
-                await ProformaConversionManager.convertirProformaAVentaAlternativa(
+                // Intentar nuevamente
+                await ProformaConversionManager.convertirProformaAVenta(
                   context: context,
                   sucursalId: sucursalId.toString(),
                   proformaId: proforma.id,
@@ -678,6 +675,15 @@ class ProformaWidget extends StatelessWidget {
     );
   }
 
+  /// Obtener el ID de sucursal actual
+  Future<String> _obtenerSucursalId() async {
+    final int? sucursalId = await VentasPendientesUtils.obtenerSucursalId();
+    if (sucursalId == null) {
+      throw Exception('No se pudo obtener el ID de sucursal');
+    }
+    return sucursalId.toString();
+  }
+
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
@@ -696,11 +702,11 @@ class ProformaSaleDialog extends StatefulWidget {
   final VoidCallback onCancel;
 
   const ProformaSaleDialog({
-    Key? key,
+    super.key,
     required this.proforma,
     required this.onConfirm,
     required this.onCancel,
-  }) : super(key: key);
+  });
 
   @override
   State<ProformaSaleDialog> createState() => _ProformaSaleDialogState();
