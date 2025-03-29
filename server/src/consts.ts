@@ -153,3 +153,13 @@ export const tiposDocClienteCodes = {
   cedulaDiplomáticaIdentidad: 'cedula_diplomática_identidad',
   noDomiciliadoSinRuc: 'no_domiciliado_sin_ruc'
 }
+
+export const estadosDocFacturacion = {
+  registrado: 'registrado-servicio-facturacion',
+  enviadoSinRespuesta: 'enviado-sin-respuesta-sunat',
+  aceptadoSunat: 'aceptado-sunat',
+  rechazadoSunat: 'rechazado-sunat',
+  anuladoSunat: 'anulado-sunat',
+  porAnular: 'por-anular',
+  sinRespuestaSunat: 'sin-respuesta-sunat'
+}

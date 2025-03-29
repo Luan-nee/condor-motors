@@ -2,7 +2,7 @@
 import { BcryptAdapter } from '@/config/bcrypt'
 import { envs } from '@/config/envs'
 import { JwtAdapter } from '@/config/jwt'
-import { isProduction } from '@/consts'
+import { isProduction, tiposDocClienteCodes } from '@/consts'
 import { formatCode } from '@/core/lib/format-values'
 import {
   getRandomNumber,
@@ -393,7 +393,7 @@ const seedDatabase = async () => {
     .values(seedConfig.tiposDocumentoClienteDefault)
     .returning({
       id: schema.tiposDocumentoClienteTable.id,
-      codigo: schema.tiposDocumentoClienteTable.codigoSunat
+      codigo: schema.tiposDocumentoClienteTable.codigo
     })
   await db
     .insert(schema.tiposDocFacturacionTable)
@@ -403,11 +403,14 @@ const seedDatabase = async () => {
     .values(seedConfig.monedasFacturacionDefault)
   await db.insert(schema.metodosPagoTable).values(seedConfig.metodosPagoDefault)
   await db.insert(schema.tiposTaxTable).values(seedConfig.tiposTaxDefault)
+  await db
+    .insert(schema.estadosDocFacturacionTable)
+    .values(seedConfig.estadosDocFacturacion)
 
   const clientesValues = Array.from({ length: seedConfig.clientesCount }).map(
     () => {
       const tipoDocumento = getRandomValueFromArray(tiposDocumentoCliente)
-      const personaNatural = tipoDocumento.codigo === '1'
+      const personaNatural = tipoDocumento.codigo === tiposDocClienteCodes.dni
       const dni = faker.number.int({ min: 11111111, max: 99999999 }).toString()
       const numeroDocumento = personaNatural
         ? dni
