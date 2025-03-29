@@ -7,33 +7,32 @@ import {
 
 export class GetInformacion {
   public readonly taxDatos = {
+    id: tiposTaxTable.id,
     nombre: tiposTaxTable.nombre,
-    codigoSunat: tiposTaxTable.codigoSunat,
-    porcentaje: tiposTaxTable.porcentaje,
     codigo: tiposTaxTable.codigo
   }
   public readonly docFacturacion = {
+    id: tiposDocFacturacionTable.id,
     nombre: tiposDocFacturacionTable.nombre,
-    codigoSunat: tiposDocFacturacionTable.codigoSunat,
     codigo: tiposDocFacturacionTable.codigo
   }
   public readonly docCliente = {
-    nombre: tiposDocumentoClienteTable.nombre,
-    codigoSunat: tiposDocumentoClienteTable.codigoSunat
+    id: tiposDocumentoClienteTable.id,
+    nombre: tiposDocumentoClienteTable.nombre
   }
 
   private async getInformacion() {
     const tiposTax = await db.select(this.taxDatos).from(tiposTaxTable)
+
     const tiposDocFacturacion = await db
       .select(this.docFacturacion)
       .from(tiposDocFacturacionTable)
-    const clitiposDocCliententeDoc = await db
+
+    const tiposDocCliente = await db
       .select(this.docCliente)
       .from(tiposDocumentoClienteTable)
 
-    const [tiposTaxs] = tiposTax
-
-    return { tiposTaxs, tiposDocFacturacion, clitiposDocCliententeDoc }
+    return { tiposTax, tiposDocFacturacion, tiposDocCliente }
   }
 
   async execute() {
