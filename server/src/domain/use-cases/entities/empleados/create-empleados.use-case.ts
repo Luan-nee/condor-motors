@@ -4,7 +4,7 @@ import { CustomError } from '@/core/errors/custom.error'
 import { empleadosTable, sucursalesTable } from '@/db/schema'
 import type { CreateEmpleadoDto } from '@/domain/dtos/entities/empleados/create-empleado.dto'
 import { db } from '@db/connection'
-import { eq, ilike } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 export class CreateEmpleado {
   private readonly authPayload: AuthPayload
@@ -15,41 +15,15 @@ export class CreateEmpleado {
   }
 
   private async validateRelated(createEmpleadoDto: CreateEmpleadoDto) {
-    if (createEmpleadoDto.dni !== undefined) {
-      const results = await db
-        .select({
-          empleadoId: empleadosTable.id,
-          sucursalId: sucursalesTable.id
-        })
-        .from(sucursalesTable)
-        .leftJoin(
-          empleadosTable,
-          ilike(empleadosTable.dni, createEmpleadoDto.dni)
-        )
-        .where(eq(sucursalesTable.id, createEmpleadoDto.sucursalId))
+    const results = await db
+      .select({
+        empleadoId: empleadosTable.id
+      })
+      .from(sucursalesTable)
+      .where(eq(sucursalesTable.id, createEmpleadoDto.sucursalId))
 
-      if (results.length < 1) {
-        throw CustomError.badRequest('La sucursal ingresada no existe')
-      }
-
-      const [result] = results
-
-      if (result.empleadoId != null) {
-        throw CustomError.badRequest(
-          `Ya existe un empleado con ese dni: ${createEmpleadoDto.dni}`
-        )
-      }
-    } else {
-      const results = await db
-        .select({
-          sucursalId: sucursalesTable.id
-        })
-        .from(sucursalesTable)
-        .where(eq(sucursalesTable.id, createEmpleadoDto.sucursalId))
-
-      if (results.length < 1) {
-        throw CustomError.badRequest('La sucursal ingresada no existe')
-      }
+    if (results.length < 1) {
+      throw CustomError.badRequest('La sucursal ingresada no existe')
     }
   }
 

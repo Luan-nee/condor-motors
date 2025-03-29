@@ -5,7 +5,7 @@ import { empleadosTable, sucursalesTable } from '@/db/schema'
 import type { UpdateEmpleadoDto } from '@/domain/dtos/entities/empleados/update-empleado.dto'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { db } from '@db/connection'
-import { eq, ilike, or } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 export class UpdateEmpleado {
   private readonly authPayload: AuthPayload
@@ -65,19 +65,10 @@ export class UpdateEmpleado {
     const results = await db
       .select({
         sucursalId: sucursalesTable.id,
-        empleadoId: empleadosTable.id,
-        empleadoDni: empleadosTable.dni
+        empleadoId: empleadosTable.id
       })
       .from(sucursalesTable)
-      .leftJoin(
-        empleadosTable,
-        or(
-          eq(empleadosTable.id, numericIdDto.id),
-          updateEmpleadoDto.dni !== undefined
-            ? ilike(empleadosTable.dni, updateEmpleadoDto.dni)
-            : undefined
-        )
-      )
+      .leftJoin(empleadosTable, eq(empleadosTable.id, numericIdDto.id))
       .where(whereCondition)
 
     if (results.length < 1) {
@@ -86,16 +77,6 @@ export class UpdateEmpleado {
 
     if (!results.some((result) => result.empleadoId === numericIdDto.id)) {
       throw CustomError.badRequest('El empleado especificado no existe')
-    }
-
-    if (updateEmpleadoDto.dni !== undefined) {
-      if (
-        results.some((result) => result.empleadoDni === updateEmpleadoDto.dni)
-      ) {
-        throw CustomError.badRequest(
-          `Ya existe un empleado con el dni ${updateEmpleadoDto.dni}`
-        )
-      }
     }
   }
 
