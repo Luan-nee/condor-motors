@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:condorsmotors/services/token_service.dart';
+import 'package:condorsmotors/utils/logger.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
 class ApiException implements Exception {
   final int statusCode;
@@ -120,11 +120,60 @@ class ApiClient {
       validateStatus: (int? status) => status != null && status < 500,
     ));
 
-    // Interceptor para logs
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: kDebugMode,
-      responseBody: kDebugMode,
-      logPrint: (Object object) => debugPrint('🌐 DIO: $object'),
+    // Interceptor para logs con colores
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
+        // Log de la petición con colores según el método
+        final String method = options.method;
+        final String endpoint = options.uri.toString().replaceAll(baseUrl, '');
+        logHttp(method, endpoint);
+        
+        // Contenido del body si existe y no es GET
+        if (method != 'GET' && options.data != null) {
+          final String dataPreview = options.data.toString();
+          final String truncated = dataPreview.length > 500 
+            ? '${dataPreview.substring(0, 500)}...' 
+            : dataPreview;
+          Logger.debug('Request Body: $truncated');
+        }
+        
+        return handler.next(options);
+      },
+      onResponse: (Response response, ResponseInterceptorHandler handler) {
+        // Log de la respuesta con colores según el status code
+        final int statusCode = response.statusCode ?? 0;
+        final String method = response.requestOptions.method;
+        final String endpoint = response.requestOptions.uri.toString().replaceAll(baseUrl, '');
+        
+        logHttp(method, endpoint, statusCode);
+        
+        // Contenido de la respuesta (resumido)
+        if (response.data != null) {
+          final String dataPreview = response.data.toString();
+          final String truncated = dataPreview.length > 500 
+            ? '${dataPreview.substring(0, 500)}...' 
+            : dataPreview;
+          Logger.debug('Response: $truncated');
+        }
+        
+        return handler.next(response);
+      },
+      onError: (DioException error, ErrorInterceptorHandler handler) {
+        // Log de error con colores
+        final int statusCode = error.response?.statusCode ?? 0;
+        final String method = error.requestOptions.method;
+        final String endpoint = error.requestOptions.uri.toString().replaceAll(baseUrl, '');
+        
+        logHttp(method, endpoint, statusCode);
+        
+        // Mensaje de error detallado
+        Logger.error('API Error: ${error.message}');
+        if (error.response?.data != null) {
+          Logger.error('Error data: ${error.response?.data}');
+        }
+        
+        return handler.next(error);
+      },
     ));
 
     // Interceptor para tokens
@@ -157,9 +206,11 @@ class ApiClient {
 
   Future<void> _refreshToken() async {
     try {
+      Logger.info('Renovando token de acceso...');
       final Response response = await _dio.post('/auth/refresh');
       if (response.data != null) {
         await _processTokenFromResponse(response);
+        Logger.info('Token renovado exitosamente');
       } else {
         throw DioException(
           requestOptions: RequestOptions(path: '/auth/refresh'),
@@ -167,7 +218,7 @@ class ApiClient {
         );
       }
     } catch (e) {
-      debugPrint('❌ Error al renovar token: $e');
+      Logger.error('Error al renovar token: $e');
       rethrow;
     }
   }
@@ -198,7 +249,7 @@ class ApiClient {
           expiryInSeconds = expDate.difference(DateTime.now()).inSeconds;
         }
       } catch (e) {
-        debugPrint('⚠️ Error al decodificar token: $e');
+        Logger.warn('Error al decodificar token: $e');
       }
 
       await _tokenService.saveTokens(

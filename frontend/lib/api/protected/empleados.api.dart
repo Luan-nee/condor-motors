@@ -1,7 +1,7 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
 import 'package:condorsmotors/models/empleado.model.dart';
-import 'package:flutter/foundation.dart';
+import 'package:condorsmotors/utils/logger.dart';
 
 class EmpleadosApi {
   final ApiClient _api;
@@ -40,12 +40,12 @@ class EmpleadosApi {
       if (useCache) {
         final List<Empleado>? cachedData = _cache.get<List<Empleado>>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Empleados obtenidos desde caché: $cacheKey');
+          Logger.info('Empleados obtenidos desde caché: $cacheKey');
           return cachedData;
         }
       }
 
-      debugPrint('EmpleadosApi: Obteniendo lista de empleados');
+      Logger.debug('Obteniendo lista de empleados');
 
       // Construir parámetros de consulta
       final Map<String, String> queryParams = <String, String>{};
@@ -80,7 +80,7 @@ class EmpleadosApi {
         queryParams: queryParams,
       );
 
-      debugPrint('EmpleadosApi: Respuesta de getEmpleados recibida');
+      Logger.debug('Respuesta de getEmpleados recibida');
 
       // Extraer los datos de la respuesta
       List<dynamic> items = <dynamic>[];
@@ -101,18 +101,17 @@ class EmpleadosApi {
           .map((item) => Empleado.fromJson(item as Map<String, dynamic>))
           .toList();
 
-      debugPrint(
-          'EmpleadosApi: Total de empleados encontrados: ${empleados.length}');
+      Logger.debug('Total de empleados encontrados: ${empleados.length}');
 
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, empleados);
-        debugPrint('✅ Empleados guardados en caché: $cacheKey');
+        Logger.info('Empleados guardados en caché: $cacheKey');
       }
 
       return empleados;
     } catch (e) {
-      debugPrint('EmpleadosApi: ERROR al obtener empleados: $e');
+      Logger.error('ERROR al obtener empleados: $e');
       rethrow;
     }
   }
@@ -139,18 +138,18 @@ class EmpleadosApi {
       if (useCache) {
         final Empleado? cachedData = _cache.get<Empleado>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Empleado obtenido desde caché: $cacheKey');
+          Logger.info('Empleado obtenido desde caché: $cacheKey');
           return cachedData;
         }
       }
 
-      debugPrint('EmpleadosApi: Obteniendo empleado con ID: $empleadoId');
+      Logger.debug('Obteniendo empleado con ID: $empleadoId');
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/empleados/$empleadoId',
         method: 'GET',
       );
 
-      debugPrint('EmpleadosApi: Respuesta de getEmpleado recibida');
+      Logger.debug('Respuesta de getEmpleado recibida');
 
       // Manejar estructura anidada
       Map<String, dynamic>? data;
@@ -165,12 +164,12 @@ class EmpleadosApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, empleado);
-        debugPrint('✅ Empleado guardado en caché: $cacheKey');
+        Logger.info('Empleado guardado en caché: $cacheKey');
       }
 
       return empleado;
     } catch (e) {
-      debugPrint('EmpleadosApi: ERROR al obtener empleado #$empleadoId: $e');
+      Logger.error('ERROR al obtener empleado #$empleadoId: $e');
       rethrow;
     }
   }
@@ -204,16 +203,15 @@ class EmpleadosApi {
             _formatTimeString(formattedData['horaFinJornada']);
       }
 
-      debugPrint(
-          'EmpleadosApi: Creando nuevo empleado: ${formattedData['nombre']} ${formattedData['apellidos']}');
+      Logger.debug('Creando nuevo empleado: ${formattedData['nombre']} ${formattedData['apellidos']}');
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/empleados',
         method: 'POST',
         body: formattedData,
       );
 
-      debugPrint('EmpleadosApi: Respuesta de createEmpleado recibida');
-      debugPrint(response['data'].toString());
+      Logger.debug('Respuesta de createEmpleado recibida');
+      Logger.debug(response['data'].toString());
 
       // Manejar estructura anidada
       Map<String, dynamic>? data;
@@ -228,7 +226,7 @@ class EmpleadosApi {
         data = null;
       }
 
-      debugPrint('terminó con el manejar estructura anidada');
+      Logger.debug('terminó con el manejar estructura anidada');
 
       if (data == null) {
         throw ApiException(
@@ -240,10 +238,10 @@ class EmpleadosApi {
       // Invalidar caché de listas de empleados
       _invalidateListCache();
 
-      debugPrint('está a punto de retornar el empleado creado');
+      Logger.debug('está a punto de retornar el empleado creado');
       return Empleado.fromJson(data);
     } catch (e) {
-      debugPrint('EmpleadosApi: ERROR al crear empleado: $e');
+      Logger.error('ERROR al crear empleado: $e');
       rethrow;
     }
   }
@@ -262,7 +260,7 @@ class EmpleadosApi {
         );
       }
 
-      debugPrint('EmpleadosApi: Actualizando empleado con ID: $empleadoId');
+      Logger.debug('Actualizando empleado con ID: $empleadoId');
 
       // Formatear las horas correctamente si están presentes
       final Map<String, dynamic> formattedData = Map.from(empleadoData);
@@ -288,7 +286,7 @@ class EmpleadosApi {
         body: formattedData,
       );
 
-      debugPrint('EmpleadosApi: Respuesta de updateEmpleado recibida');
+      Logger.debug('Respuesta de updateEmpleado recibida');
       final Map<String, dynamic> data = _processResponse(response);
 
       // Invalidar caché del empleado específico y listas
@@ -297,7 +295,7 @@ class EmpleadosApi {
 
       return Empleado.fromJson(data);
     } catch (e) {
-      debugPrint('EmpleadosApi: ERROR al actualizar empleado #$empleadoId: $e');
+      Logger.error('ERROR al actualizar empleado #$empleadoId: $e');
       rethrow;
     }
   }
@@ -325,7 +323,7 @@ class EmpleadosApi {
         return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}:00';
       }
     } catch (e) {
-      debugPrint('EmpleadosApi: Error al formatear hora: $e');
+      Logger.warn('Error al formatear hora: $e');
     }
 
     // Si no se puede formatear, devolver el valor original
@@ -346,7 +344,7 @@ class EmpleadosApi {
         );
       }
 
-      debugPrint('EmpleadosApi: Eliminando empleado con ID: $empleadoId');
+      Logger.debug('Eliminando empleado con ID: $empleadoId');
 
       // Como el endpoint DELETE está comentado en el servidor,
       // usamos PATCH para desactivar el empleado en su lugar
@@ -360,9 +358,9 @@ class EmpleadosApi {
       _cache.invalidate('empleado_$empleadoId');
       _invalidateListCache();
 
-      debugPrint('EmpleadosApi: Empleado desactivado correctamente');
+      Logger.info('Empleado desactivado correctamente');
     } catch (e) {
-      debugPrint('EmpleadosApi: ERROR al eliminar empleado #$empleadoId: $e');
+      Logger.error('ERROR al eliminar empleado #$empleadoId: $e');
       rethrow;
     }
   }
@@ -432,7 +430,7 @@ class EmpleadosApi {
     required int rolCuentaEmpleadoId,
   }) async {
     try {
-      debugPrint('EmpleadosApi: Registrando cuenta para empleado $empleadoId');
+      Logger.debug('Registrando cuenta para empleado $empleadoId');
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/auth/register',
@@ -457,7 +455,7 @@ class EmpleadosApi {
         );
       }
     } catch (e) {
-      debugPrint('EmpleadosApi: ERROR al registrar cuenta de empleado: $e');
+      Logger.error('ERROR al registrar cuenta de empleado: $e');
       rethrow;
     }
   }
@@ -519,12 +517,12 @@ class EmpleadosApi {
         final Map<String, dynamic>? cachedData =
             _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Cuenta obtenida desde caché: $cacheKey');
+          Logger.info('Cuenta obtenida desde caché: $cacheKey');
           return cachedData;
         }
       }
 
-      debugPrint('EmpleadosApi: Obteniendo información de cuenta $cuentaId');
+      Logger.debug('Obteniendo información de cuenta $cuentaId');
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/cuentasempleados/$cuentaId',
@@ -536,13 +534,13 @@ class EmpleadosApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, cuenta);
-        debugPrint('✅ Cuenta guardada en caché: $cacheKey');
+        Logger.info('Cuenta guardada en caché: $cacheKey');
       }
 
-      debugPrint('EmpleadosApi: Información de cuenta obtenida correctamente');
+      Logger.debug('Información de cuenta obtenida correctamente');
       return cuenta;
     } catch (e) {
-      debugPrint('EmpleadosApi: ERROR al obtener información de cuenta: $e');
+      Logger.error('ERROR al obtener información de cuenta: $e');
       rethrow;
     }
   }
@@ -558,12 +556,12 @@ class EmpleadosApi {
       if (useCache) {
         final List? cachedData = _cache.get<List<dynamic>>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Cuentas de empleados obtenidas desde caché: $cacheKey');
+          Logger.info('Cuentas de empleados obtenidas desde caché: $cacheKey');
           return cachedData;
         }
       }
 
-      debugPrint('EmpleadosApi: Obteniendo lista de cuentas de empleados');
+      Logger.debug('Obteniendo lista de cuentas de empleados');
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/cuentasempleados',
@@ -583,13 +581,13 @@ class EmpleadosApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, data);
-        debugPrint('✅ Cuentas de empleados guardadas en caché: $cacheKey');
+        Logger.info('Cuentas de empleados guardadas en caché: $cacheKey');
       }
 
-      debugPrint('EmpleadosApi: Total de cuentas encontradas: ${data.length}');
+      Logger.debug('Total de cuentas encontradas: ${data.length}');
       return data;
     } catch (e) {
-      debugPrint('EmpleadosApi: ERROR al obtener cuentas de empleados: $e');
+      Logger.error('ERROR al obtener cuentas de empleados: $e');
       rethrow;
     }
   }
@@ -599,7 +597,7 @@ class EmpleadosApi {
   /// Elimina permanentemente una cuenta de usuario
   Future<bool> deleteCuentaEmpleado(String cuentaId) async {
     try {
-      debugPrint('EmpleadosApi: Eliminando cuenta de empleado $cuentaId');
+      Logger.debug('Eliminando cuenta de empleado $cuentaId');
 
       await _api.authenticatedRequest(
         endpoint: '/cuentasempleados/$cuentaId',
@@ -610,10 +608,10 @@ class EmpleadosApi {
       _cache.invalidate('cuenta_$cuentaId');
       _invalidateCacheByPattern('cuentas');
 
-      debugPrint('EmpleadosApi: Cuenta de empleado eliminada correctamente');
+      Logger.info('Cuenta de empleado eliminada correctamente');
       return true;
     } catch (e) {
-      debugPrint('EmpleadosApi: ERROR al eliminar cuenta de empleado: $e');
+      Logger.error('ERROR al eliminar cuenta de empleado: $e');
       return false;
     }
   }
@@ -629,7 +627,7 @@ class EmpleadosApi {
         final List<Map<String, dynamic>>? cachedData =
             _cache.get<List<Map<String, dynamic>>>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Roles de cuentas obtenidos desde caché: $cacheKey');
+          Logger.info('Roles de cuentas obtenidos desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -648,13 +646,13 @@ class EmpleadosApi {
         // Guardar en caché si useCache es true
         if (useCache) {
           _cache.set(cacheKey, roles);
-          debugPrint('✅ Roles de cuentas guardados en caché: $cacheKey');
+          Logger.info('Roles de cuentas guardados en caché: $cacheKey');
         }
       }
 
       return roles;
     } catch (e) {
-      debugPrint('Error al obtener roles de cuentas: $e');
+      Logger.error('Error al obtener roles de cuentas: $e');
       return <Map<String, dynamic>>[];
     }
   }
@@ -670,7 +668,7 @@ class EmpleadosApi {
         final Map<String, dynamic>? cachedData =
             _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Cuenta por empleado obtenida desde caché: $cacheKey');
+          Logger.info('Cuenta por empleado obtenida desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -692,7 +690,7 @@ class EmpleadosApi {
         // Guardar en caché si useCache es true
         if (useCache) {
           _cache.set(cacheKey, cuenta);
-          debugPrint('✅ Cuenta por empleado guardada en caché: $cacheKey');
+          Logger.info('Cuenta por empleado guardada en caché: $cacheKey');
         }
 
         return cuenta;
@@ -707,8 +705,7 @@ class EmpleadosApi {
               (e.message.toLowerCase().contains('not found') ||
                   e.message.toLowerCase().contains('no encontrado') ||
                   e.message.toLowerCase().contains('no existe')))) {
-        debugPrint(
-            'EmpleadosApi: El empleado $empleadoId no tiene cuenta asociada (${e.statusCode})');
+        Logger.warn('El empleado $empleadoId no tiene cuenta asociada (${e.statusCode})');
         // En lugar de devolver null, lanzamos una excepción específica para este caso
         throw ApiException(
           statusCode: 404, // Usar 404 para representar "no encontrado"
@@ -718,7 +715,7 @@ class EmpleadosApi {
       }
 
       // Para otros errores, propagar la excepción
-      debugPrint('EmpleadosApi: ERROR al obtener cuenta por empleado: $e');
+      Logger.error('ERROR al obtener cuenta por empleado: $e');
       rethrow;
     }
   }
@@ -769,7 +766,7 @@ class EmpleadosApi {
   /// Invalida caché por patrón de clave
   void _invalidateCacheByPattern(String pattern) {
     _cache.invalidateByPattern(pattern);
-    debugPrint('✅ Caché invalidada para patrón: $pattern');
+    Logger.debug('Caché invalidada para patrón: $pattern');
   }
 
   /// Método público para forzar refresco de caché
@@ -779,11 +776,11 @@ class EmpleadosApi {
       _cache
         ..invalidate('empleado_$empleadoId')
         ..invalidate('cuenta_empleado_$empleadoId');
-      debugPrint('✅ Caché invalidada para empleado: $empleadoId');
+      Logger.info('Caché invalidada para empleado: $empleadoId');
     } else {
       // Invalidar toda la caché relacionada con empleados
       _cache.clear();
-      debugPrint('✅ Caché completamente invalidada');
+      Logger.info('Caché completamente invalidada');
     }
   }
 

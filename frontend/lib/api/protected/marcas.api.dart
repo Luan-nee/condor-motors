@@ -2,7 +2,7 @@ import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
 import 'package:condorsmotors/models/marca.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
-import 'package:flutter/foundation.dart';
+import 'package:condorsmotors/utils/logger.dart';
 
 /// Clase para gestionar las operaciones de API relacionadas con Marcas
 class MarcasApi {
@@ -49,12 +49,12 @@ class MarcasApi {
       if (useCache && !forceRefresh) {
         final ResultadoPaginado<Marca>? cachedData = _cache.get<ResultadoPaginado<Marca>>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ [MarcasApi] Marcas paginadas obtenidas desde caché: $cacheKey');
+          Logger.info('[MarcasApi] Marcas paginadas obtenidas desde caché: $cacheKey');
           return cachedData;
         }
       }
       
-      debugPrint('🔄 [MarcasApi] Obteniendo lista de marcas paginada (página: $page, tamaño: $pageSize)');
+      Logger.debug('[MarcasApi] Obteniendo lista de marcas paginada (página: $page, tamaño: $pageSize)');
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/marcas',
         method: 'GET',
@@ -64,7 +64,7 @@ class MarcasApi {
         },
       );
       
-      debugPrint('✅ [MarcasApi] Respuesta de getMarcasPaginadas recibida');
+      Logger.debug('[MarcasApi] Respuesta de getMarcasPaginadas recibida');
       
       // Extraer datos de la respuesta
       final data = response['data'];
@@ -81,7 +81,7 @@ class MarcasApi {
       // Extraer información de paginación
       final paginationData = data['pagination'];
       if (paginationData == null) {
-        debugPrint('⚠️ [MarcasApi] La respuesta no contiene información de paginación');
+        Logger.warn('[MarcasApi] La respuesta no contiene información de paginación');
       }
       
       final int totalItems = paginationData?['total'] ?? items.length;
@@ -89,14 +89,14 @@ class MarcasApi {
       final int totalPages = paginationData?['totalPages'] ?? 1;
       final int actualPageSize = paginationData?['pageSize'] ?? pageSize;
       
-      debugPrint('📊 [MarcasApi] Marcas recuperadas: ${items.length}, total: $totalItems, página: $currentPage de $totalPages');
+      Logger.debug('[MarcasApi] Marcas recuperadas: ${items.length}, total: $totalItems, página: $currentPage de $totalPages');
       
       // Convertir a objetos Marca
       final List<Marca> marcas = items.map((item) {
         try {
           return Marca.fromJson(item);
         } catch (e) {
-          debugPrint('⚠️ [MarcasApi] Error al convertir marca: $e');
+          Logger.warn('[MarcasApi] Error al convertir marca: $e');
           // Si hay un error en la conversión, lo ignoramos y continuamos
           return Marca(id: 0, nombre: 'Error');
         }
@@ -114,12 +114,12 @@ class MarcasApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, resultado);
-        debugPrint('✅ [MarcasApi] Marcas paginadas guardadas en caché: $cacheKey');
+        Logger.info('[MarcasApi] Marcas paginadas guardadas en caché: $cacheKey');
       }
       
       return resultado;
     } catch (e) {
-      debugPrint('❌ [MarcasApi] ERROR al obtener marcas paginadas: $e');
+      Logger.error('[MarcasApi] ERROR al obtener marcas paginadas: $e');
       rethrow;
     }
   }
@@ -145,7 +145,7 @@ class MarcasApi {
       if (useCache && !forceRefresh) {
         final List<Marca>? cachedData = _cache.get<List<Marca>>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ [MarcasApi] Todas las marcas obtenidas desde caché');
+          Logger.info('[MarcasApi] Todas las marcas obtenidas desde caché');
           return cachedData;
         }
       }
@@ -162,12 +162,12 @@ class MarcasApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, marcas);
-        debugPrint('✅ [MarcasApi] Todas las marcas guardadas en caché: ${marcas.length} elementos');
+        Logger.info('[MarcasApi] Todas las marcas guardadas en caché: ${marcas.length} elementos');
       }
       
       return marcas;
     } catch (e) {
-      debugPrint('❌ [MarcasApi] ERROR al obtener todas las marcas: $e');
+      Logger.error('[MarcasApi] ERROR al obtener todas las marcas: $e');
       rethrow;
     }
   }
@@ -202,18 +202,18 @@ class MarcasApi {
       if (useCache && !forceRefresh) {
         final Marca? cachedData = _cache.get<Marca>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ [MarcasApi] Marca obtenida desde caché: $cacheKey');
+          Logger.info('[MarcasApi] Marca obtenida desde caché: $cacheKey');
           return cachedData;
         }
       }
       
-      debugPrint('🔄 [MarcasApi] Obteniendo marca con ID: $id');
+      Logger.debug('[MarcasApi] Obteniendo marca con ID: $id');
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/marcas/$id',
         method: 'GET',
       );
       
-      debugPrint('✅ [MarcasApi] Respuesta de getMarca recibida');
+      Logger.debug('[MarcasApi] Respuesta de getMarca recibida');
       
       // Extraer datos de la respuesta
       final dynamic data = response['data'];
@@ -230,12 +230,12 @@ class MarcasApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, marca);
-        debugPrint('✅ [MarcasApi] Marca guardada en caché: $cacheKey');
+        Logger.info('[MarcasApi] Marca guardada en caché: $cacheKey');
       }
       
       return marca;
     } catch (e) {
-      debugPrint('❌ [MarcasApi] ERROR al obtener marca #$marcaId: $e');
+      Logger.error('[MarcasApi] ERROR al obtener marca #$marcaId: $e');
       rethrow;
     }
   }
@@ -253,14 +253,14 @@ class MarcasApi {
         );
       }
       
-      debugPrint('🔄 [MarcasApi] Creando nueva marca: ${marcaData['nombre']}');
+      Logger.debug('[MarcasApi] Creando nueva marca: ${marcaData['nombre']}');
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/marcas',
         method: 'POST',
         body: marcaData,
       );
       
-      debugPrint('✅ [MarcasApi] Respuesta de createMarca recibida');
+      Logger.debug('[MarcasApi] Respuesta de createMarca recibida');
       
       // Extraer datos de la respuesta
       final dynamic data = response['data'];
@@ -279,7 +279,7 @@ class MarcasApi {
       
       return marca;
     } catch (e) {
-      debugPrint('❌ [MarcasApi] ERROR al crear marca: $e');
+      Logger.error('[MarcasApi] ERROR al crear marca: $e');
       rethrow;
     }
   }
@@ -314,14 +314,14 @@ class MarcasApi {
         );
       }
       
-      debugPrint('🔄 [MarcasApi] Actualizando marca con ID: $id');
+      Logger.debug('[MarcasApi] Actualizando marca con ID: $id');
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/marcas/$id',
         method: 'PATCH',
         body: marcaData,
       );
       
-      debugPrint('✅ [MarcasApi] Respuesta de updateMarca recibida');
+      Logger.debug('[MarcasApi] Respuesta de updateMarca recibida');
       
       // Extraer datos de la respuesta
       final dynamic data = response['data'];
@@ -341,7 +341,7 @@ class MarcasApi {
       
       return marca;
     } catch (e) {
-      debugPrint('❌ [MarcasApi] ERROR al actualizar marca #$marcaId: $e');
+      Logger.error('[MarcasApi] ERROR al actualizar marca #$marcaId: $e');
       rethrow;
     }
   }
@@ -367,13 +367,13 @@ class MarcasApi {
         );
       }
       
-      debugPrint('🔄 [MarcasApi] Eliminando marca con ID: $id');
+      Logger.debug('[MarcasApi] Eliminando marca con ID: $id');
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/marcas/$id',
         method: 'DELETE',
       );
       
-      debugPrint('✅ [MarcasApi] Marca eliminada correctamente');
+      Logger.info('[MarcasApi] Marca eliminada correctamente');
       
       // Invalidar caché específico y general
       _cache.invalidate('$_prefixMarca$id');
@@ -381,7 +381,7 @@ class MarcasApi {
       
       return response['ok'] == true;
     } catch (e) {
-      debugPrint('❌ [MarcasApi] ERROR al eliminar marca #$marcaId: $e');
+      Logger.error('[MarcasApi] ERROR al eliminar marca #$marcaId: $e');
       rethrow;
     }
   }
@@ -392,17 +392,17 @@ class MarcasApi {
   void invalidateCache([String? marcaId]) {
     if (marcaId != null) {
       _cache.invalidate('$_prefixMarca$marcaId');
-      debugPrint('✅ [MarcasApi] Caché invalidada para marca: $marcaId');
+      Logger.info('[MarcasApi] Caché invalidada para marca: $marcaId');
     }
     
     // Invalidar todas las listas de marcas
     _cache.invalidateByPattern(_prefixListaMarcas);
-    debugPrint('✅ [MarcasApi] Caché de listas de marcas invalidada');
+    Logger.info('[MarcasApi] Caché de listas de marcas invalidada');
   }
   
   /// Método público para limpiar completamente el caché
   void clearCache() {
     _cache.clear();
-    debugPrint('✅ [MarcasApi] Caché completamente limpiada');
+    Logger.info('[MarcasApi] Caché completamente limpiada');
   }
 }

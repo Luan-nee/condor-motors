@@ -121,30 +121,87 @@ class ProformaConversionManager {
         
         Logger.debug('Información de cliente: ${clienteInfo != null ? "Presente" : "No presente"}, ID: $clienteId');
         
+        // Transformar los detalles al formato esperado por el endpoint de ventas
+        final List<Map<String, dynamic>> detallesTransformados = [];
+        for (final dynamic detalle in detalles) {
+          try {
+            // Validar que el detalle tenga la estructura mínima esperada
+            if (detalle == null || !detalle.containsKey('productoId')) {
+              Logger.debug('Detalle inválido encontrado, omitiendo: $detalle');
+              continue;
+            }
+            
+            // Crear detalle en formato esperado por el API de ventas
+            detallesTransformados.add({
+              'productoId': detalle['productoId'],
+              'cantidad': detalle['cantidadPagada'] ?? detalle['cantidadTotal'] ?? 1,
+              'tipoTaxId': 7, // IGV estándar (18%), valor por defecto
+              'aplicarOferta': detalle['descuento'] != null && detalle['descuento'] > 0
+            });
+            
+            Logger.debug('Detalle transformado: ${detallesTransformados.last}');
+          } catch (e) {
+            Logger.error('Error al transformar detalle: $e');
+            // Continuar con el siguiente detalle en lugar de fallar toda la conversión
+          }
+        }
+        
+        // Verificar si quedaron detalles válidos después de la transformación
+        if (detallesTransformados.isEmpty) {
+          Logger.debug('ERROR: No hay productos válidos después de la transformación');
+          if (context.mounted) {
+            _cerrarDialogoProcesamiento(context);
+            _mostrarError(context, 'Error en el formato de productos. No se puede convertir la proforma.');
+          }
+          return false;
+        }
+        
         // Crear venta a partir de los datos de la proforma
         final Map<String, dynamic> ventaData = {
           'observaciones': 'Convertida desde Proforma #$proformaId',
           'tipoDocumentoId': tipoDocumento == 'BOLETA' ? 1 : 2,
           'monedaId': 1, // PEN por defecto
           'metodoPagoId': 1, // Efectivo por defecto
-          'detalles': detalles,
+          'detalles': detallesTransformados,
+          'clienteId': 1, // Cliente genérico por defecto (se puede sobrescribir si hay uno válido)
         };
         
-        // Solo agregamos clienteId si no es nulo
+        // Extraer clienteId del objeto cliente si está disponible
+        int? clienteIdNumerico;
+        // Primero revisar si tenemos clienteId directo
         if (clienteId != null) {
-          ventaData['clienteId'] = int.tryParse(clienteId.toString()) ?? 0;
-          Logger.debug('Cliente asignado a la venta: ${ventaData['clienteId']}');
+          clienteIdNumerico = int.tryParse(clienteId.toString());
+        }
+        // Si no tenemos clienteId directo, intentar extraerlo del objeto cliente
+        else if (clienteInfo != null && clienteInfo is Map && clienteInfo.containsKey('id')) {
+          clienteIdNumerico = int.tryParse(clienteInfo['id'].toString());
+        }
+        
+        // Solo sobrescribir clienteId si tenemos un valor numérico válido
+        if (clienteIdNumerico != null && clienteIdNumerico > 0) {
+          // Reemplazar el clienteId genérico con el específico
+          ventaData['clienteId'] = clienteIdNumerico;
+          Logger.debug('Cliente específico asignado a la venta: $clienteIdNumerico');
         } else {
-          Logger.debug('Creando venta sin cliente asignado');
+          Logger.debug('Usando cliente genérico (ID: 1) para la venta');
         }
         
         // Obtener el ID del empleado actual
         final userData = await api.authService.getUserData();
         if (userData != null && userData.containsKey('id')) {
-          ventaData['empleadoId'] = int.tryParse(userData['id'].toString()) ?? 0;
+          final int? empleadoId = int.tryParse(userData['id'].toString());
+          if (empleadoId != null && empleadoId > 0) {
+            ventaData['empleadoId'] = empleadoId;
+          }
         }
         
         Logger.debug('PREPARANDO VENTA: $ventaData');
+        
+        // ALTERNATIVA MANUAL: Si después de varios intentos la conversión automática sigue fallando,
+        // se puede recomendar al usuario hacer la conversión manual:
+        // 1. Copiar los datos de los productos de la proforma
+        // 2. Crear una nueva venta manualmente con esos productos
+        // 3. Marcar la proforma como convertida
         
         // Crear la venta usando la API estándar de ventas
         Logger.debug('Enviando petición para crear venta...');
@@ -153,23 +210,55 @@ class ProformaConversionManager {
           sucursalId: sucursalId,
         );
         
-        Logger.debug('RESPUESTA CREACIÓN VENTA: ${ventaResponse.toString().substring(0, min(200, ventaResponse.toString().length))}...');
+        Logger.debug('RESPUESTA CREACIÓN VENTA COMPLETA: $ventaResponse');
         
         // Cerrar diálogo de procesamiento
         if (context.mounted) {
           _cerrarDialogoProcesamiento(context);
         }
         
+        // Validar el resultado de la creación de venta
         if (ventaResponse['status'] != 'success') {
           final String errorMsg = ventaResponse.containsKey('error') 
               ? ventaResponse['error'].toString() 
               : ventaResponse['message'] ?? 'Error desconocido';
           
           Logger.error('ERROR CREACIÓN VENTA: $errorMsg');
-          Logger.debug('Respuesta completa: $ventaResponse');
+          
+          String mensajeError = 'No se pudo crear la venta: $errorMsg';
+          
+          // Añadir sugerencia de creación manual si es un error persistente
+          if (errorMsg.contains('clienteId') || errorMsg.contains('tipoTaxId')) {
+            mensajeError += '\n\nIntente crear la venta manualmente usando los datos de la proforma.';
+          }
           
           if (context.mounted) {
-            _mostrarError(context, 'No se pudo crear la venta: $errorMsg');
+            _mostrarError(context, mensajeError);
+          }
+          return false;
+        }
+        
+        // Verificación adicional para asegurar que realmente se creó la venta
+        if (!ventaResponse.containsKey('data') || ventaResponse['data'] == null) {
+          Logger.error('ERROR: Respuesta de creación de venta sin datos');
+          if (context.mounted) {
+            _cerrarDialogoProcesamiento(context);
+            _mostrarError(context, 'Error en formato de respuesta al crear venta');
+          }
+          return false;
+        }
+        
+        // Verificar si el objeto data contiene un error anidado
+        final dynamic responseData = ventaResponse['data'];
+        if (responseData is Map && responseData.containsKey('status') && responseData['status'] == 'fail') {
+          final String nestedErrorMsg = responseData.containsKey('error')
+              ? responseData['error'].toString()
+              : 'Error desconocido en respuesta';
+          
+          Logger.error('ERROR ANIDADO EN RESPUESTA: $nestedErrorMsg');
+          if (context.mounted) {
+            _cerrarDialogoProcesamiento(context);
+            _mostrarError(context, 'No se pudo crear la venta: $nestedErrorMsg');
           }
           return false;
         }

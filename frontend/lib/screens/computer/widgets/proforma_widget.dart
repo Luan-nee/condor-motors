@@ -1,12 +1,13 @@
+import 'dart:math' show min;
+
 import 'package:condorsmotors/models/proforma.model.dart';
+import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_conversion_utils.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
-import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart';
+import 'package:condorsmotors/utils/logger.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:condorsmotors/utils/logger.dart';
-import 'dart:math' show min;
 
 /// Widget para mostrar los detalles de una proforma individual
 class ProformaWidget extends StatelessWidget {
