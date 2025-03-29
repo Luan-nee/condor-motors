@@ -1,27 +1,40 @@
+import { tiposDocClienteCodes } from '@/consts'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import { clientesTable } from '@/db/schema'
+import { clientesTable, tiposDocumentoClienteTable } from '@/db/schema'
 import type { UpdateClienteDto } from '@/domain/dtos/entities/clientes/update-cliente.dto'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
+import { Validator } from '@/domain/validators/validator'
 import { eq } from 'drizzle-orm'
 
 export class UpdateCliente {
-  async execute(
-    updateClienteDto: UpdateClienteDto,
-    numericIdDto: NumericIdDto
+  private async updateCliente(
+    numericIdDto: NumericIdDto,
+    updateClienteDto: UpdateClienteDto
   ) {
-    const cliente = await db
-      .select()
+    const clientes = await db
+      .select({
+        id: clientesTable.id,
+        tipoDocCodigo: tiposDocumentoClienteTable.codigo
+      })
       .from(clientesTable)
+      .innerJoin(
+        tiposDocumentoClienteTable,
+        eq(clientesTable.tipoDocumentoId, tiposDocumentoClienteTable.id)
+      )
       .where(eq(clientesTable.id, numericIdDto.id))
 
-    if (cliente.length <= 0) {
+    if (clientes.length <= 0) {
       throw CustomError.badRequest(
-        `No se encontro ningun cliente con el id ${numericIdDto.id}`
+        `No se pudo actualizar el cliente especificado (No se encontró)`
       )
     }
 
-    const updateClienteResult = await db
+    const [cliente] = clientes
+
+    this.validateDocCliente(updateClienteDto, cliente.tipoDocCodigo)
+
+    const results = await db
       .update(clientesTable)
       .set({
         numeroDocumento: updateClienteDto.numeroDocumento,
@@ -33,12 +46,66 @@ export class UpdateCliente {
       .where(eq(clientesTable.id, numericIdDto.id))
       .returning()
 
-    if (updateClienteResult.length <= 0) {
+    if (results.length <= 0) {
       throw CustomError.internalServer(
-        'ocurrio un error al intentar actualizar los datos del cliente'
+        'Ha ocurrido un error al intentar actualizar los datos del cliente'
       )
     }
-    const [clientes] = updateClienteResult
-    return clientes
+
+    const [result] = results
+
+    return result
+  }
+
+  // eslint-disable-next-line complexity
+  private validateDocCliente(
+    updateClienteDto: UpdateClienteDto,
+    tipoDocumentoCodigo: string
+  ) {
+    if (
+      tipoDocumentoCodigo === tiposDocClienteCodes.dni ||
+      tipoDocumentoCodigo === tiposDocClienteCodes.ruc ||
+      tipoDocumentoCodigo === tiposDocClienteCodes.noDomiciliadoSinRuc
+    ) {
+      if (updateClienteDto.numeroDocumento == null) {
+        throw CustomError.badRequest('El numero de documento es requerido')
+      }
+
+      if (!Validator.isOnlyNumbers(updateClienteDto.numeroDocumento)) {
+        throw CustomError.badRequest(
+          'El numero de documento solo puede contener números'
+        )
+      }
+
+      if (
+        tipoDocumentoCodigo === tiposDocClienteCodes.dni &&
+        updateClienteDto.numeroDocumento.length !== 8
+      ) {
+        throw CustomError.badRequest(
+          'Si el tipo de documento es dni este solo puede contener números y tener 8 caracteres de longitud'
+        )
+      }
+
+      if (tipoDocumentoCodigo === tiposDocClienteCodes.ruc) {
+        if (updateClienteDto.numeroDocumento.length !== 11) {
+          throw CustomError.badRequest(
+            'Si el tipo de documento es ruc este solo puede contener números y tener 11 caracteres de longitud'
+          )
+        }
+
+        if (updateClienteDto.direccion == null) {
+          throw CustomError.badRequest('La dirección es requerida')
+        }
+      }
+    }
+  }
+
+  async execute(
+    updateClienteDto: UpdateClienteDto,
+    numericIdDto: NumericIdDto
+  ) {
+    const cliente = await this.updateCliente(numericIdDto, updateClienteDto)
+
+    return cliente
   }
 }

@@ -144,3 +144,12 @@ export const estadosTransferenciasInvCodes = {
   enviado: 'enviado',
   recibido: 'recibido'
 }
+
+export const tiposDocClienteCodes = {
+  ruc: 'ruc',
+  dni: 'dni',
+  carnetExtranjeria: 'carnet_extranjeria',
+  pasaporte: 'pasaporte',
+  cedulaDiplomáticaIdentidad: 'cedula_diplomática_identidad',
+  noDomiciliadoSinRuc: 'no_domiciliado_sin_ruc'
+}

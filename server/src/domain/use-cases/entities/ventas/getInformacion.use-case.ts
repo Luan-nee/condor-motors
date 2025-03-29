@@ -18,7 +18,8 @@ export class GetInformacion {
   }
   public readonly docCliente = {
     id: tiposDocumentoClienteTable.id,
-    nombre: tiposDocumentoClienteTable.nombre
+    nombre: tiposDocumentoClienteTable.nombre,
+    codigo: tiposDocumentoClienteTable.codigo
   }
 
   private async getInformacion() {

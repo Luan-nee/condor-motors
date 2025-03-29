@@ -1,30 +1,29 @@
 import z from 'zod'
-import { Validator } from '../../validator'
+import { Validator } from '@/domain/validators/validator'
+import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
 
-// tipoPersonaId
-export const ClienteSchema = {
-  tipoDocumentoId: z.number(),
+export const clienteSchema = {
+  tipoDocumentoId: idTypeBaseSchema.numericId,
   numeroDocumento: z
     .string()
     .trim()
-    .min(6)
-    .max(13, { message: 'El Numero de documento ingresado no es valido' })
-    .refine((valor) => Validator.isOnlyNumbers(valor), {
-      message:
-        'El numero de documento Ingresado no puede contener otro tipo de caracteres a parte de los numeros'
-    }),
+    .min(8)
+    .max(15)
+    .refine((valor) => Validator.isOnlyNumbersLetters(valor), {
+      message: 'El numero de documento solo puede contener números y letras'
+    })
+    .optional()
+    .nullable(),
   denominacion: z.string().trim(),
-  direccion: z.string().trim().min(3).optional(),
-  correo: z
-    .string()
-    .trim()
-    .email({ message: 'El texto ingresado no es un correo' })
-    .optional(),
+  direccion: z.string().trim().min(3).optional().nullable(),
+  correo: z.string().trim().email().optional().nullable(),
   telefono: z
     .string()
     .trim()
-    .refine((valor) => Validator.isOnlyNumbers(valor), {
-      message: 'El telefono no contiene caracteres especiales'
+    .refine((valor) => Validator.isValidPhoneNumber(valor), {
+      message:
+        'El número de telefono solo puede contener números, espacios, guiones y el código de pais opcionalmente'
     })
     .optional()
+    .nullable()
 }

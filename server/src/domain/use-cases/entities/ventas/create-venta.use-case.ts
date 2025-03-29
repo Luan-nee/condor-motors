@@ -1,6 +1,7 @@
 /* eslint-disable max-lines */
 import {
   permissionCodes,
+  tiposDocClienteCodes,
   tiposDocFacturacionCodes,
   tiposTaxCodes
 } from '@/consts'
@@ -497,7 +498,7 @@ export class CreateVenta {
         tipoDocumentoId: tiposDocFacturacionTable.id,
         tipoDocumentoCodigo: tiposDocFacturacionTable.codigo,
         clienteId: clientesTable.id,
-        tipoDocumentoClienteCodigo: tiposDocumentoClienteTable.codigoSunat,
+        tipoDocClienteCodigo: tiposDocumentoClienteTable.codigo,
         direccionCliente: clientesTable.direccion,
         empleadoId: empleadosTable.id,
         sucursalId: sucursalesTable.id,
@@ -539,23 +540,32 @@ export class CreateVenta {
     }
 
     this.validateClientDocument({
-      tipoDocumentoClienteCodigo: result.tipoDocumentoClienteCodigo,
-      tipoDocumentoCodigo: result.tipoDocumentoCodigo
+      tipoDocClienteCodigo: result.tipoDocClienteCodigo,
+      tipoDocCodigo: result.tipoDocumentoCodigo
     })
 
     return this.getSerieDocument(result)
   }
 
   private validateClientDocument(data: {
-    tipoDocumentoClienteCodigo: string | null
-    tipoDocumentoCodigo: string | null
+    tipoDocClienteCodigo: string | null
+    tipoDocCodigo: string | null
   }) {
     if (
-      data.tipoDocumentoCodigo === tiposDocFacturacionCodes.factura &&
-      data.tipoDocumentoClienteCodigo === '1'
+      data.tipoDocCodigo === tiposDocFacturacionCodes.factura &&
+      data.tipoDocClienteCodigo !== tiposDocClienteCodes.ruc
     ) {
       throw CustomError.badRequest(
-        'No es posible emitir facturas para clientes con DNI, esto solo esta permitido para clientes con RUC'
+        'Solo se pueden emitir facturas para clientes con RUC, no se permiten otros tipos de documentos'
+      )
+    }
+
+    if (
+      data.tipoDocCodigo === tiposDocFacturacionCodes.boleta &&
+      data.tipoDocClienteCodigo === tiposDocClienteCodes.ruc
+    ) {
+      throw CustomError.badRequest(
+        'No se pueden emitir boletas para clientes con RUC, solo se permiten otros tipos de documentos'
       )
     }
   }
