@@ -20,7 +20,8 @@ export const sucursalSchema = {
       message:
         'La dirección solo puede contener este set de caracteres: a-zA-ZáéíóúÁÉÍÓÚñÑüÜ-_.,'
     })
-    .optional(),
+    .optional()
+    .nullable(),
   sucursalCentral: z.boolean(),
   serieFactura: z
     .string()
@@ -28,15 +29,17 @@ export const sucursalSchema = {
     .length(4)
     .startsWith('F')
     .toUpperCase()
-    .optional(),
-  numeroFacturaInicial: z.number().int().min(1).optional(),
+    .optional()
+    .nullable(),
+  numeroFacturaInicial: z.number().int().min(1).optional().nullable(),
   serieBoleta: z
     .string()
     .trim()
     .length(4)
     .startsWith('B')
     .toUpperCase()
-    .optional(),
-  numeroBoletaInicial: z.number().int().min(1).optional(),
-  codigoEstablecimiento: z.string().trim().length(4).optional()
+    .optional()
+    .nullable(),
+  numeroBoletaInicial: z.number().int().min(1).optional().nullable(),
+  codigoEstablecimiento: z.string().trim().length(4).optional().nullable()
 }

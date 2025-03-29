@@ -2,13 +2,13 @@ import { updateSucursalValidator } from '@/domain/validators/entities/sucursal/s
 
 export class UpdateSucursalDto {
   public nombre?: string
-  public direccion?: string
+  public direccion?: string | null
   public sucursalCentral?: boolean
-  public serieFactura?: string
-  public numeroFacturaInicial?: number
-  public serieBoleta?: string
-  public numeroBoletaInicial?: number
-  public codigoEstablecimiento?: string
+  public serieFactura?: string | null
+  public numeroFacturaInicial?: number | null
+  public serieBoleta?: string | null
+  public numeroBoletaInicial?: number | null
+  public codigoEstablecimiento?: string | null
 
   private constructor({
     nombre,

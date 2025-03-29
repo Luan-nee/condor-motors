@@ -19,19 +19,19 @@ export class CreateSucursal {
       ilike(sucursalesTable.nombre, createSucursalDto.nombre)
     ]
 
-    if (createSucursalDto.serieBoleta !== undefined) {
-      conditionals.push(
-        ilike(sucursalesTable.serieBoleta, createSucursalDto.serieBoleta)
-      )
-    }
-
-    if (createSucursalDto.serieFactura !== undefined) {
+    if (createSucursalDto.serieFactura != null) {
       conditionals.push(
         ilike(sucursalesTable.serieFactura, createSucursalDto.serieFactura)
       )
     }
 
-    if (createSucursalDto.codigoEstablecimiento !== undefined) {
+    if (createSucursalDto.serieBoleta != null) {
+      conditionals.push(
+        ilike(sucursalesTable.serieBoleta, createSucursalDto.serieBoleta)
+      )
+    }
+
+    if (createSucursalDto.codigoEstablecimiento != null) {
       conditionals.push(
         ilike(
           sucursalesTable.codigoEstablecimiento,
@@ -49,6 +49,7 @@ export class CreateSucursal {
     const sucursales = await db
       .select({
         id: sucursalesTable.id,
+        nombre: sucursalesTable.nombre,
         serieFactura: sucursalesTable.serieFactura,
         serieBoleta: sucursalesTable.serieBoleta,
         codigoEstablecimiento: sucursalesTable.codigoEstablecimiento
@@ -56,15 +57,15 @@ export class CreateSucursal {
       .from(sucursalesTable)
       .where(or(...conditionals))
 
-    if (sucursales.length > 0) {
-      throw CustomError.badRequest(
-        `Ya existe una sucursal con ese nombre: '${createSucursalDto.nombre}'`
-      )
-    }
-
     for (const sucursal of sucursales) {
+      if (sucursal.nombre === createSucursalDto.nombre) {
+        throw CustomError.badRequest(
+          `Ya existe una sucursal con ese nombre: '${createSucursalDto.nombre}'`
+        )
+      }
+
       if (
-        createSucursalDto.serieFactura !== undefined &&
+        createSucursalDto.serieFactura != null &&
         sucursal.serieFactura === createSucursalDto.serieFactura
       ) {
         throw CustomError.badRequest(
@@ -72,7 +73,7 @@ export class CreateSucursal {
         )
       }
       if (
-        createSucursalDto.serieBoleta !== undefined &&
+        createSucursalDto.serieBoleta != null &&
         sucursal.serieBoleta === createSucursalDto.serieBoleta
       ) {
         throw CustomError.badRequest(
@@ -80,7 +81,7 @@ export class CreateSucursal {
         )
       }
       if (
-        createSucursalDto.codigoEstablecimiento !== undefined &&
+        createSucursalDto.codigoEstablecimiento != null &&
         sucursal.codigoEstablecimiento ===
           createSucursalDto.codigoEstablecimiento
       ) {
