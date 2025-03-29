@@ -48,9 +48,7 @@ export const QueriesSchema = z.object({
   page_size: queriesBaseSchema.page_size,
   filter: queriesBaseSchema.filter,
   filter_value: queriesBaseSchema.filter_value,
-  filter_type: queriesBaseSchema.filter_type,
-  startDate: queriesBaseSchema.startDate,
-  endDate: queriesBaseSchema.endDate
+  filter_type: queriesBaseSchema.filter_type
 })
 
 export const queriesValidator = (object: unknown) =>

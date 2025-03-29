@@ -1,11 +1,10 @@
 import { getDateTimeString, getOffsetDateTime } from '@/core/lib/utils'
 import { db } from '@/db/connection'
 import { sucursalesTable, totalesVentaTable, ventasTable } from '@/db/schema'
-import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
-import { and, count, eq, gte, lte, sum } from 'drizzle-orm'
+import { count, eq, gte, sum } from 'drizzle-orm'
 
 export class GetReporteVentas {
-  private async getventasReporte(queriesDto: QueriesDto) {
+  private async getventasReporte() {
     const fechaActual = getOffsetDateTime(new Date(), -5)
     if (fechaActual === undefined) {
       return []
@@ -20,15 +19,15 @@ export class GetReporteVentas {
       hoy
     }
 
-    const whereCondition =
-      queriesDto.startDate instanceof Date && queriesDto.endDate instanceof Date
-        ? and(
-            gte(ventasTable.fechaCreacion, new Date(queriesDto.startDate)),
-            lte(ventasTable.fechaCreacion, new Date(queriesDto.endDate))
-          )
-        : queriesDto.startDate instanceof Date
-          ? gte(ventasTable.fechaCreacion, new Date(queriesDto.startDate))
-          : undefined
+    const whereCondition = undefined
+    // queriesDto.startDate instanceof Date && queriesDto.endDate instanceof Date
+    //   ? and(
+    //       gte(ventasTable.fechaCreacion, new Date(queriesDto.startDate)),
+    //       lte(ventasTable.fechaCreacion, new Date(queriesDto.endDate))
+    //     )
+    //   : queriesDto.startDate instanceof Date
+    //     ? gte(ventasTable.fechaCreacion, new Date(queriesDto.startDate))
+    //     : undefined
 
     const dataTotal = await db
       .select({
@@ -72,8 +71,8 @@ export class GetReporteVentas {
     }
   }
 
-  async execute(queriesDto: QueriesDto) {
-    const reporteVentas = await this.getventasReporte(queriesDto)
+  async execute() {
+    const reporteVentas = await this.getventasReporte()
 
     return reporteVentas
   }

@@ -25,9 +25,7 @@ export const defaultQueries = {
   page_size: 10,
   filter: '',
   filter_value: undefined,
-  filter_type: filterTypeValues.eq,
-  startDate: '',
-  endDate: ''
+  filter_type: filterTypeValues.eq
 }
 
 export const responseStatus = {

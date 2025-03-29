@@ -12,15 +12,15 @@ export class EstadisticasController {
     }
 
     const [error, queriesDto] = QueriesDto.create(req.query)
-
     if (error !== undefined || queriesDto === undefined) {
       CustomResponse.badRequest({ res, error })
       return
     }
+
     const getReporteVentas = new GetReporteVentas()
 
     getReporteVentas
-      .execute(queriesDto)
+      .execute()
       .then((reporte) => {
         CustomResponse.success({ res, data: reporte })
       })
