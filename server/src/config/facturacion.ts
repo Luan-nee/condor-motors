@@ -1,6 +1,10 @@
 import { envs } from '@/config/envs'
 import { CustomError } from '@/core/errors/custom.error'
-import type { consultDocumentType, sendDocumentType } from '@/types/config'
+import type {
+  cancelDocumentType,
+  consultDocumentType,
+  sendDocumentType
+} from '@/types/config'
 
 const { TOKEN_FACTURACION, FACTURACION_API_BASE_URL } = envs
 
@@ -68,6 +72,23 @@ export class ServicioFacturacion {
     ServicioFacturacion.checkAvailability()
 
     const res = await fetch(FACTURACION_API_BASE_URL + '/consulta', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${TOKEN_FACTURACION}`
+      },
+      body: JSON.stringify(document)
+    })
+
+    const apiResponse = await this.formatResponse(res)
+
+    return apiResponse
+  }
+
+  static cancelDocument: cancelDocumentType = async ({ document }) => {
+    ServicioFacturacion.checkAvailability()
+
+    const res = await fetch(FACTURACION_API_BASE_URL + '/anular', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

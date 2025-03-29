@@ -109,3 +109,10 @@ interface ConsultDocument {
   serie: string
   numero: string
 }
+
+interface CancelDoc {
+  tipo_documento: string
+  serie: string
+  numero: string
+  motivo: string
+}
