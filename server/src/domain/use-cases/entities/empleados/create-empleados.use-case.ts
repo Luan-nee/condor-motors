@@ -17,7 +17,7 @@ export class CreateEmpleado {
   private async validateRelated(createEmpleadoDto: CreateEmpleadoDto) {
     const results = await db
       .select({
-        empleadoId: empleadosTable.id
+        sucursalId: sucursalesTable.id
       })
       .from(sucursalesTable)
       .where(eq(sucursalesTable.id, createEmpleadoDto.sucursalId))
