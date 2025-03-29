@@ -15,9 +15,7 @@ export class CreateSucursal {
   }
 
   private getConditionals(createSucursalDto: CreateSucursalDto) {
-    const conditionals = [
-      ilike(sucursalesTable.nombre, createSucursalDto.nombre)
-    ]
+    const conditionals = []
 
     if (createSucursalDto.serieFactura != null) {
       conditionals.push(
@@ -49,7 +47,6 @@ export class CreateSucursal {
     const sucursales = await db
       .select({
         id: sucursalesTable.id,
-        nombre: sucursalesTable.nombre,
         serieFactura: sucursalesTable.serieFactura,
         serieBoleta: sucursalesTable.serieBoleta,
         codigoEstablecimiento: sucursalesTable.codigoEstablecimiento
@@ -58,12 +55,6 @@ export class CreateSucursal {
       .where(or(...conditionals))
 
     for (const sucursal of sucursales) {
-      if (sucursal.nombre === createSucursalDto.nombre) {
-        throw CustomError.badRequest(
-          `Ya existe una sucursal con ese nombre: '${createSucursalDto.nombre}'`
-        )
-      }
-
       if (
         createSucursalDto.serieFactura != null &&
         sucursal.serieFactura === createSucursalDto.serieFactura

@@ -33,7 +33,7 @@ const timestampsColumns = {
 
 export const sucursalesTable = pgTable('sucursales', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull().unique(),
+  nombre: text('nombre').notNull(),
   direccion: text('direccion'),
   sucursalCentral: boolean('sucursal_central').notNull(),
   serieFactura: text('serie_factura').unique(),

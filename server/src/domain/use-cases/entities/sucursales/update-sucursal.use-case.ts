@@ -18,10 +18,6 @@ export class UpdateSucursal {
   private getConditionals(updateSucursalDto: UpdateSucursalDto) {
     const conditionals = []
 
-    if (updateSucursalDto.nombre != null) {
-      conditionals.push(ilike(sucursalesTable.nombre, updateSucursalDto.nombre))
-    }
-
     if (updateSucursalDto.serieFactura != null) {
       conditionals.push(
         ilike(sucursalesTable.serieFactura, updateSucursalDto.serieFactura)
@@ -52,7 +48,6 @@ export class UpdateSucursal {
     const sucursales = await db
       .select({
         id: sucursalesTable.id,
-        nombre: sucursalesTable.nombre,
         serieFactura: sucursalesTable.serieFactura,
         serieBoleta: sucursalesTable.serieBoleta,
         codigoEstablecimiento: sucursalesTable.codigoEstablecimiento
@@ -61,15 +56,6 @@ export class UpdateSucursal {
       .where(or(...conditionals))
 
     for (const sucursal of sucursales) {
-      if (
-        updateSucursalDto.nombre != null &&
-        sucursal.nombre === updateSucursalDto.nombre
-      ) {
-        throw CustomError.badRequest(
-          `Ya existe una sucursal con ese nombre: '${updateSucursalDto.nombre}'`
-        )
-      }
-
       if (
         updateSucursalDto.serieFactura != null &&
         sucursal.serieFactura === updateSucursalDto.serieFactura
