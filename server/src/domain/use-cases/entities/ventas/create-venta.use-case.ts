@@ -498,6 +498,7 @@ export class CreateVenta {
         tipoDocumentoId: tiposDocFacturacionTable.id,
         tipoDocumentoCodigo: tiposDocFacturacionTable.codigo,
         clienteId: clientesTable.id,
+        numeroDocCliente: clientesTable.numeroDocumento,
         tipoDocClienteCodigo: tiposDocumentoClienteTable.codigo,
         direccionCliente: clientesTable.direccion,
         empleadoId: empleadosTable.id,
@@ -541,7 +542,8 @@ export class CreateVenta {
 
     this.validateClientDocument({
       tipoDocClienteCodigo: result.tipoDocClienteCodigo,
-      tipoDocCodigo: result.tipoDocumentoCodigo
+      tipoDocCodigo: result.tipoDocumentoCodigo,
+      numeroDocCliente: result.numeroDocCliente
     })
 
     return this.getSerieDocument(result)
@@ -550,6 +552,7 @@ export class CreateVenta {
   private validateClientDocument(data: {
     tipoDocClienteCodigo: string | null
     tipoDocCodigo: string | null
+    numeroDocCliente: string | null
   }) {
     if (
       data.tipoDocCodigo === tiposDocFacturacionCodes.factura &&
@@ -564,9 +567,14 @@ export class CreateVenta {
       data.tipoDocCodigo === tiposDocFacturacionCodes.boleta &&
       data.tipoDocClienteCodigo === tiposDocClienteCodes.ruc
     ) {
-      throw CustomError.badRequest(
-        'No se pueden emitir boletas para clientes con RUC, solo se permiten otros tipos de documentos'
-      )
+      if (
+        data.numeroDocCliente != null &&
+        !data.numeroDocCliente.startsWith('10')
+      ) {
+        throw CustomError.badRequest(
+          'No se pueden emitir boletas para clientes con RUC 20, solo se permiten otros tipos de documentos'
+        )
+      }
     }
   }
 
