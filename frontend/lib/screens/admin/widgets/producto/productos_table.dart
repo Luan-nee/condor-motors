@@ -166,7 +166,7 @@ class _ProductosTableState extends State<ProductosTable>
                 children: <Widget>[
                   const FaIcon(FontAwesomeIcons.boxOpen, size: 16),
                   const SizedBox(width: 8),
-                  const Text('Todos'),
+                  const Text('Disponibles'),
                   const SizedBox(width: 4),
                   Container(
                     padding:
@@ -264,8 +264,9 @@ class _ProductosTableState extends State<ProductosTable>
           child: TabBarView(
             controller: _tabController,
             children: <Widget>[
-              // Todos los productos
-              _buildProductosTabla(widget.productos),
+              // Todos los disponibles
+              _buildProductosTabla(
+                  _productosAgrupados['disponibles'] ?? <Producto>[]),
 
               // Productos con stock bajo
               _buildProductosTabla(

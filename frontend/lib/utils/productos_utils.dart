@@ -302,7 +302,9 @@ class ProductosUtils {
       if (producto.detalleProductoId == null) {
         resultado['inhabilitados']!.add(producto);
       }
-      resultado['disponibles']!.add(producto);
+      if (producto.detalleProductoId != null) {
+        resultado['disponibles']!.add(producto);
+      }
     }
     return resultado;
   }
