@@ -24,6 +24,7 @@ dependencies:
   intl: ^0.20.2
   msix: ^3.16.8
   dart_code_metrics: ^4.19.2
+  win_toast: ^0.3.0  # Notificaciones nativas en Windows 10/11
 
 dev_dependencies:
   flutter_test:
@@ -54,6 +55,42 @@ msix_config:
   msix_version: 1.0.0.0
   logo_path: assets/images/condor-motors-logo.webp
   capabilities: internetClient
+  toast_activator:
+    clsid: "936C39FC-6BBC-4A57-B8F8-7C627E401B2F"
+    arguments: "-ToastActivated"
+    display_name: "Condor Motors Proformas"
+
+# COMENTARIOS PARA CREAR INSTALADOR MSIX:
+# 1. Asegúrate de tener instalado el SDK de Windows 10
+# 2. Para crear el instalador MSIX, ejecuta este comando en la terminal:
+#    flutter pub run msix:create
+# 3. Si quieres personalizar la creación, puedes usar parámetros adicionales:
+#    flutter pub run msix:create --store (para Microsoft Store)
+#    flutter pub run msix:create --install (para crear e instalar directamente)
+#    flutter pub run msix:create --build-windows (para construir y luego crear el MSIX)
+# 4. El instalador MSIX se generará en la carpeta /build/windows/runner/Release
+# 5. Recuerda que para que funcionen las notificaciones toast en Windows,
+#    necesitas usar el instalador MSIX (no funciona ejecutando en modo debug)
+
+# COMENTARIOS PARA CREAR APK (ANDROID):
+# 1. Para crear un APK de depuración (debug):
+#    flutter build apk --debug
+#    El APK se generará en build/app/outputs/flutter-apk/app-debug.apk
+# 
+# 2. Para crear un APK de producción (release):
+#    flutter build apk --release
+#    El APK se generará en build/app/outputs/flutter-apk/app-release.apk
+#
+# 3. Para crear un APK optimizado por arquitectura (más pequeño):
+#    flutter build apk --split-per-abi --release
+#    Esto generará APKs separados para cada arquitectura (arm64-v8a, armeabi-v7a, x86_64)
+#
+# 4. Para instalar directamente en un dispositivo conectado:
+#    flutter install
+#
+# 5. Para generar un bundle para Google Play Store:
+#    flutter build appbundle
+#    El bundle se generará en build/app/outputs/bundle/release/app-release.aab
 
 flutter:
   uses-material-design: true

@@ -62,7 +62,9 @@ class ConsoleColor {
   
   /// Aplica color a un texto 
   static String colorize(String text, String color) {
-    if (!kDebugMode) return text; // Solo aplicar colores en modo debug
+    if (!kDebugMode) {
+      return text; // Solo aplicar colores en modo debug
+    }
     return '$color$text$reset';
   }
 }

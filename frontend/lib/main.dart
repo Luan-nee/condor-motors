@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/components/proforma_notification.dart';
 import 'package:condorsmotors/routes/routes.dart' as routes;
 import 'package:condorsmotors/services/token_service.dart';
 import 'package:condorsmotors/theme/apptheme.dart';
@@ -13,6 +14,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Configuración global de API
 late CondorMotorsApi api;
+
+// Instancia global del sistema de notificaciones
+final ProformaNotification proformaNotification = ProformaNotification();
 
 // Lista de servidores posibles para intentar conectarse
 final List<String> _serverUrls = <String>[
@@ -70,6 +74,12 @@ void main() async {
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
+
+  // Inicializar sistema de notificaciones para Windows
+  if (!kIsWeb && Platform.isWindows) {
+    debugPrint('Inicializando sistema de notificaciones para proformas...');
+    await proformaNotification.init();
+  }
 
   // Inicializar API
   debugPrint('Inicializando API...');

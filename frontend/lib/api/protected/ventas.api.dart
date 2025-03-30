@@ -19,13 +19,16 @@ class VentasApi {
   /// Invalida el caché para una sucursal específica o para todas las sucursales
   /// 
   /// [sucursalId] - ID de la sucursal (opcional, si no se especifica invalida para todas las sucursales)
-  void invalidateCache([String? sucursalId]) {
+  void invalidateCache([sucursalId]) {
     if (sucursalId != null) {
+      // Convertir a String en caso de recibir un entero
+      final String sucursalIdStr = sucursalId.toString();
+      
       // Invalidar sólo las ventas de esta sucursal
-      _cache..invalidateByPattern('$_prefixListaVentas$sucursalId')
-      ..invalidateByPattern('$_prefixVenta$sucursalId')
-      ..invalidateByPattern('$_prefixEstadisticas$sucursalId');
-      logCache('Caché de ventas invalidado para sucursal $sucursalId');
+      _cache..invalidateByPattern('$_prefixListaVentas$sucursalIdStr')
+      ..invalidateByPattern('$_prefixVenta$sucursalIdStr')
+      ..invalidateByPattern('$_prefixEstadisticas$sucursalIdStr');
+      logCache('Caché de ventas invalidado para sucursal $sucursalIdStr');
     } else {
       // Invalidar todas las ventas en caché
       _cache..invalidateByPattern(_prefixListaVentas)
@@ -45,14 +48,14 @@ class VentasApi {
     String? search,
     DateTime? fechaInicio,
     DateTime? fechaFin,
-    String? sucursalId,
+    sucursalId,
     String? estado,
     bool useCache = true,
     bool forceRefresh = false,
   }) async {
     try {
-      // Generar clave de caché
-      final String sucursalKey = sucursalId ?? 'global';
+      // Asegurar que sucursalId sea siempre String para uniformidad
+      final String sucursalKey = sucursalId != null ? sucursalId.toString() : 'global';
       final String fechaInicioStr = fechaInicio?.toIso8601String() ?? '';
       final String fechaFinStr = fechaFin?.toIso8601String() ?? '';
       final String searchStr = search ?? '';
@@ -72,10 +75,17 @@ class VentasApi {
       
       // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
-        final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
-        if (cachedData != null && !_cache.isStale(cacheKey)) {
-          logCache('Usando ventas en caché para sucursal $sucursalId (clave: $cacheKey)');
-          return cachedData;
+        try {
+          final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+          if (cachedData != null && !_cache.isStale(cacheKey)) {
+            logCache('Usando ventas en caché para sucursal $sucursalId (clave: $cacheKey)');
+            return cachedData;
+          }
+        } catch (e) {
+          // Si hay error al leer caché (por ejemplo, inconsistencia de tipos), 
+          // invalidar la caché y continuar con la llamada a API
+          Logger.error('Error al leer ventas de caché: $e');
+          _cache.invalidate(cacheKey);
         }
       }
       
@@ -186,13 +196,13 @@ class VentasApi {
   /// Retorna un objeto Venta
   Future<Venta?> getVenta(
     String id, {
-    String? sucursalId,
+    sucursalId,
     bool useCache = true,
     bool forceRefresh = false,
   }) async {
     try {
-      // Generar clave de caché
-      final String sucursalKey = sucursalId ?? 'global';
+      // Asegurar que sucursalId sea siempre String para uniformidad
+      final String sucursalKey = sucursalId != null ? sucursalId.toString() : 'global';
       final String cacheKey = '$_prefixVenta${sucursalKey}_$id';
       
       // Si se requiere forzar la recarga, invalidar la caché primero
@@ -202,21 +212,31 @@ class VentasApi {
       
       // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
-        final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
-        if (cachedData != null && !_cache.isStale(cacheKey)) {
-          logCache('Usando venta en caché: $cacheKey');
-          try {
-            return Venta.fromJson(cachedData);
-          } catch (e) {
-            Logger.error('Error al parsear venta desde caché: $e');
+        try {
+          final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+          if (cachedData != null && !_cache.isStale(cacheKey)) {
+            logCache('Usando venta en caché: $cacheKey');
+            try {
+              return Venta.fromJson(cachedData);
+            } catch (e) {
+              Logger.error('Error al parsear venta desde caché: $e');
+              // Si hay error al parsear, invalidar y continuar
+              _cache.invalidate(cacheKey);
+            }
           }
+        } catch (e) {
+          Logger.error('Error al acceder a caché de venta: $e');
+          _cache.invalidate(cacheKey);
         }
       }
       
       // Construir el endpoint según si hay sucursal o no
       String endpoint = _endpoint;
-      if (sucursalId != null && sucursalId.isNotEmpty) {
-        endpoint = '/$sucursalId/ventas';
+      if (sucursalId != null) {
+        final String sucursalIdStr = sucursalId.toString();
+        if (sucursalIdStr.isNotEmpty) {
+          endpoint = '/$sucursalIdStr/ventas';
+        }
       }
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
@@ -257,14 +277,17 @@ class VentasApi {
   /// [sucursalId] - ID de la sucursal
   /// 
   /// Retorna los datos de la venta creada
-  Future<Map<String, dynamic>> createVenta(Map<String, dynamic> ventaData, {String? sucursalId}) async {
+  Future<Map<String, dynamic>> createVenta(Map<String, dynamic> ventaData, {sucursalId}) async {
     try {
       Logger.debug('Creando venta con datos: $ventaData');
       
       // Construir el endpoint según si hay sucursal o no
       String endpoint = _endpoint;
-      if (sucursalId != null && sucursalId.isNotEmpty) {
-        endpoint = '/$sucursalId/ventas';
+      if (sucursalId != null) {
+        final String sucursalIdStr = sucursalId.toString();
+        if (sucursalIdStr.isNotEmpty) {
+          endpoint = '/$sucursalIdStr/ventas';
+        }
       }
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
@@ -275,7 +298,7 @@ class VentasApi {
       
       // Invalidar caché al crear una nueva venta
       if (sucursalId != null) {
-        invalidateCache(sucursalId);
+        invalidateCache(sucursalId.toString());
       } else {
         invalidateCache();
       }
@@ -305,12 +328,15 @@ class VentasApi {
   /// [id] - ID de la venta
   /// [ventaData] - Datos a actualizar
   /// [sucursalId] - ID de la sucursal
-  Future<Map<String, dynamic>> updateVenta(String id, Map<String, dynamic> ventaData, {String? sucursalId}) async {
+  Future<Map<String, dynamic>> updateVenta(String id, Map<String, dynamic> ventaData, {sucursalId}) async {
     try {
       // Construir el endpoint según si hay sucursal o no
       String endpoint = _endpoint;
-      if (sucursalId != null && sucursalId.isNotEmpty) {
-        endpoint = '/$sucursalId/ventas';
+      if (sucursalId != null) {
+        final String sucursalIdStr = sucursalId.toString();
+        if (sucursalIdStr.isNotEmpty) {
+          endpoint = '/$sucursalIdStr/ventas';
+        }
       }
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
@@ -320,12 +346,16 @@ class VentasApi {
       );
       
       // Invalidar caché de esta venta específica
-      final String sucursalKey = sucursalId ?? 'global';
+      final String sucursalKey = sucursalId != null ? sucursalId.toString() : 'global';
       final String cacheKey = '$_prefixVenta${sucursalKey}_$id';
       _cache.invalidate(cacheKey);
       
       // También invalidar listas que podrían contener esta venta
-      invalidateCache(sucursalId);
+      if (sucursalId != null) {
+        invalidateCache(sucursalId.toString());
+      } else {
+        invalidateCache();
+      }
       
       return {
         'data': response['data'] ?? response,
@@ -343,12 +373,15 @@ class VentasApi {
   /// [id] - ID de la venta
   /// [motivo] - Motivo de la cancelación
   /// [sucursalId] - ID de la sucursal
-  Future<bool> cancelarVenta(String id, String motivo, {String? sucursalId}) async {
+  Future<bool> cancelarVenta(String id, String motivo, {dynamic sucursalId}) async {
     try {
       // Construir el endpoint según si hay sucursal o no
       String endpoint = _endpoint;
-      if (sucursalId != null && sucursalId.isNotEmpty) {
-        endpoint = '/$sucursalId/ventas';
+      if (sucursalId != null) {
+        final String sucursalIdStr = sucursalId.toString();
+        if (sucursalIdStr.isNotEmpty) {
+          endpoint = '/$sucursalIdStr/ventas';
+        }
       }
       
       await _api.authenticatedRequest(
@@ -360,7 +393,11 @@ class VentasApi {
       );
       
       // Invalidar caché relacionada
-      invalidateCache(sucursalId);
+      if (sucursalId != null) {
+        invalidateCache(sucursalId.toString());
+      } else {
+        invalidateCache();
+      }
       
       return true;
     } catch (e) {
@@ -374,12 +411,15 @@ class VentasApi {
   /// [id] - ID de la venta
   /// [motivo] - Motivo de la anulación
   /// [sucursalId] - ID de la sucursal
-  Future<bool> anularVenta(String id, String motivo, {String? sucursalId}) async {
+  Future<bool> anularVenta(String id, String motivo, {dynamic sucursalId}) async {
     try {
       // Construir el endpoint según si hay sucursal o no
       String endpoint = _endpoint;
-      if (sucursalId != null && sucursalId.isNotEmpty) {
-        endpoint = '/$sucursalId/ventas';
+      if (sucursalId != null) {
+        final String sucursalIdStr = sucursalId.toString();
+        if (sucursalIdStr.isNotEmpty) {
+          endpoint = '/$sucursalIdStr/ventas';
+        }
       }
       
       await _api.authenticatedRequest(
@@ -392,7 +432,11 @@ class VentasApi {
       );
       
       // Invalidar caché relacionada
-      invalidateCache(sucursalId);
+      if (sucursalId != null) {
+        invalidateCache(sucursalId.toString());
+      } else {
+        invalidateCache();
+      }
       
       return true;
     } catch (e) {
@@ -411,13 +455,13 @@ class VentasApi {
   Future<Map<String, dynamic>> getEstadisticas({
     DateTime? fechaInicio,
     DateTime? fechaFin,
-    String? sucursalId,
+    dynamic sucursalId,
     bool useCache = true,
     bool forceRefresh = false,
   }) async {
     try {
       // Generar clave de caché
-      final String sucursalKey = sucursalId ?? 'global';
+      final String sucursalKey = sucursalId != null ? sucursalId.toString() : 'global';
       final String fechaInicioStr = fechaInicio?.toIso8601String() ?? '';
       final String fechaFinStr = fechaFin?.toIso8601String() ?? '';
       final String cacheKey = '$_prefixEstadisticas${sucursalKey}_f${fechaInicioStr}_t$fechaFinStr';
@@ -429,10 +473,15 @@ class VentasApi {
       
       // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
-        final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
-        if (cachedData != null && !_cache.isStale(cacheKey)) {
-          logCache('Usando estadísticas en caché: $cacheKey');
-          return cachedData;
+        try {
+          final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+          if (cachedData != null && !_cache.isStale(cacheKey)) {
+            logCache('Usando estadísticas en caché: $cacheKey');
+            return cachedData;
+          }
+        } catch (e) {
+          Logger.error('Error al leer estadísticas de caché: $e');
+          _cache.invalidate(cacheKey);
         }
       }
       
@@ -448,8 +497,11 @@ class VentasApi {
       
       // Construir el endpoint según si hay sucursal o no
       String endpoint = '$_endpoint/estadisticas';
-      if (sucursalId != null && sucursalId.isNotEmpty) {
-        endpoint = '/$sucursalId/ventas/estadisticas';
+      if (sucursalId != null) {
+        final String sucursalIdStr = sucursalId.toString();
+        if (sucursalIdStr.isNotEmpty) {
+          endpoint = '/$sucursalIdStr/ventas/estadisticas';
+        }
       }
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(

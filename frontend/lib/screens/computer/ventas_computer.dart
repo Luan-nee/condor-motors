@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' as models;
-import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart' show NumericKeypad, ProcessingDialog;
 import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart' as form_widget show ProformaSaleDialog;
+import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart' show NumericKeypad, ProcessingDialog;
 import 'package:condorsmotors/screens/computer/widgets/proforma_conversion_utils.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
 import 'package:flutter/foundation.dart';
@@ -144,12 +146,17 @@ class SalesComputerScreen extends StatefulWidget {
 }
 
 class _SalesComputerScreenState extends State<SalesComputerScreen> {
-  late final VentasApi _ventasApi;
-  late final ProformaVentaApi _proformasApi;
+  late VentasApi _ventasApi;
+  late ProformaVentaApi _proformasApi;
+  final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
   List<Venta> _ventas = <Venta>[];
   List<models.Proforma> _proformasObj = <models.Proforma>[];
   List<Map<String, dynamic>> _proformasFormateadas = <Map<String, dynamic>>[];
+  
+  // Para actualización automática
+  Timer? _actualizacionTimer;
+  final int _intervaloActualizacion = 30; // Segundos
   
   // Datos de prueba para ventas pendientes - Será reemplazado con proformas reales
   final List<Map<String, dynamic>> _ventasPendientes = <Map<String, dynamic>>[];
@@ -167,14 +174,29 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     super.initState();
     _ventasApi = api.ventas;
     _proformasApi = api.proformas;
-    _cargarVentas();
-    _cargarProformas();
+    
+    // Cargar datos iniciales
+    _cargarDatos();
+    
+    // Iniciar timer para actualización automática
+    _iniciarActualizacionPeriodica();
   }
 
   @override
   void dispose() {
+    _searchController.dispose();
     _montoFocusNode.dispose();
+    // Cancelar timer de actualización
+    _actualizacionTimer?.cancel();
     super.dispose();
+  }
+
+  // Método para cargar datos iniciales
+  Future<void> _cargarDatos() async {
+    await Future.wait([
+      _cargarVentas(),
+      _cargarProformas(),
+    ]);
   }
 
   // Método para manejar la entrada de teclas
@@ -925,11 +947,13 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   }
 
   // Método para cargar proformas de venta
-  Future<void> _cargarProformas() async {
+  Future<void> _cargarProformas({bool silencioso = false}) async {
     try {
-      setState(() {
-        _isLoading = true;
-      });
+      if (!silencioso) {
+        setState(() {
+          _isLoading = true;
+        });
+      }
       
       final int? sucursalId = await VentasPendientesUtils.obtenerSucursalId();
       if (sucursalId == null) {
@@ -937,9 +961,11 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         return;
       }
       
+      // Configurar para obtención en tiempo real - sin caché
       final Map<String, dynamic> proformasResponse = await _proformasApi.getProformasVenta(
         sucursalId: sucursalId.toString(),
         forceRefresh: true, // Forzar actualización para obtener datos frescos
+        useCache: false,     // No usar caché
       );
       
       if (!mounted) {
@@ -953,7 +979,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
           .where((models.Proforma p) => p.estado == models.EstadoProforma.pendiente)
           .toList();
       
-      debugPrint('Proformas cargadas: ${proformasObj.length}, pendientes: ${proformasFiltradas.length}');
+      debugPrint('🔄 Proformas cargadas: ${proformasObj.length}, pendientes: ${proformasFiltradas.length}');
       
       // Convertir proformas a formato para mostrar en la UI
       final List<Map<String, dynamic>> proformasFormateadas = 
@@ -979,9 +1005,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         _proformasFormateadas = proformasFormateadas;
       });
     } catch (e) {
-      debugPrint('Error al cargar proformas: $e');
-      // Mostrar mensaje de error en un snackbar
-      if (mounted) {
+      debugPrint('❌ Error al cargar proformas: $e');
+      // Mostrar mensaje de error en un snackbar (solo si no es silencioso)
+      if (mounted && !silencioso) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al cargar proformas: $e'),
@@ -990,7 +1016,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         );
       }
     } finally {
-      if (mounted) {
+      if (mounted && !silencioso) {
         setState(() {
           _isLoading = false;
         });
@@ -1114,6 +1140,31 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
     }
   }
 
+  // Iniciar actualización periódica de proformas
+  void _iniciarActualizacionPeriodica() {
+    // Cancelar timer existente si hay uno
+    _actualizacionTimer?.cancel();
+    
+    // Crear nuevo timer para actualizar cada _intervaloActualizacion segundos
+    _actualizacionTimer = Timer.periodic(
+      Duration(seconds: _intervaloActualizacion), 
+      (_) => _actualizarProformasEnTiempoReal()
+    );
+    
+    debugPrint('🔄 Timer de actualización de proformas iniciado (cada $_intervaloActualizacion segundos)');
+  }
+  
+  // Actualizar solo proformas en tiempo real
+  Future<void> _actualizarProformasEnTiempoReal() async {
+    debugPrint('🔄 Actualizando proformas en tiempo real...');
+    try {
+      // No cambiar estado de _isLoading para no mostrar spinner
+      // Solo recargar proformas en silencio
+      await _cargarProformas(silencioso: true);
+    } catch (e) {
+      debugPrint('❌ Error al actualizar proformas en tiempo real: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1171,6 +1222,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                 onSaleSelected: _seleccionarVenta,
                 ventasPendientes: <Map<String, dynamic>>[..._ventasPendientes, ..._proformasFormateadas],
                 onReload: _cargarProformas,
+                intervaloActualizacion: _intervaloActualizacion,
               ),
             ),
           ),
@@ -1412,12 +1464,14 @@ class PendingSalesWidget extends StatelessWidget {
   final List<Map<String, dynamic>> ventasPendientes;
   final Function(Map<String, dynamic>) onSaleSelected;
   final VoidCallback onReload;
+  final int intervaloActualizacion;
 
   const PendingSalesWidget({
     super.key,
     required this.ventasPendientes,
     required this.onSaleSelected,
     required this.onReload,
+    this.intervaloActualizacion = 30,
   });
 
   @override
@@ -1429,18 +1483,49 @@ class PendingSalesWidget extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
-            const Text(
-              'VENTAS PENDIENTES',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+            Row(
+              children: [
+                const Text(
+                  'VENTAS PENDIENTES',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.sync,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Tiempo real ($intervaloActualizacion s)',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             IconButton(
               icon: const Icon(Icons.refresh, color: Colors.white),
               onPressed: onReload,
-              tooltip: 'Recargar',
+              tooltip: 'Recargar ahora',
             ),
           ],
         ),
@@ -1585,8 +1670,10 @@ class PendingSalesWidget extends StatelessWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(ObjectFlagProperty<VoidCallback>.has('onReload', onReload))
-    ..add(IterableProperty<Map<String, dynamic>>('ventasPendientes', ventasPendientes))
-  ..add(ObjectFlagProperty<Function(Map<String, dynamic> p1)>.has('onSaleSelected', onSaleSelected));
+    properties
+      ..add(ObjectFlagProperty<VoidCallback>.has('onReload', onReload))
+      ..add(IterableProperty<Map<String, dynamic>>('ventasPendientes', ventasPendientes))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic> p1)>.has('onSaleSelected', onSaleSelected))
+      ..add(IntProperty('intervaloActualizacion', intervaloActualizacion));
   }
 } 

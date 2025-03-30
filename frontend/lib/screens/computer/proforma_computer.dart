@@ -1,4 +1,6 @@
-import 'package:condorsmotors/main.dart' show api;
+import 'dart:async';
+
+import 'package:condorsmotors/main.dart' show api, proformaNotification;
 import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/screens/computer/proforma_list.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_widget.dart';
@@ -19,57 +21,164 @@ class ProformaComputerScreen extends StatefulWidget {
 
   @override
   ProformaComputerScreenState createState() => ProformaComputerScreenState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(IntProperty('sucursalId', sucursalId));
+    properties.add(StringProperty('nombreSucursal', nombreSucursal));
+  }
 }
 
 class ProformaComputerScreenState extends State<ProformaComputerScreen> {
   List<Proforma> _proformas = [];
+  Set<int> _proformasIds = {}; // Para seguimiento de nuevas proformas
   Proforma? _selectedProforma;
   bool _isLoading = false;
   String? _errorMessage;
   Paginacion? _paginacion;
   int _currentPage = 1;
   
+  // Para actualización automática
+  Timer? _actualizacionTimer;
+  final int _intervaloActualizacion = 10; // Segundos
+  bool _hayNuevasProformas = false;
+  
   @override
   void initState() {
     super.initState();
     _loadProformas();
+    
+    // Iniciar timer para actualización automática
+    _iniciarActualizacionPeriodica();
+  }
+  
+  /// Inicia un timer para actualizar las proformas periódicamente
+  void _iniciarActualizacionPeriodica() {
+    // Cancelar timer existente si hay uno
+    _actualizacionTimer?.cancel();
+    
+    // Crear nuevo timer para actualizar cada _intervaloActualizacion segundos
+    _actualizacionTimer = Timer.periodic(
+      Duration(seconds: _intervaloActualizacion), 
+      (_) => _verificarNuevasProformas()
+    );
+    
+    Logger.info('🔄 Timer de actualización de proformas iniciado (cada $_intervaloActualizacion segundos)');
+  }
+  
+  /// Verifica si hay nuevas proformas sin interferir con la UI
+  Future<void> _verificarNuevasProformas() async {
+    Logger.debug('🔍 Verificando nuevas proformas...');
+    try {
+      // Obtener el ID de sucursal
+      String? sucursalId = await _getSucursalId();
+      if (sucursalId == null) {
+        return;
+      }
+      
+      // Obtener proformas sin modificar el estado de carga
+      final response = await api.proformas.getProformasVenta(
+        sucursalId: sucursalId,
+        page: 1, // Siempre la primera página para ver las más recientes
+        pageSize: 20, // Aumentar tamaño para tener más visibilidad
+        forceRefresh: true, // Forzar actualización desde el servidor
+        useCache: false, // No usar caché
+      );
+      
+      if (response.isNotEmpty) {
+        final nuevasProformas = api.proformas.parseProformasVenta(response);
+        
+        // Verificar si hay nuevas proformas comparando con los IDs conocidos
+        Set<int> nuevosIds = nuevasProformas.map((p) => p.id).toSet();
+        Set<int> proformasNuevas = nuevosIds.difference(_proformasIds);
+        
+        if (proformasNuevas.isNotEmpty) {
+          Logger.info('🔔 Se encontraron ${proformasNuevas.length} nuevas proformas!');
+          
+          // Notificar por cada nueva proforma encontrada
+          for (var id in proformasNuevas) {
+            final nuevaProforma = nuevasProformas.firstWhere((p) => p.id == id);
+            
+            // Mostrar notificación en Windows
+            await proformaNotification.notifyNewProformaPending(
+              nuevaProforma, 
+              nuevaProforma.getNombreCliente(),
+            );
+            
+            // Actualizar interfaz para mostrar indicador de nuevas proformas
+            if (mounted) {
+              setState(() {
+                _hayNuevasProformas = true;
+              });
+            }
+          }
+          
+          // Actualizar lista completa de proformas silenciosamente
+          await _loadProformas(silencioso: true);
+        } else {
+          Logger.debug('✓ No se encontraron nuevas proformas');
+        }
+      }
+    } catch (e) {
+      Logger.error('❌ Error al verificar nuevas proformas: $e');
+    }
+  }
+  
+  /// Obtiene el ID de la sucursal (del widget o del usuario)
+  Future<String?> _getSucursalId() async {
+    if (widget.sucursalId != null) {
+      // Usar el sucursalId pasado como parámetro
+      return widget.sucursalId.toString();
+    } else {
+      // Obtener el ID de sucursal del usuario
+      final userData = await api.authService.getUserData();
+      if (userData == null || !userData.containsKey('sucursalId')) {
+        Logger.error('No se pudo determinar la sucursal del usuario');
+        return null;
+      }
+      return userData['sucursalId'].toString();
+    }
+  }
+  
+  @override
+  void dispose() {
+    // Cancelar el timer al destruir el widget
+    _actualizacionTimer?.cancel();
+    super.dispose();
   }
   
   /// Carga las proformas desde la API
-  Future<void> _loadProformas() async {
-    if (_isLoading) {
+  Future<void> _loadProformas({bool silencioso = false}) async {
+    if (_isLoading && !silencioso) {
       return;
     }
     
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (!silencioso) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
     
     try {
-      // Obtener el ID de sucursal, primero del widget y si no está disponible, del usuario
-      String? sucursalId;
-      
-      if (widget.sucursalId != null) {
-        // Usar el sucursalId pasado como parámetro
-        sucursalId = widget.sucursalId.toString();
-      } else {
-        // Obtener el ID de sucursal del usuario
-        final userData = await api.authService.getUserData();
-        if (userData == null || !userData.containsKey('sucursalId')) {
+      // Obtener el ID de sucursal
+      String? sucursalId = await _getSucursalId();
+      if (sucursalId == null) {
+        if (!silencioso) {
           setState(() {
             _errorMessage = 'No se pudo determinar la sucursal del usuario';
             _isLoading = false;
           });
-          return;
         }
-        sucursalId = userData['sucursalId'].toString();
+        return;
       }
       
       final response = await api.proformas.getProformasVenta(
         sucursalId: sucursalId,
         page: _currentPage,
-        pageSize: 10,
+        forceRefresh: true, // Forzar actualización desde el servidor
+        useCache: false, // No usar caché
       );
       
       if (response.isNotEmpty) {
@@ -96,8 +205,13 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen> {
         if (mounted) {
           setState(() {
             _proformas = proformas;
+            
+            // Almacenar IDs para seguimiento de nuevas proformas
+            _proformasIds = proformas.map((p) => p.id).toSet();
+            
             _paginacion = paginacionObj;
             _isLoading = false;
+            _hayNuevasProformas = false; // Resetear indicador al cargar manualmente
             
             // Si la proforma seleccionada ya no está en la lista, deseleccionarla
             if (_selectedProforma != null && 
@@ -107,7 +221,7 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen> {
           });
         }
       } else {
-        if (mounted) {
+        if (mounted && !silencioso) {
           setState(() {
             _errorMessage = 'No se pudo cargar las proformas';
             _isLoading = false;
@@ -116,7 +230,7 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen> {
       }
     } catch (e) {
       Logger.error('Error al cargar proformas: $e');
-      if (mounted) {
+      if (mounted && !silencioso) {
         setState(() {
           _errorMessage = 'Error: $e';
           _isLoading = false;
@@ -268,14 +382,75 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen> {
       backgroundColor: const Color(0xFF1A1A1A),
       appBar: AppBar(
         backgroundColor: const Color(0xFF121212),
-        title: Text('Gestión de Proformas - ${widget.nombreSucursal}'),
+        title: Row(
+          children: [
+            Text('Gestión de Proformas - ${widget.nombreSucursal}'),
+            if (_hayNuevasProformas)
+              Padding(
+                padding: const EdgeInsets.only(left: 12.0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.notifications_active, color: Colors.white, size: 14),
+                      SizedBox(width: 4),
+                      Text(
+                        'NUEVAS',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadProformas,
-            tooltip: 'Recargar',
+          // Información del temporizador
+          Center(
+            child: Text(
+              'Actualización: ${_intervaloActualizacion}s',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[400],
+              ),
+            ),
           ),
+          const SizedBox(width: 8),
+          
+          // Botón de recarga
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _loadProformas,
+                tooltip: 'Recargar proformas',
+              ),
+              if (_hayNuevasProformas)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
@@ -299,19 +474,64 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen> {
                 // Lista de proformas (1/3 del ancho)
                 SizedBox(
                   width: MediaQuery.of(context).size.width * 0.35,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ProformaListWidget(
-                      proformas: _proformas,
-                      onProformaSelected: _handleProformaSelected,
-                      onConvertToSale: _handleConvertToSale,
-                      onDeleteProforma: _handleDeleteProforma,
-                      onRefresh: _loadProformas,
-                      isLoading: _isLoading,
-                      emptyMessage: 'No hay proformas disponibles',
-                      paginacion: _paginacion,
-                      onPageChanged: _handlePageChange,
-                    ),
+                  child: Column(
+                    children: [
+                      // Badge de actualización en tiempo real
+                      Container(
+                        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: _hayNuevasProformas 
+                              ? Colors.red.withOpacity(0.2) 
+                              : const Color(0xFF4CAF50).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _hayNuevasProformas 
+                                  ? Icons.notifications_active 
+                                  : Icons.sync,
+                              color: _hayNuevasProformas 
+                                  ? Colors.red 
+                                  : const Color(0xFF4CAF50),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _hayNuevasProformas 
+                                  ? '¡Nuevas proformas detectadas!' 
+                                  : 'Actualizando en tiempo real',
+                              style: TextStyle(
+                                color: _hayNuevasProformas 
+                                    ? Colors.red 
+                                    : const Color(0xFF4CAF50),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Lista de proformas
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: ProformaListWidget(
+                            proformas: _proformas,
+                            onProformaSelected: _handleProformaSelected,
+                            onConvertToSale: _handleConvertToSale,
+                            onDeleteProforma: _handleDeleteProforma,
+                            onRefresh: _loadProformas,
+                            isLoading: _isLoading,
+                            paginacion: _paginacion,
+                            onPageChanged: _handlePageChange,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 
@@ -388,11 +608,14 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen> {
     super.debugFillProperties(properties);
     properties
       ..add(IterableProperty<Proforma>('_proformas', _proformas))
+      ..add(DiagnosticsProperty<Set<int>>('_proformasIds', _proformasIds))
       ..add(DiagnosticsProperty<Proforma?>('_selectedProforma', _selectedProforma))
       ..add(DiagnosticsProperty<bool>('_isLoading', _isLoading))
       ..add(StringProperty('_errorMessage', _errorMessage))
       ..add(DiagnosticsProperty<Paginacion?>('_paginacion', _paginacion))
       ..add(IntProperty('_currentPage', _currentPage))
+      ..add(DiagnosticsProperty<bool>('_hayNuevasProformas', _hayNuevasProformas))
+      ..add(IntProperty('_intervaloActualizacion', _intervaloActualizacion))
       ..add(IntProperty('sucursalId', widget.sucursalId))
       ..add(StringProperty('nombreSucursal', widget.nombreSucursal));
   }

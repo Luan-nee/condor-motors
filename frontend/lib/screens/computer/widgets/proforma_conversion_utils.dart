@@ -27,6 +27,9 @@ class ProformaConversionManager {
     try {
       Logger.debug('INICIO: Convirtiendo proforma #$proformaId a venta tipo $tipoDocumento en sucursal $sucursalId');
       
+      // Limpiar caché de ventas para evitar problemas de inconsistencia de tipos
+      _limpiarCacheVentas(sucursalId);
+      
       // Invalidar cache al inicio para asegurar que tenemos datos actualizados
       _recargarDatos(sucursalId);
       
@@ -43,7 +46,10 @@ class ProformaConversionManager {
       try {
         Logger.debug('Verificando configuración de series para la sucursal #$sucursalId...');
         
-        final Sucursal sucursal = await api.sucursales.getSucursalData(sucursalId, forceRefresh: true);
+        // Asegurarse de que sucursalId sea siempre String para la API
+        final String sucursalIdStr = sucursalId.toString();
+        
+        final Sucursal sucursal = await api.sucursales.getSucursalData(sucursalIdStr, forceRefresh: true);
         
         // Verificar la serie según el tipo de documento
         if (tipoDocumento.toUpperCase() == 'BOLETA' && 
@@ -91,8 +97,12 @@ class ProformaConversionManager {
       // Primero, verificar si la proforma existe sin usar caché para evitar problemas
       try {
         Logger.debug('Verificando existencia de proforma #$proformaId...');
+        
+        // Asegurarse de que sucursalId sea siempre String para la API
+        final String sucursalIdStr = sucursalId.toString();
+        
         final proformaExistResponse = await api.proformas.getProformaVenta(
-          sucursalId: sucursalId,
+          sucursalId: sucursalIdStr,
           proformaId: proformaId,
           useCache: false,
           forceRefresh: true,
@@ -123,9 +133,9 @@ class ProformaConversionManager {
           }
           
           // Invalidar la caché completamente
-          api.proformas.invalidateCache(sucursalId);
+          api.proformas.invalidateCache(sucursalIdStr);
           // Forzar recarga de lista de proformas 
-          _recargarProformasSucursal(sucursalId);
+          _recargarProformasSucursal(sucursalIdStr);
           
           return false;
         }
@@ -134,7 +144,7 @@ class ProformaConversionManager {
         
         // Si llegamos aquí, la proforma existe, obtenerla de nuevo para procesar sus datos
         final proformaResponse = await api.proformas.getProformaVenta(
-          sucursalId: sucursalId,
+          sucursalId: sucursalIdStr,
           proformaId: proformaId,
         );
         
@@ -173,7 +183,7 @@ class ProformaConversionManager {
         
         // Obtener ID del tipoTax para gravado (18% IGV)
         Logger.debug('Obteniendo ID para tipo Tax Gravado (IGV 18%)');
-        final int tipoTaxId = await api.documentos.getGravadoTaxId(sucursalId);
+        final int tipoTaxId = await api.documentos.getGravadoTaxId(sucursalIdStr);
         Logger.debug('ID obtenido para Tax Gravado: $tipoTaxId');
         
         // Transformar los detalles al formato esperado por el endpoint de ventas
@@ -213,7 +223,7 @@ class ProformaConversionManager {
         
         // Determinar el tipo de documento correcto según la opción seleccionada
         Logger.debug('Obteniendo ID para tipo de documento: $tipoDocumento');
-        final int tipoDocumentoId = await api.documentos.getTipoDocumentoId(sucursalId, tipoDocumento);
+        final int tipoDocumentoId = await api.documentos.getTipoDocumentoId(sucursalIdStr, tipoDocumento);
         Logger.debug('ID obtenido para $tipoDocumento: $tipoDocumentoId');
         
         // Obtener un cliente válido del sistema en lugar de usar uno genérico fijo
@@ -259,15 +269,10 @@ class ProformaConversionManager {
         if (clienteIdNumerico != null && clienteIdNumerico > 0) {
           // Verificar que el cliente existe antes de asignarlo
           try {
-            final clienteResponse = await api.clientes.getCliente(clienteIdNumerico.toString());
-            if (clienteResponse != null) {
-              // Cliente confirmado como válido
-              ventaData['clienteId'] = clienteIdNumerico;
-              Logger.debug('Cliente específico verificado y asignado a la venta: $clienteIdNumerico');
-            } else {
-              Logger.debug('El cliente específico no existe, manteniendo el cliente genérico: $clienteIdValido');
-            }
-          } catch (e) {
+            // Cliente confirmado como válido
+            ventaData['clienteId'] = clienteIdNumerico;
+            Logger.debug('Cliente específico verificado y asignado a la venta: $clienteIdNumerico');
+                    } catch (e) {
             Logger.error('Error al verificar cliente específico: $e');
             Logger.debug('Manteniendo cliente genérico: $clienteIdValido');
           }
@@ -290,54 +295,64 @@ class ProformaConversionManager {
             return false;
           }
           
+          // Verificar que sucursalId coincida con el de la operación
+          final String userSucursalId = userData['sucursalId']?.toString() ?? '';
+          if (userSucursalId.isNotEmpty && userSucursalId != sucursalId) {
+            Logger.warn('ADVERTENCIA: El sucursalId del usuario ($userSucursalId) es diferente al de la operación ($sucursalId)');
+            // Permitimos que continúe, pero lo registramos para debugging
+          }
+          
           // Buscar el empleado asociado a esta cuenta de usuario
-          // En el sistema, el ID del empleado puede ser diferente al ID de la cuenta
+          // Primero intentar obtener empleadoId directamente de userData
           if (userData.containsKey('empleadoId')) {
-            // Si la información del empleado ya está incluida en userData, usarla
             empleadoId = int.tryParse(userData['empleadoId'].toString());
             Logger.debug('ID de empleado encontrado en userData: $empleadoId');
-          } else {
-            // Intentar obtener la lista de empleados para encontrar el asociado a este usuario
-            Logger.debug('Buscando empleado asociado al usuario ${userData['id']}...');
-            final empleados = await api.empleados.getEmpleados(
-              filter: 'cuentaEmpleadoId',
-              filterValue: userData['id'].toString(),
-            );
+          } 
+          
+          // Si no se encontró en userData, intentar buscar empleado por sucursal actual
+          if (empleadoId == null || empleadoId <= 0) {
+            Logger.debug('Buscando empleados en la sucursal $sucursalId...');
             
-            if (empleados.isNotEmpty) {
-              empleadoId = int.tryParse(empleados.first.id);
-              Logger.debug('Empleado encontrado con ID: $empleadoId');
-            } else {
-              // Si no se encuentra un empleado asociado, intentar buscar por sucursal
-              Logger.debug('No se encontró empleado por cuenta, buscando por sucursal...');
-              if (userData.containsKey('sucursalId')) {
-                final empleadosSucursal = await api.empleados.getEmpleados(
-                  filter: 'sucursalId',
-                  filterValue: userData['sucursalId'].toString(),
+            // Asegurarse de que sucursalId sea siempre String para la API
+            final String sucursalIdStr = sucursalId.toString();
+            
+            // Usar el método específico para obtener empleados por sucursal
+            final empleadosSucursal = await api.empleados.getEmpleadosPorSucursal(sucursalIdStr);
+            
+            if (empleadosSucursal.isNotEmpty) {
+              // Preferir empleado asociado al usuario si existe
+              String? userId = userData['id']?.toString();
+              if (userId != null) {
+                // Buscar empleado que coincida con el ID de usuario
+                final empleadoUsuario = empleadosSucursal.firstWhere(
+                  (emp) => emp.cuentaEmpleadoId == userId,
+                  orElse: () => empleadosSucursal.first, // Si no encuentra, usar el primero
                 );
-                
-                if (empleadosSucursal.isNotEmpty) {
-                  // Usar el primer empleado de la sucursal como alternativa
-                  empleadoId = int.tryParse(empleadosSucursal.first.id);
-                  Logger.debug('Empleado alternativo encontrado en la sucursal: $empleadoId');
-                }
+                empleadoId = int.tryParse(empleadoUsuario.id);
+                Logger.debug('Empleado encontrado asociado al usuario: $empleadoId');
+              } else {
+                // Si no hay ID de usuario, usar el primer empleado de la sucursal
+                empleadoId = int.tryParse(empleadosSucursal.first.id);
+                Logger.debug('Usando primer empleado de la sucursal: $empleadoId');
               }
+            } else {
+              Logger.error('No se encontraron empleados para la sucursal $sucursalId');
             }
           }
           
           // Si no pudimos encontrar un ID de empleado válido, fallar con un mensaje claro
           if (empleadoId == null || empleadoId <= 0) {
-            Logger.error('No se pudo obtener un ID de empleado válido');
+            Logger.error('No se pudo obtener un ID de empleado válido para la sucursal $sucursalId');
             if (context.mounted) {
               _cerrarDialogoProcesamiento(context);
-              _mostrarError(context, 'No se encontró un empleado válido asociado a su cuenta para realizar la venta');
+              _mostrarError(context, 'No se encontró un empleado válido en la sucursal para realizar la venta');
             }
             return false;
           }
           
           // Asignar el ID de empleado a los datos de la venta
           ventaData['empleadoId'] = empleadoId;
-          Logger.debug('Empleado asignado a la venta: $empleadoId');
+          Logger.debug('Empleado asignado a la venta: $empleadoId (sucursal: $sucursalId)');
         } catch (e) {
           Logger.error('Error al buscar empleado: $e');
           if (context.mounted) {
@@ -371,9 +386,12 @@ class ProformaConversionManager {
         // Crear la venta usando la API estándar de ventas
         Logger.debug('Enviando petición para crear venta...');
         try {
+          // Asegurarse de que sucursalId sea siempre String para la API
+          final String sucursalIdStr = sucursalId.toString();
+          
           final Map<String, dynamic> ventaResponse = await api.ventas.createVenta(
             ventaData,
-            sucursalId: sucursalId,
+            sucursalId: sucursalIdStr,
           );
           
           Logger.debug('RESPUESTA CREACIÓN VENTA COMPLETA: $ventaResponse');
@@ -440,7 +458,7 @@ class ProformaConversionManager {
                     // Reintentar creación con nuevo cliente
                     final nuevoResponse = await api.ventas.createVenta(
                       ventaData,
-                      sucursalId: sucursalId,
+                      sucursalId: sucursalIdStr,
                     );
                     
                     // Si el nuevo intento es exitoso, actualizar la respuesta
@@ -510,7 +528,7 @@ class ProformaConversionManager {
           // Marcar la proforma como convertida (actualizar estado)
           Logger.debug('Actualizando estado de proforma a "convertida"...');
           final updateResponse = await api.proformas.updateProformaVenta(
-            sucursalId: sucursalId,
+            sucursalId: sucursalIdStr,
             proformaId: proformaId,
             estado: 'convertida',
           );
@@ -523,7 +541,7 @@ class ProformaConversionManager {
           
           // Forzar recarga de proformas para actualizar UI
           Logger.debug('Recargando lista de proformas...');
-          _recargarProformasSucursal(sucursalId);
+          _recargarProformasSucursal(sucursalIdStr);
           
           Logger.debug('PROCESO COMPLETADO: Proforma #$proformaId convertida exitosamente a venta');
           return true;
@@ -547,9 +565,12 @@ class ProformaConversionManager {
           
           Logger.debug('ERROR 404: Proforma #$proformaId no encontrada');
           
+          // Asegurarse de que sucursalId sea siempre String para la API
+          final String sucursalIdStr = sucursalId.toString();
+          
           // Invalidar caché
-          api.proformas.invalidateCache(sucursalId);
-          _recargarProformasSucursal(sucursalId);
+          api.proformas.invalidateCache(sucursalIdStr);
+          _recargarProformasSucursal(sucursalIdStr);
           
           if (context.mounted) {
             _cerrarDialogoProcesamiento(context);
@@ -580,21 +601,24 @@ class ProformaConversionManager {
   /// Recarga los datos de proformas y sucursales para asegurar sincronización
   static Future<void> _recargarDatos(String sucursalId) async {
     try {
+      // Asegurarse de que sucursalId sea siempre String para la API
+      final String sucursalIdStr = sucursalId.toString();
+      
       // Invalidar caché de proformas para la sucursal específica
-      api.proformas.invalidateCache(sucursalId);
-      Logger.debug('Caché de proformas invalidado para sucursal $sucursalId');
+      api.proformas.invalidateCache(sucursalIdStr);
+      Logger.debug('Caché de proformas invalidado para sucursal $sucursalIdStr');
       
       // Recargar datos de la sucursal para mantener coherencia
-      await api.sucursales.getSucursalData(sucursalId, forceRefresh: true);
-      Logger.debug('Datos de sucursal recargados: $sucursalId');
+      await api.sucursales.getSucursalData(sucursalIdStr, forceRefresh: true);
+      Logger.debug('Datos de sucursal recargados: $sucursalIdStr');
       
       // Recargar proformas específicas para esta sucursal
       await api.proformas.getProformasVenta(
-        sucursalId: sucursalId,
+        sucursalId: sucursalIdStr,
         useCache: false,
         forceRefresh: true,
       );
-      Logger.debug('Lista de proformas recargada para sucursal $sucursalId');
+      Logger.debug('Lista de proformas recargada para sucursal $sucursalIdStr');
     } catch (e) {
       Logger.error('Error al recargar datos: $e');
       // No propagamos el error para no interrumpir el flujo principal
@@ -698,28 +722,50 @@ class ProformaConversionManager {
   /// Recarga la lista de proformas de una sucursal para mantener datos actualizados
   static Future<void> _recargarProformasSucursal(String sucursalId) async {
     try {
+      // Asegurarse de que sucursalId sea siempre String para la API
+      final String sucursalIdStr = sucursalId.toString();
+      
       // Invalidar caché de proformas
-      api.proformas.invalidateCache(sucursalId);
+      api.proformas.invalidateCache(sucursalIdStr);
       // Invalidar caché de la sucursal
-      api.sucursales.invalidateCache(sucursalId);
+      api.sucursales.invalidateCache(sucursalIdStr);
       
       // Forzar recarga de la lista de proformas
       await api.proformas.getProformasVenta(
-        sucursalId: sucursalId,
+        sucursalId: sucursalIdStr,
         useCache: false,
         forceRefresh: true,
       );
       
       // También recargar desde la API de sucursales para mantener sincronización
       await api.sucursales.getProformasVenta(
-        sucursalId,
+        sucursalIdStr,
         useCache: false,
         forceRefresh: true,
       );
       
-      Logger.debug('Lista de proformas recargada para sucursal $sucursalId');
+      Logger.debug('Lista de proformas recargada para sucursal $sucursalIdStr');
     } catch (e) {
       Logger.error('Error al recargar lista de proformas: $e');
+    }
+  }
+  
+  /// Limpia la caché de ventas para evitar problemas de inconsistencia de tipos
+  static void _limpiarCacheVentas(String sucursalId) {
+    try {
+      // Asegurarse de que sucursalId sea siempre String para la API
+      final String sucursalIdStr = sucursalId.toString();
+      
+      // Limpiar caché de ventas para la sucursal específica
+      api.ventas.invalidateCache(sucursalIdStr);
+      Logger.debug('Caché de ventas limpiado para sucursal $sucursalIdStr');
+      
+      // También limpiar caché global de ventas por si acaso
+      api.ventas.invalidateCache();
+      Logger.debug('Caché global de ventas limpiado');
+    } catch (e) {
+      Logger.error('Error al limpiar caché de ventas: $e');
+      // No propagamos el error para no interrumpir el flujo principal
     }
   }
 } 

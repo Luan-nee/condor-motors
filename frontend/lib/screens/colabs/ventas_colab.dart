@@ -1,6 +1,7 @@
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/cliente.model.dart'; // Importamos el modelo de Cliente
+import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' hide DetalleProforma;
@@ -84,9 +85,50 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
         _sucursalId = userData['sucursalId'].toString();
         debugPrint('Usando sucursal del usuario autenticado: $_sucursalId');
         
-        // Obtener ID del empleado
-        _empleadoId = int.tryParse(userData['id']?.toString() ?? '0') ?? 0;
-        debugPrint('ID del empleado: $_empleadoId');
+        // Buscar el empleado asociado a esta cuenta de usuario
+        try {
+          String usuarioId = userData['id']?.toString() ?? '0';
+          debugPrint('ID de usuario/cuenta: $usuarioId');
+          
+          // Comprobar si userData contiene directamente el empleadoId
+          if (userData['empleadoId'] != null) {
+            // Si existe, usarlo directamente
+            _empleadoId = int.tryParse(userData['empleadoId'].toString()) ?? 0;
+            debugPrint('Usando empleadoId del userData: $_empleadoId');
+          } else {
+            // Si no existe, buscar empleados por sucursal
+            final List<Empleado> empleados = await api.empleados.getEmpleadosPorSucursal(
+              _sucursalId,
+              pageSize: 100, // Obtener más empleados para aumentar probabilidad de encontrar
+            );
+            
+            // Buscar empleado con cuentaEmpleadoId que coincida con el id del usuario
+            Empleado? empleadoEncontrado;
+            for (final Empleado empleado in empleados) {
+              if (empleado.cuentaEmpleadoId == usuarioId) {
+                empleadoEncontrado = empleado;
+                break;
+              }
+            }
+            
+            // Si no se encontró, usar el primer empleado como fallback
+            if (empleadoEncontrado == null && empleados.isNotEmpty) {
+              empleadoEncontrado = empleados.first;
+            }
+            
+            if (empleadoEncontrado != null) {
+              _empleadoId = int.tryParse(empleadoEncontrado.id) ?? 0;
+              debugPrint('Empleado encontrado por búsqueda: ${empleadoEncontrado.nombre} ${empleadoEncontrado.apellidos} (ID: $_empleadoId)');
+            } else {
+              // Si no se encontró, usar un ID por defecto
+              _empleadoId = 1; // ID genérico
+              debugPrint('No se encontró un empleado asociado, usando ID por defecto: $_empleadoId');
+            }
+          }
+        } catch (e) {
+          debugPrint('Error al determinar ID de empleado: $e');
+          _empleadoId = 1; // Valor por defecto en caso de error
+        }
       } else {
         // Fallback por si no se puede obtener el ID de sucursal
         debugPrint('No se pudo obtener la sucursal del usuario, usando fallback: $_sucursalId');
