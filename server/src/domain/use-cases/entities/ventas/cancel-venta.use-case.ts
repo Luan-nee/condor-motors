@@ -11,7 +11,7 @@ import {
 import type { CancelVentaDto } from '@/domain/dtos/entities/ventas/cancel-venta.dto'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, sum } from 'drizzle-orm'
 
 export class CancelVenta {
   private readonly authPayload: AuthPayload
@@ -27,16 +27,14 @@ export class CancelVenta {
     cancelVentaDto: CancelVentaDto,
     sucursalId: SucursalIdType
   ) {
-    // const now = new Date()
-
     const itemsVenta = await db
       .select({
-        id: detallesVentaTable.id,
-        cantidad: detallesVentaTable.cantidad,
+        cantidad: sum(detallesVentaTable.cantidad).mapWith(Number),
         productoId: detallesVentaTable.productoId
       })
       .from(detallesVentaTable)
       .where(eq(detallesVentaTable.ventaId, numericIdDto.id))
+      .groupBy(detallesVentaTable.productoId)
 
     const productoIds = itemsVenta
       .map((item) => item.productoId)
@@ -52,7 +50,7 @@ export class CancelVenta {
       return result
     }
 
-    const [result] = await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       const productos = await tx
         .select({
           id: productosTable.id,
