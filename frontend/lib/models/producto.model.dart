@@ -21,11 +21,11 @@ class ReglaDescuento {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'cantidad': quantity,
-    'porcentaje_descuento': discountPercentage,
-    if (daysWithoutSale != null) 'dias_sin_venta': daysWithoutSale,
-    if (timeDiscount != null) 'descuento_tiempo': timeDiscount,
-  };
+        'cantidad': quantity,
+        'porcentaje_descuento': discountPercentage,
+        if (daysWithoutSale != null) 'dias_sin_venta': daysWithoutSale,
+        if (timeDiscount != null) 'descuento_tiempo': timeDiscount,
+      };
 }
 
 class Producto {
@@ -79,19 +79,33 @@ class Producto {
       sku: json['sku'] as String? ?? '',
       nombre: json['nombre'] as String? ?? '',
       descripcion: json['descripcion'] as String?,
-      maxDiasSinReabastecer: json['maxDiasSinReabastecer'] != null ? _parseInt(json['maxDiasSinReabastecer']) : null,
-      stockMinimo: json['stockMinimo'] != null ? _parseInt(json['stockMinimo']) : null,
-      cantidadMinimaDescuento: json['cantidadMinimaDescuento'] != null ? _parseInt(json['cantidadMinimaDescuento']) : null,
-      cantidadGratisDescuento: json['cantidadGratisDescuento'] != null ? _parseInt(json['cantidadGratisDescuento']) : null,
-      porcentajeDescuento: json['porcentajeDescuento'] != null ? _parseInt(json['porcentajeDescuento']) : null,
+      maxDiasSinReabastecer: json['maxDiasSinReabastecer'] != null
+          ? _parseInt(json['maxDiasSinReabastecer'])
+          : null,
+      stockMinimo:
+          json['stockMinimo'] != null ? _parseInt(json['stockMinimo']) : null,
+      cantidadMinimaDescuento: json['cantidadMinimaDescuento'] != null
+          ? _parseInt(json['cantidadMinimaDescuento'])
+          : null,
+      cantidadGratisDescuento: json['cantidadGratisDescuento'] != null
+          ? _parseInt(json['cantidadGratisDescuento'])
+          : null,
+      porcentajeDescuento: json['porcentajeDescuento'] != null
+          ? _parseInt(json['porcentajeDescuento'])
+          : null,
       color: json['color'] as String?,
       categoria: json['categoria'] as String? ?? '',
       marca: json['marca'] as String? ?? '',
-      fechaCreacion: DateTime.parse(json['fechaCreacion'] as String? ?? DateTime.now().toIso8601String()),
-      detalleProductoId: json['detalleProductoId'] != null ? _parseInt(json['detalleProductoId']) : null,
+      fechaCreacion: DateTime.parse(
+          json['fechaCreacion'] as String? ?? DateTime.now().toIso8601String()),
+      detalleProductoId: json['detalleProductoId'] != null
+          ? _parseInt(json['detalleProductoId'])
+          : null,
       precioCompra: _parseDouble(json['precioCompra']),
       precioVenta: _parseDouble(json['precioVenta']),
-      precioOferta: json['precioOferta'] != null ? _parseDouble(json['precioOferta']) : null,
+      precioOferta: json['precioOferta'] != null
+          ? _parseDouble(json['precioOferta'])
+          : null,
       stock: _parseInt(json['stock']),
       stockBajo: json['stockBajo'] as bool? ?? false,
       liquidacion: json['liquidacion'] as bool? ?? false,
@@ -99,28 +113,32 @@ class Producto {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'id': id,
-    'sku': sku,
-    'nombre': nombre,
-    if (descripcion != null) 'descripcion': descripcion,
-    if (maxDiasSinReabastecer != null) 'maxDiasSinReabastecer': maxDiasSinReabastecer,
-    if (stockMinimo != null) 'stockMinimo': stockMinimo,
-    if (cantidadMinimaDescuento != null) 'cantidadMinimaDescuento': cantidadMinimaDescuento,
-    if (cantidadGratisDescuento != null) 'cantidadGratisDescuento': cantidadGratisDescuento,
-    if (porcentajeDescuento != null) 'porcentajeDescuento': porcentajeDescuento,
-    if (color != null) 'color': color,
-    'categoria': categoria,
-    'marca': marca,
-    'fechaCreacion': fechaCreacion.toIso8601String(),
-    if (detalleProductoId != null) 'detalleProductoId': detalleProductoId,
-    'precioCompra': precioCompra,
-    'precioVenta': precioVenta,
-    if (precioOferta != null) 'precioOferta': precioOferta,
-    'stock': stock,
-    'stockBajo': stockBajo,
-    'liquidacion': liquidacion,
-  };
-  
+        'id': id,
+        'sku': sku,
+        'nombre': nombre,
+        if (descripcion != null) 'descripcion': descripcion,
+        if (maxDiasSinReabastecer != null)
+          'maxDiasSinReabastecer': maxDiasSinReabastecer,
+        if (stockMinimo != null) 'stockMinimo': stockMinimo,
+        if (cantidadMinimaDescuento != null)
+          'cantidadMinimaDescuento': cantidadMinimaDescuento,
+        if (cantidadGratisDescuento != null)
+          'cantidadGratisDescuento': cantidadGratisDescuento,
+        if (porcentajeDescuento != null)
+          'porcentajeDescuento': porcentajeDescuento,
+        if (color != null) 'color': color,
+        'categoria': categoria,
+        'marca': marca,
+        'fechaCreacion': fechaCreacion.toIso8601String(),
+        if (detalleProductoId != null) 'detalleProductoId': detalleProductoId,
+        'precioCompra': precioCompra,
+        'precioVenta': precioVenta,
+        if (precioOferta != null) 'precioOferta': precioOferta,
+        'stock': stock,
+        'stockBajo': stockBajo,
+        'liquidacion': liquidacion,
+      };
+
   /// Helper para convertir valores numéricos a double
   static double _parseDouble(value) {
     if (value is double) {
@@ -134,7 +152,7 @@ class Producto {
     }
     return 0.0;
   }
-  
+
   /// Helper para convertir valores a int de forma segura
   static int _parseInt(value) {
     if (value is int) {
@@ -152,7 +170,7 @@ class Producto {
     }
     return 0;
   }
-  
+
   /// Formatea el precio de venta a soles peruanos
   String getPrecioVentaFormateado() {
     return 'S/ ${precioVenta.toStringAsFixed(2)}';
@@ -165,7 +183,9 @@ class Producto {
 
   /// Formatea el precio de oferta a soles peruanos
   String? getPrecioOfertaFormateado() {
-    return precioOferta != null ? 'S/ ${precioOferta!.toStringAsFixed(2)}' : null;
+    return precioOferta != null
+        ? 'S/ ${precioOferta!.toStringAsFixed(2)}'
+        : null;
   }
 
   /// Calcula la ganancia
@@ -225,7 +245,7 @@ class Producto {
   String getPrecioActualFormateado() {
     return 'S/ ${getPrecioActual().toStringAsFixed(2)}';
   }
-  
+
   /// Calcula la ganancia considerando la liquidación
   double getGananciaActual() {
     return getPrecioActual() - precioCompra;
@@ -267,10 +287,13 @@ class Producto {
       sku: sku ?? this.sku,
       nombre: nombre ?? this.nombre,
       descripcion: descripcion ?? this.descripcion,
-      maxDiasSinReabastecer: maxDiasSinReabastecer ?? this.maxDiasSinReabastecer,
+      maxDiasSinReabastecer:
+          maxDiasSinReabastecer ?? this.maxDiasSinReabastecer,
       stockMinimo: stockMinimo ?? this.stockMinimo,
-      cantidadMinimaDescuento: cantidadMinimaDescuento ?? this.cantidadMinimaDescuento,
-      cantidadGratisDescuento: cantidadGratisDescuento ?? this.cantidadGratisDescuento,
+      cantidadMinimaDescuento:
+          cantidadMinimaDescuento ?? this.cantidadMinimaDescuento,
+      cantidadGratisDescuento:
+          cantidadGratisDescuento ?? this.cantidadGratisDescuento,
       porcentajeDescuento: porcentajeDescuento ?? this.porcentajeDescuento,
       color: color ?? this.color,
       categoria: categoria ?? this.categoria,
@@ -285,5 +308,4 @@ class Producto {
       liquidacion: liquidacion ?? this.liquidacion,
     );
   }
-} 
-
+}

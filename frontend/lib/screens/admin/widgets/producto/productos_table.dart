@@ -38,7 +38,8 @@ class ProductosTable extends StatefulWidget {
       ..add(IterableProperty<Sucursal>('sucursales', sucursales))
       ..add(ObjectFlagProperty<Function(Producto)>.has('onEdit', onEdit))
       ..add(ObjectFlagProperty<Function(Producto)>.has('onDelete', onDelete))
-      ..add(ObjectFlagProperty<Function(Producto)>.has('onViewDetails', onViewDetails))
+      ..add(ObjectFlagProperty<Function(Producto)>.has(
+          'onViewDetails', onViewDetails))
       ..add(ObjectFlagProperty<Function(String)?>.has('onSort', onSort))
       ..add(StringProperty('sortBy', sortBy))
       ..add(StringProperty('sortOrder', sortOrder));
@@ -53,29 +54,30 @@ class _ProductosTableState extends State<ProductosTable>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _agruparProductos();
   }
 
   @override
   void didUpdateWidget(ProductosTable oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // Verificar si realmente los productos han cambiado (por contenido, no solo por referencia)
-    bool productosHanCambiado = oldWidget.productos.length != widget.productos.length;
-    
+    bool productosHanCambiado =
+        oldWidget.productos.length != widget.productos.length;
+
     if (!productosHanCambiado && widget.productos.isNotEmpty) {
       // Verificar más profundamente comparando varios productos
       // Tomar una muestra de productos para comparar (hasta 5)
-      final int sampleSize = widget.productos.length > 5 ? 5 : widget.productos.length;
-      
+      final int sampleSize =
+          widget.productos.length > 5 ? 5 : widget.productos.length;
+
       for (int i = 0; i < sampleSize; i++) {
         final Producto oldProducto = oldWidget.productos[i];
         final Producto newProducto = widget.productos.firstWhere(
-          (Producto p) => p.id == oldProducto.id, 
-          orElse: () => oldProducto
-        );
-        
+            (Producto p) => p.id == oldProducto.id,
+            orElse: () => oldProducto);
+
         // Si algún campo importante cambió, consideramos que los productos cambiaron
         if (oldProducto.nombre != newProducto.nombre ||
             oldProducto.stock != newProducto.stock ||
@@ -89,14 +91,15 @@ class _ProductosTableState extends State<ProductosTable>
         }
       }
     }
-    
+
     // Si la key cambió significa que hubo una operación que requiere reconstrucción
     final bool keyDiferente = oldWidget.key != widget.key;
-    
+
     if (productosHanCambiado || keyDiferente) {
-      debugPrint('ProductosTable: Actualización detectada. Productos cambiados: $productosHanCambiado, Key diferente: $keyDiferente');
+      debugPrint(
+          'ProductosTable: Actualización detectada. Productos cambiados: $productosHanCambiado, Key diferente: $keyDiferente');
       _agruparProductos();
-      
+
       // Forzar reconstrucción del widget
       setState(() {});
     }
@@ -154,7 +157,7 @@ class _ProductosTableState extends State<ProductosTable>
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white.withOpacity(0.5),
           indicatorColor: const Color(0xFFE31E24),
-          indicatorWeight: 3,
+          indicatorWeight: 4,
           tabs: <Widget>[
             Tab(
               icon: Row(
@@ -230,6 +233,31 @@ class _ProductosTableState extends State<ProductosTable>
                 ],
               ),
             ),
+            Tab(
+              icon: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  FaIcon(FontAwesomeIcons.ban,
+                      size: 16, color: Colors.red.shade800),
+                  const SizedBox(width: 8),
+                  const Text('inhabilitados'),
+                  const SizedBox(width: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2D2D2D),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_productosAgrupados['inhabilitados']?.length ?? 0}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         Expanded(
@@ -240,10 +268,16 @@ class _ProductosTableState extends State<ProductosTable>
               _buildProductosTabla(widget.productos),
 
               // Productos con stock bajo
-              _buildProductosTabla(_productosAgrupados['stockBajo'] ?? <Producto>[]),
+              _buildProductosTabla(
+                  _productosAgrupados['stockBajo'] ?? <Producto>[]),
 
               // Productos agotados
-              _buildProductosTabla(_productosAgrupados['agotados'] ?? <Producto>[]),
+              _buildProductosTabla(
+                  _productosAgrupados['agotados'] ?? <Producto>[]),
+
+              // Productos inhalitados
+              _buildProductosTabla(
+                  _productosAgrupados['inhabilitados'] ?? <Producto>[]),
             ],
           ),
         ),
@@ -494,6 +528,4 @@ class _ProductosTableState extends State<ProductosTable>
       }).toList(),
     );
   }
-
-
 }

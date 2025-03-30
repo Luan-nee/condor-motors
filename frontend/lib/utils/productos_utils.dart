@@ -9,7 +9,7 @@ class ProductoEnSucursal {
   final Sucursal sucursal;
   final Producto producto;
   final bool disponible;
-  
+
   const ProductoEnSucursal({
     required this.sucursal,
     required this.producto,
@@ -23,15 +23,15 @@ class ProductosUtils {
   static Future<List<String>> obtenerCategorias() async {
     try {
       final List categorias = await api.categorias.getCategorias();
-      // Extraer nombres de categorías 
+      // Extraer nombres de categorías
       final List<String> listaCategorias = categorias
           .map<String>((cat) => cat['nombre'] as String)
           .where((String nombre) => nombre.isNotEmpty)
           .toList();
-      
+
       // Ordenar alfabéticamente
       listaCategorias.sort();
-      
+
       return listaCategorias;
     } catch (e) {
       debugPrint('Error al obtener categorías: $e');
@@ -51,20 +51,27 @@ class ProductosUtils {
   static Future<List<String>> obtenerMarcas() async {
     try {
       final List<Marca> marcas = await api.marcas.getMarcas();
-      
+
       // Extraer nombres de marcas usando la notación de punto
       final List<String> listaMarcas = marcas
           .map<String>((Marca marca) => marca.nombre)
           .where((String nombre) => nombre.isNotEmpty)
           .toList();
-      
+
       // Ordenar alfabéticamente
       listaMarcas.sort();
-      
+
       return listaMarcas;
     } catch (e) {
       debugPrint('Error al obtener marcas: $e');
-      return const <String>['Genérico', 'Honda', 'Yamaha', 'Suzuki', 'Bajaj', 'TVS'];
+      return const <String>[
+        'Genérico',
+        'Honda',
+        'Yamaha',
+        'Suzuki',
+        'Bajaj',
+        'TVS'
+      ];
     }
   }
 
@@ -81,68 +88,76 @@ class ProductosUtils {
 
     final String query = searchQuery.toLowerCase().trim();
     final String categoryLower = selectedCategory.toLowerCase().trim();
-    
+
     // Verificar si es la categoría "todos/todas" (normalizar)
-    final bool mostrarTodos = categoryLower == 'todos' || 
-                             categoryLower == 'todas' || 
-                             categoryLower.isEmpty;
-    
+    final bool mostrarTodos = categoryLower == 'todos' ||
+        categoryLower == 'todas' ||
+        categoryLower.isEmpty;
+
     if (debugMode) {
       debugPrint('🔍 ProductosUtils.filtrarProductos:');
       debugPrint('   - Productos totales: ${productos.length}');
       debugPrint('   - Query: "$query"');
-      debugPrint('   - Categoría: "$selectedCategory" (normalizada: ${mostrarTodos ? "TODOS" : categoryLower})');
-      
+      debugPrint(
+          '   - Categoría: "$selectedCategory" (normalizada: ${mostrarTodos ? "TODOS" : categoryLower})');
+
       // Listar categorías únicas presentes en los productos
-      final List<String> categorias = productos.map((Producto p) => p.categoria.toLowerCase()).toSet().toList();
+      final List<String> categorias = productos
+          .map((Producto p) => p.categoria.toLowerCase())
+          .toSet()
+          .toList();
       debugPrint('   - Categorías disponibles: $categorias');
     }
-    
+
     final List<Producto> resultados = productos.where((Producto producto) {
       // Filtro por categoría (si no es 'Todos')
       bool coincideCategoria = mostrarTodos;
-      
+
       if (!coincideCategoria) {
         // Normalizar la categoría del producto
-        final String categoriaProducto = producto.categoria.toLowerCase().trim();
+        final String categoriaProducto =
+            producto.categoria.toLowerCase().trim();
         coincideCategoria = categoriaProducto == categoryLower;
-        
-        if (debugMode && !coincideCategoria && 
-            (categoriaProducto.contains(categoryLower) || 
-             categoryLower.contains(categoriaProducto))) {
-          debugPrint('⚠️ Posible coincidencia parcial: "$categoriaProducto" vs "$categoryLower"');
+
+        if (debugMode &&
+            !coincideCategoria &&
+            (categoriaProducto.contains(categoryLower) ||
+                categoryLower.contains(categoriaProducto))) {
+          debugPrint(
+              '⚠️ Posible coincidencia parcial: "$categoriaProducto" vs "$categoryLower"');
         }
       }
-      
+
       // Si no coincide la categoría, salir temprano
       if (!coincideCategoria) {
         return false;
       }
-      
+
       // Si no hay consulta de búsqueda, incluir el producto
       if (query.isEmpty) {
         return true;
       }
-      
+
       // Buscar en nombre, SKU, marca y descripción
-      final bool coincideTexto = 
-             producto.nombre.toLowerCase().contains(query) ||
-             producto.sku.toLowerCase().contains(query) ||
-             producto.marca.toLowerCase().contains(query) ||
-             (producto.descripcion != null && 
-              producto.descripcion!.toLowerCase().contains(query));
-      
+      final bool coincideTexto =
+          producto.nombre.toLowerCase().contains(query) ||
+              producto.sku.toLowerCase().contains(query) ||
+              producto.marca.toLowerCase().contains(query) ||
+              (producto.descripcion != null &&
+                  producto.descripcion!.toLowerCase().contains(query));
+
       return coincideTexto;
     }).toList();
-    
+
     if (debugMode) {
       debugPrint('   - Productos filtrados: ${resultados.length}');
-      
+
       if (!mostrarTodos && resultados.isEmpty) {
-        debugPrint('❌ No se encontraron coincidencias para la categoría "$selectedCategory"');
+        debugPrint(
+            '❌ No se encontraron coincidencias para la categoría "$selectedCategory"');
       }
     }
-    
+
     return resultados;
   }
 
@@ -188,36 +203,38 @@ class ProductosUtils {
     }
     return Colors.white;
   }
-  
+
   /// Comprueba la disponibilidad de un producto en todas las sucursales
   static Future<List<ProductoEnSucursal>> obtenerProductoEnSucursales({
     required int productoId,
     required List<Sucursal> sucursales,
   }) async {
     final List<ProductoEnSucursal> resultados = <ProductoEnSucursal>[];
-    
+
     try {
       // Obtener todas las sucursales si no se proporcionaron
-      final List<Sucursal> listaSucursales = sucursales.isNotEmpty 
-          ? sucursales 
+      final List<Sucursal> listaSucursales = sucursales.isNotEmpty
+          ? sucursales
           : await api.sucursales.getSucursales();
-          
+
       // Consultar en paralelo para mayor eficiencia
-      final List<Future<ProductoEnSucursal>> futures = listaSucursales.map((Sucursal sucursal) async {
+      final List<Future<ProductoEnSucursal>> futures =
+          listaSucursales.map((Sucursal sucursal) async {
         try {
           final Producto producto = await api.productos.getProducto(
             sucursalId: sucursal.id,
             productoId: productoId,
           );
-          
+
           return ProductoEnSucursal(
             sucursal: sucursal,
             producto: producto,
           );
         } catch (e) {
           // Si hay un error, asumimos que el producto no está disponible
-          debugPrint('Producto $productoId no disponible en sucursal ${sucursal.id}: $e');
-          
+          debugPrint(
+              'Producto $productoId no disponible en sucursal ${sucursal.id}: $e');
+
           // Creamos un objeto ficticio para representar la no disponibilidad
           return ProductoEnSucursal(
             sucursal: sucursal,
@@ -237,51 +254,56 @@ class ProductosUtils {
           );
         }
       }).toList();
-      
+
       // Esperar a que se completen todas las consultas
-      resultados..addAll(await Future.wait(futures))
-      
-      // Ordenar: primero sucursales con producto disponible, luego las centrales
-      ..sort((ProductoEnSucursal a, ProductoEnSucursal b) {
-        // Primero por disponibilidad (disponibles primero)
-        if (a.disponible != b.disponible) {
-          return a.disponible ? -1 : 1;
-        }
-        
-        // Luego por tipo de sucursal (centrales primero)
-        if (a.sucursal.sucursalCentral != b.sucursal.sucursalCentral) {
-          return a.sucursal.sucursalCentral ? -1 : 1;
-        }
-        
-        // Finalmente por nombre de sucursal
-        return a.sucursal.nombre.compareTo(b.sucursal.nombre);
-      });
-      
+      resultados
+        ..addAll(await Future.wait(futures))
+
+        // Ordenar: primero sucursales con producto disponible, luego las centrales
+        ..sort((ProductoEnSucursal a, ProductoEnSucursal b) {
+          // Primero por disponibilidad (disponibles primero)
+          if (a.disponible != b.disponible) {
+            return a.disponible ? -1 : 1;
+          }
+
+          // Luego por tipo de sucursal (centrales primero)
+          if (a.sucursal.sucursalCentral != b.sucursal.sucursalCentral) {
+            return a.sucursal.sucursalCentral ? -1 : 1;
+          }
+
+          // Finalmente por nombre de sucursal
+          return a.sucursal.nombre.compareTo(b.sucursal.nombre);
+        });
+
       return resultados;
     } catch (e) {
       debugPrint('Error al obtener producto en sucursales: $e');
       return resultados;
     }
   }
-  
+
   /// Agrupa los productos por su disponibilidad en: disponibles, stock bajo y agotados
-  static Map<String, List<Producto>> agruparProductosPorDisponibilidad(List<Producto> productos) {
+  static Map<String, List<Producto>> agruparProductosPorDisponibilidad(
+      List<Producto> productos) {
     final Map<String, List<Producto>> resultado = <String, List<Producto>>{
       'disponibles': <Producto>[],
       'stockBajo': <Producto>[],
       'agotados': <Producto>[],
+      'inhabilitados': <Producto>[],
     };
 
     for (final Producto producto in productos) {
       if (producto.stock <= 0) {
         resultado['agotados']!.add(producto);
-      } else if (producto.tieneStockBajo()) {
-        resultado['stockBajo']!.add(producto);
-      } else {
-        resultado['disponibles']!.add(producto);
       }
+      if (producto.tieneStockBajo()) {
+        resultado['stockBajo']!.add(producto);
+      }
+      if (producto.detalleProductoId == null) {
+        resultado['inhabilitados']!.add(producto);
+      }
+      resultado['disponibles']!.add(producto);
     }
-
     return resultado;
   }
 }
