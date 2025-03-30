@@ -64,10 +64,6 @@ interface ComputeTotalArgs {
   totalTaxItem: number
   totalBaseTaxItem: number
   exonerada: boolean
-  totalGratuitas: number
-  totalExoneradas: number
-  totalGravadas: number
-  totalTax: number
 }
 
 interface ComputeItemVentaDetailsArgs {
@@ -199,27 +195,18 @@ export class CreateVenta {
 
           detallesVenta.push(item)
 
-          const {
-            totalGratuitas: newTotalGratuitas,
-            totalExoneradas: newTotalExoneradas,
-            totalGravadas: newTotalGravadas,
-            totalTax: newTotalTax
-          } = this.computeNewTotal({
+          const totalesItem = this.computeNewTotal({
             isFreeItem,
             totalItem: detallesItem.totalItem,
             totalTaxItem: detallesItem.totalTax,
             totalBaseTaxItem: detallesItem.totalBaseTax,
-            exonerada: detallesItem.exonerada,
-            totalGratuitas,
-            totalExoneradas,
-            totalGravadas,
-            totalTax
+            exonerada: detallesItem.exonerada
           })
 
-          totalGratuitas = newTotalGratuitas
-          totalExoneradas = newTotalExoneradas
-          totalGravadas = newTotalGravadas
-          totalTax = newTotalTax
+          totalGratuitas += totalesItem.totalGratuitas
+          totalExoneradas += totalesItem.totalExoneradas
+          totalGravadas += totalesItem.totalGravadas
+          totalTax += totalesItem.totalTax
 
           continue
         }
@@ -236,39 +223,29 @@ export class CreateVenta {
 
         const applyOffer = detalleVenta.aplicarOferta && !isFreeItem
 
-        const { detallesItem, items, gratuitas } = this.computeItemVentaDetails(
-          {
+        const { detallesItem, items, totalGratuitasItem } =
+          this.computeItemVentaDetails({
             detalleVenta,
             detalleProducto,
             tipoTaxProducto,
             freeItemTax,
             applyOffer
-          }
-        )
+          })
 
         detallesVenta.push(...items)
 
-        const {
-          totalGratuitas: newTotalGratuitas,
-          totalExoneradas: newTotalExoneradas,
-          totalGravadas: newTotalGravadas,
-          totalTax: newTotalTax
-        } = this.computeNewTotal({
+        const totalesItem = this.computeNewTotal({
           isFreeItem,
           totalItem: detallesItem.totalItem,
           totalTaxItem: detallesItem.totalTax,
           totalBaseTaxItem: detallesItem.totalBaseTax,
-          exonerada: detallesItem.exonerada,
-          totalGratuitas,
-          totalExoneradas,
-          totalGravadas,
-          totalTax
+          exonerada: detallesItem.exonerada
         })
 
-        totalGratuitas = newTotalGratuitas + gratuitas
-        totalExoneradas = newTotalExoneradas
-        totalGravadas = newTotalGravadas
-        totalTax = newTotalTax
+        totalGratuitas += totalesItem.totalGratuitas + totalGratuitasItem
+        totalExoneradas += totalesItem.totalExoneradas
+        totalGravadas += totalesItem.totalGravadas
+        totalTax += totalesItem.totalTax
 
         await tx
           .update(detallesProductoTable)
@@ -323,10 +300,10 @@ export class CreateVenta {
     freeItemTax,
     applyOffer
   }: ComputeItemVentaDetailsArgs) {
-    this.validateStock(detalleProducto, detalleVenta.cantidad)
+    let { cantidad: newCantidad } = detalleVenta
 
     const { price, free } = this.computePriceOffer({
-      cantidad: detalleVenta.cantidad,
+      cantidad: newCantidad,
       cantidadMinimaDescuento: detalleProducto.cantidadMinimaDescuento,
       cantidadGratisDescuento: detalleProducto.cantidadGratisDescuento,
       porcentajeDescuento: detalleProducto.porcentajeDescuento,
@@ -338,7 +315,7 @@ export class CreateVenta {
 
     const detallesItem = this.computeDetallesItem(
       price,
-      detalleVenta.cantidad,
+      newCantidad,
       tipoTaxProducto.porcentajeTax
     )
 
@@ -346,7 +323,7 @@ export class CreateVenta {
       {
         codigo: detalleProducto.sku,
         nombre: detalleProducto.nombre,
-        cantidad: detalleVenta.cantidad,
+        cantidad: newCantidad,
         precioSinIgv: fixedTwoDecimals(detallesItem.valorUnitario),
         precioConIgv: fixedTwoDecimals(detallesItem.precioUnitario),
         tipoTaxId: detalleVenta.tipoTaxId,
@@ -357,7 +334,7 @@ export class CreateVenta {
       }
     ]
 
-    let gratuitas = 0
+    let totalGratuitasItem = 0
 
     if (free > 0 && applyOffer) {
       const detallesFreeItem = this.computeDetallesItem(
@@ -379,17 +356,18 @@ export class CreateVenta {
         productoId: detalleProducto.productoId
       })
 
-      gratuitas += detallesFreeItem.totalItem
-      detalleVenta.cantidad += free
-      this.validateStock(detalleProducto, detalleVenta.cantidad)
+      totalGratuitasItem += detallesFreeItem.totalItem
+      newCantidad += free
     }
+
+    this.validateStock(detalleProducto, newCantidad)
 
     return {
       detallesItem,
       price,
       free,
       items,
-      gratuitas
+      totalGratuitasItem
     }
   }
 
@@ -435,35 +413,31 @@ export class CreateVenta {
     totalItem,
     totalTaxItem,
     totalBaseTaxItem,
-    exonerada,
-    totalGratuitas,
-    totalExoneradas,
-    totalGravadas,
-    totalTax
+    exonerada
   }: ComputeTotalArgs) {
     if (isFreeItem) {
       return {
-        totalGratuitas: totalGratuitas + totalItem,
-        totalExoneradas,
-        totalGravadas,
-        totalTax
+        totalGratuitas: totalItem,
+        totalExoneradas: 0,
+        totalGravadas: 0,
+        totalTax: 0
       }
     }
 
     if (exonerada) {
       return {
-        totalGratuitas,
-        totalExoneradas: totalExoneradas + totalItem,
-        totalGravadas,
-        totalTax
+        totalGratuitas: 0,
+        totalExoneradas: totalItem,
+        totalGravadas: 0,
+        totalTax: 0
       }
     }
 
     return {
-      totalGratuitas,
-      totalExoneradas,
-      totalGravadas: totalGravadas + totalBaseTaxItem,
-      totalTax: totalTax + totalTaxItem
+      totalGratuitas: 0,
+      totalExoneradas: 0,
+      totalGravadas: totalBaseTaxItem,
+      totalTax: totalTaxItem
     }
   }
 
