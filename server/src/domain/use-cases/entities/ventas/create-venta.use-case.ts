@@ -44,6 +44,7 @@ interface DetalleVenta {
   totalBaseTax: string
   totalTax: string
   total: string
+  productoId?: number
 }
 
 interface ComputePriceOfferArgs {
@@ -192,7 +193,8 @@ export class CreateVenta {
           tipoTaxId: detalleVenta.tipoTaxId,
           totalBaseTax: fixedTwoDecimals(detallesItem.totalBaseTax),
           totalTax: fixedTwoDecimals(detallesItem.totalTax),
-          total: fixedTwoDecimals(detallesItem.totalItem)
+          total: fixedTwoDecimals(detallesItem.totalItem),
+          productoId: detalleProducto.productoId
         })
 
         const {
@@ -233,7 +235,8 @@ export class CreateVenta {
             tipoTaxId: freeItemTax.id,
             totalBaseTax: fixedTwoDecimals(detallesFreeItem.totalBaseTax),
             totalTax: fixedTwoDecimals(detallesFreeItem.totalTax),
-            total: fixedTwoDecimals(detallesFreeItem.totalItem)
+            total: fixedTwoDecimals(detallesFreeItem.totalItem),
+            productoId: detalleProducto.productoId
           })
 
           totalGratuitas += detallesFreeItem.totalItem
