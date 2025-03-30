@@ -10,7 +10,7 @@ import { CuentasEmpleadosRoutes } from '@/presentation/entities/cuentas-empleado
 import { ColoresRoutes } from '@/presentation/entities/colores/routes'
 import { ClientesRoutes } from './clientes/routes'
 import { ReservasProductoRoutes } from '@/presentation/entities/reservas-producto/routes'
-import { TransferenciasInventarioRoutes } from '@/presentation/entities/transeferenciasInventario/routes'
+import { TransferenciasInventarioRoutes } from '@/presentation/entities/transferencias-inventario/routes'
 import { EstadisticaRouter } from './estadisticas/routes'
 
 export class EntitiesRoutes {
