@@ -1,6 +1,7 @@
 import z from 'zod'
 import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
 import { Validator } from '@/domain/validators/validator'
+import { productoSchema } from '../productos/producto.schema'
 
 export const ventaSchema = {
   observaciones: z
@@ -11,12 +12,21 @@ export const ventaSchema = {
     .optional(),
   tipoDocumentoId: idTypeBaseSchema.numericId,
   detalles: z
-    .object({
-      productoId: idTypeBaseSchema.numericId,
-      cantidad: z.number().min(1),
-      tipoTaxId: idTypeBaseSchema.numericId,
-      aplicarOferta: z.boolean().default(true)
-    })
+    .union([
+      z.object({
+        productoId: idTypeBaseSchema.numericId,
+        cantidad: z.number().min(1),
+        tipoTaxId: idTypeBaseSchema.numericId,
+        aplicarOferta: z.boolean().default(true)
+      }),
+      z.object({
+        productoId: z.null(),
+        nombre: productoSchema.nombre,
+        cantidad: z.number().min(1),
+        precio: z.number().min(0),
+        tipoTaxId: idTypeBaseSchema.numericId
+      })
+    ])
     .array()
     .min(1),
   monedaId: idTypeBaseSchema.numericId.optional(),

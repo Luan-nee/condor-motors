@@ -1,14 +1,24 @@
 import { createVentaValidator } from '@/domain/validators/entities/ventas/venta.validator'
 
+interface DefinedProduct {
+  productoId: number
+  cantidad: number
+  tipoTaxId: number
+  aplicarOferta: boolean
+}
+
+interface CustomProduct {
+  productoId: null
+  cantidad: number
+  tipoTaxId: number
+  nombre: string
+  precio: number
+}
+
 export class CreateVentaDto {
   public observaciones?: string
   public tipoDocumentoId: number
-  public detalles: Array<{
-    productoId: number
-    cantidad: number
-    tipoTaxId: number
-    aplicarOferta: boolean
-  }>
+  public detalles: Array<DefinedProduct | CustomProduct>
   public monedaId?: number
   public metodoPagoId?: number
   public clienteId: number
@@ -43,6 +53,10 @@ export class CreateVentaDto {
     const duplicateProductoIds = new Set<number>()
 
     for (const { productoId } of createVentaDto.detalles) {
+      if (productoId == null) {
+        continue
+      }
+
       if (productoIds.has(productoId)) {
         duplicateProductoIds.add(productoId)
       } else {

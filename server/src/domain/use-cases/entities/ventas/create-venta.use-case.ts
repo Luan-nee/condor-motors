@@ -35,7 +35,7 @@ import type { SucursalIdType } from '@/types/schemas'
 import { and, desc, eq, inArray, like, or } from 'drizzle-orm'
 
 interface DetalleVenta {
-  codigo: string
+  codigo?: string
   nombre: string
   cantidad: number
   precioSinIgv: string
@@ -68,6 +68,38 @@ interface ComputeTotalArgs {
   totalExoneradas: number
   totalGravadas: number
   totalTax: number
+}
+
+interface ComputeItemVentaDetailsArgs {
+  detalleVenta: {
+    productoId: number
+    cantidad: number
+    tipoTaxId: number
+    aplicarOferta: boolean
+  }
+  detalleProducto: {
+    id: number
+    stock: number
+    precioVenta: string
+    precioOferta: string | null
+    productoId: number
+    sku: string
+    nombre: string
+    cantidadMinimaDescuento: number | null
+    cantidadGratisDescuento: number | null
+    porcentajeDescuento: number | null
+    liquidacion: boolean
+  }
+  tipoTaxProducto: {
+    id: number
+    porcentajeTax: number
+  }
+  freeItemTax: {
+    id: number
+    codigoLocal: string
+    porcentajeTax: number
+  }
+  applyOffer: boolean
 }
 
 export class CreateVenta {
@@ -104,9 +136,9 @@ export class CreateVenta {
 
     const tiposTaxMap = new Map(tiposTax.map((t) => [t.id, t]))
 
-    const productoIds = createVentaDto.detalles.map(
-      (detalle) => detalle.productoId
-    )
+    const productoIds = createVentaDto.detalles
+      .map((detalle) => detalle.productoId)
+      .filter((id) => id != null)
 
     const result = await db.transaction(async (tx) => {
       const detallesProductos = await tx
@@ -147,16 +179,8 @@ export class CreateVenta {
       let totalVenta = 0
 
       for (const detalleVenta of createVentaDto.detalles) {
-        const detalleProducto = detallesProductosMap.get(
-          detalleVenta.productoId
-        )
         const tipoTaxProducto = tiposTaxMap.get(detalleVenta.tipoTaxId)
 
-        if (detalleProducto === undefined) {
-          throw CustomError.badRequest(
-            `El producto con id ${detalleVenta.productoId} no existe en la sucursal especificada`
-          )
-        }
         if (tipoTaxProducto === undefined) {
           throw CustomError.badRequest(
             `El tipo de impuesto que intentó asignar al detalle con el producto ${detalleVenta.productoId} no existe`
@@ -164,38 +188,65 @@ export class CreateVenta {
         }
 
         const isFreeItem = detalleVenta.tipoTaxId === freeItemTax.id
-        const applyOffer = detalleVenta.aplicarOferta && !isFreeItem
 
-        this.validateStock(detalleProducto, detalleVenta.cantidad)
-        const { price, free } = this.computePriceOffer({
-          cantidad: detalleVenta.cantidad,
-          cantidadMinimaDescuento: detalleProducto.cantidadMinimaDescuento,
-          cantidadGratisDescuento: detalleProducto.cantidadGratisDescuento,
-          porcentajeDescuento: detalleProducto.porcentajeDescuento,
-          precioVenta: detalleProducto.precioVenta,
-          precioOferta: detalleProducto.precioOferta,
-          liquidacion: detalleProducto.liquidacion,
-          aplicarOferta: applyOffer
-        })
+        if (detalleVenta.productoId == null) {
+          const { detallesItem, item } = this.computeCustomItemVentaDetails({
+            nombre: detalleVenta.nombre,
+            price: detalleVenta.precio,
+            cantidad: detalleVenta.cantidad,
+            tipoTaxProducto
+          })
 
-        const detallesItem = this.computeDetallesItem(
-          price,
-          detalleVenta.cantidad,
-          tipoTaxProducto.porcentajeTax
+          detallesVenta.push(item)
+
+          const {
+            totalGratuitas: newTotalGratuitas,
+            totalExoneradas: newTotalExoneradas,
+            totalGravadas: newTotalGravadas,
+            totalTax: newTotalTax
+          } = this.computeNewTotal({
+            isFreeItem,
+            totalItem: detallesItem.totalItem,
+            totalTaxItem: detallesItem.totalTax,
+            totalBaseTaxItem: detallesItem.totalBaseTax,
+            exonerada: detallesItem.exonerada,
+            totalGratuitas,
+            totalExoneradas,
+            totalGravadas,
+            totalTax
+          })
+
+          totalGratuitas = newTotalGratuitas
+          totalExoneradas = newTotalExoneradas
+          totalGravadas = newTotalGravadas
+          totalTax = newTotalTax
+
+          continue
+        }
+
+        const detalleProducto = detallesProductosMap.get(
+          detalleVenta.productoId
         )
 
-        detallesVenta.push({
-          codigo: detalleProducto.sku,
-          nombre: detalleProducto.nombre,
-          cantidad: detalleVenta.cantidad,
-          precioSinIgv: fixedTwoDecimals(detallesItem.valorUnitario),
-          precioConIgv: fixedTwoDecimals(detallesItem.precioUnitario),
-          tipoTaxId: detalleVenta.tipoTaxId,
-          totalBaseTax: fixedTwoDecimals(detallesItem.totalBaseTax),
-          totalTax: fixedTwoDecimals(detallesItem.totalTax),
-          total: fixedTwoDecimals(detallesItem.totalItem),
-          productoId: detalleProducto.productoId
-        })
+        if (detalleProducto === undefined) {
+          throw CustomError.badRequest(
+            `El producto con id ${detalleVenta.productoId} no existe en la sucursal especificada`
+          )
+        }
+
+        const applyOffer = detalleVenta.aplicarOferta && !isFreeItem
+
+        const { detallesItem, items, gratuitas } = this.computeItemVentaDetails(
+          {
+            detalleVenta,
+            detalleProducto,
+            tipoTaxProducto,
+            freeItemTax,
+            applyOffer
+          }
+        )
+
+        detallesVenta.push(...items)
 
         const {
           totalGratuitas: newTotalGratuitas,
@@ -214,35 +265,10 @@ export class CreateVenta {
           totalTax
         })
 
-        totalGratuitas = newTotalGratuitas
+        totalGratuitas = newTotalGratuitas + gratuitas
         totalExoneradas = newTotalExoneradas
         totalGravadas = newTotalGravadas
         totalTax = newTotalTax
-
-        if (free > 0 && applyOffer) {
-          const detallesFreeItem = this.computeDetallesItem(
-            price,
-            free,
-            freeItemTax.porcentajeTax
-          )
-
-          detallesVenta.push({
-            codigo: detalleProducto.sku,
-            nombre: detalleProducto.nombre,
-            cantidad: free,
-            precioSinIgv: fixedTwoDecimals(detallesFreeItem.valorUnitario),
-            precioConIgv: fixedTwoDecimals(detallesFreeItem.precioUnitario),
-            tipoTaxId: freeItemTax.id,
-            totalBaseTax: fixedTwoDecimals(detallesFreeItem.totalBaseTax),
-            totalTax: fixedTwoDecimals(detallesFreeItem.totalTax),
-            total: fixedTwoDecimals(detallesFreeItem.totalItem),
-            productoId: detalleProducto.productoId
-          })
-
-          totalGratuitas += detallesFreeItem.totalItem
-          detalleVenta.cantidad += free
-          this.validateStock(detalleProducto, detalleVenta.cantidad)
-        }
 
         await tx
           .update(detallesProductoTable)
@@ -288,6 +314,120 @@ export class CreateVenta {
     })
 
     return result
+  }
+
+  private computeItemVentaDetails({
+    detalleVenta,
+    detalleProducto,
+    tipoTaxProducto,
+    freeItemTax,
+    applyOffer
+  }: ComputeItemVentaDetailsArgs) {
+    this.validateStock(detalleProducto, detalleVenta.cantidad)
+
+    const { price, free } = this.computePriceOffer({
+      cantidad: detalleVenta.cantidad,
+      cantidadMinimaDescuento: detalleProducto.cantidadMinimaDescuento,
+      cantidadGratisDescuento: detalleProducto.cantidadGratisDescuento,
+      porcentajeDescuento: detalleProducto.porcentajeDescuento,
+      precioVenta: detalleProducto.precioVenta,
+      precioOferta: detalleProducto.precioOferta,
+      liquidacion: detalleProducto.liquidacion,
+      aplicarOferta: applyOffer
+    })
+
+    const detallesItem = this.computeDetallesItem(
+      price,
+      detalleVenta.cantidad,
+      tipoTaxProducto.porcentajeTax
+    )
+
+    const items = [
+      {
+        codigo: detalleProducto.sku,
+        nombre: detalleProducto.nombre,
+        cantidad: detalleVenta.cantidad,
+        precioSinIgv: fixedTwoDecimals(detallesItem.valorUnitario),
+        precioConIgv: fixedTwoDecimals(detallesItem.precioUnitario),
+        tipoTaxId: detalleVenta.tipoTaxId,
+        totalBaseTax: fixedTwoDecimals(detallesItem.totalBaseTax),
+        totalTax: fixedTwoDecimals(detallesItem.totalTax),
+        total: fixedTwoDecimals(detallesItem.totalItem),
+        productoId: detalleProducto.productoId
+      }
+    ]
+
+    let gratuitas = 0
+
+    if (free > 0 && applyOffer) {
+      const detallesFreeItem = this.computeDetallesItem(
+        price,
+        free,
+        freeItemTax.porcentajeTax
+      )
+
+      items.push({
+        codigo: detalleProducto.sku,
+        nombre: detalleProducto.nombre,
+        cantidad: free,
+        precioSinIgv: fixedTwoDecimals(detallesFreeItem.valorUnitario),
+        precioConIgv: fixedTwoDecimals(detallesFreeItem.precioUnitario),
+        tipoTaxId: freeItemTax.id,
+        totalBaseTax: fixedTwoDecimals(detallesFreeItem.totalBaseTax),
+        totalTax: fixedTwoDecimals(detallesFreeItem.totalTax),
+        total: fixedTwoDecimals(detallesFreeItem.totalItem),
+        productoId: detalleProducto.productoId
+      })
+
+      gratuitas += detallesFreeItem.totalItem
+      detalleVenta.cantidad += free
+      this.validateStock(detalleProducto, detalleVenta.cantidad)
+    }
+
+    return {
+      detallesItem,
+      price,
+      free,
+      items,
+      gratuitas
+    }
+  }
+
+  private computeCustomItemVentaDetails({
+    nombre,
+    price,
+    cantidad,
+    tipoTaxProducto
+  }: {
+    nombre: string
+    price: number
+    cantidad: number
+    tipoTaxProducto: {
+      id: number
+      porcentajeTax: number
+    }
+  }) {
+    const detallesItem = this.computeDetallesItem(
+      price,
+      cantidad,
+      tipoTaxProducto.porcentajeTax
+    )
+
+    const item = {
+      nombre,
+      cantidad,
+      precioSinIgv: fixedTwoDecimals(detallesItem.valorUnitario),
+      precioConIgv: fixedTwoDecimals(detallesItem.precioUnitario),
+      tipoTaxId: tipoTaxProducto.id,
+      totalBaseTax: fixedTwoDecimals(detallesItem.totalBaseTax),
+      totalTax: fixedTwoDecimals(detallesItem.totalTax),
+      total: fixedTwoDecimals(detallesItem.totalItem)
+    }
+
+    return {
+      detallesItem,
+      item
+    }
   }
 
   private computeNewTotal({
