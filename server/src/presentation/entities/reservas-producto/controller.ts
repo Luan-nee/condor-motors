@@ -4,11 +4,11 @@ import { CreateReservasProductoDto } from '@/domain/dtos/entities/reservas-produ
 import { UpdateReservasProductosDto } from '@/domain/dtos/entities/reservas-producto/update-reservasProductos.dto'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
-import { CreateReservasProducto } from '@/domain/use-cases/entities/ReservasProducto/create-reservasProducto.use-case'
-import { DeleteReservasProductos } from '@/domain/use-cases/entities/ReservasProducto/delete-reservasProductos.use-case'
-import { GetReservasProductoById } from '@/domain/use-cases/entities/ReservasProducto/get-reservasProducto-by-id.use-case'
-import { GetReservasProductos } from '@/domain/use-cases/entities/ReservasProducto/get-ReservasProductos.use-case'
-import { UpdateReservasProductos } from '@/domain/use-cases/entities/ReservasProducto/update-reservasProductos.use-case'
+import { CreateReservasProducto } from '@/domain/use-cases/entities/reservas-producto/create-reservas-producto.use-case'
+import { DeleteReservasProductos } from '@/domain/use-cases/entities/reservas-producto/delete-reserva-producto.use-case'
+import { GetReservasProductoById } from '@/domain/use-cases/entities/reservas-producto/get-reserva-producto-by-id.use-case'
+import { GetReservasProductos } from '@/domain/use-cases/entities/reservas-producto/get-reservas-producto.use-case'
+import { UpdateReservasProductos } from '@/domain/use-cases/entities/reservas-producto/update-reserva-producto.use-case'
 import type { Request, Response } from 'express'
 
 export class ReservasProductosController {
