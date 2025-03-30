@@ -43,7 +43,10 @@ export class GetVentas {
       totalTax: totalesVentaTable.totalTax,
       totalVenta: totalesVentaTable.totalVenta
     },
-    estado: estadosDocFacturacionTable.nombre,
+    estado: {
+      codigo: estadosDocFacturacionTable.codigo,
+      nombre: estadosDocFacturacionTable.nombre
+    },
     documentoFacturacion: {
       id: docsFacturacionTable.id,
       codigoEstadoSunat: docsFacturacionTable.estadoRawId,

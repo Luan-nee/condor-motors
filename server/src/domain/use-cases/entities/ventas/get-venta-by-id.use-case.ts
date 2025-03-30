@@ -60,7 +60,10 @@ export class GetVentaById {
       totalTax: totalesVentaTable.totalTax,
       totalVenta: totalesVentaTable.totalVenta
     },
-    estado: estadosDocFacturacionTable.nombre,
+    estado: {
+      codigo: estadosDocFacturacionTable.codigo,
+      nombre: estadosDocFacturacionTable.nombre
+    },
     documentoFacturacion: {
       id: docsFacturacionTable.id,
       codigoEstadoSunat: docsFacturacionTable.estadoRawId,
@@ -90,7 +93,7 @@ export class GetVentaById {
     totalBaseTax: detallesVentaTable.totalBaseTax,
     totalTax: detallesVentaTable.totalTax,
     total: detallesVentaTable.total,
-    ventaId: detallesVentaTable.ventaId
+    productoId: detallesVentaTable.productoId
   }
 
   constructor(authPayload: AuthPayload) {
