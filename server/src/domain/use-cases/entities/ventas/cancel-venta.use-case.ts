@@ -112,6 +112,7 @@ export class CancelVenta {
       const ventas = await db
         .update(ventasTable)
         .set({
+          cancelada: true,
           motivoAnulado: cancelVentaDto.motivoAnulado
         })
         .where(
@@ -142,6 +143,7 @@ export class CancelVenta {
     const ventas = await db
       .update(ventasTable)
       .set({
+        cancelada: true,
         motivoAnulado: cancelVentaDto.motivoAnulado
       })
       .where(
@@ -170,7 +172,7 @@ export class CancelVenta {
     const ventas = await db
       .select({
         id: ventasTable.id,
-        motivoAnulado: ventasTable.motivoAnulado
+        cancelada: ventasTable.cancelada
       })
       .from(ventasTable)
       .where(
@@ -186,7 +188,7 @@ export class CancelVenta {
 
     const [venta] = ventas
 
-    if (venta.motivoAnulado != null) {
+    if (venta.cancelada) {
       throw CustomError.badRequest(
         'Esta venta no se puede cancelar porque ya ha sido cancelada'
       )

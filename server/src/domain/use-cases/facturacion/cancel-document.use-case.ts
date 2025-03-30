@@ -32,7 +32,9 @@ export class CancelDocument {
       .select({
         serie: ventasTable.serieDocumento,
         numero: ventasTable.numeroDocumento,
+        declarada: ventasTable.declarada,
         anulada: ventasTable.anulada,
+        cancelada: ventasTable.cancelada,
         motivoAnulado: ventasTable.motivoAnulado,
         tipo_documento: tiposDocFacturacionTable.codigoSunat
       })
@@ -56,9 +58,21 @@ export class CancelDocument {
 
     const [venta] = ventas
 
+    if (!venta.declarada) {
+      throw CustomError.notFound(
+        `Esta venta no puede ser anulada ante la sunat (Aún no ha sido declarada)`
+      )
+    }
+
     if (venta.anulada) {
       throw CustomError.notFound(
-        `Esta venta no puede ser anulada (Ya ha sido anulada con anterioridad)`
+        `Esta venta no puede ser anulada ante la sunat (Ya ha sido anulada con anterioridad)`
+      )
+    }
+
+    if (!venta.cancelada) {
+      throw CustomError.notFound(
+        `Esta venta no puede ser anulada ante la sunat (Primero cancele la venta)`
       )
     }
 
