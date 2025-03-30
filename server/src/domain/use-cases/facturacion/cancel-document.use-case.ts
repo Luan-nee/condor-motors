@@ -91,6 +91,12 @@ export class CancelDocument {
       throw CustomError.badGateway(error.message)
     }
 
+    if (documentDataResponse.data.state_type_id === '03') {
+      documentDataResponse.data.state_type_id = '13'
+    } else if (documentDataResponse.data.state_type_id === '05') {
+      documentDataResponse.data.state_type_id = '11'
+    }
+
     const estados = await db
       .select({
         id: estadosDocFacturacionTable.id,

@@ -89,6 +89,11 @@ export class SyncDocument {
 
     const estadoId = estado != null ? estado.id : null
 
+    const linkCdr =
+      documentDataResponse.links.cdr.length > 0
+        ? documentDataResponse.links.cdr
+        : undefined
+
     return await db.transaction(async (tx) => {
       const updatedResults = await tx
         .update(docsFacturacionTable)
@@ -99,7 +104,7 @@ export class SyncDocument {
           qr: documentDataResponse.data.qr,
           linkXml: documentDataResponse.links.xml,
           linkPdf: documentDataResponse.links.pdf,
-          linkCdr: documentDataResponse.links.cdr,
+          linkCdr,
           estadoRawId: documentDataResponse.data.state_type_id,
           estadoId,
           informacionSunat: documentDataResponse.sunat_information
