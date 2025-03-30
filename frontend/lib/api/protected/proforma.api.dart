@@ -23,12 +23,85 @@ class DetalleProforma {
 
   /// Crea un objeto DetalleProforma desde un mapa JSON
   factory DetalleProforma.fromJson(Map<String, dynamic> json) {
+    // Mostrar los datos en la consola para depuración
+    Logger.debug('🧾 [ProformaApi] Procesando DetalleProforma: ${json.toString()}');
+    
+    // Procesar la cantidad según la disponibilidad de campos
+    int cantidad = 0;
+    
+    // Priorizar el uso de cantidadTotal si está disponible
+    if (json.containsKey('cantidadTotal') && json['cantidadTotal'] != null) {
+      cantidad = (json['cantidadTotal'] is int) 
+          ? json['cantidadTotal'] 
+          : int.tryParse(json['cantidadTotal'].toString()) ?? 0;
+      Logger.debug('🧾 Usando cantidadTotal: $cantidad');
+    } 
+    // Si no existe, verificar cantidadPagada
+    else if (json.containsKey('cantidadPagada') && json['cantidadPagada'] != null) {
+      cantidad = (json['cantidadPagada'] is int) 
+          ? json['cantidadPagada'] 
+          : int.tryParse(json['cantidadPagada'].toString()) ?? 0;
+      Logger.debug('🧾 Usando cantidadPagada: $cantidad');
+    }
+    // En último caso, usar cantidad tradicional
+    else if (json.containsKey('cantidad') && json['cantidad'] != null) {
+      cantidad = (json['cantidad'] is int) 
+          ? json['cantidad'] 
+          : int.tryParse(json['cantidad'].toString()) ?? 0;
+      Logger.debug('🧾 Usando cantidad: $cantidad');
+    }
+    
+    // Procesar el precio unitario y el subtotal
+    final double precioUnitario = (json['precioUnitario'] is num)
+        ? (json['precioUnitario'] as num).toDouble()
+        : double.tryParse(json['precioUnitario'].toString()) ?? 0.0;
+        
+    final double subtotal = (json['subtotal'] is num)
+        ? (json['subtotal'] as num).toDouble()
+        : double.tryParse(json['subtotal'].toString()) ?? 0.0;
+    
+    // Procesar campos adicionales
+    final double? precioOriginal = json.containsKey('precioOriginal') && json['precioOriginal'] != null
+        ? ((json['precioOriginal'] is num)
+            ? (json['precioOriginal'] as num).toDouble()
+            : double.tryParse(json['precioOriginal'].toString()))
+        : null;
+    
+    final int? descuento = json.containsKey('descuento') && json['descuento'] != null
+        ? ((json['descuento'] is int)
+            ? json['descuento'] as int
+            : int.tryParse(json['descuento'].toString()))
+        : null;
+        
+    final int? cantidadGratis = json.containsKey('cantidadGratis') && json['cantidadGratis'] != null
+        ? ((json['cantidadGratis'] is int)
+            ? json['cantidadGratis'] as int
+            : int.tryParse(json['cantidadGratis'].toString()))
+        : null;
+        
+    final int? cantidadPagada = json.containsKey('cantidadPagada') && json['cantidadPagada'] != null
+        ? ((json['cantidadPagada'] is int)
+            ? json['cantidadPagada'] as int
+            : int.tryParse(json['cantidadPagada'].toString()))
+        : null;
+    
+    // Mostrar información sobre promociones y descuentos
+    if (descuento != null && descuento > 0) {
+      Logger.debug('🎯 Producto con descuento: ${json['nombre']} - $descuento%');
+    }
+    
+    if (cantidadGratis != null && cantidadGratis > 0) {
+      Logger.debug('🎁 Producto con unidades gratis: ${json['nombre']} - $cantidadGratis unidades');
+    }
+    
     return DetalleProforma(
-      productoId: json['productoId'] as int,
-      nombre: json['nombre'] as String,
-      cantidad: json['cantidad'] as int,
-      subtotal: (json['subtotal'] as num).toDouble(),
-      precioUnitario: (json['precioUnitario'] as num?)?.toDouble() ?? 0.0,
+      productoId: (json['productoId'] is int) 
+          ? json['productoId'] 
+          : int.tryParse(json['productoId'].toString()) ?? 0,
+      nombre: json['nombre']?.toString() ?? 'Producto sin nombre',
+      cantidad: cantidad,
+      subtotal: subtotal,
+      precioUnitario: precioUnitario,
     );
   }
 
@@ -62,6 +135,10 @@ class DetalleProforma {
       cantidad: cantidad,
       subtotal: subtotal,
       precioUnitario: precioUnitario,
+      precioOriginal: precioUnitario,
+      descuento: 0,
+      cantidadGratis: 0,
+      cantidadPagada: cantidad,
     );
   }
 }

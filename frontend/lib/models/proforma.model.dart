@@ -14,6 +14,12 @@ class DetalleProforma {
   final String? marca;
   final String? categoria;
   final Producto? producto; // Referencia opcional al producto completo
+  
+  // Nuevos campos del servidor para descuentos y promociones
+  final double? precioOriginal;
+  final int? descuento;
+  final int? cantidadGratis;
+  final int? cantidadPagada;
 
   const DetalleProforma({
     required this.productoId,
@@ -25,6 +31,10 @@ class DetalleProforma {
     this.marca,
     this.categoria,
     this.producto,
+    this.precioOriginal,
+    this.descuento,
+    this.cantidadGratis,
+    this.cantidadPagada,
   });
 
   /// Crea un objeto DetalleProforma desde un mapa JSON
@@ -69,15 +79,36 @@ class DetalleProforma {
         return 0.0;
       }
       
+      // Priorizar el uso de cantidadTotal si está disponible en el JSON
+      int cantidadFinal = 0;
+      
+      // Verificar si existe cantidadTotal en el JSON (nueva estructura)
+      if (json.containsKey('cantidadTotal')) {
+        cantidadFinal = parseEntero(json['cantidadTotal']);
+      }
+      // Si no existe cantidadTotal, verificar si existe cantidadPagada
+      else if (json.containsKey('cantidadPagada')) {
+        cantidadFinal = parseEntero(json['cantidadPagada']);
+      }
+      // Si no hay ninguno de los anteriores, usar el campo 'cantidad' tradicional
+      else {
+        cantidadFinal = parseEntero(json['cantidad']);
+      }
+      
       return DetalleProforma(
         productoId: parseEntero(json['productoId']),
         nombre: json['nombre']?.toString() ?? 'Producto desconocido',
-        cantidad: parseEntero(json['cantidad']),
+        cantidad: cantidadFinal, // Usar la cantidad procesada según prioridad
         subtotal: parseDouble(json['subtotal']),
         precioUnitario: parseDouble(json['precioUnitario']),
         sku: json['sku']?.toString(),
         marca: json['marca']?.toString(),
         categoria: json['categoria']?.toString(),
+        // Nuevos campos
+        precioOriginal: json.containsKey('precioOriginal') ? parseDouble(json['precioOriginal']) : null,
+        descuento: json.containsKey('descuento') ? parseEntero(json['descuento']) : null,
+        cantidadGratis: json.containsKey('cantidadGratis') ? parseEntero(json['cantidadGratis']) : null,
+        cantidadPagada: json.containsKey('cantidadPagada') ? parseEntero(json['cantidadPagada']) : null,
       );
     } catch (e) {
       debugPrint('Error al parsear DetalleProforma: $e');
@@ -120,6 +151,11 @@ class DetalleProforma {
       if (sku != null) 'sku': sku,
       if (marca != null) 'marca': marca,
       if (categoria != null) 'categoria': categoria,
+      // Nuevos campos
+      if (precioOriginal != null) 'precioOriginal': precioOriginal,
+      if (descuento != null) 'descuento': descuento,
+      if (cantidadGratis != null) 'cantidadGratis': cantidadGratis,
+      if (cantidadPagada != null) 'cantidadPagada': cantidadPagada,
     };
   }
   

@@ -7,7 +7,6 @@ import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' hide DetalleProforma;
 // Importamos la API de proformas para usar DetalleProforma
 import 'package:condorsmotors/screens/colabs/barcode_colab.dart';
-import 'package:condorsmotors/screens/colabs/historial_ventas_colab.dart';
 import 'package:condorsmotors/screens/colabs/widgets/busqueda_producto.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -1678,14 +1677,6 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
     }
   }
   
-  // Ir a la pantalla de historial de ventas
-  void _irAHistorial() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (BuildContext context) => const HistorialVentasColabScreen()),
-    );
-  }
-
   // Mostrar overlay de carga para operaciones asíncronas
   Widget _buildLoadingOverlay(Widget child) {
     return Stack(
@@ -1808,15 +1799,8 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       Scaffold(
         appBar: AppBar(
           title: const Text('Ventas'),
-          actions: <Widget>[
-          IconButton(
-              icon: const FaIcon(FontAwesomeIcons.clockRotateLeft),
-            tooltip: 'Historial de Ventas',
-            onPressed: _irAHistorial,
-          ),
-        ],
-      ),
-      body: Column(
+        ),
+        body: Column(
         children: <Widget>[
             // Sección de cliente
             Card(

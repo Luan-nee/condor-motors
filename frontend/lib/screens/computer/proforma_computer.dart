@@ -25,8 +25,8 @@ class ProformaComputerScreen extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(IntProperty('sucursalId', sucursalId));
-    properties.add(StringProperty('nombreSucursal', nombreSucursal));
+    properties..add(IntProperty('sucursalId', sucursalId))
+    ..add(StringProperty('nombreSucursal', nombreSucursal));
   }
 }
 
@@ -80,7 +80,6 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen> {
       // Obtener proformas sin modificar el estado de carga
       final response = await api.proformas.getProformasVenta(
         sucursalId: sucursalId,
-        page: 1, // Siempre la primera página para ver las más recientes
         pageSize: 20, // Aumentar tamaño para tener más visibilidad
         forceRefresh: true, // Forzar actualización desde el servidor
         useCache: false, // No usar caché

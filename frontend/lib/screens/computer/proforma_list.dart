@@ -337,6 +337,11 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
   Widget _buildProformaItem(Proforma proforma) {
     final bool puedeConvertirse = proforma.puedeConvertirseEnVenta();
     
+    // Verificar si hay promociones en esta proforma
+    final bool tieneDescuentos = proforma.detalles.any(_tieneDescuento);
+    final bool tieneUnidadesGratis = proforma.detalles.any(_tieneUnidadesGratis);
+    final bool tienePromociones = tieneDescuentos || tieneUnidadesGratis;
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       color: const Color(0xFF2D2D2D),
@@ -359,13 +364,42 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      proforma.nombre ?? 'Proforma #${proforma.id}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          proforma.nombre ?? 'Proforma #${proforma.id}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        if (tienePromociones) ...[
+                          const SizedBox(width: 8),
+                          Tooltip(
+                            message: _obtenerMensajePromociones(proforma),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: Colors.orange.withOpacity(0.5),
+                                  width: 1,
+                                ),
+                              ),
+                              child: const Text(
+                                'PROMO',
+                                style: TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -407,12 +441,31 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '${proforma.detalles.length} ${proforma.detalles.length == 1 ? 'item' : 'items'}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.white54,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${proforma.detalles.length} ${proforma.detalles.length == 1 ? 'item' : 'items'}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white54,
+                        ),
+                      ),
+                      if (tienePromociones) ...[
+                        const Text(
+                          ' • ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white54,
+                          ),
+                        ),
+                        const Icon(
+                          Icons.local_offer,
+                          size: 12,
+                          color: Colors.orange,
+                        ),
+                      ],
+                    ],
                   ),
                   
                   const SizedBox(height: 8),
@@ -530,6 +583,53 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
         ],
       ),
     );
+  }
+  
+  /// Verificar si un detalle de proforma tiene descuento
+  bool _tieneDescuento(DetalleProforma detalle) {
+    try {
+      final dynamic descuento = (detalle as dynamic).descuento;
+      return descuento != null && descuento > 0;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  /// Verificar si un detalle tiene unidades gratis
+  bool _tieneUnidadesGratis(DetalleProforma detalle) {
+    try {
+      final dynamic cantidadGratis = (detalle as dynamic).cantidadGratis;
+      return cantidadGratis != null && cantidadGratis > 0;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  /// Obtener un mensaje descriptivo sobre las promociones en la proforma
+  String _obtenerMensajePromociones(Proforma proforma) {
+    final List<String> mensajes = [];
+    
+    int productosConDescuento = 0;
+    int productosConUnidadesGratis = 0;
+    
+    for (final detalle in proforma.detalles) {
+      if (_tieneDescuento(detalle)) {
+        productosConDescuento++;
+      }
+      if (_tieneUnidadesGratis(detalle)) {
+        productosConUnidadesGratis++;
+      }
+    }
+    
+    if (productosConDescuento > 0) {
+      mensajes.add('$productosConDescuento productos con descuento');
+    }
+    
+    if (productosConUnidadesGratis > 0) {
+      mensajes.add('$productosConUnidadesGratis productos con unidades gratis');
+    }
+    
+    return mensajes.join('\n');
   }
 }
 

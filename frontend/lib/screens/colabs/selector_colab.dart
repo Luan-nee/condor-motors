@@ -1,5 +1,4 @@
 import 'package:condorsmotors/main.dart' as app_main;
-import 'package:condorsmotors/screens/colabs/historial_ventas_colab.dart';
 import 'package:condorsmotors/screens/colabs/movimiento_colab.dart';
 import 'package:condorsmotors/screens/colabs/productos_colab.dart';
 import 'package:condorsmotors/screens/colabs/ventas_colab.dart';
@@ -169,15 +168,6 @@ class SelectorColabScreen extends StatelessWidget {
                       const VentasColabScreen(),
                       const Color(0xFF4CAF50),
                       'Crear nuevas ventas y gestionar productos',
-                    ),
-                    _buildOptionCard(
-                      context,
-                      'Historial',
-                      'Consultar ventas',
-                      FontAwesomeIcons.clockRotateLeft,
-                      const HistorialVentasColabScreen(),
-                      const Color(0xFF9C27B0),
-                      'Ver historial de ventas realizadas',
                     ),
                     _buildOptionCard(
                       context,
