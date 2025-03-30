@@ -28,9 +28,11 @@ export class GetVentaById {
   private readonly ventaSelectFields = {
     id: ventasTable.id,
     declarada: ventasTable.declarada,
+    anulada: ventasTable.anulada,
     serieDocumento: ventasTable.serieDocumento,
     numeroDocumento: ventasTable.numeroDocumento,
     observaciones: ventasTable.observaciones,
+    motivoAnulado: ventasTable.motivoAnulado,
     tipoDocumento: tiposDocFacturacionTable.nombre,
     fechaEmision: ventasTable.fechaEmision,
     horaEmision: ventasTable.horaEmision,
@@ -40,8 +42,7 @@ export class GetVentaById {
       id: clientesTable.id,
       tipoDocumento: tiposDocumentoClienteTable.nombre,
       numeroDocumento: clientesTable.numeroDocumento,
-      denominacion: clientesTable.denominacion,
-      codigoPais: clientesTable.codigoPais
+      denominacion: clientesTable.denominacion
     },
     empleado: {
       id: empleadosTable.id,
@@ -62,12 +63,19 @@ export class GetVentaById {
     estado: estadosDocFacturacionTable.nombre,
     documentoFacturacion: {
       id: docsFacturacionTable.id,
+      codigoEstadoSunat: docsFacturacionTable.estadoRawId,
       factproDocumentId: docsFacturacionTable.factproDocumentId,
       hash: docsFacturacionTable.hash,
       qr: docsFacturacionTable.qr,
       linkXml: docsFacturacionTable.linkXml,
       linkPdf: docsFacturacionTable.linkPdf,
-      linkCdr: docsFacturacionTable.linkCdr
+      linkCdr: docsFacturacionTable.linkCdr,
+      factproDocumentIdAnulado: docsFacturacionTable.factproDocumentIdAnulado,
+      linkXmlAnulado: docsFacturacionTable.linkXmlAnulado,
+      linkPdfAnulado: docsFacturacionTable.linkPdfAnulado,
+      linkCdrAnulado: docsFacturacionTable.linkCdrAnulado,
+      ticketAnulado: docsFacturacionTable.ticketAnulado,
+      informacionSunat: docsFacturacionTable.informacionSunat
     }
   }
   private readonly detallesVentaSelectFields = {

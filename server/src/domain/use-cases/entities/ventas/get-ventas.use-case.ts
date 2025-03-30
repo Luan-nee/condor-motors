@@ -21,9 +21,9 @@ export class GetVentas {
   private readonly selectFields = {
     id: ventasTable.id,
     declarada: ventasTable.declarada,
+    anulada: ventasTable.anulada,
     serieDocumento: ventasTable.serieDocumento,
     numeroDocumento: ventasTable.numeroDocumento,
-    observaciones: ventasTable.observaciones,
     tipoDocumento: tiposDocFacturacionTable.nombre,
     fechaEmision: ventasTable.fechaEmision,
     horaEmision: ventasTable.horaEmision,
@@ -46,9 +46,8 @@ export class GetVentas {
     estado: estadosDocFacturacionTable.nombre,
     documentoFacturacion: {
       id: docsFacturacionTable.id,
-      qr: docsFacturacionTable.qr,
-      linkPdf: docsFacturacionTable.linkPdf,
-      estadoSunat: docsFacturacionTable.estadoRawId
+      codigoEstadoSunat: docsFacturacionTable.estadoRawId,
+      linkPdf: docsFacturacionTable.linkPdf
     }
   }
 
