@@ -224,7 +224,10 @@ export class DeclareVenta {
     }
 
     const estados = await db
-      .select({ id: estadosDocFacturacionTable.id })
+      .select({
+        id: estadosDocFacturacionTable.id,
+        codigoSunat: estadosDocFacturacionTable.codigoSunat
+      })
       .from(estadosDocFacturacionTable)
       .where(
         eq(
@@ -233,11 +236,11 @@ export class DeclareVenta {
         )
       )
 
-    let estado = undefined
+    const estado = estados.find(
+      (e) => e.codigoSunat === documentDataResponse.data.state_type_id
+    )
 
-    if (estados.length > 0) {
-      ;[estado] = estados
-    }
+    const estadoId = estado != null ? estado.id : null
 
     return await db.transaction(async (tx) => {
       const [documento] = await tx
@@ -251,7 +254,7 @@ export class DeclareVenta {
           linkPdf: documentDataResponse.links.pdf,
           linkCdr: documentDataResponse.links.cdr,
           estadoRawId: documentDataResponse.data.state_type_id,
-          estadoId: estado?.id,
+          estadoId,
           informacionSunat: documentDataResponse.sunat_information,
           ventaId: declareVentaDto.ventaId
         })
@@ -265,7 +268,7 @@ export class DeclareVenta {
 
       if (updatedResults.length < 1) {
         throw CustomError.internalServer(
-          'Ha ocurrido un problema al intentar declarar la venta (Contacte a soporte técnico para resolver este problema)'
+          'Ha ocurrido un problema al intentar declarar la venta (Inténtelo nuevamente o contacte a soporte técnico para resolver este problema)'
         )
       }
 

@@ -90,7 +90,7 @@ export class SyncDocument {
     const estadoId = estado != null ? estado.id : null
 
     return await db.transaction(async (tx) => {
-      const [documento] = await tx
+      const updatedResults = await tx
         .update(docsFacturacionTable)
         .set({
           factproFilename: documentDataResponse.data.filename,
@@ -107,17 +107,13 @@ export class SyncDocument {
         .where(eq(docsFacturacionTable.ventaId, syncDocumentDto.ventaId))
         .returning({ id: docsFacturacionTable.id })
 
-      const updatedResults = await tx
-        .update(ventasTable)
-        .set({ declarada: true })
-        .where(eq(ventasTable.id, syncDocumentDto.ventaId))
-        .returning({ id: ventasTable.id })
-
       if (updatedResults.length < 1) {
         throw CustomError.internalServer(
-          'Ha ocurrido un problema al intentar sincronizar el estado de la venta (Contacte a soporte técnico para resolver este problema)'
+          'Ha ocurrido un problema al intentar sincronizar el estado del documento (Inténtelo nuevamente o contacte a soporte técnico para resolver este problema)'
         )
       }
+
+      const [documento] = updatedResults
 
       return documento
     })

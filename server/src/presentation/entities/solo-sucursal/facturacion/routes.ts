@@ -10,7 +10,7 @@ export class FacturacionRoutes {
 
     router.post('/declarar', facturacionController.declare)
 
-    router.post('/consultar', facturacionController.sync)
+    router.post('/sincronizar', facturacionController.sync)
 
     router.post('/anular', facturacionController.anular)
 

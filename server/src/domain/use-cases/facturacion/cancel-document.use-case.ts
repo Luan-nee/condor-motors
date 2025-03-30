@@ -111,7 +111,7 @@ export class CancelDocument {
     const estadoId = estado != null ? estado.id : null
 
     return await db.transaction(async (tx) => {
-      const [documento] = await tx
+      const documentos = await tx
         .update(docsFacturacionTable)
         .set({
           identificadorAnulado: documentDataResponse.data.identifier,
@@ -132,11 +132,13 @@ export class CancelDocument {
         .where(eq(ventasTable.id, cancelDocument.ventaId))
         .returning({ id: ventasTable.id })
 
-      if (updatedResults.length < 1) {
+      if (updatedResults.length < 1 || documentos.length < 1) {
         throw CustomError.internalServer(
-          'Ha ocurrido un problema al intentar anular la venta (Trate de intentarlo nuevamente o contacte a soporte técnico para resolver este problema)'
+          'Ha ocurrido un problema al intentar anular el documento (Inténtelo nuevamente o contacte a soporte técnico para resolver este problema)'
         )
       }
+
+      const [documento] = documentos
 
       return documento
     })
