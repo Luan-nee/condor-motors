@@ -377,7 +377,7 @@ export const tiposTaxTable = pgTable('tipos_tax', {
 export const detallesVentaTable = pgTable('detalles_venta', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   tipoUnidad: text('tipo_unidad').notNull().default('NIU'),
-  sku: text('sku').notNull(),
+  codigo: text('codigo'),
   nombre: text('nombre').notNull(),
   cantidad: integer('cantidad').notNull().default(1),
   precioSinIgv: numeric('precio_sin_igv', {

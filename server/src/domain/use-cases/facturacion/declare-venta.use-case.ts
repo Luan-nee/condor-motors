@@ -60,7 +60,7 @@ export class DeclareVenta {
   }
   private readonly detallesVentaSelectFields = {
     unidad: detallesVentaTable.tipoUnidad,
-    codigo: detallesVentaTable.sku,
+    codigo: detallesVentaTable.codigo,
     descripcion: detallesVentaTable.nombre,
     cantidad: detallesVentaTable.cantidad,
     valor_unitario: detallesVentaTable.precioSinIgv,
@@ -146,7 +146,7 @@ export class DeclareVenta {
 
     const items: Item[] = detalles.map((detalle) => ({
       unidad: detalle.unidad,
-      codigo: detalle.codigo,
+      codigo: detalle.codigo ?? '',
       descripcion: detalle.descripcion,
       codigo_producto_sunat: '',
       codigo_producto_gsl: '',

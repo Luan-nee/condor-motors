@@ -35,7 +35,7 @@ import type { SucursalIdType } from '@/types/schemas'
 import { and, desc, eq, inArray, like, or } from 'drizzle-orm'
 
 interface DetalleVenta {
-  sku: string
+  codigo: string
   nombre: string
   cantidad: number
   precioSinIgv: string
@@ -185,7 +185,7 @@ export class CreateVenta {
         )
 
         detallesVenta.push({
-          sku: detalleProducto.sku,
+          codigo: detalleProducto.sku,
           nombre: detalleProducto.nombre,
           cantidad: detalleVenta.cantidad,
           precioSinIgv: fixedTwoDecimals(detallesItem.valorUnitario),
@@ -227,7 +227,7 @@ export class CreateVenta {
           )
 
           detallesVenta.push({
-            sku: detalleProducto.sku,
+            codigo: detalleProducto.sku,
             nombre: detalleProducto.nombre,
             cantidad: free,
             precioSinIgv: fixedTwoDecimals(detallesFreeItem.valorUnitario),

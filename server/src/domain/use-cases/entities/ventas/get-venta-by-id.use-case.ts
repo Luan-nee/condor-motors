@@ -81,7 +81,7 @@ export class GetVentaById {
   private readonly detallesVentaSelectFields = {
     id: detallesVentaTable.id,
     tipoUnidad: detallesVentaTable.tipoUnidad,
-    sku: detallesVentaTable.sku,
+    codigo: detallesVentaTable.codigo,
     nombre: detallesVentaTable.nombre,
     cantidad: detallesVentaTable.cantidad,
     precioSinIgv: detallesVentaTable.precioSinIgv,
