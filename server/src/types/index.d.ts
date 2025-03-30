@@ -99,6 +99,29 @@ interface BillingApiSuccessResponse {
   }
 }
 
+interface BillingApiCancelDocResponse {
+  success: boolean
+  message: null
+  data: {
+    identifier: string
+    external_id: string
+    hash: null
+    state_type_id: string
+    state_description: string
+  }
+  links: {
+    pdf: string
+    xml: string
+    cdr: string
+  }
+  sunat_information: {
+    code: any
+    description: any
+    notes: any
+    ticket: string
+  }
+}
+
 interface BillingApiErrorResponse {
   success: boolean
   message: string

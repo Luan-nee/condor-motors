@@ -2,7 +2,12 @@ import { permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import { tiposDocFacturacionTable, ventasTable } from '@/db/schema'
+import {
+  docsFacturacionTable,
+  estadosDocFacturacionTable,
+  tiposDocFacturacionTable,
+  ventasTable
+} from '@/db/schema'
 import type { CancelDocumentDto } from '@/domain/dtos/entities/facturacion/cancel-document.dto'
 import type { BillingService } from '@/types/interfaces'
 import type { SucursalIdType } from '@/types/schemas'
@@ -82,66 +87,59 @@ export class CancelDocument {
         document: cancelDoc
       })
 
-    return {
-      documentDataResponse,
-      error
+    if (error !== null) {
+      throw CustomError.badGateway(error.message)
     }
 
-    // if (error !== null) {
-    //   throw CustomError.badGateway(error.message)
-    // }
+    const estados = await db
+      .select({
+        id: estadosDocFacturacionTable.id,
+        codigoSunat: estadosDocFacturacionTable.codigoSunat
+      })
+      .from(estadosDocFacturacionTable)
+      .where(
+        eq(
+          estadosDocFacturacionTable.codigoSunat,
+          documentDataResponse.data.state_type_id
+        )
+      )
 
-    // const estados = await db
-    //   .select({
-    //     id: estadosDocFacturacionTable.id,
-    //     codigoSunat: estadosDocFacturacionTable.codigoSunat
-    //   })
-    //   .from(estadosDocFacturacionTable)
-    //   .where(
-    //     eq(
-    //       estadosDocFacturacionTable.codigoSunat,
-    //       documentDataResponse.data.state_type_id
-    //     )
-    //   )
+    const estado = estados.find(
+      (e) => e.codigoSunat === documentDataResponse.data.state_type_id
+    )
 
-    // const estado = estados.find(
-    //   (e) => e.codigoSunat === documentDataResponse.data.state_type_id
-    // )
+    const estadoId = estado != null ? estado.id : null
 
-    // const estadoId = estado != null ? estado.id : null
+    return await db.transaction(async (tx) => {
+      const [documento] = await tx
+        .update(docsFacturacionTable)
+        .set({
+          identificadorAnulado: documentDataResponse.data.identifier,
+          factproDocumentIdAnulado: documentDataResponse.data.external_id,
+          linkXmlAnulado: documentDataResponse.links.xml,
+          linkPdfAnulado: documentDataResponse.links.pdf,
+          linkCdrAnulado: documentDataResponse.links.cdr,
+          estadoRawId: documentDataResponse.data.state_type_id,
+          estadoId,
+          ticketAnulado: documentDataResponse.sunat_information.ticket
+        })
+        .where(eq(docsFacturacionTable.ventaId, cancelDocument.ventaId))
+        .returning({ id: docsFacturacionTable.id })
 
-    // return await db.transaction(async (tx) => {
-    //   const [documento] = await tx
-    //     .update(docsFacturacionTable)
-    //     .set({
-    //       factproFilename: documentDataResponse.data.filename,
-    //       factproDocumentId: documentDataResponse.data.external_id,
-    //       hash: documentDataResponse.data.hash,
-    //       qr: documentDataResponse.data.qr,
-    //       linkXml: documentDataResponse.links.xml,
-    //       linkPdf: documentDataResponse.links.pdf,
-    //       linkCdr: documentDataResponse.links.cdr,
-    //       estadoRawId: documentDataResponse.data.state_type_id,
-    //       estadoId,
-    //       informacionSunat: documentDataResponse.sunat_information
-    //     })
-    //     .where(eq(docsFacturacionTable.ventaId, cancelDocument.ventaId))
-    //     .returning({ id: docsFacturacionTable.id })
+      const updatedResults = await tx
+        .update(ventasTable)
+        .set({ anulada: true })
+        .where(eq(ventasTable.id, cancelDocument.ventaId))
+        .returning({ id: ventasTable.id })
 
-    //   const updatedResults = await tx
-    //     .update(ventasTable)
-    //     .set({ declarada: true })
-    //     .where(eq(ventasTable.id, cancelDocument.ventaId))
-    //     .returning({ id: ventasTable.id })
+      if (updatedResults.length < 1) {
+        throw CustomError.internalServer(
+          'Ha ocurrido un problema al intentar anular la venta (Trate de intentarlo nuevamente o contacte a soporte técnico para resolver este problema)'
+        )
+      }
 
-    //   if (updatedResults.length < 1) {
-    //     throw CustomError.internalServer(
-    //       'Ha ocurrido un problema al intentar sincronizar el estado de la venta (Contacte a soporte técnico para resolver este problema)'
-    //     )
-    //   }
-
-    //   return documento
-    // })
+      return documento
+    })
   }
 
   private async validatePermissions(sucursalId: SucursalIdType) {

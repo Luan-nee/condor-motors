@@ -512,7 +512,14 @@ export const docsFacturacionTable = pgTable('docs_facturacion', {
   linkXml: text('link_xml'),
   linkPdf: text('link_pdf'),
   linkCdr: text('link_cdr'),
+  identificadorAnulado: text('identificador_anulado'),
+  factproDocumentIdAnulado: text('factpro_document_id_anulado'),
+  linkXmlAnulado: text('link_xml_anulado'),
+  linkPdfAnulado: text('link_pdf_anulado'),
+  linkCdrAnulado: text('link_cdr_anulado'),
+  ticketAnulado: text('ticket_anulado'),
   estadoRawId: text('estado_raw_id'),
+  descripcionEstado: text('descripcion_estado'),
   informacionSunat: jsonb('informacion_sunat'),
   estadoId: integer('estado_id').references(
     () => estadosDocFacturacionTable.id

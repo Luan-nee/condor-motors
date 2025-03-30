@@ -68,8 +68,8 @@ export type consultDocumentType = (args: {
 }) => Promise<Result<BillingApiSuccessResponse, BillingApiErrorResponse>>
 
 export type cancelDocumentType = (args: {
-  document: ConsultDocument
-}) => Promise<Result<any, BillingApiErrorResponse>>
+  document: CancelDoc
+}) => Promise<Result<BillingApiCancelDocResponse, BillingApiErrorResponse>>
 
 export type searchClientType = (args: {
   numeroDocumento: string
