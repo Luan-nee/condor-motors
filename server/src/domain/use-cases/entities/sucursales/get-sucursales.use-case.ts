@@ -2,18 +2,13 @@ import { orderValues, permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import {
-  cuentasEmpleadosTable,
-  empleadosTable,
-  sucursalesTable
-} from '@/db/schema'
+import { empleadosTable, sucursalesTable } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
-import { and, asc, desc, eq, ilike, or, type SQL } from 'drizzle-orm'
+import { asc, count, desc, eq, ilike, or } from 'drizzle-orm'
 
 export class GetSucursales {
   private readonly authPayload: AuthPayload
-  private readonly permissionGetAny = permissionCodes.sucursales.getAny
-  private readonly permissionGetRelated = permissionCodes.sucursales.getRelated
+  private readonly permissionAny = permissionCodes.sucursales.getAny
   private readonly selectFields = {
     id: sucursalesTable.id,
     nombre: sucursalesTable.nombre,
@@ -26,7 +21,8 @@ export class GetSucursales {
     codigoEstablecimiento: sucursalesTable.codigoEstablecimiento,
     tieneNotificaciones: sucursalesTable.tieneNotificaciones,
     fechaCreacion: sucursalesTable.fechaCreacion,
-    fechaActualizacion: sucursalesTable.fechaActualizacion
+    fechaActualizacion: sucursalesTable.fechaActualizacion,
+    totalEmpleados: count(empleadosTable.id)
   }
 
   private readonly validSortBy = {
@@ -60,48 +56,7 @@ export class GetSucursales {
     return this.validSortBy.fechaCreacion
   }
 
-  private async getRelatedSucursales(
-    queriesDto: QueriesDto,
-    order: SQL,
-    whereCondition: SQL | undefined
-  ) {
-    return await db
-      .select(this.selectFields)
-      .from(sucursalesTable)
-      .innerJoin(
-        empleadosTable,
-        eq(empleadosTable.sucursalId, sucursalesTable.id)
-      )
-      .innerJoin(
-        cuentasEmpleadosTable,
-        eq(cuentasEmpleadosTable.empleadoId, empleadosTable.id)
-      )
-      .where(
-        and(whereCondition, eq(cuentasEmpleadosTable.id, this.authPayload.id))
-      )
-      .orderBy(order)
-      .limit(queriesDto.page_size)
-      .offset(queriesDto.page_size * (queriesDto.page - 1))
-  }
-
-  private async getAnySucursales(
-    queriesDto: QueriesDto,
-    order: SQL,
-    whereCondition: SQL | undefined
-  ) {
-    return await db
-      .select(this.selectFields)
-      .from(sucursalesTable)
-      .where(whereCondition)
-      .orderBy(order)
-      .limit(queriesDto.page_size)
-      .offset(queriesDto.page_size * (queriesDto.page - 1))
-  }
-
-  private async getSucursales(
-    queriesDto: QueriesDto,
-    hasPermissionGetAny: boolean
-  ) {
+  private async getSucursales(queriesDto: QueriesDto) {
     const sortByColumn = this.getSortByColumn(queriesDto.sort_by)
 
     const order =
@@ -117,13 +72,18 @@ export class GetSucursales {
           )
         : undefined
 
-    const sucursales = hasPermissionGetAny
-      ? await this.getAnySucursales(queriesDto, order, whereCondition)
-      : await this.getRelatedSucursales(queriesDto, order, whereCondition)
-
-    if (sucursales.length < 1) {
-      return []
-    }
+    const sucursales = await db
+      .select(this.selectFields)
+      .from(sucursalesTable)
+      .leftJoin(
+        empleadosTable,
+        eq(sucursalesTable.id, empleadosTable.sucursalId)
+      )
+      .where(whereCondition)
+      .groupBy(sucursalesTable.id)
+      .orderBy(order)
+      .limit(queriesDto.page_size)
+      .offset(queriesDto.page_size * (queriesDto.page - 1))
 
     return sucursales
   }
@@ -131,29 +91,28 @@ export class GetSucursales {
   private async validatePermissions() {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
-      [this.permissionGetAny, this.permissionGetRelated]
+      [this.permissionAny]
     )
 
-    const hasPermissionGetAny = validPermissions.some(
-      (permission) => permission.codigoPermiso === this.permissionGetAny
-    )
+    let hasPermissionAny = false
 
-    if (
-      !hasPermissionGetAny &&
-      !validPermissions.some(
-        (permission) => permission.codigoPermiso === this.permissionGetRelated
-      )
-    ) {
-      throw CustomError.forbidden()
+    for (const permission of validPermissions) {
+      if (permission.codigoPermiso === this.permissionAny) {
+        hasPermissionAny = true
+      }
+
+      if (hasPermissionAny) {
+        return
+      }
     }
 
-    return hasPermissionGetAny
+    throw CustomError.forbidden()
   }
 
   async execute(queriesDto: QueriesDto) {
-    const hasPermissionGetAny = await this.validatePermissions()
+    await this.validatePermissions()
 
-    const sucursales = await this.getSucursales(queriesDto, hasPermissionGetAny)
+    const sucursales = await this.getSucursales(queriesDto)
 
     return sucursales
   }

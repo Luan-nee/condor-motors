@@ -2,18 +2,14 @@ import { permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import {
-  cuentasEmpleadosTable,
-  empleadosTable,
-  sucursalesTable
-} from '@/db/schema'
+import { empleadosTable, sucursalesTable } from '@/db/schema'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
-import { and, eq } from 'drizzle-orm'
+import { count, eq } from 'drizzle-orm'
 
 export class GetSucursalById {
   private readonly authPayload: AuthPayload
-  private readonly permissionGetAny = permissionCodes.sucursales.getAny
-  private readonly permissionGetRelated = permissionCodes.sucursales.getRelated
+  private readonly permissionAny = permissionCodes.sucursales.getAny
+  private readonly permissionRelated = permissionCodes.sucursales.getRelated
   private readonly selectFields = {
     id: sucursalesTable.id,
     nombre: sucursalesTable.nombre,
@@ -26,53 +22,26 @@ export class GetSucursalById {
     codigoEstablecimiento: sucursalesTable.codigoEstablecimiento,
     tieneNotificaciones: sucursalesTable.tieneNotificaciones,
     fechaCreacion: sucursalesTable.fechaCreacion,
-    fechaActualizacion: sucursalesTable.fechaActualizacion
+    fechaActualizacion: sucursalesTable.fechaActualizacion,
+    totalEmpleados: count(empleadosTable.id)
   }
 
   constructor(authPayload: AuthPayload) {
     this.authPayload = authPayload
   }
 
-  private async getRelatedSucursal(numericIdDto: NumericIdDto) {
-    return await db
+  private async getSucursalById(numericIdDto: NumericIdDto) {
+    const sucursales = await db
       .select(this.selectFields)
       .from(sucursalesTable)
-      .innerJoin(
+      .leftJoin(
         empleadosTable,
-        eq(empleadosTable.sucursalId, sucursalesTable.id)
+        eq(sucursalesTable.id, empleadosTable.sucursalId)
       )
-      .innerJoin(
-        cuentasEmpleadosTable,
-        eq(cuentasEmpleadosTable.empleadoId, empleadosTable.id)
-      )
-      .where(
-        and(
-          eq(sucursalesTable.id, numericIdDto.id),
-          eq(cuentasEmpleadosTable.id, this.authPayload.id)
-        )
-      )
-  }
-
-  private async getAnySucursal(numericIdDto: NumericIdDto) {
-    return await db
-      .select(this.selectFields)
-      .from(sucursalesTable)
       .where(eq(sucursalesTable.id, numericIdDto.id))
-  }
-
-  private async getSucursalById(
-    numericIdDto: NumericIdDto,
-    hasPermissionGetAny: boolean
-  ) {
-    const sucursales = hasPermissionGetAny
-      ? await this.getAnySucursal(numericIdDto)
-      : await this.getRelatedSucursal(numericIdDto)
+      .groupBy(sucursalesTable.id)
 
     if (sucursales.length < 1) {
-      if (!hasPermissionGetAny) {
-        throw CustomError.forbidden()
-      }
-
       throw CustomError.badRequest(
         `No se encontró ninguna sucursal con el id '${numericIdDto.id}'`
       )
@@ -83,35 +52,39 @@ export class GetSucursalById {
     return sucursal
   }
 
-  private async validatePermissions() {
+  private async validatePermissions(numericIdDto: NumericIdDto) {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
-      [this.permissionGetAny, this.permissionGetRelated]
+      [this.permissionAny, this.permissionRelated]
     )
 
-    const hasPermissionGetAny = validPermissions.some(
-      (permission) => permission.codigoPermiso === this.permissionGetAny
-    )
+    let hasPermissionAny = false
+    let hasPermissionRelated = false
+    let isSameSucursal = false
 
-    if (
-      !hasPermissionGetAny &&
-      !validPermissions.some(
-        (permission) => permission.codigoPermiso === this.permissionGetRelated
-      )
-    ) {
-      throw CustomError.forbidden()
+    for (const permission of validPermissions) {
+      if (permission.codigoPermiso === this.permissionAny) {
+        hasPermissionAny = true
+      }
+      if (permission.codigoPermiso === this.permissionRelated) {
+        hasPermissionRelated = true
+      }
+      if (permission.sucursalId === numericIdDto.id) {
+        isSameSucursal = true
+      }
+
+      if (hasPermissionAny || (hasPermissionRelated && isSameSucursal)) {
+        return
+      }
     }
 
-    return hasPermissionGetAny
+    throw CustomError.forbidden()
   }
 
   async execute(numericIdDto: NumericIdDto) {
-    const hasPermissionGetAny = await this.validatePermissions()
+    await this.validatePermissions(numericIdDto)
 
-    const sucursal = await this.getSucursalById(
-      numericIdDto,
-      hasPermissionGetAny
-    )
+    const sucursal = await this.getSucursalById(numericIdDto)
 
     return sucursal
   }
