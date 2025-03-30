@@ -1,7 +1,9 @@
 import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
+import { CancelVentaDto } from '@/domain/dtos/entities/ventas/cancel-venta.dto'
 import { CreateVentaDto } from '@/domain/dtos/entities/ventas/create-venta.dto'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
+import { CancelVenta } from '@/domain/use-cases/entities/ventas/cancel-venta.use-case'
 import { CreateVenta } from '@/domain/use-cases/entities/ventas/create-venta.use-case'
 import { GetVentaById } from '@/domain/use-cases/entities/ventas/get-venta-by-id.use-case'
 import { GetVentas } from '@/domain/use-cases/entities/ventas/get-ventas.use-case'
@@ -121,7 +123,30 @@ export class VentasController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
+    const [error, cancelVentaDto] = CancelVentaDto.validate(req.body)
+    if (error !== undefined || cancelVentaDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload, sucursalId } = req
+
+    const cancelVenta = new CancelVenta(authPayload)
+
+    cancelVenta
+      .execute(numericIdDto, cancelVentaDto, sucursalId)
+      .then((venta) => {
+        CustomResponse.success({ res, data: venta })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
   getInformacion = (req: Request, res: Response) => {

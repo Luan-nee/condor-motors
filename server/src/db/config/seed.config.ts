@@ -191,6 +191,7 @@ export const vendedorPermisssions = transformPermissionsCodesFromArray([
   permissionCodes.proformasVenta.deleteRelated,
   permissionCodes.ventas.createRelated,
   permissionCodes.ventas.getRelated,
+  permissionCodes.ventas.cancelRelated,
   permissionCodes.cuentasEmpleados.getRelated,
   permissionCodes.cuentasEmpleados.updateSelf,
   permissionCodes.reservasProductos.createAny,

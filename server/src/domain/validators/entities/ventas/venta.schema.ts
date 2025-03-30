@@ -32,5 +32,10 @@ export const ventaSchema = {
     .time({
       message: 'El formato esperado es el siguiente: hh:mm:ss'
     })
-    .optional()
+    .optional(),
+  motivoAnulado: z
+    .string()
+    .trim()
+    .min(2)
+    .refine((val) => Validator.isValidDescription(val))
 }

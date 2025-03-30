@@ -69,11 +69,11 @@ export const permissionCodes = {
     createAny: 'ventas:create_any',
     getAny: 'ventas:get_any',
     updateAny: 'ventas:update_any',
-    deleteAny: 'ventas:delete_any',
+    cancelAny: 'ventas:cancel_any',
     createRelated: 'ventas:create_related',
     getRelated: 'ventas:get_related',
     updateRelated: 'ventas:update_related',
-    deleteRelated: 'ventas:delete_related'
+    cancelRelated: 'ventas:cancel_related'
   },
   facturacion: {
     declareAny: 'facturacion:declare_any',

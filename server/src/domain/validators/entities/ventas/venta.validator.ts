@@ -15,3 +15,10 @@ const createVentaSchema = z.object({
 
 export const createVentaValidator = (object: unknown) =>
   createVentaSchema.safeParse(object)
+
+const cancelVentaSchema = z.object({
+  motivoAnulado: ventaSchema.motivoAnulado
+})
+
+export const cancelVentaValidator = (object: unknown) =>
+  cancelVentaSchema.safeParse(object)
