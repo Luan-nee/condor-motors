@@ -443,10 +443,8 @@ class VentasPendientesUtils {
             apiError.toString().contains('Not found')) {
               
           // Invalidar la caché para esta proforma
-          if (sucursalId != null) {
-            api.proformas.invalidateCache(sucursalId.toString());
-          }
-          
+          api.proformas.invalidateCache(sucursalId.toString());
+                  
           debugPrint('Error 404: Proforma $proformaId no existe. Error: $apiError');
           return <String, dynamic>{
             'exito': false,

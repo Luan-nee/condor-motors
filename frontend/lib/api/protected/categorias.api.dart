@@ -1,7 +1,7 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
 import 'package:condorsmotors/models/categoria.model.dart';
-import 'package:flutter/foundation.dart';
+import 'package:condorsmotors/utils/logger.dart';
 
 class CategoriasApi {
   final ApiClient _api;
@@ -26,12 +26,12 @@ class CategoriasApi {
       if (useCache) {
         final List? cachedData = _cache.get<List<dynamic>>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Categorías obtenidas desde caché');
+          logCache('Categorías obtenidas desde caché');
           return cachedData;
         }
       }
       
-      debugPrint('CategoriasApi: Obteniendo categorías');
+      Logger.debug('Obteniendo categorías');
       
       final Map<String, String> queryParams = <String, String>{
         'sort_by': 'nombre',
@@ -43,21 +43,21 @@ class CategoriasApi {
         queryParams: queryParams,
       );
       
-      debugPrint('CategoriasApi: Respuesta recibida, status: ${response['status']}');
+      Logger.debug('Respuesta recibida, status: ${response['status']}');
       
       // Verificar estructura de respuesta
       if (response['data'] == null) {
-        debugPrint('CategoriasApi: La respuesta no contiene datos');
+        Logger.warn('La respuesta no contiene datos');
         return <List<dynamic>>[];
       }
       
       if (response['data'] is! List) {
-        debugPrint('CategoriasApi: Formato de datos inesperado. Recibido: ${response['data'].runtimeType}');
+        Logger.warn('Formato de datos inesperado. Recibido: ${response['data'].runtimeType}');
         return <List<dynamic>>[];
       }
       
       final List categorias = response['data'] as List;
-      debugPrint('CategoriasApi: ${categorias.length} categorías encontradas');
+      Logger.debug('${categorias.length} categorías encontradas');
       
       // Información adicional sobre totalProductos
       int totalProductosGlobal = 0;
@@ -66,22 +66,22 @@ class CategoriasApi {
           totalProductosGlobal += (cat['totalProductos'] as int? ?? 0);
         }
       }
-      debugPrint('CategoriasApi: Total de productos en todas las categorías: $totalProductosGlobal');
+      Logger.debug('Total de productos en todas las categorías: $totalProductosGlobal');
       
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, categorias);
-        debugPrint('✅ Categorías guardadas en caché');
+        logCache('Categorías guardadas en caché');
       }
       
       return categorias;
     } catch (e) {
-      debugPrint('CategoriasApi: Error al obtener categorías: $e');
+      Logger.error('Error al obtener categorías: $e');
       // Capturar más detalles sobre el error
       if (e is ApiException) {
-        debugPrint('CategoriasApi: Código de error: ${e.statusCode}, Mensaje: ${e.message}');
+        Logger.error('Código de error: ${e.statusCode}, Mensaje: ${e.message}');
         if (e.data != null) {
-          debugPrint('CategoriasApi: Datos adicionales del error: ${e.data}');
+          Logger.error('Datos adicionales del error: ${e.data}');
         }
       }
       rethrow;
@@ -105,7 +105,7 @@ class CategoriasApi {
       
       return categorias;
     } catch (e) {
-      debugPrint('CategoriasApi: ERROR al obtener categorías como objetos: $e');
+      Logger.error('ERROR al obtener categorías como objetos: $e');
       rethrow;
     }
   }
@@ -119,7 +119,7 @@ class CategoriasApi {
     String? descripcion,
   }) async {
     try {
-      debugPrint('CategoriasApi: Creando nueva categoría: $nombre');
+      Logger.debug('Creando nueva categoría: $nombre');
       
       final Map<String, dynamic> body = <String, dynamic>{
         'nombre': nombre,
@@ -135,19 +135,19 @@ class CategoriasApi {
         body: body,
       );
       
-      debugPrint('CategoriasApi: Categoría creada con éxito');
+      Logger.info('Categoría creada con éxito');
       
       // Invalidar caché de categorías
       _invalidateCache();
       
       return response['data'];
     } catch (e) {
-      debugPrint('CategoriasApi: Error al crear categoría: $e');
+      Logger.error('Error al crear categoría: $e');
       // Capturar más detalles sobre el error
       if (e is ApiException) {
-        debugPrint('CategoriasApi: Código de error: ${e.statusCode}, Mensaje: ${e.message}');
+        Logger.error('Código de error: ${e.statusCode}, Mensaje: ${e.message}');
         if (e.data != null) {
-          debugPrint('CategoriasApi: Datos adicionales del error: ${e.data}');
+          Logger.error('Datos adicionales del error: ${e.data}');
         }
       }
       rethrow;
@@ -163,7 +163,7 @@ class CategoriasApi {
       );
       return Categoria.fromJson(data);
     } catch (e) {
-      debugPrint('CategoriasApi: ERROR al crear categoría como objeto: $e');
+      Logger.error('ERROR al crear categoría como objeto: $e');
       rethrow;
     }
   }
@@ -179,7 +179,7 @@ class CategoriasApi {
     String? descripcion,
   }) async {
     try {
-      debugPrint('CategoriasApi: Actualizando categoría con ID: $id');
+      Logger.debug('Actualizando categoría con ID: $id');
       
       // Construir el cuerpo de la solicitud solo con los campos que se van a actualizar
       final Map<String, dynamic> body = <String, dynamic>{};
@@ -203,7 +203,7 @@ class CategoriasApi {
         body: body,
       );
       
-      debugPrint('CategoriasApi: Categoría actualizada con éxito');
+      Logger.info('Categoría actualizada con éxito');
       
       // Invalidar caché
       _invalidateCache();
@@ -211,12 +211,12 @@ class CategoriasApi {
       
       return response['data'];
     } catch (e) {
-      debugPrint('CategoriasApi: Error al actualizar categoría: $e');
+      Logger.error('Error al actualizar categoría: $e');
       // Capturar más detalles sobre el error
       if (e is ApiException) {
-        debugPrint('CategoriasApi: Código de error: ${e.statusCode}, Mensaje: ${e.message}');
+        Logger.error('Código de error: ${e.statusCode}, Mensaje: ${e.message}');
         if (e.data != null) {
-          debugPrint('CategoriasApi: Datos adicionales del error: ${e.data}');
+          Logger.error('Datos adicionales del error: ${e.data}');
         }
       }
       rethrow;
@@ -233,7 +233,7 @@ class CategoriasApi {
       );
       return Categoria.fromJson(data);
     } catch (e) {
-      debugPrint('CategoriasApi: ERROR al actualizar categoría como objeto: $e');
+      Logger.error('ERROR al actualizar categoría como objeto: $e');
       rethrow;
     }
   }
@@ -243,14 +243,14 @@ class CategoriasApi {
   /// [id] ID de la categoría a eliminar
   Future<bool> deleteCategoria(String id) async {
     try {
-      debugPrint('CategoriasApi: Eliminando categoría con ID: $id');
+      Logger.debug('Eliminando categoría con ID: $id');
       
       await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
         method: 'DELETE',
       );
       
-      debugPrint('CategoriasApi: Categoría eliminada con éxito');
+      Logger.info('Categoría eliminada con éxito');
       
       // Invalidar caché
       _invalidateCache();
@@ -258,12 +258,12 @@ class CategoriasApi {
       
       return true;
     } catch (e) {
-      debugPrint('CategoriasApi: Error al eliminar categoría: $e');
+      Logger.error('Error al eliminar categoría: $e');
       // Capturar más detalles sobre el error
       if (e is ApiException) {
-        debugPrint('CategoriasApi: Código de error: ${e.statusCode}, Mensaje: ${e.message}');
+        Logger.error('Código de error: ${e.statusCode}, Mensaje: ${e.message}');
         if (e.data != null) {
-          debugPrint('CategoriasApi: Datos adicionales del error: ${e.data}');
+          Logger.error('Datos adicionales del error: ${e.data}');
         }
       }
       return false;
@@ -282,36 +282,36 @@ class CategoriasApi {
       if (useCache) {
         final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Categoría obtenida desde caché: $cacheKey');
+          logCache('Categoría obtenida desde caché: $cacheKey');
           return cachedData;
         }
       }
       
-      debugPrint('CategoriasApi: Obteniendo categoría con ID: $id');
+      Logger.debug('Obteniendo categoría con ID: $id');
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id',
         method: 'GET',
       );
       
-      debugPrint('CategoriasApi: Categoría obtenida con éxito');
+      Logger.debug('Categoría obtenida con éxito');
       
       final Map<String, dynamic> categoria = response['data'] as Map<String, dynamic>;
       
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, categoria);
-        debugPrint('✅ Categoría guardada en caché: $cacheKey');
+        logCache('Categoría guardada en caché: $cacheKey');
       }
       
       return categoria;
     } catch (e) {
-      debugPrint('CategoriasApi: Error al obtener categoría: $e');
+      Logger.error('Error al obtener categoría: $e');
       // Capturar más detalles sobre el error
       if (e is ApiException) {
-        debugPrint('CategoriasApi: Código de error: ${e.statusCode}, Mensaje: ${e.message}');
+        Logger.error('Código de error: ${e.statusCode}, Mensaje: ${e.message}');
         if (e.data != null) {
-          debugPrint('CategoriasApi: Datos adicionales del error: ${e.data}');
+          Logger.error('Datos adicionales del error: ${e.data}');
         }
       }
       rethrow;
@@ -324,7 +324,7 @@ class CategoriasApi {
       final Map<String, dynamic> categoriaData = await getCategoria(id, useCache: useCache);
       return Categoria.fromJson(categoriaData);
     } catch (e) {
-      debugPrint('CategoriasApi: ERROR al obtener categoría como objeto: $e');
+      Logger.error('ERROR al obtener categoría como objeto: $e');
       rethrow;
     }
   }
@@ -332,7 +332,7 @@ class CategoriasApi {
   /// Invalidar caché de categorías
   void _invalidateCache() {
     _cache.invalidate('categorias_all');
-    debugPrint('✅ Caché de categorías invalidada');
+    logCache('Caché de categorías invalidada');
   }
   
   /// Método público para forzar refresco de caché
@@ -340,10 +340,10 @@ class CategoriasApi {
     if (categoriaId != null) {
       _cache.invalidate('categoria_$categoriaId');
       _invalidateCache();
-      debugPrint('✅ Caché invalidada para categoría: $categoriaId');
+      logCache('Caché invalidada para categoría: $categoriaId');
     } else {
       _cache.clear();
-      debugPrint('✅ Caché de categorías completamente invalidada');
+      logCache('Caché de categorías completamente invalidada');
     }
   }
 }

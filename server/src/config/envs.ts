@@ -17,6 +17,8 @@ export const envs = {
     .asIntPositive(),
   ADMIN_USER: get('ADMIN_USER').required().asString(),
   ADMIN_PASSWORD: get('ADMIN_PASSWORD').required().asString(),
+  CONSULTA_API_BASE_URL: get('CONSULTA_API_BASE_URL').asString(),
+  TOKEN_CONSULTA: get('TOKEN_CONSULTA').asString(),
   FACTURACION_API_BASE_URL: get('FACTURACION_API_BASE_URL').asString(),
   TOKEN_FACTURACION: get('TOKEN_FACTURACION').asString()
 }

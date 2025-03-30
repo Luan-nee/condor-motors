@@ -2,7 +2,7 @@ import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
-import 'package:flutter/foundation.dart';
+import 'package:condorsmotors/utils/logger.dart';
 
 class ProductosApi {
   final ApiClient _api;
@@ -44,7 +44,7 @@ class ProductosApi {
     try {
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
-        debugPrint('Forzando recarga de productos para sucursal $sucursalId');
+        Logger.debug('Forzando recarga de productos para sucursal $sucursalId');
         invalidateCache(sucursalId);
       }
       
@@ -67,13 +67,13 @@ class ProductosApi {
       if (useCache && !forceRefresh) {
         final PaginatedResponse<Producto>? cachedData = _cache.get<PaginatedResponse<Producto>>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Datos obtenidos desde caché: $cacheKey');
+          logCache('Datos obtenidos desde caché: $cacheKey');
           return cachedData;
         }
       }
       
       // Si no hay caché o useCache es false, obtener desde la API
-      debugPrint('Obteniendo productos para sucursal $sucursalId con parámetros: '
+      Logger.debug('Obteniendo productos para sucursal $sucursalId con parámetros: '
           '{ search: $search, page: $page, pageSize: $pageSize, sortBy: $sortBy, order: $order, filter: $filter, stockBajo: $stockBajo, liquidacion: $liquidacion }');
       
       final Map<String, String> queryParams = <String, String>{};
@@ -152,12 +152,12 @@ class ProductosApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, result);
-        debugPrint('✅ Datos guardados en caché: $cacheKey');
+        logCache('Datos guardados en caché: $cacheKey');
       }
       
       return result;
     } catch (e) {
-      debugPrint('Error al obtener productos: $e');
+      Logger.debug('Error al obtener productos: $e');
       rethrow;
     }
   }
@@ -312,12 +312,12 @@ class ProductosApi {
       if (useCache) {
         final Producto? cachedData = _cache.get<Producto>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Producto obtenido desde caché: $cacheKey');
+          logCache('Producto obtenido desde caché: $cacheKey');
           return cachedData;
         }
       }
       
-      debugPrint('Obteniendo producto $productoId de sucursal $sucursalId');
+      Logger.debug('Obteniendo producto $productoId de sucursal $sucursalId');
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
@@ -329,12 +329,12 @@ class ProductosApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, producto);
-        debugPrint('✅ Producto guardado en caché: $cacheKey');
+        logCache('Producto guardado en caché: $cacheKey');
       }
       
       return producto;
     } catch (e) {
-      debugPrint('Error al obtener producto: $e');
+      Logger.debug('Error al obtener producto: $e');
       rethrow;
     }
   }
@@ -348,7 +348,7 @@ class ProductosApi {
     required Map<String, dynamic> productoData,
   }) async {
     try {
-      debugPrint('Creando nuevo producto en sucursal $sucursalId');
+      Logger.debug('Creando nuevo producto en sucursal $sucursalId');
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos',
@@ -358,11 +358,11 @@ class ProductosApi {
       
       // Invalidar caché relacionada de manera más agresiva
       invalidateCache(sucursalId);
-      debugPrint('✅ Caché de productos completamente invalidada después de crear producto');
+      logCache('Caché de productos completamente invalidada después de crear producto');
       
       return Producto.fromJson(response['data']);
     } catch (e) {
-      debugPrint('Error al crear producto: $e');
+      Logger.debug('Error al crear producto: $e');
       rethrow;
     }
   }
@@ -378,7 +378,7 @@ class ProductosApi {
     required Map<String, dynamic> productoData,
   }) async {
     try {
-      debugPrint('Añadiendo producto $productoId a sucursal $sucursalId');
+      Logger.debug('Añadiendo producto $productoId a sucursal $sucursalId');
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
@@ -388,7 +388,7 @@ class ProductosApi {
       
       return Producto.fromJson(response['data']);
     } catch (e) {
-      debugPrint('Error al añadir producto: $e');
+      Logger.debug('Error al añadir producto: $e');
       rethrow;
     }
   }
@@ -423,10 +423,10 @@ class ProductosApi {
       final Map<String, dynamic> dataToSend = Map<String, dynamic>.from(productoData);
       dataToSend.remove('id'); // No enviar el ID en el cuerpo
       
-      debugPrint('ProductosApi: Actualizando producto $productoId en sucursal $sucursalId');
-      debugPrint('ProductosApi: Endpoint: /$sucursalId/productos/$productoId');
-      debugPrint('ProductosApi: Método: PATCH');
-      debugPrint('ProductosApi: Datos a enviar: $dataToSend');
+      Logger.debug('Actualizando producto $productoId en sucursal $sucursalId');
+      Logger.debug('Endpoint: /$sucursalId/productos/$productoId');
+      Logger.debug('Método: PATCH');
+      Logger.debug('Datos a enviar: $dataToSend');
       
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
@@ -434,7 +434,7 @@ class ProductosApi {
         body: dataToSend,
       );
       
-      debugPrint('ProductosApi: Respuesta recibida para la actualización del producto');
+      Logger.debug('Respuesta recibida para la actualización del producto');
       
       // Invalidar caché relacionada de manera más agresiva
       invalidateCache(sucursalId);
@@ -449,7 +449,7 @@ class ProductosApi {
       
       return Producto.fromJson(response['data']);
     } catch (e) {
-      debugPrint('Error al actualizar producto: $e');
+      Logger.debug('Error al actualizar producto: $e');
       rethrow;
     }
   }
@@ -463,7 +463,7 @@ class ProductosApi {
     required int productoId,
   }) async {
     try {
-      debugPrint('Eliminando producto $productoId de sucursal $sucursalId');
+      Logger.debug('Eliminando producto $productoId de sucursal $sucursalId');
       
       await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
@@ -472,7 +472,7 @@ class ProductosApi {
       
       return true;
     } catch (e) {
-      debugPrint('Error al eliminar producto: $e');
+      Logger.debug('Error al eliminar producto: $e');
       return false;
     }
   }
@@ -495,7 +495,7 @@ class ProductosApi {
     required int nuevoStock,
   }) async {
     try {
-      debugPrint('Actualizando stock del producto $productoId a $nuevoStock');
+      Logger.debug('Actualizando stock del producto $productoId a $nuevoStock');
       
       final Producto producto = await updateProducto(
         sucursalId: sucursalId,
@@ -509,7 +509,7 @@ class ProductosApi {
       
       return producto;
     } catch (e) {
-      debugPrint('Error al actualizar stock: $e');
+      Logger.debug('Error al actualizar stock: $e');
       rethrow;
     }
   }
@@ -531,7 +531,7 @@ class ProductosApi {
         throw Exception('La cantidad a disminuir debe ser mayor a 0');
       }
       
-      debugPrint('Disminuyendo $cantidad unidades al producto $productoId en sucursal $sucursalId');
+      Logger.debug('Disminuyendo $cantidad unidades al producto $productoId en sucursal $sucursalId');
       
       // Asegurarse de que los tipos sean los correctos para la API
       final Map<String, dynamic> body = <String, dynamic>{
@@ -554,7 +554,7 @@ class ProductosApi {
       
       return true;
     } catch (e) {
-      debugPrint('Error al disminuir stock: $e');
+      Logger.debug('Error al disminuir stock: $e');
       rethrow;
     }
   }
@@ -576,7 +576,7 @@ class ProductosApi {
         throw Exception('La cantidad a agregar debe ser mayor a 0');
       }
       
-      debugPrint('Agregando $cantidad unidades al producto $productoId en sucursal $sucursalId');
+      Logger.debug('Agregando $cantidad unidades al producto $productoId en sucursal $sucursalId');
       
       // Asegurarse de que los tipos sean los correctos para la API
       final Map<String, dynamic> body = <String, dynamic>{
@@ -599,7 +599,7 @@ class ProductosApi {
       
       return true;
     } catch (e) {
-      debugPrint('Error al agregar stock: $e');
+      Logger.debug('Error al agregar stock: $e');
       rethrow;
     }
   }
@@ -674,9 +674,9 @@ class ProductosApi {
         data['precioOferta'] = precioLiquidacion;
       }
       
-      debugPrint('Estableciendo liquidación para producto $productoId en sucursal $sucursalId: $enLiquidacion');
+      Logger.debug('Estableciendo liquidación para producto $productoId en sucursal $sucursalId: $enLiquidacion');
       if (precioLiquidacion != null) {
-        debugPrint('Precio de liquidación: $precioLiquidacion');
+        Logger.debug('Precio de liquidación: $precioLiquidacion');
       }
       
       // Actualizar el producto con los datos de liquidación
@@ -686,7 +686,7 @@ class ProductosApi {
         productoData: data,
       );
     } catch (e) {
-      debugPrint('Error al establecer liquidación: $e');
+      Logger.debug('Error al establecer liquidación: $e');
       rethrow;
     }
   }
@@ -747,13 +747,13 @@ class ProductosApi {
       // Invalidar caché específica de este producto
       final String cacheKey = 'producto_${sucursalId}_$productoId';
       _cache.invalidate(cacheKey);
-      debugPrint('✅ Caché invalidada para producto $productoId en sucursal $sucursalId: $cacheKey');
+      logCache('Caché invalidada para producto $productoId en sucursal $sucursalId: $cacheKey');
     }
     
     // Invalidar listas que podrían contener este producto
     _cache.invalidateByPattern('productos_$sucursalId');
-    debugPrint('✅ Caché de productos invalidada para sucursal $sucursalId');
-    debugPrint('📊 Estado de caché después de invalidación: ${_cache.size} entradas');
+    logCache('Caché de productos invalidada para sucursal $sucursalId');
+    logCache('Estado de caché después de invalidación: ${_cache.size} entradas');
   }
   
   // Método público para forzar refresco de caché
@@ -769,15 +769,15 @@ class ProductosApi {
       
       for (final String key in productKeys) {
         _cache.invalidate(key);
-        debugPrint('✅ Caché invalidada: $key');
+        logCache('Caché invalidada: $key');
       }
       
-      debugPrint('✅ Caché de productos completamente invalidada para sucursal $sucursalId');
-      debugPrint('📊 Estado de caché después de invalidación: ${_cache.size} entradas');
+      logCache('Caché de productos completamente invalidada para sucursal $sucursalId');
+      logCache('Estado de caché después de invalidación: ${_cache.size} entradas');
     } else {
       _cache.clear();
-      debugPrint('✅ Caché de productos completamente invalidada para todas las sucursales');
-      debugPrint('📊 Estado de caché después de invalidación: ${_cache.size} entradas');
+      logCache('Caché de productos completamente invalidada para todas las sucursales');
+      logCache('Estado de caché después de invalidación: ${_cache.size} entradas');
     }
   }
   
@@ -1034,7 +1034,7 @@ class ProductosApi {
     // En una implementación completa, consultaríamos un endpoint específico con estadísticas
     // Por ahora, obtenemos productos normales y simulamos la ordenación
     
-    debugPrint('Obteniendo productos más vendidos en la sucursal $sucursalId durante los últimos $dias días');
+    Logger.debug('Obteniendo productos más vendidos en la sucursal $sucursalId durante los últimos $dias días');
     
     final PaginatedResponse<Producto> productos = await getProductos(
       sucursalId: sucursalId,

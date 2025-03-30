@@ -8,6 +8,7 @@ import type {
   randomSecretType,
   refreshAccessTokenType,
   refreshTokenCookieType,
+  searchClientType,
   sendDocumentType,
   verifyType
 } from '@/types/config'
@@ -35,4 +36,8 @@ export interface BillingService {
   sendDocument: sendDocumentType
   consultDocument: consultDocumentType
   cancelDocument: cancelDocumentType
+}
+
+export interface ConsultService {
+  searchClient: searchClientType
 }

@@ -24,6 +24,7 @@ class CondorMotorsApi {
   late final ProformaVentaApi proformas;
   late final ColoresApi colores;
   late final ClientesApi clientes;
+  late final DocumentoApi documentos;
   late final TokenService tokenService;
   
   /// Inicializa todas las APIs con la URL base
@@ -48,6 +49,7 @@ class CondorMotorsApi {
     proformas = ProformaVentaApi(_apiClient);
     colores = ColoresApi(apiClient: _apiClient);
     clientes = ClientesApi(_apiClient);
+    documentos = DocumentoApi(_apiClient);
     
     // Inicializar el AuthService con las nuevas dependencias
     authService = AuthService(tokenService);

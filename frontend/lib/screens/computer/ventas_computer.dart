@@ -1,17 +1,14 @@
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/main.dart' show api;
-import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' as models;
 import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart' show NumericKeypad, ProcessingDialog;
 import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart' as form_widget show ProformaSaleDialog;
 import 'package:condorsmotors/screens/computer/widgets/proforma_conversion_utils.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
-import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:intl/intl.dart';
 
 /// Clase utilitaria para operaciones con ventas y formateo de montos
 /// 

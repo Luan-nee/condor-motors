@@ -1,6 +1,7 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 
 class SucursalesApi {
@@ -28,7 +29,7 @@ class SucursalesApi {
       ..invalidateByPattern('$_prefixNotificaciones$sucursalId')
       ..invalidateByPattern('$_prefixProductos$sucursalId')
       ..invalidateByPattern('$_prefixVentas$sucursalId');
-      debugPrint('🔄 Caché invalidado para sucursal $sucursalId');
+      logCache('🔄 Caché invalidado para sucursal $sucursalId');
     } else {
       // Invalidar todas las sucursales en caché
       _cache..invalidateByPattern(_prefixSucursal)
@@ -37,9 +38,9 @@ class SucursalesApi {
       ..invalidateByPattern(_prefixNotificaciones)
       ..invalidateByPattern(_prefixProductos)
       ..invalidateByPattern(_prefixVentas);
-      debugPrint('🔄 Caché de sucursales invalidado completamente');
+      logCache('🔄 Caché de sucursales invalidado completamente');
     }
-    debugPrint('📊 Entradas en caché después de invalidación: ${_cache.size}');
+    logCache('📊 Entradas en caché después de invalidación: ${_cache.size}');
   }
   
   /// Obtiene los datos específicos de una sucursal
@@ -62,12 +63,12 @@ class SucursalesApi {
       if (useCache && !forceRefresh) {
         final Sucursal? cachedData = _cache.get<Sucursal>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
-          debugPrint('🔍 Usando datos en caché para sucursal $sucursalId');
+          logCache('🔍 Usando datos en caché para sucursal $sucursalId');
           return cachedData;
         }
       }
       
-      debugPrint('SucursalesApi: Obteniendo datos de sucursal con ID: $sucursalId');
+      logCache('SucursalesApi: Obteniendo datos de sucursal con ID: $sucursalId');
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/sucursales/$sucursalId',
         method: 'GET',
@@ -78,12 +79,12 @@ class SucursalesApi {
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, sucursal);
-        debugPrint('💾 Guardados datos de sucursal en caché: $sucursalId');
+        logCache('💾 Guardados datos de sucursal en caché: $sucursalId');
       }
       
       return sucursal;
     } catch (e) {
-      debugPrint('❌ SucursalesApi: ERROR al obtener datos de sucursal #$sucursalId: $e');
+      logCache('❌ SucursalesApi: ERROR al obtener datos de sucursal #$sucursalId: $e');
       rethrow;
     }
   }
@@ -94,23 +95,27 @@ class SucursalesApi {
     bool forceRefresh = false,
   }) async {
     try {
-      const String cacheKey = _prefixSucursales;
-      
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
-        _cache.invalidate(cacheKey);
+        Logger.debug('Forzando recarga de sucursales');
+        invalidateCache();
       }
-      
-      // Intentar obtener desde caché si corresponde
-      if (useCache && !forceRefresh) {
+
+      // Generar clave de caché
+      const String cacheKey = 'sucursales';
+
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
         final List<Sucursal>? cachedData = _cache.get<List<Sucursal>>(cacheKey);
-        if (cachedData != null && !_cache.isStale(cacheKey)) {
-          debugPrint('🔍 Usando lista de sucursales en caché');
+        if (cachedData != null) {
+          logCache('Sucursales obtenidas desde caché: $cacheKey');
           return cachedData;
         }
       }
-      
-      debugPrint('SucursalesApi: Obteniendo lista de sucursales');
+
+      // Si no hay caché o useCache es false, obtener desde la API
+      Logger.debug('Obteniendo sucursales desde la API');
+
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/sucursales',
         method: 'GET',
@@ -131,15 +136,15 @@ class SucursalesApi {
       // Convertir cada elemento en un objeto Sucursal
       final List<Sucursal> sucursales = rawData.map((item) => Sucursal.fromJson(item)).toList();
       
-      // Guardar en caché
+      // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, sucursales);
-        debugPrint('💾 Guardada lista de sucursales en caché');
+        logCache('Sucursales guardadas en caché: $cacheKey');
       }
       
       return sucursales;
     } catch (e) {
-      debugPrint('❌ SucursalesApi: ERROR al obtener sucursales: $e');
+      Logger.error('❌ SucursalesApi: ERROR al obtener sucursales: $e');
       rethrow;
     }
   }
@@ -164,7 +169,7 @@ class SucursalesApi {
       if (useCache && !forceRefresh) {
         final List? cachedData = _cache.get<List<dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
-          debugPrint('🔍 Usando proformas en caché para sucursal $sucursalId');
+          logCache('🔍 Usando proformas en caché para sucursal $sucursalId');
           return cachedData;
         }
       }
@@ -179,12 +184,12 @@ class SucursalesApi {
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, proformas);
-        debugPrint('💾 Guardadas proformas en caché para sucursal $sucursalId');
+        logCache('💾 Guardadas proformas en caché para sucursal $sucursalId');
       }
       
       return proformas;
     } catch (e) {
-      debugPrint('❌ Error al obtener proformas de venta: $e');
+      logCache('❌ Error al obtener proformas de venta: $e');
       rethrow;
     }
   }
@@ -200,11 +205,11 @@ class SucursalesApi {
       
       // Invalidar caché de proformas para esta sucursal
       _cache.invalidate('$_prefixProformas$sucursalId');
-      debugPrint('🔄 Caché de proformas invalidado para sucursal $sucursalId');
+      logCache('🔄 Caché de proformas invalidado para sucursal $sucursalId');
       
       return response['data'];
     } catch (e) {
-      debugPrint('❌ Error al crear proforma de venta: $e');
+      logCache('❌ Error al crear proforma de venta: $e');
       rethrow;
     }
   }
@@ -220,11 +225,11 @@ class SucursalesApi {
       
       // Invalidar caché de proformas para esta sucursal
       _cache.invalidate('$_prefixProformas$sucursalId');
-      debugPrint('🔄 Caché de proformas invalidado para sucursal $sucursalId');
+      logCache('🔄 Caché de proformas invalidado para sucursal $sucursalId');
       
       return response['data'];
     } catch (e) {
-      debugPrint('❌ Error al actualizar proforma de venta: $e');
+      logCache('❌ Error al actualizar proforma de venta: $e');
       rethrow;
     }
   }
@@ -239,9 +244,9 @@ class SucursalesApi {
       
       // Invalidar caché de proformas para esta sucursal
       _cache.invalidate('$_prefixProformas$sucursalId');
-      debugPrint('🔄 Caché de proformas invalidado para sucursal $sucursalId');
+      logCache('🔄 Caché de proformas invalidado para sucursal $sucursalId');
     } catch (e) {
-      debugPrint('❌ Error al eliminar proforma de venta: $e');
+      logCache('❌ Error al eliminar proforma de venta: $e');
       rethrow;
     }
   }
@@ -266,7 +271,7 @@ class SucursalesApi {
       if (useCache && !forceRefresh) {
         final List? cachedData = _cache.get<List<dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
-          debugPrint('🔍 Usando notificaciones en caché para sucursal $sucursalId');
+          logCache('🔍 Usando notificaciones en caché para sucursal $sucursalId');
           return cachedData;
         }
       }
@@ -281,12 +286,12 @@ class SucursalesApi {
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, notificaciones);
-        debugPrint('💾 Guardadas notificaciones en caché para sucursal $sucursalId');
+        logCache('💾 Guardadas notificaciones en caché para sucursal $sucursalId');
       }
       
       return notificaciones;
     } catch (e) {
-      debugPrint('❌ Error al obtener notificaciones: $e');
+      logCache('❌ Error al obtener notificaciones: $e');
       rethrow;
     }
   }
@@ -301,9 +306,9 @@ class SucursalesApi {
       
       // Invalidar caché de notificaciones para esta sucursal
       _cache.invalidate('$_prefixNotificaciones$sucursalId');
-      debugPrint('🔄 Caché de notificaciones invalidado para sucursal $sucursalId');
+      logCache('🔄 Caché de notificaciones invalidado para sucursal $sucursalId');
     } catch (e) {
-      debugPrint('❌ Error al eliminar notificación: $e');
+      logCache('❌ Error al eliminar notificación: $e');
       rethrow;
     }
   }
@@ -322,7 +327,7 @@ class SucursalesApi {
   /// Crea una nueva sucursal
   Future<Sucursal> createSucursal(Map<String, dynamic> sucursalData) async {
     try {
-      debugPrint('SucursalesApi: Creando nueva sucursal: ${sucursalData['nombre']}');
+      logCache('SucursalesApi: Creando nueva sucursal: ${sucursalData['nombre']}');
       
       // Validar campos requeridos
       if (!sucursalData.containsKey('nombre') || !sucursalData.containsKey('sucursalCentral')) {
@@ -353,7 +358,7 @@ class SucursalesApi {
       
       return sucursal;
     } catch (e) {
-      debugPrint('❌ SucursalesApi: ERROR al crear sucursal: $e');
+      logCache('❌ SucursalesApi: ERROR al crear sucursal: $e');
       rethrow;
     }
   }
@@ -361,7 +366,7 @@ class SucursalesApi {
   /// Actualiza una sucursal existente
   Future<Sucursal> updateSucursal(String sucursalId, Map<String, dynamic> sucursalData) async {
     try {
-      debugPrint('SucursalesApi: Actualizando sucursal con ID: $sucursalId');
+      logCache('SucursalesApi: Actualizando sucursal con ID: $sucursalId');
       
       // Validar formato de series si están presentes
       if (sucursalData.containsKey('serieFactura') && 
@@ -387,7 +392,7 @@ class SucursalesApi {
       
       return sucursal;
     } catch (e) {
-      debugPrint('❌ SucursalesApi: ERROR al actualizar sucursal #$sucursalId: $e');
+      logCache('❌ SucursalesApi: ERROR al actualizar sucursal #$sucursalId: $e');
       rethrow;
     }
   }
@@ -395,16 +400,16 @@ class SucursalesApi {
   /// Elimina una sucursal
   Future<void> deleteSucursal(String sucursalId) async {
     try {
-      debugPrint('SucursalesApi: Eliminando sucursal con ID: $sucursalId');
+      logCache('SucursalesApi: Eliminando sucursal con ID: $sucursalId');
       await _api.authenticatedRequest(
         endpoint: '/sucursales/$sucursalId',
         method: 'DELETE',
       );
       
       invalidateCache();
-      debugPrint('✅ SucursalesApi: Sucursal eliminada correctamente');
+      logCache('✅ SucursalesApi: Sucursal eliminada correctamente');
     } catch (e) {
-      debugPrint('❌ SucursalesApi: ERROR al eliminar sucursal #$sucursalId: $e');
+      logCache('❌ SucursalesApi: ERROR al eliminar sucursal #$sucursalId: $e');
       rethrow;
     }
   }
@@ -444,7 +449,7 @@ class SucursalesApi {
       
       return productos;
     } catch (e) {
-      debugPrint('❌ Error al obtener productos de sucursal: $e');
+      logCache('❌ Error al obtener productos de sucursal: $e');
       rethrow;
     }
   }
@@ -464,7 +469,7 @@ class SucursalesApi {
       _cache.invalidate('$_prefixProductos$sucursalId');
       return response['data'];
     } catch (e) {
-      debugPrint('❌ Error al registrar entrada de inventario: $e');
+      logCache('❌ Error al registrar entrada de inventario: $e');
       rethrow;
     }
   }
@@ -479,7 +484,7 @@ class SucursalesApi {
       
       return response['data'];
     } catch (e) {
-      debugPrint('❌ Error al obtener información de ventas: $e');
+      logCache('❌ Error al obtener información de ventas: $e');
       rethrow;
     }
   }
@@ -498,7 +503,7 @@ class SucursalesApi {
       
       return response['data'];
     } catch (e) {
-      debugPrint('❌ Error al declarar facturación: $e');
+      logCache('❌ Error al declarar facturación: $e');
       rethrow;
     }
   }
@@ -517,7 +522,7 @@ class SucursalesApi {
       
       return response['data'];
     } catch (e) {
-      debugPrint('❌ Error al sincronizar facturación: $e');
+      logCache('❌ Error al sincronizar facturación: $e');
       rethrow;
     }
   }

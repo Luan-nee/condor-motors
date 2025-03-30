@@ -10,9 +10,12 @@ import { GetClienteByDoc } from '@/domain/use-cases/entities/clientes/get-client
 import { GetClienteById } from '@/domain/use-cases/entities/clientes/get-cliente-by-id.use-case'
 import { GetClientes } from '@/domain/use-cases/entities/clientes/get-clientes.use-case'
 import { UpdateCliente } from '@/domain/use-cases/entities/clientes/update-cliente.use-case'
+import type { ConsultService } from '@/types/interfaces'
 import type { Request, Response } from 'express'
 
 export class ClientesController {
+  constructor(private readonly consultService: ConsultService) {}
+
   create = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
       CustomResponse.unauthorized({ res })
@@ -69,11 +72,14 @@ export class ClientesController {
 
     const [error, numericDocDto] = NumericDocDto.create(req.params)
     if (error !== undefined || numericDocDto === undefined) {
-      CustomResponse.badRequest({ res, error: 'Numero de documento inválido' })
+      CustomResponse.badRequest({
+        res,
+        error: 'No se encontró ninguna persona con ese número de documento'
+      })
       return
     }
 
-    const getClienteByDoc = new GetClienteByDoc()
+    const getClienteByDoc = new GetClienteByDoc(this.consultService)
 
     getClienteByDoc
       .execute(numericDocDto)
