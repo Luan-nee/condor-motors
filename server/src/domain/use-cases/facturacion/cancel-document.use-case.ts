@@ -102,7 +102,7 @@ export class CancelDocument {
       })
 
     if (error !== null) {
-      throw CustomError.badGateway(error.message)
+      throw CustomError.badRequest(error.message)
     }
 
     if (documentDataResponse.data.state_type_id === '03') {

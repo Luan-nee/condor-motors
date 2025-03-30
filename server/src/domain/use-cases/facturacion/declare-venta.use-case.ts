@@ -220,7 +220,7 @@ export class DeclareVenta {
       })
 
     if (error !== null) {
-      throw CustomError.badGateway(error.message)
+      throw CustomError.badRequest(error.message)
     }
 
     const estados = await db

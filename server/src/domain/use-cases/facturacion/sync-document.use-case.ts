@@ -67,7 +67,7 @@ export class SyncDocument {
       })
 
     if (error !== null) {
-      throw CustomError.badGateway(error.message)
+      throw CustomError.badRequest(error.message)
     }
 
     const estados = await db
