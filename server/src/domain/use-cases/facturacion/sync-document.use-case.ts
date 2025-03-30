@@ -89,16 +89,27 @@ export class SyncDocument {
 
     const estadoId = estado != null ? estado.id : null
 
+    return await this.saveApiResponse(
+      syncDocumentDto,
+      documentDataResponse,
+      estadoId
+    )
+  }
+
+  private async saveApiResponse(
+    syncDocumentDto: SyncDocumentDto,
+    documentDataResponse: BillingApiConsultDocResponse,
+    estadoId: number | null
+  ) {
     const linkCdr =
       documentDataResponse.links.cdr.length > 0
         ? documentDataResponse.links.cdr
         : undefined
 
-    return await db.transaction(async (tx) => {
+    const updateResult = await db.transaction(async (tx) => {
       const updatedResults = await tx
         .update(docsFacturacionTable)
         .set({
-          factproFilename: documentDataResponse.data.filename,
           factproDocumentId: documentDataResponse.data.external_id,
           hash: documentDataResponse.data.hash,
           qr: documentDataResponse.data.qr,
@@ -113,15 +124,43 @@ export class SyncDocument {
         .returning({ id: docsFacturacionTable.id })
 
       if (updatedResults.length < 1) {
-        throw CustomError.internalServer(
-          'Ha ocurrido un problema al intentar sincronizar el estado del documento (Inténtelo nuevamente o contacte a soporte técnico para resolver este problema)'
-        )
+        const [documento] = await tx
+          .insert(docsFacturacionTable)
+          .values({
+            factproDocumentId: documentDataResponse.data.external_id,
+            hash: documentDataResponse.data.hash,
+            qr: documentDataResponse.data.qr,
+            linkXml: documentDataResponse.links.xml,
+            linkPdf: documentDataResponse.links.pdf,
+            linkCdr: documentDataResponse.links.cdr,
+            estadoRawId: documentDataResponse.data.state_type_id,
+            estadoId,
+            informacionSunat: documentDataResponse.sunat_information,
+            ventaId: syncDocumentDto.ventaId
+          })
+          .returning({ id: docsFacturacionTable.id })
+
+        const updatedResults = await tx
+          .update(ventasTable)
+          .set({ declarada: true })
+          .where(eq(ventasTable.id, syncDocumentDto.ventaId))
+          .returning({ id: ventasTable.id })
+
+        if (updatedResults.length < 1) {
+          throw CustomError.internalServer(
+            'Ha ocurrido un problema al intentar declarar la venta (Inténtelo nuevamente o contacte a soporte técnico para resolver este problema)'
+          )
+        }
+
+        return documento
       }
 
       const [documento] = updatedResults
 
       return documento
     })
+
+    return updateResult
   }
 
   private async validatePermissions(sucursalId: SucursalIdType) {

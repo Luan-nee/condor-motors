@@ -65,7 +65,7 @@ export type sendDocumentType = (args: {
 
 export type consultDocumentType = (args: {
   document: ConsultDocument
-}) => Promise<Result<BillingApiSuccessResponse, BillingApiErrorResponse>>
+}) => Promise<Result<BillingApiConsultDocResponse, BillingApiErrorResponse>>
 
 export type cancelDocumentType = (args: {
   document: CancelDoc

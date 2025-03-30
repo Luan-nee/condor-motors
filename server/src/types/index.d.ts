@@ -74,7 +74,7 @@ interface Item {
 
 interface BillingApiSuccessResponse {
   success: boolean
-  message: string
+  message: string | null
   data: {
     number: string
     filename: string
@@ -99,9 +99,35 @@ interface BillingApiSuccessResponse {
   }
 }
 
+interface BillingApiConsultDocResponse {
+  success: boolean
+  message: string | null
+  data: {
+    number: string
+    external_id: string
+    hash: string
+    qr: string
+    state_type_id: string
+    state_description: string
+  }
+  links: {
+    xml: string
+    cdr: string
+    pdf: string
+    download_pdf: string
+    pdf_html: string
+  }
+  sunat_information: {
+    code: string
+    sent: boolean
+    notes: any[]
+    description: string
+  }
+}
+
 interface BillingApiCancelDocResponse {
   success: boolean
-  message: null
+  message: string | null
   data: {
     identifier: string
     external_id: string
