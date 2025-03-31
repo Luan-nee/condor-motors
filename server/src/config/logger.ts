@@ -4,73 +4,124 @@ import type { Request, Response } from 'express'
 import fs from 'fs'
 import path from 'path'
 
+enum LogLevel {
+  DEBUG = 'DEBUG',
+  INFO = 'INFO',
+  WARN = 'WARN',
+  ERROR = 'ERROR',
+  FATAL = 'FATAL'
+}
+
 interface Logger {
-  info: (message: string) => void
-  error: (message: string) => void
+  debug: (message: string, ...meta: any[]) => void
+  info: (message: string, ...meta: any[]) => void
+  warn: (message: string, ...meta: any[]) => void
+  error: (message: string, ...meta: any[]) => void
+  fatal: (message: string, ...meta: any[]) => void
 }
 
-class ConsoleLogger implements Logger {
-  info(message: string): void {
-    console.info(message)
-  }
-
-  error(message: string): void {
-    console.error(message)
+class BaseLogger {
+  protected formatLog(level: LogLevel, message: string, meta: any[]): string {
+    const timestamp = new Date().toISOString()
+    const metaString = meta.length > 0 ? JSON.stringify(meta) : ''
+    return `[${timestamp}] [${level}] ${message} ${metaString}\n`
   }
 }
 
-class FileLogger implements Logger {
+class ConsoleLogger extends BaseLogger implements Logger {
+  debug(message: string, ...meta: any[]): void {
+    if (!isProduction) {
+      console.debug(this.formatLog(LogLevel.DEBUG, message, meta))
+    }
+  }
+
+  info(message: string, ...meta: any[]): void {
+    console.info(this.formatLog(LogLevel.INFO, message, meta))
+  }
+
+  warn(message: string, ...meta: any[]): void {
+    console.warn(this.formatLog(LogLevel.WARN, message, meta))
+  }
+
+  error(message: string, ...meta: any[]): void {
+    console.error(this.formatLog(LogLevel.ERROR, message, meta))
+  }
+
+  fatal(message: string, ...meta: any[]): void {
+    console.error(this.formatLog(LogLevel.FATAL, message, meta))
+  }
+}
+
+class FileLogger extends BaseLogger implements Logger {
   private readonly logFilePath: string
-  private readonly errorLogFileName: string
+  private readonly errorLogFilePath: string
 
   constructor(logFileName: string, errorLogFileName: string) {
-    this.logFilePath = path.join(process.cwd(), 'logs/', logFileName)
-
-    if (!fs.existsSync(path.dirname(this.logFilePath))) {
-      fs.mkdirSync(path.dirname(this.logFilePath), { recursive: true })
+    const logsDir = path.join(process.cwd(), 'logs/')
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir, { recursive: true })
     }
 
-    this.errorLogFileName = path.join(process.cwd(), 'logs/', errorLogFileName)
+    super()
 
-    if (!fs.existsSync(path.dirname(this.errorLogFileName))) {
-      fs.mkdirSync(path.dirname(this.errorLogFileName), { recursive: true })
-    }
+    this.logFilePath = path.join(logsDir, logFileName)
+    this.errorLogFilePath = path.join(logsDir, errorLogFileName)
   }
 
-  private writeLog(message: string, filePath: string) {
-    const logMessage = `${message}\n`
+  private writeLog(
+    level: LogLevel,
+    message: string,
+    meta: any[],
+    filePath: string
+  ) {
+    const logMessage = this.formatLog(level, message, meta)
     fs.appendFile(filePath, logMessage, { encoding: 'utf-8' }, (err) => {
       if (err != null) {
-        console.error("Couldn't save the log")
+        console.error("Couldn't save the log to file:", err)
       }
     })
   }
 
-  info(message: string): void {
-    this.writeLog(message, this.logFilePath)
+  debug(message: string, ...meta: any[]): void {
+    this.writeLog(LogLevel.DEBUG, message, meta, this.logFilePath)
   }
 
-  error(message: string): void {
-    this.writeLog(message, this.errorLogFileName)
+  info(message: string, ...meta: any[]): void {
+    this.writeLog(LogLevel.INFO, message, meta, this.logFilePath)
+  }
+
+  warn(message: string, ...meta: any[]): void {
+    this.writeLog(LogLevel.WARN, message, meta, this.logFilePath)
+  }
+
+  error(message: string, ...meta: any[]): void {
+    this.writeLog(LogLevel.ERROR, message, meta, this.errorLogFilePath)
+  }
+
+  fatal(message: string, ...meta: any[]): void {
+    this.writeLog(LogLevel.FATAL, message, meta, this.errorLogFilePath)
   }
 }
 
 const createLogger = (): Logger => {
   if (!isProduction) {
-    return new FileLogger('requests.log', 'errors.log')
+    return new FileLogger('app.log', 'errors.log')
   }
-
   return new ConsoleLogger()
 }
 
 export const CustomLogger = createLogger()
 
-export const LogRequest = (req: Request, res: Response, duration: number) => {
-  const resource = 'http://' + req.headers.host + req.baseUrl + req.url
-  const ip = req.ip ?? 'NULL'
-  const user = 'id:' + (req.authPayload?.id ?? 'NULL')
+export const LogRequest = (
+  req: Request,
+  res: Response,
+  duration: number,
+  resource: string
+) => {
+  const ip = req.ip ?? null
+  const user = req.authPayload ?? { id: null }
   const message = `${req.method} ${resource} ${req.protocol.toUpperCase()}/${req.httpVersion} ${res.statusCode} ${duration}ms`
   const meta = { ip, user }
 
-  CustomLogger.info(message + JSON.stringify(meta))
+  CustomLogger.info(message, meta)
 }
