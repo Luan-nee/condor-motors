@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import { LogRequest } from '@/config/logger'
 import type { NextFunction, Request, Response } from 'express'
 
 export class LoggerMiddleware {
@@ -33,6 +34,8 @@ export class LoggerMiddleware {
       console.log('query:', req.query)
       console.log('-- - - - - - - - - - - - - - - - - - - - - - - END')
       console.log('==================================================')
+
+      LogRequest(req, res, duration)
     })
 
     next()
