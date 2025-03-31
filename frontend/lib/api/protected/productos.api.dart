@@ -8,11 +8,11 @@ class ProductosApi {
   final ApiClient _api;
   // Fast Cache para todas las operaciones de productos
   final FastCache _cache = FastCache();
-  
+
   ProductosApi(this._api);
-  
+
   /// Obtiene todos los productos de una sucursal específica
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [search] Término de búsqueda para filtrar productos (opcional)
   /// [page] Número de página para paginación (opcional)
@@ -47,7 +47,7 @@ class ProductosApi {
         Logger.debug('Forzando recarga de productos para sucursal $sucursalId');
         invalidateCache(sucursalId);
       }
-      
+
       // Generar clave única para este conjunto de parámetros
       final String cacheKey = _generateCacheKey(
         'productos_$sucursalId',
@@ -62,110 +62,114 @@ class ProductosApi {
         stockBajo: stockBajo,
         liquidacion: liquidacion,
       );
-      
+
       // Intentar obtener desde caché si useCache es true
       if (useCache && !forceRefresh) {
-        final PaginatedResponse<Producto>? cachedData = _cache.get<PaginatedResponse<Producto>>(cacheKey);
+        final PaginatedResponse<Producto>? cachedData =
+            _cache.get<PaginatedResponse<Producto>>(cacheKey);
         if (cachedData != null) {
           logCache('Datos obtenidos desde caché: $cacheKey');
           return cachedData;
         }
       }
-      
+
       // Si no hay caché o useCache es false, obtener desde la API
-      Logger.debug('Obteniendo productos para sucursal $sucursalId con parámetros: '
+      Logger.debug(
+          'Obteniendo productos para sucursal $sucursalId con parámetros: '
           '{ search: $search, page: $page, pageSize: $pageSize, sortBy: $sortBy, order: $order, filter: $filter, stockBajo: $stockBajo, liquidacion: $liquidacion }');
-      
+
       final Map<String, String> queryParams = <String, String>{};
-      
+
       if (search != null && search.isNotEmpty) {
         queryParams['search'] = search;
       }
-      
+
       if (page != null) {
         queryParams['page'] = page.toString();
       }
-      
+
       if (pageSize != null) {
         queryParams['page_size'] = pageSize.toString();
       }
-      
+
       if (sortBy != null && sortBy.isNotEmpty) {
         queryParams['sort_by'] = sortBy;
       }
-      
+
       if (order != null && order.isNotEmpty) {
         queryParams['order'] = order;
       }
-      
+
       if (filter != null && filter.isNotEmpty) {
         queryParams['filter'] = filter;
       }
-      
+
       if (filterValue != null) {
         queryParams['filter_value'] = filterValue;
       }
-      
+
       if (filterType != null && filterType.isNotEmpty) {
         queryParams['filter_type'] = filterType;
       }
-      
+
       // Añadir parámetro stockBajo si está definido
       if (stockBajo != null) {
         queryParams['stockBajo'] = stockBajo.toString();
       }
-      
+
       // Añadir parámetro liquidacion si está definido
       if (liquidacion != null) {
         queryParams['liquidacion'] = liquidacion.toString();
       }
-      
+
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos',
         method: 'GET',
         queryParams: queryParams,
       );
-      
+
       // Extraer los datos de productos
       final List<dynamic> rawData = response['data'] ?? <dynamic>[];
-      final List<Producto> productos = rawData.map((item) => Producto.fromJson(item)).toList();
-      
+      final List<Producto> productos =
+          rawData.map((item) => Producto.fromJson(item)).toList();
+
       // Extraer información de paginación
       Map<String, dynamic> paginacionData = <String, dynamic>{};
-      if (response.containsKey('pagination') && response['pagination'] != null) {
+      if (response.containsKey('pagination') &&
+          response['pagination'] != null) {
         paginacionData = response['pagination'] as Map<String, dynamic>;
       }
-      
+
       // Extraer metadata si está disponible
       Map<String, dynamic>? metadata;
       if (response.containsKey('metadata') && response['metadata'] != null) {
         metadata = response['metadata'] as Map<String, dynamic>;
       }
-      
+
       // Crear la respuesta paginada
       final PaginatedResponse<Producto> result = PaginatedResponse<Producto>(
         items: productos,
         paginacion: Paginacion.fromJson(paginacionData),
         metadata: metadata,
       );
-      
+
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, result);
         logCache('Datos guardados en caché: $cacheKey');
       }
-      
+
       return result;
     } catch (e) {
       Logger.debug('Error al obtener productos: $e');
       rethrow;
     }
   }
-  
+
   /// Obtiene productos con stock bajo de una sucursal específica
-  /// 
+  ///
   /// Método helper que utiliza getProductos con el parámetro stockBajo=true
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [page] Número de página para paginación (opcional)
   /// [pageSize] Número de elementos por página (opcional)
@@ -188,9 +192,9 @@ class ProductosApi {
       useCache: useCache,
     );
   }
-  
+
   /// Obtiene productos agotados (stock = 0) de una sucursal específica
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [page] Número de página para paginación (opcional)
   /// [pageSize] Número de elementos por página (opcional)
@@ -208,15 +212,17 @@ class ProductosApi {
     final PaginatedResponse<Producto> response = await getProductos(
       sucursalId: sucursalId,
       page: page ?? 1,
-      pageSize: pageSize ?? 50, // Tamaño grande para tener suficientes después de filtrar
+      pageSize: pageSize ??
+          50, // Tamaño grande para tener suficientes después de filtrar
       sortBy: sortBy ?? 'nombre',
       order: 'asc',
       useCache: useCache,
     );
-    
+
     // Filtramos solo los productos agotados (stock = 0)
-    final List<Producto> productosAgotados = response.items.where((Producto p) => p.stock <= 0).toList();
-    
+    final List<Producto> productosAgotados =
+        response.items.where((Producto p) => p.stock <= 0).toList();
+
     // Mantenemos la misma información de paginación pero ajustamos totalItems
     final Paginacion paginacionAjustada = Paginacion(
       currentPage: response.paginacion.currentPage,
@@ -225,7 +231,7 @@ class ProductosApi {
       hasNext: response.paginacion.hasNext,
       hasPrev: response.paginacion.hasPrev,
     );
-    
+
     // Devolvemos una nueva respuesta paginada con solo los productos agotados
     return PaginatedResponse<Producto>(
       items: productosAgotados,
@@ -233,11 +239,11 @@ class ProductosApi {
       metadata: response.metadata,
     );
   }
-  
+
   /// Obtiene productos sin stock bajo de una sucursal específica
-  /// 
+  ///
   /// Método helper que utiliza getProductos con el parámetro stockBajo=false
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [page] Número de página para paginación (opcional)
   /// [pageSize] Número de elementos por página (opcional)
@@ -260,11 +266,11 @@ class ProductosApi {
       useCache: useCache,
     );
   }
-  
+
   /// Busca productos por nombre en una sucursal específica
-  /// 
+  ///
   /// Método helper que utiliza getProductos con el parámetro search
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [nombre] Término de búsqueda para filtrar productos por nombre
   /// [page] Número de página para paginación (opcional)
@@ -283,7 +289,7 @@ class ProductosApi {
         message: 'El término de búsqueda no puede estar vacío',
       );
     }
-    
+
     return getProductos(
       sucursalId: sucursalId,
       search: nombre,
@@ -296,7 +302,7 @@ class ProductosApi {
   }
 
   /// Obtiene un producto específico de una sucursal
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [productoId] ID del producto
   /// [useCache] Indica si se debe usar el caché (default: true)
@@ -307,7 +313,7 @@ class ProductosApi {
   }) async {
     try {
       final String cacheKey = 'producto_${sucursalId}_$productoId';
-      
+
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
         final Producto? cachedData = _cache.get<Producto>(cacheKey);
@@ -316,31 +322,31 @@ class ProductosApi {
           return cachedData;
         }
       }
-      
+
       Logger.debug('Obteniendo producto $productoId de sucursal $sucursalId');
-      
+
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
         method: 'GET',
       );
-      
+
       final Producto producto = Producto.fromJson(response['data']);
-      
+
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, producto);
         logCache('Producto guardado en caché: $cacheKey');
       }
-      
+
       return producto;
     } catch (e) {
       Logger.debug('Error al obtener producto: $e');
       rethrow;
     }
   }
-  
+
   /// Crea un nuevo producto en una sucursal
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [productoData] Datos del producto a crear
   Future<Producto> createProducto({
@@ -349,26 +355,27 @@ class ProductosApi {
   }) async {
     try {
       Logger.debug('Creando nuevo producto en sucursal $sucursalId');
-      
+
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos',
         method: 'POST',
         body: productoData,
       );
-      
+
       // Invalidar caché relacionada de manera más agresiva
       invalidateCache(sucursalId);
-      logCache('Caché de productos completamente invalidada después de crear producto');
-      
+      logCache(
+          'Caché de productos completamente invalidada después de crear producto');
+
       return Producto.fromJson(response['data']);
     } catch (e) {
       Logger.debug('Error al crear producto: $e');
       rethrow;
     }
   }
-  
+
   /// Añade un producto existente a una sucursal
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [productoId] ID del producto existente a añadir
   /// [productoData] Datos específicos del producto para esta sucursal
@@ -379,22 +386,22 @@ class ProductosApi {
   }) async {
     try {
       Logger.debug('Añadiendo producto $productoId a sucursal $sucursalId');
-      
+
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
         method: 'POST',
         body: productoData,
       );
-      
+
       return Producto.fromJson(response['data']);
     } catch (e) {
       Logger.debug('Error al añadir producto: $e');
       rethrow;
     }
   }
-  
+
   /// Actualiza un producto existente en una sucursal
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [productoId] ID del producto
   /// [productoData] Datos actualizados del producto
@@ -411,34 +418,35 @@ class ProductosApi {
           message: 'ID de sucursal no puede estar vacío',
         );
       }
-      
+
       if (productoId <= 0) {
         throw ApiException(
           statusCode: 400,
           message: 'ID de producto inválido: $productoId',
         );
       }
-      
+
       // Eliminar el ID del producto de los datos para evitar conflictos
-      final Map<String, dynamic> dataToSend = Map<String, dynamic>.from(productoData);
+      final Map<String, dynamic> dataToSend =
+          Map<String, dynamic>.from(productoData);
       dataToSend.remove('id'); // No enviar el ID en el cuerpo
-      
+
       Logger.debug('Actualizando producto $productoId en sucursal $sucursalId');
       Logger.debug('Endpoint: /$sucursalId/productos/$productoId');
       Logger.debug('Método: PATCH');
       Logger.debug('Datos a enviar: $dataToSend');
-      
+
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
         method: 'PATCH',
         body: dataToSend,
       );
-      
+
       Logger.debug('Respuesta recibida para la actualización del producto');
-      
+
       // Invalidar caché relacionada de manera más agresiva
       invalidateCache(sucursalId);
-      
+
       // Verificar estructura de respuesta
       if (response['data'] == null) {
         throw ApiException(
@@ -446,16 +454,16 @@ class ProductosApi {
           message: 'Respuesta inválida del servidor al actualizar el producto',
         );
       }
-      
+
       return Producto.fromJson(response['data']);
     } catch (e) {
       Logger.debug('Error al actualizar producto: $e');
       rethrow;
     }
   }
-  
+
   /// Elimina un producto de una sucursal (No implementado en el servidor)
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [productoId] ID del producto
   Future<bool> deleteProducto({
@@ -464,26 +472,26 @@ class ProductosApi {
   }) async {
     try {
       Logger.debug('Eliminando producto $productoId de sucursal $sucursalId');
-      
+
       await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
         method: 'DELETE',
       );
-      
+
       return true;
     } catch (e) {
       Logger.debug('Error al eliminar producto: $e');
       return false;
     }
   }
-  
+
   /// Actualiza el stock de un producto
-  /// 
+  ///
   /// Este método es un helper que utiliza updateProducto internamente
   /// [sucursalId] ID de la sucursal
   /// [productoId] ID del producto
   /// [nuevoStock] Nueva cantidad de stock
-  /// 
+  ///
   /// TODO: Este método no debe usarse directamente para actualizar el stock.
   /// La forma correcta de gestionar el stock es a través del endpoint de inventarios:
   /// - Para incrementar stock: usar el método agregarStock() que utiliza el endpoint de entradas de inventario.
@@ -496,7 +504,7 @@ class ProductosApi {
   }) async {
     try {
       Logger.debug('Actualizando stock del producto $productoId a $nuevoStock');
-      
+
       final Producto producto = await updateProducto(
         sucursalId: sucursalId,
         productoId: productoId,
@@ -504,18 +512,18 @@ class ProductosApi {
           'stock': nuevoStock,
         },
       );
-      
+
       // La invalidación del caché ya ocurre en updateProducto
-      
+
       return producto;
     } catch (e) {
       Logger.debug('Error al actualizar stock: $e');
       rethrow;
     }
   }
-  
+
   /// Disminuye stock de un producto mediante el endpoint de salidas de inventario
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [productoId] ID del producto
   /// [cantidad] Cantidad a restar (debe ser positiva)
@@ -530,37 +538,38 @@ class ProductosApi {
       if (cantidad <= 0) {
         throw Exception('La cantidad a disminuir debe ser mayor a 0');
       }
-      
-      Logger.debug('Disminuyendo $cantidad unidades al producto $productoId en sucursal $sucursalId');
-      
+
+      Logger.debug(
+          'Disminuyendo $cantidad unidades al producto $productoId en sucursal $sucursalId');
+
       // Asegurarse de que los tipos sean los correctos para la API
       final Map<String, dynamic> body = <String, dynamic>{
         'productoId': productoId, // Asegurarse que sea un entero
         'cantidad': cantidad, // Asegurarse que sea un entero
       };
-      
+
       if (motivo != null && motivo.isNotEmpty) {
         body['motivo'] = motivo;
       }
-      
+
       await _api.authenticatedRequest(
         endpoint: '/$sucursalId/inventarios/salidas',
         method: 'POST',
         body: body,
       );
-      
+
       // Invalidar caché relacionada
       _invalidateRelatedCache(sucursalId, productoId);
-      
+
       return true;
     } catch (e) {
       Logger.debug('Error al disminuir stock: $e');
       rethrow;
     }
   }
-  
+
   /// Agrega stock a un producto mediante el endpoint de entradas de inventario
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [productoId] ID del producto
   /// [cantidad] Cantidad a agregar (debe ser positiva)
@@ -575,37 +584,38 @@ class ProductosApi {
       if (cantidad <= 0) {
         throw Exception('La cantidad a agregar debe ser mayor a 0');
       }
-      
-      Logger.debug('Agregando $cantidad unidades al producto $productoId en sucursal $sucursalId');
-      
+
+      Logger.debug(
+          'Agregando $cantidad unidades al producto $productoId en sucursal $sucursalId');
+
       // Asegurarse de que los tipos sean los correctos para la API
       final Map<String, dynamic> body = <String, dynamic>{
         'productoId': productoId, // Asegurarse que sea un entero
         'cantidad': cantidad, // Asegurarse que sea un entero
       };
-      
+
       if (motivo != null && motivo.isNotEmpty) {
         body['motivo'] = motivo;
       }
-      
+
       await _api.authenticatedRequest(
         endpoint: '/$sucursalId/inventarios/entradas',
         method: 'POST',
         body: body,
       );
-      
+
       // Invalidar caché relacionada
       _invalidateRelatedCache(sucursalId, productoId);
-      
+
       return true;
     } catch (e) {
       Logger.debug('Error al agregar stock: $e');
       rethrow;
     }
   }
-  
+
   /// Obtiene productos en liquidación de una sucursal específica
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [page] Número de página para paginación (opcional)
   /// [pageSize] Número de elementos por página (opcional)
@@ -628,9 +638,9 @@ class ProductosApi {
       useCache: useCache,
     );
   }
-  
+
   /// Establece un producto en liquidación o quita la liquidación
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [productoId] ID del producto
   /// [enLiquidacion] Si es true, pone el producto en liquidación, si es false, quita la liquidación
@@ -648,37 +658,39 @@ class ProductosApi {
           message: 'ID de sucursal no puede estar vacío',
         );
       }
-      
+
       if (productoId <= 0) {
         throw ApiException(
           statusCode: 400,
           message: 'ID de producto inválido: $productoId',
         );
       }
-      
+
       // Si se está activando la liquidación, el precio de liquidación debe ser proporcionado
       if (enLiquidacion && precioLiquidacion == null) {
         throw ApiException(
           statusCode: 400,
-          message: 'Se requiere precio de liquidación al poner un producto en liquidación',
+          message:
+              'Se requiere precio de liquidación al poner un producto en liquidación',
         );
       }
-      
+
       // Datos a enviar al servidor
       final Map<String, dynamic> data = <String, dynamic>{
         'liquidacion': enLiquidacion,
       };
-      
+
       // Añadir precio de liquidación si está presente
       if (precioLiquidacion != null) {
         data['precioOferta'] = precioLiquidacion;
       }
-      
-      Logger.debug('Estableciendo liquidación para producto $productoId en sucursal $sucursalId: $enLiquidacion');
+
+      Logger.debug(
+          'Estableciendo liquidación para producto $productoId en sucursal $sucursalId: $enLiquidacion');
       if (precioLiquidacion != null) {
         Logger.debug('Precio de liquidación: $precioLiquidacion');
       }
-      
+
       // Actualizar el producto con los datos de liquidación
       return await updateProducto(
         sucursalId: sucursalId,
@@ -690,7 +702,7 @@ class ProductosApi {
       rethrow;
     }
   }
-  
+
   // Método helper para generar claves de caché consistentes
   String _generateCacheKey(
     String base, {
@@ -706,7 +718,7 @@ class ProductosApi {
     bool? liquidacion,
   }) {
     final List<String> components = <String>[base];
-    
+
     if (search != null && search.isNotEmpty) {
       components.add('s:$search');
     }
@@ -737,52 +749,60 @@ class ProductosApi {
     if (liquidacion != null) {
       components.add('liq:${liquidacion ? 'true' : 'false'}');
     }
-    
+
     return components.join('_');
   }
-  
+
   // Método para invalidar caché relacionada
   void _invalidateRelatedCache(String sucursalId, [int? productoId]) {
     if (productoId != null) {
       // Invalidar caché específica de este producto
       final String cacheKey = 'producto_${sucursalId}_$productoId';
       _cache.invalidate(cacheKey);
-      logCache('Caché invalidada para producto $productoId en sucursal $sucursalId: $cacheKey');
+      logCache(
+          'Caché invalidada para producto $productoId en sucursal $sucursalId: $cacheKey');
     }
-    
+
     // Invalidar listas que podrían contener este producto
     _cache.invalidateByPattern('productos_$sucursalId');
     logCache('Caché de productos invalidada para sucursal $sucursalId');
-    logCache('Estado de caché después de invalidación: ${_cache.size} entradas');
+    logCache(
+        'Estado de caché después de invalidación: ${_cache.size} entradas');
   }
-  
+
   // Método público para forzar refresco de caché
   void invalidateCache([String? sucursalId]) {
     if (sucursalId != null) {
       // Invalidar todos los productos de esta sucursal (listas paginadas)
       _cache.invalidateByPattern('productos_$sucursalId');
-      
-      // También invalidar todos los productos individuales de esta sucursal 
+
+      // También invalidar todos los productos individuales de esta sucursal
       // ya que podrían haber cambiado
-      final List<String> productKeys = _cache.keys.where((String key) => 
-          key.startsWith('producto_$sucursalId')).toList();
-      
+      final List<String> productKeys = _cache.keys
+          .where((String key) => key.startsWith('producto_$sucursalId'))
+          .toList();
+
       for (final String key in productKeys) {
         _cache.invalidate(key);
         logCache('Caché invalidada: $key');
       }
-      
-      logCache('Caché de productos completamente invalidada para sucursal $sucursalId');
-      logCache('Estado de caché después de invalidación: ${_cache.size} entradas');
+
+      logCache(
+          'Caché de productos completamente invalidada para sucursal $sucursalId');
+      logCache(
+          'Estado de caché después de invalidación: ${_cache.size} entradas');
     } else {
       _cache.clear();
-      logCache('Caché de productos completamente invalidada para todas las sucursales');
-      logCache('Estado de caché después de invalidación: ${_cache.size} entradas');
+      logCache(
+          'Caché de productos completamente invalidada para todas las sucursales');
+      logCache(
+          'Estado de caché después de invalidación: ${_cache.size} entradas');
     }
   }
-  
+
   // Método para verificar si los datos en caché están obsoletos
-  bool isCacheStale(String sucursalId, {
+  bool isCacheStale(
+    String sucursalId, {
     String? search,
     int? page,
     int? pageSize,
@@ -805,14 +825,14 @@ class ProductosApi {
       filterType: filterType,
       stockBajo: stockBajo,
     );
-    
+
     return _cache.isStale(cacheKey);
   }
 
   /// Obtiene productos por filtros combinados
-  /// 
+  ///
   /// Método helper que permite combinar múltiples filtros para búsquedas avanzadas
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [categoria] Categoría de productos (opcional)
   /// [marca] Marca de productos (opcional)
@@ -837,13 +857,13 @@ class ProductosApi {
   }) async {
     // Construir parámetros base
     final Map<String, String> queryParams = <String, String>{};
-    
+
     if (categoria != null && categoria.isNotEmpty) {
       queryParams['filter'] = 'categoria';
       queryParams['filter_value'] = categoria;
       queryParams['filter_type'] = 'eq';
     }
-    
+
     if (marca != null && marca.isNotEmpty) {
       // Nota: Este es un caso especial ya que filter solo permite un valor a la vez
       // Para aplicar múltiples filtros, el backend necesitaría soporte especial
@@ -854,7 +874,7 @@ class ProductosApi {
         queryParams['filter_type'] = 'eq';
       }
     }
-    
+
     // Para precio, podemos usar search como alternativa
     String searchTerm = '';
     if (precioMinimo != null || precioMaximo != null) {
@@ -865,7 +885,7 @@ class ProductosApi {
         searchTerm += 'precio<${precioMaximo.toStringAsFixed(2)} ';
       }
     }
-    
+
     // Obtenemos resultados base
     final PaginatedResponse<Producto> resultados = await getProductos(
       sucursalId: sucursalId,
@@ -876,43 +896,49 @@ class ProductosApi {
       search: searchTerm.isNotEmpty ? searchTerm : null,
       useCache: useCache,
     );
-    
+
     // Si no hay filtros adicionales, devolvemos los resultados directamente
-    if ((stockPositivo != true && conPromocion != true) || resultados.items.isEmpty) {
+    if ((stockPositivo != true && conPromocion != true) ||
+        resultados.items.isEmpty) {
       return resultados;
     }
-    
+
     // Filtros post-proceso (porque el backend no soporta estos filtros directamente)
-    final List<Producto> productosFiltrados = resultados.items.where((Producto producto) {
+    final List<Producto> productosFiltrados =
+        resultados.items.where((Producto producto) {
       // Filtrar por stock positivo
       if (stockPositivo == true && (producto.stock <= 0)) {
         return false;
       }
-      
+
       // Filtrar por promoción activa
       if (conPromocion == true) {
         final bool tienePromocion = producto.liquidacion || // Liquidación
-                             (producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0) || // Promo gratis
-                             (producto.cantidadMinimaDescuento != null && producto.porcentajeDescuento != null && 
-                              producto.cantidadMinimaDescuento! > 0 && producto.porcentajeDescuento! > 0); // Descuento por cantidad
-        
+            (producto.cantidadGratisDescuento != null &&
+                producto.cantidadGratisDescuento! > 0) || // Promo gratis
+            (producto.cantidadMinimaDescuento != null &&
+                producto.porcentajeDescuento != null &&
+                producto.cantidadMinimaDescuento! > 0 &&
+                producto.porcentajeDescuento! > 0); // Descuento por cantidad
+
         if (!tienePromocion) {
           return false;
         }
       }
-      
+
       return true;
     }).toList();
-    
+
     // Ajustar paginación para reflejar los resultados filtrados
     final Paginacion paginacionAjustada = Paginacion(
       currentPage: resultados.paginacion.currentPage,
       totalPages: (productosFiltrados.length / (pageSize ?? 20)).ceil(),
       totalItems: productosFiltrados.length,
-      hasNext: (page ?? 1) < ((productosFiltrados.length / (pageSize ?? 20)).ceil()),
+      hasNext:
+          (page ?? 1) < ((productosFiltrados.length / (pageSize ?? 20)).ceil()),
       hasPrev: (page ?? 1) > 1,
     );
-    
+
     return PaginatedResponse<Producto>(
       items: productosFiltrados,
       paginacion: paginacionAjustada,
@@ -921,7 +947,7 @@ class ProductosApi {
   }
 
   /// Obtiene productos con alguna promoción activa
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [tipoPromocion] Tipo de promoción: 'cualquiera', 'liquidacion', 'gratis', 'porcentaje' (opcional)
   /// [page] Número de página para paginación (opcional)
@@ -943,7 +969,7 @@ class ProductosApi {
         useCache: useCache,
       );
     }
-    
+
     // Para otros tipos, obtenemos todos y filtramos
     final PaginatedResponse<Producto> resultados = await getProductos(
       sucursalId: sucursalId,
@@ -953,50 +979,61 @@ class ProductosApi {
       order: 'asc',
       useCache: useCache,
     );
-    
+
     if (resultados.items.isEmpty) {
       return resultados;
     }
-    
+
     // Filtrar según el tipo de promoción
     List<Producto> productosFiltrados;
-    
+
     switch (tipoPromocion) {
       case 'gratis':
-        productosFiltrados = resultados.items.where((Producto p) => 
-          p.cantidadGratisDescuento != null && p.cantidadGratisDescuento! > 0
-        ).toList();
+        productosFiltrados = resultados.items
+            .where((Producto p) =>
+                p.cantidadGratisDescuento != null &&
+                p.cantidadGratisDescuento! > 0)
+            .toList();
         break;
       case 'porcentaje':
-        productosFiltrados = resultados.items.where((Producto p) => 
-          p.cantidadMinimaDescuento != null && p.porcentajeDescuento != null &&
-          p.cantidadMinimaDescuento! > 0 && p.porcentajeDescuento! > 0
-        ).toList();
+        productosFiltrados = resultados.items
+            .where((Producto p) =>
+                p.cantidadMinimaDescuento != null &&
+                p.porcentajeDescuento != null &&
+                p.cantidadMinimaDescuento! > 0 &&
+                p.porcentajeDescuento! > 0)
+            .toList();
         break;
       case 'cualquiera':
       default:
-        productosFiltrados = resultados.items.where((Producto p) => 
-          p.liquidacion || // Liquidación
-          (p.cantidadGratisDescuento != null && p.cantidadGratisDescuento! > 0) || // Promo gratis
-          (p.cantidadMinimaDescuento != null && p.porcentajeDescuento != null && 
-           p.cantidadMinimaDescuento! > 0 && p.porcentajeDescuento! > 0) // Descuento por cantidad
-        ).toList();
+        productosFiltrados = resultados.items
+            .where((Producto p) =>
+                    p.liquidacion || // Liquidación
+                    (p.cantidadGratisDescuento != null &&
+                        p.cantidadGratisDescuento! > 0) || // Promo gratis
+                    (p.cantidadMinimaDescuento != null &&
+                        p.porcentajeDescuento != null &&
+                        p.cantidadMinimaDescuento! > 0 &&
+                        p.porcentajeDescuento! > 0) // Descuento por cantidad
+                )
+            .toList();
         break;
     }
-    
+
     // Paginar los resultados manualmente
     final int pageNumber = page ?? 1;
     final int itemsPerPage = pageSize ?? 20;
     final int startIndex = (pageNumber - 1) * itemsPerPage;
-    final int endIndex = startIndex + itemsPerPage < productosFiltrados.length 
-        ? startIndex + itemsPerPage 
+    final int endIndex = startIndex + itemsPerPage < productosFiltrados.length
+        ? startIndex + itemsPerPage
         : productosFiltrados.length;
-    
+
     // Asegurarnos de no ir fuera de rango
-    final List<Producto> paginatedResults = startIndex < productosFiltrados.length 
-        ? productosFiltrados.sublist(startIndex, endIndex)
-        : <Producto>[];
-    
+    final List<Producto> paginatedResults =
+        startIndex < productosFiltrados.length
+            ? productosFiltrados.sublist(startIndex, endIndex)
+            : <Producto>[];
+
     // Ajustar paginación
     final int totalPages = (productosFiltrados.length / itemsPerPage).ceil();
     final Paginacion paginacionAjustada = Paginacion(
@@ -1006,7 +1043,7 @@ class ProductosApi {
       hasNext: pageNumber < totalPages,
       hasPrev: pageNumber > 1,
     );
-    
+
     return PaginatedResponse<Producto>(
       items: paginatedResults,
       paginacion: paginacionAjustada,
@@ -1015,10 +1052,10 @@ class ProductosApi {
   }
 
   /// Obtiene productos ordenados por más vendidos
-  /// 
+  ///
   /// Este método simula la funcionalidad ya que el backend aún no provee estadísticas directas
   /// En una implementación real, se debería consultar un endpoint específico en el servidor
-  /// 
+  ///
   /// [sucursalId] ID de la sucursal
   /// [dias] Días a considerar para el cálculo (7=semana, 30=mes, etc.)
   /// [page] Número de página para paginación (opcional)
@@ -1033,21 +1070,23 @@ class ProductosApi {
   }) async {
     // En una implementación completa, consultaríamos un endpoint específico con estadísticas
     // Por ahora, obtenemos productos normales y simulamos la ordenación
-    
-    Logger.debug('Obteniendo productos más vendidos en la sucursal $sucursalId durante los últimos $dias días');
-    
+
+    Logger.debug(
+        'Obteniendo productos más vendidos en la sucursal $sucursalId durante los últimos $dias días');
+
     final PaginatedResponse<Producto> productos = await getProductos(
       sucursalId: sucursalId,
       page: page ?? 1,
       pageSize: pageSize ?? 20,
-      sortBy: 'fechaCreacion', // Esto es lo más cercano a "popularidad" sin tener estadísticas reales
+      sortBy:
+          'fechaCreacion', // Esto es lo más cercano a "popularidad" sin tener estadísticas reales
       order: 'desc', // Más recientes primero como aproximación
       useCache: useCache,
     );
-    
+
     // Nota: Aquí deberíamos aplicar la lógica real de ventas
     // Por ahora solo devolvemos los resultados como están
-    
+
     return productos;
   }
 }

@@ -5,6 +5,7 @@ import 'package:condorsmotors/models/marca.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/utils/productos_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -43,6 +44,7 @@ class ProductosFormDialogAdmin extends StatefulWidget {
 
 class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final ProductoRepository _productoRepository = ProductoRepository.instance;
   late TextEditingController _nombreController;
   late TextEditingController _descripcionController;
   late TextEditingController _precioVentaController;
@@ -71,10 +73,6 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
   // Tipo de promoción seleccionada
   String _tipoPromocionSeleccionada = 'ninguna';
-
-  // Verificar si tiene promoción de "lleva X, paga Y" (gratis)
-
-  // Verificar si tiene promoción de descuento porcentual
 
   // Listas para categorías, marcas y colores
   List<String> _categorias = <String>[];
@@ -661,17 +659,57 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             return null;
           },
         ),
-        // const SizedBox(height: 16),
-        // TextFormField(
-        //   controller: _precioOfertaController,
-        //   decoration:
-        //       _getInputDecoration('Precio de liquidación', prefixText: 'S/ '),
-        //   style: const TextStyle(color: Colors.white),
-        //   keyboardType: TextInputType.number,
-        // ),
         const SizedBox(height: 16),
-
-        // Campo de stock con manejo especial para edición
+        // Añadir campo de precio de liquidación
+        Row(
+          children: [
+            // Switch para activar/desactivar liquidación
+            Switch(
+              value: _liquidacionActiva,
+              onChanged: (value) {
+                setState(() {
+                  _liquidacionActiva = value;
+                });
+              },
+              activeColor: const Color(0xFFE31E24),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Producto en liquidación',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        if (_liquidacionActiva) ...[
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _precioOfertaController,
+            decoration:
+                _getInputDecoration('Precio de liquidación', prefixText: 'S/ '),
+            style: const TextStyle(color: Colors.white),
+            keyboardType: TextInputType.number,
+            validator: _liquidacionActiva
+                ? (String? value) {
+                    if (value?.isEmpty ?? true) {
+                      return 'El precio de liquidación es requerido';
+                    }
+                    final double oferta = double.tryParse(value!) ?? 0;
+                    final double venta =
+                        double.tryParse(_precioVentaController.text) ?? 0;
+                    final double compra =
+                        double.tryParse(_precioCompraController.text) ?? 0;
+                    if (oferta >= venta) {
+                      return 'El precio debe ser menor al precio de venta';
+                    }
+                    if (oferta < compra) {
+                      return 'El precio no puede ser menor al de compra';
+                    }
+                    return null;
+                  }
+                : null,
+          ),
+        ],
+        const SizedBox(height: 16),
         TextFormField(
           controller: _stockController,
           decoration: _getInputDecoration(
@@ -2220,10 +2258,91 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       });
       debugPrint('ProductosForm: === FIN DATOS PRODUCTO ===');
 
-      // Llamar al callback onSave proporcionado por el componente padre
-      widget.onSave(productoData);
-      debugPrint('ProductosForm: Callback onSave ejecutado');
+      // Usar el repositorio en lugar del callback onSave
+      final String sucursalId = _sucursalSeleccionada!.id.toString();
 
+      // Mostrar indicador de carga
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Guardando producto...'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 1),
+        ),
+      );
+
+      // Ejecutar en función asíncrona para evitar bloquear la UI
+      Future<void> saveProducto() async {
+        try {
+          if (esNuevoProducto) {
+            await _productoRepository.createProducto(
+              sucursalId: sucursalId,
+              productoData: productoData,
+            );
+            debugPrint('ProductosForm: Producto creado correctamente');
+          } else {
+            // Manejar correctamente el tipo de ID
+            final dynamic rawId = productoData['id'];
+            if (rawId == null) {
+              throw Exception(
+                  'ID de producto es null. No se puede actualizar.');
+            }
+
+            // Convertir ID a entero de forma segura
+            final int productoId = rawId is int
+                ? rawId
+                : (rawId is String ? int.parse(rawId) : -1);
+
+            if (productoId <= 0) {
+              throw Exception('ID de producto inválido: $rawId');
+            }
+
+            debugPrint('ProductosForm: Actualizando producto ID $productoId');
+
+            await _productoRepository.updateProducto(
+              sucursalId: sucursalId,
+              productoId: productoId,
+              productoData: productoData,
+            );
+
+            debugPrint('ProductosForm: Producto actualizado correctamente');
+          }
+
+          // Invalidar caché para forzar recarga de datos
+          _productoRepository.invalidateCache(sucursalId);
+
+          // Mostrar mensaje de éxito si todavía estamos montados
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Producto guardado exitosamente'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+
+          // Si aún tenemos el onSave callback del widget padre, llamarlo para compatibilidad
+          widget.onSave(productoData);
+          debugPrint(
+              'ProductosForm: Callback onSave ejecutado para compatibilidad');
+        } catch (e) {
+          debugPrint('ProductosForm: ERROR al guardar producto: $e');
+
+          // Mostrar mensaje de error si todavía estamos montados
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error al guardar producto: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
+
+      // Iniciar el proceso de guardado sin esperar (no bloqueamos la UI)
+      saveProducto();
+
+      // Cerrar el diálogo
       Navigator.pop(context);
     }
   }

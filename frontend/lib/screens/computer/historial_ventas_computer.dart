@@ -534,7 +534,9 @@ class _HistorialVentasComputerScreenState
                   sucursalId: sucursalIdParam,
                 );
 
-                if (!mounted) return;
+                if (!mounted) {
+                  return;
+                }
                 Navigator.of(context).pop(); // Cerrar diálogo de carga
 
                 if (resultado) {

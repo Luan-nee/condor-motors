@@ -17,6 +17,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
   final TextEditingController _descripcionController = TextEditingController();
 
   bool _isLoading = false;
+  bool _isCreating = false;
   String _errorMessage = '';
   List<Marca> _marcas = <Marca>[];
   Map<int, int> _productosPorMarca = <int, int>{};
@@ -34,6 +35,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
     });
 
     try {
+      debugPrint('Cargando marcas desde la API...');
       // Obtenemos las marcas directamente como objetos Marca
       final List<Marca> marcas = await api.marcas.getMarcas();
 
@@ -51,10 +53,13 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
         _productosPorMarca = tempProductosPorMarca;
         _isLoading = false;
       });
+
+      debugPrint('${_marcas.length} marcas cargadas correctamente');
     } catch (e) {
       if (!mounted) {
         return;
       }
+      debugPrint('Error al cargar marcas: $e');
       setState(() {
         _isLoading = false;
         _errorMessage = 'Error al cargar marcas: $e';
@@ -80,7 +85,10 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
     }
 
     try {
-      setState(() => _isLoading = true);
+      setState(() {
+        _isCreating = true;
+        _errorMessage = '';
+      });
 
       final Map<String, String> marcaData = <String, String>{
         'nombre': _nombreController.text,
@@ -89,16 +97,18 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
 
       if (marca != null) {
         // Actualizar marca existente
+        debugPrint('Actualizando marca: ${marca.id}');
         await api.marcas.updateMarca(marca.id.toString(), marcaData);
       } else {
         // Crear nueva marca
+        debugPrint('Creando nueva marca: ${_nombreController.text}');
         await api.marcas.createMarca(marcaData);
       }
 
       if (!mounted) {
         return;
       }
-      Navigator.pop(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(marca == null
@@ -107,21 +117,26 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
           backgroundColor: Colors.green,
         ),
       );
+
       await _cargarMarcas(); // Recargar la lista
     } catch (e) {
       if (!mounted) {
         return;
       }
-      setState(() {
-        _isLoading = false;
-      });
-
+      debugPrint('Error al guardar marca: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al guardar marca: $e'),
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCreating = false;
+        });
+        Navigator.pop(context);
+      }
     }
   }
 
@@ -149,7 +164,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                   children: <Widget>[
                     const FaIcon(
                       FontAwesomeIcons.trademark,
-                      color: Colors.white,
+                      color: Colors.red,
                       size: 20,
                     ),
                     const SizedBox(width: 12),
@@ -209,7 +224,8 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: <Widget>[
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed:
+                          _isCreating ? null : () => Navigator.pop(context),
                       child: const Text(
                         'Cancelar',
                         style: TextStyle(color: Colors.white54),
@@ -225,8 +241,9 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                           vertical: 12,
                         ),
                       ),
-                      onPressed: _isLoading ? null : () => _guardarMarca(marca),
-                      child: _isLoading
+                      onPressed:
+                          _isCreating ? null : () => _guardarMarca(marca),
+                      child: _isCreating
                           ? const SizedBox(
                               width: 20,
                               height: 20,
@@ -289,24 +306,93 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                     ),
                   ],
                 ),
-                ElevatedButton.icon(
-                  icon: const FaIcon(FontAwesomeIcons.plus,
-                      size: 16, color: Colors.white),
-                  label: const Text('Nueva Marca'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE31E24),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
+                Row(
+                  children: <Widget>[
+                    if (_isLoading)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: Row(
+                          children: <Widget>[
+                            const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Cargando...',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    IconButton(
+                      icon: const FaIcon(
+                        FontAwesomeIcons.arrowsRotate,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      onPressed: _isLoading ? null : _cargarMarcas,
+                      tooltip: 'Recargar marcas',
                     ),
-                  ),
-                  onPressed:
-                      _isLoading ? null : () => _mostrarFormularioMarca(),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      icon: const FaIcon(FontAwesomeIcons.plus,
+                          size: 16, color: Colors.white),
+                      label: const Text('Nueva Marca'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE31E24),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                      ),
+                      onPressed:
+                          _isLoading ? null : () => _mostrarFormularioMarca(),
+                    ),
+                  ],
                 ),
               ],
             ),
             const SizedBox(height: 32),
+
+            // Mensaje de error si existe
+            if (_errorMessage.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: <Widget>[
+                    const Icon(Icons.error_outline, color: Colors.red),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        _errorMessage,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.red),
+                      onPressed: () {
+                        setState(() {
+                          _errorMessage = '';
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
 
             // Tabla de marcas
             Expanded(
@@ -320,174 +406,182 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                 ),
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : _errorMessage.isNotEmpty
+                    : _marcas.isEmpty
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: <Widget>[
-                                Text(
-                                  _errorMessage,
-                                  style: const TextStyle(color: Colors.red),
+                                const FaIcon(
+                                  FontAwesomeIcons.tag,
+                                  color: Colors.grey,
+                                  size: 48,
                                 ),
                                 const SizedBox(height: 16),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFE31E24),
-                                    foregroundColor: Colors.white,
+                                Text(
+                                  'No hay marcas registradas',
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 16,
                                   ),
-                                  onPressed: _cargarMarcas,
-                                  child: const Text('Reintentar'),
+                                ),
+                                const SizedBox(height: 8),
+                                ElevatedButton.icon(
+                                  icon: const FaIcon(
+                                    FontAwesomeIcons.plus,
+                                    size: 14,
+                                  ),
+                                  label: const Text('Crear marca'),
+                                  onPressed: () => _mostrarFormularioMarca(),
                                 ),
                               ],
                             ),
                           )
-                        : _marcas.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  'No hay marcas registradas',
-                                  style: TextStyle(color: Colors.white54),
+                        : SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                // Encabezado de la tabla
+                                Container(
+                                  color: const Color(0xFF2D2D2D),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16, horizontal: 20),
+                                  child: const Row(
+                                    children: <Widget>[
+                                      // Marca (35% del ancho)
+                                      Expanded(
+                                        flex: 35,
+                                        child: Text(
+                                          'Marca',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      // Descripción (45% del ancho)
+                                      Expanded(
+                                        flex: 45,
+                                        child: Text(
+                                          'Descripción',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      // Cant. de productos (10% del ancho)
+                                      Expanded(
+                                        flex: 10,
+                                        child: Text(
+                                          'Productos',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      // Acciones (10% del ancho)
+                                      Expanded(
+                                        flex: 10,
+                                        child: Text(
+                                          'Acciones',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              )
-                            : SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: <Widget>[
-                                    // Encabezado de la tabla
-                                    Container(
-                                      color: const Color(0xFF2D2D2D),
+
+                                // Filas de marcas
+                                ..._marcas.map((Marca marca) => Container(
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color:
+                                                Colors.white.withOpacity(0.1),
+                                          ),
+                                        ),
+                                      ),
                                       padding: const EdgeInsets.symmetric(
-                                          vertical: 16, horizontal: 20),
-                                      child: const Row(
+                                          vertical: 12, horizontal: 20),
+                                      child: Row(
                                         children: <Widget>[
-                                          // Marca (35% del ancho)
+                                          // Marca
                                           Expanded(
                                             flex: 35,
-                                            child: Text(
-                                              'Marca',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                            child: Row(
+                                              children: <Widget>[
+                                                Container(
+                                                  width: 32,
+                                                  height: 32,
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        const Color(0xFF2D2D2D),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                  ),
+                                                  child: const Center(
+                                                    child: FaIcon(
+                                                      FontAwesomeIcons.tag,
+                                                      color: Color(0xFFE31E24),
+                                                      size: 14,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Text(
+                                                  marca.nombre,
+                                                  style: const TextStyle(
+                                                      color: Colors.white),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          // Descripción (45% del ancho)
+                                          // Descripción
                                           Expanded(
                                             flex: 45,
                                             child: Text(
-                                              'Descripción',
+                                              marca.descripcion ??
+                                                  'Sin descripción',
                                               style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                          // Cant. de productos (10% del ancho)
-                                          Expanded(
-                                            flex: 10,
-                                            child: Text(
-                                              'Productos',
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                          // Acciones (10% del ancho)
-                                          Expanded(
-                                            flex: 10,
-                                            child: Text(
-                                              'Acciones',
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    // Filas de marcas
-                                    ..._marcas.map((Marca marca) => Container(
-                                          decoration: BoxDecoration(
-                                            border: Border(
-                                              bottom: BorderSide(
                                                 color: Colors.white
-                                                    .withOpacity(0.1),
+                                                    .withOpacity(0.7),
                                               ),
                                             ),
                                           ),
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 12, horizontal: 20),
-                                          child: Row(
-                                            children: <Widget>[
-                                              // Marca
-                                              Expanded(
-                                                flex: 35,
+                                          // Cant. de productos
+                                          Expanded(
+                                            flex: 10,
+                                            child: Center(
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 4,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFE31E24)
+                                                      .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
                                                 child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: <Widget>[
-                                                    Container(
-                                                      width: 32,
-                                                      height: 32,
-                                                      decoration: BoxDecoration(
-                                                        color: const Color(
-                                                            0xFF2D2D2D),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                      ),
-                                                      child: const Center(
-                                                        child: FaIcon(
-                                                          FontAwesomeIcons.tag,
-                                                          color:
-                                                              Color(0xFFE31E24),
-                                                          size: 14,
-                                                        ),
-                                                      ),
+                                                    const FaIcon(
+                                                      FontAwesomeIcons.box,
+                                                      size: 12,
+                                                      color: Color(0xFFE31E24),
                                                     ),
-                                                    const SizedBox(width: 12),
+                                                    const SizedBox(width: 6),
                                                     Text(
-                                                      marca.nombre,
-                                                      style: const TextStyle(
-                                                          color: Colors.white),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              // Descripción
-                                              Expanded(
-                                                flex: 45,
-                                                child: Text(
-                                                  marca.descripcion ??
-                                                      'Sin descripción',
-                                                  style: TextStyle(
-                                                    color: Colors.white
-                                                        .withOpacity(0.7),
-                                                  ),
-                                                ),
-                                              ),
-                                              // Cant. de productos
-                                              Expanded(
-                                                flex: 10,
-                                                child: Center(
-                                                  child: Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 4,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: const Color(
-                                                              0xFFE31E24)
-                                                          .withOpacity(0.1),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              12),
-                                                    ),
-                                                    child: Text(
                                                       _productosPorMarca[
                                                                   marca.id]
                                                               ?.toString() ??
@@ -499,42 +593,44 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                                             FontWeight.bold,
                                                       ),
                                                     ),
-                                                  ),
-                                                ),
-                                              ),
-                                              // Acciones
-                                              Expanded(
-                                                flex: 10,
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: <Widget>[
-                                                    IconButton(
-                                                      icon: const FaIcon(
-                                                        FontAwesomeIcons
-                                                            .penToSquare,
-                                                        color: Colors.white54,
-                                                        size: 16,
-                                                      ),
-                                                      onPressed: () =>
-                                                          _mostrarFormularioMarca(
-                                                              marca),
-                                                      constraints:
-                                                          const BoxConstraints(
-                                                        minWidth: 30,
-                                                        minHeight: 30,
-                                                      ),
-                                                      padding: EdgeInsets.zero,
-                                                    )
                                                   ],
                                                 ),
                                               ),
-                                            ],
+                                            ),
                                           ),
-                                        )),
-                                  ],
-                                ),
-                              ),
+                                          // Acciones
+                                          Expanded(
+                                            flex: 10,
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: <Widget>[
+                                                IconButton(
+                                                  icon: const FaIcon(
+                                                    FontAwesomeIcons
+                                                        .penToSquare,
+                                                    color: Colors.white54,
+                                                    size: 16,
+                                                  ),
+                                                  onPressed: () =>
+                                                      _mostrarFormularioMarca(
+                                                          marca),
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                    minWidth: 30,
+                                                    minHeight: 30,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                )
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )),
+                              ],
+                            ),
+                          ),
               ),
             ),
           ],

@@ -24,79 +24,74 @@ class DetalleProforma {
   /// Crea un objeto DetalleProforma desde un mapa JSON
   factory DetalleProforma.fromJson(Map<String, dynamic> json) {
     // Mostrar los datos en la consola para depuración
-    Logger.debug('🧾 [ProformaApi] Procesando DetalleProforma: ${json.toString()}');
-    
+    Logger.debug(
+        '🧾 [ProformaApi] Procesando DetalleProforma: ${json.toString()}');
+
     // Procesar la cantidad según la disponibilidad de campos
     int cantidad = 0;
-    
+
     // Priorizar el uso de cantidadTotal si está disponible
     if (json.containsKey('cantidadTotal') && json['cantidadTotal'] != null) {
-      cantidad = (json['cantidadTotal'] is int) 
-          ? json['cantidadTotal'] 
+      cantidad = (json['cantidadTotal'] is int)
+          ? json['cantidadTotal']
           : int.tryParse(json['cantidadTotal'].toString()) ?? 0;
       Logger.debug('🧾 Usando cantidadTotal: $cantidad');
-    } 
+    }
     // Si no existe, verificar cantidadPagada
-    else if (json.containsKey('cantidadPagada') && json['cantidadPagada'] != null) {
-      cantidad = (json['cantidadPagada'] is int) 
-          ? json['cantidadPagada'] 
+    else if (json.containsKey('cantidadPagada') &&
+        json['cantidadPagada'] != null) {
+      cantidad = (json['cantidadPagada'] is int)
+          ? json['cantidadPagada']
           : int.tryParse(json['cantidadPagada'].toString()) ?? 0;
       Logger.debug('🧾 Usando cantidadPagada: $cantidad');
     }
     // En último caso, usar cantidad tradicional
     else if (json.containsKey('cantidad') && json['cantidad'] != null) {
-      cantidad = (json['cantidad'] is int) 
-          ? json['cantidad'] 
+      cantidad = (json['cantidad'] is int)
+          ? json['cantidad']
           : int.tryParse(json['cantidad'].toString()) ?? 0;
       Logger.debug('🧾 Usando cantidad: $cantidad');
     }
-    
+
     // Procesar el precio unitario y el subtotal
     final double precioUnitario = (json['precioUnitario'] is num)
         ? (json['precioUnitario'] as num).toDouble()
         : double.tryParse(json['precioUnitario'].toString()) ?? 0.0;
-        
+
     final double subtotal = (json['subtotal'] is num)
         ? (json['subtotal'] as num).toDouble()
         : double.tryParse(json['subtotal'].toString()) ?? 0.0;
-    
+
     // Procesar campos adicionales
-    final double? precioOriginal = json.containsKey('precioOriginal') && json['precioOriginal'] != null
-        ? ((json['precioOriginal'] is num)
-            ? (json['precioOriginal'] as num).toDouble()
-            : double.tryParse(json['precioOriginal'].toString()))
-        : null;
-    
-    final int? descuento = json.containsKey('descuento') && json['descuento'] != null
-        ? ((json['descuento'] is int)
-            ? json['descuento'] as int
-            : int.tryParse(json['descuento'].toString()))
-        : null;
-        
-    final int? cantidadGratis = json.containsKey('cantidadGratis') && json['cantidadGratis'] != null
-        ? ((json['cantidadGratis'] is int)
-            ? json['cantidadGratis'] as int
-            : int.tryParse(json['cantidadGratis'].toString()))
-        : null;
-        
-    final int? cantidadPagada = json.containsKey('cantidadPagada') && json['cantidadPagada'] != null
-        ? ((json['cantidadPagada'] is int)
-            ? json['cantidadPagada'] as int
-            : int.tryParse(json['cantidadPagada'].toString()))
-        : null;
-    
+
+    final int? descuento =
+        json.containsKey('descuento') && json['descuento'] != null
+            ? ((json['descuento'] is int)
+                ? json['descuento'] as int
+                : int.tryParse(json['descuento'].toString()))
+            : null;
+
+    final int? cantidadGratis =
+        json.containsKey('cantidadGratis') && json['cantidadGratis'] != null
+            ? ((json['cantidadGratis'] is int)
+                ? json['cantidadGratis'] as int
+                : int.tryParse(json['cantidadGratis'].toString()))
+            : null;
+
     // Mostrar información sobre promociones y descuentos
     if (descuento != null && descuento > 0) {
-      Logger.debug('🎯 Producto con descuento: ${json['nombre']} - $descuento%');
+      Logger.debug(
+          '🎯 Producto con descuento: ${json['nombre']} - $descuento%');
     }
-    
+
     if (cantidadGratis != null && cantidadGratis > 0) {
-      Logger.debug('🎁 Producto con unidades gratis: ${json['nombre']} - $cantidadGratis unidades');
+      Logger.debug(
+          '🎁 Producto con unidades gratis: ${json['nombre']} - $cantidadGratis unidades');
     }
-    
+
     return DetalleProforma(
-      productoId: (json['productoId'] is int) 
-          ? json['productoId'] 
+      productoId: (json['productoId'] is int)
+          ? json['productoId']
           : int.tryParse(json['productoId'].toString()) ?? 0,
       nombre: json['nombre']?.toString() ?? 'Producto sin nombre',
       cantidad: cantidad,
@@ -147,7 +142,7 @@ class DetalleProforma {
 class ProformaVentaApi {
   final ApiClient _api;
   final FastCache _cache = FastCache(maxSize: 50);
-  
+
   // Prefijos para las claves de caché
   static const String _prefixListaProformas = 'proformas_lista_';
   static const String _prefixProforma = 'proforma_detalle_';
@@ -156,32 +151,34 @@ class ProformaVentaApi {
   ProformaVentaApi(this._api);
 
   /// Invalida el caché para una sucursal específica o para todas las sucursales
-  /// 
+  ///
   /// [sucursalId] - ID de la sucursal (opcional, si no se especifica invalida para todas las sucursales)
   void invalidateCache([String? sucursalId]) {
     if (sucursalId != null) {
       // Invalidar sólo las proformas de esta sucursal
-      _cache..invalidateByPattern('$_prefixListaProformas$sucursalId')
-      ..invalidateByPattern('$_prefixProforma$sucursalId');
+      _cache
+        ..invalidateByPattern('$_prefixListaProformas$sucursalId')
+        ..invalidateByPattern('$_prefixProforma$sucursalId');
       logCache('🔄 Caché de proformas invalidado para sucursal $sucursalId');
     } else {
       // Invalidar todas las proformas en caché
-      _cache..invalidateByPattern(_prefixListaProformas)
-      ..invalidateByPattern(_prefixProforma);
+      _cache
+        ..invalidateByPattern(_prefixListaProformas)
+        ..invalidateByPattern(_prefixProforma);
       logCache('🔄 Caché de proformas invalidado completamente');
     }
     logCache('📊 Entradas en caché después de invalidación: ${_cache.size}');
   }
 
   /// Obtener lista de proformas de venta para una sucursal específica
-  /// 
+  ///
   /// [sucursalId] - ID de la sucursal
   /// [page] - Número de página (paginación)
   /// [pageSize] - Tamaño de página (paginación)
   /// [search] - Término de búsqueda opcional
   /// [useCache] - Si se debe usar el caché (por defecto true)
   /// [forceRefresh] - Si se debe forzar una actualización desde el servidor (por defecto false)
-  /// 
+  ///
   /// Retorna un mapa con la siguiente estructura:
   /// ```
   /// {
@@ -224,47 +221,53 @@ class ProformaVentaApi {
     bool forceRefresh = false,
   }) async {
     try {
-      final String cacheKey = '$_prefixListaProformas${sucursalId}_p${page}_s${pageSize}_q${search ?? ""}';
-      
+      final String cacheKey =
+          '$_prefixListaProformas${sucursalId}_p${page}_s${pageSize}_q${search ?? ""}';
+
       // Nuevo mensaje de debug para seguimiento detallado
-      logCache('📝 [ProformaVentaApi] Solicitando proformas de sucursal $sucursalId (page: $page, pageSize: $pageSize, useCache: $useCache, forceRefresh: $forceRefresh)');
-      
+      logCache(
+          '📝 [ProformaVentaApi] Solicitando proformas de sucursal $sucursalId (page: $page, pageSize: $pageSize, useCache: $useCache, forceRefresh: $forceRefresh)');
+
       // Intentar obtener del caché si corresponde
       if (useCache && !forceRefresh) {
-        final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        final Map<String, dynamic>? cachedData =
+            _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
           logCache('🔍 Usando proformas en caché para sucursal $sucursalId');
           return cachedData;
         }
       }
-      
+
       final Map<String, String> queryParams = <String, String>{
         'page': page.toString(),
         'page_size': pageSize.toString(),
         if (search != null && search.isNotEmpty) 'search': search,
       };
-      
-      logCache('🔄 [ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa');
-      
+
+      logCache(
+          '🔄 [ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa');
+
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa',
         method: 'GET',
         queryParams: queryParams,
       );
-      
+
       // Nuevo mensaje de debug con información de respuesta
-      logCache('✅ [ProformaVentaApi] Respuesta recibida para proformas de sucursal $sucursalId');
+      logCache(
+          '✅ [ProformaVentaApi] Respuesta recibida para proformas de sucursal $sucursalId');
       if (response.containsKey('data')) {
-        final int proformasCount = response['data'] is List ? (response['data'] as List).length : 0;
+        final int proformasCount =
+            response['data'] is List ? (response['data'] as List).length : 0;
         logCache('📊 [ProformaVentaApi] Proformas recibidas: $proformasCount');
       }
-      
+
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, response);
         logCache('💾 Guardadas proformas en caché para sucursal $sucursalId');
       }
-      
+
       return response;
     } catch (e) {
       logCache('❌ [ProformaVentaApi] ERROR al obtener proformas de venta: $e');
@@ -273,12 +276,12 @@ class ProformaVentaApi {
   }
 
   /// Obtener detalles de una proforma específica
-  /// 
+  ///
   /// [sucursalId] - ID de la sucursal
   /// [proformaId] - ID de la proforma
   /// [useCache] - Si se debe usar el caché (por defecto true)
   /// [forceRefresh] - Si se debe forzar una actualización desde el servidor (por defecto false)
-  /// 
+  ///
   /// Retorna un mapa con la siguiente estructura:
   /// ```
   /// {
@@ -312,54 +315,61 @@ class ProformaVentaApi {
   }) async {
     try {
       final String cacheKey = '$_prefixProforma${sucursalId}_$proformaId';
-      
+
       // Nuevo mensaje de debug para seguimiento detallado
-      logCache('📝 [ProformaVentaApi] Solicitando proforma #$proformaId de sucursal $sucursalId (useCache: $useCache, forceRefresh: $forceRefresh)');
-      
+      logCache(
+          '📝 [ProformaVentaApi] Solicitando proforma #$proformaId de sucursal $sucursalId (useCache: $useCache, forceRefresh: $forceRefresh)');
+
       // Intentar obtener del caché si corresponde
       if (useCache && !forceRefresh) {
-        final Map<String, dynamic>? cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+        final Map<String, dynamic>? cachedData =
+            _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
-          logCache('🔍 [ProformaVentaApi] Usando proforma en caché: $sucursalId/$proformaId');
+          logCache(
+              '🔍 [ProformaVentaApi] Usando proforma en caché: $sucursalId/$proformaId');
           return cachedData;
         }
       }
-      
-      logCache('🔄 [ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa/$proformaId');
-      
+
+      logCache(
+          '🔄 [ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa/$proformaId');
+
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
         method: 'GET',
       );
-      
+
       // Nuevo mensaje de debug con información de respuesta
-      logCache('✅ [ProformaVentaApi] Respuesta recibida para proforma #$proformaId');
+      logCache(
+          '✅ [ProformaVentaApi] Respuesta recibida para proforma #$proformaId');
       if (response.containsKey('status')) {
         logCache('📊 [ProformaVentaApi] Status: ${response['status']}');
       }
-      
+
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, response);
-        logCache('💾 [ProformaVentaApi] Guardada proforma en caché: $sucursalId/$proformaId');
+        logCache(
+            '💾 [ProformaVentaApi] Guardada proforma en caché: $sucursalId/$proformaId');
       }
-      
+
       return response;
     } catch (e) {
-      logCache('❌ [ProformaVentaApi] ERROR al obtener proforma #$proformaId: $e');
+      logCache(
+          '❌ [ProformaVentaApi] ERROR al obtener proforma #$proformaId: $e');
       rethrow;
     }
   }
 
   /// Crear una nueva proforma de venta
-  /// 
+  ///
   /// [sucursalId] - ID de la sucursal
   /// [nombre] - Nombre o identificador de la proforma (opcional)
   /// [total] - Total de la proforma
   /// [detalles] - Lista de productos incluidos en la proforma
   /// [empleadoId] - ID del empleado que crea la proforma
   /// [clienteId] - ID del cliente asociado (opcional)
-  /// 
+  ///
   /// Formato esperado para cada detalle:
   /// ```
   /// {
@@ -370,7 +380,7 @@ class ProformaVentaApi {
   ///   "precioUnitario": 250.00
   /// }
   /// ```
-  /// 
+  ///
   /// Retorna un mapa con la nueva proforma creada:
   /// ```
   /// {
@@ -405,25 +415,27 @@ class ProformaVentaApi {
         'sucursalId': int.parse(sucursalId),
         if (clienteId != null) 'clienteId': clienteId,
         if (estado != null) 'estado': estado,
-        if (fechaExpiracion != null) 'fechaExpiracion': fechaExpiracion.toIso8601String(),
+        if (fechaExpiracion != null)
+          'fechaExpiracion': fechaExpiracion.toIso8601String(),
       };
-      
+
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa',
         method: 'POST',
         body: body,
       );
-      
+
       // Invalidar caché después de crear
       invalidateCache(sucursalId);
-      
+
       // Enviar notificación si la respuesta fue exitosa
-      if (response.containsKey('status') && response['status'] == 'success' && 
+      if (response.containsKey('status') &&
+          response['status'] == 'success' &&
           response.containsKey('data')) {
-          
         // Intentar obtener la proforma creada
-        final proforma_model.Proforma? nuevaProforma = parseProformaVenta(response);
-        
+        final proforma_model.Proforma? nuevaProforma =
+            parseProformaVenta(response);
+
         if (nuevaProforma != null) {
           // Buscar el nombre del cliente si existe
           String nombreCliente = '';
@@ -433,24 +445,27 @@ class ProformaVentaApi {
               nombreCliente = userData?['nombre'] ?? '';
             } catch (e) {
               // Ignorar errores al obtener el nombre del cliente
-              Logger.warn('⚠️ No se pudo obtener el nombre del cliente para la notificación: $e');
+              Logger.warn(
+                  '⚠️ No se pudo obtener el nombre del cliente para la notificación: $e');
             }
           }
-          
+
           // Enviamos siempre la notificación de nueva proforma
-          Logger.info('🔔 Enviando notificación de nueva proforma #${nuevaProforma.id}');
+          Logger.info(
+              '🔔 Enviando notificación de nueva proforma #${nuevaProforma.id}');
           await proformaNotification.notifyNewProforma(nuevaProforma);
-          
+
           // Siempre enviamos la notificación de proforma pendiente, para que aparezca en la barra de Windows
           // sin tener que verificar el rol (simplificando el flujo)
           await proformaNotification.notifyNewProformaPending(
-            nuevaProforma, 
+            nuevaProforma,
             nombreCliente,
           );
-          Logger.info('🔔 Notificación de proforma pendiente enviada para #${nuevaProforma.id}');
+          Logger.info(
+              '🔔 Notificación de proforma pendiente enviada para #${nuevaProforma.id}');
         }
       }
-      
+
       return response;
     } catch (e) {
       Logger.error('❌ Error al crear proforma de venta: $e');
@@ -459,12 +474,12 @@ class ProformaVentaApi {
   }
 
   /// Actualizar una proforma existente
-  /// 
+  ///
   /// [sucursalId] - ID de la sucursal
   /// [proformaId] - ID de la proforma a actualizar
   /// [data] - Datos a actualizar
   /// [estado] - Estado nuevo de la proforma (opcional)
-  /// 
+  ///
   /// Retorna un mapa con la respuesta del servidor
   Future<Map<String, dynamic>> updateProformaVenta({
     required String sucursalId,
@@ -474,39 +489,46 @@ class ProformaVentaApi {
   }) async {
     try {
       // Nuevo mensaje de debug para seguimiento
-      logCache('📝 [ProformaVentaApi] Actualizando proforma #$proformaId en sucursal $sucursalId');
-      
+      logCache(
+          '📝 [ProformaVentaApi] Actualizando proforma #$proformaId en sucursal $sucursalId');
+
       // Si se especifica el estado, preparar los datos para actualizar
       if (estado != null) {
         data = data ?? <String, dynamic>{};
         data['estado'] = estado;
-        
-        logCache('🔄 [ProformaVentaApi] Cambiando estado de proforma a: $estado');
+
+        logCache(
+            '🔄 [ProformaVentaApi] Cambiando estado de proforma a: $estado');
       }
-      
+
       if (data == null || data.isEmpty) {
-        throw Exception('Se deben proporcionar datos para actualizar la proforma');
+        throw Exception(
+            'Se deben proporcionar datos para actualizar la proforma');
       }
-      
-      logCache('🔄 [ProformaVentaApi] Realizando petición API PATCH a /$sucursalId/proformasventa/$proformaId');
-      
+
+      logCache(
+          '🔄 [ProformaVentaApi] Realizando petición API PATCH a /$sucursalId/proformasventa/$proformaId');
+
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
         method: 'PATCH',
         body: data,
       );
-      
+
       // Nuevo mensaje de debug con resultado
-      logCache('✅ [ProformaVentaApi] Respuesta de actualización de proforma #$proformaId recibida');
+      logCache(
+          '✅ [ProformaVentaApi] Respuesta de actualización de proforma #$proformaId recibida');
       if (response.containsKey('status')) {
         logCache('📊 [ProformaVentaApi] Status: ${response['status']}');
       }
-      
+
       // Invalidar caché para esta proforma
       invalidateCache(sucursalId);
-      
+
       // Enviar notificación si se cambió el estado a "convertida"
-      if (estado == 'convertida' && response.containsKey('status') && response['status'] == 'success') {
+      if (estado == 'convertida' &&
+          response.containsKey('status') &&
+          response['status'] == 'success') {
         try {
           // Obtener los detalles de la proforma para la notificación
           final Map<String, dynamic> proformaResponse = await getProformaVenta(
@@ -514,34 +536,38 @@ class ProformaVentaApi {
             proformaId: proformaId,
             useCache: false, // No usar caché para obtener datos actualizados
           );
-          
-          final proforma_model.Proforma? proforma = parseProformaVenta(proformaResponse);
-          
+
+          final proforma_model.Proforma? proforma =
+              parseProformaVenta(proformaResponse);
+
           if (proforma != null) {
             // Enviar notificación de proforma convertida
-            Logger.info('🔔 Enviando notificación de proforma convertida #$proformaId');
+            Logger.info(
+                '🔔 Enviando notificación de proforma convertida #$proformaId');
             await proformaNotification.notifyProformaConverted(proforma);
           }
         } catch (e) {
           // Ignorar errores al enviar la notificación
-          Logger.warn('⚠️ Error al enviar notificación de proforma convertida: $e');
+          Logger.warn(
+              '⚠️ Error al enviar notificación de proforma convertida: $e');
         }
       }
-      
+
       return response;
     } catch (e) {
-      logCache('❌ [ProformaVentaApi] ERROR al actualizar proforma #$proformaId: $e');
+      logCache(
+          '❌ [ProformaVentaApi] ERROR al actualizar proforma #$proformaId: $e');
       rethrow;
     }
   }
 
   /// Eliminar una proforma
-  /// 
+  ///
   /// [sucursalId] - ID de la sucursal
   /// [proformaId] - ID de la proforma a eliminar
-  /// 
+  ///
   /// Retorna un mapa con información sobre la eliminación
-  /// 
+  ///
   /// NOTA: Esta funcionalidad está definida pero puede no estar implementada en el servidor.
   /// Si el servidor devuelve notImplemented, este método simulará una respuesta exitosa.
   Future<Map<String, dynamic>> deleteProformaVenta({
@@ -554,47 +580,52 @@ class ProformaVentaApi {
         endpoint: '/$sucursalId/proformasventa/$proformaId',
         method: 'DELETE',
       );
-      
+
       // Invalidar caché después de eliminar
       invalidateCache(sucursalId);
-      
+
       return response;
     } catch (e) {
       // Si el servidor retorna notImplemented, devolver una respuesta simulada
       logCache('⚠️ Error al eliminar proforma: $e');
-      logCache('⚠️ El método deleteProformaVenta puede no estar implementado en el servidor.');
-      logCache('⚠️ Devolviendo respuesta simulada para propósitos de demostración.');
-      
+      logCache(
+          '⚠️ El método deleteProformaVenta puede no estar implementado en el servidor.');
+      logCache(
+          '⚠️ Devolviendo respuesta simulada para propósitos de demostración.');
+
       // Invalidar caché de todos modos para consistencia
       invalidateCache(sucursalId);
-      
+
       return <String, dynamic>{
         'status': 'success',
         'data': <String, Object>{
           'id': proformaId,
           'message': 'Proforma eliminada (simulado)',
-          'warning': 'Esta respuesta es simulada. El endpoint aún no está implementado en el servidor.'
+          'warning':
+              'Esta respuesta es simulada. El endpoint aún no está implementado en el servidor.'
         }
       };
     }
   }
 
   /// Convierte una lista de datos de la API a una lista de objetos Proforma
-  /// 
+  ///
   /// [data] - Datos recibidos de la API
-  /// 
+  ///
   /// Retorna una lista de objetos Proforma
   List<proforma_model.Proforma> parseProformasVenta(data) {
     if (data == null) {
       return <proforma_model.Proforma>[];
     }
-    
+
     // Verificar si los datos son una lista directamente o están dentro de un objeto
     List<dynamic> proformasData;
-    
+
     if (data is List) {
       proformasData = data;
-    } else if (data is Map && data.containsKey('data') && data['data'] is List) {
+    } else if (data is Map &&
+        data.containsKey('data') &&
+        data['data'] is List) {
       proformasData = data['data'] as List;
     } else {
       logCache('⚠️ Formato inesperado de respuesta de proformas: $data');
@@ -624,25 +655,25 @@ class ProformaVentaApi {
   }
 
   /// Convierte los datos de la API a un objeto Proforma
-  /// 
+  ///
   /// [data] - Datos de una proforma recibidos de la API
-  /// 
+  ///
   /// Retorna un objeto Proforma
   proforma_model.Proforma? parseProformaVenta(data) {
     if (data == null) {
       return null;
     }
-    
+
     // Verificar si los datos están directamente o dentro de un objeto con clave 'data'
     Map<String, dynamic> proformaData;
-    
+
     if (data is Map<String, dynamic>) {
       if (data.containsKey('data') && data['data'] is Map<String, dynamic>) {
         proformaData = data['data'] as Map<String, dynamic>;
       } else {
         proformaData = data;
       }
-      
+
       try {
         return proforma_model.Proforma.fromJson(proformaData);
       } catch (e) {
@@ -650,34 +681,35 @@ class ProformaVentaApi {
         return null;
       }
     }
-    
+
     return null;
   }
-  
+
   /// Crea una lista de detalles de proforma a partir de productos
   List<DetalleProforma> crearDetallesDesdeProductos(
-    List<Producto> productos, 
+    List<Producto> productos,
     Map<int, int> cantidades,
   ) {
     final List<DetalleProforma> result = <DetalleProforma>[];
-    
+
     for (final Producto producto in productos) {
       final int cantidad = cantidades[producto.id] ?? 1;
       if (cantidad <= 0) {
         continue; // No agregar productos con cantidad 0
       }
-      
+
       result.add(DetalleProforma.fromProducto(
-        producto, 
+        producto,
         cantidad: cantidad,
       ));
     }
-    
+
     return result;
   }
-  
+
   /// Calcula el total de una lista de detalles de proforma
   double calcularTotal(List<DetalleProforma> detalles) {
-    return detalles.fold(0.0, (double sum, DetalleProforma detalle) => sum + detalle.subtotal);
+    return detalles.fold(
+        0.0, (double sum, DetalleProforma detalle) => sum + detalle.subtotal);
   }
 }

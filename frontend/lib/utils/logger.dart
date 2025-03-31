@@ -12,7 +12,7 @@ class ConsoleColor {
   static const String magenta = '\x1B[35m';
   static const String cyan = '\x1B[36m';
   static const String white = '\x1B[37m';
-  
+
   // Colores brillantes
   static const String brightBlack = '\x1B[90m';
   static const String brightRed = '\x1B[91m';
@@ -22,12 +22,12 @@ class ConsoleColor {
   static const String brightMagenta = '\x1B[95m';
   static const String brightCyan = '\x1B[96m';
   static const String brightWhite = '\x1B[97m';
-  
+
   // Estilos de texto
   static const String bold = '\x1B[1m';
   static const String underline = '\x1B[4m';
   static const String dim = '\x1B[2m'; // Texto tenue (opacidad 50%)
-  
+
   // Fondos
   static const String bgBlack = '\x1B[40m';
   static const String bgRed = '\x1B[41m';
@@ -37,30 +37,36 @@ class ConsoleColor {
   static const String bgMagenta = '\x1B[45m';
   static const String bgCyan = '\x1B[46m';
   static const String bgWhite = '\x1B[47m';
-  
+
   // Colores para métodos HTTP
   static const String get = brightGreen;
   static const String post = brightBlue;
   static const String put = brightYellow;
   static const String patch = brightMagenta;
   static const String delete = brightRed;
-  
+
   // Colores para funcionalidades específicas
   static const String cache = '$dim$brightBlack'; // Gris con opacidad 50%
-  
+
   /// Obtiene el color para un método HTTP específico
   static String getHttpMethodColor(String method) {
     switch (method.toUpperCase()) {
-      case 'GET': return get;
-      case 'POST': return post;
-      case 'PUT': return put;
-      case 'PATCH': return patch;
-      case 'DELETE': return delete;
-      default: return reset;
+      case 'GET':
+        return get;
+      case 'POST':
+        return post;
+      case 'PUT':
+        return put;
+      case 'PATCH':
+        return patch;
+      case 'DELETE':
+        return delete;
+      default:
+        return reset;
     }
   }
-  
-  /// Aplica color a un texto 
+
+  /// Aplica color a un texto
   static String colorize(String text, String color) {
     if (!kDebugMode) {
       return text; // Solo aplicar colores en modo debug
@@ -114,36 +120,38 @@ class Logger {
       _log('ERROR', message, ConsoleColor.red);
     }
   }
-  
+
   /// Registra un mensaje relacionado con caché (con color gris y opacidad 50%)
   static void cache(String message) {
     if (_currentLevel.index <= LogLevel.info.index) {
       _log('CACHE', message, ConsoleColor.cache);
     }
   }
-  
+
   /// Registra una petición HTTP
   static void http(String method, String endpoint, [int? statusCode]) {
     if (_currentLevel.index <= LogLevel.debug.index) {
       final String methodColor = ConsoleColor.getHttpMethodColor(method);
-      
+
       // Usar un enfoque alternativo para rellenar el string sin padEnd
       String paddedMethod = method;
       while (paddedMethod.length < 6) {
         paddedMethod += ' ';
       }
-      
-      final String coloredMethod = ConsoleColor.colorize(paddedMethod, methodColor);
-      
+
+      final String coloredMethod =
+          ConsoleColor.colorize(paddedMethod, methodColor);
+
       String message = '$coloredMethod $endpoint';
-      
+
       if (statusCode != null) {
-        final String statusColor = statusCode >= 400 
-          ? ConsoleColor.red 
-          : (statusCode >= 300 ? ConsoleColor.yellow : ConsoleColor.green);
-        message += ' ${ConsoleColor.colorize('[${statusCode.toString()}]', statusColor)}';
+        final String statusColor = statusCode >= 400
+            ? ConsoleColor.red
+            : (statusCode >= 300 ? ConsoleColor.yellow : ConsoleColor.green);
+        message +=
+            ' ${ConsoleColor.colorize('[${statusCode.toString()}]', statusColor)}';
       }
-      
+
       _rawLog(message);
     }
   }
@@ -151,24 +159,23 @@ class Logger {
   /// Método interno para mostrar los logs con formato
   static void _log(String level, String message, String color) {
     final DateTime now = DateTime.now();
-    final String timestamp = 
-        '${now.hour.toString().padLeft(2, '0')}:'
+    final String timestamp = '${now.hour.toString().padLeft(2, '0')}:'
         '${now.minute.toString().padLeft(2, '0')}:'
         '${now.second.toString().padLeft(2, '0')}';
-    
+
     final String coloredLevel = ConsoleColor.colorize(level, color);
     final String logMessage = '[$timestamp] $coloredLevel: $message';
-    
+
     _rawLog(logMessage);
   }
-  
+
   /// Muestra un mensaje sin formato adicional
   static void _rawLog(String message) {
     if (kDebugMode) {
       // ignore: avoid_print
       print(message);
     }
-    
+
     // TODO: Implementar almacenamiento persistente de logs para producción
     // Esto podría incluir enviar logs a un servicio remoto o guardarlos localmente
   }
@@ -236,4 +243,4 @@ void logCustom(String prefix, String message) {
     // ignore: avoid_print
     print('$prefix $message');
   }
-} 
+}

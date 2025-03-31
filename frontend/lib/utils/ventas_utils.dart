@@ -59,4 +59,4 @@ class VentasUtils {
     final DateFormat formatoHora = DateFormat('HH:mm');
     return formatoHora.format(fecha);
   }
-} 
+}

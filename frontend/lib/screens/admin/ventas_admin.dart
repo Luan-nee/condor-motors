@@ -1,78 +1,9 @@
 import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
+import 'package:condorsmotors/screens/admin/widgets/venta/venta_table.dart';
 import 'package:flutter/material.dart';
-
-// Definición de la clase Venta para manejar los datos
-class Venta {
-  final String id;
-  final DateTime? fechaCreacion;
-  final String estado;
-  final double subtotal;
-  final double igv;
-  final double total;
-  final double descuentoTotal;
-  final List<DetalleVenta>? detalles;
-
-  Venta({
-    required this.id,
-    this.fechaCreacion,
-    required this.estado,
-    required this.subtotal,
-    required this.igv,
-    required this.total,
-    this.descuentoTotal = 0.0,
-    this.detalles,
-  });
-
-  factory Venta.fromJson(Map<String, dynamic> json) {
-    return Venta(
-      id: json['id']?.toString() ?? '',
-      fechaCreacion: json['fecha_creacion'] != null 
-          ? DateTime.parse(json['fecha_creacion']) 
-          : null,
-      estado: json['estado'] ?? 'PENDIENTE',
-      subtotal: (json['subtotal'] ?? 0.0).toDouble(),
-      igv: (json['igv'] ?? 0.0).toDouble(),
-      total: (json['total'] ?? 0.0).toDouble(),
-      descuentoTotal: (json['descuento_total'] ?? 0.0).toDouble(),
-      detalles: json['detalles'] != null
-          ? (json['detalles'] as List)
-              .map((detalle) => DetalleVenta.fromJson(detalle))
-              .toList()
-          : null,
-    );
-  }
-}
-
-// Clase para los detalles de venta
-class DetalleVenta {
-  final String productoId;
-  final int cantidad;
-  final double precioUnitario;
-  final double subtotal;
-
-  DetalleVenta({
-    required this.productoId,
-    required this.cantidad,
-    required this.precioUnitario,
-    required this.subtotal,
-  });
-
-  factory DetalleVenta.fromJson(Map<String, dynamic> json) {
-    return DetalleVenta(
-      productoId: json['producto_id']?.toString() ?? '',
-      cantidad: json['cantidad'] ?? 0,
-      precioUnitario: (json['precio_unitario'] ?? 0.0).toDouble(),
-      subtotal: (json['subtotal'] ?? 0.0).toDouble(),
-    );
-  }
-}
-
-// Constantes para los estados de venta
-class EstadosVenta {
-  static const String pendiente = 'PENDIENTE';
-  static const String completada = 'COMPLETADA';
-  static const String anulada = 'ANULADA';
-}
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class VentasAdminScreen extends StatefulWidget {
   const VentasAdminScreen({super.key});
@@ -82,98 +13,234 @@ class VentasAdminScreen extends StatefulWidget {
 }
 
 class _VentasAdminScreenState extends State<VentasAdminScreen> {
-  bool _isLoading = false;
-  List<Venta> _ventas = <Venta>[];
+  String _errorMessage = '';
+  List<Sucursal> _sucursales = [];
+  Sucursal? _sucursalSeleccionada;
+  bool _isSucursalesLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _cargarVentas();
+    _cargarSucursales();
   }
 
-  Future<void> _cargarVentas() async {
-    if (!mounted) {
-      return;
-    }
-    setState(() => _isLoading = true);
-    
+  // Carga las sucursales disponibles
+  Future<void> _cargarSucursales() async {
+    setState(() {
+      _isSucursalesLoading = true;
+      _errorMessage = '';
+    });
+
     try {
-      final Map<String, dynamic> response = await api.ventas.getVentas();
-      
+      debugPrint('Cargando sucursales desde la API...');
+      final data = await api.sucursales.getSucursales();
+
       if (!mounted) {
         return;
       }
-      
-      final List<Venta> ventasList = <Venta>[];
-      if (response['data'] != null && response['data'] is List) {
-        for (var item in response['data']) {
-          ventasList.add(Venta.fromJson(item));
+
+      debugPrint('Datos recibidos tipo: ${data.runtimeType}');
+      debugPrint('Longitud de la lista: ${data.length}');
+      if (data.isNotEmpty) {
+        debugPrint('Primer elemento tipo: ${data.first.runtimeType}');
+      }
+
+      List<Sucursal> sucursalesParsed = [];
+
+      // Procesamiento seguro de los datos
+      for (var item in data) {
+        try {
+          // Si ya es un objeto Sucursal, lo usamos directamente
+          sucursalesParsed.add(item);
+        } catch (e) {
+          debugPrint('Error al procesar sucursal: $e');
         }
       }
-      
+
+      // Ordenar por nombre
+      sucursalesParsed.sort((a, b) => a.nombre.compareTo(b.nombre));
+
+      debugPrint(
+          'Sucursales cargadas correctamente: ${sucursalesParsed.length}');
+
       setState(() {
-        _ventas = ventasList;
+        _sucursales = sucursalesParsed;
+        _isSucursalesLoading = false;
+
+        // Seleccionar la primera sucursal como predeterminada si hay sucursales
+        if (_sucursales.isNotEmpty && _sucursalSeleccionada == null) {
+          _sucursalSeleccionada = _sucursales.first;
+        }
       });
     } catch (e) {
       if (!mounted) {
         return;
       }
+
+      debugPrint('Error al cargar sucursales: $e');
+      setState(() {
+        _isSucursalesLoading = false;
+        _errorMessage = 'Error al cargar sucursales: $e';
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al cargar ventas: $e'),
+          content: Text('Error al cargar sucursales: $e'),
           backgroundColor: Colors.red,
         ),
       );
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
     }
+  }
+
+  // Cambia la sucursal seleccionada
+  void _cambiarSucursal(Sucursal sucursal) {
+    setState(() {
+      _sucursalSeleccionada = sucursal;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ventas'),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _ventas.length,
-              itemBuilder: (BuildContext context, int index) {
-                final Venta venta = _ventas[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+      body: Row(
+        children: [
+          // Panel izquierdo: Tabla de ventas (70%)
+          Expanded(
+            flex: 7,
+            child: VentaTable(
+              sucursalSeleccionada: _sucursalSeleccionada,
+              onRecargarVentas: _cargarSucursales,
+            ),
+          ),
+
+          // Panel derecho: Selector de sucursales (30%)
+          Container(
+            width: 300,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              border: Border(
+                left: BorderSide(
+                  color: Colors.white.withOpacity(0.1),
+                ),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Cabecera del panel de sucursales
+                Container(
+                  padding: const EdgeInsets.all(16.0),
+                  color: const Color(0xFF2D2D2D),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          FaIcon(
+                            FontAwesomeIcons.buildingUser,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'SUCURSALES',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_isSucursalesLoading)
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                    ],
                   ),
-                  child: ListTile(
-                    title: Text('Venta #${venta.id}'),
-                    subtitle: Text('Fecha: ${venta.fechaCreacion?.toLocal() ?? 'No disponible'}'),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: <Widget>[
-                        Text(
-                          'Total: S/ ${venta.total.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Subtotal: S/ ${venta.subtotal.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            color: Colors.green[700],
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                ),
+
+                // Mensaje de error para sucursales
+                if (_errorMessage.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      _errorMessage,
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
                     ),
                   ),
-                );
-              },
+
+                // Selector de sucursales
+                Expanded(
+                  child: _isSucursalesLoading
+                      ? const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              CircularProgressIndicator(
+                                color: Color(0xFFE31E24),
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'Cargando sucursales...',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _sucursales.isEmpty && _errorMessage.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: <Widget>[
+                                  const FaIcon(
+                                    FontAwesomeIcons.buildingCircleXmark,
+                                    color: Colors.white54,
+                                    size: 48,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'No hay sucursales disponibles',
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  ElevatedButton.icon(
+                                    icon: const FaIcon(
+                                        FontAwesomeIcons.arrowsRotate,
+                                        size: 16),
+                                    label: const Text('Recargar'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFE31E24),
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    onPressed: _cargarSucursales,
+                                  ),
+                                ],
+                              ),
+                            )
+                          : SlideSucursal(
+                              sucursales: _sucursales,
+                              sucursalSeleccionada: _sucursalSeleccionada,
+                              onSucursalSelected: _cambiarSucursal,
+                              onRecargarSucursales: _cargarSucursales,
+                              isLoading: _isSucursalesLoading,
+                            ),
+                ),
+              ],
             ),
+          ),
+        ],
+      ),
     );
   }
-} 
+}
