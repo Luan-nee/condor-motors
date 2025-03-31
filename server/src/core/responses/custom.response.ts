@@ -140,6 +140,15 @@ export class CustomResponse {
     })
   }
 
+  static internalServer({ res }: ErrorResponseArgs) {
+    this.send({
+      res,
+      error: 'Internal Server Error',
+      status: responseStatus.error,
+      statusCode: 500
+    })
+  }
+
   static notImplemented({ res }: ErrorResponseArgs) {
     this.send({
       res,
