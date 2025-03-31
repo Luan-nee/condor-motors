@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Homepage</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+
+    :root {
+      color-scheme: dark dark;
+    }
+
+    html {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: hsl(0, 0%, 0%);
+    }
+
+    input {
+      background-color: hsl(0, 0%, 0%);
+      padding: 0.5rem 0.5rem;
+      font-weight: 600;
+    }
+
+    button {
+      color: black;
+      background-color: white;
+      border: none;
+      font-weight: 600;
+      border-radius: 0.25rem;
+      padding: 0.5rem 0.5rem;
+    }
+
+    .text-xs {
+      font-size: 0.75rem;
+      line-height: calc(1 / 0.75);
+    }
+
+    .text-sm {
+      font-size: 0.875rem;
+      line-height: calc(1.25 / 0.875);
+    }
+
+    .text-base {
+      font-size: 1rem;
+      line-height: calc(1.5 / 1);
+    }
+
+    .text-lg {
+      font-size: 1.125rem;
+      line-height: calc(1.75 / 1.125);
+    }
+
+    .text-xl {
+      font-size: 1.25rem;
+      line-height: calc(1.75 / 1.25);
+    }
+
+    .text-2xl {
+      font-size: 1.5rem;
+      line-height: calc(2 / 1.5);
+    }
+
+    .text-3xl {
+      font-size: 1.875rem;
+      line-height: calc(2.25 / 1.875);
+    }
+
+    .h-dvh {
+      height: 100dvh;
+    }
+
+    .flex {
+      display: flex;
+    }
+
+    .flex-col {
+      flex-direction: column;
+    }
+
+    .justify-center {
+      justify-content: center;
+    }
+
+    .items-center {
+      align-items: center;
+    }
+
+    .border {
+      border: 1px solid currentColor;
+    }
+
+    .border-gray-100 {
+      border-color: hsl(0, 0%, 10%);
+    }
+
+    .border-gray-200 {
+      border-color: hsl(0, 0%, 20%);
+    }
+
+    .rounded {
+      border-radius: 0.25rem;
+    }
+
+    .font-medium {
+      font-weight: 500;
+    }
+
+    .font-semibold {
+      font-weight: 600;
+    }
+
+    .p-8 {
+      padding: 1rem;
+    }
+
+    .mb-8 {
+      margin-bottom: 1rem;
+    }
+
+    .mt-8 {
+      margin-top: 1rem;
+    }
+
+    .login-form-container {
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+    }
+
+    .login-form {
+      max-width: 448px;
+      min-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      span {
+        font-weight: 600;
+        color: hsl(0, 0%, 90%);
+      }
+    }
+
+    .header {
+      margin-left: auto;
+      padding: 0.75rem;
+      position: absolute;
+      top: 0;
+    }
+
+    .file-input {
+      background-color: hsl(0, 0%, 10%);
+      border: 0.2rem dashed hsl(0, 0%, 20%);
+      padding: 0.75rem;
+      border-radius: 0.75rem;
+      transition: 200ms;
+      color: hsl(0, 0%, 80%);
+      font-weight: 600;
+      width: 280px;
+      height: 64px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      &:hover {
+        background-color: hsl(0, 0%, 12%);
+        color: hsl(0, 0%, 100%);
+      }
+    }
+
+    .upload-file-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidepanel {
+      display: flex;
+      position: absolute;
+      height: 96dvh;
+      width: 280px;
+      right: 16px;
+      top: calc((100dvh - 96dvh) / 2);
+      border-radius: 1rem;
+      border: 1px solid hsl(0, 0%, 15%);
+      background-color: hsl(0, 0%, 5%);
+      padding: 1rem;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidepanel-item {
+      border-radius: 0.5rem;
+      border: 1px solid hsl(0, 0%, 12%);
+      padding: 0.5rem;
+      height: fit-content;
+
+      h2 {
+        font-size: 1rem;
+      }
+
+      p {
+        color: hsl(0, 0%, 80%);
+      }
+
+      &:hover {
+        border-color: hsl(0, 0%, 20%);
+        background-color: hsla(0, 0%, 20%, 20%);
+      }
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+  <script type="module">
+    // @ts-check
+    (() => {
+      let logged = false
+
+      function setCookie(cname, cvalue, exminutes) {
+        const d = new Date();
+        d.setTime(d.getTime() + (exminutes * 60 * 1000));
+        let expires = "expires=" + d.toUTCString();
+        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+      }
+
+      function getCookie(cname) {
+        let name = cname + "=";
+        let decodedCookie = decodeURIComponent(document.cookie);
+        let ca = decodedCookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+          let c = ca[i];
+          while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+          }
+          if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+          }
+        }
+        return "";
+      }
+
+      const $loginForm = document.querySelector('[data-id="login-form"]')
+
+      if (!($loginForm instanceof HTMLFormElement)) {
+        console.error("Login form not found");
+        return
+      }
+
+      const $uploadFileForm = document.querySelector('[data-id="upload-file-form"]')
+
+      if (!($uploadFileForm instanceof HTMLFormElement)) {
+        console.error("Upload file form not found");
+        return
+      }
+
+      const $sidepanelEl = document.querySelector('[data-id="sidepanel"]')
+
+      if (!($sidepanelEl instanceof HTMLDivElement)) {
+        console.error("Sidepanel not found");
+        return
+      }
+
+      const $inputUsuario = $loginForm.elements["usuario"]
+      const $inputClave = $loginForm.elements["clave"]
+
+      if (
+        !($inputUsuario instanceof HTMLInputElement) ||
+        !($inputClave instanceof HTMLInputElement)
+      ) {
+        return
+      }
+
+      const $message = document.querySelector('[data-id="login-message"]')
+
+      if (!($message instanceof HTMLDivElement)) {
+        return
+      }
+
+      let sidebarLoaded = false
+
+      const loadSidebar = () => {
+        if (sidebarLoaded) {
+          return
+        }
+
+        sidebarLoaded = true
+
+        $sidepanelEl.classList.remove('hidden')
+
+        fetch('/api/cuentasempleados', {
+          headers: {
+            'Content-type': 'Application/json',
+            'authorization': accessToken
+          }
+        })
+          .then(async (res) => await res.json())
+          .then((json) => {
+            if (json.status != 'success') {
+              $sidepanelEl.innerText = 'Ha ocurrido un error al intentar cargar las cuentas de los empleados'
+              return
+            }
+
+            const cuentasEmpleados = json.data.map((c) => {
+              const $item = document.createElement('div')
+              $item.classList.add('sidepanel-item')
+
+              $item.innerHTML = /* html */`
+                <h2>${c.usuario}</h2>
+                <p>Empleado: ${c.empleado.nombre}</p>
+                <p>Sucursal: ${c.sucursal.nombre}</p>
+              `
+
+              $sidepanelEl.appendChild($item)
+            })
+          })
+          .catch((error) => {
+            console.error(error.message);
+          })
+      }
+
+      let accessToken = getCookie('access_token')
+
+      if (accessToken.length > 0) {
+        logged = true
+        $loginForm.classList.add('hidden')
+        $uploadFileForm.classList.remove('hidden')
+        loadSidebar()
+      }
+
+      $loginForm.addEventListener("submit", (e) => {
+        e.preventDefault()
+
+        const data = {
+          usuario: $inputUsuario.value,
+          clave: $inputClave.value,
+        }
+
+        fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-type': 'Application/json'
+          },
+          body: JSON.stringify(data)
+        }).then(async (res) => {
+          const accessToken = res.headers.get("authorization")
+          if (accessToken != null) {
+            setCookie("access_token", accessToken, 15)
+          }
+
+          return await res.json()
+        }).then((json) => {
+          if (json.status === 'success') {
+            $message.innerText = 'Bienvenido ' + json.data.usuario
+
+            $loginForm.classList.toggle('hidden')
+            $uploadFileForm.classList.toggle('hidden')
+            loadSidebar()
+
+            return
+          }
+
+          $message.innerText = json.error
+        })
+          .catch((error) => {
+            console.error(error.message);
+          })
+      })
+
+      if (logged) {
+        loadSidebar()
+      }
+    })()
+  </script>
+</head>
+
+<body>
+  <header class="header">
+    <div data-id="login-message"></div>
+  </header>
+  <main class="flex justify-center items-center h-dvh">
+    <div class="border border-gray-200 login-form-container">
+      <form class="login-form" data-id="login-form">
+        <h1 class="text-2xl font-semibold mb-8">Iniciar sesión</h1>
+        <label class="flex flex-col label">
+          <span class="text-sm font-medium">Usuario</span>
+          <input name="usuario" type="text" class="border border-gray-200 rounded" placeholder="usuario123"
+            autocomplete="off" required>
+        </label>
+        <label class="flex flex-col label">
+          <span class="text-sm font-medium">Clave</span>
+          <input name="clave" type="password" class="border border-gray-200 rounded" autocomplete="off" required>
+        </label>
+
+        <button class="mt-8" type="submit">Login</button>
+      </form>
+
+      <form class="upload-file-form hidden" data-id="upload-file-form">
+        <h1 class="text-2xl font-semibold mb-8">Subir archivo</h1>
+        <label class="file-input">
+          <span>Seleccione un archivo</span>
+          <input name="image" type="file" accept="image/jpeg,image/jpg,image/png" hidden>
+        </label>
+
+        <button class="mt-8" type="submit">Subir archivo</button>
+      </form>
+    </div>
+  </main>
+
+  <div class="sidepanel hidden" data-id="sidepanel"></div>
+</body>
+
+</html>

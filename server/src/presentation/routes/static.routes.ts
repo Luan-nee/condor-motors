@@ -6,8 +6,8 @@ export class StaticRoutes {
     const router = Router()
 
     router.use(
-      '/static',
-      ExpressStatic(path.join(process.cwd(), 'storage/public/static'), {
+      '/',
+      ExpressStatic(path.join(process.cwd(), 'storage/public/'), {
         setHeaders: (_res, filePath) => {
           if (filePath.endsWith('.gitignore')) {
             return false
