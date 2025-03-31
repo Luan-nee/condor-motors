@@ -7,9 +7,9 @@ export class AppRoutes {
   static get routes() {
     const router = Router()
 
-    router.use('/api', ApiRoutes.routes)
-
     router.use('/', StaticRoutes.routes)
+
+    router.use('/api', ApiRoutes.routes)
 
     router.use((_req, res: Response) => {
       CustomResponse.notFound({ res })
