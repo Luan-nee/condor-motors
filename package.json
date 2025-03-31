@@ -29,8 +29,5 @@
   ],
   "dependencies": {
     "drizzle-orm": "^0.39.3"
-  },
-  "devDependencies": {
-    "@faker-js/faker": "^9.6.0"
   }
 }
