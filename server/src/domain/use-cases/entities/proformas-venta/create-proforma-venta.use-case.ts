@@ -13,7 +13,7 @@ import {
 } from '@/db/schema'
 import type { CreateProformaVentaDto } from '@/domain/dtos/entities/proformas-venta/create-proforma-venta.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { and, eq, or } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 
 interface DetalleProformaVenta {
   id: number
@@ -25,6 +25,16 @@ interface DetalleProformaVenta {
   precioOferta: string | null
   detallesProductoId: number
   stock: number
+  liquidacion: boolean
+}
+
+interface ComputePriceOfferArgs {
+  cantidad: number
+  cantidadMinimaDescuento: number | null
+  cantidadGratisDescuento: number | null
+  porcentajeDescuento: number | null
+  precioVenta: string
+  precioOferta: string | null
   liquidacion: boolean
 }
 
@@ -97,27 +107,29 @@ export class CreateProformaVenta {
       const detalleProforma = detallesMap.get(detalle.id)
       const cantidad = detalleProforma?.cantidad ?? 1
 
-      const {
-        precioUnitario,
-        precioOriginal,
-        cantidadGratis,
-        descuento,
-        cantidadPagada
-      } = this.calcularPrecioYDescuento(detalle, cantidad)
+      const { free, price } = this.computePriceOffer({
+        cantidad,
+        cantidadMinimaDescuento: detalle.cantidadMinimaDescuento,
+        cantidadGratisDescuento: detalle.cantidadGratisDescuento,
+        porcentajeDescuento: detalle.porcentajeDescuento,
+        precioVenta: detalle.precioVenta,
+        precioOferta: detalle.precioOferta,
+        liquidacion: detalle.liquidacion
+      })
 
-      const cantidadTotal = cantidadPagada + cantidadGratis
-      const subtotal = productWithTwoDecimals(precioUnitario, cantidadPagada)
+      const cantidadTotal = cantidad + free
+      const subtotal = productWithTwoDecimals(price, cantidad)
       total += subtotal
 
       return {
         productoId: detalle.id,
         nombre: detalle.nombre,
-        cantidadGratis,
-        descuento,
-        cantidadPagada,
+        cantidadGratis: free,
+        descuento: detalle.porcentajeDescuento,
+        cantidadPagada: cantidad,
         cantidadTotal,
-        precioUnitario,
-        precioOriginal,
+        precioUnitario: price,
+        precioOriginal: parseFloat(detalle.precioVenta),
         subtotal
       }
     })
@@ -125,62 +137,38 @@ export class CreateProformaVenta {
     return { detallesCalculados, total }
   }
 
-  private calcularPrecioYDescuento(
-    detalle: DetalleProformaVenta,
-    cantidad: number
-  ) {
-    let precioUnitario = Number(detalle.precioVenta)
-    const precioOriginal = precioUnitario
-    const cantidadGratis = 0
-    const descuento = 0
-    const cantidadPagada = cantidad
+  private computePriceOffer({
+    cantidad,
+    cantidadMinimaDescuento,
+    cantidadGratisDescuento,
+    porcentajeDescuento,
+    precioVenta,
+    precioOferta,
+    liquidacion
+  }: ComputePriceOfferArgs) {
+    let price = parseFloat(precioVenta)
+    let free = 0
 
-    if (detalle.precioOferta !== null && detalle.liquidacion) {
-      precioUnitario = Number(detalle.precioOferta)
+    if (precioOferta !== null && liquidacion) {
+      price = parseFloat(precioOferta)
     }
 
     if (
-      detalle.cantidadMinimaDescuento === null ||
-      cantidad < detalle.cantidadMinimaDescuento
+      cantidadMinimaDescuento === null ||
+      cantidad < cantidadMinimaDescuento
     ) {
-      return {
-        precioUnitario,
-        precioOriginal,
-        cantidadGratis,
-        descuento,
-        cantidadPagada
-      }
+      return { price, free }
     }
 
-    if (detalle.cantidadGratisDescuento !== null) {
-      return {
-        precioUnitario,
-        precioOriginal,
-        cantidadGratis: detalle.cantidadGratisDescuento,
-        descuento,
-        cantidadPagada: cantidad
-      }
-    }
-
-    if (detalle.porcentajeDescuento !== null) {
-      return {
-        precioUnitario: productWithTwoDecimals(
-          precioUnitario * (1 - detalle.porcentajeDescuento / 100),
-          1
-        ),
-        precioOriginal,
-        cantidadGratis,
-        descuento: detalle.porcentajeDescuento,
-        cantidadPagada
-      }
+    if (cantidadGratisDescuento !== null) {
+      free = cantidadGratisDescuento
+    } else if (porcentajeDescuento !== null) {
+      price = productWithTwoDecimals(price, 1 - porcentajeDescuento / 100)
     }
 
     return {
-      precioUnitario,
-      precioOriginal,
-      cantidadGratis,
-      descuento,
-      cantidadPagada
+      price,
+      free
     }
   }
 
@@ -215,32 +203,11 @@ export class CreateProformaVenta {
     createProformaVentaDto: CreateProformaVentaDto,
     sucursalId: SucursalIdType
   ) {
-    const productoIds = new Set<number>()
-    const duplicateProductoIds = new Set<number>()
-
-    for (const { productoId } of createProformaVentaDto.detalles) {
-      if (productoIds.has(productoId)) {
-        duplicateProductoIds.add(productoId)
-      } else {
-        productoIds.add(productoId)
-      }
-    }
-
-    if (duplicateProductoIds.size > 0) {
-      throw CustomError.badRequest(
-        `Existen productos duplicados en los detalles: ${[...duplicateProductoIds].join(', ')}`
-      )
-    }
-
-    if (productoIds.size < 1) {
-      return []
-    }
+    const productoIds = createProformaVentaDto.detalles.map(
+      (detalle) => detalle.productoId
+    )
 
     await this.validateSucursalEmpleado(createProformaVentaDto, sucursalId)
-
-    const productosConditionals = Array.from(productoIds).map((id) =>
-      eq(productosTable.id, id)
-    )
 
     const productos = await db
       .select({
@@ -263,7 +230,7 @@ export class CreateProformaVenta {
           eq(detallesProductoTable.sucursalId, sucursalId)
         )
       )
-      .where(or(...productosConditionals))
+      .where(inArray(productosTable.id, productoIds))
 
     const productosMap = new Map(productos.map((p) => [p.id, p]))
 
