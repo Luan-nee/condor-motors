@@ -59,7 +59,9 @@ export class GetProductos {
     precioVenta: detallesProductoTable.precioVenta,
     precioOferta: detallesProductoTable.precioOferta,
     stock: detallesProductoTable.stock,
-    fechaCreacion: productosTable.fechaCreacion
+    fechaCreacion: productosTable.fechaCreacion,
+    stockBajo: detallesProductoTable.stockBajo,
+    liquidacion: detallesProductoTable.liquidacion
   } as const
 
   private readonly validDecimalFilter = {
