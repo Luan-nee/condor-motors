@@ -1,4 +1,6 @@
 /* eslint-disable no-console */
+import { envs } from '@/config/envs'
+import { isProduction } from '@/consts'
 import { db } from '@db/connection'
 import { sql } from 'drizzle-orm'
 import { exit } from 'process'
@@ -37,12 +39,19 @@ const message =
         ? `${dbSchemas.join(' and ')} schemas have been dropped correctly!`
         : `${dbSchemas.join(', ')} schemas have been dropped correctly!`
 
-dropSchema(dbSchemas)
-  .then(() => {
-    console.log(message)
-    exit()
-  })
-  .catch((error: unknown) => {
-    console.error(error)
-    exit(1)
-  })
+const { NODE_ENV: nodeEnv } = envs
+
+if (!isProduction) {
+  dropSchema(dbSchemas)
+    .then(() => {
+      console.log(message)
+      exit()
+    })
+    .catch((error: unknown) => {
+      console.error(error)
+      exit(1)
+    })
+} else {
+  console.log(`Database not modified`)
+  console.log(`You are in ${nodeEnv} enviroment`)
+}
