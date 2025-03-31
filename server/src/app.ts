@@ -1,6 +1,6 @@
 import { envs } from '@/config/envs'
 import { testDatabaseConnection } from '@/db/connection'
-import { AppRoutes } from '@presentation/routes'
+import { AppRoutes } from '@/presentation/routes/index.routes'
 import { Server } from '@presentation/server'
 
 const main = async () => {
