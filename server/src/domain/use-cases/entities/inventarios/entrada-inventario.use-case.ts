@@ -2,7 +2,11 @@ import { permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import { detallesProductoTable, entradasInventariosTable } from '@/db/schema'
+import {
+  detallesProductoTable,
+  entradasInventariosTable,
+  productosTable
+} from '@/db/schema'
 import type { EntradaInventarioDto } from '@/domain/dtos/entities/inventarios/entradas.dto'
 import type { SucursalIdType } from '@/types/schemas'
 import { and, eq } from 'drizzle-orm'
@@ -25,9 +29,14 @@ export class EntradaInventario {
     const insertedResult = await db.transaction(async (tx) => {
       const detallesProductos = await tx
         .select({
-          currentStock: detallesProductoTable.stock
+          currentStock: detallesProductoTable.stock,
+          stockMinimo: productosTable.stockMinimo
         })
         .from(detallesProductoTable)
+        .innerJoin(
+          productosTable,
+          eq(detallesProductoTable.productoId, productosTable.id)
+        )
         .where(
           and(
             eq(detallesProductoTable.sucursalId, sucursalId),
@@ -48,6 +57,9 @@ export class EntradaInventario {
 
       const newStock =
         detallesProducto.currentStock + entradaInventarioDto.cantidad
+      const stockBajo =
+        detallesProducto.stockMinimo != null &&
+        newStock < detallesProducto.stockMinimo
 
       const [entradaInventario] = await tx
         .insert(entradasInventariosTable)
@@ -64,6 +76,7 @@ export class EntradaInventario {
         .update(detallesProductoTable)
         .set({
           stock: newStock,
+          stockBajo,
           fechaActualizacion: now
         })
         .where(

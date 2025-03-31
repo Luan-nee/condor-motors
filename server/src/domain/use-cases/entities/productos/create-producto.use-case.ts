@@ -35,9 +35,8 @@ export class CreateProducto {
     }
 
     const detalleProductoStockBajo =
-      createProductoDto.stockMinimo != null && createProductoDto.stock > 0
-        ? createProductoDto.stock < createProductoDto.stockMinimo
-        : false
+      createProductoDto.stockMinimo != null &&
+      createProductoDto.stock < createProductoDto.stockMinimo
 
     const insertedProductResult = await db.transaction(async (tx) => {
       const [producto] = await tx

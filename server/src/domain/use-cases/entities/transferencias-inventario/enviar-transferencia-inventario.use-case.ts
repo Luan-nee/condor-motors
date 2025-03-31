@@ -71,7 +71,8 @@ export class EnviarTransferenciaInventario {
           id: detallesProductoTable.id,
           nombre: productosTable.nombre,
           stock: detallesProductoTable.stock,
-          productoId: detallesProductoTable.productoId
+          productoId: detallesProductoTable.productoId,
+          stockMinimo: productosTable.stockMinimo
         })
         .from(detallesProductoTable)
         .innerJoin(
@@ -105,9 +106,13 @@ export class EnviarTransferenciaInventario {
           )
         }
 
+        const newStock = producto.stock - itemTransferencia.cantidad
+        const stockBajo =
+          producto.stockMinimo != null && newStock < producto.stockMinimo
+
         await tx
           .update(detallesProductoTable)
-          .set({ stock: producto.stock - itemTransferencia.cantidad })
+          .set({ stock: newStock, stockBajo })
           .where(
             and(
               eq(

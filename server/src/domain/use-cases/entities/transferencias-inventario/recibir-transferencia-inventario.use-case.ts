@@ -88,16 +88,15 @@ export class RecibirTransferenciaInventario {
       for (const itemTransferencia of itemsTransferencia) {
         const producto = productosMap.get(itemTransferencia.productoId)
 
-        if (producto === undefined) {
+        if (producto == null) {
           throw CustomError.internalServer()
         }
 
         const stockBajo =
-          producto.stockMinimo !== null
-            ? itemTransferencia.cantidad < producto.stockMinimo
-            : false
+          producto.stockMinimo != null &&
+          itemTransferencia.cantidad < producto.stockMinimo
 
-        if (producto.detallesProductoId === null) {
+        if (producto.detallesProductoId == null) {
           await tx.insert(detallesProductoTable).values({
             precioCompra: '0',
             precioVenta: '0',

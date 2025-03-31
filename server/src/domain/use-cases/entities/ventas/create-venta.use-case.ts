@@ -146,6 +146,7 @@ export class CreateVenta {
           productoId: detallesProductoTable.productoId,
           sku: productosTable.sku,
           nombre: productosTable.nombre,
+          stockMinimo: productosTable.stockMinimo,
           cantidadMinimaDescuento: productosTable.cantidadMinimaDescuento,
           cantidadGratisDescuento: productosTable.cantidadGratisDescuento,
           porcentajeDescuento: productosTable.porcentajeDescuento,
@@ -247,9 +248,14 @@ export class CreateVenta {
         totalGravadas += totalesItem.totalGravadas
         totalTax += totalesItem.totalTax
 
+        const newStock = detalleProducto.stock - detalleVenta.cantidad
+        const stockBajo =
+          detalleProducto.stockMinimo != null &&
+          newStock < detalleProducto.stockMinimo
+
         await tx
           .update(detallesProductoTable)
-          .set({ stock: detalleProducto.stock - detalleVenta.cantidad })
+          .set({ stock: newStock, stockBajo })
           .where(eq(detallesProductoTable.id, detalleProducto.id))
       }
 

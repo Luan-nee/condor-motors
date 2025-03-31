@@ -72,9 +72,8 @@ export class AddProducto {
     }
 
     const detalleProductoStockBajo =
-      producto.stockMinimo !== null && addProductoDto.stock > 0
-        ? addProductoDto.stock < producto.stockMinimo
-        : false
+      producto.stockMinimo !== null &&
+      addProductoDto.stock < producto.stockMinimo
 
     const insertedDetallesProductos = await db
       .insert(detallesProductoTable)
