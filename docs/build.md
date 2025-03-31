@@ -1,5 +1,3 @@
-Te ayudaré a configurar los diferentes tipos de compilación y pruebas para la aplicación. Vamos paso a paso:
-
 1. Primero, verificaré la configuración actual del proyecto:
 
 Read file: CondorMotors/frontend/pubspec.yaml
@@ -126,41 +124,12 @@ switch ($platform.ToLower()) {
     }
 }
 ```
-Ahora te explicaré cómo usar el script para compilar para cada plataforma:
 
-1. **Para Windows (Instalador MSIX)**:
-```powershell
-.\build.ps1 -platform windows -release
-```
-El instalador se generará en `build\windows\runner\Release`
-
-2. **Para Android (APK)**:
-```powershell
-.\build.ps1 -platform android -release
-```
-El APK se generará en `build\app\outputs\flutter-apk\app-release.apk`
-
-3. **Para Web + ngrok**:
-```powershell
-.\build.ps1 -platform web
-```
-Esto:
-- Compilará la aplicación web
-- Iniciará un servidor local en el puerto 8080
-- Iniciará ngrok y te dará una URL pública
-
-**Requisitos previos:**
+**Requisitos:**
 1. Tener instalado Flutter y Dart
 2. Para Windows: Visual Studio con el workload de "Desktop development with C++"
 3. Para Android: Android Studio y el SDK de Android
-4. Para ngrok: Descargar e instalar ngrok desde https://ngrok.com/download
 
 **Notas importantes:**
 1. Para el instalador de Windows, asegúrate de tener un certificado digital o usar uno de desarrollo
 2. Para el APK de release, necesitarás configurar la firma del APK en `android/app/build.gradle`
-3. Para ngrok, necesitarás autenticarte la primera vez con:
-```powershell
-ngrok authtoken TU_TOKEN
-```
-
-¿Necesitas ayuda con alguno de estos pasos o quieres que profundicemos en alguna plataforma específica?

@@ -20,11 +20,11 @@ final ProformaNotification proformaNotification = ProformaNotification();
 
 // Lista de servidores posibles para intentar conectarse
 final List<String> _serverUrls = <String>[
-  'http://192.168.1.66:3000/api',  // IP de tu PC en la red WiFi local
-  'http://192.168.1.100:3000/api', // IP principal
-  'http://localhost:3000/api',      // Servidor local
-  'http://127.0.0.1:3000/api',      // Localhost alternativo
-  'http://10.0.2.2:3000/api',       // Emulador Android
+  'http://192.168.1.42:3000/api', // IP de tu PC en la red WiFi local
+  'http://192.168.1.42:3000/api', // IP principal
+  'http://localhost:3000/api', // Servidor local
+  'http://127.0.0.1:3000/api', // Localhost alternativo
+  'http://10.0.2.2:3000/api', // Emulador Android
 ];
 
 // Función para inicializar la API global
@@ -40,7 +40,8 @@ Future<bool> _checkServerConnectivity(String url) async {
   try {
     debugPrint('Comprobando conectividad con: $url');
     final Uri uri = Uri.parse(url.replaceAll('/api', ''));
-    final Socket socket = await Socket.connect(uri.host, uri.port, timeout: Duration(seconds: 3));
+    final Socket socket =
+        await Socket.connect(uri.host, uri.port, timeout: Duration(seconds: 3));
     socket.destroy();
     debugPrint('Conexión exitosa con: $url');
     return true;
@@ -64,7 +65,7 @@ Future<String?> _getLastServerUrl() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Configurar UI del sistema
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -83,13 +84,13 @@ void main() async {
 
   // Inicializar API
   debugPrint('Inicializando API...');
-  
+
   // Obtener la última URL usada
   final String? lastUrl = await _getLastServerUrl();
   if (lastUrl != null) {
     _serverUrls.insert(0, lastUrl); // Priorizar la última URL usada
   }
-  
+
   // Verificar conectividad con los servidores en orden
   String? workingUrl;
   for (final String url in _serverUrls) {
@@ -98,33 +99,34 @@ void main() async {
       break;
     }
   }
-  
+
   // Si no se encuentra ningún servidor disponible, usar el primero de la lista
   final String baseUrl = workingUrl ?? _serverUrls.first;
   debugPrint('URL base de la API: $baseUrl');
-  
+
   // Guardar la URL seleccionada para futuras sesiones
   if (workingUrl != null) {
     await _saveServerUrl(workingUrl);
   }
-  
+
   final TokenService tokenService = TokenService.instance;
-  
+
   // Configurar la URL base en TokenService
   tokenService.setBaseUrl(baseUrl);
-  
-  final CondorMotorsApi apiInstance = CondorMotorsApi(baseUrl: baseUrl, tokenService: tokenService);
-  
+
+  final CondorMotorsApi apiInstance =
+      CondorMotorsApi(baseUrl: baseUrl, tokenService: tokenService);
+
   // Inicializar la API global
   initializeApi(apiInstance);
   debugPrint('API inicializada correctamente');
-  
+
   // Verificar autenticación del usuario
   debugPrint('Verificando autenticación del usuario...');
   final bool isAuthenticated = await tokenService.loadTokens();
   String initialRoute = role_utils.login;
   Map<String, dynamic>? userData;
-  
+
   if (isAuthenticated) {
     // Verificar si el token es realmente válido intentando hacer una petición sencilla
     try {
@@ -132,7 +134,7 @@ void main() async {
       // En lugar de solo hacer ping, verificamos si el token es válido
       // usando el endpoint específico para ello
       final bool isTokenValid = await apiInstance.auth.verificarToken();
-      
+
       if (!isTokenValid) {
         debugPrint('Token no validado por el servidor, redirigiendo a login');
         // Limpiar token inválido
@@ -152,11 +154,11 @@ void main() async {
     if (initialRoute != role_utils.login) {
       // Obtener datos del usuario guardados de forma segura
       userData = await api.authService.getUserData();
-      
+
       if (userData != null && userData['rol'] != null) {
         // Normalizar el rol para asegurarnos de que es válido
         final String rol = userData['rol'] as String;
-        
+
         // Verificar si necesitamos normalizar el rol
         if (!role_utils.roles.containsKey(rol)) {
           // Intentar con versión en mayúsculas
@@ -164,32 +166,31 @@ void main() async {
           if (role_utils.roles.containsKey(rolUpper)) {
             userData['rol'] = rolUpper;
             debugPrint('Rol normalizado a mayúsculas: ${userData['rol']}');
-          } 
+          }
           // Verificar casos específicos conocidos
           else if (rol == 'adminstrador' || rolUpper == 'ADMINSTRADOR') {
             userData['rol'] = 'ADMINISTRADOR';
-            debugPrint('Rol normalizado manualmente de "$rol" a "ADMINISTRADOR"');
-          }
-          else if (rol == 'computadora' || rolUpper == 'COMPUTADORA') {
+            debugPrint(
+                'Rol normalizado manualmente de "$rol" a "ADMINISTRADOR"');
+          } else if (rol == 'computadora' || rolUpper == 'COMPUTADORA') {
             userData['rol'] = 'COMPUTADORA';
             debugPrint('Rol normalizado manualmente de "$rol" a "COMPUTADORA"');
-          }
-          else if (rol == 'vendedor' || rolUpper == 'VENDEDOR') {
+          } else if (rol == 'vendedor' || rolUpper == 'VENDEDOR') {
             userData['rol'] = 'VENDEDOR';
             debugPrint('Rol normalizado manualmente de "$rol" a "VENDEDOR"');
-          }
-          else {
+          } else {
             // Si el rol no es reconocido, forzar logout
             debugPrint('Rol no reconocido: $rol, forzando logout');
             await api.authService.logout();
             userData = null;
           }
         }
-        
+
         // Si tenemos un rol normalizado válido, obtener la ruta inicial
         if (userData != null) {
           initialRoute = role_utils.getInitialRoute(userData['rol'] as String);
-          debugPrint('Usuario autenticado con rol: ${userData['rol']}, redirigiendo a $initialRoute');
+          debugPrint(
+              'Usuario autenticado con rol: ${userData['rol']}, redirigiendo a $initialRoute');
         }
       } else {
         debugPrint('No se encontró un token válido, redirigiendo a login');
@@ -200,7 +201,7 @@ void main() async {
   } else {
     debugPrint('No se encontró un token válido, redirigiendo a login');
   }
-  
+
   runApp(CondorMotorsApp(
     initialRoute: initialRoute,
     userData: userData,
@@ -234,7 +235,7 @@ class CondorMotorsApp extends StatelessWidget {
       },
       initialRoute: initialRoute,
     );
-    
+
     // Envolver la aplicación con el widget de estado de conexión
     // Esto mostrará una barra de estado cuando haya problemas de conectividad
     return ConnectionStatusWidget(
@@ -245,7 +246,8 @@ class CondorMotorsApp extends StatelessWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(StringProperty('initialRoute', initialRoute))
-    ..add(DiagnosticsProperty<Map<String, dynamic>?>('userData', userData));
+    properties
+      ..add(StringProperty('initialRoute', initialRoute))
+      ..add(DiagnosticsProperty<Map<String, dynamic>?>('userData', userData));
   }
 }

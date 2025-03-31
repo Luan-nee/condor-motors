@@ -29,7 +29,7 @@ enum EstadoVenta {
     if (text == null) {
       return EstadoVenta.pendiente;
     }
-    
+
     switch (text.toUpperCase()) {
       case 'COMPLETADA':
         return EstadoVenta.completada;
@@ -83,12 +83,18 @@ class DetalleVenta {
       cantidad: json['cantidad'] ?? 0,
       precioSinIgv: _parseDouble(json['precioSinIgv']) ?? 0.0,
       precioConIgv: _parseDouble(json['precioConIgv']) ?? 0.0,
-      tipoTaxId: json['tipoTaxId'] is String ? int.tryParse(json['tipoTaxId']) ?? 1 : json['tipoTaxId'] ?? 1,
+      tipoTaxId: json['tipoTaxId'] is String
+          ? int.tryParse(json['tipoTaxId']) ?? 1
+          : json['tipoTaxId'] ?? 1,
       totalBaseTax: _parseDouble(json['totalBaseTax']) ?? 0.0,
       totalTax: _parseDouble(json['totalTax']) ?? 0.0,
       total: _parseDouble(json['total']) ?? 0.0,
-      productoId: json['productoId'] is String ? int.tryParse(json['productoId']) : json['productoId'],
-      ventaId: json['ventaId'] is String ? int.tryParse(json['ventaId']) : json['ventaId'],
+      productoId: json['productoId'] is String
+          ? int.tryParse(json['productoId'])
+          : json['productoId'],
+      ventaId: json['ventaId'] is String
+          ? int.tryParse(json['ventaId'])
+          : json['ventaId'],
     );
   }
 
@@ -142,7 +148,9 @@ class TotalesVenta {
   /// Crea los totales desde un JSON
   factory TotalesVenta.fromJson(Map<String, dynamic> json) {
     return TotalesVenta(
-      ventaId: json['ventaId'] is String ? int.tryParse(json['ventaId']) ?? 0 : json['ventaId'] ?? 0,
+      ventaId: json['ventaId'] is String
+          ? int.tryParse(json['ventaId']) ?? 0
+          : json['ventaId'] ?? 0,
       totalGravadas: _parseDouble(json['totalGravadas']) ?? 0.0,
       totalExoneradas: _parseDouble(json['totalExoneradas']) ?? 0.0,
       totalGratuitas: _parseDouble(json['totalGratuitas']) ?? 0.0,
@@ -234,12 +242,14 @@ class Venta {
     // Extraer datos
     final id = json['id'] is String ? int.tryParse(json['id']) : json['id'];
     final fechaEmision = parseDate(json['fechaEmision']);
-    final fechaCreacion = parseDate(json['fechaCreacion'] ?? json['fecha_creacion']);
-    final fechaActualizacion = parseDate(json['fechaActualizacion'] ?? json['fecha_actualizacion']);
-    
+    final fechaCreacion =
+        parseDate(json['fechaCreacion'] ?? json['fecha_creacion']);
+    final fechaActualizacion =
+        parseDate(json['fechaActualizacion'] ?? json['fecha_actualizacion']);
+
     // Extraer estado
     final estado = EstadoVenta.fromText(json['estado']);
-    
+
     // Extraer detalles
     List<DetalleVenta> detalles = [];
     if (json['detalles'] != null) {
@@ -249,11 +259,21 @@ class Venta {
             .toList();
       }
     }
-    
+
     // Extraer totales
     TotalesVenta? totales;
     if (json['totales'] != null) {
       totales = TotalesVenta.fromJson(json['totales']);
+    } else if (json['totalesVenta'] != null) {
+      // Manejar el caso donde los totales vienen como 'totalesVenta'
+      totales = TotalesVenta.fromJson({
+        'ventaId': id ?? 0,
+        'totalGravadas': json['totalesVenta']['totalGravadas'],
+        'totalExoneradas': json['totalesVenta']['totalExoneradas'],
+        'totalGratuitas': json['totalesVenta']['totalGratuitas'],
+        'totalTax': json['totalesVenta']['totalTax'],
+        'totalVenta': json['totalesVenta']['totalVenta'],
+      });
     }
 
     return Venta(
@@ -261,25 +281,25 @@ class Venta {
       observaciones: json['observaciones'],
       tipoOperacion: json['tipoOperacion'] ?? '0101',
       porcentajeVenta: json['porcentajeVenta'] ?? 18,
-      tipoDocumentoId: json['tipoDocumentoId'] is String 
-          ? int.tryParse(json['tipoDocumentoId']) ?? 0 
+      tipoDocumentoId: json['tipoDocumentoId'] is String
+          ? int.tryParse(json['tipoDocumentoId']) ?? 0
           : json['tipoDocumentoId'] ?? 0,
       serieDocumento: json['serieDocumento'] ?? '',
       numeroDocumento: json['numeroDocumento'] ?? '',
-      monedaId: json['monedaId'] is String 
-          ? int.tryParse(json['monedaId']) ?? 1 
+      monedaId: json['monedaId'] is String
+          ? int.tryParse(json['monedaId']) ?? 1
           : json['monedaId'] ?? 1,
-      metodoPagoId: json['metodoPagoId'] is String 
-          ? int.tryParse(json['metodoPagoId']) ?? 1 
+      metodoPagoId: json['metodoPagoId'] is String
+          ? int.tryParse(json['metodoPagoId']) ?? 1
           : json['metodoPagoId'] ?? 1,
-      clienteId: json['clienteId'] is String 
-          ? int.tryParse(json['clienteId']) ?? 0 
+      clienteId: json['clienteId'] is String
+          ? int.tryParse(json['clienteId']) ?? 0
           : json['clienteId'] ?? 0,
-      empleadoId: json['empleadoId'] is String 
-          ? int.tryParse(json['empleadoId']) ?? 0 
+      empleadoId: json['empleadoId'] is String
+          ? int.tryParse(json['empleadoId']) ?? 0
           : json['empleadoId'] ?? 0,
-      sucursalId: json['sucursalId'] is String 
-          ? int.tryParse(json['sucursalId']) ?? 0 
+      sucursalId: json['sucursalId'] is String
+          ? int.tryParse(json['sucursalId']) ?? 0
           : json['sucursalId'] ?? 0,
       fechaEmision: fechaEmision,
       horaEmision: json['horaEmision'] ?? '00:00:00',
@@ -295,7 +315,7 @@ class Venta {
   /// Convierte a JSON para la API
   Map<String, dynamic> toJson() {
     final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
-    
+
     return {
       if (id != null) 'id': id,
       if (observaciones != null) 'observaciones': observaciones,
@@ -320,7 +340,7 @@ class Venta {
   /// Versión simplificada para crear una nueva venta
   Map<String, dynamic> toCreateJson() {
     final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
-    
+
     return {
       if (observaciones != null) 'observaciones': observaciones,
       'tipoDocumentoId': tipoDocumentoId,
