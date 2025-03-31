@@ -158,7 +158,7 @@ export class CreateProformaVenta {
         precioOriginal,
         cantidadGratis: detalle.cantidadGratisDescuento,
         descuento,
-        cantidadPagada: cantidad - detalle.cantidadGratisDescuento
+        cantidadPagada: cantidad
       }
     }
 
