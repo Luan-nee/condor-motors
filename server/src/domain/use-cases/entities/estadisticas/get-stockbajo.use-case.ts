@@ -33,9 +33,9 @@ export class GetStockBajoLiquidacion {
       .where(eq(detallesProductoTable.liquidacion, true))
 
     const [stockBajo] = getStockBajo
-    const [liquidacion] = getLiquidacion
+    const [cantidadLiquidacion] = getLiquidacion
 
-    return { ...stockBajo, ...liquidacion, sucursales }
+    return { ...stockBajo, ...cantidadLiquidacion, sucursales }
   }
 
   async execute() {
