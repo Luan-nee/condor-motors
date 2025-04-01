@@ -293,16 +293,16 @@ class ProductosUtils {
     };
 
     for (final Producto producto in productos) {
-      if (producto.stock <= 0) {
+      if (producto.stock <= 0 && (producto.detalleProductoId != null)) {
         resultado['agotados']!.add(producto);
       }
-      if (producto.tieneStockBajo()) {
+      if (producto.tieneStockBajo() && (producto.detalleProductoId != null)) {
         resultado['stockBajo']!.add(producto);
       }
       if (producto.detalleProductoId == null) {
         resultado['inhabilitados']!.add(producto);
       }
-      if (producto.detalleProductoId != null) {
+      if (producto.detalleProductoId != null && producto.stock > 0) {
         resultado['disponibles']!.add(producto);
       }
     }

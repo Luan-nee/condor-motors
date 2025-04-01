@@ -66,7 +66,8 @@ export class CustomResponse {
     pagination,
     metadata,
     cookie,
-    authorization
+    authorization,
+    redirect
   }: SuccessArgs) {
     this.send({
       res,
@@ -77,7 +78,8 @@ export class CustomResponse {
       pagination,
       metadata,
       cookie,
-      authorization
+      authorization,
+      redirect
     })
   }
 

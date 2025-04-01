@@ -367,6 +367,7 @@ class _ProductosTableState extends State<ProductosTable>
       ],
       rows: productosLista.map((Producto producto) {
         final bool stockBajo = producto.tieneStockBajo();
+        final bool agotado = producto.stock == 0;
 
         return DataRow(
           cells: <DataCell>[
@@ -378,7 +379,7 @@ class _ProductosTableState extends State<ProductosTable>
                     width: 8,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: stockBajo
+                      color: (stockBajo || agotado)
                           ? const Color(0xFFE31E24)
                           : const Color(0xFF4CAF50),
                       borderRadius: BorderRadius.circular(4),

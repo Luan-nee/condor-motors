@@ -25,8 +25,6 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
   late Animation<double> _animation;
 
   // Estado para controlar el modo edición
-  bool _modoEdicion = false;
-  Sucursal? _sucursalSeleccionada;
 
   // Controladores para la lista
   final ScrollController _scrollController = ScrollController();
@@ -34,7 +32,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
   // Filtros avanzados
   bool _mostrarFiltrosAvanzados = false;
   String _filtroTipo = 'Todos';
-  List<String> _opcionesTipo = ['Todos', 'Central', 'Local'];
+  final List<String> _opcionesTipo = ['Todos', 'Central', 'Local'];
 
   // Estado de la lista
   bool _isListScrollable = false;
@@ -80,8 +78,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -111,7 +110,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
   Future<void> _guardarSucursal(Map<String, dynamic> data) async {
     final String? error = await _sucursalProvider.guardarSucursal(data);
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     // Cerramos el diálogo después de guardar
     Navigator.of(context).pop();
@@ -156,12 +157,16 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
       ),
     );
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     if (confirm == true) {
       final String? error = await _sucursalProvider.eliminarSucursal(sucursal);
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       if (error == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -189,7 +194,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
   }
 
   List<Sucursal> _aplicarFiltrosAvanzados(List<Sucursal> sucursales) {
-    if (_filtroTipo == 'Todos') return sucursales;
+    if (_filtroTipo == 'Todos') {
+      return sucursales;
+    }
 
     bool esCentral = _filtroTipo == 'Central';
     return sucursales.where((s) => s.sucursalCentral == esCentral).toList();
@@ -575,7 +582,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                       top: 0,
                       left: 0,
                       right: 0,
-                      child: Container(
+                      child: SizedBox(
                         height: 3,
                         child: const LinearProgressIndicator(
                           backgroundColor: Colors.transparent,

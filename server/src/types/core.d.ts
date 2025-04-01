@@ -27,6 +27,7 @@ export type SuccessArgs = Pick<
   | 'metadata'
   | 'cookie'
   | 'authorization'
+  | 'redirect'
 >
 export type CreatedArgs = Pick<SendResponseArgs, 'res' | 'message' | 'data'>
 export type AcceptedArgs = Pick<SendResponseArgs, 'res' | 'message' | 'data'>

@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
-import { isProduction } from '@/consts'
-import type { Request, Response } from 'express'
+import { isProduction, logsDestination } from '@/consts'
 import fs from 'fs'
 import path from 'path'
+import { envs } from './envs'
 
 enum LogLevel {
   DEBUG = 'DEBUG',
@@ -103,25 +103,12 @@ class FileLogger extends BaseLogger implements Logger {
   }
 }
 
-const createLogger = (): Logger => {
-  if (!isProduction) {
+const createLogger = (type: string): Logger => {
+  if (type === logsDestination.filesystem) {
     return new FileLogger('app.log', 'errors.log')
   }
+
   return new ConsoleLogger()
 }
 
-export const CustomLogger = createLogger()
-
-export const LogRequest = (
-  req: Request,
-  res: Response,
-  duration: number,
-  resource: string
-) => {
-  const ip = req.ip ?? null
-  const user = req.authPayload ?? { id: null }
-  const message = `${req.method} ${resource} ${req.protocol.toUpperCase()}/${req.httpVersion} ${res.statusCode} ${duration}ms`
-  const meta = { ip, user }
-
-  CustomLogger.info(message, meta)
-}
+export const CustomLogger = createLogger(envs.LOGS)

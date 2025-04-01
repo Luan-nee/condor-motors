@@ -1,7 +1,7 @@
 import { deleteCookie, getCookie, setCookie } from '@/core/lib/cookies';
 import { accessTokenCookieName, apiBaseUrl } from '@/core/consts';
 
-export const refreshAccessToken = async () => {
+export const refreshAccessToken: RefreshAccessToken = async () => {
   const res = await fetch(`${apiBaseUrl}/api/auth/refresh`, {
     method: 'POST',
     headers: {
@@ -27,7 +27,7 @@ export const refreshAccessToken = async () => {
     return {
       error: null,
       data: {
-        success: true,
+        user: json.data,
       },
     };
   } catch (error) {
@@ -47,7 +47,7 @@ export const testSession: TestSession = async () => {
     window.location.replace('/login');
   };
 
-  if (accessToken == null) {
+  if (accessToken == null || accessToken.length < 1) {
     return {
       data: null,
       error: { message: 'Invalid session', action: redirectToLogin },
@@ -83,7 +83,7 @@ export const testSession: TestSession = async () => {
       };
     }
 
-    const { error } = await refreshAccessToken();
+    const { data, error } = await refreshAccessToken();
 
     if (error !== null) {
       return {
@@ -95,7 +95,7 @@ export const testSession: TestSession = async () => {
     return {
       error: null,
       data: {
-        user: json.data,
+        user: data,
       },
     };
   } catch (error) {
@@ -141,7 +141,7 @@ export const login: AuthLogin = async ({ username, password }) => {
       data: {
         message: 'Bienvenido ' + json.data.usuario,
         action: () => {
-          window.location.replace('/uploads');
+          window.location.replace('/dashboard');
         },
       },
     };
@@ -155,6 +155,61 @@ export const login: AuthLogin = async ({ username, password }) => {
   }
 };
 
-export const endSession = () => {
-  deleteCookie(accessTokenCookieName);
+export const logout: AuthLogout = async () => {
+  let accessToken = getCookie(accessTokenCookieName);
+
+  const redirectToLogin = () => {
+    window.location.replace('/login');
+  };
+
+  if (accessToken == null || accessToken.length < 1) {
+    return {
+      data: null,
+      error: { message: 'Invalid session', action: redirectToLogin },
+    };
+  }
+
+  const res = await fetch(`${apiBaseUrl}/api/auth/logout`, {
+    method: 'POST',
+    headers: {
+      'Content-type': 'application/json',
+      Authorization: accessToken,
+    },
+    credentials: 'include',
+  });
+
+  try {
+    const textResponse = await res.text();
+    const json = JSON.parse(textResponse);
+
+    console.log(json);
+
+    if (json.status !== 'success') {
+      return {
+        data: null,
+        error: {
+          message: String(json.error ?? 'Unexpected error'),
+          action: redirectToLogin,
+        },
+      };
+    }
+
+    deleteCookie(accessTokenCookieName);
+
+    return {
+      error: null,
+      data: {
+        message: json.message,
+        action: redirectToLogin,
+      },
+    };
+  } catch (error) {
+    return {
+      error: {
+        message: 'Unexpected format response',
+        action: () => {},
+      },
+      data: null,
+    };
+  }
 };
