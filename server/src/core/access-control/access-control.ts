@@ -5,23 +5,13 @@ import {
   permisosTable,
   rolesPermisosTable
 } from '@/db/schema'
-import { and, eq, or } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 
 export class AccessControl {
-  private static getConditionals(permissionCodes: string[]) {
-    const conditionals = permissionCodes.map((permissionCode) =>
-      eq(permisosTable.codigo, permissionCode)
-    )
-
-    return or(...conditionals)
-  }
-
   static async verifyPermissions(
     authPayload: AuthPayload,
     permissionCodes: string[]
   ) {
-    const permissionConditionals = this.getConditionals(permissionCodes)
-
     const permissions = await db
       .select({
         codigoPermiso: permisosTable.codigo,
@@ -43,7 +33,7 @@ export class AccessControl {
       .where(
         and(
           eq(cuentasEmpleadosTable.id, authPayload.id),
-          permissionConditionals
+          inArray(permisosTable.codigo, permissionCodes)
         )
       )
 
