@@ -29,6 +29,13 @@ const ParamsDocSchema = z.object({
   doc: paramsBaseSchema.doc
 })
 
+const ParamsProductoIdSchema = z.object({
+  idProducto: paramsBaseSchema.numericId
+})
+
+export const paramsProductosIdValidator = (object: unknown) =>
+  ParamsProductoIdSchema.safeParse(object)
+
 export const paramsDocValidator = (object: unknown) =>
   ParamsDocSchema.safeParse(object)
 
