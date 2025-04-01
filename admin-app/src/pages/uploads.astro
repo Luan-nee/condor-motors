@@ -1,0 +1,125 @@
+---
+import Button from '@/components/atoms/Button.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Uploads">
+  <section class="flex w-full items-stretch">
+    <div class="hidden md:flex p-2">
+      <aside
+        class="left-2 top-2 bottom-2 w-[280px] rounded-lg h-full
+        bg-gray-300/5 backdrop-blur-md border border-white/10 p-3 flex flex-col justify-between"
+      >
+        <header>
+          <h2 class="text-xl font-medium">Archivos</h2>
+          <p id="card-message" class="text-sm font-medium">Loading...</p>
+        </header>
+        <div class="grow" id="files-list">
+          <template>
+            <div>
+              <p></p>
+            </div>
+          </template>
+        </div>
+        <footer>
+          <div class="hidden text-sm space-y-2" id="user-container">
+            <div class="flex items-center gap-1">
+              <span class="font-semibold text-gray-300">Usuario:</span>
+              <span data-id="usuario"></span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="font-semibold text-gray-300">Rol:</span>
+              <span data-id="rol"></span>
+            </div>
+            <div class="mt-3">
+              <button
+                class="px-4 py-2 rounded-md bg-red-500/50 text-red-200 text-sm font-semibold
+              hover:bg-red-600/50 hover:text-red-100 transition-colors"
+                id="end-session"
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+        </footer>
+      </aside>
+    </div>
+
+    <div class="grow p-2 flex flex-col">
+      <div
+        class="border-white/10 rounded-lg bg-black/10 h-full border-3 border-dashed p-4"
+      >
+        <h1 class="text-2xl font-medium mb-6">Subir archivos</h1>
+
+        <section class="grid md:grid-cols-2 gap-4">
+          <div class="space-y-4">
+            <h2 class="font-medium text-gray-300">Subir APK</h2>
+            <form class="flex flex-col space-y-4">
+              <label
+                class="border-3 border-dashed border-white/30 rounded-2xl p-8 min-h-48 md:min-h-72 bg-gray-500/5 hover:bg-gray-300/5 transition-colors text-gray-400 hover:text-gray-300 flex justify-center items-center"
+              >
+                <span class="font-semibold">Seleccione un archivo</span>
+                <input type="file" hidden accept="image/jpg" />
+              </label>
+
+              <Button type="submit">Subir</Button>
+            </form>
+          </div>
+
+          <div class="space-y-4">
+            <h2 class="font-medium text-gray-300">Subir Desktop App</h2>
+            <form class="flex flex-col space-y-4">
+              <label
+                class="border-3 border-dashed border-white/30 rounded-2xl p-8 min-h-48 md:min-h-72 bg-gray-500/5 hover:bg-gray-300/5 transition-colors text-gray-400 hover:text-gray-300 flex justify-center items-center"
+              >
+                <span class="font-semibold">Seleccione un archivo</span>
+                <input type="file" hidden accept="image/jpg" />
+              </label>
+
+              <Button type="submit">Subir</Button>
+            </form>
+          </div>
+        </section>
+
+        <p id="error-message" class="text-sm font-medium text-red-300"></p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { testSession, endSession } from '@/core/lib/auth';
+  import { selectWith } from '@/core/lib/utils';
+
+  (async () => {
+    const { data, error } = await testSession();
+
+    if (error != null) {
+      error.action();
+      return;
+    }
+
+    const $userContainer = selectWith<HTMLDivElement>('#user-container');
+    const $cardMessage = selectWith<HTMLParagraphElement>('#card-message');
+    const $username = selectWith<HTMLSpanElement>(
+      '[data-id="usuario"]',
+      $userContainer
+    );
+    const $rol = selectWith<HTMLSpanElement>('[data-id="rol"]', $userContainer);
+
+    $cardMessage.innerText = '';
+    $userContainer.classList.remove('hidden');
+    $username.innerText = data.user.usuario;
+    $rol.innerText = data.user.rol.nombre;
+
+    const $endSessionButton = selectWith<HTMLButtonElement>(
+      '#end-session',
+      $userContainer
+    );
+
+    $endSessionButton.addEventListener('click', () => {
+      endSession();
+      window.location.replace('/');
+    });
+  })();
+</script>

@@ -1,0 +1,11 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+interface Props extends HTMLAttributes<'button'> {}
+---
+
+<button
+  class="w-full button flex items-center justify-center px-3 py-2.5 font-medium text-white bg-linear-[83.21deg,#3245ff_0%,#bc52ee_100%] rounded-lg text-sm transition-all duration-200 shadow hover:shadow-none"
+  {...Astro.props}
+>
+  <slot />
+</button>

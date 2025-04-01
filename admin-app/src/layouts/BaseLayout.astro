@@ -1,6 +1,12 @@
 ---
 import '@/styles/global.css';
 import background from '@/assets/background.svg';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
 ---
 
 <!doctype html>
@@ -9,7 +15,7 @@ import background from '@/assets/background.svg';
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Admin App</title>
+    <title>{title}</title>
     <meta name="robots" content="noindex" />
   </head>
   <body>

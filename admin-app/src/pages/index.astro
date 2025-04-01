@@ -1,39 +1,25 @@
 ---
-import Label from '@/components/Label.astro';
-import Input from '@/components/Input.astro';
+import Label from '@/components/atoms/Label.astro';
+import Input from '@/components/atoms/Input.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import Button from '@/components/atoms/Button.astro';
 ---
 
-<BaseLayout>
-  <section class="pt-8 items-center flex-col justify-center p-4 flex">
+<BaseLayout title="Login">
+  <section class="items-center flex-col justify-center p-4 flex">
     <h1 class="text-2xl mb-4 font-medium">Iniciar sesión</h1>
     <section class="flex gap-4 md:flex-wrap">
       <form id="login-form" class="space-y-2">
         <Label text="Usuario">
-          <Input
-            name="username"
-            type="text"
-            placeholder="Usuario123"
-            autocomplete="off"
-          />
+          <Input name="username" type="text" autocomplete="off" />
         </Label>
 
         <Label text="Clave">
-          <Input
-            name="password"
-            type="password"
-            placeholder="Usuario123"
-            autocomplete="off"
-          />
+          <Input name="password" type="password" autocomplete="off" />
         </Label>
 
         <div class="flex justify-center flex-col mt-8">
-          <button
-            type="submit"
-            class="w-full button flex items-center justify-center px-3 py-2.5 font-medium text-white bg-linear-[83.21deg,#3245ff_0%,#bc52ee_100%] rounded-lg text-sm transition-all duration-200 shadow hover:shadow-none"
-          >
-            Iniciar sesión
-          </button>
+          <Button type="submit">Iniciar sesión</Button>
           <p
             id="success-message"
             class="text-sm font-medium text-green-300 mt-3"
@@ -48,67 +34,16 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 </BaseLayout>
 
 <script>
+  import { login } from '@/core/lib/auth';
+  import { selectWith } from '@/core/lib/utils';
+
   (() => {
-    function setCookie(cname: string, cvalue: string, exminutes: number) {
-      const d = new Date();
-      d.setTime(d.getTime() + exminutes * 60 * 1000);
-      let expires = 'expires=' + d.toUTCString();
-      document.cookie = cname + '=' + cvalue + ';' + expires + ';path=/';
-    }
+    const $loginForm = selectWith<HTMLFormElement>('#login-form');
+    const $successMessage =
+      selectWith<HTMLParagraphElement>('#success-message');
+    const $errorMessage = selectWith<HTMLParagraphElement>('#error-message');
 
-    const $loginForm = document.querySelector('#login-form');
-    const $successMessage = document.querySelector('#success-message');
-    const $errorMessage = document.querySelector('#error-message');
-
-    if (
-      !($loginForm instanceof HTMLFormElement) ||
-      !($successMessage instanceof HTMLParagraphElement) ||
-      !($errorMessage instanceof HTMLParagraphElement)
-    ) {
-      console.error('Elements not found');
-      return;
-    }
-
-    const login = (username: string, password: string) => {
-      fetch('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-type': 'Application/json',
-        },
-        body: JSON.stringify({
-          usuario: username,
-          clave: password,
-        }),
-      })
-        .then(async (res) => {
-          const accessToken = res.headers.get('authorization');
-          if (accessToken != null) {
-            setCookie('access_token', accessToken, 15);
-          }
-
-          return await res.text();
-        })
-        .then((textResponse) => {
-          try {
-            const json = JSON.parse(textResponse);
-
-            if (json.status !== 'success') {
-              $errorMessage.innerText = json.error;
-              return;
-            }
-
-            $successMessage.innerText = 'Bienvenido ' + json.data.usuario;
-            window.location.replace('/uploads');
-          } catch (error) {
-            $errorMessage.innerText = 'Unexpected format response';
-          }
-        })
-        .catch((error) => {
-          console.error(error.message);
-        });
-    };
-
-    $loginForm.addEventListener('submit', (e) => {
+    $loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       $errorMessage.innerText = '';
       $successMessage.innerText = '';
@@ -126,7 +61,20 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
         return;
       }
 
-      login(username, password);
+      const { data, error } = await login({ username, password });
+
+      if (data != null) {
+        $successMessage.innerText = data.message;
+        data.action();
+        return;
+      }
+
+      if (error != null) {
+        $errorMessage.innerText = error.message;
+        return;
+      }
+
+      $errorMessage.innerText = 'Unexpected error';
     });
   })();
 </script>
