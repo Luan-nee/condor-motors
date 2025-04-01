@@ -1,5 +1,6 @@
 import { CustomError } from '@/core/errors/custom.error'
 import { formatFileName } from '@/core/lib/format-values'
+import { getFileNameAndExtension } from '@/core/lib/utils'
 import { Validator } from '@/domain/validators/validator'
 import multer from 'multer'
 import path from 'node:path'
@@ -13,8 +14,8 @@ const privateDiskStorage = multer.diskStorage({
       callback(CustomError.badRequest('El nombre del archivo es inválido'), '')
     }
 
-    const extension = path.extname(file.originalname).toLowerCase()
-    const formattedName = formatFileName(file.originalname)
+    const { basename, extension } = getFileNameAndExtension(file.originalname)
+    const formattedName = formatFileName(basename)
 
     callback(null, `${Date.now().toString(16)}-${formattedName}${extension}`)
   }
