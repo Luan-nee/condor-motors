@@ -44,7 +44,7 @@ export const testSession: TestSession = async () => {
   let accessToken = getCookie(accessTokenCookieName);
 
   const redirectToLogin = () => {
-    window.location.replace('/');
+    window.location.replace('/login');
   };
 
   if (accessToken == null) {

@@ -1,5 +1,7 @@
 ---
 import Button from '@/components/atoms/Button.astro';
+import Input from '@/components/atoms/Input.astro';
+import Label from '@/components/atoms/Label.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 ---
 
@@ -51,32 +53,58 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
       >
         <h1 class="text-2xl font-medium mb-6">Subir archivos</h1>
 
-        <section class="grid md:grid-cols-2 gap-4">
+        <section class="container mx-auto">
           <div class="space-y-4">
             <h2 class="font-medium text-gray-300">Subir APK</h2>
             <form class="flex flex-col space-y-4">
-              <label
-                class="border-3 border-dashed border-white/30 rounded-2xl p-8 min-h-48 md:min-h-72 bg-gray-500/5 hover:bg-gray-300/5 transition-colors text-gray-400 hover:text-gray-300 flex justify-center items-center"
-              >
-                <span class="font-semibold">Seleccione un archivo</span>
-                <input type="file" hidden accept="image/jpg" />
-              </label>
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="flex flex-col space-y-4">
+                  <Label text="Nombre">
+                    <Input
+                      name="name"
+                      type="text"
+                      autocomplete="off"
+                      placeholder="Apk en alpha version 0.216.58"
+                    />
+                  </Label>
 
-              <Button type="submit">Subir</Button>
-            </form>
-          </div>
+                  <Label text="Tipo">
+                    <select
+                      class="px-3 py-2 border border-white/30 h-full
+                      bg-gray-500/5 hover:bg-gray-300/5
+                      transition-colors rounded-md
+                      hover:border-white/60"
+                    >
+                      <option value="null" selected disabled
+                        >Seleccione un tipo</option
+                      >
+                      <option value="apk">APK</option>
+                      <option value="desktop-app"
+                        >Aplicación de escritorio</option
+                      >
+                    </select>
+                  </Label>
+                </div>
 
-          <div class="space-y-4">
-            <h2 class="font-medium text-gray-300">Subir Desktop App</h2>
-            <form class="flex flex-col space-y-4">
-              <label
-                class="border-3 border-dashed border-white/30 rounded-2xl p-8 min-h-48 md:min-h-72 bg-gray-500/5 hover:bg-gray-300/5 transition-colors text-gray-400 hover:text-gray-300 flex justify-center items-center"
-              >
-                <span class="font-semibold">Seleccione un archivo</span>
-                <input type="file" hidden accept="image/jpg" />
-              </label>
+                <label
+                  class="border-3 border-dashed rounded-2xl p-8 min-h-48 md:min-h-72
+                  border-white/30 bg-gray-500/5 hover:bg-gray-300/5 transition-colors
+                  text-gray-400 hover:text-gray-300 flex justify-center items-center"
+                >
+                  <span class="font-semibold">Seleccione un archivo</span>
+                  <input type="file" hidden accept="image/jpg" />
+                </label>
+              </div>
 
-              <Button type="submit">Subir</Button>
+              <div class="flex flex-wrap justify-end gap-4">
+                <button
+                  type="button"
+                  class="border-white/10 rounded-lg border text-sm px-5 py-3 hover:bg-white/15 hover:border-white/50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <Button type="submit">Subir</Button>
+              </div>
             </form>
           </div>
         </section>

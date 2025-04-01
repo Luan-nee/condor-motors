@@ -19,7 +19,7 @@ import Button from '@/components/atoms/Button.astro';
         </Label>
 
         <div class="flex justify-center flex-col mt-8">
-          <Button type="submit">Iniciar sesión</Button>
+          <Button type="submit" fullWidth>Iniciar sesión</Button>
           <p
             id="success-message"
             class="text-sm font-medium text-green-300 mt-3"
@@ -34,10 +34,17 @@ import Button from '@/components/atoms/Button.astro';
 </BaseLayout>
 
 <script>
-  import { login } from '@/core/lib/auth';
+  import { testSession, login } from '@/core/lib/auth';
   import { selectWith } from '@/core/lib/utils';
 
-  (() => {
+  (async () => {
+    const { error } = await testSession();
+
+    if (error == null) {
+      window.location.replace('/dashboard');
+      return;
+    }
+
     const $loginForm = selectWith<HTMLFormElement>('#login-form');
     const $successMessage =
       selectWith<HTMLParagraphElement>('#success-message');
