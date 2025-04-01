@@ -25,3 +25,29 @@ export const selectWith = <T extends HTMLElement>(
 };
 
 export const $all = (selector: string) => document.querySelectorAll(selector);
+
+export const validateAndFormatFileName = (value: string) => {
+  const maxLength = 255;
+  const invalidCharacters = /[\\/:*?"<>|]/;
+
+  if (!value) {
+    throw new Error('El nombre del archivo no puede estar vacío.');
+  }
+
+  if (value.length > maxLength) {
+    throw new Error(
+      `El nombre del archivo no puede exceder los ${maxLength} caracteres.`
+    );
+  }
+
+  if (invalidCharacters.test(value)) {
+    throw new Error('El nombre del archivo contiene caracteres inválidos.');
+  }
+
+  return value
+    .trim()
+    .replace(/[\s]+/g, '_')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .replace(/-+/g, '-');
+};
