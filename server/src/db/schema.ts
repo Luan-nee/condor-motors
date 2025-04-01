@@ -544,3 +544,13 @@ export const notificacionesTable = pgTable('notificaciones', {
     .references(() => sucursalesTable.id),
   ...timestampsColumns
 })
+
+export const archivosAppTable = pgTable('archivos_app', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  nombre: text('nombre').notNull(),
+  tipo: text('tipo', { enum: ['apk', 'desktop-app'] }).notNull(),
+  size: text('size').notNull(),
+  metadata: jsonb('metadata').notNull(),
+  downloadPath: text('download_path').notNull(),
+  ...timestampsColumns
+})
