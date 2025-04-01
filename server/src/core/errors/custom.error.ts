@@ -40,7 +40,7 @@ export class CustomError extends Error {
     })
   }
 
-  static unauthorized(message: string, redirect: string) {
+  static unauthorized(message: string, redirect?: string) {
     return new CustomError({
       statusCode: 401,
       message,
