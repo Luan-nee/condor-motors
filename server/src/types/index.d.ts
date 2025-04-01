@@ -11,6 +11,7 @@ interface Permission {
   codigoPermiso: string
   sucursalId: number
 }
+
 interface AuthPayload {
   id: number
 }

@@ -31,6 +31,7 @@ export class AccessControlMiddleware {
           }
 
           if (hasPermission) {
+            req.permissions = validPermissions
             next()
             return
           }
