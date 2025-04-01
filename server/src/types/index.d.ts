@@ -3,9 +3,14 @@ declare namespace Express {
     authPayload?: AuthPayload
     sucursalId?: number
     idProducto?: number
+    permissions?: Permission[]
   }
 }
 
+interface Permission {
+  codigoPermiso: string
+  sucursalId: number
+}
 interface AuthPayload {
   id: number
 }
