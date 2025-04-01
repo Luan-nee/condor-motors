@@ -6,6 +6,7 @@ export class CorsMiddleware {
   static readonly allowedOrigins = envs.ALLOWED_ORIGINS
 
   static readonly requests = cors({
+    exposedHeaders: ['Authorization'],
     origin: (origin, callback) => {
       if (origin === undefined) {
         callback(null, true)
