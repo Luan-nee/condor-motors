@@ -172,6 +172,7 @@ export class MarcasController {
           })
           return
         }
+
         CustomResponse.success({
           res,
           data: { message: 'Marca eliminada correctamente' }

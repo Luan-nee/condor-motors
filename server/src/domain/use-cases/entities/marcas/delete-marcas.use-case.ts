@@ -26,6 +26,12 @@ export class DeleteMarcas implements DeleteMarcasUseCase {
       .where(eq(marcasTable.id, id))
       .returning()
 
+    if (marca.length < 1) {
+      throw CustomError.badRequest(
+        `No se pudo eliminar esta marca (No se encontró)`
+      )
+    }
+
     return marca[0]
   }
 }
