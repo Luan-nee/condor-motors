@@ -203,7 +203,8 @@ class Producto {
 
   /// Verifica si el producto tiene stock bajo
   bool tieneStockBajo() {
-    return stockBajo || (stockMinimo != null && stock <= stockMinimo!);
+    return stockBajo ||
+        (stockMinimo != null && stock <= stockMinimo! && stock != 0);
   }
 
   /// Verifica si el producto está en oferta
