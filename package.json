@@ -4,6 +4,10 @@
   "version": "1.0.0",
   "description": "Sistema de gestión de empleados, inventario y facturación.",
   "scripts": {
+    "dev:admin-app": "npm run dev --workspace admin-app",
+    "build:admin-app": "npm run build --workspace admin-app",
+    "preview:admin-app": "npm run preview --workspace admin-app",
+    "astro:admin-app": "npm run astro --workspace admin-app",
     "dev:server": "npm run dev --workspace server",
     "build:server": "npm run build --workspace server",
     "start:server": "npm run start --workspace server",
@@ -25,9 +29,12 @@
   "author": "",
   "license": "ISC",
   "workspaces": [
-    "server"
+    "server",
+    "admin-app"
   ],
   "dependencies": {
-    "drizzle-orm": "^0.39.3"
+    "@tailwindcss/vite": "^4.0.17",
+    "drizzle-orm": "^0.39.3",
+    "tailwindcss": "^4.0.17"
   }
 }

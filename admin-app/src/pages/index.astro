@@ -1,0 +1,132 @@
+---
+import Label from '@/components/Label.astro';
+import Input from '@/components/Input.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+---
+
+<BaseLayout>
+  <section class="pt-8 items-center flex-col justify-center p-4 flex">
+    <h1 class="text-2xl mb-4 font-medium">Iniciar sesión</h1>
+    <section class="flex gap-4 md:flex-wrap">
+      <form id="login-form" class="space-y-2">
+        <Label text="Usuario">
+          <Input
+            name="username"
+            type="text"
+            placeholder="Usuario123"
+            autocomplete="off"
+          />
+        </Label>
+
+        <Label text="Clave">
+          <Input
+            name="password"
+            type="password"
+            placeholder="Usuario123"
+            autocomplete="off"
+          />
+        </Label>
+
+        <div class="flex justify-center flex-col mt-8">
+          <button
+            type="submit"
+            class="w-full button flex items-center justify-center px-3 py-2.5 font-medium text-white bg-linear-[83.21deg,#3245ff_0%,#bc52ee_100%] rounded-lg text-sm transition-all duration-200 shadow hover:shadow-none"
+          >
+            Iniciar sesión
+          </button>
+          <p
+            id="success-message"
+            class="text-sm font-medium text-green-300 mt-3"
+          >
+          </p>
+          <p id="error-message" class="text-sm font-medium text-red-300 mt-3">
+          </p>
+        </div>
+      </form>
+    </section>
+  </section>
+</BaseLayout>
+
+<script>
+  (() => {
+    function setCookie(cname: string, cvalue: string, exminutes: number) {
+      const d = new Date();
+      d.setTime(d.getTime() + exminutes * 60 * 1000);
+      let expires = 'expires=' + d.toUTCString();
+      document.cookie = cname + '=' + cvalue + ';' + expires + ';path=/';
+    }
+
+    const $loginForm = document.querySelector('#login-form');
+    const $successMessage = document.querySelector('#success-message');
+    const $errorMessage = document.querySelector('#error-message');
+
+    if (
+      !($loginForm instanceof HTMLFormElement) ||
+      !($successMessage instanceof HTMLParagraphElement) ||
+      !($errorMessage instanceof HTMLParagraphElement)
+    ) {
+      console.error('Elements not found');
+      return;
+    }
+
+    const login = (username: string, password: string) => {
+      fetch('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-type': 'Application/json',
+        },
+        body: JSON.stringify({
+          usuario: username,
+          clave: password,
+        }),
+      })
+        .then(async (res) => {
+          const accessToken = res.headers.get('authorization');
+          if (accessToken != null) {
+            setCookie('access_token', accessToken, 15);
+          }
+
+          return await res.text();
+        })
+        .then((textResponse) => {
+          try {
+            const json = JSON.parse(textResponse);
+
+            if (json.status !== 'success') {
+              $errorMessage.innerText = json.error;
+              return;
+            }
+
+            $successMessage.innerText = 'Bienvenido ' + json.data.usuario;
+            window.location.replace('/uploads');
+          } catch (error) {
+            $errorMessage.innerText = 'Unexpected format response';
+          }
+        })
+        .catch((error) => {
+          console.error(error.message);
+        });
+    };
+
+    $loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      $errorMessage.innerText = '';
+      $successMessage.innerText = '';
+
+      const formData = new FormData($loginForm);
+      const { username, password } = Object.fromEntries(formData);
+
+      if (username == null || typeof username !== 'string') {
+        $errorMessage.innerText = 'Ingrese su nombre de usuario';
+        return;
+      }
+
+      if (password == null || typeof password !== 'string') {
+        $errorMessage.innerText = 'Ingrese su clave';
+        return;
+      }
+
+      login(username, password);
+    });
+  })();
+</script>

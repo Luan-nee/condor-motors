@@ -1,0 +1,49 @@
+---
+import '@/styles/global.css';
+import background from '@/assets/background.svg';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Admin App</title>
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <div class="h-full flex flex-col">
+      <img
+        class="fixed inset-0 w-full h-full -z-10 blur-[100px]"
+        src={background.src}
+        alt="background image"
+        fetchpriority="high"
+      />
+      <main class="h-full flex justify-center">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>
+
+<style>
+  * {
+    padding: 0;
+    box-sizing: border-box;
+    margin: 0;
+  }
+
+  :root {
+    color-scheme: dark dark;
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    font-family:
+      Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial,
+      sans-serif;
+  }
+</style>
