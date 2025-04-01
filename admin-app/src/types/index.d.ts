@@ -16,8 +16,18 @@ interface LoginSuccess {
   action: () => void;
 }
 
-interface SimplifiedError {
+interface ApiSuccessWithAction {
   message: string;
+  action: () => void;
+}
+
+interface ApiError {
+  message: string;
+}
+
+interface ApiErrorWithAction {
+  message: string;
+  action: () => void;
 }
 
 type AuthLogin = Method<
@@ -26,7 +36,7 @@ type AuthLogin = Method<
     password: string;
   },
   LoginSuccess,
-  SimplifiedError
+  ApiError
 >;
 
 interface TestUserSuccess {
@@ -40,8 +50,8 @@ interface TestUserSuccess {
   };
 }
 
-type TestSession = Method<
-  void,
-  TestUserSuccess,
-  SimplifiedError & { action: () => void }
->;
+type TestSession = Method<void, TestUserSuccess, ApiErrorWithAction>;
+
+type RefreshAccessToken = Method<void, TestUserSuccess, ApiError>;
+
+type AuthLogout = Method<void, ApiSuccessWithAction, ApiErrorWithAction>;

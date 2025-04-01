@@ -5,7 +5,7 @@ import Label from '@/components/atoms/Label.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 ---
 
-<BaseLayout title="Uploads">
+<BaseLayout title="Dashboard">
   <section class="flex w-full items-stretch">
     <div class="hidden md:flex p-2">
       <aside
@@ -37,7 +37,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
               <button
                 class="px-4 py-2 rounded-md bg-red-500/50 text-red-200 text-sm font-semibold
               hover:bg-red-600/50 hover:text-red-100 transition-colors"
-                id="end-session"
+                id="logout"
               >
                 Cerrar sesión
               </button>
@@ -116,7 +116,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 </BaseLayout>
 
 <script>
-  import { testSession, endSession } from '@/core/lib/auth';
+  import { testSession, logout } from '@/core/lib/auth';
   import { selectWith } from '@/core/lib/utils';
 
   (async () => {
@@ -140,14 +140,24 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
     $username.innerText = data.user.usuario;
     $rol.innerText = data.user.rol.nombre;
 
-    const $endSessionButton = selectWith<HTMLButtonElement>(
-      '#end-session',
+    const $logoutButton = selectWith<HTMLButtonElement>(
+      '#logout',
       $userContainer
     );
 
-    $endSessionButton.addEventListener('click', () => {
-      endSession();
-      window.location.replace('/');
+    $logoutButton.addEventListener('click', async () => {
+      const { data, error } = await logout();
+
+      console.log(data, error);
+
+      if (error != null) {
+        $cardMessage.innerText = error.message;
+        error.action();
+        return;
+      }
+
+      $cardMessage.innerText = data.message;
+      data.action();
     });
   })();
 </script>
