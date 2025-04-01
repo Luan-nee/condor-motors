@@ -1,7 +1,7 @@
+import { Router } from 'express'
 import { SucursalesRoutes } from '@/presentation/entities/sucursales/routes'
 import { EmpleadosRoutes } from '@/presentation/entities/empleados/routes'
 import { MarcasRoutes } from '@/presentation/entities/marcas/routes'
-import { Router } from 'express'
 import { SoloSucursalRoutes } from '@/presentation/entities/solo-sucursal/routes'
 import { EntitiesMiddleware } from '@/presentation/middlewares/entities.middleware'
 import { CategoriasRoutes } from '@/presentation/entities/categorias/routes'
@@ -11,8 +11,9 @@ import { ColoresRoutes } from '@/presentation/entities/colores/routes'
 import { ClientesRoutes } from './clientes/routes'
 import { ReservasProductoRoutes } from '@/presentation/entities/reservas-producto/routes'
 import { TransferenciasInventarioRoutes } from '@/presentation/entities/transferencias-inventario/routes'
-import { EstadisticaRouter } from './estadisticas/routes'
-import { ProductosMiddleware } from '../middlewares/productosMiddleware'
+import { EstadisticaRouter } from '@/presentation/entities/estadisticas/routes'
+import { ArchivosRoutes } from '@/presentation/entities/archivos/routes'
+import { ProductosMiddleware } from '@/presentation/middlewares/productosMiddleware'
 import { ProductosRouter } from './productos/routes'
 
 export class EntitiesRoutes {
@@ -33,6 +34,8 @@ export class EntitiesRoutes {
       '/transferenciasinventario',
       TransferenciasInventarioRoutes.routes
     )
+    router.use('/archivos', ArchivosRoutes.routes)
+
     router.use(
       '/producto/:idProducto',
       [ProductosMiddleware.soloProductos],
