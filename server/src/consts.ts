@@ -127,6 +127,12 @@ export const permissionCodes = {
     getRelated: 'transferencias_inventarios:get_related',
     updateRelated: 'transferencias_inventarios:update_related',
     deleteRelated: 'transferencias_inventarios:delete_related'
+  },
+  archivos: {
+    createAny: 'archivos:create_any',
+    deleteAny: 'archivos:delete_any',
+    getAny: 'archivos:get_any',
+    getVisible: 'archivos:get_visible'
   }
 } as const
 
@@ -171,3 +177,8 @@ export const logsDestination = {
   console: 'console',
   none: 'none'
 }
+
+export const fileTypeValues = {
+  apk: 'apk',
+  desktopApp: 'desktop-app'
+} as const

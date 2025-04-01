@@ -30,4 +30,14 @@ export class Validator {
 
   static isValidPhoneNumber = (val: string) =>
     /^\+? ?[\d]+(?:[- ][\d]+)*$/.test(val)
+
+  static containsIvalidCharacters = (val: string) => /[\\/:*?"<>|]/.test(val)
+
+  static isValidFileName = (val: string) => {
+    if (val.length < 1 || val.length > 220) {
+      return false
+    }
+
+    return !Validator.containsIvalidCharacters(val)
+  }
 }
