@@ -547,11 +547,14 @@ export const notificacionesTable = pgTable('notificaciones', {
 
 export const archivosAppTable = pgTable('archivos_app', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull().unique(),
+  nombre: text('nombre').notNull(),
+  filename: text('filename').notNull().unique(),
   tipo: text('tipo', { enum: ['apk', 'desktop-app'] }).notNull(),
   size: text('size').notNull(),
   metadata: jsonb('metadata').notNull(),
-  downloadPath: text('download_path').notNull(),
   visible: boolean('visible').notNull().default(true),
+  userId: integer().references(() => cuentasEmpleadosTable.id, {
+    onDelete: 'set null'
+  }),
   ...timestampsColumns
 })
