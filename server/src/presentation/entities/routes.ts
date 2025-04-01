@@ -12,6 +12,8 @@ import { ClientesRoutes } from './clientes/routes'
 import { ReservasProductoRoutes } from '@/presentation/entities/reservas-producto/routes'
 import { TransferenciasInventarioRoutes } from '@/presentation/entities/transferencias-inventario/routes'
 import { EstadisticaRouter } from './estadisticas/routes'
+import { ProductosMiddleware } from '../middlewares/productosMiddleware'
+import { ProductosRouter } from './productos/routes'
 
 export class EntitiesRoutes {
   static get routes() {
@@ -31,7 +33,11 @@ export class EntitiesRoutes {
       '/transferenciasinventario',
       TransferenciasInventarioRoutes.routes
     )
-
+    router.use(
+      '/producto/:idProducto',
+      [ProductosMiddleware.soloProductos],
+      ProductosRouter.routes
+    )
     router.use(
       '/:sucursalId',
       [EntitiesMiddleware.soloSucursal],
