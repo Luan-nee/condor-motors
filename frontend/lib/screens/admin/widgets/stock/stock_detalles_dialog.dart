@@ -1,9 +1,10 @@
 import 'package:condorsmotors/main.dart' show api; // Importamos el API global
 import 'package:condorsmotors/models/producto.model.dart';
-import 'package:condorsmotors/utils/stock_utils.dart';
+import 'package:condorsmotors/providers/admin/stock.provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
 /// Diálogo para mostrar los detalles de stock de un producto
 class StockDetallesDialog extends StatefulWidget {
@@ -39,11 +40,12 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   late int _stockNuevo;
   late TextEditingController _stockController;
   bool _mostrarAdvertencia = false;
+  late StockProvider _stockProvider;
 
   // Variables para controlar la aparición de botones rápidos
   int _contadorClicsAumentar = 0;
   bool _mostrarBotonesRapidos = false;
-  
+
   // Nuevas variables para gestionar liquidación
   bool _enLiquidacion = false;
   late double _precioLiquidacion;
@@ -57,13 +59,19 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
     _stockMinimo = widget.producto.stockMinimo ?? 0;
     _stockNuevo = _stockActual;
     _stockController = TextEditingController(text: '0');
-    
+
     // Inicializar variables de liquidación
     _enLiquidacion = widget.producto.liquidacion;
-    _precioLiquidacion = widget.producto.precioOferta ?? widget.producto.precioVenta * 0.9; // Por defecto 10% descuento
-    _precioLiquidacionController = TextEditingController(
-      text: _precioLiquidacion.toStringAsFixed(2)
-    );
+    _precioLiquidacion = widget.producto.precioOferta ??
+        widget.producto.precioVenta * 0.9; // Por defecto 10% descuento
+    _precioLiquidacionController =
+        TextEditingController(text: _precioLiquidacion.toStringAsFixed(2));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _stockProvider = Provider.of<StockProvider>(context, listen: false);
   }
 
   @override
@@ -126,7 +134,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       if (!mounted) {
         return;
       }
-      
+
       setState(() {
         _error = 'Error al actualizar stock: ${e.toString()}';
         _isUpdating = false;
@@ -140,34 +148,37 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       );
     }
   }
-  
+
   // Método para gestionar liquidación
   Future<void> _gestionarLiquidacion() async {
     // Validación de precio de liquidación
     if (_enLiquidacion) {
-      final double? precioLiquidacion = double.tryParse(_precioLiquidacionController.text);
+      final double? precioLiquidacion =
+          double.tryParse(_precioLiquidacionController.text);
       if (precioLiquidacion == null || precioLiquidacion <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('El precio de liquidación debe ser un número válido mayor a 0'),
+            content: Text(
+                'El precio de liquidación debe ser un número válido mayor a 0'),
             backgroundColor: Colors.red,
           ),
         );
         return;
       }
-      
+
       // Verificar que el precio de liquidación sea menor al precio de venta
       if (precioLiquidacion >= widget.producto.precioVenta) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('El precio de liquidación debe ser menor al precio de venta'),
+            content: Text(
+                'El precio de liquidación debe ser menor al precio de venta'),
             backgroundColor: Colors.red,
           ),
         );
         return;
       }
     }
-    
+
     setState(() {
       _isUpdating = true;
       _error = null;
@@ -179,7 +190,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         sucursalId: widget.sucursalId,
         productoId: widget.producto.id,
         enLiquidacion: _enLiquidacion,
-        precioLiquidacion: _enLiquidacion ? double.parse(_precioLiquidacionController.text) : null,
+        precioLiquidacion: _enLiquidacion
+            ? double.parse(_precioLiquidacionController.text)
+            : null,
       );
 
       if (!mounted) {
@@ -191,13 +204,14 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       });
 
       // Actualizar la UI con los datos del producto actualizado
-      Navigator.of(context).pop(productoActualizado); // Devolver el producto actualizado
+      Navigator.of(context)
+          .pop(productoActualizado); // Devolver el producto actualizado
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_enLiquidacion 
-            ? 'Producto puesto en liquidación correctamente' 
-            : 'Liquidación removida correctamente'),
+          content: Text(_enLiquidacion
+              ? 'Producto puesto en liquidación correctamente'
+              : 'Liquidación removida correctamente'),
           backgroundColor: Colors.green,
         ),
       );
@@ -205,7 +219,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       if (!mounted) {
         return;
       }
-      
+
       setState(() {
         _error = 'Error al gestionar liquidación: ${e.toString()}';
         _isUpdating = false;
@@ -222,12 +236,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final Color statusColor =
-        StockUtils.getStockStatusColor(_stockActual, _stockMinimo);
-    final IconData statusIcon =
-        StockUtils.getStockStatusIcon(_stockActual, _stockMinimo);
-    final String statusText =
-        StockUtils.getStockStatusText(_stockActual, _stockMinimo);
+    final Color statusColor = _getStockStatusColor(_stockActual, _stockMinimo);
+    final IconData statusIcon = _getStockStatusIcon(_stockActual, _stockMinimo);
+    final String statusText = _getStockStatusText(_stockActual, _stockMinimo);
 
     return Dialog(
       backgroundColor: const Color(0xFF1A1A1A),
@@ -237,7 +248,8 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       elevation: 10,
       child: Container(
         width: 800,
-        height: 580, // Aumentamos la altura para acomodar la sección de liquidación
+        height:
+            580, // Aumentamos la altura para acomodar la sección de liquidación
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -316,38 +328,46 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                                       icon: statusIcon, color: statusColor),
                                 ],
                               ),
-                              
+
                               const SizedBox(height: 16),
-                              
+
                               // Información de precios y liquidación
                               _buildInfoSection(
                                 'Información de Precios',
                                 FontAwesomeIcons.tag,
                                 <Widget>[
                                   _buildInfoRow(
-                                    'Precio Compra', 
+                                    'Precio Compra',
                                     widget.producto.getPrecioCompraFormateado(),
                                   ),
                                   _buildInfoRow(
-                                    'Precio Venta', 
+                                    'Precio Venta',
                                     widget.producto.getPrecioVentaFormateado(),
                                   ),
                                   if (widget.producto.precioOferta != null)
                                     _buildInfoRow(
-                                      'Precio Oferta', 
-                                      widget.producto.getPrecioOfertaFormateado()!,
+                                      'Precio Oferta',
+                                      widget.producto
+                                          .getPrecioOfertaFormateado()!,
                                       color: Colors.orange,
                                     ),
                                   _buildInfoRow(
-                                    'Estado Liquidación', 
-                                    widget.producto.liquidacion ? 'En liquidación' : 'Precio normal',
-                                    color: widget.producto.liquidacion ? Colors.orange : null,
-                                    icon: widget.producto.liquidacion ? FontAwesomeIcons.fire : null,
+                                    'Estado Liquidación',
+                                    widget.producto.liquidacion
+                                        ? 'En liquidación'
+                                        : 'Precio normal',
+                                    color: widget.producto.liquidacion
+                                        ? Colors.orange
+                                        : null,
+                                    icon: widget.producto.liquidacion
+                                        ? FontAwesomeIcons.fire
+                                        : null,
                                   ),
                                   if (widget.producto.liquidacion)
                                     _buildInfoRow(
-                                      'Precio Actual', 
-                                      widget.producto.getPrecioActualFormateado(),
+                                      'Precio Actual',
+                                      widget.producto
+                                          .getPrecioActualFormateado(),
                                       color: Colors.orange,
                                     ),
                                 ],
@@ -367,7 +387,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                     ),
 
                     const SizedBox(height: 16),
-                    
+
                     // Sección para gestionar liquidación
                     _buildGestionLiquidacion(),
                   ],
@@ -448,7 +468,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       ),
     );
   }
-  
+
   // Widget para gestionar liquidación
   Widget _buildGestionLiquidacion() {
     return Container(
@@ -495,15 +515,15 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                 ),
                 const Spacer(),
                 Icon(
-                  _mostrarSeccionLiquidacion 
-                    ? Icons.keyboard_arrow_up 
-                    : Icons.keyboard_arrow_down,
+                  _mostrarSeccionLiquidacion
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
                   color: Colors.white70,
                 ),
               ],
             ),
           ),
-          
+
           // Contenido expandible
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
@@ -512,214 +532,251 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
             child: AnimatedOpacity(
               opacity: _mostrarSeccionLiquidacion ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 300),
-              child: _mostrarSeccionLiquidacion ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  const SizedBox(height: 16),
-                  
-                  // Descripción de liquidación
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                    ),
-                    child: Column(
+              child: _mostrarSeccionLiquidacion
+                  ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        const Row(
+                        const SizedBox(height: 16),
+
+                        // Descripción de liquidación
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color: Colors.orange.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              const Row(
+                                children: <Widget>[
+                                  FaIcon(
+                                    FontAwesomeIcons.circleInfo,
+                                    size: 14,
+                                    color: Colors.orange,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Información sobre liquidación',
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Al activar la liquidación, el producto utilizará el precio de oferta como precio de venta principal. '
+                                'Esto aplica un descuento especial para liquidar inventario. '
+                                'El precio de liquidación debe ser menor al precio de venta regular.',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Switch para activar/desactivar liquidación
+                        Row(
                           children: <Widget>[
-                            FaIcon(
-                              FontAwesomeIcons.circleInfo,
-                              size: 14,
-                              color: Colors.orange,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Información sobre liquidación',
+                            const Text(
+                              'Activar liquidación',
                               style: TextStyle(
-                                color: Colors.orange,
-                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
                                 fontSize: 14,
                               ),
                             ),
+                            const SizedBox(width: 16),
+                            Switch(
+                              value: _enLiquidacion,
+                              onChanged: (bool value) {
+                                setState(() {
+                                  _enLiquidacion = value;
+                                });
+                              },
+                              activeColor: Colors.orange,
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Al activar la liquidación, el producto utilizará el precio de oferta como precio de venta principal. '
-                          'Esto aplica un descuento especial para liquidar inventario. '
-                          'El precio de liquidación debe ser menor al precio de venta regular.',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontSize: 12,
+
+                        const SizedBox(height: 16),
+
+                        // Campo para precio de liquidación (visible solo si liquidación está activa)
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          height: _enLiquidacion ? null : 0,
+                          curve: Curves.easeInOut,
+                          child: AnimatedOpacity(
+                            opacity: _enLiquidacion ? 1.0 : 0.0,
+                            duration: const Duration(milliseconds: 300),
+                            child: _enLiquidacion
+                                ? Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      const Text(
+                                        'Precio de liquidación',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextField(
+                                        controller:
+                                            _precioLiquidacionController,
+                                        keyboardType: const TextInputType
+                                            .numberWithOptions(decimal: true),
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                        decoration: InputDecoration(
+                                          labelText: 'Precio de liquidación',
+                                          hintText:
+                                              'Ingrese el precio de liquidación',
+                                          border: const OutlineInputBorder(),
+                                          filled: true,
+                                          fillColor: const Color(0xFF1A1A1A),
+                                          labelStyle: const TextStyle(
+                                              color: Colors.white70),
+                                          hintStyle: const TextStyle(
+                                              color: Colors.white30),
+                                          prefixText: 'S/ ',
+                                          prefixStyle: const TextStyle(
+                                              color: Colors.white70),
+                                          helperText:
+                                              'Debe ser menor a S/ ${widget.producto.precioVenta.toStringAsFixed(2)}',
+                                          helperStyle: TextStyle(
+                                              color: Colors.white
+                                                  .withOpacity(0.6)),
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 8),
+
+                                      // Comparación de precios
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1A1A1A),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Column(
+                                          children: <Widget>[
+                                            _buildPrecioComparacion(
+                                              'Precio Regular',
+                                              widget.producto.precioVenta,
+                                              Colors.white,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            _buildPrecioComparacion(
+                                              'Precio Liquidación',
+                                              double.tryParse(
+                                                      _precioLiquidacionController
+                                                          .text) ??
+                                                  0,
+                                              Colors.orange,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            _buildPrecioComparacion(
+                                              'Descuento',
+                                              widget.producto.precioVenta -
+                                                  (double.tryParse(
+                                                          _precioLiquidacionController
+                                                              .text) ??
+                                                      0),
+                                              Colors.green,
+                                              isDescuento: true,
+                                              precioOriginal:
+                                                  widget.producto.precioVenta,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : const SizedBox.shrink(),
                           ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Botones para guardar/cancelar
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: <Widget>[
+                            ElevatedButton(
+                              onPressed: _isUpdating
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        _enLiquidacion =
+                                            widget.producto.liquidacion;
+                                        _precioLiquidacionController.text =
+                                            (widget.producto.precioOferta ??
+                                                    (widget.producto
+                                                            .precioVenta *
+                                                        0.9))
+                                                .toStringAsFixed(2);
+                                      });
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.grey.shade800,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('Cancelar'),
+                            ),
+                            const SizedBox(width: 16),
+                            ElevatedButton(
+                              onPressed:
+                                  _isUpdating ? null : _gestionarLiquidacion,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: _isUpdating
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(_enLiquidacion
+                                      ? 'Guardar Liquidación'
+                                      : 'Quitar Liquidación'),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Switch para activar/desactivar liquidación
-                  Row(
-                    children: <Widget>[
-                      const Text(
-                        'Activar liquidación',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Switch(
-                        value: _enLiquidacion,
-                        onChanged: (bool value) {
-                          setState(() {
-                            _enLiquidacion = value;
-                          });
-                        },
-                        activeColor: Colors.orange,
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Campo para precio de liquidación (visible solo si liquidación está activa)
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    height: _enLiquidacion ? null : 0,
-                    curve: Curves.easeInOut,
-                    child: AnimatedOpacity(
-                      opacity: _enLiquidacion ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 300),
-                      child: _enLiquidacion ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          const Text(
-                            'Precio de liquidación',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _precioLiquidacionController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: 'Precio de liquidación',
-                              hintText: 'Ingrese el precio de liquidación',
-                              border: const OutlineInputBorder(),
-                              filled: true,
-                              fillColor: const Color(0xFF1A1A1A),
-                              labelStyle: const TextStyle(color: Colors.white70),
-                              hintStyle: const TextStyle(color: Colors.white30),
-                              prefixText: 'S/ ',
-                              prefixStyle: const TextStyle(color: Colors.white70),
-                              helperText: 'Debe ser menor a S/ ${widget.producto.precioVenta.toStringAsFixed(2)}',
-                              helperStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-                            ),
-                          ),
-                          
-                          const SizedBox(height: 8),
-                          
-                          // Comparación de precios
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1A1A1A),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Column(
-                              children: <Widget>[
-                                _buildPrecioComparacion(
-                                  'Precio Regular',
-                                  widget.producto.precioVenta,
-                                  Colors.white,
-                                ),
-                                const SizedBox(height: 8),
-                                _buildPrecioComparacion(
-                                  'Precio Liquidación',
-                                  double.tryParse(_precioLiquidacionController.text) ?? 0,
-                                  Colors.orange,
-                                ),
-                                const SizedBox(height: 8),
-                                _buildPrecioComparacion(
-                                  'Descuento',
-                                  widget.producto.precioVenta - (double.tryParse(_precioLiquidacionController.text) ?? 0),
-                                  Colors.green,
-                                  isDescuento: true,
-                                  precioOriginal: widget.producto.precioVenta,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ) : const SizedBox.shrink(),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Botones para guardar/cancelar
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: <Widget>[
-                      ElevatedButton(
-                        onPressed: _isUpdating ? null : () {
-                          setState(() {
-                            _enLiquidacion = widget.producto.liquidacion;
-                            _precioLiquidacionController.text = (widget.producto.precioOferta ?? (widget.producto.precioVenta * 0.9)).toStringAsFixed(2);
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey.shade800,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Cancelar'),
-                      ),
-                      const SizedBox(width: 16),
-                      ElevatedButton(
-                        onPressed: _isUpdating ? null : _gestionarLiquidacion,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: _isUpdating 
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Text(_enLiquidacion ? 'Guardar Liquidación' : 'Quitar Liquidación'),
-                      ),
-                    ],
-                  ),
-                ],
-              ) : const SizedBox.shrink(),
+                    )
+                  : const SizedBox.shrink(),
             ),
           ),
         ],
       ),
     );
   }
-  
+
   // Widget para mostrar comparación de precios
-  Widget _buildPrecioComparacion(String label, double precio, Color color, {bool isDescuento = false, double? precioOriginal}) {
+  Widget _buildPrecioComparacion(String label, double precio, Color color,
+      {bool isDescuento = false, double? precioOriginal}) {
     // Calcular porcentaje de descuento
     String porcentajeDescuento = '';
     if (isDescuento && precioOriginal != null && precioOriginal > 0) {
       final double porcentaje = (precio / precioOriginal) * 100;
       porcentajeDescuento = ' (${porcentaje.toStringAsFixed(1)}%)';
     }
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
@@ -1076,5 +1133,45 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         ],
       ),
     );
+  }
+
+  // Métodos auxiliares que usan el provider
+  Color _getStockStatusColor(int stockActual, int stockMinimo) {
+    final StockStatus status =
+        _stockProvider.getStockStatus(stockActual, stockMinimo);
+    switch (status) {
+      case StockStatus.agotado:
+        return Colors.red.shade800;
+      case StockStatus.stockBajo:
+        return const Color(0xFFE31E24);
+      case StockStatus.disponible:
+        return Colors.green;
+    }
+  }
+
+  IconData _getStockStatusIcon(int stockActual, int stockMinimo) {
+    final StockStatus status =
+        _stockProvider.getStockStatus(stockActual, stockMinimo);
+    switch (status) {
+      case StockStatus.agotado:
+        return FontAwesomeIcons.ban;
+      case StockStatus.stockBajo:
+        return FontAwesomeIcons.triangleExclamation;
+      case StockStatus.disponible:
+        return FontAwesomeIcons.check;
+    }
+  }
+
+  String _getStockStatusText(int stockActual, int stockMinimo) {
+    final StockStatus status =
+        _stockProvider.getStockStatus(stockActual, stockMinimo);
+    switch (status) {
+      case StockStatus.agotado:
+        return 'Agotado';
+      case StockStatus.stockBajo:
+        return 'Stock bajo';
+      case StockStatus.disponible:
+        return 'Disponible';
+    }
   }
 }

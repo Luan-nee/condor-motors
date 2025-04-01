@@ -1,10 +1,11 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/providers/admin/stock.provider.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalle_sucursal.dart';
-import 'package:condorsmotors/utils/stock_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
 class TableProducts extends StatelessWidget {
   final String selectedSucursalId;
@@ -66,8 +67,13 @@ class TableProducts extends StatelessWidget {
     'Acciones',
   ];
 
+  // Método auxiliar para convertir entre los enums de StockStatus
+
   @override
   Widget build(BuildContext context) {
+    final StockProvider stockProvider =
+        Provider.of<StockProvider>(context, listen: false);
+
     // Mostrar indicador de carga
     if (isLoading) {
       return const Center(
@@ -202,9 +208,9 @@ class TableProducts extends StatelessWidget {
       );
     }
 
-    // Agrupar productos por estado de stock
+    // Agrupar productos por estado utilizando el StockProvider
     final Map<StockStatus, List<Producto>> productosAgrupados =
-        StockUtils.agruparProductosPorEstadoStock(productos!);
+        stockProvider.agruparProductosPorEstadoStock(productos!);
 
     // Contadores para cada grupo
     final int agotadosCount = productosAgrupados[StockStatus.agotado]!.length;
@@ -482,16 +488,18 @@ class TableProducts extends StatelessWidget {
 
   // Método para construir una fila de producto en vista estándar (por sucursal)
   Widget _buildProductRow(BuildContext context, Producto producto) {
+    final StockProvider stockProvider =
+        Provider.of<StockProvider>(context, listen: false);
     final int stockActual = producto.stock;
     final int stockMinimo = producto.stockMinimo ?? 0;
 
     // Determinar color e icono según el estado
     final Color statusColor =
-        StockUtils.getStockStatusColor(stockActual, stockMinimo);
+        stockProvider.getStockStatusColor(stockActual, stockMinimo);
     final IconData statusIcon =
-        StockUtils.getStockStatusIcon(stockActual, stockMinimo);
+        stockProvider.getStockStatusIcon(stockActual, stockMinimo);
     final String statusText =
-        StockUtils.getStockStatusText(stockActual, stockMinimo);
+        stockProvider.getStockStatusText(stockActual, stockMinimo);
 
     return Container(
       decoration: BoxDecoration(
@@ -750,16 +758,18 @@ class TableProducts extends StatelessWidget {
 
   // Método para construir una fila de producto en vista global (todas las sucursales)
   Widget _buildGlobalProductRow(BuildContext context, Producto producto) {
+    final StockProvider stockProvider =
+        Provider.of<StockProvider>(context, listen: false);
     final int stockActual = producto.stock;
     final int stockMinimo = producto.stockMinimo ?? 0;
 
     // Determinar color e icono según el estado
     final Color statusColor =
-        StockUtils.getStockStatusColor(stockActual, stockMinimo);
+        stockProvider.getStockStatusColor(stockActual, stockMinimo);
     final IconData statusIcon =
-        StockUtils.getStockStatusIcon(stockActual, stockMinimo);
+        stockProvider.getStockStatusIcon(stockActual, stockMinimo);
     final String statusText =
-        StockUtils.getStockStatusText(stockActual, stockMinimo);
+        stockProvider.getStockStatusText(stockActual, stockMinimo);
 
     // Obtener datos de stock por sucursal
     final Map<String, int> stocks =
@@ -1220,8 +1230,9 @@ class InventarioResumen extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(IterableProperty<Producto>('productos', productos));
-    properties.add(StringProperty('sucursalNombre', sucursalNombre));
+    properties
+      ..add(IterableProperty<Producto>('productos', productos))
+      ..add(StringProperty('sucursalNombre', sucursalNombre));
   }
 }
 
@@ -1230,13 +1241,16 @@ class _InventarioResumenState extends State<InventarioResumen> {
 
   @override
   Widget build(BuildContext context) {
+    final StockProvider stockProvider =
+        Provider.of<StockProvider>(context, listen: false);
+
     if (widget.productos.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    // Agrupar productos por disponibilidad usando la nueva función
+    // Agrupar productos por disponibilidad usando el StockProvider
     final Map<StockStatus, List<Producto>> agrupados =
-        StockUtils.agruparProductosPorEstadoStock(widget.productos);
+        stockProvider.agruparProductosPorEstadoStock(widget.productos);
 
     // Obtener contadores
     final int agotadosCount = agrupados[StockStatus.agotado]!.length;

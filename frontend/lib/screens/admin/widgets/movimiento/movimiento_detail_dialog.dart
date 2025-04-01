@@ -1,9 +1,10 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/movimiento.model.dart';
+import 'package:condorsmotors/providers/admin/movimiento.provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 /// Widget para mostrar el detalle de un movimiento de inventario
 /// Este widget maneja internamente los estados de carga, error y visualización
@@ -21,8 +22,7 @@ class MovimientoDetailDialog extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties
-      .add(DiagnosticsProperty<Movimiento>('movimiento', movimiento));
+    properties.add(DiagnosticsProperty<Movimiento>('movimiento', movimiento));
   }
 }
 
@@ -31,56 +31,59 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   String? _errorMessage;
   Movimiento? _detalleMovimiento;
   int _retryCount = 0;
-  
+
   @override
   void initState() {
     super.initState();
     // Cargar detalles al inicializar el widget
     _cargarDetalles();
   }
-  
+
   Future<void> _cargarDetalles() async {
     if (!mounted) {
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-    
+
     try {
-      debugPrint('⏳ [MovimientoDetailDialog] Cargando detalles del movimiento #${widget.movimiento.id}');
-      
-      // Cargar detalles desde la API
+      debugPrint(
+          '⏳ [MovimientoDetailDialog] Cargando detalles del movimiento #${widget.movimiento.id}');
+
+      // Cargar detalles usando el provider
+      final MovimientoProvider movimientoProvider =
+          Provider.of<MovimientoProvider>(context, listen: false);
       final String id = widget.movimiento.id.toString();
-      
-      // Usar useCache: false para forzar una nueva solicitud
-      final Movimiento detalleMovimiento = await api.movimientos.getMovimiento(
-        id, 
-        useCache: false,
+
+      // Obtener detalle del movimiento
+      final Movimiento detalleMovimiento =
+          await movimientoProvider.obtenerDetalleMovimiento(
+        id,
       );
-      
+
       if (!mounted) {
         return;
       }
-      
+
       setState(() {
         _detalleMovimiento = detalleMovimiento;
         _isLoading = false;
       });
-      
+
       debugPrint('✅ [MovimientoDetailDialog] Detalles cargados correctamente');
-      debugPrint('📦 [MovimientoDetailDialog] Productos: ${_detalleMovimiento?.productos?.length ?? 0}');
-      
+      debugPrint(
+          '📦 [MovimientoDetailDialog] Productos: ${_detalleMovimiento?.productos?.length ?? 0}');
     } catch (e, stackTrace) {
       debugPrint('❌ [MovimientoDetailDialog] Error al cargar detalles: $e');
       debugPrint('📋 [MovimientoDetailDialog] StackTrace: $stackTrace');
-      
+
       if (!mounted) {
         return;
       }
-      
+
       // Si hay un error, usamos los datos que ya tenemos
       setState(() {
         _detalleMovimiento = widget.movimiento;
@@ -89,14 +92,15 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       });
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     // Obtener tamaño de pantalla
     final Size screenSize = MediaQuery.of(context).size;
     final bool isWideScreen = screenSize.width > 1200;
-    final bool isMediumScreen = screenSize.width > 800 && screenSize.width <= 1200;
-    
+    final bool isMediumScreen =
+        screenSize.width > 800 && screenSize.width <= 1200;
+
     // Calcular ancho apropiado basado en el tamaño de pantalla
     double dialogWidth;
     if (isWideScreen) {
@@ -106,10 +110,10 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
     } else {
       dialogWidth = screenSize.width * 0.85;
     }
-    
+
     // Asegurar que el diálogo nunca sea demasiado pequeño
     dialogWidth = dialogWidth.clamp(350.0, 1000.0);
-    
+
     return Dialog(
       backgroundColor: const Color(0xFF1A1A1A),
       shape: RoundedRectangleBorder(
@@ -126,23 +130,24 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       ),
     );
   }
-  
-  Widget _buildContent(BuildContext context, bool isWideScreen, bool isMediumScreen) {
+
+  Widget _buildContent(
+      BuildContext context, bool isWideScreen, bool isMediumScreen) {
     // Estado de carga
     if (_isLoading) {
       return _buildLoadingContent();
     }
-    
+
     // Estado de error
     if (_errorMessage != null && _retryCount < 2) {
       return _buildErrorContent();
     }
-    
+
     // Estado normal - muestra los detalles usando el movimiento actual
     // (ya sea el cargado exitosamente o el original como fallback)
     return _buildDetailContent(context, isWideScreen, isMediumScreen);
   }
-  
+
   // Widget para mostrar estado de carga
   Widget _buildLoadingContent() {
     return SingleChildScrollView(
@@ -177,7 +182,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       ),
     );
   }
-  
+
   // Widget para mostrar estado de error
   Widget _buildErrorContent() {
     return SingleChildScrollView(
@@ -205,7 +210,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                 style: const TextStyle(color: Colors.white, fontSize: 16),
               ),
             ),
-            if (_errorMessage != null) 
+            if (_errorMessage != null)
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Container(
@@ -228,7 +233,8 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
               children: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancelar', style: TextStyle(color: Color(0xFFE31E24))),
+                  child: const Text('Cancelar',
+                      style: TextStyle(color: Color(0xFFE31E24))),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
@@ -264,12 +270,13 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       ),
     );
   }
-  
+
   // Widget para mostrar los detalles del movimiento
-  Widget _buildDetailContent(BuildContext context, bool isWideScreen, bool isMediumScreen) {
+  Widget _buildDetailContent(
+      BuildContext context, bool isWideScreen, bool isMediumScreen) {
     // Movimiento a mostrar (ya sea el detallado o el original)
     final Movimiento movimiento = _detalleMovimiento ?? widget.movimiento;
-    
+
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -278,7 +285,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
           _buildHeader(context),
           const Divider(color: Colors.white24),
           const SizedBox(height: 16),
-          
+
           // Mensaje de error si hubo problemas cargando detalles pero seguimos adelante
           if (_errorMessage != null)
             Container(
@@ -291,18 +298,20 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
               ),
               child: Row(
                 children: <Widget>[
-                  const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+                  const Icon(Icons.warning_amber_rounded,
+                      color: Colors.orange, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Mostrando información parcial. Algunos detalles podrían no estar disponibles.',
-                      style: TextStyle(color: Colors.orange.shade200, fontSize: 14),
+                      style: TextStyle(
+                          color: Colors.orange.shade200, fontSize: 14),
                     ),
                   ),
                 ],
               ),
             ),
-          
+
           // Layout adaptativo para información general y sucursales
           if (isWideScreen)
             // En pantallas anchas, mostrar todo en una fila
@@ -420,9 +429,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                 ),
               ],
             ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Productos y Observaciones
           if (isWideScreen)
             // En pantallas anchas, mostrar productos y observaciones en una fila
@@ -452,9 +461,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                 _buildObservacionesSectionCard(movimiento),
               ],
             ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Botón para cerrar
           Center(
             child: ElevatedButton.icon(
@@ -463,7 +472,8 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
               label: const Text('Cerrar'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE31E24),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
             ),
           ),
@@ -518,21 +528,21 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       children: <Widget>[
         Expanded(
           child: _buildInfoItem(
-            'ID', 
+            'ID',
             movimiento.id.toString(),
             FontAwesomeIcons.hashtag,
           ),
         ),
         Expanded(
           child: _buildInfoItem(
-            'Fecha Creación', 
+            'Fecha Creación',
             _formatFecha(movimiento.salidaOrigen),
             FontAwesomeIcons.calendar,
           ),
         ),
         Expanded(
           child: _buildInfoItem(
-            'Estado', 
+            'Estado',
             movimiento.estado,
             FontAwesomeIcons.circleInfo,
           ),
@@ -547,14 +557,14 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       children: <Widget>[
         Expanded(
           child: _buildInfoItem(
-            'Sucursal Origen', 
+            'Sucursal Origen',
             movimiento.nombreSucursalOrigen,
             FontAwesomeIcons.building,
           ),
         ),
         Expanded(
           child: _buildInfoItem(
-            'Sucursal Destino', 
+            'Sucursal Destino',
             movimiento.nombreSucursalDestino,
             FontAwesomeIcons.building,
           ),
@@ -591,9 +601,11 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                 ),
               ),
               const SizedBox(width: 16),
-              if (movimiento.productos != null && movimiento.productos!.isNotEmpty)
+              if (movimiento.productos != null &&
+                  movimiento.productos!.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE31E24).withOpacity(0.2),
                     borderRadius: BorderRadius.circular(16),
@@ -610,7 +622,6 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
             ],
           ),
           const SizedBox(height: 16),
-          
           if (movimiento.productos != null && movimiento.productos!.isNotEmpty)
             _buildProductosList(movimiento)
           else
@@ -708,8 +719,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   // Lista de productos
   Widget _buildProductosList(Movimiento movimiento) {
     // Debug para verificar qué contiene productos
-    debugPrint('📦 Productos en el movimiento: ${movimiento.productos?.length ?? 0}');
-    
+    debugPrint(
+        '📦 Productos en el movimiento: ${movimiento.productos?.length ?? 0}');
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF2D2D2D),
@@ -730,7 +742,8 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
           itemBuilder: (BuildContext context, int index) {
             final DetalleProducto producto = movimiento.productos![index];
             return ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -750,14 +763,15 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              subtitle: producto.codigo != null 
-                ? Text(
-                    'Código: ${producto.codigo}',
-                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  )
-                : null,
+              subtitle: producto.codigo != null
+                  ? Text(
+                      'Código: ${producto.codigo}',
+                      style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    )
+                  : null,
               trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE31E24).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
@@ -829,4 +843,4 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       return 'Fecha inválida';
     }
   }
-} 
+}

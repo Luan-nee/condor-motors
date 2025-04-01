@@ -1,11 +1,12 @@
 import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/providers/admin/stock.provider.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalles_dialog.dart';
-import 'package:condorsmotors/utils/stock_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
 /// Diálogo que muestra el stock de un producto en todas las sucursales
 class StockDetalleSucursalDialog extends StatefulWidget {
@@ -35,11 +36,20 @@ class _StockDetalleSucursalDialogState
   Map<String, int> _stockPorSucursal = <String, int>{};
   Map<String, bool> _productoDisponibleEnSucursal = <String, bool>{};
   bool _dataLoaded = false;
+  late StockProvider _stockProvider;
 
   @override
   void initState() {
     super.initState();
-    _cargarSucursales();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarSucursales();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _stockProvider = Provider.of<StockProvider>(context, listen: false);
   }
 
   Future<void> _cargarSucursales() async {
@@ -140,6 +150,46 @@ class _StockDetalleSucursalDialogState
     // Si hubo cambios en el stock o liquidación, recargar las sucursales para actualizar la información
     if (result != null) {
       await _cargarSucursales();
+    }
+  }
+
+  // Métodos auxiliares que usan el provider
+  Color _getStockStatusColor(int stockActual, int stockMinimo) {
+    final StockStatus status =
+        _stockProvider.getStockStatus(stockActual, stockMinimo);
+    switch (status) {
+      case StockStatus.agotado:
+        return Colors.red.shade800;
+      case StockStatus.stockBajo:
+        return const Color(0xFFE31E24);
+      case StockStatus.disponible:
+        return Colors.green;
+    }
+  }
+
+  IconData _getStockStatusIcon(int stockActual, int stockMinimo) {
+    final StockStatus status =
+        _stockProvider.getStockStatus(stockActual, stockMinimo);
+    switch (status) {
+      case StockStatus.agotado:
+        return FontAwesomeIcons.ban;
+      case StockStatus.stockBajo:
+        return FontAwesomeIcons.triangleExclamation;
+      case StockStatus.disponible:
+        return FontAwesomeIcons.check;
+    }
+  }
+
+  String _getStockStatusText(int stockActual, int stockMinimo) {
+    final StockStatus status =
+        _stockProvider.getStockStatus(stockActual, stockMinimo);
+    switch (status) {
+      case StockStatus.agotado:
+        return 'Agotado';
+      case StockStatus.stockBajo:
+        return 'Stock bajo';
+      case StockStatus.disponible:
+        return 'Disponible';
     }
   }
 
@@ -294,16 +344,13 @@ class _StockDetalleSucursalDialogState
                         _productoDisponibleEnSucursal[sucursal.id] ?? false;
 
                     final Color statusColor = disponible
-                        ? StockUtils.getStockStatusColor(
-                            stockEnSucursal, stockMinimo)
+                        ? _getStockStatusColor(stockEnSucursal, stockMinimo)
                         : Colors.grey;
                     final IconData statusIcon = disponible
-                        ? StockUtils.getStockStatusIcon(
-                            stockEnSucursal, stockMinimo)
+                        ? _getStockStatusIcon(stockEnSucursal, stockMinimo)
                         : FontAwesomeIcons.ban;
                     final String statusText = disponible
-                        ? StockUtils.getStockStatusText(
-                            stockEnSucursal, stockMinimo)
+                        ? _getStockStatusText(stockEnSucursal, stockMinimo)
                         : 'No disponible';
 
                     return Card(

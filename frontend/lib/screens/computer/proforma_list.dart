@@ -11,7 +11,7 @@ class Paginacion {
   final int total;
   final int page;
   final int pageSize;
-  
+
   Paginacion({
     required this.total,
     required this.page,
@@ -54,14 +54,19 @@ class ProformaListWidget extends StatefulWidget {
     super.debugFillProperties(properties);
     properties
       ..add(IterableProperty<Proforma>('proformas', proformas))
-      ..add(ObjectFlagProperty<Function(Proforma)>.has('onProformaSelected', onProformaSelected))
-      ..add(ObjectFlagProperty<Function(Proforma)?>.has('onConvertToSale', onConvertToSale))
-      ..add(ObjectFlagProperty<Function(Proforma)?>.has('onDeleteProforma', onDeleteProforma))
-      ..add(ObjectFlagProperty<Future<void> Function()?>.has('onRefresh', onRefresh))
+      ..add(ObjectFlagProperty<Function(Proforma)>.has(
+          'onProformaSelected', onProformaSelected))
+      ..add(ObjectFlagProperty<Function(Proforma)?>.has(
+          'onConvertToSale', onConvertToSale))
+      ..add(ObjectFlagProperty<Function(Proforma)?>.has(
+          'onDeleteProforma', onDeleteProforma))
+      ..add(ObjectFlagProperty<Future<void> Function()?>.has(
+          'onRefresh', onRefresh))
       ..add(DiagnosticsProperty<bool>('isLoading', isLoading))
       ..add(StringProperty('emptyMessage', emptyMessage))
       ..add(DiagnosticsProperty<Paginacion?>('paginacion', paginacion))
-      ..add(ObjectFlagProperty<Function(int)?>.has('onPageChanged', onPageChanged))
+      ..add(ObjectFlagProperty<Function(int)?>.has(
+          'onPageChanged', onPageChanged))
       ..add(DiagnosticsProperty<bool>('compact', compact));
   }
 }
@@ -71,20 +76,20 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
   late TextEditingController _searchController;
   List<Proforma> _filteredProformas = [];
   bool _procesandoConversion = false;
-  
+
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
     _filteredProformas = widget.proformas;
-    
+
     // Suscribirse a cambios en el sistema de proformas
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Recargar datos automáticamente al iniciar
       _recargarDatosProformas();
     });
   }
-  
+
   @override
   void didUpdateWidget(ProformaListWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -92,13 +97,13 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
       _filterProformas();
     }
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
-  
+
   /// Recarga los datos de proformas para mantener la lista actualizada
   Future<void> _recargarDatosProformas() async {
     try {
@@ -106,17 +111,17 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
       if (_procesandoConversion) {
         return;
       }
-      
+
       // Obtener sucursalId
       final int? sucursalId = await VentasPendientesUtils.obtenerSucursalId();
       if (sucursalId == null) {
         debugPrint('Error: No se pudo obtener el ID de sucursal');
         return;
       }
-      
+
       // Invalidar caché de proformas y recargar
       api.proformas.invalidateCache(sucursalId.toString());
-      
+
       // Si hay un método de recarga, utilizarlo
       if (widget.onRefresh != null) {
         await widget.onRefresh!();
@@ -125,7 +130,7 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
       debugPrint('Error al recargar datos de proformas: $e');
     }
   }
-  
+
   // Filtra las proformas según el término de búsqueda
   void _filterProformas() {
     if (_searchQuery.isEmpty) {
@@ -137,7 +142,7 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
         final String nombre = (proforma.nombre ?? '').toLowerCase();
         final String cliente = proforma.getNombreCliente().toLowerCase();
         final String id = proforma.id.toString();
-        
+
         // Buscar en productos
         bool contieneProducto = false;
         for (final detalle in proforma.detalles) {
@@ -146,28 +151,29 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
             break;
           }
         }
-        
-        return nombre.contains(query) || 
-               cliente.contains(query) || 
-               id.contains(query) ||
-               contieneProducto;
+
+        return nombre.contains(query) ||
+            cliente.contains(query) ||
+            id.contains(query) ||
+            contieneProducto;
       }).toList();
     }
     setState(() {});
   }
-  
+
   // Convertir proforma a venta con manejo de errores mejorado
   void _handleConvertToSale(Proforma proforma) {
     if (_procesandoConversion) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Ya hay una conversión en proceso. Espere a que termine.'),
+          content:
+              Text('Ya hay una conversión en proceso. Espere a que termine.'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
-    
+
     // Mostrar diálogo para confirmar y elegir tipo de documento
     showDialog(
       context: context,
@@ -175,15 +181,16 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
         proforma: proforma,
         onConfirm: (Map<String, dynamic> ventaData) async {
           Navigator.of(context).pop(); // Cerrar diálogo de confirmación
-          
+
           // Marcar como procesando para evitar múltiples intentos
           setState(() {
             _procesandoConversion = true;
           });
-          
+
           // Obtener tipo de documento de los datos
-          final String tipoDocumento = ventaData['tipoDocumento'] as String? ?? 'BOLETA';
-          
+          final String tipoDocumento =
+              ventaData['tipoDocumento'] as String? ?? 'BOLETA';
+
           // Obtener sucursalId
           final sucursalId = await VentasPendientesUtils.obtenerSucursalId();
           if (sucursalId == null) {
@@ -198,12 +205,13 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
             );
             return;
           }
-          
+
           // Invalidar caché antes de la conversión
           api.proformas.invalidateCache(sucursalId.toString());
-          
+
           // Convertir proforma usando el método directo
-          final bool exito = await ProformaConversionManager.convertirProformaAVenta(
+          final bool exito =
+              await ProformaConversionManager.convertirProformaAVenta(
             context: context,
             sucursalId: sucursalId.toString(),
             proformaId: proforma.id,
@@ -213,26 +221,26 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
               setState(() {
                 _procesandoConversion = false;
               });
-              
+
               // Llamar al callback externo si existe
               if (widget.onConvertToSale != null) {
                 widget.onConvertToSale!(proforma);
               }
-              
+
               // Recargar datos si hay un método de recarga disponible
               if (widget.onRefresh != null) {
                 widget.onRefresh!();
               }
             },
           );
-          
+
           if (!exito) {
             // El error ya fue mostrado en el gestor
             setState(() {
               _procesandoConversion = false;
             });
           }
-          
+
           // Recargar datos siempre después de intentar la conversión
           _recargarDatosProformas();
         },
@@ -240,7 +248,7 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
       ),
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -268,7 +276,8 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                     decoration: InputDecoration(
                       hintText: 'Buscar proformas...',
                       hintStyle: const TextStyle(color: Colors.white54),
-                      prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                      prefixIcon:
+                          const Icon(Icons.search, color: Colors.white54),
                       fillColor: const Color(0xFF1A1A1A),
                       filled: true,
                       border: OutlineInputBorder(
@@ -278,7 +287,8 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                       contentPadding: const EdgeInsets.symmetric(),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear, color: Colors.white54),
+                              icon: const Icon(Icons.clear,
+                                  color: Colors.white54),
                               onPressed: () {
                                 setState(() {
                                   _searchQuery = '';
@@ -301,9 +311,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
               ],
             ),
           ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Lista de proformas
         Expanded(
           child: widget.isLoading
@@ -326,22 +336,23 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                       ),
                     ),
         ),
-        
+
         // Paginación
         if (widget.paginacion != null && widget.onPageChanged != null)
           _buildPagination(),
       ],
     );
   }
-  
+
   Widget _buildProformaItem(Proforma proforma) {
     final bool puedeConvertirse = proforma.puedeConvertirseEnVenta();
-    
+
     // Verificar si hay promociones en esta proforma
     final bool tieneDescuentos = proforma.detalles.any(_tieneDescuento);
-    final bool tieneUnidadesGratis = proforma.detalles.any(_tieneUnidadesGratis);
+    final bool tieneUnidadesGratis =
+        proforma.detalles.any(_tieneUnidadesGratis);
     final bool tienePromociones = tieneDescuentos || tieneUnidadesGratis;
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       color: const Color(0xFF2D2D2D),
@@ -358,7 +369,7 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
               // Icono según el estado
               _buildStatusIcon(proforma.estado),
               const SizedBox(width: 16),
-              
+
               // Información principal
               Expanded(
                 child: Column(
@@ -379,13 +390,13 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                           Tooltip(
                             message: _obtenerMensajePromociones(proforma),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.orange.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
                                   color: Colors.orange.withOpacity(0.5),
-                                  width: 1,
                                 ),
                               ),
                               child: const Text(
@@ -421,13 +432,15 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                         'Expira: ${VentasPendientesUtils.formatearFecha(proforma.fechaExpiracion!)}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: proforma.haExpirado() ? Colors.red : Colors.white54,
+                          color: proforma.haExpirado()
+                              ? Colors.red
+                              : Colors.white54,
                         ),
                       ),
                   ],
                 ),
               ),
-              
+
               // Precio total
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -467,16 +480,17 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                       ],
                     ],
                   ),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   // Botones de acción
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       if (widget.onDeleteProforma != null)
                         IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                          icon: const Icon(Icons.delete,
+                              color: Colors.red, size: 20),
                           onPressed: () => widget.onDeleteProforma!(proforma),
                           tooltip: 'Eliminar proforma',
                           constraints: const BoxConstraints(
@@ -488,7 +502,8 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                         ),
                       if (widget.onConvertToSale != null && puedeConvertirse)
                         IconButton(
-                          icon: const Icon(Icons.shopping_cart, color: Colors.green, size: 20),
+                          icon: const Icon(Icons.shopping_cart,
+                              color: Colors.green, size: 20),
                           onPressed: () => _handleConvertToSale(proforma),
                           tooltip: 'Convertir a venta',
                           constraints: const BoxConstraints(
@@ -508,11 +523,11 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
       ),
     );
   }
-  
+
   Widget _buildStatusIcon(EstadoProforma estado) {
     IconData icon;
     Color color;
-    
+
     switch (estado) {
       case EstadoProforma.pendiente:
         icon = Icons.pending;
@@ -531,7 +546,7 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
         color = Colors.orange;
         break;
     }
-    
+
     return Container(
       width: 40,
       height: 40,
@@ -546,15 +561,15 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
       ),
     );
   }
-  
+
   Widget _buildPagination() {
     final int currentPage = widget.paginacion?.page ?? 1;
     final int totalPages = widget.paginacion?.total ?? 1;
-    
+
     if (totalPages <= 1) {
       return const SizedBox.shrink();
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
@@ -584,7 +599,7 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
       ),
     );
   }
-  
+
   /// Verificar si un detalle de proforma tiene descuento
   bool _tieneDescuento(DetalleProforma detalle) {
     try {
@@ -594,7 +609,7 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
       return false;
     }
   }
-  
+
   /// Verificar si un detalle tiene unidades gratis
   bool _tieneUnidadesGratis(DetalleProforma detalle) {
     try {
@@ -604,14 +619,14 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
       return false;
     }
   }
-  
+
   /// Obtener un mensaje descriptivo sobre las promociones en la proforma
   String _obtenerMensajePromociones(Proforma proforma) {
     final List<String> mensajes = [];
-    
+
     int productosConDescuento = 0;
     int productosConUnidadesGratis = 0;
-    
+
     for (final detalle in proforma.detalles) {
       if (_tieneDescuento(detalle)) {
         productosConDescuento++;
@@ -620,15 +635,15 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
         productosConUnidadesGratis++;
       }
     }
-    
+
     if (productosConDescuento > 0) {
       mensajes.add('$productosConDescuento productos con descuento');
     }
-    
+
     if (productosConUnidadesGratis > 0) {
       mensajes.add('$productosConUnidadesGratis productos con unidades gratis');
     }
-    
+
     return mensajes.join('\n');
   }
 }
@@ -648,19 +663,21 @@ class ProformaSaleDialog extends StatefulWidget {
 
   @override
   State<ProformaSaleDialog> createState() => _ProformaSaleDialogState();
-  
+
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(DiagnosticsProperty<Proforma>('proforma', proforma))
-    ..add(ObjectFlagProperty<Function(Map<String, dynamic> p1)>.has('onConfirm', onConfirm))
-    ..add(ObjectFlagProperty<VoidCallback>.has('onCancel', onCancel));
+    properties
+      ..add(DiagnosticsProperty<Proforma>('proforma', proforma))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic> p1)>.has(
+          'onConfirm', onConfirm))
+      ..add(ObjectFlagProperty<VoidCallback>.has('onCancel', onCancel));
   }
 }
 
 class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
   String _tipoDocumento = 'BOLETA';
-  
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -694,7 +711,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
               ],
             ),
             const SizedBox(height: 24),
-            
+
             // Selector de tipo de documento
             const Text(
               'Tipo de Documento:',
@@ -711,9 +728,9 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                 _buildDocumentTypeButton('FACTURA'),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Resumen de la proforma
             Container(
               padding: const EdgeInsets.all(16),
@@ -776,7 +793,8 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                           Expanded(
                             flex: 2,
                             child: Text(
-                              VentasUtils.formatearMontoTexto(detalle.precioUnitario),
+                              VentasUtils.formatearMontoTexto(
+                                  detalle.precioUnitario),
                               style: const TextStyle(
                                 color: Colors.white70,
                               ),
@@ -823,7 +841,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -832,7 +850,8 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                   onPressed: widget.onCancel,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.white54),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                   child: const Text(
                     'Cancelar',
@@ -844,13 +863,16 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                   onPressed: () {
                     final Map<String, dynamic> ventaData = {
                       'tipoDocumento': _tipoDocumento,
-                      'productos': widget.proforma.detalles.map((detalle) => {
-                        'productoId': detalle.productoId,
-                        'cantidad': detalle.cantidad,
-                        'precio': detalle.precioUnitario,
-                        'subtotal': detalle.subtotal,
-                      }).toList(),
-                      'cliente': widget.proforma.cliente ?? {'nombre': widget.proforma.getNombreCliente()},
+                      'productos': widget.proforma.detalles
+                          .map((detalle) => {
+                                'productoId': detalle.productoId,
+                                'cantidad': detalle.cantidad,
+                                'precio': detalle.precioUnitario,
+                                'subtotal': detalle.subtotal,
+                              })
+                          .toList(),
+                      'cliente': widget.proforma.cliente ??
+                          {'nombre': widget.proforma.getNombreCliente()},
                       'metodoPago': 'EFECTIVO', // Por defecto
                       'total': widget.proforma.total,
                     };
@@ -858,7 +880,8 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4CAF50),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                   icon: const Icon(Icons.check),
                   label: const Text('Confirmar'),
@@ -870,10 +893,10 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
       ),
     );
   }
-  
+
   Widget _buildDocumentTypeButton(String tipo) {
     final bool isSelected = _tipoDocumento == tipo;
-    
+
     return Flexible(
       fit: FlexFit.tight,
       child: InkWell(
@@ -886,7 +909,9 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF4CAF50).withOpacity(0.1) : Colors.transparent,
+            color: isSelected
+                ? const Color(0xFF4CAF50).withOpacity(0.1)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isSelected ? const Color(0xFF4CAF50) : Colors.white24,
@@ -911,7 +936,8 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
     super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty<Proforma>('proforma', widget.proforma))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has('onConfirm', widget.onConfirm))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has(
+          'onConfirm', widget.onConfirm))
       ..add(ObjectFlagProperty<VoidCallback>.has('onCancel', widget.onCancel))
       ..add(StringProperty('_tipoDocumento', _tipoDocumento));
   }
@@ -965,4 +991,4 @@ class ProcessingDialog extends StatelessWidget {
     super.debugFillProperties(properties);
     properties.add(StringProperty('documentType', documentType));
   }
-} 
+}

@@ -1,9 +1,12 @@
 import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/providers/admin/empleado.provider.dart';
+import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_cuenta_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_horario_dialog.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
 /// Widget para mostrar los detalles de un empleado
 ///
@@ -32,12 +35,16 @@ class EmpleadoDetallesViewer extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(DiagnosticsProperty<Empleado>('empleado', empleado))
-    ..add(DiagnosticsProperty<Map<String, String>>('nombresSucursales', nombresSucursales))
-    ..add(ObjectFlagProperty<String Function(Empleado p1)>.has('obtenerRolDeEmpleado', obtenerRolDeEmpleado))
-    ..add(ObjectFlagProperty<Function(Empleado p1)?>.has('onEdit', onEdit))
-    ..add(ObjectFlagProperty<Function(BuildContext p1, Empleado p2)?>.has('onGestionarCuenta', onGestionarCuenta))
-    ..add(DiagnosticsProperty<bool>('showActions', showActions));
+    properties
+      ..add(DiagnosticsProperty<Empleado>('empleado', empleado))
+      ..add(DiagnosticsProperty<Map<String, String>>(
+          'nombresSucursales', nombresSucursales))
+      ..add(ObjectFlagProperty<String Function(Empleado p1)>.has(
+          'obtenerRolDeEmpleado', obtenerRolDeEmpleado))
+      ..add(ObjectFlagProperty<Function(Empleado p1)?>.has('onEdit', onEdit))
+      ..add(ObjectFlagProperty<Function(BuildContext p1, Empleado p2)?>.has(
+          'onGestionarCuenta', onGestionarCuenta))
+      ..add(DiagnosticsProperty<bool>('showActions', showActions));
   }
 }
 
@@ -59,9 +66,11 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
     });
 
     try {
-      // Usar la función de utilidad para cargar la información de la cuenta
+      // Usar el provider para cargar la información de la cuenta
+      final empleadoProvider =
+          Provider.of<EmpleadoProvider>(context, listen: false);
       final Map<String, dynamic> resultado =
-          await EmpleadosUtils.cargarInformacionCuenta(widget.empleado);
+          await empleadoProvider.obtenerInfoCuentaEmpleado(widget.empleado);
 
       if (mounted) {
         setState(() {
@@ -106,8 +115,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
         debugPrint('Error al cargar información de cuenta: $e');
       }
     } finally {
-      if (mounted) {
-      }
+      if (mounted) {}
     }
   }
 
@@ -119,7 +127,8 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
     final String nombreSucursal = EmpleadosUtils.getNombreSucursalEmpleado(
         widget.empleado, widget.nombresSucursales);
     final String rol = widget.obtenerRolDeEmpleado(widget.empleado);
-    final String nombreCompleto = EmpleadosUtils.getNombreCompleto(widget.empleado);
+    final String nombreCompleto =
+        EmpleadosUtils.getNombreCompleto(widget.empleado);
 
     return SingleChildScrollView(
       child: Column(
@@ -146,7 +155,8 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                             width: 64,
                             height: 64,
                             fit: BoxFit.cover,
-                            errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) =>
+                            errorBuilder: (BuildContext context, Object error,
+                                    StackTrace? stackTrace) =>
                                 const FaIcon(
                               FontAwesomeIcons.user,
                               color: Color(0xFFE31E24),
@@ -445,7 +455,6 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
       ),
     );
   }
-
 }
 
 /// Diálogo para mostrar los detalles de un empleado
@@ -469,10 +478,13 @@ class EmpleadoDetallesDialog extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(DiagnosticsProperty<Empleado>('empleado', empleado))
-    ..add(DiagnosticsProperty<Map<String, String>>('nombresSucursales', nombresSucursales))
-    ..add(ObjectFlagProperty<String Function(Empleado p1)>.has('obtenerRolDeEmpleado', obtenerRolDeEmpleado))
-    ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onEdit', onEdit));
+    properties
+      ..add(DiagnosticsProperty<Empleado>('empleado', empleado))
+      ..add(DiagnosticsProperty<Map<String, String>>(
+          'nombresSucursales', nombresSucursales))
+      ..add(ObjectFlagProperty<String Function(Empleado p1)>.has(
+          'obtenerRolDeEmpleado', obtenerRolDeEmpleado))
+      ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onEdit', onEdit));
   }
 }
 
@@ -559,20 +571,24 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
       if (!context.mounted) {
         return;
       }
+
+      // Mostrar diálogo de carga
       await EmpleadosUtils.mostrarDialogoCarga(context,
           mensaje: 'Cargando información de cuenta...',
-          barrierDismissible:
-              true // Permitir cancelar el diálogo si tarda demasiado
-          );
+          barrierDismissible: true);
 
       // Verificar si el contexto sigue montado después del diálogo de carga
       if (!context.mounted) {
         return;
       }
 
-      // Usar la función de utilidad para gestionar la cuenta
-      final bool cuentaActualizada =
-          await EmpleadosUtils.gestionarCuenta(context, empleado);
+      // Obtener el provider
+      final empleadoProvider =
+          Provider.of<EmpleadoProvider>(context, listen: false);
+
+      // Obtener datos para gestionar la cuenta
+      final Map<String, dynamic> datosCuenta =
+          await empleadoProvider.prepararDatosGestionCuenta(empleado);
 
       // Verificar si el widget y el contexto siguen montados después de la operación asíncrona
       if (!mounted) {
@@ -587,11 +603,30 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
         Navigator.pop(context);
       }
 
+      // Mostrar diálogo de gestión de cuenta
+      final bool cuentaActualizada = await showDialog<bool>(
+            context: context,
+            builder: (BuildContext dialogContext) => Dialog(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: EmpleadoCuentaDialog(
+                  empleadoId: datosCuenta['empleadoId'],
+                  empleadoNombre: datosCuenta['empleadoNombre'],
+                  cuentaId: datosCuenta['cuentaId'],
+                  usuarioActual: datosCuenta['usuarioActual'],
+                  rolActualId: datosCuenta['rolActualId'],
+                  roles: datosCuenta['roles'],
+                  esNuevaCuenta: datosCuenta['esNuevaCuenta'],
+                ),
+              ),
+            ),
+          ) ??
+          false;
+
       // Si se realizó algún cambio, actualizar la información
       if (cuentaActualizada) {
         EmpleadosUtils.mostrarMensaje(context,
-            mensaje: 'Cuenta actualizada correctamente',
-            esError: false);
+            mensaje: 'Cuenta actualizada correctamente', esError: false);
 
         setState(() {
           // Forzar reconstrucción para actualizar los datos

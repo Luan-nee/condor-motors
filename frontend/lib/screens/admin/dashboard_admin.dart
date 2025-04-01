@@ -1,12 +1,8 @@
-import 'dart:math' as math;
-
-import 'package:condorsmotors/main.dart' show api;
-import 'package:condorsmotors/models/empleado.model.dart';
-import 'package:condorsmotors/models/paginacion.model.dart';
-import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/providers/admin/dashboard.provider.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
 // Un modelo básico para el widget de estadísticas del Dashboard
 class DashboardItemInfo {
@@ -52,23 +48,9 @@ class DashboardAdminScreen extends StatefulWidget {
 
 class _DashboardAdminScreenState extends State<DashboardAdminScreen>
     with SingleTickerProviderStateMixin {
-  bool _isLoading = true;
-  String _sucursalSeleccionadaId = '';
-
-  // Controlador de animación para los elementos del dashboard
   late AnimationController _animationController;
   late Animation<double> _animation;
-
-  // Datos para mostrar en el dashboard
-  List<Sucursal> _sucursales = <Sucursal>[];
-  List<Producto> _productos = <Producto>[];
-  double _totalVentas = 0;
-  double _totalGanancias = 0;
-  int _totalEmpleados = 0;
-  int _productosAgotados = 0;
-
-  // Mapa para agrupar productos por sucursal
-  Map<String, List<Producto>> _productosPorSucursal = <String, List<Producto>>{};
+  late DashboardProvider _dashboardProvider;
 
   @override
   void initState() {
@@ -84,7 +66,9 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
     );
     _animationController.forward();
 
-    _loadData();
+    // Inicializar provider
+    _dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    _dashboardProvider.inicializar();
   }
 
   @override
@@ -93,284 +77,120 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
     super.dispose();
   }
 
-  Future<void> _loadData() async {
-    try {
-      // Cargar sucursales primero
-      final List<Sucursal> sucursalesResponse = await api.sucursales.getSucursales();
-
-      final List<Sucursal> sucursalesList = <Sucursal>[];
-      final List<Sucursal> centralesList = <Sucursal>[];
-
-      for (Sucursal sucursal in sucursalesResponse) {
-        sucursalesList.add(sucursal);
-        if (sucursal.sucursalCentral) {
-          centralesList.add(sucursal);
-        }
-      }
-
-      // Establecer la sucursal seleccionada: central si existe, o la primera disponible
-      String sucursalId = '';
-      if (centralesList.isNotEmpty) {
-        sucursalId = centralesList.first.id.toString();
-      } else if (sucursalesList.isNotEmpty) {
-        sucursalId = sucursalesList.first.id.toString();
-      }
-
-      if (sucursalId.isNotEmpty) {
-        _sucursalSeleccionadaId = sucursalId;
-        await Future.wait(<Future<void>>[
-          _loadProductos(),
-          _loadEmpleados(),
-          _loadCategorias(),
-          _loadColores(),
-          _loadVentasStats(),
-        ]);
-      }
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _sucursales = sucursalesList;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error cargando datos iniciales: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadProductos() async {
-    try {
-      // Mapa para organizar productos por sucursal
-      final Map<String, List<Producto>> productosBySucursal = <String, List<Producto>>{};
-
-      // Inicializar listas vacías para cada sucursal
-      for (Sucursal sucursal in _sucursales) {
-        productosBySucursal[sucursal.id.toString()] = <Producto>[];
-      }
-
-      // Cargar productos para la sucursal seleccionada
-      final PaginatedResponse<Producto> paginatedProductos = await api.productos.getProductos(
-        sucursalId: _sucursalSeleccionadaId,
-      );
-
-      final Map<int, int> newExistencias = <int, int>{};
-      int agotados = 0;
-
-      // Procesar los datos de productos
-      for (Producto producto in paginatedProductos.items) {
-        newExistencias[producto.id] = producto.stock;
-        if (producto.stock <= 0) {
-          agotados++;
-        }
-
-        // Agregar al mapa de productos por sucursal
-        final String sucId = _sucursalSeleccionadaId;
-        if (productosBySucursal.containsKey(sucId)) {
-          productosBySucursal[sucId]!.add(producto);
-        }
-      }
-
-      // Para cada sucursal, cargar algunos productos (en una implementación real,
-      // podrías cargar datos para todas las sucursales de forma paralela)
-      for (Sucursal sucursal in _sucursales) {
-        if (sucursal.id.toString() != _sucursalSeleccionadaId) {
-          try {
-            // Cargar solo algunos productos para evitar demasiadas llamadas API
-            // En producción, podrías implementar una API que devuelva conteos por sucursal
-            final PaginatedResponse<Producto> sucProducts = await api.productos.getProductos(
-              sucursalId: sucursal.id.toString(),
-              pageSize: 10, // Solo obtener algunos para la demo
-            );
-            productosBySucursal[sucursal.id.toString()] = sucProducts.items;
-          } catch (e) {
-            debugPrint(
-                'Error cargando productos para sucursal ${sucursal.id}: $e');
-          }
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _productos = paginatedProductos.items;
-          _productosAgotados = agotados;
-          _productosPorSucursal = productosBySucursal;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error cargando productos: $e');
-    }
-  }
-
-  Future<void> _loadEmpleados() async {
-    try {
-      final List<Empleado> empleados = await api.empleados.getEmpleados();
-      if (mounted) {
-        setState(() {
-          _totalEmpleados = empleados.length;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error cargando empleados: $e');
-    }
-  }
-
-  Future<void> _loadCategorias() async {
-    try {
-      if (mounted) {
-        setState(() {
-        });
-      }
-    } catch (e) {
-      debugPrint('Error cargando categorías: $e');
-    }
-  }
-
-  Future<void> _loadColores() async {
-    try {
-      if (mounted) {
-        setState(() {
-        });
-      }
-    } catch (e) {
-      debugPrint('Error cargando colores: $e');
-    }
-  }
-
-  Future<void> _loadVentasStats() async {
-    try {
-      // Simulando datos de ventas y ganancias
-      // En una implementación real, deberías obtener estos datos de la API
-      final math.Random random = math.Random();
-      _totalVentas = 15000 + random.nextDouble() * 5000;
-      _totalGanancias = _totalVentas * 0.3;
-
-      // Idealmente, obtendrías estos datos de la API de ventas
-      // final ventasStats = await api.ventas.getVentasStats(sucursalId: _sucursalSeleccionadaId);
-      // _totalVentas = ventasStats.total;
-      // _totalGanancias = ventasStats.ganancias;
-    } catch (e) {
-      debugPrint('Error cargando estadísticas de ventas: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 768;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Dashboard de Administración',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: const Color(0xFF222222),
-        actions: <Widget>[
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.rotate),
-            onPressed: () async {
-              setState(() {
-                _isLoading = true;
-              });
-              await _loadData();
-            },
-            tooltip: 'Recargar datos',
+    return Consumer<DashboardProvider>(
+        builder: (context, dashboardProvider, child) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Dashboard de Administración',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFE31E24),
-              ),
-            )
-          : Container(
-              color: const Color(0xFF111111),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: ListView(
-                  children: <Widget>[
-                    // Sección de estadísticas principales
-                    FadeTransition(
-                      opacity: _animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, -0.1),
-                          end: Offset.zero,
-                        ).animate(_animation),
-                        child: _buildMainStatsSection(isMobile),
+          backgroundColor: const Color(0xFF222222),
+          actions: <Widget>[
+            IconButton(
+              icon: const FaIcon(FontAwesomeIcons.rotate),
+              onPressed: dashboardProvider.recargarDatos,
+              tooltip: 'Recargar datos',
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        body: dashboardProvider.isLoading
+            ? const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFFE31E24),
+                ),
+              )
+            : Container(
+                color: const Color(0xFF111111),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ListView(
+                    children: <Widget>[
+                      // Sección de estadísticas principales
+                      FadeTransition(
+                        opacity: _animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, -0.1),
+                            end: Offset.zero,
+                          ).animate(_animation),
+                          child: _buildMainStatsSection(
+                              isMobile, dashboardProvider),
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                    // Distribución geográfica de sucursales
-                    FadeTransition(
-                      opacity: _animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.1),
-                          end: Offset.zero,
-                        ).animate(_animation),
-                        child: _buildSucursalesDistribution(isMobile),
+                      // Placeholder para gráfico de ventas (se implementará más adelante)
+                      FadeTransition(
+                        opacity: _animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.05),
+                            end: Offset.zero,
+                          ).animate(_animation),
+                          child: _buildVentasChart(dashboardProvider),
+                        ),
                       ),
-                    ),
-                  ],
+
+                      const SizedBox(height: 24),
+
+                      // Distribución geográfica de sucursales
+                      FadeTransition(
+                        opacity: _animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.1),
+                            end: Offset.zero,
+                          ).animate(_animation),
+                          child: _buildSucursalesDistribution(
+                              isMobile, dashboardProvider),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-    );
+      );
+    });
   }
 
-  Widget _buildMainStatsSection(bool isMobile) {
+  Widget _buildMainStatsSection(bool isMobile, DashboardProvider provider) {
+    final double screenWidth = MediaQuery.of(context).size.width;
     final List<DashboardItemInfo> statsItems = <DashboardItemInfo>[
       DashboardItemInfo(
         icon: FontAwesomeIcons.boxesStacked,
         title: 'Productos',
-        value: _productos.length.toString(),
+        value: provider.productos.length.toString(),
         color: Colors.blue,
         bgColor: Colors.blue.withOpacity(0.15),
       ),
       DashboardItemInfo(
         icon: FontAwesomeIcons.moneyBillWave,
         title: 'Ventas',
-        value: 'S/ ${_totalVentas.toStringAsFixed(2)}',
+        value: 'S/ ${provider.totalVentas.toStringAsFixed(2)}',
         color: Colors.green,
         bgColor: Colors.green.withOpacity(0.15),
       ),
       DashboardItemInfo(
-        icon: FontAwesomeIcons.chartLine,
-        title: 'Ganancias',
-        value: 'S/ ${_totalGanancias.toStringAsFixed(2)}',
-        color: Colors.purple,
-        bgColor: Colors.purple.withOpacity(0.15),
-      ),
-      DashboardItemInfo(
         icon: FontAwesomeIcons.store,
         title: 'Locales',
-        value: _sucursales.length.toString(),
+        value: provider.sucursales.length.toString(),
         color: Colors.orange,
         bgColor: Colors.orange.withOpacity(0.15),
       ),
       DashboardItemInfo(
         icon: FontAwesomeIcons.userTie,
         title: 'Colaboradores',
-        value: _totalEmpleados.toString(),
+        value: provider.totalEmpleados.toString(),
         color: Colors.teal,
         bgColor: Colors.teal.withOpacity(0.15),
-      ),
-      DashboardItemInfo(
-        icon: FontAwesomeIcons.circleExclamation,
-        title: 'Productos agotados',
-        value: _productosAgotados.toString(),
-        color: const Color(0xFFE31E24),
-        bgColor: const Color(0xFFE31E24).withOpacity(0.15),
       ),
     ];
 
@@ -407,20 +227,19 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
                   );
                 }).toList(),
               )
-            : Wrap(
-                spacing: 10, // Espaciado horizontal entre tarjetas
-                runSpacing: 10, // Espaciado vertical entre tarjetas
-                children: statsItems.map((DashboardItemInfo item) {
-                  return ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minWidth:
-                          isMobile ? double.infinity : 200, // Ancho mínimo
-                      maxWidth:
-                          isMobile ? double.infinity : 300, // Ancho máximo
-                    ),
-                    child: _buildModernCard(item),
-                  );
-                }).toList(),
+            : GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: screenWidth > 1200 ? 4 : 2,
+                  childAspectRatio: 2.2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
+                itemCount: statsItems.length,
+                itemBuilder: (context, index) {
+                  return _buildModernCard(statsItems[index]);
+                },
               ),
       ],
     );
@@ -432,7 +251,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: const <Color>[
+          colors: const [
             Color(0xFF1A1A1A),
             Color(0xFF282828),
           ],
@@ -448,7 +267,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(10.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -493,7 +312,58 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
     );
   }
 
-  Widget _buildSucursalesDistribution(bool isMobile) {
+  Widget _buildVentasChart(DashboardProvider provider) {
+    // Simplemente mostrar un contenedor con un mensaje
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.all(20),
+      height: 200, // Altura reducida para el placeholder
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            FontAwesomeIcons.chartLine,
+            color: Colors.grey,
+            size: 36,
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Gráfico de ventas mensuales',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Los gráficos estadísticos serán implementados próximamente',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSucursalesDistribution(
+      bool isMobile, DashboardProvider provider) {
+    final double screenWidth = MediaQuery.of(context).size.width;
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
@@ -512,20 +382,25 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              FaIcon(
-                FontAwesomeIcons.mapLocationDot,
-                color: Colors.orange,
-                size: 20,
-              ),
-              SizedBox(width: 10),
-              Text(
-                'Distribución de locales',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+              Row(
+                children: <Widget>[
+                  FaIcon(
+                    FontAwesomeIcons.mapLocationDot,
+                    color: Colors.orange,
+                    size: 20,
+                  ),
+                  SizedBox(width: 10),
+                  Text(
+                    'Distribución de locales',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -534,15 +409,19 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: isMobile ? 1 : 3,
-              childAspectRatio: 2.5,
+              crossAxisCount: isMobile
+                  ? 1
+                  : screenWidth > 1200
+                      ? 3
+                      : 2,
+              childAspectRatio: 2.0,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
             ),
-            itemCount: _sucursales.length,
+            itemCount: provider.sucursales.length,
             itemBuilder: (BuildContext context, int index) {
-              final Sucursal sucursal = _sucursales[index];
-              return _buildSucursalCard(sucursal);
+              final Sucursal sucursal = provider.sucursales[index];
+              return _buildSucursalCard(sucursal, provider);
             },
           ),
         ],
@@ -550,17 +429,37 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
     );
   }
 
-  Widget _buildSucursalCard(Sucursal sucursal) {
+  Widget _buildSucursalCard(Sucursal sucursal, DashboardProvider provider) {
+    // Obtener la lista de productos para esta sucursal
+    final List<dynamic> productosSucursal =
+        provider.productosPorSucursal[sucursal.id.toString()] ?? [];
+
+    // Contar productos con stock bajo (menos de 5 unidades)
+    final int productosStockBajo = productosSucursal
+        .where((producto) =>
+            producto.stock != null && producto.stock > 0 && producto.stock < 5)
+        .length;
+
+    // Contar productos agotados
+    final int productosAgotados = productosSucursal
+        .where((producto) => producto.stock == null || producto.stock <= 0)
+        .length;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: const <Color>[
-            Color(0xFF2D2D2D),
-            Color(0xFF363636),
-          ],
+          colors: sucursal.sucursalCentral
+              ? [
+                  const Color(0xFF352D1A),
+                  const Color(0xFF3D3523),
+                ]
+              : [
+                  const Color(0xFF2D2D2D),
+                  const Color(0xFF363636),
+                ],
         ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: <BoxShadow>[
@@ -571,6 +470,11 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
             offset: const Offset(0, 2),
           ),
         ],
+        border: sucursal.sucursalCentral
+            ? Border.all(
+                color: Colors.amber.withOpacity(0.5),
+              )
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -639,12 +543,12 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
                     Text(
                       sucursal.direccion ?? 'Sin dirección registrada',
                       style: TextStyle(
-                        color: sucursal.direccion != null 
+                        color: sucursal.direccion != null
                             ? Colors.white.withOpacity(0.7)
                             : Colors.white.withOpacity(0.4),
                         fontSize: 12,
-                        fontStyle: sucursal.direccion != null 
-                            ? FontStyle.normal 
+                        fontStyle: sucursal.direccion != null
+                            ? FontStyle.normal
                             : FontStyle.italic,
                       ),
                       maxLines: 1,
@@ -658,21 +562,44 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
 
           const SizedBox(height: 10),
 
-          // Indicadores de productos y empleados
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Indicadores de productos y stock
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _buildMiniStat(
-                FontAwesomeIcons.boxesStacked,
-                'Productos',
-                '${_productosPorSucursal[sucursal.id.toString()]?.length ?? 0}',
-                Colors.blue,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  _buildMiniStat(
+                    FontAwesomeIcons.boxesStacked,
+                    'Productos',
+                    '${productosSucursal.length}',
+                    Colors.blue,
+                  ),
+                  _buildMiniStat(
+                    FontAwesomeIcons.userTie,
+                    'Colaboradores',
+                    '3', // Este dato debería venir de una API real
+                    Colors.teal,
+                  ),
+                ],
               ),
-              _buildMiniStat(
-                FontAwesomeIcons.userTie,
-                'Colaboradores',
-                '3', // Este dato debería venir de una API real
-                Colors.teal,
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  _buildMiniStat(
+                    FontAwesomeIcons.triangleExclamation,
+                    'Stock bajo',
+                    '$productosStockBajo',
+                    Colors.orange,
+                  ),
+                  _buildMiniStat(
+                    FontAwesomeIcons.circleExclamation,
+                    'Agotados',
+                    '$productosAgotados',
+                    const Color(0xFFE31E24),
+                  ),
+                ],
               ),
             ],
           ),

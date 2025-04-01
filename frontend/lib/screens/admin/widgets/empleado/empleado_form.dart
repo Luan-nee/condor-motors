@@ -1,10 +1,13 @@
 import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/providers/admin/empleado.provider.dart';
+import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_cuenta_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_horario_dialog.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
 class EmpleadoForm extends StatefulWidget {
   final Empleado? empleado;
@@ -126,7 +129,11 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
 
     // Datos laborales
     _selectedSucursalId = empleado.sucursalId;
-    _selectedRol = EmpleadosUtils.obtenerRolDeEmpleado(empleado);
+
+    // Utilizar el provider para obtener el rol
+    final empleadoProvider =
+        Provider.of<EmpleadoProvider>(context, listen: false);
+    _selectedRol = empleadoProvider.obtenerRolDeEmpleado(empleado);
 
     // Estado del empleado
     _isEmpleadoActivo = empleado.activo;
@@ -159,9 +166,11 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     });
 
     try {
-      // Usar la función de utilidad para cargar la información de la cuenta
+      // Usar el provider para cargar la información de la cuenta
+      final empleadoProvider =
+          Provider.of<EmpleadoProvider>(context, listen: false);
       final Map<String, dynamic> resultado =
-          await EmpleadosUtils.cargarInformacionCuenta(widget.empleado!);
+          await empleadoProvider.obtenerInfoCuentaEmpleado(widget.empleado!);
 
       if (mounted) {
         setState(() {
@@ -989,9 +998,38 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     setState(() => _isLoading = true);
 
     try {
-      // Usar la función de utilidad para gestionar la cuenta
-      final bool cuentaActualizada =
-          await EmpleadosUtils.gestionarCuenta(context, widget.empleado!);
+      // Obtener el provider
+      final empleadoProvider =
+          Provider.of<EmpleadoProvider>(context, listen: false);
+
+      // Obtener datos para gestionar la cuenta
+      final Map<String, dynamic> datosCuenta =
+          await empleadoProvider.prepararDatosGestionCuenta(widget.empleado!);
+
+      // Si el widget ya no está montado, salir temprano
+      if (!mounted || !context.mounted) {
+        return;
+      }
+
+      // Mostrar diálogo de gestión de cuenta
+      final bool cuentaActualizada = await showDialog<bool>(
+            context: context,
+            builder: (BuildContext dialogContext) => Dialog(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: EmpleadoCuentaDialog(
+                  empleadoId: datosCuenta['empleadoId'],
+                  empleadoNombre: datosCuenta['empleadoNombre'],
+                  cuentaId: datosCuenta['cuentaId'],
+                  usuarioActual: datosCuenta['usuarioActual'],
+                  rolActualId: datosCuenta['rolActualId'],
+                  roles: datosCuenta['roles'],
+                  esNuevaCuenta: datosCuenta['esNuevaCuenta'],
+                ),
+              ),
+            ),
+          ) ??
+          false;
 
       // Si el widget ya no está montado, salir temprano
       if (!mounted) {

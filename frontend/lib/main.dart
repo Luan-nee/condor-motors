@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/components/proforma_notification.dart';
+import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
 import 'package:condorsmotors/routes/routes.dart' as routes;
 import 'package:condorsmotors/services/token_service.dart';
 import 'package:condorsmotors/theme/apptheme.dart';
@@ -10,6 +11,7 @@ import 'package:condorsmotors/widgets/connection_status.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Configuración global de API
@@ -236,10 +238,43 @@ class CondorMotorsApp extends StatelessWidget {
       initialRoute: initialRoute,
     );
 
-    // Envolver la aplicación con el widget de estado de conexión
-    // Esto mostrará una barra de estado cuando haya problemas de conectividad
-    return ConnectionStatusWidget(
-      child: app,
+    // Envolver la aplicación con MultiProvider para gestionar los estados
+    // y después con el widget de estado de conexión
+    return MultiProvider(
+      providers: [
+        // Providers de administración
+        ChangeNotifierProvider<CategoriasProvider>(
+          create: (_) => CategoriasProvider(),
+        ),
+        ChangeNotifierProvider<MarcasProvider>(
+          create: (_) => MarcasProvider(),
+        ),
+        ChangeNotifierProvider<EmpleadoProvider>(
+          create: (_) => EmpleadoProvider(),
+        ),
+        ChangeNotifierProvider<MovimientoProvider>(
+          create: (_) => MovimientoProvider(),
+        ),
+        ChangeNotifierProvider<ProductoProvider>(
+          create: (_) => ProductoProvider(),
+        ),
+        ChangeNotifierProvider<StockProvider>(
+          create: (_) => StockProvider(),
+        ),
+        ChangeNotifierProvider<VentasProvider>(
+          create: (_) => VentasProvider(),
+        ),
+        ChangeNotifierProvider<SucursalProvider>(
+          create: (_) => SucursalProvider(),
+        ),
+        ChangeNotifierProvider<DashboardProvider>(
+          create: (_) => DashboardProvider(),
+        ),
+        // Aquí puedes agregar más providers según sea necesario
+      ],
+      child: ConnectionStatusWidget(
+        child: app,
+      ),
     );
   }
 

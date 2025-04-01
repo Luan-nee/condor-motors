@@ -1,12 +1,13 @@
 import 'package:condorsmotors/api/main.api.dart' show ApiException;
-import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
 import 'package:condorsmotors/widgets/dialogs/confirm_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
 /// Diálogo para gestionar la cuenta de un empleado
-/// 
+///
 /// Permite crear una nueva cuenta o actualizar una existente (cambiar usuario y/o clave)
 class EmpleadoCuentaDialog extends StatefulWidget {
   final String empleadoId;
@@ -16,7 +17,7 @@ class EmpleadoCuentaDialog extends StatefulWidget {
   final int? rolActualId;
   final List<Map<String, dynamic>> roles;
   final bool? esNuevaCuenta; // Permite forzar el modo de creación
-  
+
   const EmpleadoCuentaDialog({
     super.key,
     required this.empleadoId,
@@ -49,34 +50,36 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _usuarioController = TextEditingController();
   final TextEditingController _claveController = TextEditingController();
-  final TextEditingController _confirmarClaveController = TextEditingController();
-  
+  final TextEditingController _confirmarClaveController =
+      TextEditingController();
+
   bool _isLoading = false;
   bool _ocultarClave = true;
   bool _ocultarConfirmarClave = true;
   String? _errorMessage;
   int? _selectedRolId;
   String? _rolActualNombre;
-  
+  late EmpleadoProvider _empleadoProvider;
+
   // Usar esNuevaCuenta forzado si se proporciona, o determinar automáticamente
   bool get _esNuevaCuenta => widget.esNuevaCuenta ?? widget.cuentaId == null;
-  
+
   // Colores y estilos comunes
   Color get _primaryColor => _esNuevaCuenta ? Colors.green : Colors.blue;
-  
+
   // Estilos predefinidos para mejor reutilización
   late final TextStyle _labelStyle = TextStyle(
     fontWeight: FontWeight.bold,
     fontSize: 13,
     color: _esNuevaCuenta ? Colors.green.shade700 : Colors.blue.shade700,
   );
-  
+
   late final TextStyle _helperStyle = TextStyle(
     fontStyle: FontStyle.italic,
     fontSize: 11,
     color: _esNuevaCuenta ? Colors.green.shade700 : Colors.blue.shade700,
   );
-  
+
   late final InputDecoration _inputDecoration = InputDecoration(
     contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
     isDense: true,
@@ -84,19 +87,23 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       borderRadius: BorderRadius.circular(8),
     ),
   );
-  
+
   @override
   void initState() {
     super.initState();
-    
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _empleadoProvider = Provider.of<EmpleadoProvider>(context, listen: false);
+    });
+
     // Si es una cuenta existente, inicializar con el usuario actual
     if (widget.usuarioActual != null) {
       _usuarioController.text = widget.usuarioActual!;
     }
-    
+
     _inicializarRol();
   }
-  
+
   void _inicializarRol() {
     // Inicializar el rol seleccionado
     if (widget.rolActualId != null) {
@@ -106,13 +113,14 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         (Map<String, dynamic> rol) => rol['id'] == widget.rolActualId,
         orElse: () => <String, dynamic>{},
       );
-      _rolActualNombre = rolActual['nombre'] ?? rolActual['codigo'] ?? 'Rol desconocido';
+      _rolActualNombre =
+          rolActual['nombre'] ?? rolActual['codigo'] ?? 'Rol desconocido';
     } else if (widget.roles.isNotEmpty) {
       // Si no hay rol actual pero hay roles disponibles, seleccionar el primero por defecto
       _selectedRolId = widget.roles.first['id'];
     }
   }
-  
+
   @override
   void dispose() {
     _usuarioController.dispose();
@@ -120,90 +128,95 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     _confirmarClaveController.dispose();
     super.dispose();
   }
-  
+
   // Validar el formulario
   bool _validarFormulario() {
     // Limpiar mensaje de error previo
     setState(() => _errorMessage = null);
-    
+
     // Validar campos del formulario
     if (!_formKey.currentState!.validate()) {
       return false;
     }
-    
+
     // Validar que se haya seleccionado un rol (solo para nuevas cuentas)
     if (_esNuevaCuenta && _selectedRolId == null) {
       setState(() => _errorMessage = 'Debe seleccionar un rol para la cuenta');
       return false;
     }
-    
+
     // Validar que las contraseñas coincidan
-    if (_claveController.text.isNotEmpty && 
+    if (_claveController.text.isNotEmpty &&
         _claveController.text != _confirmarClaveController.text) {
       setState(() => _errorMessage = 'Las contraseñas no coinciden');
       return false;
     }
-    
+
     return true;
   }
-  
+
   // Guardar la cuenta (crear nueva o actualizar existente)
   Future<void> _guardarCuenta() async {
     if (!_validarFormulario()) {
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-    
+
     try {
+      bool success = false;
+
       if (_esNuevaCuenta) {
-        await _crearNuevaCuenta();
+        success = await _crearNuevaCuenta();
       } else {
-        await _actualizarCuentaExistente();
+        success = await _actualizarCuentaExistente();
       }
-      
+
       if (!mounted) {
         return;
       }
-      Navigator.of(context).pop(true); // Cerrar diálogo con resultado exitoso
+
+      if (success) {
+        Navigator.of(context).pop(true); // Cerrar diálogo con resultado exitoso
+      } else {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'No se pudo realizar la operación';
+        });
+      }
     } catch (e) {
       _manejarError(e);
     }
   }
-  
-  Future<void> _crearNuevaCuenta() async {
-    // Crear nueva cuenta
-    await api.cuentasEmpleados.registerEmpleadoAccount(
+
+  Future<bool> _crearNuevaCuenta() async {
+    // Crear nueva cuenta usando el provider
+    final bool success = await _empleadoProvider.crearCuentaEmpleado(
       empleadoId: widget.empleadoId,
       usuario: _usuarioController.text,
       clave: _claveController.text,
       rolCuentaEmpleadoId: _selectedRolId!,
     );
-    
-    if (!mounted) {
-      return;
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cuenta creada exitosamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cuenta creada exitosamente'),
-        backgroundColor: Colors.green,
-      ),
-    );
+
+    return success;
   }
-  
-  Future<void> _actualizarCuentaExistente() async {
-    final Map<String, dynamic> updateData = <String, dynamic>{};
-    
-    // Incluir usuario siempre que se haya proporcionado uno
-    if (_usuarioController.text.isNotEmpty) {
-      updateData['usuario'] = _usuarioController.text;
-    }
-    
+
+  Future<bool> _actualizarCuentaExistente() async {
     // Solo actualizar si hay datos para actualizar
-    if (updateData.isNotEmpty || _claveController.text.isNotEmpty) {
+    if (_usuarioController.text.isNotEmpty ||
+        _claveController.text.isNotEmpty) {
       final int? cuentaId = int.tryParse(widget.cuentaId!);
       if (cuentaId == null) {
         throw ApiException(
@@ -211,39 +224,40 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           message: 'ID de cuenta inválido',
         );
       }
-      
-      await api.cuentasEmpleados.updateCuentaEmpleado(
+
+      final bool success = await _empleadoProvider.actualizarCuentaEmpleado(
         id: cuentaId,
-        usuario: updateData['usuario'],
-        // Si hay una clave nueva, se enviará para actualización
+        usuario:
+            _usuarioController.text.isNotEmpty ? _usuarioController.text : null,
         clave: _claveController.text.isNotEmpty ? _claveController.text : null,
       );
-      
-      if (!mounted) {
-        return;
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cuenta actualizada exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cuenta actualizada exitosamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
+
+      return success;
     } else {
-      if (!mounted) {
-        return;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se realizaron cambios'),
+            backgroundColor: Colors.blue,
+          ),
+        );
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se realizaron cambios'),
-          backgroundColor: Colors.blue,
-        ),
-      );
+      return true; // No hay cambios, pero consideramos que fue exitoso
     }
   }
-  
+
   void _manejarError(e) {
     String errorMsg = e.toString();
-    
+
     // Mejorar mensajes de error comunes
     if (e is ApiException) {
       switch (e.statusCode) {
@@ -252,7 +266,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           break;
         case 400:
           if (e.message.contains('exists') || e.message.contains('ya existe')) {
-            errorMsg = 'El nombre de usuario ya está en uso. Por favor, elija otro.';
+            errorMsg =
+                'El nombre de usuario ya está en uso. Por favor, elija otro.';
           } else {
             errorMsg = 'Error en los datos: ${e.message}';
           }
@@ -265,7 +280,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           break;
       }
     }
-    
+
     if (mounted) {
       setState(() {
         _isLoading = false;
@@ -273,32 +288,33 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       });
     }
   }
-  
+
   // Eliminar cuenta
   Future<void> _eliminarCuenta() async {
     if (_esNuevaCuenta) {
       return; // No se puede eliminar una cuenta que no existe
     }
-    
+
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) => ConfirmDialog(
         title: 'Eliminar Cuenta',
-        message: '¿Está seguro que desea eliminar la cuenta "${widget.usuarioActual}"? Esta acción no se puede deshacer.',
+        message:
+            '¿Está seguro que desea eliminar la cuenta "${widget.usuarioActual}"? Esta acción no se puede deshacer.',
         confirmText: 'Eliminar',
         onConfirm: () => Navigator.of(context).pop(true),
       ),
     );
-    
+
     if (confirmed != true) {
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-    
+
     try {
       final int? cuentaId = int.tryParse(widget.cuentaId!);
       if (cuentaId == null) {
@@ -307,14 +323,15 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           message: 'ID de cuenta inválido',
         );
       }
-      
-      // Usar la nueva API para eliminar la cuenta
-      final bool success = await api.cuentasEmpleados.deleteCuentaEmpleado(cuentaId);
-      
+
+      // Usar el provider para eliminar la cuenta
+      final bool success =
+          await _empleadoProvider.eliminarCuentaEmpleado(cuentaId);
+
       if (!mounted) {
         return;
       }
-      
+
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -336,14 +353,14 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final String title = _esNuevaCuenta 
-        ? 'Crear Cuenta de Usuario' 
+    final String title = _esNuevaCuenta
+        ? 'Crear Cuenta de Usuario'
         : 'Gestionar Cuenta de Usuario';
-    
-    final String subtitle = widget.empleadoNombre != null 
+
+    final String subtitle = widget.empleadoNombre != null
         ? 'Empleado: ${widget.empleadoNombre}'
         : 'ID Empleado: ${widget.empleadoId}';
-    
+
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -351,13 +368,12 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       child: Container(
         width: 500,
         padding: const EdgeInsets.all(20),
-        child: _isLoading
-            ? _buildLoadingIndicator()
-            : _buildForm(title, subtitle),
+        child:
+            _isLoading ? _buildLoadingIndicator() : _buildForm(title, subtitle),
       ),
     );
   }
-  
+
   Widget _buildLoadingIndicator() {
     return const Center(
       child: Column(
@@ -370,7 +386,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ),
     );
   }
-  
+
   Widget _buildForm(String title, String subtitle) {
     return Form(
       key: _formKey,
@@ -392,7 +408,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ),
     );
   }
-  
+
   Widget _buildHeader(String title, String subtitle) {
     return Row(
       children: <Widget>[
@@ -416,16 +432,18 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: _esNuevaCuenta ? Colors.green.shade800 : Colors.blue.shade800,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: _esNuevaCuenta
+                          ? Colors.green.shade800
+                          : Colors.blue.shade800,
+                    ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey.shade600,
-                ),
+                      color: Colors.grey.shade600,
+                    ),
               ),
             ],
           ),
@@ -433,7 +451,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ],
     );
   }
-  
+
   Widget _buildErrorMessage() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -462,7 +480,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ],
     );
   }
-  
+
   Widget _buildInstructions() {
     return Container(
       padding: const EdgeInsets.all(8),
@@ -484,7 +502,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ),
     );
   }
-  
+
   Widget _buildNewAccountInstructions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -513,7 +531,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ],
     );
   }
-  
+
   Widget _buildExistingAccountInstructions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,7 +565,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ],
     );
   }
-  
+
   Widget _buildUserFields() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -564,7 +582,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ],
     );
   }
-  
+
   Widget _buildUserField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -581,9 +599,9 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           decoration: _inputDecoration.copyWith(
             hintText: 'Ingrese un nombre de usuario',
             prefixIcon: const Icon(Icons.person, size: 18),
-            helperText: _esNuevaCuenta 
-              ? 'Usuario para iniciar sesión'
-              : 'Nuevo nombre de usuario',
+            helperText: _esNuevaCuenta
+                ? 'Usuario para iniciar sesión'
+                : 'Nuevo nombre de usuario',
             helperStyle: _helperStyle,
           ),
           validator: _validarUsuario,
@@ -591,7 +609,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ],
     );
   }
-  
+
   String? _validarUsuario(String? value) {
     if (value == null || value.isEmpty) {
       return 'Ingrese un nombre de usuario';
@@ -607,7 +625,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     }
     return null;
   }
-  
+
   Widget _buildRoleField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -651,7 +669,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ],
     );
   }
-  
+
   Widget _buildPasswordFields() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -666,7 +684,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ],
     );
   }
-  
+
   Widget _buildPasswordField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -682,8 +700,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           controller: _claveController,
           obscureText: _ocultarClave,
           decoration: _inputDecoration.copyWith(
-            hintText: _esNuevaCuenta 
-                ? 'Ingrese contraseña segura' 
+            hintText: _esNuevaCuenta
+                ? 'Ingrese contraseña segura'
                 : 'Nueva contraseña (opcional)',
             prefixIcon: const Icon(Icons.lock, size: 18),
             suffixIcon: IconButton(
@@ -697,9 +715,9 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
                 });
               },
             ),
-            helperText: _esNuevaCuenta 
-              ? 'Mín. 6 caracteres con 1 número'
-              : 'Vacío = no cambiar',
+            helperText: _esNuevaCuenta
+                ? 'Mín. 6 caracteres con 1 número'
+                : 'Vacío = no cambiar',
             helperStyle: _helperStyle,
           ),
           validator: _validarClave,
@@ -707,7 +725,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ],
     );
   }
-  
+
   String? _validarClave(String? value) {
     if (_esNuevaCuenta && (value == null || value.isEmpty)) {
       return 'Ingrese una contraseña';
@@ -725,7 +743,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     }
     return null;
   }
-  
+
   Widget _buildConfirmPasswordField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -745,7 +763,9 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
             prefixIcon: const Icon(Icons.lock_outline, size: 18),
             suffixIcon: IconButton(
               icon: Icon(
-                _ocultarConfirmarClave ? Icons.visibility : Icons.visibility_off,
+                _ocultarConfirmarClave
+                    ? Icons.visibility
+                    : Icons.visibility_off,
                 size: 18,
               ),
               onPressed: () {
@@ -758,7 +778,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
             helperStyle: _helperStyle,
           ),
           validator: (String? value) {
-            if (_claveController.text.isNotEmpty && value != _claveController.text) {
+            if (_claveController.text.isNotEmpty &&
+                value != _claveController.text) {
               return 'Las contraseñas no coinciden';
             }
             return null;
@@ -767,7 +788,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ],
     );
   }
-  
+
   Widget _buildActionButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -795,7 +816,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           )
         else
           const SizedBox.shrink(),
-          
+
         Row(
           children: <Widget>[
             // Botón para cancelar
@@ -805,15 +826,18 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
               onPressed: () => Navigator.of(context).pop(false),
               style: TextButton.styleFrom(
                 foregroundColor: Colors.grey[700],
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
             ),
             const SizedBox(width: 8),
-            
+
             // Botón para guardar
             ElevatedButton.icon(
               icon: FaIcon(
-                _esNuevaCuenta ? FontAwesomeIcons.userPlus : FontAwesomeIcons.floppyDisk,
+                _esNuevaCuenta
+                    ? FontAwesomeIcons.userPlus
+                    : FontAwesomeIcons.floppyDisk,
                 size: 14,
               ),
               label: Text(
@@ -835,4 +859,4 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       ],
     );
   }
-} 
+}

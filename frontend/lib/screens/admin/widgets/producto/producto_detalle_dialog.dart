@@ -1,11 +1,12 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/providers/admin/producto.provider.dart';
 import 'package:condorsmotors/utils/productos_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
 class ProductoDetalleDialog extends StatefulWidget {
   final Producto producto;
@@ -28,6 +29,9 @@ class ProductoDetalleDialog extends StatefulWidget {
     await showDialog(
       context: context,
       builder: (BuildContext context) {
+        // Asegurarse de que el ProductoProvider esté disponible
+        Provider.of<ProductoProvider>(context, listen: false);
+
         return Dialog(
           insetPadding: const EdgeInsets.all(24),
           shape:
@@ -72,7 +76,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     super.initState();
     _cargarDetallesProducto();
     _cargarColores();
-    
+
     // Inicializar controlador de pestañas
     _atributosTabController = TabController(length: 3, vsync: this);
   }
@@ -90,38 +94,48 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     });
 
     try {
+      final ProductoProvider productoProvider =
+          Provider.of<ProductoProvider>(context, listen: false);
       final List<ProductoEnSucursal> sucursales =
-          await ProductosUtils.obtenerProductoEnSucursales(
+          await productoProvider.obtenerProductoEnSucursales(
         productoId: widget.producto.id,
         sucursales: widget.sucursales,
       );
 
-      setState(() {
-        _sucursalesCompartidas = sucursales;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _sucursalesCompartidas = sucursales;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = 'No se pudieron cargar los detalles del producto: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'No se pudieron cargar los detalles del producto: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _cargarColores() async {
-
     try {
-      final List<ColorApp> colores = await api.colores.getColores();
+      final ProductoProvider productoProvider =
+          Provider.of<ProductoProvider>(context, listen: false);
+      final List<ColorApp> colores = await productoProvider.obtenerColores();
 
       if (mounted) {
         setState(() {
           _colores = colores;
 
           // Si el producto tiene color, buscar la coincidencia en la lista
-          if (widget.producto.color != null && widget.producto.color!.isNotEmpty) {
+          if (widget.producto.color != null &&
+              widget.producto.color!.isNotEmpty) {
             try {
               _colorProducto = _colores.firstWhere(
-                (ColorApp color) => color.nombre.toLowerCase() == widget.producto.color!.toLowerCase(),
+                (ColorApp color) =>
+                    color.nombre.toLowerCase() ==
+                    widget.producto.color!.toLowerCase(),
               );
             } catch (e) {
               // No se encontró coincidencia, _colorProducto queda como null
@@ -132,9 +146,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       }
     } catch (e) {
       debugPrint('Error al cargar colores: $e');
-
-      if (mounted) {
-      }
     }
   }
 
@@ -158,11 +169,11 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           children: <Widget>[
             _buildHeader(context),
             const SizedBox(height: 16),
-            
+
             // Sección para mostrar promociones de forma destacada
             _buildPromocionesDestacadas(widget.producto),
             const SizedBox(height: 16),
-            
+
             // Información básica del producto
             _buildProductoBasicInfo(isPantallaReducida),
             const SizedBox(height: 16),
@@ -252,7 +263,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                       if (widget.producto.liquidacion) ...<Widget>[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.amber.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(4),
@@ -295,7 +307,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         if (widget.producto.color != null &&
                             widget.producto.color!.isNotEmpty) ...<Widget>[
                           const SizedBox(width: 8),
-                          _buildColorTag(widget.producto.color!, _colorProducto),
+                          _buildColorTag(
+                              widget.producto.color!, _colorProducto),
                         ],
                       ],
                     ),
@@ -603,7 +616,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             ),
 
             // Mostrar sección de liquidación en modo solo visualización
-            if (widget.producto.liquidacion || widget.producto.cantidadMinimaDescuento != null || widget.producto.porcentajeDescuento != null) ...<Widget>[
+            if (widget.producto.liquidacion ||
+                widget.producto.cantidadMinimaDescuento != null ||
+                widget.producto.porcentajeDescuento != null) ...<Widget>[
               const SizedBox(height: 16),
               // Llamamos a nuestra función de visualización de promociones
               _buildPromocionesInfo(),
@@ -618,49 +633,51 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   Widget _buildPromocionesInfo() {
     final Producto producto = widget.producto;
     final bool enLiquidacion = producto.liquidacion;
-    final bool tienePromocionGratis = producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0;
-    final bool tieneDescuentoPorcentual = producto.cantidadMinimaDescuento != null && producto.cantidadMinimaDescuento! > 0 &&
-                                    producto.porcentajeDescuento != null && producto.porcentajeDescuento! > 0;
-    
+    final bool tienePromocionGratis =
+        producto.cantidadGratisDescuento != null &&
+            producto.cantidadGratisDescuento! > 0;
+    final bool tieneDescuentoPorcentual =
+        producto.cantidadMinimaDescuento != null &&
+            producto.cantidadMinimaDescuento! > 0 &&
+            producto.porcentajeDescuento != null &&
+            producto.porcentajeDescuento! > 0;
+
     return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
         // Mostrar resumen de cada promoción activa
         if (enLiquidacion)
           _buildResumenPromocion(
-            'Liquidación Activa', 
-            'Precio de liquidación: ${producto.getPrecioOfertaFormateado() ?? "N/A"}', 
-            Colors.amber, 
-            FontAwesomeIcons.tag
-          ),
-          
+              'Liquidación Activa',
+              'Precio de liquidación: ${producto.getPrecioOfertaFormateado() ?? "N/A"}',
+              Colors.amber,
+              FontAwesomeIcons.tag),
+
         if (tienePromocionGratis) ...<Widget>[
           if (enLiquidacion) const SizedBox(height: 8),
           _buildResumenPromocion(
-            'Promoción: Lleva y Paga', 
-            'Lleva ${producto.cantidadMinimaDescuento}, paga ${producto.cantidadMinimaDescuento! - producto.cantidadGratisDescuento!}', 
-            Colors.green, 
-            FontAwesomeIcons.gift
-          ),
+              'Promoción: Lleva y Paga',
+              'Lleva ${producto.cantidadMinimaDescuento}, paga ${producto.cantidadMinimaDescuento! - producto.cantidadGratisDescuento!}',
+              Colors.green,
+              FontAwesomeIcons.gift),
         ],
-          
+
         if (tieneDescuentoPorcentual) ...<Widget>[
           if (enLiquidacion || tienePromocionGratis) const SizedBox(height: 8),
           _buildResumenPromocion(
-            'Descuento por Cantidad', 
-            '${producto.porcentajeDescuento}% al comprar ${producto.cantidadMinimaDescuento} o más', 
-            Colors.blue, 
-            FontAwesomeIcons.percent
-          ),
+              'Descuento por Cantidad',
+              '${producto.porcentajeDescuento}% al comprar ${producto.cantidadMinimaDescuento} o más',
+              Colors.blue,
+              FontAwesomeIcons.percent),
         ],
-        
-                        const SizedBox(height: 16),
+
+        const SizedBox(height: 16),
         TextButton.icon(
           onPressed: () {
             // Volver al inicio del diálogo para ver la promoción destacada
             Navigator.of(context).pop();
             ProductoDetalleDialog.show(
-              context: context, 
+              context: context,
               producto: widget.producto,
               sucursales: widget.sucursales,
               onSave: widget.onSave,
@@ -670,55 +687,56 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           label: const Text('Ver detalles completos'),
           style: TextButton.styleFrom(
             foregroundColor: Colors.white70,
-                              ),
-                            ),
-                          ],
+          ),
+        ),
+      ],
     );
   }
-  
+
   // Método auxiliar para construir el resumen de cada promoción
-  Widget _buildResumenPromocion(String titulo, String descripcion, Color color, IconData icono) {
+  Widget _buildResumenPromocion(
+      String titulo, String descripcion, Color color, IconData icono) {
     return Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
           color: color.withOpacity(0.3),
         ),
       ),
       child: Row(
-                      children: <Widget>[
-                        FaIcon(
+        children: <Widget>[
+          FaIcon(
             icono,
-                          size: 16,
+            size: 16,
             color: color,
-                        ),
-                        const SizedBox(width: 8),
+          ),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                        Text(
+                Text(
                   titulo,
-                          style: TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                     color: color,
                   ),
                 ),
                 const SizedBox(height: 2),
-                        Text(
+                Text(
                   descripcion,
-                          style: TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     color: Colors.white.withOpacity(0.8),
-                          ),
-                        ),
-                  ],
+                  ),
                 ),
-              ),
-          ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -726,15 +744,15 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   // Métodos para la pestaña de precios
   Widget _buildPreciosRow() {
     return Row(
-            children: <Widget>[
-              Expanded(
+      children: <Widget>[
+        Expanded(
             child: _buildAtributo(
                 'Precio compra', widget.producto.getPrecioCompraFormateado())),
-              Expanded(
+        Expanded(
             child: _buildAtributo(
                 'Precio venta', widget.producto.getPrecioVentaFormateado())),
         if (widget.producto.estaEnOferta())
-              Expanded(
+          Expanded(
               child: _buildAtributo('Precio de liquidación',
                   widget.producto.getPrecioOfertaFormateado() ?? '',
                   color: Colors.amber)),
@@ -755,7 +773,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       child: Wrap(
         spacing: 16,
         runSpacing: 12,
-                children: <Widget>[
+        children: <Widget>[
           SizedBox(
               width: 150,
               child: _buildAtributo('Precio compra',
@@ -895,7 +913,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
 
     // Ya no usamos filtrado, mostramos todas las sucursales disponibles
     final List<ProductoEnSucursal> sucursalesDisponibles =
-        _sucursalesCompartidas.where((ProductoEnSucursal s) => s.disponible).toList();
+        _sucursalesCompartidas
+            .where((ProductoEnSucursal s) => s.disponible)
+            .toList();
 
     if (sucursalesDisponibles.isEmpty) {
       return Center(
@@ -1031,8 +1051,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white60,
-                    fontStyle: sucursal.direccion != null 
-                        ? FontStyle.normal 
+                    fontStyle: sucursal.direccion != null
+                        ? FontStyle.normal
                         : FontStyle.italic,
                   ),
                   maxLines: 1,
@@ -1206,6 +1226,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       ),
     );
   }
+
   // Métodos para la pestaña de información adicional
   Widget _buildInfoAdicionalRow() {
     return Row(
@@ -1296,12 +1317,12 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   Widget _buildColorTag(String colorNombre, ColorApp? colorApp) {
     // Determinar el color a mostrar
     Color colorVisual = Colors.grey;
-    
+
     if (colorApp != null) {
       // Si tenemos el objeto de color, usar su método toColor()
       colorVisual = colorApp.toColor();
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
@@ -1353,15 +1374,20 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   Widget _buildPromocionesDestacadas(Producto producto) {
     // Determinar los tipos de promoción activas
     final bool enLiquidacion = producto.liquidacion;
-    final bool tienePromocionGratis = producto.cantidadGratisDescuento != null && producto.cantidadGratisDescuento! > 0;
-    final bool tieneDescuentoPorcentual = producto.cantidadMinimaDescuento != null && producto.cantidadMinimaDescuento! > 0 &&
-                                   producto.porcentajeDescuento != null && producto.porcentajeDescuento! > 0;
-    
+    final bool tienePromocionGratis =
+        producto.cantidadGratisDescuento != null &&
+            producto.cantidadGratisDescuento! > 0;
+    final bool tieneDescuentoPorcentual =
+        producto.cantidadMinimaDescuento != null &&
+            producto.cantidadMinimaDescuento! > 0 &&
+            producto.porcentajeDescuento != null &&
+            producto.porcentajeDescuento! > 0;
+
     // Si no hay promociones, no mostrar nada
     if (!enLiquidacion && !tienePromocionGratis && !tieneDescuentoPorcentual) {
       return Container(); // Widget vacío
     }
-    
+
     return Card(
       color: const Color(0xFF2A2A2A),
       elevation: 4,
@@ -1393,7 +1419,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                 ),
               ],
             ),
-            if ((enLiquidacion && tienePromocionGratis) || 
+            if ((enLiquidacion && tienePromocionGratis) ||
                 (enLiquidacion && tieneDescuentoPorcentual) ||
                 (tienePromocionGratis && tieneDescuentoPorcentual)) ...<Widget>[
               const SizedBox(height: 12),
@@ -1426,20 +1452,19 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               ),
             ],
             const SizedBox(height: 16),
-            
+
             // Mostrar todas las promociones activas
             if (enLiquidacion) ...<Widget>[
               _buildPromocionLiquidacion(producto),
               if (tienePromocionGratis || tieneDescuentoPorcentual)
                 const SizedBox(height: 16),
             ],
-            
+
             if (tienePromocionGratis) ...<Widget>[
               _buildPromocionGratis(producto),
-              if (tieneDescuentoPorcentual)
-                const SizedBox(height: 16),
+              if (tieneDescuentoPorcentual) const SizedBox(height: 16),
             ],
-            
+
             if (tieneDescuentoPorcentual)
               _buildPromocionDescuentoPorcentual(producto),
           ],
@@ -1447,13 +1472,14 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       ),
     );
   }
-  
+
   // Método para mostrar la promoción de liquidación
   Widget _buildPromocionLiquidacion(Producto producto) {
     // Mostrar promoción de liquidación
     final double ahorro = producto.precioVenta - (producto.precioOferta ?? 0);
-    final num porcentaje = producto.precioVenta > 0 ? (ahorro / producto.precioVenta) * 100 : 0;
-    
+    final num porcentaje =
+        producto.precioVenta > 0 ? (ahorro / producto.precioVenta) * 100 : 0;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1489,7 +1515,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.amber.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -1564,14 +1591,14 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       ),
     );
   }
-  
+
   // Método para mostrar la promoción de productos gratis
   Widget _buildPromocionGratis(Producto producto) {
     // Mostrar promoción de productos gratis
     final int cantidadMinima = producto.cantidadMinimaDescuento!;
     final int cantidadGratis = producto.cantidadGratisDescuento!;
     final int cantidadPago = cantidadMinima - cantidadGratis;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1638,13 +1665,13 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       ),
     );
   }
-  
+
   // Método para mostrar la promoción de descuento porcentual
   Widget _buildPromocionDescuentoPorcentual(Producto producto) {
     // Mostrar promoción de descuento porcentual
     final int cantidadMinima = producto.cantidadMinimaDescuento!;
     final int porcentaje = producto.porcentajeDescuento!;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

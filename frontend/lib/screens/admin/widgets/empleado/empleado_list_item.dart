@@ -1,9 +1,10 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
 class EmpleadoListItem extends StatefulWidget {
   final Empleado empleado;
@@ -31,11 +32,14 @@ class EmpleadoListItem extends StatefulWidget {
     super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty<Empleado>('empleado', empleado))
-      ..add(DiagnosticsProperty<Map<String, String>>('nombresSucursales', nombresSucursales))
-      ..add(ObjectFlagProperty<String Function(Empleado p1)>.has('obtenerRolDeEmpleado', obtenerRolDeEmpleado))
+      ..add(DiagnosticsProperty<Map<String, String>>(
+          'nombresSucursales', nombresSucursales))
+      ..add(ObjectFlagProperty<String Function(Empleado p1)>.has(
+          'obtenerRolDeEmpleado', obtenerRolDeEmpleado))
       ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onEdit', onEdit))
       ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onDelete', onDelete))
-      ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onViewDetails', onViewDetails));
+      ..add(ObjectFlagProperty<Function(Empleado p1)>.has(
+          'onViewDetails', onViewDetails));
   }
 }
 
@@ -43,35 +47,34 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
   bool _isHovered = false;
   bool _isLoading = false;
   String? _usuarioEmpleado;
+  late EmpleadoProvider _empleadoProvider;
 
   @override
   void initState() {
     super.initState();
 
-    // Solo cargar la información de usuario si no viene en la respuesta de la API
-    if (widget.empleado.cuentaEmpleadoId != null && _usuarioEmpleado == null) {
-      _cargarUsuarioEmpleado();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _empleadoProvider = Provider.of<EmpleadoProvider>(context, listen: false);
+
+      // Solo cargar la información de usuario si no viene en la respuesta de la API
+      if (widget.empleado.cuentaEmpleadoId != null &&
+          _usuarioEmpleado == null) {
+        _cargarUsuarioEmpleado();
+      }
+    });
   }
 
   Future<void> _cargarUsuarioEmpleado() async {
     try {
       setState(() => _isLoading = true);
 
-      // Obtener información de la cuenta de empleado por su ID
-      if (widget.empleado.cuentaEmpleadoId != null) {
-        final Map<String, dynamic> cuentaInfo = await api.empleados
-            .getCuentaEmpleado(widget.empleado.cuentaEmpleadoId!);
-        if (cuentaInfo['usuario'] != null) {
-          setState(() => _usuarioEmpleado = cuentaInfo['usuario'].toString());
-        }
-      } else {
-        // Compatibilidad con versión anterior: obtener por ID de empleado
-        final Map<String, dynamic>? cuentaInfo =
-            await api.empleados.getCuentaByEmpleadoId(widget.empleado.id);
-        if (cuentaInfo != null && cuentaInfo['usuario'] != null) {
-          setState(() => _usuarioEmpleado = cuentaInfo['usuario'].toString());
-        }
+      // Usar el provider para obtener información de la cuenta
+      final Map<String, dynamic> infoCuenta =
+          await _empleadoProvider.obtenerInfoCuentaEmpleado(widget.empleado);
+
+      // Actualizar el estado con el usuario obtenido
+      if (infoCuenta['usuarioActual'] != null) {
+        setState(() => _usuarioEmpleado = infoCuenta['usuarioActual']);
       }
     } catch (e) {
       // Manejar específicamente errores de autenticación
@@ -149,9 +152,10 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                       width: 36,
                                       height: 36,
                                       fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (BuildContext context, Object error, StackTrace? stackTrace) =>
-                                              const FaIcon(
+                                      errorBuilder: (BuildContext context,
+                                              Object error,
+                                              StackTrace? stackTrace) =>
+                                          const FaIcon(
                                         FontAwesomeIcons.user,
                                         color: Color(0xFFE31E24),
                                         size: 16,

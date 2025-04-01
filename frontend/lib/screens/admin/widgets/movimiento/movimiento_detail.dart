@@ -1,9 +1,10 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/movimiento.model.dart';
+import 'package:condorsmotors/providers/admin/movimiento.provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 /// Widget para mostrar el detalle de un movimiento de inventario
 /// Este widget maneja internamente los estados de carga, error y visualización
@@ -21,8 +22,7 @@ class MovimientoDetailDialog extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties
-      .add(DiagnosticsProperty<Movimiento>('movimiento', movimiento));
+    properties.add(DiagnosticsProperty<Movimiento>('movimiento', movimiento));
   }
 }
 
@@ -31,56 +31,59 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   String? _errorMessage;
   Movimiento? _detalleMovimiento;
   int _retryCount = 0;
-  
+
   @override
   void initState() {
     super.initState();
     // Cargar detalles al inicializar el widget
     _cargarDetalles();
   }
-  
+
   Future<void> _cargarDetalles() async {
     if (!mounted) {
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-    
+
     try {
-      debugPrint('⏳ [MovimientoDetailDialog] Cargando detalles del movimiento #${widget.movimiento.id}');
-      
-      // Cargar detalles desde la API
+      debugPrint(
+          '⏳ [MovimientoDetailDialog] Cargando detalles del movimiento #${widget.movimiento.id}');
+
+      // Cargar detalles usando el provider
+      final MovimientoProvider movimientoProvider =
+          Provider.of<MovimientoProvider>(context, listen: false);
       final String id = widget.movimiento.id.toString();
-      
-      // Usar useCache: false para forzar una nueva solicitud
-      final Movimiento detalleMovimiento = await api.movimientos.getMovimiento(
-        id, 
-        useCache: false,
+
+      // Obtener detalle del movimiento usando el provider
+      final Movimiento detalleMovimiento =
+          await movimientoProvider.obtenerDetalleMovimiento(
+        id,
       );
-      
+
       if (!mounted) {
         return;
       }
-      
+
       setState(() {
         _detalleMovimiento = detalleMovimiento;
         _isLoading = false;
       });
-      
+
       debugPrint('✅ [MovimientoDetailDialog] Detalles cargados correctamente');
-      debugPrint('📦 [MovimientoDetailDialog] Productos: ${_detalleMovimiento?.productos?.length ?? 0}');
-      
+      debugPrint(
+          '📦 [MovimientoDetailDialog] Productos: ${_detalleMovimiento?.productos?.length ?? 0}');
     } catch (e, stackTrace) {
       debugPrint('❌ [MovimientoDetailDialog] Error al cargar detalles: $e');
       debugPrint('📋 [MovimientoDetailDialog] StackTrace: $stackTrace');
-      
+
       if (!mounted) {
         return;
       }
-      
+
       // Si hay un error, usamos los datos que ya tenemos
       setState(() {
         _detalleMovimiento = widget.movimiento;
@@ -89,7 +92,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       });
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -104,23 +107,23 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       ),
     );
   }
-  
+
   Widget _buildContent() {
     // Estado de carga
     if (_isLoading) {
       return _buildLoadingContent();
     }
-    
+
     // Estado de error
     if (_errorMessage != null && _retryCount < 2) {
       return _buildErrorContent();
     }
-    
+
     // Estado normal - muestra los detalles usando el movimiento actual
     // (ya sea el cargado exitosamente o el original como fallback)
     return _buildDetailContent();
   }
-  
+
   // Widget para mostrar estado de carga
   Widget _buildLoadingContent() {
     return Column(
@@ -151,7 +154,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       ],
     );
   }
-  
+
   // Widget para mostrar estado de error
   Widget _buildErrorContent() {
     return Column(
@@ -173,12 +176,13 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
           textAlign: TextAlign.center,
           style: const TextStyle(color: Colors.white),
         ),
-        if (_errorMessage != null) 
+        if (_errorMessage != null)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               'Error: $_errorMessage',
-              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+              style:
+                  TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
             ),
           ),
         const SizedBox(height: 24),
@@ -187,7 +191,8 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
           children: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar', style: TextStyle(color: Color(0xFFE31E24))),
+              child: const Text('Cancelar',
+                  style: TextStyle(color: Color(0xFFE31E24))),
             ),
             const SizedBox(width: 16),
             ElevatedButton(
@@ -221,12 +226,12 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       ],
     );
   }
-  
+
   // Widget para mostrar los detalles del movimiento
   Widget _buildDetailContent() {
     // Movimiento a mostrar (ya sea el detallado o el original)
     final Movimiento movimiento = _detalleMovimiento ?? widget.movimiento;
-    
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,7 +239,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
         _buildHeader(context),
         const Divider(color: Colors.white24),
         const SizedBox(height: 16),
-        
+
         // Mensaje de error si hubo problemas cargando detalles pero seguimos adelante
         if (_errorMessage != null)
           Container(
@@ -247,34 +252,36 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
             ),
             child: Row(
               children: <Widget>[
-                const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+                const Icon(Icons.warning_amber_rounded,
+                    color: Colors.orange, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Mostrando información parcial. Algunos detalles podrían no estar disponibles.',
-                    style: TextStyle(color: Colors.orange.shade200, fontSize: 12),
+                    style:
+                        TextStyle(color: Colors.orange.shade200, fontSize: 12),
                   ),
                 ),
               ],
             ),
           ),
-        
+
         // Información general
         _buildGeneralInfo(movimiento),
         const SizedBox(height: 16),
-        
+
         _buildSucursalesInfo(movimiento),
         const SizedBox(height: 24),
-        
+
         // Productos
         _buildProductosSection(movimiento),
         const SizedBox(height: 24),
-        
+
         // Observaciones
         _buildObservacionesSection(movimiento),
-        
+
         const SizedBox(height: 24),
-        
+
         // Botón para cerrar
         Center(
           child: ElevatedButton(
@@ -317,21 +324,21 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       children: <Widget>[
         Expanded(
           child: _buildInfoItem(
-            'ID', 
+            'ID',
             movimiento.id.toString(),
             FontAwesomeIcons.hashtag,
           ),
         ),
         Expanded(
           child: _buildInfoItem(
-            'Fecha Creación', 
+            'Fecha Creación',
             _formatFecha(movimiento.salidaOrigen),
             FontAwesomeIcons.calendar,
           ),
         ),
         Expanded(
           child: _buildInfoItem(
-            'Estado', 
+            'Estado',
             movimiento.estado,
             FontAwesomeIcons.circleInfo,
           ),
@@ -346,14 +353,14 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       children: <Widget>[
         Expanded(
           child: _buildInfoItem(
-            'Sucursal Origen', 
+            'Sucursal Origen',
             movimiento.nombreSucursalOrigen,
             FontAwesomeIcons.building,
           ),
         ),
         Expanded(
           child: _buildInfoItem(
-            'Sucursal Destino', 
+            'Sucursal Destino',
             movimiento.nombreSucursalDestino,
             FontAwesomeIcons.building,
           ),
@@ -376,7 +383,6 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
           ),
         ),
         const SizedBox(height: 8),
-        
         if (movimiento.productos != null && movimiento.productos!.isNotEmpty)
           _buildProductosList(movimiento)
         else
@@ -391,8 +397,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   // Lista de productos
   Widget _buildProductosList(Movimiento movimiento) {
     // Debug para verificar qué contiene productos
-    debugPrint('📦 Productos en el movimiento: ${movimiento.productos?.length ?? 0}');
-    
+    debugPrint(
+        '📦 Productos en el movimiento: ${movimiento.productos?.length ?? 0}');
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF2D2D2D),
@@ -413,12 +420,12 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                 producto.nombre,
                 style: const TextStyle(color: Colors.white),
               ),
-              subtitle: producto.codigo != null 
-                ? Text(
-                    'Código: ${producto.codigo}',
-                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  )
-                : null,
+              subtitle: producto.codigo != null
+                  ? Text(
+                      'Código: ${producto.codigo}',
+                      style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    )
+                  : null,
               trailing: Text(
                 'Cantidad: ${producto.cantidad}',
                 style: const TextStyle(

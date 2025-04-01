@@ -9,7 +9,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  fl_chart: ^0.70.2
   cupertino_icons: ^1.0.8
   http: ^1.3.0
   dio: ^5.4.1  # Cliente HTTP moderno y potente
@@ -25,6 +24,8 @@ dependencies:
   msix: ^3.16.8
   dart_code_metrics: ^4.19.2
   win_toast: ^0.3.0  # Notificaciones nativas en Windows 10/11
+  provider: ^6.1.4
+  fl_chart: 0.36.4
 
 dev_dependencies:
   flutter_test:

@@ -5,11 +5,12 @@ import 'package:condorsmotors/models/marca.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
-import 'package:condorsmotors/repositories/index.repository.dart';
+import 'package:condorsmotors/providers/admin/producto.provider.dart';
 import 'package:condorsmotors/utils/productos_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
 class ProductosFormDialogAdmin extends StatefulWidget {
   final Producto? producto;
@@ -44,7 +45,6 @@ class ProductosFormDialogAdmin extends StatefulWidget {
 
 class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final ProductoRepository _productoRepository = ProductoRepository.instance;
   late TextEditingController _nombreController;
   late TextEditingController _descripcionController;
   late TextEditingController _precioVentaController;
@@ -156,6 +156,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     setState(() => _isLoadingCategorias = true);
 
     try {
+      Provider.of<ProductoProvider>(context, listen: false);
+
       // Obtenemos las categorías como objetos tipados
       final List<Categoria> categoriasList =
           await api.categorias.getCategoriasObjetos(useCache: false);
@@ -2258,8 +2260,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       });
       debugPrint('ProductosForm: === FIN DATOS PRODUCTO ===');
 
-      // Usar el repositorio en lugar del callback onSave
-      final String sucursalId = _sucursalSeleccionada!.id.toString();
+      // Obtener el provider
+      final ProductoProvider productoProvider =
+          Provider.of<ProductoProvider>(context, listen: false);
+      _sucursalSeleccionada!.id.toString();
 
       // Mostrar indicador de carga
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2273,57 +2277,32 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       // Ejecutar en función asíncrona para evitar bloquear la UI
       Future<void> saveProducto() async {
         try {
-          if (esNuevoProducto) {
-            await _productoRepository.createProducto(
-              sucursalId: sucursalId,
-              productoData: productoData,
-            );
-            debugPrint('ProductosForm: Producto creado correctamente');
-          } else {
-            // Manejar correctamente el tipo de ID
-            final dynamic rawId = productoData['id'];
-            if (rawId == null) {
-              throw Exception(
-                  'ID de producto es null. No se puede actualizar.');
+          final bool resultado = await productoProvider.guardarProducto(
+              productoData, esNuevoProducto);
+
+          if (resultado) {
+            // Mostrar mensaje de éxito si todavía estamos montados
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Producto guardado exitosamente'),
+                  backgroundColor: Colors.green,
+                ),
+              );
             }
 
-            // Convertir ID a entero de forma segura
-            final int productoId = rawId is int
-                ? rawId
-                : (rawId is String ? int.parse(rawId) : -1);
-
-            if (productoId <= 0) {
-              throw Exception('ID de producto inválido: $rawId');
-            }
-
-            debugPrint('ProductosForm: Actualizando producto ID $productoId');
-
-            await _productoRepository.updateProducto(
-              sucursalId: sucursalId,
-              productoId: productoId,
-              productoData: productoData,
-            );
-
-            debugPrint('ProductosForm: Producto actualizado correctamente');
-          }
-
-          // Invalidar caché para forzar recarga de datos
-          _productoRepository.invalidateCache(sucursalId);
-
-          // Mostrar mensaje de éxito si todavía estamos montados
-          if (mounted) {
+            // Si aún tenemos el onSave callback del widget padre, llamarlo para compatibilidad
+            widget.onSave(productoData);
+            debugPrint(
+                'ProductosForm: Callback onSave ejecutado para compatibilidad');
+          } else if (mounted && productoProvider.errorMessage != null) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Producto guardado exitosamente'),
-                backgroundColor: Colors.green,
+              SnackBar(
+                content: Text(productoProvider.errorMessage!),
+                backgroundColor: Colors.red,
               ),
             );
           }
-
-          // Si aún tenemos el onSave callback del widget padre, llamarlo para compatibilidad
-          widget.onSave(productoData);
-          debugPrint(
-              'ProductosForm: Callback onSave ejecutado para compatibilidad');
         } catch (e) {
           debugPrint('ProductosForm: ERROR al guardar producto: $e');
 

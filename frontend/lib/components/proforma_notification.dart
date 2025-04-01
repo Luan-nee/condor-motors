@@ -142,7 +142,9 @@ class ProformaNotification {
     required String body,
     required String tag,
   }) async {
-    if (!_isInitialized) return;
+    if (!_isInitialized) {
+      return;
+    }
 
     try {
       // Usar XML para definir la notificación con una prioridad mayor
