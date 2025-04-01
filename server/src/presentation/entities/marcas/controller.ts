@@ -168,7 +168,7 @@ export class MarcasController {
         if (marcas === null) {
           res.status(404).json({
             ok: false,
-            error: 'Marca no encontrada'
+            error: 'Marca no encontrada o tiene datos relacionados'
           })
           return
         }
