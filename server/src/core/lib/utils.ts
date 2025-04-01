@@ -1,5 +1,6 @@
 import type { permissionCodes } from '@/consts'
 import Big from 'big.js'
+import path from 'node:path'
 
 export const generateSequentialIds = (length: number) =>
   Array.from({ length }).map((_, i) => i + 1)
@@ -117,4 +118,23 @@ export const parseBoolString = (str: string) => {
   }
 
   return undefined
+}
+
+export const getFileNameFromPath = (filePath: string) => {
+  if (filePath.trim() === '') {
+    throw new Error(
+      'La ruta no puede estar vacía o contener solo espacios en blanco.'
+    )
+  }
+
+  return path.basename(filePath)
+}
+
+export const getFileNameAndExtension = (filename: string) => {
+  const ext = path.extname(filename)
+  const nameWithoutExt = path.basename(filename, ext)
+  return {
+    basename: nameWithoutExt,
+    extension: ext
+  }
 }

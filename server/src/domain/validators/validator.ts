@@ -34,10 +34,13 @@ export class Validator {
   static containsIvalidCharacters = (val: string) => /[\\/:*?"<>|]/.test(val)
 
   static isValidFileName = (val: string) => {
-    if (val.length < 1 || val.length > 220) {
+    const trimValue = val.trim()
+
+    const maxLength = 255
+    if (trimValue === '' || trimValue.length > maxLength) {
       return false
     }
 
-    return !Validator.containsIvalidCharacters(val)
+    return !Validator.containsIvalidCharacters(trimValue)
   }
 }
