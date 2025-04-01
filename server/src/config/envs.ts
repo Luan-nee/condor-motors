@@ -20,5 +20,6 @@ export const envs = {
   CONSULTA_API_BASE_URL: get('CONSULTA_API_BASE_URL').asString(),
   TOKEN_CONSULTA: get('TOKEN_CONSULTA').asString(),
   FACTURACION_API_BASE_URL: get('FACTURACION_API_BASE_URL').asString(),
-  TOKEN_FACTURACION: get('TOKEN_FACTURACION').asString()
+  TOKEN_FACTURACION: get('TOKEN_FACTURACION').asString(),
+  LOGS: get('LOGS').default('console').asString()
 }

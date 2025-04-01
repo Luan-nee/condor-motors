@@ -165,3 +165,9 @@ export const estadosDocFacturacion = {
   porAnular: 'por-anular',
   sinRespuestaSunat: 'sin-respuesta-sunat'
 }
+
+export const logsDestination = {
+  filesystem: 'filesystem',
+  console: 'console',
+  none: 'none'
+}

@@ -1,9 +1,16 @@
 /* eslint-disable no-console */
-import { isProduction } from '@/consts'
+import { envs } from '@/config/envs'
+import { CustomLogger } from '@/config/logger'
+import { isProduction, logsDestination } from '@/consts'
 import type { NextFunction, Request, Response } from 'express'
 
 export class LoggerMiddleware {
   static requests = (req: Request, res: Response, next: NextFunction) => {
+    if (envs.LOGS === logsDestination.none) {
+      next()
+      return
+    }
+
     const { protocol, headers, baseUrl, url } = req
     const { host } = headers
     const resource = `${protocol}://${host}${baseUrl}${url}`
@@ -37,6 +44,15 @@ export class LoggerMiddleware {
         console.log('query:', req.query)
         console.log('-- - - - - - - - - - - - - - - - - - - - - - - END')
         console.log('==================================================')
+      }
+
+      if (envs.LOGS === logsDestination.filesystem) {
+        const ip = req.ip ?? null
+        const user = req.authPayload ?? { id: null }
+        const message = `${req.method} ${resource} ${req.protocol.toUpperCase()}/${req.httpVersion} ${res.statusCode} ${duration}ms`
+        const meta = { ip, user }
+
+        CustomLogger.info(message, meta)
       }
     })
 
