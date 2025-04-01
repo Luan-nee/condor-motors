@@ -3,6 +3,7 @@ import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
 import { RefreshTokenCookieDto } from '@/domain/dtos/auth/refresh-token-cookie.dto'
 import { RefreshToken } from '@/domain/use-cases/auth/refresh-token.use-case'
+import { TestSession } from '@/domain/use-cases/auth/test-session.use-case'
 import type {
   AuthSerializer,
   Encryptor,
@@ -112,6 +113,29 @@ export class AuthController {
       })
       .catch((error: unknown) => {
         res.clearCookie(refreshTokenCookieName)
+        handleError(error, res)
+      })
+  }
+
+  testSession = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const { authPayload } = req
+
+    const testSession = new TestSession(authPayload)
+
+    testSession
+      .execute()
+      .then((user) => {
+        CustomResponse.success({
+          res,
+          data: user
+        })
+      })
+      .catch((error: unknown) => {
         handleError(error, res)
       })
   }
