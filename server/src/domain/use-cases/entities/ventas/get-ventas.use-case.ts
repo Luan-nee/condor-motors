@@ -12,7 +12,7 @@ import {
   ventasTable
 } from '@/db/schema'
 import type { SucursalIdType } from '@/types/schemas'
-import { eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 
 export class GetVentas {
   private readonly authPayload: AuthPayload
@@ -84,6 +84,7 @@ export class GetVentas {
         eq(docsFacturacionTable.estadoId, estadosDocFacturacionTable.id)
       )
       .where(eq(ventasTable.sucursalId, sucursalId))
+      .orderBy(desc(ventasTable.fechaCreacion))
 
     return ventas
   }
