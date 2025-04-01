@@ -19,7 +19,8 @@ export class CustomResponse {
     statusCode = 200,
     error,
     cookie,
-    authorization
+    authorization,
+    redirect
   }: SendResponseArgs) {
     const response = {
       status,
@@ -36,6 +37,11 @@ export class CustomResponse {
 
     if (authorization !== undefined) {
       res.header('Authorization', authorization)
+    }
+
+    if (redirect != null) {
+      res.status(statusCode).redirect(redirect)
+      return
     }
 
     if (typeof response.data === 'string') {
@@ -113,12 +119,13 @@ export class CustomResponse {
     })
   }
 
-  static unauthorized({ res, error }: ErrorResponseArgs) {
+  static unauthorized({ res, error, redirect }: ErrorResponseArgs) {
     this.send({
       res,
       error,
       status: responseStatus.fail,
-      statusCode: 401
+      statusCode: 401,
+      redirect
     })
   }
 

@@ -15,6 +15,7 @@ export interface SendResponseArgs {
   error?: any
   cookie?: string
   authorization?: string
+  redirect?: string
 }
 
 export type SuccessArgs = Pick<
@@ -30,4 +31,7 @@ export type SuccessArgs = Pick<
 export type CreatedArgs = Pick<SendResponseArgs, 'res' | 'message' | 'data'>
 export type AcceptedArgs = Pick<SendResponseArgs, 'res' | 'message' | 'data'>
 export type NoContentArgs = Pick<SendResponseArgs, 'res' | 'message'>
-export type ErrorResponseArgs = Pick<SendResponseArgs, 'res' | 'error'>
+export type ErrorResponseArgs = Pick<
+  SendResponseArgs,
+  'res' | 'error' | 'redirect'
+>

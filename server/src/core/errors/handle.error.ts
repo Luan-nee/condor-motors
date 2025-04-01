@@ -12,7 +12,8 @@ export const handleError = (error: unknown, res: Response) => {
       statusCode: error.statusCode,
       status: error.status,
       error: error.message,
-      data: error.data
+      data: error.data,
+      redirect: error.redirect
     })
     return
   }
