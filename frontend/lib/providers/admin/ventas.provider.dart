@@ -16,6 +16,11 @@ class VentasProvider extends ChangeNotifier {
   bool _isVentasLoading = false;
   String _ventasErrorMessage = '';
 
+  // Estado para detalles de venta
+  Venta? _ventaSeleccionada;
+  bool _isVentaDetalleLoading = false;
+  String _ventaDetalleErrorMessage = '';
+
   // Getters para sucursales
   String get errorMessage => _errorMessage;
   List<Sucursal> get sucursales => _sucursales;
@@ -26,6 +31,11 @@ class VentasProvider extends ChangeNotifier {
   List<dynamic> get ventas => _ventas;
   bool get isVentasLoading => _isVentasLoading;
   String get ventasErrorMessage => _ventasErrorMessage;
+
+  // Getters para detalles de venta
+  Venta? get ventaSeleccionada => _ventaSeleccionada;
+  bool get isVentaDetalleLoading => _isVentaDetalleLoading;
+  String get ventaDetalleErrorMessage => _ventaDetalleErrorMessage;
 
   /// Inicializa el provider cargando los datos necesarios
   void inicializar() {
@@ -98,6 +108,7 @@ class VentasProvider extends ChangeNotifier {
   void limpiarErrores() {
     _errorMessage = '';
     _ventasErrorMessage = '';
+    _ventaDetalleErrorMessage = '';
     notifyListeners();
   }
 
@@ -164,6 +175,51 @@ class VentasProvider extends ChangeNotifier {
       _isVentasLoading = false;
       _ventasErrorMessage = 'Error al cargar ventas: $e';
       notifyListeners();
+    }
+  }
+
+  /// Carga los detalles de una venta específica
+  Future<Venta?> cargarDetalleVenta(String id) async {
+    if (_sucursalSeleccionada == null) {
+      _ventaDetalleErrorMessage = 'Debe seleccionar una sucursal';
+      _ventaSeleccionada = null;
+      notifyListeners();
+      return null;
+    }
+
+    _isVentaDetalleLoading = true;
+    _ventaDetalleErrorMessage = '';
+    notifyListeners();
+
+    try {
+      debugPrint(
+          'Cargando detalle de venta: $id para sucursal: ${_sucursalSeleccionada!.id}');
+
+      final Venta? venta = await api.ventas.getVenta(
+        id,
+        sucursalId: _sucursalSeleccionada!.id,
+        forceRefresh: true, // Forzar recarga para obtener datos actualizados
+      );
+
+      if (venta == null) {
+        _ventaDetalleErrorMessage = 'No se pudo cargar la venta';
+        _isVentaDetalleLoading = false;
+        notifyListeners();
+        return null;
+      }
+
+      _ventaSeleccionada = venta;
+      _isVentaDetalleLoading = false;
+      notifyListeners();
+
+      debugPrint('Venta cargada: ${venta.id}');
+      return venta;
+    } catch (e) {
+      debugPrint('Error al cargar detalle de venta: $e');
+      _isVentaDetalleLoading = false;
+      _ventaDetalleErrorMessage = 'Error al cargar detalle de venta: $e';
+      notifyListeners();
+      return null;
     }
   }
 }

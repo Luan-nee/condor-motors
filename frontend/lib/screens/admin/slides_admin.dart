@@ -96,7 +96,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                 ),
                 _buildMenuItem(
                   icon: FontAwesomeIcons.fileInvoiceDollar,
-                  text: 'Facturación',
+                  text: 'Ventas y facturación',
                   isSelected: _selectedIndex == 1,
                   onTap: () => setState(() {
                     _selectedIndex = 1;
@@ -183,18 +183,20 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                     onPressed: () async {
                       // 1. Limpiar tokens almacenados
                       await TokenService.instance.clearTokens();
-                      
+
                       // 2. Desactivar la opción "Permanecer conectado"
-                      final SharedPreferences prefs = await SharedPreferences.getInstance();
+                      final SharedPreferences prefs =
+                          await SharedPreferences.getInstance();
                       await prefs.setBool('stay_logged_in', false);
                       await prefs.remove('username_auto');
                       await prefs.remove('password_auto');
-                      
+
                       // 3. Navegar a la pantalla de login
                       if (!context.mounted) {
                         return;
                       }
-                      await Navigator.pushReplacementNamed(context, role_utils.login);
+                      await Navigator.pushReplacementNamed(
+                          context, role_utils.login);
                     },
                     icon: const FaIcon(
                       FontAwesomeIcons.rightFromBracket,

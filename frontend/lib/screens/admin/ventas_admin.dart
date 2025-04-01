@@ -1,8 +1,9 @@
+import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/admin/ventas.provider.dart';
-import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
-import 'package:condorsmotors/screens/admin/widgets/venta/venta_table.dart';
+import 'package:condorsmotors/screens/admin/widgets/venta/venta_detalle_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class VentasAdminScreen extends StatefulWidget {
@@ -13,6 +14,11 @@ class VentasAdminScreen extends StatefulWidget {
 }
 
 class _VentasAdminScreenState extends State<VentasAdminScreen> {
+  final NumberFormat _formatoMoneda = NumberFormat.currency(
+    symbol: 'S/ ',
+    decimalDigits: 2,
+  );
+  final DateFormat _formatoFecha = DateFormat('dd/MM/yyyy');
   late VentasProvider _ventasProvider;
 
   @override
@@ -41,39 +47,40 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Row(
-        children: [
-          // Panel izquierdo: Tabla de ventas (70%)
-          Expanded(
-            flex: 7,
-            child: Consumer<VentasProvider>(
-              builder: (context, provider, child) {
-                return VentaTable(
-                  sucursalSeleccionada: provider.sucursalSeleccionada,
-                  onRecargarVentas: provider.cargarSucursales,
-                );
-              },
-            ),
-          ),
-
-          // Panel derecho: Selector de sucursales (30%)
-          Container(
-            width: 300,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              border: Border(
-                left: BorderSide(
-                  color: Colors.white.withOpacity(0.1),
+      body: Consumer<VentasProvider>(
+        builder: (context, ventasProvider, child) {
+          return Row(
+            children: [
+              // Panel izquierdo: Contenido principal (70%)
+              Expanded(
+                flex: 7,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(context, ventasProvider),
+                    Expanded(
+                      child: _buildVentasContent(context, ventasProvider),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Cabecera del panel de sucursales
-                Consumer<VentasProvider>(
-                  builder: (context, provider, child) {
-                    return Container(
+
+              // Panel derecho: Selector de sucursales (30%)
+              Container(
+                width: 300,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  border: Border(
+                    left: BorderSide(
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Cabecera del panel de sucursales
+                    Container(
                       padding: const EdgeInsets.all(16.0),
                       color: const Color(0xFF2D2D2D),
                       child: Row(
@@ -97,7 +104,7 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                               ),
                             ],
                           ),
-                          if (provider.isSucursalesLoading)
+                          if (ventasProvider.isSucursalesLoading)
                             const SizedBox(
                               width: 16,
                               height: 16,
@@ -108,15 +115,11 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                             ),
                         ],
                       ),
-                    );
-                  },
-                ),
+                    ),
 
-                // Mensaje de error para sucursales
-                Consumer<VentasProvider>(
-                  builder: (context, provider, child) {
-                    if (provider.errorMessage.isNotEmpty) {
-                      return Container(
+                    // Mensaje de error para sucursales
+                    if (ventasProvider.errorMessage.isNotEmpty)
+                      Container(
                         padding: const EdgeInsets.all(8),
                         margin: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -124,84 +127,488 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          provider.errorMessage,
+                          ventasProvider.errorMessage,
                           style:
                               const TextStyle(color: Colors.red, fontSize: 12),
                         ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
+                      ),
 
-                // Selector de sucursales
-                Expanded(
-                  child: Consumer<VentasProvider>(
-                    builder: (context, provider, child) {
-                      if (provider.isSucursalesLoading) {
-                        return const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              CircularProgressIndicator(
-                                color: Color(0xFFE31E24),
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Cargando sucursales...',
-                                style: TextStyle(color: Colors.white70),
-                              ),
-                            ],
-                          ),
-                        );
-                      } else if (provider.sucursales.isEmpty &&
-                          provider.errorMessage.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              const FaIcon(
-                                FontAwesomeIcons.buildingCircleXmark,
-                                color: Colors.white54,
-                                size: 48,
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'No hay sucursales disponibles',
-                                style: TextStyle(color: Colors.white70),
-                              ),
-                              const SizedBox(height: 24),
-                              ElevatedButton.icon(
-                                icon: const FaIcon(
-                                    FontAwesomeIcons.arrowsRotate,
-                                    size: 16),
-                                label: const Text('Recargar'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE31E24),
-                                  foregroundColor: Colors.white,
-                                ),
-                                onPressed: provider.cargarSucursales,
-                              ),
-                            ],
-                          ),
-                        );
-                      } else {
-                        return SlideSucursal(
-                          sucursales: provider.sucursales,
-                          sucursalSeleccionada: provider.sucursalSeleccionada,
-                          onSucursalSelected: provider.cambiarSucursal,
-                          onRecargarSucursales: provider.cargarSucursales,
-                          isLoading: provider.isSucursalesLoading,
-                        );
-                      }
-                    },
+                    // Selector de sucursales
+                    Expanded(
+                      child: _buildSucursalesContent(ventasProvider),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, VentasProvider ventasProvider) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Ventas y Facturación',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Gestiona las ventas de ${ventasProvider.sucursalSeleccionada?.nombre ?? "todas las sucursales"}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
                   ),
                 ),
               ],
             ),
           ),
+          ElevatedButton.icon(
+            icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
+            label: const Text('Nueva Venta'),
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: const Color(0xFFE31E24),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+            onPressed: () {
+              // Implementar creación de nueva venta
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Función en desarrollo'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
+  }
+
+  Widget _buildVentasContent(
+      BuildContext context, VentasProvider ventasProvider) {
+    if (ventasProvider.isVentasLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (ventasProvider.ventasErrorMessage.isNotEmpty) {
+      return Center(
+        child: _buildEmptyState(
+          icon: FontAwesomeIcons.triangleExclamation,
+          title: 'Error al cargar ventas',
+          description: ventasProvider.ventasErrorMessage,
+          actionText: 'Intentar de nuevo',
+          onAction: () => ventasProvider.cargarVentas(),
+        ),
+      );
+    }
+
+    if (ventasProvider.ventas.isEmpty) {
+      return Center(
+        child: _buildEmptyState(
+          icon: FontAwesomeIcons.fileInvoiceDollar,
+          title: 'No hay ventas registradas',
+          description: 'Aún no hay ventas registradas para esta sucursal',
+          actionText: 'Actualizar',
+          onAction: () => ventasProvider.cargarVentas(),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Filtros y búsqueda (a implementar)
+        Container(
+          padding: const EdgeInsets.all(16),
+          child: const Text(
+            'Próximamente: Filtros de búsqueda',
+            style: TextStyle(
+              color: Colors.grey,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+        // Lista de ventas
+        Expanded(
+          child: ListView.builder(
+            itemCount: ventasProvider.ventas.length,
+            itemBuilder: (context, index) {
+              final venta = ventasProvider.ventas[index];
+              return _buildVentaItem(context, ventasProvider, venta);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget de pantalla vacía o estado de error
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String description,
+    required String actionText,
+    required VoidCallback onAction,
+  }) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        FaIcon(
+          icon,
+          size: 48,
+          color: Colors.grey[400],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          description,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: onAction,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFE31E24),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 12,
+            ),
+          ),
+          child: Text(actionText),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSucursalesContent(VentasProvider provider) {
+    if (provider.isSucursalesLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            CircularProgressIndicator(
+              color: Color(0xFFE31E24),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Cargando sucursales...',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ],
+        ),
+      );
+    } else if (provider.sucursales.isEmpty && provider.errorMessage.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const FaIcon(
+              FontAwesomeIcons.buildingCircleXmark,
+              color: Colors.white54,
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No hay sucursales disponibles',
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16),
+              label: const Text('Recargar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE31E24),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: provider.cargarSucursales,
+            ),
+          ],
+        ),
+      );
+    } else {
+      return ListView.builder(
+        itemCount: provider.sucursales.length,
+        itemBuilder: (context, index) {
+          final sucursal = provider.sucursales[index];
+          final isSelected = provider.sucursalSeleccionada?.id == sucursal.id;
+
+          return ListTile(
+            title: Text(
+              sucursal.nombre,
+              style: TextStyle(
+                color: isSelected ? const Color(0xFFE31E24) : Colors.white,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            selected: isSelected,
+            selectedTileColor: const Color(0xFFE31E24).withOpacity(0.1),
+            onTap: () => provider.cambiarSucursal(sucursal),
+            leading: const FaIcon(
+              FontAwesomeIcons.building,
+              size: 16,
+              color: Colors.white54,
+            ),
+          );
+        },
+      );
+    }
+  }
+
+  Widget _buildVentaItem(
+      BuildContext context, VentasProvider ventasProvider, dynamic venta) {
+    // Obtener valores según el tipo de objeto
+    final bool isVenta = venta is Venta;
+
+    final String id = isVenta ? venta.id.toString() : venta['id'].toString();
+
+    final String serie =
+        isVenta ? venta.serieDocumento : venta['serieDocumento'] ?? '';
+
+    final String numero =
+        isVenta ? venta.numeroDocumento : venta['numeroDocumento'] ?? '';
+
+    final DateTime fecha = isVenta
+        ? venta.fechaCreacion
+        : (venta['fechaCreacion'] != null
+            ? DateTime.parse(venta['fechaCreacion'])
+            : DateTime.now());
+
+    final double total = isVenta
+        ? venta.calcularTotal()
+        : (venta['totalesVenta'] != null &&
+                venta['totalesVenta']['totalVenta'] != null
+            ? (venta['totalesVenta']['totalVenta'] is String
+                ? double.tryParse(venta['totalesVenta']['totalVenta']) ?? 0.0
+                : venta['totalesVenta']['totalVenta'].toDouble())
+            : 0.0);
+
+    final String cliente = isVenta
+        ? (venta.clienteDetalle?.denominacion ?? 'Cliente no especificado')
+        : (venta['cliente'] != null
+            ? venta['cliente']['denominacion'] ?? 'Cliente no especificado'
+            : 'Cliente no especificado');
+
+    final String estado = isVenta
+        ? venta.estado.toText()
+        : (venta['estado'] is Map
+            ? venta['estado']['nombre'] ?? 'PENDIENTE'
+            : venta['estado'] ?? 'PENDIENTE');
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: InkWell(
+        onTap: () => _mostrarDetalleVenta(context, ventasProvider, id),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Icono según el estado
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: _getEstadoColor(estado).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: FaIcon(
+                    FontAwesomeIcons.fileInvoiceDollar,
+                    color: _getEstadoColor(estado),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Información principal
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      serie.isNotEmpty && numero.isNotEmpty
+                          ? '$serie-$numero'
+                          : 'Venta #$id',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Fecha: ${_formatoFecha.format(fecha)}',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Cliente: $cliente',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Monto y estado
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _formatoMoneda.format(total),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getEstadoColor(estado).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      estado,
+                      style: TextStyle(
+                        color: _getEstadoColor(estado),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Obtener color según el estado de la venta
+  Color _getEstadoColor(String estado) {
+    switch (estado.toUpperCase()) {
+      case 'COMPLETADA':
+        return Colors.green;
+      case 'ANULADA':
+        return Colors.red;
+      case 'DECLARADA':
+        return Colors.blue;
+      case 'ACEPTADO-SUNAT':
+        return Colors.green;
+      case 'ACEPTADO ANTE LA SUNAT':
+        return Colors.green;
+      case 'PENDIENTE':
+      default:
+        return Colors.orange;
+    }
+  }
+
+  // Mostrar detalles de la venta
+  Future<void> _mostrarDetalleVenta(
+      BuildContext context, VentasProvider ventasProvider, String id) async {
+    // Mostrar un indicador de carga mientras se obtienen los datos
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const AlertDialog(
+          content: SizedBox(
+            height: 100,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Cargando detalles de la venta...'),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    try {
+      // Obtener detalles de la venta desde el servidor
+      final Venta? venta = await ventasProvider.cargarDetalleVenta(id);
+
+      // Cerrar el diálogo de carga
+      Navigator.of(context).pop();
+
+      if (venta == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ventasProvider.ventaDetalleErrorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Mostrar el diálogo con los detalles de la venta
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => VentaDetalleDialog(venta: venta),
+        );
+      }
+    } catch (e) {
+      // Cerrar el diálogo de carga en caso de error
+      Navigator.of(context).pop();
+
+      // Mostrar mensaje de error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar detalles: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

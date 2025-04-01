@@ -172,50 +172,197 @@ class TotalesVenta {
   }
 }
 
+/// Clase para representar la información de facturación electrónica
+class DocumentoFacturacion {
+  final int id;
+  final String? codigoEstadoSunat;
+  final String? factproDocumentId;
+  final String? hash;
+  final String? qr;
+  final String? linkXml;
+  final String? linkPdf;
+  final String? linkCdr;
+  final String? factproDocumentIdAnulado;
+  final String? linkXmlAnulado;
+  final String? linkPdfAnulado;
+  final String? linkCdrAnulado;
+  final String? ticketAnulado;
+  final Map<String, dynamic>? informacionSunat;
+
+  DocumentoFacturacion({
+    required this.id,
+    this.codigoEstadoSunat,
+    this.factproDocumentId,
+    this.hash,
+    this.qr,
+    this.linkXml,
+    this.linkPdf,
+    this.linkCdr,
+    this.factproDocumentIdAnulado,
+    this.linkXmlAnulado,
+    this.linkPdfAnulado,
+    this.linkCdrAnulado,
+    this.ticketAnulado,
+    this.informacionSunat,
+  });
+
+  factory DocumentoFacturacion.fromJson(Map<String, dynamic> json) {
+    return DocumentoFacturacion(
+      id: json['id'] is String
+          ? int.tryParse(json['id']) ?? 0
+          : json['id'] ?? 0,
+      codigoEstadoSunat: json['codigoEstadoSunat'],
+      factproDocumentId: json['factproDocumentId'],
+      hash: json['hash'],
+      qr: json['qr'],
+      linkXml: json['linkXml'],
+      linkPdf: json['linkPdf'],
+      linkCdr: json['linkCdr'],
+      factproDocumentIdAnulado: json['factproDocumentIdAnulado'],
+      linkXmlAnulado: json['linkXmlAnulado'],
+      linkPdfAnulado: json['linkPdfAnulado'],
+      linkCdrAnulado: json['linkCdrAnulado'],
+      ticketAnulado: json['ticketAnulado'],
+      informacionSunat: json['informacionSunat'],
+    );
+  }
+}
+
+/// Clase para representar información de cliente
+class Cliente {
+  final int id;
+  final String? tipoDocumento;
+  final String? numeroDocumento;
+  final String denominacion;
+
+  Cliente({
+    required this.id,
+    this.tipoDocumento,
+    this.numeroDocumento,
+    required this.denominacion,
+  });
+
+  factory Cliente.fromJson(Map<String, dynamic> json) {
+    return Cliente(
+      id: json['id'] is String
+          ? int.tryParse(json['id']) ?? 0
+          : json['id'] ?? 0,
+      tipoDocumento: json['tipoDocumento'],
+      numeroDocumento: json['numeroDocumento'],
+      denominacion: json['denominacion'] ?? '',
+    );
+  }
+}
+
+/// Clase para representar información básica de empleado
+class Empleado {
+  final int id;
+  final String nombre;
+  final String apellidos;
+
+  Empleado({
+    required this.id,
+    required this.nombre,
+    required this.apellidos,
+  });
+
+  factory Empleado.fromJson(Map<String, dynamic> json) {
+    return Empleado(
+      id: json['id'] is String
+          ? int.tryParse(json['id']) ?? 0
+          : json['id'] ?? 0,
+      nombre: json['nombre'] ?? '',
+      apellidos: json['apellidos'] ?? '',
+    );
+  }
+
+  String getNombreCompleto() {
+    return '$nombre $apellidos';
+  }
+}
+
+/// Clase para representar información básica de sucursal
+class SucursalBasica {
+  final int id;
+  final String nombre;
+
+  SucursalBasica({
+    required this.id,
+    required this.nombre,
+  });
+
+  factory SucursalBasica.fromJson(Map<String, dynamic> json) {
+    return SucursalBasica(
+      id: json['id'] is String
+          ? int.tryParse(json['id']) ?? 0
+          : json['id'] ?? 0,
+      nombre: json['nombre'] ?? '',
+    );
+  }
+}
+
 /// Representa una venta completa
 class Venta {
   final int? id;
   final String? observaciones;
+  final String? motivoAnulado;
   final String tipoOperacion;
   final int porcentajeVenta;
   final int tipoDocumentoId;
   final String serieDocumento;
   final String numeroDocumento;
   final int monedaId;
+  final String? moneda;
   final int metodoPagoId;
+  final String? metodoPago;
   final int clienteId;
+  final Cliente? clienteDetalle;
   final int empleadoId;
+  final Empleado? empleadoDetalle;
   final int sucursalId;
+  final SucursalBasica? sucursalDetalle;
   final DateTime fechaEmision;
   final String horaEmision;
   final bool declarada;
+  final bool anulada;
   final DateTime fechaCreacion;
   final DateTime fechaActualizacion;
   final List<DetalleVenta> detalles;
   final TotalesVenta? totales;
   final EstadoVenta estado;
+  final String? tipoDocumento;
+  final DocumentoFacturacion? documentoFacturacion;
 
   Venta({
     this.id,
     this.observaciones,
+    this.motivoAnulado,
     this.tipoOperacion = '0101',
     this.porcentajeVenta = 18,
     required this.tipoDocumentoId,
     required this.serieDocumento,
     required this.numeroDocumento,
     required this.monedaId,
+    this.moneda,
     required this.metodoPagoId,
+    this.metodoPago,
     required this.clienteId,
+    this.clienteDetalle,
     required this.empleadoId,
+    this.empleadoDetalle,
     required this.sucursalId,
+    this.sucursalDetalle,
     required this.fechaEmision,
     required this.horaEmision,
     this.declarada = false,
+    this.anulada = false,
     required this.fechaCreacion,
     required this.fechaActualizacion,
     required this.detalles,
     this.totales,
     this.estado = EstadoVenta.pendiente,
+    this.tipoDocumento,
+    this.documentoFacturacion,
   });
 
   /// Crea una venta desde un JSON
@@ -247,14 +394,31 @@ class Venta {
     final fechaActualizacion =
         parseDate(json['fechaActualizacion'] ?? json['fecha_actualizacion']);
 
-    // Extraer estado
-    final estado = EstadoVenta.fromText(json['estado']);
+    // Extraer estado - con manejo seguro de diferentes formatos
+    EstadoVenta estado;
+    if (json['estado'] == null) {
+      estado = EstadoVenta.pendiente;
+    } else if (json['estado'] is String) {
+      estado = EstadoVenta.fromText(json['estado'] as String);
+    } else if (json['estado'] is Map) {
+      // Si el estado viene como un objeto, intentar extraer el código o nombre
+      final estadoMap = json['estado'] as Map<String, dynamic>;
+      estado = EstadoVenta.fromText(estadoMap['codigo'] ?? estadoMap['nombre']);
+    } else {
+      estado = EstadoVenta.pendiente;
+    }
 
-    // Extraer detalles
+    // Extraer detalles - pueden venir como detalles o detallesVenta
     List<DetalleVenta> detalles = [];
     if (json['detalles'] != null) {
       if (json['detalles'] is List) {
         detalles = (json['detalles'] as List)
+            .map((detalle) => DetalleVenta.fromJson(detalle))
+            .toList();
+      }
+    } else if (json['detallesVenta'] != null) {
+      if (json['detallesVenta'] is List) {
+        detalles = (json['detallesVenta'] as List)
             .map((detalle) => DetalleVenta.fromJson(detalle))
             .toList();
       }
@@ -266,19 +430,49 @@ class Venta {
       totales = TotalesVenta.fromJson(json['totales']);
     } else if (json['totalesVenta'] != null) {
       // Manejar el caso donde los totales vienen como 'totalesVenta'
-      totales = TotalesVenta.fromJson({
-        'ventaId': id ?? 0,
-        'totalGravadas': json['totalesVenta']['totalGravadas'],
-        'totalExoneradas': json['totalesVenta']['totalExoneradas'],
-        'totalGratuitas': json['totalesVenta']['totalGratuitas'],
-        'totalTax': json['totalesVenta']['totalTax'],
-        'totalVenta': json['totalesVenta']['totalVenta'],
-      });
+      final totalesData = json['totalesVenta'];
+      if (totalesData is Map<String, dynamic>) {
+        totales = TotalesVenta.fromJson({
+          'ventaId': id ?? 0,
+          'totalGravadas': totalesData['totalGravadas'],
+          'totalExoneradas': totalesData['totalExoneradas'],
+          'totalGratuitas': totalesData['totalGratuitas'],
+          'totalTax': totalesData['totalTax'],
+          'totalVenta': totalesData['totalVenta'],
+        });
+      }
+    }
+
+    // Extraer información del cliente
+    Cliente? clienteDetalle;
+    if (json['cliente'] != null && json['cliente'] is Map<String, dynamic>) {
+      clienteDetalle = Cliente.fromJson(json['cliente']);
+    }
+
+    // Extraer información del empleado
+    Empleado? empleadoDetalle;
+    if (json['empleado'] != null && json['empleado'] is Map<String, dynamic>) {
+      empleadoDetalle = Empleado.fromJson(json['empleado']);
+    }
+
+    // Extraer información de la sucursal
+    SucursalBasica? sucursalDetalle;
+    if (json['sucursal'] != null && json['sucursal'] is Map<String, dynamic>) {
+      sucursalDetalle = SucursalBasica.fromJson(json['sucursal']);
+    }
+
+    // Extraer documento facturación
+    DocumentoFacturacion? documentoFacturacion;
+    if (json['documentoFacturacion'] != null &&
+        json['documentoFacturacion'] is Map<String, dynamic>) {
+      documentoFacturacion =
+          DocumentoFacturacion.fromJson(json['documentoFacturacion']);
     }
 
     return Venta(
       id: id,
       observaciones: json['observaciones'],
+      motivoAnulado: json['motivoAnulado'],
       tipoOperacion: json['tipoOperacion'] ?? '0101',
       porcentajeVenta: json['porcentajeVenta'] ?? 18,
       tipoDocumentoId: json['tipoDocumentoId'] is String
@@ -289,26 +483,34 @@ class Venta {
       monedaId: json['monedaId'] is String
           ? int.tryParse(json['monedaId']) ?? 1
           : json['monedaId'] ?? 1,
+      moneda: json['moneda'],
       metodoPagoId: json['metodoPagoId'] is String
           ? int.tryParse(json['metodoPagoId']) ?? 1
           : json['metodoPagoId'] ?? 1,
+      metodoPago: json['metodoPago'],
       clienteId: json['clienteId'] is String
           ? int.tryParse(json['clienteId']) ?? 0
           : json['clienteId'] ?? 0,
+      clienteDetalle: clienteDetalle,
       empleadoId: json['empleadoId'] is String
           ? int.tryParse(json['empleadoId']) ?? 0
           : json['empleadoId'] ?? 0,
+      empleadoDetalle: empleadoDetalle,
       sucursalId: json['sucursalId'] is String
           ? int.tryParse(json['sucursalId']) ?? 0
           : json['sucursalId'] ?? 0,
+      sucursalDetalle: sucursalDetalle,
       fechaEmision: fechaEmision,
       horaEmision: json['horaEmision'] ?? '00:00:00',
       declarada: json['declarada'] ?? false,
+      anulada: json['anulada'] ?? false,
       fechaCreacion: fechaCreacion,
       fechaActualizacion: fechaActualizacion,
       detalles: detalles,
       totales: totales,
       estado: estado,
+      tipoDocumento: json['tipoDocumento'],
+      documentoFacturacion: documentoFacturacion,
     );
   }
 
