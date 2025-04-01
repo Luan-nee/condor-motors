@@ -105,56 +105,61 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
 
     try {
       // Aplicar la búsqueda del servidor sólo si la búsqueda es mayor a 3 caracteres
-      final String? searchQuery = _searchQuery.length >= 3 ? _searchQuery : null;
+      final String? searchQuery =
+          _searchQuery.length >= 3 ? _searchQuery : null;
 
       // Si está seleccionado el filtro de stock bajo, usar el método específico
       if (_filtroEstadoStock == StockStatus.stockBajo) {
-        final PaginatedResponse<Producto> paginatedProductos = await api.productos.getProductosConStockBajo(
+        final PaginatedResponse<Producto> paginatedProductos =
+            await api.productos.getProductosConStockBajo(
           sucursalId: sucursalId,
           page: _currentPage,
           pageSize: _pageSize,
           sortBy: _sortBy.isNotEmpty ? _sortBy : 'nombre',
         );
-        
+
         setState(() {
           _paginatedProductos = paginatedProductos;
           _productosFiltrados = paginatedProductos.items;
           _isLoadingProductos = false;
         });
-        
+
         // Mostrar mensaje si no hay productos
         if (paginatedProductos.items.isEmpty) {
-          _mostrarMensajeNoProductos('No se encontraron productos con stock bajo');
+          _mostrarMensajeNoProductos(
+              'No se encontraron productos con stock bajo');
         }
-        
+
         return;
       }
-      
+
       // Si está seleccionado el filtro de agotados, usamos el método específico
       if (_filtroEstadoStock == StockStatus.agotado) {
-        final PaginatedResponse<Producto> paginatedProductos = await api.productos.getProductosAgotados(
+        final PaginatedResponse<Producto> paginatedProductos =
+            await api.productos.getProductosAgotados(
           sucursalId: sucursalId,
           page: _currentPage,
           pageSize: _pageSize,
           sortBy: _sortBy.isNotEmpty ? _sortBy : 'nombre',
         );
-        
+
         setState(() {
           _paginatedProductos = paginatedProductos;
           _productosFiltrados = paginatedProductos.items;
           _isLoadingProductos = false;
         });
-        
+
         // Mostrar mensaje si no hay productos
         if (paginatedProductos.items.isEmpty) {
           _mostrarMensajeNoProductos('No se encontraron productos agotados');
         }
-        
+
         return;
       }
-      
+
       // Para otros casos, usar el método general
-      final PaginatedResponse<Producto> paginatedProductos = await api.productos.getProductos(
+      final PaginatedResponse<Producto> paginatedProductos =
+          await api.productos.getProductos(
         sucursalId: sucursalId,
         search: searchQuery,
         page: _currentPage,
@@ -175,12 +180,13 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
         _productosFiltrados = productosReorganizados;
         _isLoadingProductos = false;
       });
-      
+
       // Mostrar mensaje si no hay productos y hay filtros aplicados
-      if (productosReorganizados.isEmpty && (_searchQuery.isNotEmpty || _filtroEstadoStock != null)) {
-        _mostrarMensajeNoProductos('No se encontraron productos que coincidan con los filtros aplicados');
+      if (productosReorganizados.isEmpty &&
+          (_searchQuery.isNotEmpty || _filtroEstadoStock != null)) {
+        _mostrarMensajeNoProductos(
+            'No se encontraron productos que coincidan con los filtros aplicados');
       }
-      
     } catch (e) {
       setState(() {
         _errorProductos = e.toString();
@@ -243,27 +249,30 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
 
     try {
       final List<Producto> todosProductos = <Producto>[];
-      
+
       // Cargar productos de cada sucursal utilizando el nuevo método getProductosConStockBajo
       final List<Future> futures = <Future>[];
-      
+
       for (final Sucursal sucursal in _sucursales) {
-        futures.add(_cargarProductosConBajoStockDeSucursal(sucursal, todosProductos));
+        futures.add(
+            _cargarProductosConBajoStockDeSucursal(sucursal, todosProductos));
       }
-      
+
       // Esperar a que todas las peticiones terminen
       await Future.wait(futures);
-      
+
       // Consolidar productos para evitar duplicados
-      final List<Producto> productosUnicos = StockUtils.consolidarProductosUnicos(todosProductos);
-      
+      final List<Producto> productosUnicos =
+          StockUtils.consolidarProductosUnicos(todosProductos);
+
       // Priorizar productos con problemas más graves
-      final List<Producto> productosPrioritarios = StockUtils.reorganizarProductosPorPrioridad(
+      final List<Producto> productosPrioritarios =
+          StockUtils.reorganizarProductosPorPrioridad(
         productosUnicos,
         stockPorSucursal: _stockPorSucursal,
         sucursales: _sucursales,
       );
-      
+
       setState(() {
         _productosBajoStock = productosPrioritarios;
         _isLoadingProductos = false;
@@ -275,31 +284,30 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       });
     }
   }
-  
+
   // Método auxiliar para cargar productos con stock bajo de una sucursal
   Future<void> _cargarProductosConBajoStockDeSucursal(
       Sucursal sucursal, List<Producto> todosProductos) async {
     try {
       // Cargar productos con stock bajo usando paginación completa
       await _cargarTodosProductosConCondicion(
-        sucursal: sucursal,
-        todosProductos: todosProductos,
-        condicion: 'stockBajo',
-        mensaje: 'con stock bajo'
-      );
-      
+          sucursal: sucursal,
+          todosProductos: todosProductos,
+          condicion: 'stockBajo',
+          mensaje: 'con stock bajo');
+
       // Cargar productos agotados (pueden solaparse con los de stock bajo)
       await _cargarTodosProductosConCondicion(
-        sucursal: sucursal,
-        todosProductos: todosProductos,
-        condicion: 'agotados',
-        mensaje: 'agotados'
-      );
+          sucursal: sucursal,
+          todosProductos: todosProductos,
+          condicion: 'agotados',
+          mensaje: 'agotados');
     } catch (e) {
-      debugPrint('Error al cargar productos de sucursal ${sucursal.nombre}: $e');
+      debugPrint(
+          'Error al cargar productos de sucursal ${sucursal.nombre}: $e');
     }
   }
-  
+
   // Método para cargar todos los productos de una sucursal que cumplan una condición específica
   Future<void> _cargarTodosProductosConCondicion({
     required Sucursal sucursal,
@@ -312,12 +320,12 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     const int tamanioPagina = 100;
     bool hayMasPaginas = true;
     final List<Producto> productosObtenidos = <Producto>[];
-    
+
     try {
       // Iteramos mientras haya más páginas
       while (hayMasPaginas) {
         PaginatedResponse<Producto> respuesta;
-        
+
         // Según la condición, usamos el método API correspondiente
         if (condicion == 'stockBajo') {
           respuesta = await api.productos.getProductosConStockBajo(
@@ -340,19 +348,19 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
             pageSize: tamanioPagina,
           );
         }
-        
+
         // Guardamos los productos obtenidos
         productosObtenidos.addAll(respuesta.items);
-        
+
         // Procesamos los productos de esta página
         if (respuesta.items.isNotEmpty) {
           _procesarProductosPorSucursal(respuesta.items, sucursal);
           todosProductos.addAll(respuesta.items);
         }
-        
+
         // Verificamos si hay más páginas
         hayMasPaginas = paginaActual < respuesta.paginacion.totalPages;
-        
+
         // Si hay más páginas, incrementamos la página actual
         if (hayMasPaginas) {
           paginaActual++;
@@ -360,10 +368,12 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
           break;
         }
       }
-      
-      debugPrint('Cargados ${productosObtenidos.length} productos $mensaje de ${sucursal.nombre}');
+
+      debugPrint(
+          'Cargados ${productosObtenidos.length} productos $mensaje de ${sucursal.nombre}');
     } catch (e) {
-      debugPrint('Error al cargar productos $mensaje de sucursal ${sucursal.nombre}: $e');
+      debugPrint(
+          'Error al cargar productos $mensaje de sucursal ${sucursal.nombre}: $e');
     }
   }
 
@@ -438,7 +448,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       _selectedSucursal = sucursal;
       _currentPage = 1; // Volver a la primera página al cambiar de sucursal
       _filtroEstadoStock = null; // Resetear filtro al cambiar de sucursal
-      _mostrarVistaConsolidada = false; // Desactivar vista consolidada al cambiar de sucursal
+      _mostrarVistaConsolidada =
+          false; // Desactivar vista consolidada al cambiar de sucursal
     });
     _cargarProductos(sucursal.id);
   }
@@ -499,26 +510,26 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   void _filtrarConsolidadoPorEstado(StockStatus estado) {
     setState(() {
       // Si ya tenemos todos los productos cargados, simplemente filtramos
-      _productosBajoStock = StockUtils.filtrarPorEstadoStock(
-        _productosBajoStock, 
-        estado
-      );
+      _productosBajoStock =
+          StockUtils.filtrarPorEstadoStock(_productosBajoStock, estado);
     });
-    
+
     // Mostrar mensaje si no hay productos de este tipo
     if (_productosBajoStock.isEmpty) {
-      _mostrarMensajeNoProductos('No se encontraron productos ${estado == StockStatus.agotado ? 'agotados' : 'con stock bajo'} en ninguna sucursal');
+      _mostrarMensajeNoProductos(
+          'No se encontraron productos ${estado == StockStatus.agotado ? 'agotados' : 'con stock bajo'} en ninguna sucursal');
       _reiniciarFiltrosConsolidados(); // Reiniciar si no hay productos
     }
   }
-  
+
   // Reiniciar filtros en la vista consolidada
   void _reiniciarFiltrosConsolidados() {
     _cargarProductosTodasSucursales(); // Volver a cargar todos los productos
   }
-  
+
   // Widget para botones de acción rápida
-  Widget _buildActionButton(String label, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildActionButton(
+      String label, IconData icon, Color color, VoidCallback onTap) {
     return ElevatedButton.icon(
       icon: FaIcon(
         icon,
@@ -546,8 +557,9 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
 
   // Método para limpiar todos los filtros aplicados
   void _limpiarFiltros() {
-    debugPrint('Ejecutando _limpiarFiltros() - Limpiando todos los filtros aplicados');
-    
+    debugPrint(
+        'Ejecutando _limpiarFiltros() - Limpiando todos los filtros aplicados');
+
     // Limpiar campo de búsqueda físicamente si existe un controlador de texto
     _searchController.clear();
 
@@ -556,16 +568,16 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       _filtroEstadoStock = null;
       _currentPage = 1;
     });
-    
+
     debugPrint('Filtros limpiados. Recargando productos...');
-    
+
     // Recargar productos sin filtros
     if (_mostrarVistaConsolidada) {
       _cargarProductosTodasSucursales();
     } else if (_selectedSucursalId.isNotEmpty) {
       _cargarProductos(_selectedSucursalId);
     }
-    
+
     // Mostrar mensaje confirmando que los filtros fueron limpiados
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -587,8 +599,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     final List<Producto> productosAMostrar =
         _mostrarVistaConsolidada ? _productosBajoStock : _productosFiltrados;
 
-    if (productosAMostrar.isNotEmpty) {
-    }
+    if (productosAMostrar.isNotEmpty) {}
 
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
@@ -708,7 +719,10 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                 borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide.none,
                               ),
-                              contentPadding: const EdgeInsets.symmetric(),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16.0, // Espaciado horizontal
+                                vertical: 12.0, // Espaciado vertical
+                              ),
                             ),
                             style: const TextStyle(color: Colors.white),
                             onChanged: (String value) {
@@ -786,9 +800,10 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                       ),
                     ),
                   ],
-                  
+
                   // Botones de acción rápida en vista consolidada
-                  if (_mostrarVistaConsolidada && _productosBajoStock.isNotEmpty) ...<Widget>[
+                  if (_mostrarVistaConsolidada &&
+                      _productosBajoStock.isNotEmpty) ...<Widget>[
                     const SizedBox(height: 16),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -806,14 +821,16 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                             'Ver solo agotados',
                             FontAwesomeIcons.ban,
                             Colors.red.shade800,
-                            () => _filtrarConsolidadoPorEstado(StockStatus.agotado),
+                            () => _filtrarConsolidadoPorEstado(
+                                StockStatus.agotado),
                           ),
                           const SizedBox(width: 8),
                           _buildActionButton(
                             'Ver solo stock bajo',
                             FontAwesomeIcons.triangleExclamation,
                             const Color(0xFFE31E24),
-                            () => _filtrarConsolidadoPorEstado(StockStatus.stockBajo),
+                            () => _filtrarConsolidadoPorEstado(
+                                StockStatus.stockBajo),
                           ),
                           const SizedBox(width: 8),
                           _buildActionButton(
@@ -858,7 +875,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                   stockPorSucursal: _stockPorSucursal,
                                   sucursales: _sucursales,
                                   esVistaGlobal: true,
-                                  filtrosActivos: true, // La vista global siempre tiene filtros implícitos
+                                  filtrosActivos:
+                                      true, // La vista global siempre tiene filtros implícitos
                                 )
                               : TableProducts(
                                   selectedSucursalId: _selectedSucursalId,
@@ -875,7 +893,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                   sortBy: _sortBy,
                                   sortOrder: _order,
                                   // Indicar si hay filtros aplicados en esta vista
-                                  filtrosActivos: _searchQuery.isNotEmpty || _filtroEstadoStock != null,
+                                  filtrosActivos: _searchQuery.isNotEmpty ||
+                                      _filtroEstadoStock != null,
                                 ),
                         ),
 
