@@ -7,6 +7,7 @@ export class CorsMiddleware {
 
   static readonly requests = cors({
     exposedHeaders: ['Authorization'],
+    credentials: true,
     origin: (origin, callback) => {
       if (origin === undefined) {
         callback(null, true)

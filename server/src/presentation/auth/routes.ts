@@ -25,7 +25,7 @@ export class AuthRoutes {
 
     router.post('/refresh', authController.refreshToken)
 
-    router.get(
+    router.post(
       '/testsession',
       [AuthMiddleware.requests],
       authController.testSession

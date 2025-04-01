@@ -11,7 +11,7 @@ export class CookieTokenAdapter {
     const refreshTokenCookie = serialize(refreshTokenCookieName, refreshToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: isProduction ? 'strict' : 'lax',
       maxAge: 1000 * 60 * 60 * 24 * 7,
       path: '/'
     })
