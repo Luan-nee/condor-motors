@@ -7,7 +7,7 @@ export class ProductosRouter {
 
     const productosController = new ProductosController()
 
-    router.get('/detalles', productosController.detalles)
+    router.get('/:id/detalles', productosController.detalles)
 
     return router
   }

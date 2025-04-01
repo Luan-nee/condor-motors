@@ -1,5 +1,6 @@
 import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
+import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { GetByIdData } from '@/domain/use-cases/entities/productos/get-bt-id-dates-use-case'
 import type { Request, Response } from 'express'
 
@@ -9,17 +10,16 @@ export class ProductosController {
       CustomResponse.invalidAccessToken({ res })
     }
 
-    if (req.idProducto === undefined) {
-      CustomResponse.badRequest({ res, error: 'Id de producto Invalido' })
+    const [error, numericIdDto] = NumericIdDto.create(req.params)
+    if (error != null || numericIdDto == null) {
+      CustomResponse.badRequest({ res, error })
       return
     }
-
-    const { idProducto } = req
 
     const getProdcutoById = new GetByIdData()
 
     getProdcutoById
-      .execute(idProducto)
+      .execute(numericIdDto.id)
       .then((data) => {
         CustomResponse.success({
           res,
