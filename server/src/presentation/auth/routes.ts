@@ -25,6 +25,8 @@ export class AuthRoutes {
 
     router.post('/refresh', authController.refreshToken)
 
+    router.post('/logout', [AuthMiddleware.requests], authController.logoutUser)
+
     router.post(
       '/testsession',
       [AuthMiddleware.requests],

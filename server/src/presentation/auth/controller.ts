@@ -140,5 +140,19 @@ export class AuthController {
       })
   }
 
+  logoutUser = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    res.clearCookie(refreshTokenCookieName)
+
+    CustomResponse.success({
+      res,
+      message: 'Sesión terminada exitosamente'
+    })
+  }
+
   // authorize = (req: Request, res: Response) => {}
 }
