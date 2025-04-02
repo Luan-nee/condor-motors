@@ -10,6 +10,7 @@ export class CategoriasRoutes {
     router.get('/:id', categoriasController.getById)
     router.get('/', categoriasController.getAll)
     router.patch('/:id', categoriasController.update)
+    router.delete('/id', categoriasController.delete)
     return router
   }
 }

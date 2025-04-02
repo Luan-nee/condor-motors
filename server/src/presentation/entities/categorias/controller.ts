@@ -9,6 +9,7 @@ import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { GetCategoriaById } from '@/domain/use-cases/entities/categorias/get-categoria-by-id.use-case'
 import { UpdateCategoriaDto } from '@/domain/dtos/entities/categorias/update-categoria.dto'
 import { UpdateCategoria } from '@/domain/use-cases/entities/categorias/update-categorias.use-case'
+import { DeleteCategoria } from '@/domain/use-cases/entities/categorias/delete.use-case'
 
 export class CategoriasController {
   create = (req: Request, res: Response) => {
@@ -117,6 +118,33 @@ export class CategoriasController {
       .execute(updateCategoriaDto, numericIdDto)
       .then((categoria) => {
         const message = `La categoria con id ${categoria.id} ha sido actualizada`
+        CustomResponse.success({ res, message, data: categoria })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
+
+  delete = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [error, numericIdDto] = NumericIdDto.create(req.params)
+
+    if (error !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: 'Id invalido' })
+      return
+    }
+
+    const deleteCategoria = new DeleteCategoria()
+
+    deleteCategoria
+      .execute(numericIdDto)
+      .then((categoria) => {
+        const message = ` Categoria con el ID : ${categoria.id} eliminado`
+
         CustomResponse.success({ res, message, data: categoria })
       })
       .catch((error: unknown) => {
