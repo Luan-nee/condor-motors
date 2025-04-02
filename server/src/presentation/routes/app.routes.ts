@@ -1,13 +1,20 @@
-import { Router } from 'express'
+import { Router, static as ExpressStatic } from 'express'
 import path from 'path'
 
 export class AppRoutes {
   static get routes() {
     const router = Router()
 
-    router.get('/', (_req, res) => {
-      res.sendFile(path.join(process.cwd(), 'storage/app', 'index.html'))
-    })
+    router.use(
+      '/',
+      ExpressStatic(path.join(process.cwd(), 'storage/app/'), {
+        setHeaders: (_res, filePath) => {
+          if (filePath.endsWith('.gitignore')) {
+            return false
+          }
+        }
+      })
+    )
 
     return router
   }
