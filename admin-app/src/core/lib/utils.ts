@@ -8,6 +8,9 @@ export const debounce = (callback: (...args: any[]) => void, delay: number) => {
   }
 }
 
+export const delay = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms))
+
 export const selectWith = <T extends HTMLElement>(
   selector: string,
   parent: ParentNode = document
