@@ -1,4 +1,4 @@
-import { permissionCodes } from '@/consts'
+import { orderValues, permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
@@ -11,8 +11,9 @@ import {
   totalesVentaTable,
   ventasTable
 } from '@/db/schema'
+import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { desc, eq } from 'drizzle-orm'
+import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm'
 
 export class GetVentas {
   private readonly authPayload: AuthPayload
@@ -54,11 +55,63 @@ export class GetVentas {
     }
   }
 
+  private readonly validSortBy = {
+    declarada: ventasTable.declarada,
+    anulada: ventasTable.anulada,
+    estadoDocFacturacion: estadosDocFacturacionTable.nombre,
+    totalVenta: totalesVentaTable.totalVenta,
+    documentoFacturacion: docsFacturacionTable.id,
+    serieDocumento: ventasTable.serieDocumento,
+    numeroDocumento: ventasTable.numeroDocumento,
+    nombreEmpleado: empleadosTable.nombre,
+    // denominacionCliente: clientesTable.denominacion,
+    tipoDocumentoCliente: tiposDocFacturacionTable.nombre,
+    fechaEmision: ventasTable.fechaEmision,
+    fechaCreacion: ventasTable.fechaCreacion
+  } as const
+
   constructor(authPayload: AuthPayload) {
     this.authPayload = authPayload
   }
 
-  private async getVentas(sucursalId: SucursalIdType) {
+  private isValidSortBy(
+    sortBy: string
+  ): sortBy is keyof typeof this.validSortBy {
+    return Object.keys(this.validSortBy).includes(sortBy)
+  }
+
+  private getSortByColumn(sortBy: string) {
+    if (
+      Object.keys(this.validSortBy).includes(sortBy) &&
+      this.isValidSortBy(sortBy)
+    ) {
+      return this.validSortBy[sortBy]
+    }
+
+    return this.validSortBy.fechaCreacion
+  }
+
+  private async getVentas(queriesDto: QueriesDto, sucursalId: SucursalIdType) {
+    const sortByColumn = this.getSortByColumn(queriesDto.sort_by)
+
+    const order =
+      queriesDto.order === orderValues.asc
+        ? asc(sortByColumn)
+        : desc(sortByColumn)
+
+    const searchCondition =
+      queriesDto.search.length > 0
+        ? or(
+            // ilike(clientesTable.denominacion, `%${queriesDto.search}%`),
+            // ilike(clientesTable.numeroDocumento, `%${queriesDto.search}%`),
+            ilike(ventasTable.serieDocumento, `%${queriesDto.search}%`),
+            ilike(empleadosTable.nombre, `%${queriesDto.search}%`),
+            ilike(empleadosTable.dni, `%${queriesDto.search}%`)
+          )
+        : undefined
+
+    const whereCondition = searchCondition
+
     const ventas = await db
       .select(this.selectFields)
       .from(ventasTable)
@@ -83,8 +136,10 @@ export class GetVentas {
         estadosDocFacturacionTable,
         eq(docsFacturacionTable.estadoId, estadosDocFacturacionTable.id)
       )
-      .where(eq(ventasTable.sucursalId, sucursalId))
-      .orderBy(desc(ventasTable.fechaCreacion))
+      .where(and(eq(ventasTable.sucursalId, sucursalId), whereCondition))
+      .orderBy(order)
+      .limit(queriesDto.page_size)
+      .offset(queriesDto.page_size * (queriesDto.page - 1))
 
     const mappedVentas = ventas.map((venta) => {
       if (venta.documentoFacturacion?.linkPdf != null) {
@@ -135,6 +190,70 @@ export class GetVentas {
     }
   }
 
+  private getMetadata() {
+    return {
+      sortByOptions: Object.keys(this.validSortBy)
+    }
+  }
+
+  private async getPagination(
+    queriesDto: QueriesDto,
+    sucursalId: SucursalIdType
+  ) {
+    const searchCondition =
+      queriesDto.search.length > 0
+        ? or(
+            // ilike(clientesTable.denominacion, `%${queriesDto.search}%`),
+            // ilike(clientesTable.numeroDocumento, `%${queriesDto.search}%`),
+            ilike(ventasTable.serieDocumento, `%${queriesDto.search}%`),
+            ilike(empleadosTable.nombre, `%${queriesDto.search}%`),
+            ilike(empleadosTable.dni, `%${queriesDto.search}%`)
+          )
+        : undefined
+
+    const whereCondition = searchCondition
+
+    const results = await db
+      .select({ count: count(ventasTable.id) })
+      .from(ventasTable)
+      .innerJoin(
+        totalesVentaTable,
+        eq(ventasTable.id, totalesVentaTable.ventaId)
+      )
+      .innerJoin(
+        tiposDocFacturacionTable,
+        eq(ventasTable.tipoDocumentoId, tiposDocFacturacionTable.id)
+      )
+      .innerJoin(empleadosTable, eq(ventasTable.empleadoId, empleadosTable.id))
+      .innerJoin(
+        sucursalesTable,
+        eq(ventasTable.sucursalId, sucursalesTable.id)
+      )
+      .leftJoin(
+        docsFacturacionTable,
+        eq(ventasTable.id, docsFacturacionTable.ventaId)
+      )
+      .leftJoin(
+        estadosDocFacturacionTable,
+        eq(docsFacturacionTable.estadoId, estadosDocFacturacionTable.id)
+      )
+      .where(and(eq(ventasTable.sucursalId, sucursalId), whereCondition))
+
+    const [totalItems] = results
+
+    const totalPages = Math.ceil(totalItems.count / queriesDto.page_size)
+    const hasNext = queriesDto.page < totalPages && queriesDto.page >= 1
+    const hasPrev = queriesDto.page > 1 && queriesDto.page <= totalPages
+
+    return {
+      totalItems: totalItems.count,
+      totalPages,
+      currentPage: queriesDto.page,
+      hasNext,
+      hasPrev
+    }
+  }
+
   private async validatePermissions(sucursalId: SucursalIdType) {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
@@ -164,11 +283,25 @@ export class GetVentas {
     throw CustomError.forbidden()
   }
 
-  async execute(sucursalId: SucursalIdType) {
+  async execute(queriesDto: QueriesDto, sucursalId: SucursalIdType) {
     await this.validatePermissions(sucursalId)
 
-    const ventas = await this.getVentas(sucursalId)
+    const metadata = this.getMetadata()
+    const pagination = await this.getPagination(queriesDto, sucursalId)
 
-    return ventas
+    const isValidPage =
+      (pagination.currentPage <= pagination.totalPages ||
+        pagination.currentPage >= 1) &&
+      pagination.totalItems > 0
+
+    const results = isValidPage
+      ? await this.getVentas(queriesDto, sucursalId)
+      : []
+
+    return {
+      results,
+      pagination,
+      metadata
+    }
   }
 }

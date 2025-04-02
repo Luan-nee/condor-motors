@@ -3,6 +3,7 @@ import { CustomResponse } from '@/core/responses/custom.response'
 import { CancelVentaDto } from '@/domain/dtos/entities/ventas/cancel-venta.dto'
 import { CreateVentaDto } from '@/domain/dtos/entities/ventas/create-venta.dto'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
+import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { CancelVenta } from '@/domain/use-cases/entities/ventas/cancel-venta.use-case'
 import { CreateVenta } from '@/domain/use-cases/entities/ventas/create-venta.use-case'
 import { GetVentaById } from '@/domain/use-cases/entities/ventas/get-venta-by-id.use-case'
@@ -84,14 +85,25 @@ export class VentasController {
       return
     }
 
+    const [error, queriesDto] = QueriesDto.create(req.query)
+    if (error !== undefined || queriesDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
     const { authPayload, sucursalId } = req
 
     const getVentas = new GetVentas(authPayload)
 
     getVentas
-      .execute(sucursalId)
+      .execute(queriesDto, sucursalId)
       .then((ventas) => {
-        CustomResponse.success({ res, data: ventas })
+        CustomResponse.success({
+          res,
+          data: ventas.results,
+          pagination: ventas.pagination,
+          metadata: ventas.metadata
+        })
       })
       .catch((error: unknown) => {
         handleError(error, res)
