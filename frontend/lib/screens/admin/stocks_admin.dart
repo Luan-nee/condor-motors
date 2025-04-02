@@ -149,8 +149,18 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                   ? 'Ver vista individual'
                   : 'Ver vista consolidada',
             ),
-            IconButton(
-              icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 18),
+            ElevatedButton.icon(
+              icon: const FaIcon(FontAwesomeIcons.arrowsRotate,
+                  size: 16, color: Colors.white),
+              label: const Text('Actualizar stock'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0075FF),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+              ),
               onPressed: () {
                 if (stockProvider.mostrarVistaConsolidada) {
                   stockProvider.cargarProductosTodasSucursales();
@@ -162,8 +172,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                   }
                 }
               },
-              tooltip: 'Actualizar',
             ),
+            const SizedBox(width: 16),
           ],
         ),
         body: Row(
