@@ -86,7 +86,53 @@ export class GetVentas {
       .where(eq(ventasTable.sucursalId, sucursalId))
       .orderBy(desc(ventasTable.fechaCreacion))
 
-    return ventas
+    const mappedVentas = ventas.map((venta) => {
+      if (venta.documentoFacturacion?.linkPdf != null) {
+        const {
+          documentoFacturacion: { linkPdf }
+        } = venta
+
+        const { linkPdfA4, linkPdfTicket } = this.getPdfUrls(linkPdf)
+
+        return {
+          ...venta,
+          documentoFacturacion: {
+            ...venta.documentoFacturacion,
+            linkPdfA4,
+            linkPdfTicket
+          }
+        }
+      }
+
+      return venta
+    })
+
+    return mappedVentas
+  }
+
+  private getPdfUrls(url: string) {
+    try {
+      const urlObj = new URL(url)
+      const baseUrl = `${urlObj.origin}${urlObj.pathname}`
+
+      const urlObjPdf = new URL(baseUrl)
+      urlObjPdf.searchParams.set('type', 'a4')
+      const linkPdfA4 = urlObjPdf.toString()
+
+      const urlObjTicket = new URL(baseUrl)
+      urlObjTicket.searchParams.set('type', 'ticket')
+      const linkPdfTicket = urlObjTicket.toString()
+
+      return {
+        linkPdfA4,
+        linkPdfTicket
+      }
+    } catch {
+      return {
+        linkPdfA4: null,
+        linkPdfTicket: null
+      }
+    }
   }
 
   private async validatePermissions(sucursalId: SucursalIdType) {

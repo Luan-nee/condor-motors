@@ -152,7 +152,7 @@ export class GetVentaById {
       throw CustomError.notFound('La venta no se encontró')
     }
 
-    const [venta] = ventas
+    const [ventaFromDb] = ventas
 
     const detallesVenta = await db
       .select(this.detallesVentaSelectFields)
@@ -161,11 +161,57 @@ export class GetVentaById {
         tiposTaxTable,
         eq(detallesVentaTable.tipoTaxId, tiposTaxTable.id)
       )
-      .where(eq(detallesVentaTable.ventaId, venta.id))
+      .where(eq(detallesVentaTable.ventaId, ventaFromDb.id))
+
+    const venta = (() => {
+      if (ventaFromDb.documentoFacturacion?.linkPdf != null) {
+        const {
+          documentoFacturacion: { linkPdf }
+        } = ventaFromDb
+
+        const { linkPdfA4, linkPdfTicket } = this.getPdfUrls(linkPdf)
+
+        return {
+          ...ventaFromDb,
+          documentoFacturacion: {
+            ...ventaFromDb.documentoFacturacion,
+            linkPdfA4,
+            linkPdfTicket
+          }
+        }
+      } else {
+        return ventaFromDb
+      }
+    })()
 
     return {
       ...venta,
       detallesVenta
+    }
+  }
+
+  private getPdfUrls(url: string) {
+    try {
+      const urlObj = new URL(url)
+      const baseUrl = `${urlObj.origin}${urlObj.pathname}`
+
+      const urlObjPdf = new URL(baseUrl)
+      urlObjPdf.searchParams.set('type', 'a4')
+      const linkPdfA4 = urlObjPdf.toString()
+
+      const urlObjTicket = new URL(baseUrl)
+      urlObjTicket.searchParams.set('type', 'ticket')
+      const linkPdfTicket = urlObjTicket.toString()
+
+      return {
+        linkPdfA4,
+        linkPdfTicket
+      }
+    } catch {
+      return {
+        linkPdfA4: null,
+        linkPdfTicket: null
+      }
     }
   }
 
