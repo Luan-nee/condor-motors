@@ -50,3 +50,4 @@ export interface FileEntity {
 }
 
 export type GetFilesApi = Method<void, FileEntity[], ApiError>
+export type DeleteFileApi = Method<{ id: number }, { id: number }, ApiError>

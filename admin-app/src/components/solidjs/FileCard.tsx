@@ -6,9 +6,10 @@ import type { FileEntity } from '@/types/archivos'
 
 interface Props {
   file: FileEntity
+  deleteItem: () => void
 }
 
-export const FileCard = ({ file }: Props) => {
+export const FileCard = ({ file, deleteItem }: Props) => {
   return (
     <div
       class="rounded shadow p-3 text-sm space-y-2 transition-colors border
@@ -64,6 +65,9 @@ export const FileCard = ({ file }: Props) => {
           class="border border-white/10 p-1.5 rounded text-gray-400
             hover:bg-white/10 hover:text-white
             transition-colors"
+          onclick={() => {
+            deleteItem()
+          }}
         >
           <TrashIcon class="w-5 h-5" />
         </button>

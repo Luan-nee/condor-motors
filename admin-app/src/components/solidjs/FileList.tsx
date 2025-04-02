@@ -1,4 +1,4 @@
-import { getFiles } from '@/core/controllers/archivos.controller'
+import { deleteFile, getFiles } from '@/core/controllers/archivos.controller'
 import { FileCard } from './FileCard'
 import { createEffect, createSignal, onMount } from 'solid-js'
 import type { FileEntity } from '@/types/archivos'
@@ -19,11 +19,14 @@ export const FetchButton = () => {
 }
 
 export const FileList = () => {
-  const [files, setFiles] = createSignal<FileEntity[] | null>(null)
-  const [error, setError] = createSignal<string | null>(null)
+  const [fetched, setFetched] = createSignal<boolean>(false)
+  const [files, setFiles] = createSignal<FileEntity[]>([])
+  const [error, setError] = createSignal<string>('')
 
   const fetchData = async () => {
     const { data: apiData, error: apiError } = await getFiles()
+
+    setFetched(true)
 
     if (apiError != null) {
       setError(apiError.message)
@@ -39,11 +42,28 @@ export const FileList = () => {
     }
   })
 
+  const deleteItem = (id: number) => async () => {
+    const { data: apiData, error: apiError } = await deleteFile({ id })
+
+    if (apiError != null) {
+      setError(apiError.message)
+      return
+    }
+
+    const newData = files().filter((f) => f.id !== id)
+    setFiles(newData)
+  }
+
   return (
     <>
-      {error() != null && error()}
-      {files() != null && files()?.map((item) => <FileCard file={item} />)}
-      {files() == null && (
+      {error().length > 0 && (
+        <div class="text-sm text-red-400 font-medium">{error()}</div>
+      )}
+      {files().length > 0 &&
+        files().map((item) => (
+          <FileCard file={item} deleteItem={deleteItem(item.id)} />
+        ))}
+      {!fetched() && (
         <div class="flex flex-col justify-center items-center gap-4 h-full text-white/70">
           <BubbleLoadingIcon class="w-8 h-8" />
           <p>Loading files</p>
