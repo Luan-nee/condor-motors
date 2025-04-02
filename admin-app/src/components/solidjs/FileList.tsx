@@ -1,14 +1,28 @@
 import { getFiles } from '@/core/controllers/archivos.controller'
 import { FileCard } from './FileCard'
-import { createSignal, onMount } from 'solid-js'
+import { createEffect, createSignal, onMount } from 'solid-js'
 import type { FileEntity } from '@/types/archivos'
 import { BubbleLoadingIcon } from './icons/BubbleLoadingIcon'
+import { RefreshIcon } from './icons/RefreshIcon'
+
+const [fetchTrigger, setFetchTrigger] = createSignal(0)
+
+export const FetchButton = () => {
+  return (
+    <button
+      onClick={() => setFetchTrigger(fetchTrigger() + 1)}
+      class="text-white/50 hover:text-white/70 p-2 hover:bg-white/5 rounded"
+    >
+      <RefreshIcon class="w-6 h-6" />
+    </button>
+  )
+}
 
 export const FileList = () => {
   const [files, setFiles] = createSignal<FileEntity[] | null>(null)
   const [error, setError] = createSignal<string | null>(null)
 
-  onMount(async () => {
+  const fetchData = async () => {
     const { data: apiData, error: apiError } = await getFiles()
 
     if (apiError != null) {
@@ -17,6 +31,12 @@ export const FileList = () => {
     }
 
     setFiles(apiData)
+  }
+
+  createEffect(() => {
+    if (fetchTrigger() >= 0) {
+      fetchData()
+    }
   })
 
   return (

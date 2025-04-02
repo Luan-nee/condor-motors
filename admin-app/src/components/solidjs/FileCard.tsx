@@ -32,30 +32,32 @@ export const FileCard = ({ file }: Props) => {
             </span>
           </div>
           <div>
-            <span class="text-gray-500">Tamaño:</span>
+            <span class="text-gray-500 mr-1">Tamaño:</span>
             <span>{(Number(file.size) / (1024 * 1024)).toFixed(2)} MB</span>
           </div>
         </div>
       </div>
       <div>
-        <span class="text-gray-500 block">Nombre:</span>
-        <span>{file.nombre}</span>
+        <p class="text-gray-500 block">Nombre:</p>
+        <p class="overflow-hidden overflow-ellipsis">{file.nombre}</p>
       </div>
       <div>
-        <span class="text-gray-500 block">Archivo:</span>
-        <span>{file.filename}</span>
+        <p class="text-gray-500 block">Archivo:</p>
+        <p class="overflow-hidden overflow-ellipsis">{file.filename}</p>
       </div>
       <div>
-        <span class="text-gray-500 block">Subido:</span>
-        <span>{new Date(file.fechaCreacion).toLocaleString()}</span>
+        <p class="text-gray-500 block">Subido:</p>
+        <p class="overflow-hidden overflow-ellipsis">
+          {new Date(file.fechaCreacion).toLocaleString()}
+        </p>
       </div>
       <div>
-        <span class="text-gray-500 block">Autor:</span>
-        <span>{file.user.nombre}</span>
+        <p class="text-gray-500 block">Autor:</p>
+        <p>{file.user.nombre}</p>
       </div>
       <div>
-        <span class="text-gray-500">Visible para todos:</span>
-        <span>{file.visible ? 'Si' : 'No'}</span>
+        <p class="text-gray-500 mr-1">Visible para todos:</p>
+        <p>{file.visible ? 'Si' : 'No'}</p>
       </div>
       <div class="flex flex-wrap gap-2 justify-end">
         <button

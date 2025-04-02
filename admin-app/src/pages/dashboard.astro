@@ -4,7 +4,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro'
 import Button from '@/components/atoms/Button.astro'
 import Input from '@/components/atoms/Input.astro'
 import Label from '@/components/atoms/Label.astro'
-import { FileList } from '@/components/solidjs/FileList'
+import { FileList, FetchButton } from '@/components/solidjs/FileList'
 ---
 
 <BaseLayout title="Dashboard">
@@ -14,8 +14,9 @@ import { FileList } from '@/components/solidjs/FileList'
         class="left-2 top-2 bottom-2 w-[280px] rounded-lg h-full
         bg-gray-300/5 backdrop-blur-md border border-white/10 flex flex-col justify-between"
       >
-        <header class="p-3">
+        <header class="p-3 flex items-center justify-between">
           <h2 class="text-xl font-medium">Archivos</h2>
+          <FetchButton client:visible />
         </header>
         <div class="grow flex flex-col gap-3 px-3 overflow-y-auto">
           <FileList client:load />
