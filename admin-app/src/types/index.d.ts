@@ -75,3 +75,9 @@ type RefreshAccessToken = MethodAll<
   TestUserSuccess & { accessToken: string },
   ApiError
 >
+
+type HttpRequestOptions = ((accessToken: string) => RequestInit) | RequestInit
+
+type HttpRequestResult<T> = Promise<
+  ResultAll<T, { message: string; action?: () => void }>
+>

@@ -28,7 +28,11 @@ export interface UploadApkFileDto {
   appFile: File
 }
 
-export type UploadApkFile = Method<UploadApkFileDto, SuccessUploadApk, ApiError>
+export type UploadApkFile = MethodAll<
+  UploadApkFileDto,
+  SuccessUploadApk,
+  ApiError
+>
 
 export interface FileEntity {
   id: number
@@ -49,5 +53,5 @@ export interface FileEntity {
   }
 }
 
-export type GetFilesApi = Method<void, FileEntity[], ApiError>
-export type DeleteFileApi = Method<{ id: number }, { id: number }, ApiError>
+export type GetFilesApi = MethodAll<void, FileEntity[], ApiError>
+export type DeleteFileApi = MethodAll<{ id: number }, { id: number }, ApiError>

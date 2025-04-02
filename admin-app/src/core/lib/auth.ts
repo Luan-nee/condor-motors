@@ -1,34 +1,6 @@
 import { deleteCookie, getCookie, setCookie } from '@/core/lib/cookies'
 import { accessTokenCookieName, apiBaseUrl } from '@/core/consts'
-import { customFetch } from '../network/request'
-import { tryCatchAll } from './try-catch'
-
-const resToData = async (res: Response) => {
-  const { data: json, error: jsonError } = await tryCatchAll(async () => {
-    const textResponse = await res.text()
-    return JSON.parse(textResponse)
-  })
-
-  if (jsonError != null) {
-    return {
-      error: {
-        message: 'Unexpected format response'
-      }
-    }
-  }
-
-  if (json.status !== 'success') {
-    return {
-      error: {
-        message: String(json.error)
-      }
-    }
-  }
-
-  return {
-    data: json.data
-  }
-}
+import { customFetch, resToData } from '@/core/lib/network'
 
 export const refreshAccessToken: RefreshAccessToken = async () => {
   const { res, fetchError } = await customFetch(
@@ -70,6 +42,22 @@ export const refreshAccessToken: RefreshAccessToken = async () => {
       user: data
     }
   }
+}
+
+export async function getAccessToken() {
+  const accessTokenCookie = getCookie(accessTokenCookieName)
+
+  if (accessTokenCookie != null && accessTokenCookie !== '') {
+    return { data: accessTokenCookie }
+  }
+
+  const { data, error } = await refreshAccessToken()
+
+  if (error != null) {
+    return { error }
+  }
+
+  return { data: data.accessToken }
 }
 
 export const testSession: TestSession = async () => {
