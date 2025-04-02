@@ -209,13 +209,17 @@ class DashboardProvider extends ChangeNotifier {
 
   /// Obtiene el promedio de ventas de los últimos meses
   double getVentasPromedio() {
-    if (_ventasMensuales.isEmpty) return 0;
+    if (_ventasMensuales.isEmpty) {
+      return 0;
+    }
     return _ventasMensuales.reduce((a, b) => a + b) / _ventasMensuales.length;
   }
 
   /// Calcula el porcentaje de crecimiento comparando el último mes con el anterior
   String getCrecimientoPorcentual() {
-    if (_ventasMensuales.length < 2) return "0%";
+    if (_ventasMensuales.length < 2) {
+      return "0%";
+    }
 
     final double ultimoMes = _ventasMensuales.last;
     final double penultimoMes = _ventasMensuales[_ventasMensuales.length - 2];
@@ -228,7 +232,9 @@ class DashboardProvider extends ChangeNotifier {
 
   /// Proyecta las ventas para el próximo mes basado en la tendencia
   double getProyeccionVentas() {
-    if (_ventasMensuales.length < 2) return _totalVentas;
+    if (_ventasMensuales.length < 2) {
+      return _totalVentas;
+    }
 
     // Usamos una proyección lineal simple basada en los últimos dos meses
     final double ultimoMes = _ventasMensuales.last;

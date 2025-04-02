@@ -492,7 +492,7 @@ class ProductosApi {
   /// [productoId] ID del producto
   /// [nuevoStock] Nueva cantidad de stock
   ///
-  /// TODO: Este método no debe usarse directamente para actualizar el stock.
+  /// Este método no debe usarse directamente para actualizar el stock.
   /// La forma correcta de gestionar el stock es a través del endpoint de inventarios:
   /// - Para incrementar stock: usar el método agregarStock() que utiliza el endpoint de entradas de inventario.
   /// - Para decrementar stock: crear un método similar que utilice el endpoint de salidas de inventario.

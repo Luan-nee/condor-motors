@@ -1,22 +1,37 @@
+import 'dart:math' show min;
+
 import 'package:condorsmotors/models/ventas.model.dart';
+import 'package:condorsmotors/providers/admin/ventas.provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 
 class VentaDetalleDialog extends StatefulWidget {
   final dynamic venta;
   final bool isLoadingFullData;
+  final Function(String)? onDeclararPressed;
 
   const VentaDetalleDialog({
     super.key,
     required this.venta,
     this.isLoadingFullData = false,
+    this.onDeclararPressed,
   });
 
   @override
   State<VentaDetalleDialog> createState() => _VentaDetalleDialogState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('venta', venta))
+      ..add(DiagnosticsProperty<bool>('isLoadingFullData', isLoadingFullData))
+      ..add(ObjectFlagProperty<Function(String)?>.has(
+          'onDeclararPressed', onDeclararPressed));
+  }
 }
 
 class _VentaDetalleDialogState extends State<VentaDetalleDialog>
@@ -30,6 +45,10 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
   // Controlador de animación
   late AnimationController _animationController;
   late Animation<double> _opacityAnimation;
+
+  // Obtener referencia al provider
+  VentasProvider get _ventasProvider =>
+      Provider.of<VentasProvider>(context, listen: false);
 
   @override
   void initState() {
@@ -56,8 +75,9 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
     // Si cambiaron los datos o el estado de carga, animar
     if (oldWidget.venta != widget.venta ||
         oldWidget.isLoadingFullData != widget.isLoadingFullData) {
-      _animationController.reset();
-      _animationController.forward();
+      _animationController
+        ..reset()
+        ..forward();
     }
   }
 
@@ -143,19 +163,8 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
     // Calcular el total
     double total = 0.0;
     if (isMap) {
-      // Intentar obtener el total del formato del ejemplo JSON
-      if (widget.venta['totalesVenta'] != null &&
-          widget.venta['totalesVenta']['totalVenta'] != null) {
-        final totalValue = widget.venta['totalesVenta']['totalVenta'];
-        if (totalValue is String) {
-          total = double.tryParse(totalValue) ?? 0.0;
-        } else {
-          total = (totalValue ?? 0.0).toDouble();
-        }
-      } else {
-        // Fallback al método existente
-        total = _calcularTotal(widget.venta);
-      }
+      // Usar el método del provider para calcular total
+      total = _ventasProvider.calcularTotalVenta(widget.venta);
     } else {
       total = widget.venta.calcularTotal();
     }
@@ -165,6 +174,10 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: min(MediaQuery.of(context).size.width * 0.05, 24.0),
+        vertical: min(MediaQuery.of(context).size.height * 0.05, 24.0),
+      ),
       child: AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {
@@ -173,63 +186,68 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
             child: Stack(
               children: [
                 Container(
-                  width: MediaQuery.of(context).size.width * 0.8,
+                  width: min(MediaQuery.of(context).size.width * 0.9, 900),
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.85,
+                  ),
                   padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Cabecera del diálogo
-                      _buildHeader(
-                          serie, numero, idVenta, fechaCreacion, context),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Cabecera del diálogo
+                        _buildHeader(
+                            serie, numero, idVenta, fechaCreacion, context),
 
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                      // Información general
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2D2D2D),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: widget.isLoadingFullData
-                                  ? Colors.black.withOpacity(0.1)
-                                  : Colors.black.withOpacity(0.2),
-                              blurRadius: widget.isLoadingFullData ? 5 : 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                        // Información general
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2D2D2D),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: widget.isLoadingFullData
+                                    ? Colors.black.withOpacity(0.1)
+                                    : Colors.black.withOpacity(0.2),
+                                blurRadius: widget.isLoadingFullData ? 5 : 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: _buildInformacionGeneral(
+                            estadoText,
+                            idVenta,
+                            total,
+                            tipoDocumento,
+                            serie,
+                            numero,
+                            clienteNombre,
+                            isMap,
+                            isVenta,
+                          ),
                         ),
-                        child: _buildInformacionGeneral(
-                          estadoText,
-                          idVenta,
-                          total,
-                          tipoDocumento,
-                          serie,
-                          numero,
-                          clienteNombre,
-                          isMap,
-                          isVenta,
+
+                        const SizedBox(height: 24),
+
+                        // Listado de productos con animación
+                        AnimatedOpacity(
+                          opacity: widget.isLoadingFullData ? 0.7 : 1.0,
+                          duration: const Duration(milliseconds: 300),
+                          child: _buildProductList(detalles, isMap, context),
                         ),
-                      ),
 
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                      // Listado de productos con animación
-                      AnimatedOpacity(
-                        opacity: widget.isLoadingFullData ? 0.7 : 1.0,
-                        duration: const Duration(milliseconds: 300),
-                        child: _buildProductList(detalles, isMap, context),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Botones de acción
-                      _buildActionButtons(context),
-                    ],
+                        // Botones de acción
+                        _buildActionButtons(context),
+                      ],
+                    ),
                   ),
                 ),
 
@@ -291,25 +309,63 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
   // Builder para la cabecera del diálogo
   Widget _buildHeader(String serie, String numero, String idVenta,
       DateTime fechaCreacion, BuildContext context) {
+    // Verificar si existe documento PDF usando el provider
+    final bool tienePdf = _ventasProvider.tienePdfDisponible(widget.venta);
+
+    // Obtener estado de declarada/anulada
+    final bool declarada = widget.venta is Venta
+        ? widget.venta.declarada
+        : (widget.venta is Map ? widget.venta['declarada'] ?? false : false);
+
+    final bool anulada = widget.venta is Venta
+        ? widget.venta.anulada
+        : (widget.venta is Map ? widget.venta['anulada'] ?? false : false);
+
+    // Obtener URL del PDF usando el provider
+    final String? pdfLink = _ventasProvider.obtenerUrlPdf(widget.venta);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFF2D2D2D),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Center(
-                child: FaIcon(
-                  FontAwesomeIcons.fileInvoice,
-                  color: Color(0xFFE31E24),
-                  size: 16,
+            Stack(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D2D2D),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: FaIcon(
+                      tienePdf
+                          ? FontAwesomeIcons.filePdf
+                          : FontAwesomeIcons.fileInvoice,
+                      color: Color(0xFFE31E24),
+                      size: 16,
+                    ),
+                  ),
                 ),
-              ),
+                // Indicador visual para declarada/anulada si es aplicable
+                if (declarada || anulada)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      width: 15,
+                      height: 15,
+                      decoration: BoxDecoration(
+                        color: anulada
+                            ? Colors.red
+                            : (declarada ? Colors.green : Colors.transparent),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: 16),
             Column(
@@ -336,9 +392,25 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
             ),
           ],
         ),
-        IconButton(
-          icon: const Icon(Icons.close, color: Colors.white54),
-          onPressed: () => Navigator.of(context).pop(),
+        Row(
+          children: [
+            if (tienePdf)
+              IconButton(
+                icon: const FaIcon(
+                  FontAwesomeIcons.filePdf,
+                  color: Colors.blue,
+                  size: 18,
+                ),
+                tooltip: 'Ver PDF',
+                onPressed: () => pdfLink != null
+                    ? _ventasProvider.abrirPdf(pdfLink, context)
+                    : null,
+              ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white54),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
       ],
     );
@@ -356,6 +428,39 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
     bool isMap,
     bool isVenta,
   ) {
+    // Extraer información adicional
+    final bool declarada = isVenta
+        ? widget.venta.declarada
+        : (isMap ? widget.venta['declarada'] ?? false : false);
+
+    final bool anulada = isVenta
+        ? widget.venta.anulada
+        : (isMap ? widget.venta['anulada'] ?? false : false);
+
+    // Obtener hora de emisión
+    final String horaEmision = isVenta
+        ? widget.venta.horaEmision
+        : (isMap ? widget.venta['horaEmision'] ?? '' : '');
+
+    // Obtener información del empleado
+    final String empleado = isVenta
+        ? (widget.venta.empleadoDetalle != null
+            ? widget.venta.empleadoDetalle!.getNombreCompleto()
+            : 'No especificado')
+        : (isMap && widget.venta['empleado'] != null
+            ? '${widget.venta['empleado']['nombre']} ${widget.venta['empleado']['apellidos']}'
+            : 'No especificado');
+
+    // Obtener información de la sucursal
+    final String sucursal = isVenta
+        ? (widget.venta.sucursalDetalle?.nombre ?? 'No especificada')
+        : (isMap && widget.venta['sucursal'] != null
+            ? widget.venta['sucursal']['nombre'] ?? 'No especificada'
+            : 'No especificada');
+
+    // Determinar si estamos en pantalla pequeña
+    final bool isSmallScreen = MediaQuery.of(context).size.width < 600;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -391,9 +496,12 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Primera fila: ID, estado, total
-              Row(
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
                 children: [
-                  Expanded(
+                  SizedBox(
+                    width: isSmallScreen ? double.infinity : 180,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -415,7 +523,8 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                       ],
                     ),
                   ),
-                  Expanded(
+                  SizedBox(
+                    width: isSmallScreen ? double.infinity : 180,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -434,23 +543,45 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: _getEstadoColor(estadoText).withOpacity(
-                                widget.isLoadingFullData ? 0.1 : 0.2),
+                            color: _ventasProvider
+                                .getEstadoColor(estadoText)
+                                .withOpacity(
+                                    widget.isLoadingFullData ? 0.1 : 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Text(
-                            estadoText,
-                            style: TextStyle(
-                              color: _getEstadoColor(estadoText),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                estadoText,
+                                style: TextStyle(
+                                  color: _ventasProvider
+                                      .getEstadoColor(estadoText),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              if (declarada || anulada)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 4),
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          anulada ? Colors.red : Colors.green,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Expanded(
+                  SizedBox(
+                    width: isSmallScreen ? double.infinity : 180,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -495,9 +626,12 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
               const SizedBox(height: 16),
 
               // Segunda fila
-              Row(
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
                 children: [
-                  Expanded(
+                  SizedBox(
+                    width: isSmallScreen ? double.infinity : 180,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -523,7 +657,8 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                       ],
                     ),
                   ),
-                  Expanded(
+                  SizedBox(
+                    width: isSmallScreen ? double.infinity : 180,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -547,7 +682,48 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                       ],
                     ),
                   ),
-                  Expanded(
+                  SizedBox(
+                    width: isSmallScreen ? double.infinity : 180,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Hora Emisión',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: Text(
+                            key: ValueKey<String>('hora-$horaEmision'),
+                            horaEmision.isNotEmpty
+                                ? horaEmision
+                                : 'No registrado',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // Tercera fila
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: isSmallScreen ? double.infinity : 180,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -575,8 +751,104 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                       ],
                     ),
                   ),
+                  SizedBox(
+                    width: isSmallScreen ? double.infinity : 180,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Empleado',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: Text(
+                            key: ValueKey<String>(
+                                'empleado-${empleado.hashCode}'),
+                            empleado,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    width: isSmallScreen ? double.infinity : 180,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Sucursal',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: Text(
+                            key: ValueKey<String>(
+                                'sucursal-${sucursal.hashCode}'),
+                            sucursal,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
+
+              // Sección de estados adicionales
+              if (declarada || anulada)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: anulada
+                          ? Colors.red.withOpacity(0.1)
+                          : Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        FaIcon(
+                          anulada
+                              ? FontAwesomeIcons.ban
+                              : FontAwesomeIcons.check,
+                          color: anulada ? Colors.red : Colors.green,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            anulada
+                                ? 'Esta venta ha sido anulada'
+                                : 'Esta venta ha sido declarada a SUNAT',
+                            style: TextStyle(
+                              color: anulada ? Colors.red : Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -587,6 +859,10 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
   // Builder para la lista de productos
   Widget _buildProductList(
       List<dynamic> detalles, bool isMap, BuildContext context) {
+    // Definir una altura máxima para la lista de productos
+    final double maxProductListHeight =
+        MediaQuery.of(context).size.height * 0.3;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -664,7 +940,8 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.3,
+            maxHeight: maxProductListHeight,
+            minHeight: min(detalles.length * 50.0, maxProductListHeight),
           ),
           decoration: BoxDecoration(
             color: const Color(0xFF1A1A1A),
@@ -687,6 +964,10 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
             child: ListView.builder(
               key: ValueKey<int>(detalles.length),
               shrinkWrap: true,
+              // Usar physics NeverScrollableScrollPhysics si hay pocos elementos
+              physics: detalles.length <= 3
+                  ? const NeverScrollableScrollPhysics()
+                  : const ClampingScrollPhysics(),
               itemCount: detalles.length,
               itemBuilder: (context, index) {
                 final detalle = detalles[index];
@@ -701,9 +982,73 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
 
   // Builder para botones de acción
   Widget _buildActionButtons(BuildContext context) {
+    // Verificar el estado de la venta para mostrar botones apropiados
+    final bool isMap = widget.venta is Map;
+    final bool isVenta = widget.venta is Venta;
+
+    // Obtener el ID de la venta
+    final String idVenta =
+        isMap ? widget.venta['id'].toString() : widget.venta.id.toString();
+
+    // Verificar si la venta está declarada o anulada
+    final bool declarada = isVenta
+        ? widget.venta.declarada
+        : (isMap ? widget.venta['declarada'] ?? false : false);
+
+    final bool anulada = isVenta
+        ? widget.venta.anulada
+        : (isMap ? widget.venta['anulada'] ?? false : false);
+
+    // Verificar si tiene PDF usando el provider
+    final bool tienePdf = _ventasProvider.tienePdfDisponible(widget.venta);
+    final String? pdfLink = _ventasProvider.obtenerUrlPdf(widget.venta);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
+        // Botón para declarar venta (solo si no está declarada ni anulada)
+        if (!declarada && !anulada && widget.onDeclararPressed != null)
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: ElevatedButton.icon(
+              icon: const FaIcon(
+                FontAwesomeIcons.receipt,
+                size: 16,
+              ),
+              label: const Text('Declarar a SUNAT'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2D8B95),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                // Confirmar antes de declarar
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Confirmar Declaración'),
+                    content: const Text(
+                      '¿Está seguro que desea declarar esta venta a SUNAT? '
+                      'Esta acción no se puede deshacer.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cancelar'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          widget.onDeclararPressed!(idVenta);
+                        },
+                        child: const Text('Declarar'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+
         ElevatedButton.icon(
           icon: const FaIcon(
             FontAwesomeIcons.print,
@@ -715,13 +1060,22 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
             foregroundColor: Colors.white,
           ),
           onPressed: () {
-            Navigator.of(context).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Función en desarrollo'),
-                backgroundColor: Colors.orange,
-              ),
-            );
+            if (tienePdf && pdfLink != null) {
+              // Usar el método del provider para imprimir
+              _ventasProvider.imprimirDocumentoPdf(
+                pdfLink,
+                'Venta_${_ventasProvider.obtenerNumeroDocumento(widget.venta)}',
+                context,
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                      'La venta debe ser declarada primero para generar el PDF'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
           },
         ),
         const SizedBox(width: 16),
@@ -764,7 +1118,7 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
       builder: (context, child) {
         final double delayFactor = widget.isLoadingFullData
             ? 0.0
-            : (index * 0.05 > 0.5 ? 0.5 : index * 0.05);
+            : (index * 0.05 > 0.5 ? 0.5 : index * 0.5);
         final double startValue = widget.isLoadingFullData ? 0.7 : 0.0;
         final double opacity = _animationController.value > delayFactor
             ? startValue +
@@ -827,73 +1181,5 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
         ),
       ),
     );
-  }
-
-  // Obtener el color según el estado de la venta
-  Color _getEstadoColor(String estado) {
-    switch (estado.toUpperCase()) {
-      case 'COMPLETADA':
-        return Colors.green;
-      case 'ANULADA':
-        return Colors.red;
-      case 'DECLARADA':
-        return Colors.blue;
-      case 'ACEPTADO-SUNAT':
-        return Colors.green;
-      case 'ACEPTADO ANTE LA SUNAT':
-        return Colors.green;
-      case 'PENDIENTE':
-      default:
-        return Colors.orange;
-    }
-  }
-
-  // Calcular el total de la venta
-  double _calcularTotal(Map<String, dynamic> venta) {
-    // Primero intentamos con el formato del ejemplo JSON (totalesVenta)
-    if (venta.containsKey('totalesVenta') && venta['totalesVenta'] != null) {
-      if (venta['totalesVenta']['totalVenta'] != null) {
-        final value = venta['totalesVenta']['totalVenta'];
-        if (value is String) {
-          return double.tryParse(value) ?? 0.0;
-        } else {
-          return (value ?? 0.0).toDouble();
-        }
-      }
-    }
-
-    // Luego intentamos con el formato anterior
-    if (venta.containsKey('total')) {
-      final value = venta['total'];
-      if (value is String) {
-        return double.tryParse(value) ?? 0.0;
-      } else {
-        return (value ?? 0.0).toDouble();
-      }
-    } else if (venta.containsKey('subtotal') && venta.containsKey('igv')) {
-      final subtotal = venta['subtotal'] is String
-          ? double.tryParse(venta['subtotal']) ?? 0.0
-          : (venta['subtotal'] ?? 0.0).toDouble();
-      final igv = venta['igv'] is String
-          ? double.tryParse(venta['igv']) ?? 0.0
-          : (venta['igv'] ?? 0.0).toDouble();
-      return subtotal + igv;
-    }
-
-    // Si no hay total, intentamos sumando los detalles
-    double totalCalculado = 0.0;
-    if (venta.containsKey('detallesVenta') && venta['detallesVenta'] is List) {
-      for (var detalle in venta['detallesVenta']) {
-        if (detalle is Map && detalle.containsKey('total')) {
-          final total = detalle['total'] is String
-              ? double.tryParse(detalle['total']) ?? 0.0
-              : (detalle['total'] ?? 0.0).toDouble();
-          totalCalculado += total;
-        }
-      }
-      return totalCalculado;
-    }
-
-    return 0.0;
   }
 }

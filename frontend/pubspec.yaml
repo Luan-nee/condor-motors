@@ -27,6 +27,9 @@ dependencies:
   provider: ^6.1.4
   fl_chart: 0.36.4
   url_launcher: ^6.3.1
+  pdf: ^3.11.3
+  printing: ^5.14.2
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:

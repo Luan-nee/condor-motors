@@ -2,6 +2,7 @@ import 'dart:math' show min;
 import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
@@ -19,6 +20,14 @@ class HistorialVentasComputerScreen extends StatefulWidget {
   @override
   State<HistorialVentasComputerScreen> createState() =>
       _HistorialVentasComputerScreenState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(IntProperty('sucursalId', sucursalId))
+      ..add(StringProperty('nombreSucursal', nombreSucursal));
+  }
 }
 
 class _HistorialVentasComputerScreenState
@@ -59,7 +68,9 @@ class _HistorialVentasComputerScreenState
   }
 
   Future<void> _cargarVentas({bool forceRefresh = false}) async {
-    if (_isLoading) return;
+    if (_isLoading) {
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -67,8 +78,7 @@ class _HistorialVentasComputerScreenState
 
     try {
       // Asegurar que sucursalId sea un valor manejable para la API
-      final sucursalIdParam =
-          widget.sucursalId != null ? widget.sucursalId.toString() : null;
+      final sucursalIdParam = widget.sucursalId?.toString();
 
       final response = await api.ventas.getVentas(
         page: _currentPage,
@@ -129,8 +139,6 @@ class _HistorialVentasComputerScreenState
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
               primary: Color(0xFFE31E24),
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
             ),
           ),
           child: child!,
@@ -211,7 +219,6 @@ class _HistorialVentasComputerScreenState
                 children: [
                   // Columna izquierda - información básica
                   Expanded(
-                    flex: 1,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -243,7 +250,6 @@ class _HistorialVentasComputerScreenState
                   // Columna derecha - resumen de totales
                   if (venta.totales != null)
                     Expanded(
-                      flex: 1,
                       child: _buildInfoCard(
                           'Resumen de Totales',
                           const FaIcon(FontAwesomeIcons.moneyBillWave,
@@ -287,24 +293,24 @@ class _HistorialVentasComputerScreenState
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: Row(
-                        children: [
-                          const SizedBox(
+                        children: const [
+                          SizedBox(
                               width: 40,
                               child: Text('Cant.',
                                   style:
                                       TextStyle(fontWeight: FontWeight.bold))),
-                          const SizedBox(width: 8),
-                          const Expanded(
+                          SizedBox(width: 8),
+                          Expanded(
                               child: Text('Producto',
                                   style:
                                       TextStyle(fontWeight: FontWeight.bold))),
-                          const SizedBox(width: 8),
-                          const SizedBox(
+                          SizedBox(width: 8),
+                          SizedBox(
                               width: 100,
                               child: Text('Precio',
                                   style:
                                       TextStyle(fontWeight: FontWeight.bold))),
-                          const SizedBox(
+                          SizedBox(
                               width: 100,
                               child: Text('Total',
                                   style: TextStyle(fontWeight: FontWeight.bold),
@@ -524,9 +530,7 @@ class _HistorialVentasComputerScreenState
 
               try {
                 // Asegurar que sucursalId sea un valor manejable para la API
-                final sucursalIdParam = widget.sucursalId != null
-                    ? widget.sucursalId.toString()
-                    : null;
+                final sucursalIdParam = widget.sucursalId?.toString();
 
                 final bool resultado = await api.ventas.anularVenta(
                   venta.id.toString(),
@@ -556,7 +560,9 @@ class _HistorialVentasComputerScreenState
                   );
                 }
               } catch (e) {
-                if (!mounted) return;
+                if (!mounted) {
+                  return;
+                }
                 Navigator.of(context).pop(); // Cerrar diálogo de carga
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -615,8 +621,7 @@ class _HistorialVentasComputerScreenState
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: 0),
+                          contentPadding: const EdgeInsets.symmetric(),
                         ),
                         onSubmitted: (_) {
                           _currentPage = 1;

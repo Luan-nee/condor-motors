@@ -22,7 +22,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   final TextEditingController _searchController = TextEditingController();
   late stock_provider.StockProvider _stockProvider;
   // Estado del drawer
-  bool _drawerOpen = true;
+  final bool _drawerOpen = true;
 
   @override
   void initState() {

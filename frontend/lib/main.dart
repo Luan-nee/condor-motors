@@ -37,6 +37,10 @@ void initializeApi(CondorMotorsApi instance) {
 // Clave global para el navegador
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+// Clave global para el ScaffoldMessenger
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 // Comprobar conectividad con un servidor
 Future<bool> _checkServerConnectivity(String url) async {
   try {
@@ -225,6 +229,7 @@ class CondorMotorsApp extends StatelessWidget {
     // Crear la aplicación base
     final MaterialApp app = MaterialApp(
       navigatorKey: navigatorKey,
+      scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       title: 'Condor Motors',
       theme: AppTheme.theme,
@@ -262,7 +267,11 @@ class CondorMotorsApp extends StatelessWidget {
           create: (_) => StockProvider(),
         ),
         ChangeNotifierProvider<VentasProvider>(
-          create: (_) => VentasProvider(),
+          create: (_) {
+            final provider = VentasProvider();
+            provider.messengerKey = scaffoldMessengerKey;
+            return provider;
+          },
         ),
         ChangeNotifierProvider<SucursalProvider>(
           create: (_) => SucursalProvider(),

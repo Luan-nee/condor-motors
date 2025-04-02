@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -8,11 +9,11 @@ class SucursalDetalles extends StatelessWidget {
   final VoidCallback onDelete;
 
   const SucursalDetalles({
-    Key? key,
+    super.key,
     required this.sucursal,
     required this.onEdit,
     required this.onDelete,
-  }) : super(key: key);
+  });
 
   // Método para obtener icono según la sucursal
   IconData _getIconForSucursal(Sucursal sucursal) {
@@ -298,5 +299,13 @@ class SucursalDetalles extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<Sucursal>('sucursal', sucursal));
+    properties.add(ObjectFlagProperty<VoidCallback>.has('onEdit', onEdit));
+    properties.add(ObjectFlagProperty<VoidCallback>.has('onDelete', onDelete));
   }
 }

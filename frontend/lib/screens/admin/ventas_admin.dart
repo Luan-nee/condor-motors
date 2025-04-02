@@ -425,7 +425,7 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
   }
 
   Widget _buildVentaItem(
-      BuildContext context, VentasProvider ventasProvider, dynamic venta) {
+      BuildContext context, VentasProvider ventasProvider, venta) {
     final bool isVenta = venta is Venta;
 
     final String id = isVenta ? venta.id.toString() : venta['id'].toString();
@@ -440,7 +440,12 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
         ? venta.fechaCreacion
         : (venta['fechaCreacion'] != null
             ? DateTime.parse(venta['fechaCreacion'])
-            : DateTime.now());
+            : (venta['fechaEmision'] != null
+                ? DateTime.parse(venta['fechaEmision'])
+                : DateTime.now()));
+
+    final String horaEmision =
+        isVenta ? venta.horaEmision : venta['horaEmision'] ?? '';
 
     final double total = isVenta
         ? venta.calcularTotal()
@@ -451,17 +456,38 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                 : venta['totalesVenta']['totalVenta'].toDouble())
             : 0.0);
 
-    final String cliente = isVenta
-        ? (venta.clienteDetalle?.denominacion ?? 'Cliente no especificado')
-        : (venta['cliente'] != null
-            ? venta['cliente']['denominacion'] ?? 'Cliente no especificado'
-            : 'Cliente no especificado');
+    // El empleado siempre está disponible en las ventas
+    final String empleado = isVenta
+        ? (venta.empleadoDetalle != null
+            ? '${venta.empleadoDetalle!.nombre} ${venta.empleadoDetalle!.apellidos}'
+            : 'No especificado')
+        : (venta['empleado'] != null
+            ? '${venta['empleado']['nombre']} ${venta['empleado']['apellidos']}'
+            : 'No especificado');
 
+    // Verifica si hay PDF
+    final bool tienePdf = isVenta
+        ? (venta.documentoFacturacion != null &&
+            venta.documentoFacturacion!.linkPdf != null)
+        : (venta['documentoFacturacion'] != null &&
+            venta['documentoFacturacion']['linkPdf'] != null);
+
+    final String? pdfLink = isVenta
+        ? (venta.documentoFacturacion?.linkPdf)
+        : (tienePdf ? venta['documentoFacturacion']['linkPdf'] : null);
+
+    // Estados adicionales (declarada/anulada)
+    final bool declarada =
+        isVenta ? venta.declarada : venta['declarada'] ?? false;
+
+    final bool anulada = isVenta ? venta.anulada : venta['anulada'] ?? false;
+
+    // Estado de SUNAT
     final String estado = isVenta
         ? venta.estado.toText()
         : (venta['estado'] is Map
             ? venta['estado']['nombre'] ?? 'PENDIENTE'
-            : venta['estado'] ?? 'PENDIENTE');
+            : (anulada ? 'ANULADA' : (declarada ? 'DECLARADA' : 'PENDIENTE')));
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -471,19 +497,43 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: _getEstadoColor(estado).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: FaIcon(
-                    FontAwesomeIcons.fileInvoiceDollar,
-                    color: _getEstadoColor(estado),
+              // Icono principal con indicador de estado
+              Stack(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: _getEstadoColor(estado).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: FaIcon(
+                        tienePdf
+                            ? FontAwesomeIcons.filePdf
+                            : FontAwesomeIcons.fileInvoiceDollar,
+                        color: _getEstadoColor(estado),
+                      ),
+                    ),
                   ),
-                ),
+                  // Indicador visual para declarada o anulada
+                  if (declarada || anulada)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        width: 15,
+                        height: 15,
+                        decoration: BoxDecoration(
+                          color: anulada
+                              ? Colors.red
+                              : (declarada ? Colors.green : Colors.transparent),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -501,14 +551,14 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Fecha: ${_formatoFecha.format(fecha)}',
+                      'Fecha: ${_formatoFecha.format(fecha)}${horaEmision.isNotEmpty ? ' $horaEmision' : ''}',
                       style: TextStyle(
                         color: Colors.grey[600],
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Cliente: $cliente',
+                      'Atendido por: $empleado',
                       style: TextStyle(
                         color: Colors.grey[600],
                       ),
@@ -530,23 +580,40 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getEstadoColor(estado).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      estado,
-                      style: TextStyle(
-                        color: _getEstadoColor(estado),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getEstadoColor(estado).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          estado,
+                          style: TextStyle(
+                            color: _getEstadoColor(estado),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
-                    ),
+                      if (tienePdf)
+                        IconButton(
+                          icon: FaIcon(
+                            FontAwesomeIcons.fileArrowDown,
+                            size: 14,
+                            color: Colors.blue,
+                          ),
+                          tooltip: 'Descargar PDF',
+                          constraints: const BoxConstraints(),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          onPressed: () => _abrirPdf(pdfLink!),
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -593,10 +660,32 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     // Notifier para controlar el estado de carga
     final ValueNotifier<bool> isLoadingFullData = ValueNotifier<bool>(false);
 
+    // Función para declarar la venta a SUNAT usando los callbacks del provider
+    Future<void> declararVenta(String ventaId) async {
+      // Actualizamos el estado de carga
+      isLoadingFullData.value = true;
+
+      // Llamar al provider para declarar la venta usando callbacks para manejar éxito y error
+      await ventasProvider.declararVenta(
+        ventaId,
+        onSuccess: () async {
+          // Recargar los detalles completos de la venta
+          final ventaActualizada =
+              await ventasProvider.cargarDetalleVenta(ventaId);
+          ventaNotifier.value = ventaActualizada;
+          isLoadingFullData.value = false;
+        },
+        onError: (errorMsg) {
+          // No necesitamos mostrar el error aquí, lo manejará el provider
+          isLoadingFullData.value = false;
+        },
+      );
+    }
+
     // Mostramos un diálogo con la información cargada hasta el momento
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (BuildContext context) {
         return ValueListenableBuilder<dynamic>(
           valueListenable: ventaNotifier,
@@ -607,6 +696,7 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                   return VentaDetalleDialog(
                     venta: currentVenta,
                     isLoadingFullData: isLoading,
+                    onDeclararPressed: declararVenta,
                   );
                 });
           },
@@ -627,15 +717,19 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
       // Marcar que ya no estamos cargando
       isLoadingFullData.value = false;
     } catch (e) {
-      // En caso de error, cerrar el diálogo y mostrar un mensaje
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:
-              Text('Error al cargar los detalles de la venta: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
+      // En caso de error, actualizar el estado y mostrar el mensaje desde el provider
+      ventasProvider.mostrarMensaje(
+        mensaje: 'Error al cargar los detalles de la venta: ${e.toString()}',
+        backgroundColor: Colors.red,
       );
+      isLoadingFullData.value = false;
     }
+  }
+
+  // Método para abrir PDFs usando el método del provider
+  Future<void> _abrirPdf(String url) async {
+    // Utilizamos el método del provider para abrir PDFs
+    await Provider.of<VentasProvider>(context, listen: false)
+        .abrirPdf(url, context);
   }
 }

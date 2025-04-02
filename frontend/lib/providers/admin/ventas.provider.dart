@@ -1,7 +1,12 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:flutter/material.dart';
+import 'package:printing/printing.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Provider para gestionar ventas y sucursales
 class VentasProvider extends ChangeNotifier {
@@ -26,6 +31,364 @@ class VentasProvider extends ChangeNotifier {
   Venta? _ventaSeleccionada;
   bool _isVentaDetalleLoading = false;
   String _ventaDetalleErrorMessage = '';
+
+  // Referencia global al messenger
+  GlobalKey<ScaffoldMessengerState>? messengerKey;
+
+  // Método para mostrar mensajes globales sin depender de un contexto específico
+  void mostrarMensaje({
+    required String mensaje,
+    Color backgroundColor = Colors.black,
+    Duration duration = const Duration(seconds: 3),
+  }) {
+    final messenger = messengerKey?.currentState;
+    if (messenger != null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(mensaje),
+          backgroundColor: backgroundColor,
+          duration: duration,
+        ),
+      );
+    }
+  }
+
+  /// Abre un PDF en una aplicación externa
+  ///
+  /// [url] URL del documento PDF
+  /// [context] Contexto para mostrar mensajes de error (opcional)
+  Future<bool> abrirPdf(String url, [BuildContext? context]) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return true;
+      } else {
+        throw 'No se pudo abrir el enlace: $url';
+      }
+    } catch (e) {
+      debugPrint('Error al abrir el PDF: $e');
+
+      // Usar el método global para mostrar mensajes si no hay contexto
+      if (context == null || !context.mounted) {
+        mostrarMensaje(
+          mensaje: 'Error al abrir el PDF: $e',
+          backgroundColor: Colors.red,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al abrir el PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
+  /// Imprime un documento PDF desde una URL con bypass de verificación SSL
+  ///
+  /// [url] URL del documento PDF
+  /// [nombreDocumento] Nombre para el trabajo de impresión
+  /// [context] Contexto para mostrar mensajes (opcional)
+  Future<bool> imprimirDocumentoPdf(String url, String nombreDocumento,
+      [BuildContext? context]) async {
+    try {
+      // Mostrar mensaje de preparación
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Preparando documento para impresión...'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else {
+        mostrarMensaje(
+          mensaje: 'Preparando documento para impresión...',
+          duration: const Duration(seconds: 1),
+        );
+      }
+
+      // Crear un cliente HTTP que acepte todos los certificados
+      final httpClient = HttpClient()
+        ..badCertificateCallback =
+            (X509Certificate cert, String host, int port) => true;
+
+      // Realizar la solicitud HTTP
+      final request = await httpClient.getUrl(Uri.parse(url));
+      final response = await request.close();
+
+      if (response.statusCode != 200) {
+        throw Exception('Error al descargar el PDF: ${response.statusCode}');
+      }
+
+      // Leer los bytes de la respuesta
+      final List<int> bytesBuilder = [];
+      await for (var data in response) {
+        bytesBuilder.addAll(data);
+      }
+      final Uint8List bytes = Uint8List.fromList(bytesBuilder);
+
+      // Cerrar el cliente HTTP
+      httpClient.close();
+
+      // Imprimir el PDF usando el plugin printing
+      final result = await Printing.layoutPdf(
+        onLayout: (_) => Future.value(bytes),
+        name: nombreDocumento,
+      );
+
+      if (result) {
+        if (context != null && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Documento enviado a la impresora'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          mostrarMensaje(
+            mensaje: 'Documento enviado a la impresora',
+            backgroundColor: Colors.green,
+          );
+        }
+        return true;
+      } else {
+        // Si la impresión falló, abrir el PDF como fallback
+        await abrirPdf(url);
+
+        if (context != null && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se pudo imprimir. PDF abierto en navegador'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        } else {
+          mostrarMensaje(
+            mensaje: 'No se pudo imprimir. PDF abierto en navegador',
+            backgroundColor: Colors.orange,
+          );
+        }
+        return false;
+      }
+    } catch (e) {
+      // Manejar errores
+      debugPrint('Error al imprimir documento: $e');
+
+      // Intentar abrir el PDF en el navegador como alternativa
+      await abrirPdf(url);
+
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al imprimir: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else {
+        mostrarMensaje(
+          mensaje: 'Error al imprimir: $e',
+          backgroundColor: Colors.red,
+        );
+      }
+      return false;
+    }
+  }
+
+  /// Calcula el total de una venta a partir de un Map
+  double calcularTotalVenta(Map<String, dynamic> venta) {
+    // Primero intentamos con el formato del ejemplo JSON (totalesVenta)
+    if (venta.containsKey('totalesVenta') && venta['totalesVenta'] != null) {
+      if (venta['totalesVenta']['totalVenta'] != null) {
+        final value = venta['totalesVenta']['totalVenta'];
+        if (value is String) {
+          return double.tryParse(value) ?? 0.0;
+        } else {
+          return (value ?? 0.0).toDouble();
+        }
+      }
+    }
+
+    // Luego intentamos con el formato anterior
+    if (venta.containsKey('total')) {
+      final value = venta['total'];
+      if (value is String) {
+        return double.tryParse(value) ?? 0.0;
+      } else {
+        return (value ?? 0.0).toDouble();
+      }
+    } else if (venta.containsKey('subtotal') && venta.containsKey('igv')) {
+      final subtotal = venta['subtotal'] is String
+          ? double.tryParse(venta['subtotal']) ?? 0.0
+          : (venta['subtotal'] ?? 0.0).toDouble();
+      final igv = venta['igv'] is String
+          ? double.tryParse(venta['igv']) ?? 0.0
+          : (venta['igv'] ?? 0.0).toDouble();
+      return subtotal + igv;
+    }
+
+    // Si no hay total, intentamos sumando los detalles
+    double totalCalculado = 0.0;
+    if (venta.containsKey('detallesVenta') && venta['detallesVenta'] is List) {
+      for (var detalle in venta['detallesVenta']) {
+        if (detalle is Map && detalle.containsKey('total')) {
+          final total = detalle['total'] is String
+              ? double.tryParse(detalle['total']) ?? 0.0
+              : (detalle['total'] ?? 0.0).toDouble();
+          totalCalculado += total;
+        }
+      }
+      return totalCalculado;
+    }
+
+    return 0.0;
+  }
+
+  /// Obtiene el color según el estado de una venta
+  Color getEstadoColor(String estado) {
+    switch (estado.toUpperCase()) {
+      case 'COMPLETADA':
+        return Colors.green;
+      case 'ANULADA':
+        return Colors.red;
+      case 'DECLARADA':
+        return Colors.blue;
+      case 'ACEPTADO-SUNAT':
+        return Colors.green;
+      case 'ACEPTADO ANTE LA SUNAT':
+        return Colors.green;
+      case 'PENDIENTE':
+      default:
+        return Colors.orange;
+    }
+  }
+
+  /// Obtiene el formato de serie-número o ID de una venta
+  String obtenerNumeroDocumento(venta) {
+    final bool isMap = venta is Map;
+    final bool isVenta = venta is Venta;
+
+    final String serie = isMap
+        ? (venta['serieDocumento'] ?? '').toString()
+        : isVenta
+            ? venta.serieDocumento
+            : '';
+    final String numero = isMap
+        ? (venta['numeroDocumento'] ?? '').toString()
+        : isVenta
+            ? venta.numeroDocumento
+            : '';
+
+    if (serie.isNotEmpty && numero.isNotEmpty) {
+      return '$serie-$numero';
+    }
+
+    final String id = isMap
+        ? venta['id'].toString()
+        : isVenta
+            ? venta.id.toString()
+            : '';
+    return id;
+  }
+
+  /// Verifica si una venta tiene PDF disponible
+  bool tienePdfDisponible(venta) {
+    final bool isVenta = venta is Venta;
+
+    return isVenta
+        ? (venta.documentoFacturacion != null &&
+            venta.documentoFacturacion!.linkPdf != null)
+        : (venta is Map &&
+            venta['documentoFacturacion'] != null &&
+            venta['documentoFacturacion']['linkPdf'] != null);
+  }
+
+  /// Obtiene la URL del PDF de una venta si existe
+  String? obtenerUrlPdf(venta) {
+    final bool isVenta = venta is Venta;
+    final bool tienePdf = tienePdfDisponible(venta);
+
+    return isVenta
+        ? venta.documentoFacturacion?.linkPdf
+        : (tienePdf ? venta['documentoFacturacion']['linkPdf'] : null);
+  }
+
+  /// Declara una venta a SUNAT
+  ///
+  /// [ventaId] ID de la venta a declarar
+  /// [enviarCliente] Indica si se debe enviar el comprobante al cliente
+  /// [onSuccess] Callback opcional para manejar el éxito
+  /// [onError] Callback opcional para manejar el error
+  ///
+  /// Retorna un Future<bool> indicando si la operación fue exitosa
+  Future<bool> declararVenta(
+    String ventaId, {
+    bool enviarCliente = false,
+    VoidCallback? onSuccess,
+    Function(String)? onError,
+  }) async {
+    _isVentasLoading = true;
+    notifyListeners();
+
+    try {
+      // Necesitamos la sucursal ID actual
+      if (_sucursalSeleccionada == null) {
+        final errorMsg = 'No hay una sucursal seleccionada';
+        if (onError != null) {
+          onError(errorMsg);
+        } else {
+          mostrarMensaje(
+            mensaje: errorMsg,
+            backgroundColor: Colors.red,
+          );
+        }
+        throw Exception(errorMsg);
+      }
+
+      // Forzar recarga de los datos para obtener el estado actualizado
+      await cargarVentas();
+
+      // Si teníamos detalles de esta venta seleccionados, actualizar
+      if (_ventaSeleccionada != null &&
+          _ventaSeleccionada!.id.toString() == ventaId) {
+        await cargarDetalleVenta(ventaId);
+      }
+
+      // Llamar al callback de éxito si existe
+      if (onSuccess != null) {
+        onSuccess();
+      } else {
+        mostrarMensaje(
+          mensaje: 'Venta declarada correctamente',
+          backgroundColor: Colors.green,
+        );
+      }
+
+      return true;
+    } catch (e) {
+      final errorMsg = 'Error al declarar venta: $e';
+      debugPrint(errorMsg);
+      _ventasErrorMessage = errorMsg;
+
+      // Llamar al callback de error si existe
+      if (onError != null) {
+        onError(errorMsg);
+      } else {
+        mostrarMensaje(
+          mensaje: errorMsg,
+          backgroundColor: Colors.red,
+        );
+      }
+
+      notifyListeners();
+      return false;
+    } finally {
+      _isVentasLoading = false;
+      notifyListeners();
+    }
+  }
 
   // Getters para sucursales
   String get errorMessage => _errorMessage;

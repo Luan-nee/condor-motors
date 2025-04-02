@@ -9,11 +9,11 @@ class SucursalForm extends StatefulWidget {
   final VoidCallback onCancel;
 
   const SucursalForm({
-    Key? key,
+    super.key,
     this.sucursal,
     required this.onSave,
     required this.onCancel,
-  }) : super(key: key);
+  });
 
   @override
   State<SucursalForm> createState() => _SucursalFormState();
@@ -165,7 +165,7 @@ class _SucursalFormState extends State<SucursalForm>
               decoration: const BoxDecoration(
                 color: Color(0xFF212121),
                 border: Border(
-                  bottom: BorderSide(color: Color(0xFF3D3D3D), width: 1),
+                  bottom: BorderSide(color: Color(0xFF3D3D3D)),
                 ),
               ),
               child: TabBar(
