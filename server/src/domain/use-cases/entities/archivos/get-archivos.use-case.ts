@@ -2,7 +2,7 @@ import { permissionCodes } from '@/consts'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import { archivosAppTable, cuentasEmpleadosTable } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 
 export class GetArchivos {
   private readonly permissionAny = permissionCodes.archivos.getAny
@@ -40,6 +40,7 @@ export class GetArchivos {
         eq(archivosAppTable.userId, cuentasEmpleadosTable.id)
       )
       .where(whereCondition)
+      .orderBy(desc(archivosAppTable.fechaCreacion))
 
     return files
   }
