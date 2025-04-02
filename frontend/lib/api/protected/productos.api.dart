@@ -240,6 +240,53 @@ class ProductosApi {
     );
   }
 
+  /// Obtiene productos disponibles (stock > 0) de una sucursal específica
+  ///
+  /// [sucursalId] ID de la sucursal
+  /// [page] Número de página para paginación (opcional)
+  /// [pageSize] Número de elementos por página (opcional)
+  /// [sortBy] Campo por el cual ordenar (opcional)
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<PaginatedResponse<Producto>> getProductosDisponibles({
+    required String sucursalId,
+    int? page,
+    int? pageSize,
+    String? sortBy,
+    bool useCache = true,
+  }) async {
+    // Usamos el método general y filtramos manualmente
+    // porque el backend no tiene un endpoint específico para disponibles
+    final PaginatedResponse<Producto> response = await getProductos(
+      sucursalId: sucursalId,
+      page: page ?? 1,
+      pageSize: pageSize ??
+          50, // Tamaño grande para tener suficientes después de filtrar
+      sortBy: sortBy ?? 'nombre',
+      order: 'asc',
+      useCache: useCache,
+    );
+
+    // Filtramos solo los productos agotados (stock = 0)
+    final List<Producto> productosAgotados =
+        response.items.where((Producto p) => p.stock > 0).toList();
+
+    // Mantenemos la misma información de paginación pero ajustamos totalItems
+    final Paginacion paginacionAjustada = Paginacion(
+      currentPage: response.paginacion.currentPage,
+      totalPages: response.paginacion.totalPages,
+      totalItems: productosAgotados.length,
+      hasNext: response.paginacion.hasNext,
+      hasPrev: response.paginacion.hasPrev,
+    );
+
+    // Devolvemos una nueva respuesta paginada con solo los productos agotados
+    return PaginatedResponse<Producto>(
+      items: productosAgotados,
+      paginacion: paginacionAjustada,
+      metadata: response.metadata,
+    );
+  }
+
   /// Obtiene productos sin stock bajo de una sucursal específica
   ///
   /// Método helper que utiliza getProductos con el parámetro stockBajo=false

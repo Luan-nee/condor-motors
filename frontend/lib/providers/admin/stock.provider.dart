@@ -223,6 +223,23 @@ class StockProvider extends ChangeNotifier {
         return;
       }
 
+      // Si está seleccionado el filtro de disponible, usamos el método específico
+      if (_filtroEstadoStock == StockStatus.disponible) {
+        final PaginatedResponse<Producto> paginatedProductos =
+            await api.productos.getProductosDisponibles(
+          sucursalId: sucursalId,
+          page: _currentPage,
+          pageSize: _pageSize,
+          sortBy: _sortBy.isNotEmpty ? _sortBy : 'nombre',
+        );
+
+        _paginatedProductos = paginatedProductos;
+        _productosFiltrados = paginatedProductos.items;
+        _isLoadingProductos = false;
+        notifyListeners();
+        return;
+      }
+
       // Para otros casos, usar el método general
       final PaginatedResponse<Producto> paginatedProductos =
           await api.productos.getProductos(
@@ -233,7 +250,7 @@ class StockProvider extends ChangeNotifier {
         sortBy: _sortBy.isNotEmpty ? _sortBy : null,
         order: _order,
         // Si filtro es disponible, enviamos stockBajo=false
-        stockBajo: _filtroEstadoStock == StockStatus.disponible ? false : null,
+        stockBajo: _filtroEstadoStock == null,
       );
 
       // Reorganizar los productos según la prioridad de stock
