@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/admin/ventas.provider.dart';
+import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
 import 'package:condorsmotors/screens/admin/widgets/venta/venta_detalle_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -135,7 +136,14 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
 
                     // Selector de sucursales
                     Expanded(
-                      child: _buildSucursalesContent(ventasProvider),
+                      child: SlideSucursal(
+                        sucursales: ventasProvider.sucursales,
+                        sucursalSeleccionada:
+                            ventasProvider.sucursalSeleccionada,
+                        onSucursalSelected: ventasProvider.cambiarSucursal,
+                        onRecargarSucursales: ventasProvider.cargarSucursales,
+                        isLoading: ventasProvider.isSucursalesLoading,
+                      ),
                     ),
                   ],
                 ),
@@ -316,80 +324,6 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
         ),
       ],
     );
-  }
-
-  Widget _buildSucursalesContent(VentasProvider provider) {
-    if (provider.isSucursalesLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            CircularProgressIndicator(
-              color: Color(0xFFE31E24),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Cargando sucursales...',
-              style: TextStyle(color: Colors.white70),
-            ),
-          ],
-        ),
-      );
-    } else if (provider.sucursales.isEmpty && provider.errorMessage.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const FaIcon(
-              FontAwesomeIcons.buildingCircleXmark,
-              color: Colors.white54,
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'No hay sucursales disponibles',
-              style: TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16),
-              label: const Text('Recargar'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31E24),
-                foregroundColor: Colors.white,
-              ),
-              onPressed: provider.cargarSucursales,
-            ),
-          ],
-        ),
-      );
-    } else {
-      return ListView.builder(
-        itemCount: provider.sucursales.length,
-        itemBuilder: (context, index) {
-          final sucursal = provider.sucursales[index];
-          final isSelected = provider.sucursalSeleccionada?.id == sucursal.id;
-
-          return ListTile(
-            title: Text(
-              sucursal.nombre,
-              style: TextStyle(
-                color: isSelected ? const Color(0xFFE31E24) : Colors.white,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-            selected: isSelected,
-            selectedTileColor: const Color(0xFFE31E24).withOpacity(0.1),
-            onTap: () => provider.cambiarSucursal(sucursal),
-            leading: const FaIcon(
-              FontAwesomeIcons.building,
-              size: 16,
-              color: Colors.white54,
-            ),
-          );
-        },
-      );
-    }
   }
 
   Widget _buildVentaItem(
