@@ -259,18 +259,23 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                               ],
                             ),
                           ),
-                        IconButton(
-                          icon: const FaIcon(
-                            FontAwesomeIcons.arrowsRotate,
-                            color: Colors.white,
-                            size: 16,
+                        ElevatedButton.icon(
+                          icon: const FaIcon(FontAwesomeIcons.arrowsRotate,
+                              size: 16, color: Colors.white),
+                          label: const Text('Actualizar datos'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0075FF),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 16,
+                            ),
                           ),
                           onPressed: isLoading
                               ? null
                               : () => marcasProvider.cargarMarcas(),
-                          tooltip: 'Recargar marcas',
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
                         ElevatedButton.icon(
                           icon: const FaIcon(FontAwesomeIcons.plus,
                               size: 16, color: Colors.white),
