@@ -143,7 +143,7 @@ class VentasApi {
 
       // Procesar la respuesta para añadir objetos Venta
       List<dynamic> ventasData = [];
-      List<dynamic> ventasConvertidas = [];
+      List<Venta> ventasConvertidas = [];
 
       if (response.containsKey('data') && response['data'] is List) {
         ventasData = response['data'] as List;
@@ -156,31 +156,19 @@ class VentasApi {
         }
 
         try {
-          ventasConvertidas = ventasData.map((ventaData) {
-            if (ventaData is Map<String, dynamic>) {
-              try {
-                return Venta.fromJson(ventaData);
-              } catch (e) {
-                Logger.error('Error al parsear venta: $e');
-                // Retornar el objeto original en caso de error
-                return ventaData;
-              }
-            } else if (ventaData is Venta) {
-              return ventaData;
-            } else {
-              Logger.error(
-                  'Tipo inesperado para venta: ${ventaData.runtimeType}');
-              return ventaData;
-            }
-          }).toList();
+          // Intentar convertir los datos utilizando el método parseVentas más robusto
+          ventasConvertidas = parseVentas(ventasData);
 
           // Verificar resultados de la conversión
           if (ventasConvertidas.isNotEmpty) {
             Logger.debug(
                 'Tipo del primer elemento convertido: ${ventasConvertidas.first.runtimeType}');
+          } else {
+            Logger.warn('No se pudo convertir ninguna venta correctamente');
           }
-        } catch (e) {
+        } catch (e, stackTrace) {
           Logger.error('Error procesando ventas: $e');
+          Logger.debug('Stack trace: $stackTrace');
           ventasConvertidas = [];
         }
       } else {
@@ -202,8 +190,9 @@ class VentasApi {
         'status': response['status'] ?? 'error',
         'message': response['message'] ?? '',
       };
-    } catch (e) {
+    } catch (e, stackTrace) {
       Logger.error('Error al obtener ventas: $e');
+      Logger.debug('Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -575,34 +564,37 @@ class VentasApi {
       return [];
     }
 
-    // Convertir cada elemento a un objeto Venta
-    return ventasData.map((item) {
+    // Convertir cada elemento a un objeto Venta con manejo de errores detallado
+    List<Venta> resultado = [];
+    for (var item in ventasData) {
       if (item is Map<String, dynamic>) {
         try {
-          return Venta.fromJson(item);
-        } catch (e) {
+          resultado.add(Venta.fromJson(item));
+        } catch (e, stackTrace) {
           Logger.error('Error al parsear venta: $e');
-          // Retornar un objeto venta vacío en caso de error
-          return Venta(
-            id: 0,
-            tipoDocumentoId: 0,
-            serieDocumento: '',
-            numeroDocumento: '',
-            monedaId: 0,
-            metodoPagoId: 0,
-            clienteId: 0,
-            empleadoId: 0,
-            sucursalId: 0,
-            fechaEmision: DateTime.now(),
-            horaEmision: '00:00:00',
-            fechaCreacion: DateTime.now(),
-            fechaActualizacion: DateTime.now(),
-            detalles: [],
-          );
-        }
-      }
+          Logger.debug('Stack trace: $stackTrace');
+          Logger.debug('Datos de venta problemáticos: $item');
 
-      throw FormatException('Formato de venta inválido: $item');
-    }).toList();
+          // Intentar identificar qué campo está causando el problema
+          if (e.toString().contains('is not a subtype of type')) {
+            final errorMsg = e.toString();
+            final match =
+                RegExp(r"'(.+?)' is not a subtype").firstMatch(errorMsg);
+            if (match != null) {
+              Logger.error('Tipo problemático: ${match.group(1)}');
+            }
+          }
+
+          // Podríamos añadir la venta a la lista con valores por defecto
+          // para que la app siga funcionando aunque haya elementos problemáticos
+        }
+      } else if (item is Venta) {
+        resultado.add(item);
+      } else {
+        Logger.error('Formato de venta inesperado: ${item.runtimeType}');
+      }
+    }
+
+    return resultado;
   }
 }

@@ -3,6 +3,7 @@ import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
 import { CreateArchivoDto } from '@/domain/dtos/entities/archivos/create-archivo.dto'
 import { CreateArchivo } from '@/domain/use-cases/entities/archivos/create-archivo.use-case'
+import { GetArchivos } from '@/domain/use-cases/entities/archivos/get-archivos.use-case'
 import type { Request, Response } from 'express'
 
 export class ArchivosController {
@@ -63,7 +64,23 @@ export class ArchivosController {
       return
     }
 
-    CustomResponse.notImplemented({ res })
+    if (req.permissions == null) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const { permissions } = req
+
+    const getArchivos = new GetArchivos(permissions)
+
+    getArchivos
+      .execute()
+      .then((files) => {
+        CustomResponse.success({ res, data: files })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
   }
 
   delete = (req: Request, res: Response) => {

@@ -30,7 +30,16 @@ export class ArchivosRoutes {
       sucursalesController.uploadDesktopApp
     )
 
-    router.get('/', sucursalesController.getAll)
+    router.get(
+      '/',
+      [
+        AccessControlMiddleware.requests([
+          permissionCodes.archivos.getAny,
+          permissionCodes.archivos.getVisible
+        ])
+      ],
+      sucursalesController.getAll
+    )
 
     router.delete('/:id', sucursalesController.delete)
 

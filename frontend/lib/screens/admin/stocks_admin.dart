@@ -1,4 +1,3 @@
-// API global
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/providers/admin/stock.provider.dart'
     as stock_provider;
