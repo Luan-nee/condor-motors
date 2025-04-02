@@ -16,7 +16,7 @@ import { FileList, FetchButton } from '@/components/solidjs/FileList'
       >
         <header class="p-3 flex items-center justify-between">
           <h2 class="text-xl font-medium">Archivos</h2>
-          <!-- <FetchButton client:visible /> -->
+          <FetchButton client:visible />
         </header>
         <div class="grow flex flex-col gap-3 px-3 overflow-y-auto">
           <FileList client:load />

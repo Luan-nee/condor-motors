@@ -10,10 +10,15 @@ const [fetchTrigger, setFetchTrigger] = createSignal(0)
 export const FetchButton = () => {
   return (
     <button
-      onClick={() => setFetchTrigger(fetchTrigger() + 1)}
-      class="text-white/50 hover:text-white/70 p-2 hover:bg-white/5 rounded"
+      onClick={() => {
+        setFetchTrigger(fetchTrigger() + 1)
+      }}
+      class="p-2 rounded text-white/50
+        hover:bg-white/5 hover:text-white/70
+        active:bg-white/10 active:text-white/80
+        hover:[&>svg]:rotate-180"
     >
-      <RefreshIcon class="w-6 h-6" />
+      <RefreshIcon class="w-6 h-6 transition-transform duration-500" />
     </button>
   )
 }
