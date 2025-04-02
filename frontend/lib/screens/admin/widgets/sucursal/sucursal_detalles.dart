@@ -108,7 +108,6 @@ class SucursalDetalles extends StatelessWidget {
           color: sucursal.sucursalCentral
               ? const Color(0xFFE31E24).withOpacity(0.3)
               : Colors.white.withOpacity(0.1),
-          width: 1,
         ),
       ),
       child: Column(

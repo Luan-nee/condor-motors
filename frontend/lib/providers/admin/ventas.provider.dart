@@ -355,8 +355,8 @@ class VentasProvider extends ChangeNotifier {
       );
 
       // Verificar si la respuesta es exitosa
-      if (result == null || result['status'] != 'success') {
-        final errorMsg = result?['message'] ?? 'Error al declarar la venta';
+      if (result['status'] != 'success') {
+        final errorMsg = result['message'] ?? 'Error al declarar la venta';
         if (onError != null) {
           onError(errorMsg);
         } else {
