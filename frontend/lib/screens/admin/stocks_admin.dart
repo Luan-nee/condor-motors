@@ -272,13 +272,13 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                             ),
                             const SizedBox(width: 8),
                             _buildFilterChip(
-                              'Agotados',
-                              FontAwesomeIcons.ban,
-                              Colors.red.shade800,
+                              'Disponibles',
+                              FontAwesomeIcons.check,
+                              Colors.green,
                               stockProvider.filtroEstadoStock ==
-                                  stock_provider.StockStatus.agotado,
+                                  stock_provider.StockStatus.disponible,
                               () => stockProvider.filtrarPorEstadoStock(
-                                  stock_provider.StockStatus.agotado),
+                                  stock_provider.StockStatus.disponible),
                             ),
                             const SizedBox(width: 8),
                             _buildFilterChip(
@@ -292,13 +292,13 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                             ),
                             const SizedBox(width: 8),
                             _buildFilterChip(
-                              'Disponibles',
-                              FontAwesomeIcons.check,
-                              Colors.green,
+                              'Agotados',
+                              FontAwesomeIcons.ban,
+                              Colors.red.shade800,
                               stockProvider.filtroEstadoStock ==
-                                  stock_provider.StockStatus.disponible,
+                                  stock_provider.StockStatus.agotado,
                               () => stockProvider.filtrarPorEstadoStock(
-                                  stock_provider.StockStatus.disponible),
+                                  stock_provider.StockStatus.agotado),
                             ),
                             const SizedBox(width: 16),
                             if (stockProvider.filtroEstadoStock != null)
