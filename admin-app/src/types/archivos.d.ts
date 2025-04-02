@@ -29,3 +29,24 @@ export interface UploadApkFileDto {
 }
 
 export type UploadApkFile = Method<UploadApkFileDto, SuccessUploadApk, ApiError>
+
+export interface FileEntity {
+  id: number
+  nombre: string
+  filename: string
+  tipo: string
+  size: string
+  metadata: {
+    encoding: string
+    mimetype: string
+    originalName: string
+  }
+  visible: boolean
+  fechaCreacion: string
+  user: {
+    id: number
+    nombre: string
+  }
+}
+
+export type GetFilesApi = Method<void, FileEntity[], ApiError>

@@ -1,9 +1,10 @@
 ---
+import { fileTypeValues } from '@/core/consts'
+import BaseLayout from '@/layouts/BaseLayout.astro'
 import Button from '@/components/atoms/Button.astro'
 import Input from '@/components/atoms/Input.astro'
 import Label from '@/components/atoms/Label.astro'
-import { fileTypeValues } from '@/core/consts'
-import BaseLayout from '@/layouts/BaseLayout.astro'
+import { FileList } from '@/components/solidjs/FileList'
 ---
 
 <BaseLayout title="Dashboard">
@@ -11,20 +12,15 @@ import BaseLayout from '@/layouts/BaseLayout.astro'
     <div class="hidden md:flex p-2">
       <aside
         class="left-2 top-2 bottom-2 w-[280px] rounded-lg h-full
-        bg-gray-300/5 backdrop-blur-md border border-white/10 p-3 flex flex-col justify-between"
+        bg-gray-300/5 backdrop-blur-md border border-white/10 flex flex-col justify-between"
       >
-        <header>
+        <header class="p-3">
           <h2 class="text-xl font-medium">Archivos</h2>
-          <p id="card-message" class="text-sm font-medium">Loading...</p>
         </header>
-        <div class="grow" id="files-list">
-          <template>
-            <div>
-              <p></p>
-            </div>
-          </template>
+        <div class="grow flex flex-col gap-3 px-3 overflow-y-auto">
+          <FileList client:load />
         </div>
-        <footer>
+        <footer class="p-3">
           <div class="hidden text-sm space-y-2" id="user-container">
             <div class="flex items-center gap-1">
               <span class="font-semibold text-gray-300">Usuario:</span>
@@ -155,14 +151,12 @@ import BaseLayout from '@/layouts/BaseLayout.astro'
     }
 
     const $userContainer = selectWith<HTMLDivElement>('#user-container')
-    const $cardMessage = selectWith<HTMLParagraphElement>('#card-message')
     const $username = selectWith<HTMLSpanElement>(
       '[data-id="usuario"]',
       $userContainer
     )
     const $rol = selectWith<HTMLSpanElement>('[data-id="rol"]', $userContainer)
 
-    $cardMessage.innerText = ''
     $userContainer.classList.remove('hidden')
     $username.innerText = data.user.usuario
     $rol.innerText = data.user.rol.nombre
@@ -253,12 +247,10 @@ import BaseLayout from '@/layouts/BaseLayout.astro'
       console.log(data, error)
 
       if (error != null) {
-        $cardMessage.innerText = error.message
         error.action()
         return
       }
 
-      $cardMessage.innerText = data.message
       data.action()
     })
   })()
