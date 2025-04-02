@@ -16,6 +16,12 @@ class VentasProvider extends ChangeNotifier {
   bool _isVentasLoading = false;
   String _ventasErrorMessage = '';
 
+  // Estado para búsqueda y filtros
+  String _searchQuery = '';
+  DateTime? _fechaInicio;
+  DateTime? _fechaFin;
+  String? _estadoFiltro;
+
   // Estado para detalles de venta
   Venta? _ventaSeleccionada;
   bool _isVentaDetalleLoading = false;
@@ -32,6 +38,12 @@ class VentasProvider extends ChangeNotifier {
   bool get isVentasLoading => _isVentasLoading;
   String get ventasErrorMessage => _ventasErrorMessage;
 
+  // Getters para búsqueda y filtros
+  String get searchQuery => _searchQuery;
+  DateTime? get fechaInicio => _fechaInicio;
+  DateTime? get fechaFin => _fechaFin;
+  String? get estadoFiltro => _estadoFiltro;
+
   // Getters para detalles de venta
   Venta? get ventaSeleccionada => _ventaSeleccionada;
   bool get isVentaDetalleLoading => _isVentaDetalleLoading;
@@ -40,6 +52,34 @@ class VentasProvider extends ChangeNotifier {
   /// Inicializa el provider cargando los datos necesarios
   void inicializar() {
     cargarSucursales();
+  }
+
+  /// Actualiza el término de búsqueda y recarga las ventas
+  void actualizarBusqueda(String query) {
+    _searchQuery = query;
+    cargarVentas();
+  }
+
+  /// Actualiza los filtros de fecha y recarga las ventas
+  void actualizarFiltrosFecha(DateTime? inicio, DateTime? fin) {
+    _fechaInicio = inicio;
+    _fechaFin = fin;
+    cargarVentas();
+  }
+
+  /// Actualiza el filtro de estado y recarga las ventas
+  void actualizarFiltroEstado(String? estado) {
+    _estadoFiltro = estado;
+    cargarVentas();
+  }
+
+  /// Limpia todos los filtros aplicados
+  void limpiarFiltros() {
+    _searchQuery = '';
+    _fechaInicio = null;
+    _fechaFin = null;
+    _estadoFiltro = null;
+    cargarVentas();
   }
 
   /// Carga las sucursales disponibles
@@ -129,6 +169,10 @@ class VentasProvider extends ChangeNotifier {
       debugPrint('Cargando ventas para sucursal: ${_sucursalSeleccionada!.id}');
       final Map<String, dynamic> response = await api.ventas.getVentas(
         sucursalId: _sucursalSeleccionada!.id,
+        search: _searchQuery.isEmpty ? null : _searchQuery,
+        fechaInicio: _fechaInicio,
+        fechaFin: _fechaFin,
+        estado: _estadoFiltro,
       );
 
       debugPrint(

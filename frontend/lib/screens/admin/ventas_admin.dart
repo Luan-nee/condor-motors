@@ -159,10 +159,10 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF2D2D2D),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -170,28 +170,26 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
       ),
       child: Row(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Ventas y Facturación',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Gestiona las ventas de ${ventasProvider.sucursalSeleccionada?.nombre ?? "todas las sucursales"}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
+          const FaIcon(
+            FontAwesomeIcons.fileInvoiceDollar,
+            color: Color(0xFFE31E24),
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            ventasProvider.sucursalSeleccionada?.nombre ??
+                'Todas las sucursales',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
+          const SizedBox(width: 24),
+          Expanded(
+            child: _buildSearchField(ventasProvider),
+          ),
+          const SizedBox(width: 16),
           ElevatedButton.icon(
             icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
             label: const Text('Nueva Venta'),
@@ -218,6 +216,48 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     );
   }
 
+  Widget _buildSearchField(VentasProvider ventasProvider) {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.1),
+        ),
+      ),
+      child: TextField(
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          hintText: 'Buscar por cliente, número de documento o serie...',
+          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+          border: InputBorder.none,
+          prefixIcon: Icon(
+            Icons.search,
+            color: Colors.white.withOpacity(0.5),
+          ),
+          suffixIcon: ventasProvider.searchQuery.isNotEmpty
+              ? IconButton(
+                  icon:
+                      const Icon(Icons.close, color: Colors.white70, size: 18),
+                  onPressed: () {
+                    // Limpiar búsqueda
+                    ventasProvider.actualizarBusqueda('');
+                  },
+                )
+              : null,
+        ),
+        onChanged: (value) {
+          // Actualizar búsqueda después de un pequeño retraso
+          Future.delayed(const Duration(milliseconds: 500), () {
+            ventasProvider.actualizarBusqueda(value);
+          });
+        },
+      ),
+    );
+  }
+
   Widget _buildVentasContent(
       BuildContext context, VentasProvider ventasProvider) {
     if (ventasProvider.isVentasLoading) {
@@ -239,11 +279,17 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     }
 
     if (ventasProvider.ventas.isEmpty) {
+      String mensajeVacio = 'Aún no hay ventas registradas para esta sucursal';
+      if (ventasProvider.searchQuery.isNotEmpty) {
+        mensajeVacio =
+            'No se encontraron ventas con el término "${ventasProvider.searchQuery}"';
+      }
+
       return Center(
         child: _buildEmptyState(
           icon: FontAwesomeIcons.fileInvoiceDollar,
           title: 'No hay ventas registradas',
-          description: 'Aún no hay ventas registradas para esta sucursal',
+          description: mensajeVacio,
           actionText: 'Actualizar',
           onAction: () => ventasProvider.cargarVentas(),
         ),
@@ -252,18 +298,71 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
 
     return Column(
       children: [
-        // Filtros y búsqueda (a implementar)
         Container(
-          padding: const EdgeInsets.all(16),
-          child: const Text(
-            'Próximamente: Filtros de búsqueda',
-            style: TextStyle(
-              color: Colors.grey,
-              fontStyle: FontStyle.italic,
-            ),
+          padding: const EdgeInsets.all(12),
+          color: const Color(0xFF222222),
+          child: Row(
+            children: [
+              Text(
+                'Mostrando ${ventasProvider.ventas.length} ventas',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                ),
+              ),
+              const Spacer(),
+              OutlinedButton.icon(
+                icon: const FaIcon(
+                  FontAwesomeIcons.calendarDays,
+                  size: 14,
+                ),
+                label: const Text('Filtrar por fecha'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                ),
+                onPressed: () {
+                  // TODO: Implementar filtro por fecha
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Función en desarrollo'),
+                      backgroundColor: Colors.blue,
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                icon: const FaIcon(
+                  FontAwesomeIcons.filter,
+                  size: 14,
+                ),
+                label: const Text('Filtrar por estado'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                ),
+                onPressed: () {
+                  // TODO: Implementar filtro por estado
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Función en desarrollo'),
+                      backgroundColor: Colors.blue,
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
-        // Lista de ventas
         Expanded(
           child: ListView.builder(
             itemCount: ventasProvider.ventas.length,
@@ -277,7 +376,6 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     );
   }
 
-  // Widget de pantalla vacía o estado de error
   Widget _buildEmptyState({
     required IconData icon,
     required String title,
@@ -328,7 +426,6 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
 
   Widget _buildVentaItem(
       BuildContext context, VentasProvider ventasProvider, dynamic venta) {
-    // Obtener valores según el tipo de objeto
     final bool isVenta = venta is Venta;
 
     final String id = isVenta ? venta.id.toString() : venta['id'].toString();
@@ -374,7 +471,6 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Icono según el estado
               Container(
                 width: 50,
                 height: 50,
@@ -390,7 +486,6 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                 ),
               ),
               const SizedBox(width: 16),
-              // Información principal
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -424,7 +519,6 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                 ),
               ),
               const SizedBox(width: 16),
-              // Monto y estado
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -463,7 +557,6 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     );
   }
 
-  // Obtener color según el estado de la venta
   Color _getEstadoColor(String estado) {
     switch (estado.toUpperCase()) {
       case 'COMPLETADA':
@@ -482,10 +575,8 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     }
   }
 
-  // Mostrar detalles de la venta
   Future<void> _mostrarDetalleVenta(
       BuildContext context, VentasProvider ventasProvider, String id) async {
-    // Mostrar un indicador de carga mientras se obtienen los datos
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -509,10 +600,8 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     );
 
     try {
-      // Obtener detalles de la venta desde el servidor
       final Venta? venta = await ventasProvider.cargarDetalleVenta(id);
 
-      // Cerrar el diálogo de carga
       Navigator.of(context).pop();
 
       if (venta == null) {
@@ -525,7 +614,6 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
         return;
       }
 
-      // Mostrar el diálogo con los detalles de la venta
       if (context.mounted) {
         showDialog(
           context: context,
@@ -533,10 +621,8 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
         );
       }
     } catch (e) {
-      // Cerrar el diálogo de carga en caso de error
       Navigator.of(context).pop();
 
-      // Mostrar mensaje de error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cargar detalles: $e'),
