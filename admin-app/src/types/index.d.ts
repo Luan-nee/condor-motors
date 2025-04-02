@@ -52,10 +52,32 @@ interface TestUserSuccess {
 
 type TestSession = Method<void, TestUserSuccess, ApiErrorWithAction>
 
-type RefreshAccessToken = Method<
+type AuthLogout = Method<void, ApiSuccessWithAction, ApiErrorWithAction>
+
+type SuccessAll<T> = {
+  data: T
+  error?: never
+}
+
+type FailureAll<E> = {
+  data?: never
+  error: E
+}
+
+type ResultAll<T, E = Error> = SuccessAll<T> | FailureAll<E>
+
+type MaybePromise<T> = T | Promise<T>
+
+type MethodAll<A, T, E> = (args: A) => Promise<ResultAll<T, E>>
+
+type RefreshAccessToken = MethodAll<
   void,
   TestUserSuccess & { accessToken: string },
   ApiError
 >
 
-type AuthLogout = Method<void, ApiSuccessWithAction, ApiErrorWithAction>
+type HttpRequestOptions = ((accessToken: string) => RequestInit) | RequestInit
+
+type HttpRequestResult<T> = Promise<
+  ResultAll<T, { message: string; action?: () => void }>
+>

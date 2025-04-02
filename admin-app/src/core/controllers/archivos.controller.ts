@@ -1,22 +1,19 @@
-import {
-  accessTokenCookieName,
-  apiBaseUrl,
-  fileTypeValues
-} from '@/core/consts'
+import { fileTypeValues } from '@/core/consts'
 import type {
   DeleteFileApi,
+  FileEntity,
   GetFilesApi,
+  SuccessUploadApk,
   UploadApkFile,
   UploadApkFileDto
 } from '@/types/archivos'
-import { getCookie } from '@/core/lib/cookies'
-import { refreshAccessToken } from '@/core/lib/auth'
+import { httpRequest } from '@/core/lib/network'
 
 export const uploadApk: UploadApkFile = async (
   uploadApkFileDto: UploadApkFileDto
 ) => {
   if (uploadApkFileDto.tipo !== fileTypeValues.apk) {
-    return { data: null, error: { message: 'El tipo de archivo debe ser apk' } }
+    return { error: { message: 'El tipo de archivo debe ser apk' } }
   }
 
   const formData = new FormData()
@@ -27,154 +24,65 @@ export const uploadApk: UploadApkFile = async (
     formData.append('visible', 'true')
   }
 
-  let accessToken = getCookie(accessTokenCookieName)
-
-  const redirectToLogin = () => {
-    window.location.replace('/login')
-  }
-
-  if (accessToken == null || accessToken.length < 1) {
-    const { data, error } = await refreshAccessToken()
-
-    if (error !== null) {
-      return {
-        data: null,
-        error: { message: error.message, action: redirectToLogin }
-      }
-    }
-
-    accessToken = data.accessToken
-  }
-
-  const res = await fetch(`${apiBaseUrl}/api/archivos/apk`, {
-    method: 'POST',
-    headers: {
-      Authorization: accessToken
-    },
-    body: formData,
-    credentials: 'include'
-  })
-
-  try {
-    const textResponse = await res.text()
-    const json = JSON.parse(textResponse)
-
-    if (json.status !== 'success') {
-      return { data: null, error: { message: String(json.error) } }
-    }
-
-    return {
-      error: null,
-      data: {
-        file: json.data
-      }
-    }
-  } catch (error) {
-    return {
-      error: {
-        message: 'Unexpected format response'
+  const { data, error } = await httpRequest<SuccessUploadApk>(
+    '/api/archivos/apk',
+    (accessToken) => ({
+      method: 'POST',
+      headers: {
+        Authorization: accessToken
       },
-      data: null
-    }
+      body: formData,
+      credentials: 'include'
+    })
+  )
+
+  console.log(data)
+
+  if (error != null) {
+    return { error }
   }
+
+  return { data }
 }
 
 export const getFiles: GetFilesApi = async () => {
-  let accessToken = getCookie(accessTokenCookieName)
-
-  const redirectToLogin = () => {
-    window.location.replace('/login')
-  }
-
-  if (accessToken == null || accessToken.length < 1) {
-    const { data, error } = await refreshAccessToken()
-
-    if (error !== null) {
-      return {
-        data: null,
-        error: { message: error.message, action: redirectToLogin }
-      }
-    }
-
-    accessToken = data.accessToken
-  }
-
-  const res = await fetch(`${apiBaseUrl}/api/archivos`, {
-    method: 'GET',
-    headers: {
-      Authorization: accessToken
-    },
-    credentials: 'include'
-  })
-
-  try {
-    const textResponse = await res.text()
-    const json = JSON.parse(textResponse)
-
-    if (json.status !== 'success') {
-      return { data: null, error: { message: String(json.error) } }
-    }
-
-    return {
-      error: null,
-      data: json.data
-    }
-  } catch (error) {
-    return {
-      error: {
-        message: 'Unexpected format response'
+  const { data, error } = await httpRequest<FileEntity[]>(
+    '/api/archivos',
+    (accessToken) => ({
+      method: 'GET',
+      headers: {
+        'Content-type': 'application/json',
+        Authorization: accessToken
       },
-      data: null
-    }
+      credentials: 'include'
+    })
+  )
+
+  if (error != null) {
+    return { error: { message: error.message } }
   }
+
+  return { data }
 }
 
 export const deleteFile: DeleteFileApi = async ({ id: fileId }) => {
-  let accessToken = getCookie(accessTokenCookieName)
-
-  const redirectToLogin = () => {
-    window.location.replace('/login')
-  }
-
-  if (accessToken == null || accessToken.length < 1) {
-    const { data, error } = await refreshAccessToken()
-
-    if (error !== null) {
-      return {
-        data: null,
-        error: { message: error.message, action: redirectToLogin }
-      }
-    }
-
-    accessToken = data.accessToken
-  }
-
-  const res = await fetch(`${apiBaseUrl}/api/archivos/${fileId}`, {
-    method: 'DELETE',
-    headers: {
-      Authorization: accessToken
-    },
-    credentials: 'include'
-  })
-
-  try {
-    const textResponse = await res.text()
-    const json = JSON.parse(textResponse)
-
-    if (json.status !== 'success') {
-      return { data: null, error: { message: String(json.error) } }
-    }
-
-    return {
-      error: null,
-      data: json.data
-    }
-  } catch (error) {
-    return {
-      error: {
-        message: 'Unexpected format response'
+  const { data, error } = await httpRequest<{ id: number }>(
+    `/api/archivos/${fileId}`,
+    (accessToken) => ({
+      method: 'DELETE',
+      headers: {
+        'Content-type': 'application/json',
+        Authorization: accessToken
       },
-      data: null
-    }
+      credentials: 'include'
+    })
+  )
+
+  if (error != null) {
+    return { error: error }
+  }
+
+  return {
+    data
   }
 }

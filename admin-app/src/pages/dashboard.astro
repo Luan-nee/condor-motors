@@ -239,7 +239,7 @@ import { FileList, FetchButton } from '@/components/solidjs/FileList'
         return
       }
 
-      $uploadFileFormSuccessMessage.innerText = JSON.stringify(data.file)
+      $uploadFileFormSuccessMessage.innerText = JSON.stringify(data)
     })
 
     $logoutButton.addEventListener('click', async () => {

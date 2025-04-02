@@ -1,44 +1,63 @@
 import { deleteCookie, getCookie, setCookie } from '@/core/lib/cookies'
 import { accessTokenCookieName, apiBaseUrl } from '@/core/consts'
+import { customFetch, resToData } from '@/core/lib/network'
 
 export const refreshAccessToken: RefreshAccessToken = async () => {
-  const res = await fetch(`${apiBaseUrl}/api/auth/refresh`, {
-    method: 'POST',
-    headers: {
-      'Content-type': 'application/json'
-    },
-    credentials: 'include'
-  })
+  const { res, fetchError } = await customFetch(
+    `${apiBaseUrl}/api/auth/refresh`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-type': 'application/json'
+      },
+      credentials: 'include'
+    }
+  )
+
+  if (fetchError != null) {
+    return {
+      error: fetchError
+    }
+  }
 
   const accessToken = res.headers.get('Authorization')
 
-  if (accessToken != null) {
-    setCookie(accessTokenCookieName, accessToken, 15)
+  if (accessToken == null) {
+    return {
+      error: { message: 'Ocurrió un error al intentar refrescar la sesión' }
+    }
   }
 
-  try {
-    const textResponse = await res.text()
-    const json = JSON.parse(textResponse)
+  setCookie(accessTokenCookieName, accessToken, 15)
 
-    if (json.status !== 'success' || accessToken == null) {
-      return { data: null, error: { message: String(json.error) } }
-    }
+  const { data, error } = await resToData(res)
 
-    return {
-      error: null,
-      data: {
-        accessToken,
-        user: json.data
-      }
-    }
-  } catch (error) {
-    return {
-      error: {
-        message: 'Unexpected format response'
-      },
-      data: null
+  if (error != null) {
+    return { error }
+  }
+
+  return {
+    data: {
+      accessToken: accessToken,
+      user: data
     }
   }
+}
+
+export async function getAccessToken() {
+  const accessTokenCookie = getCookie(accessTokenCookieName)
+
+  if (accessTokenCookie != null && accessTokenCookie !== '') {
+    return { data: accessTokenCookie }
+  }
+
+  const { data, error } = await refreshAccessToken()
+
+  if (error != null) {
+    return { error }
+  }
+
+  return { data: data.accessToken }
 }
 
 export const testSession: TestSession = async () => {
@@ -51,7 +70,7 @@ export const testSession: TestSession = async () => {
   if (accessToken == null || accessToken.length < 1) {
     const { data, error } = await refreshAccessToken()
 
-    if (error !== null) {
+    if (error != null) {
       return {
         data: null,
         error: { message: error.message, action: redirectToLogin }

@@ -44,7 +44,7 @@ export class CreateArchivo {
 
     const now = new Date()
 
-    const file = await db
+    const [file] = await db
       .insert(archivosAppTable)
       .values({
         nombre: createArchivoDto.nombre,
