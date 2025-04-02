@@ -28,14 +28,19 @@ export class GetStockBajoLiquidacion {
       .where(eq(detallesProductoTable.stockBajo, true))
 
     const getLiquidacion = await db
-      .select({ cantidadLiquidacion: count() })
+      .select({ liquidacion: count() })
       .from(detallesProductoTable)
       .where(eq(detallesProductoTable.liquidacion, true))
 
     const [stockBajo] = getStockBajo
     const [liquidacion] = getLiquidacion
 
-    return { ...stockBajo, ...liquidacion, sucursales }
+    const productos = {
+      ...stockBajo,
+      ...liquidacion
+    }
+
+    return { productos, sucursales }
   }
 
   async execute() {

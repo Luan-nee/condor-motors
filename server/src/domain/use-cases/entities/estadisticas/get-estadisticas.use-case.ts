@@ -34,7 +34,7 @@ export class GetReporteVentas {
       .select({ ventasDelMes: count(ventasTable.id) })
       .from(ventasTable)
       .where(gte(ventasTable.fechaCreacion, inicioMes))
-    const [mes] = getVentasMes
+    const [esteMes] = getVentasMes
     const whereCondition = undefined
     // queriesDto.startDate instanceof Date && queriesDto.endDate instanceof Date
     //   ? and(
@@ -55,11 +55,11 @@ export class GetReporteVentas {
       .where(whereCondition)
 
     const getVentaHoy = await db
-      .select({ ventaDelDia: count(ventasTable.id) })
+      .select({ hoy: count(ventasTable.id) })
       .from(ventasTable)
       .where(gte(ventasTable.fechaCreacion, hoy))
 
-    const getVentasSucursal = await db
+    const sucursales = await db
       .select({
         Sucursal: sucursalesTable.nombre,
         Ventas: count(),
@@ -77,13 +77,18 @@ export class GetReporteVentas {
       .where(whereCondition)
       .groupBy(ventasTable.sucursalId, sucursalesTable.nombre)
 
-    const [data] = dataTotal
+    const [ventas] = dataTotal
     const [hoyDia] = getVentaHoy
-    return {
-      ...data,
-      ...mes,
+
+    const totalVentas = {
       ...hoyDia,
-      getVentasSucursal
+      ...esteMes
+    }
+
+    return {
+      ...ventas,
+      totalVentas,
+      sucursales
     }
   }
 
