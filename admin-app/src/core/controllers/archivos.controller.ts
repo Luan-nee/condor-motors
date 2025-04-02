@@ -36,6 +36,8 @@ export const uploadApk: UploadApkFile = async (
     })
   )
 
+  console.log(data)
+
   if (error != null) {
     return { error }
   }
