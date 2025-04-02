@@ -685,7 +685,6 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     // Mostramos un diálogo con la información cargada hasta el momento
     showDialog(
       context: context,
-      barrierDismissible: true,
       builder: (BuildContext context) {
         return ValueListenableBuilder<dynamic>(
           valueListenable: ventaNotifier,

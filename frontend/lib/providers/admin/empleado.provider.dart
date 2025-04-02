@@ -519,7 +519,7 @@ class EmpleadoProvider extends ChangeNotifier {
   }
 
   // Método para manejar errores de la API
-  void _handleApiError(dynamic e) {
+  void _handleApiError(e) {
     String errorMsg = e.toString();
 
     if (e is ApiException) {

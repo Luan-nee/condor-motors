@@ -935,8 +935,9 @@ class _HistorialVentasComputerScreenState
                         }
 
                         // Asegurarse de que el número de página esté en rango
-                        if (pageNumber > _paginacion!.totalPages)
+                        if (pageNumber > _paginacion!.totalPages) {
                           return const SizedBox();
+                        }
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
