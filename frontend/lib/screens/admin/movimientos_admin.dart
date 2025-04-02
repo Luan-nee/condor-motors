@@ -149,12 +149,21 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                         ),
                       ),
                       // Botón de refrescar
-                      IconButton(
+                      ElevatedButton.icon(
                         icon: const FaIcon(FontAwesomeIcons.arrowsRotate,
                             size: 16, color: Colors.white),
+                        label: const Text('Actualizar'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0075FF),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                        ),
                         onPressed: () => _cargarMovimientos(forceRefresh: true),
-                        tooltip: 'Refrescar datos',
                       ),
+                      const SizedBox(width: 16),
                     ],
                   ),
                 ],
