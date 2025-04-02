@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-type-assertion */
-import { defaultQueries, filterTypeValues, orderValues } from '@/consts'
+import {
+  defaultQueries,
+  filterTypeValues,
+  maxPageSize,
+  orderValues
+} from '@/consts'
 import z from 'zod'
 import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
 import { Validator } from '@/domain/validators/validator'
@@ -42,8 +47,8 @@ export const queriesBaseSchema = {
       switch (true) {
         case value < 1:
           return 1
-        case value > 200:
-          return 200
+        case value > maxPageSize:
+          return maxPageSize
         default:
           return value
       }
