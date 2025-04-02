@@ -5,16 +5,16 @@ import { fileTypeValues } from '@/consts'
 import type { FileTypeValues } from '@/types/zod'
 
 const createArchivoSchema = z.object({
-  nombre: z
+  nombre: z.coerce
     .string()
     .trim()
     .min(2)
     .max(255)
     .refine((val) => Validator.isValidDescription(val), {
       message:
-        'La descripción solo puede contener este set de caracteres: a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ.,¡!¿?-()[]{}$%&*\'_"@#+'
+        'El nombre solo puede contener este set de caracteres: a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ.,¡!¿?-()[]{}$%&*\'_"@#+'
     }),
-  tipo: z
+  tipo: z.coerce
     .string()
     .trim()
     .refine(
@@ -28,7 +28,7 @@ const createArchivoSchema = z.object({
           'El tipo de archivo es inválido solo se permiten estos tipos (apk | desktop-app)'
       }
     ),
-  visible: z.boolean().default(false)
+  visible: z.coerce.boolean().default(false)
 })
 
 export const createArchivoValidator = (object: unknown) =>
