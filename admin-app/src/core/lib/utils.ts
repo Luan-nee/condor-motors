@@ -24,6 +24,22 @@ export const selectWith = <T extends HTMLElement>(
   return $element as T
 }
 
+export const selectSvgWith = <T extends SVGElement>(
+  selector: string,
+  parent: ParentNode = document
+): T => {
+  const $element = parent.querySelector(selector)
+  if ($element == null) {
+    throw new Error(`SVG element not found with selector: ${selector}`)
+  }
+
+  if (!($element instanceof SVGElement)) {
+    throw new Error(`Element is not an instance of SVGElement`)
+  }
+
+  return $element as T
+}
+
 export const $all = (selector: string) => document.querySelectorAll(selector)
 
 export const validateAndFormatFileName = (value: string) => {

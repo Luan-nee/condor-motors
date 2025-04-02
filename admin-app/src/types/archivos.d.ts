@@ -25,7 +25,7 @@ export interface UploadApkFileDto {
   nombre: string
   visible: boolean
   tipo: FileTypeValues
-  appFile: string
+  appFile: File
 }
 
 export type UploadApkFile = Method<UploadApkFileDto, SuccessUploadApk, ApiError>

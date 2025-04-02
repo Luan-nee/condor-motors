@@ -48,9 +48,20 @@ export const testSession: TestSession = async () => {
   }
 
   if (accessToken == null || accessToken.length < 1) {
+    const { data, error } = await refreshAccessToken()
+
+    if (error !== null) {
+      return {
+        data: null,
+        error: { message: error.message, action: redirectToLogin }
+      }
+    }
+
     return {
-      data: null,
-      error: { message: 'Invalid session', action: redirectToLogin }
+      error: null,
+      data: {
+        user: data
+      }
     }
   }
 
@@ -125,7 +136,7 @@ export const login: AuthLogin = async ({ username, password }) => {
   const accessToken = res.headers.get('Authorization')
 
   if (accessToken != null) {
-    setCookie(accessTokenCookieName, accessToken, 15)
+    setCookie(accessTokenCookieName, accessToken, 1)
   }
 
   try {

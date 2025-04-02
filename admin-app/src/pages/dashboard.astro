@@ -1,8 +1,9 @@
 ---
-import Button from '@/components/atoms/Button.astro';
-import Input from '@/components/atoms/Input.astro';
-import Label from '@/components/atoms/Label.astro';
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import Button from '@/components/atoms/Button.astro'
+import Input from '@/components/atoms/Input.astro'
+import Label from '@/components/atoms/Label.astro'
+import { fileTypeValues } from '@/core/consts'
+import BaseLayout from '@/layouts/BaseLayout.astro'
 ---
 
 <BaseLayout title="Dashboard">
@@ -58,7 +59,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
             <h2 class="font-medium text-gray-300">
               Subir apk o aplicación de escritorio
             </h2>
-            <form class="flex flex-col space-y-4">
+            <form class="flex flex-col space-y-4" id="upload-file-form">
               <div class="grid md:grid-cols-2 gap-4">
                 <div class="flex flex-col space-y-4">
                   <Label text="Nombre">
@@ -72,18 +73,19 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 
                   <Label text="Tipo">
                     <select
+                      name="fileType"
                       class="px-3 py-2 border border-white/30 h-full
                       bg-gray-500/5 hover:bg-gray-300/5
                       transition-colors rounded-md
                       hover:border-white/60"
                     >
-                      <option value="null" selected disabled
-                        >Seleccione un tipo</option
-                      >
-                      <option value="apk">APK</option>
-                      <option value="desktop-app"
-                        >Aplicación de escritorio</option
-                      >
+                      <option value="null" selected disabled>
+                        Seleccione un tipo
+                      </option>
+                      <option value={fileTypeValues.apk}> APK </option>
+                      <option value={fileTypeValues.desktopApp}>
+                        Aplicación de escritorio
+                      </option>
                     </select>
                   </Label>
                 </div>
@@ -107,6 +109,16 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
                 </button>
                 <Button type="submit">Subir</Button>
               </div>
+              <div
+                id="error-message-upload-file-form"
+                class="text-sm font-medium text-red-300"
+              >
+              </div>
+              <div
+                id="success-message-upload-file-form"
+                class="text-sm font-medium text-green-300 mt-3"
+              >
+              </div>
             </form>
           </div>
         </section>
@@ -118,48 +130,86 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 </BaseLayout>
 
 <script>
-  import { testSession, logout } from '@/core/lib/auth';
-  import { selectWith } from '@/core/lib/utils';
-
-  (async () => {
-    const { data, error } = await testSession();
+  import { fileTypeValues } from '@/core/consts'
+  import { uploadApk } from '@/core/controllers/archivos.controller'
+  import { testSession, logout } from '@/core/lib/auth'
+  import { selectWith } from '@/core/lib/utils'
+  ;(async () => {
+    const { data, error } = await testSession()
 
     if (error != null) {
-      error.action();
-      return;
+      error.action()
+      return
     }
 
-    const $userContainer = selectWith<HTMLDivElement>('#user-container');
-    const $cardMessage = selectWith<HTMLParagraphElement>('#card-message');
+    const $userContainer = selectWith<HTMLDivElement>('#user-container')
+    const $cardMessage = selectWith<HTMLParagraphElement>('#card-message')
     const $username = selectWith<HTMLSpanElement>(
       '[data-id="usuario"]',
       $userContainer
-    );
-    const $rol = selectWith<HTMLSpanElement>('[data-id="rol"]', $userContainer);
+    )
+    const $rol = selectWith<HTMLSpanElement>('[data-id="rol"]', $userContainer)
 
-    $cardMessage.innerText = '';
-    $userContainer.classList.remove('hidden');
-    $username.innerText = data.user.usuario;
-    $rol.innerText = data.user.rol.nombre;
+    $cardMessage.innerText = ''
+    $userContainer.classList.remove('hidden')
+    $username.innerText = data.user.usuario
+    $rol.innerText = data.user.rol.nombre
 
     const $logoutButton = selectWith<HTMLButtonElement>(
       '#logout',
       $userContainer
-    );
+    )
 
-    $logoutButton.addEventListener('click', async () => {
-      const { data, error } = await logout();
+    const $uploadFileForm = selectWith<HTMLFormElement>('#upload-file-form')
+    const $uploadFileFormSuccessMessage = selectWith<HTMLFormElement>(
+      '#success-message-upload-file-form'
+    )
+    const $uploadFileFormErrorMessage = selectWith<HTMLFormElement>(
+      '#success-message-upload-file-form'
+    )
 
-      console.log(data, error);
+    $uploadFileForm.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      $uploadFileFormSuccessMessage.innerText = ''
+      $uploadFileFormErrorMessage.innerText = ''
 
-      if (error != null) {
-        $cardMessage.innerText = error.message;
-        error.action();
-        return;
+      const formData = new FormData($uploadFileForm)
+      const { name, password: fileType } = Object.fromEntries(formData)
+
+      if (name == null || typeof name !== 'string') {
+        $uploadFileFormSuccessMessage.innerText =
+          'Ingrese un nombre para identificar su archivo'
+        return
       }
 
-      $cardMessage.innerText = data.message;
-      data.action();
-    });
-  })();
+      if (fileType == null || typeof fileType !== 'string') {
+        $uploadFileFormErrorMessage.innerText =
+          'Seleccione el tipo de archivo que está subiendo'
+        return
+      }
+
+      if (!Object.values(fileTypeValues).includes(fileType as any)) {
+        $uploadFileFormErrorMessage.innerText =
+          'El tipo de archivo seleccionado es inválido'
+        return
+      }
+
+      // const {data, error} = await uploadApk()
+    })
+
+    $logoutButton.addEventListener('click', async () => {
+      const { data, error } = await logout()
+
+      console.log(data, error)
+
+      if (error != null) {
+        $cardMessage.innerText = error.message
+        error.action()
+        return
+      }
+
+      $cardMessage.innerText = data.message
+      data.action()
+    })
+  })()
 </script>
