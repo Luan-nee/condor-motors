@@ -133,22 +133,6 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
           shadowColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
           actions: <Widget>[
-            // Botón para activar/desactivar vista consolidada
-            IconButton(
-              icon: Icon(
-                stockProvider.mostrarVistaConsolidada
-                    ? FontAwesomeIcons.tableList
-                    : FontAwesomeIcons.tableColumns,
-                size: 18,
-                color: stockProvider.mostrarVistaConsolidada
-                    ? const Color(0xFFE31E24)
-                    : Colors.white,
-              ),
-              onPressed: stockProvider.toggleVistaConsolidada,
-              tooltip: stockProvider.mostrarVistaConsolidada
-                  ? 'Ver vista individual'
-                  : 'Ver vista consolidada',
-            ),
             ElevatedButton.icon(
               icon: const FaIcon(FontAwesomeIcons.arrowsRotate,
                   size: 16, color: Colors.white),
