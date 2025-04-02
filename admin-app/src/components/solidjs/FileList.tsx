@@ -1,6 +1,6 @@
 import { deleteFile, getFiles } from '@/core/controllers/archivos.controller'
 import { FileCard } from './FileCard'
-import { createEffect, createSignal, onMount } from 'solid-js'
+import { createEffect, createSignal } from 'solid-js'
 import type { FileEntity } from '@/types/archivos'
 import { BubbleLoadingIcon } from './icons/BubbleLoadingIcon'
 import { RefreshIcon } from './icons/RefreshIcon'
