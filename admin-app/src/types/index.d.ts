@@ -52,6 +52,10 @@ interface TestUserSuccess {
 
 type TestSession = Method<void, TestUserSuccess, ApiErrorWithAction>
 
-type RefreshAccessToken = Method<void, TestUserSuccess, ApiError>
+type RefreshAccessToken = Method<
+  void,
+  TestUserSuccess & { accessToken: string },
+  ApiError
+>
 
 type AuthLogout = Method<void, ApiSuccessWithAction, ApiErrorWithAction>

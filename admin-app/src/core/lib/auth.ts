@@ -20,13 +20,14 @@ export const refreshAccessToken: RefreshAccessToken = async () => {
     const textResponse = await res.text()
     const json = JSON.parse(textResponse)
 
-    if (json.status !== 'success') {
+    if (json.status !== 'success' || accessToken == null) {
       return { data: null, error: { message: String(json.error) } }
     }
 
     return {
       error: null,
       data: {
+        accessToken,
         user: json.data
       }
     }
