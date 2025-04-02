@@ -59,11 +59,12 @@ import EyeIcon from '@/components/icons/EyeIcon.astro'
 <script>
   import { testSession, login } from '@/core/lib/auth'
   import { selectWith, selectSvgWith } from '@/core/lib/utils'
+  import { routes } from '@/core/routes'
   ;(async () => {
     const { data } = await testSession()
 
     if (data != null) {
-      window.location.replace('/dashboard')
+      window.location.replace(routes.dashboard)
       return
     }
 

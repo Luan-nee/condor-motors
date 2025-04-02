@@ -1,6 +1,7 @@
 import { deleteCookie, getCookie, setCookie } from '@/core/lib/cookies'
 import { accessTokenCookieName, apiBaseUrl } from '@/core/consts'
 import { customFetch, resToData } from '@/core/lib/network'
+import { routes } from '@/core/routes'
 
 export const refreshAccessToken: RefreshAccessToken = async () => {
   const { res, fetchError } = await customFetch(
@@ -64,7 +65,7 @@ export const testSession: TestSession = async () => {
   let accessToken = getCookie(accessTokenCookieName)
 
   const redirectToLogin = () => {
-    window.location.replace('/login')
+    window.location.replace(routes.login)
   }
 
   if (accessToken == null || accessToken.length < 1) {
@@ -172,7 +173,7 @@ export const login: AuthLogin = async ({ username, password }) => {
       data: {
         message: 'Bienvenido ' + json.data.usuario,
         action: () => {
-          window.location.replace('/dashboard')
+          window.location.replace(routes.dashboard)
         }
       }
     }
@@ -190,7 +191,7 @@ export const logout: AuthLogout = async () => {
   let accessToken = getCookie(accessTokenCookieName)
 
   const redirectToLogin = () => {
-    window.location.replace('/login')
+    window.location.replace(routes.login)
   }
 
   if (accessToken == null || accessToken.length < 1) {
