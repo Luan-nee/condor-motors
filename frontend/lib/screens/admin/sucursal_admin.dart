@@ -258,16 +258,36 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
               tooltip: 'Filtros avanzados',
               onPressed: _toggleFiltrosAvanzados,
             ),
-            IconButton(
-              icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16),
-              tooltip: 'Actualizar datos',
+            ElevatedButton.icon(
+              icon: const FaIcon(FontAwesomeIcons.arrowsRotate,
+                  size: 16, color: Colors.white),
+              label: const Text('Actualizar datos'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0075FF),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+              ),
               onPressed: provider.cargarSucursales,
             ),
-            IconButton(
-              icon: const Icon(Icons.add),
-              tooltip: 'Agregar nueva sucursal',
+            const SizedBox(width: 12),
+            ElevatedButton.icon(
+              icon: const FaIcon(FontAwesomeIcons.plus,
+                  size: 16, color: Colors.white),
+              label: const Text('Nueva Sucursal'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE31E24),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+              ),
               onPressed: () => _mostrarFormularioSucursal(),
             ),
+            const SizedBox(width: 12)
           ],
         ),
         body: Column(
@@ -423,7 +443,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                   const SizedBox(height: 12),
                   // Switch para agrupar/desagrupar
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: <Widget>[
                       Row(
                         children: <Widget>[
@@ -444,6 +464,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                           ),
                         ],
                       ),
+                      const SizedBox(width: 12),
                       Switch(
                         value: _mostrarAgrupados,
                         onChanged: (bool value) {
