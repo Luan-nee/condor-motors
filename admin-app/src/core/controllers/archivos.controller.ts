@@ -1,5 +1,11 @@
-import { apiBaseUrl, fileTypeValues } from '@/core/consts'
+import {
+  accessTokenCookieName,
+  apiBaseUrl,
+  fileTypeValues
+} from '@/core/consts'
 import type { UploadApkFile, UploadApkFileDto } from '@/types/archivos'
+import { getCookie } from '@/core/lib/cookies'
+import { refreshAccessToken } from '@/core/lib/auth'
 
 export const uploadApk: UploadApkFile = async (
   uploadApkFileDto: UploadApkFileDto
@@ -8,20 +14,40 @@ export const uploadApk: UploadApkFile = async (
     return { data: null, error: { message: 'El tipo de archivo debe ser apk' } }
   }
 
-  const data = {
-    nombre: uploadApkFileDto.nombre,
-    visible: uploadApkFileDto.visible,
-    tipo: uploadApkFileDto.tipo,
-    app_file: uploadApkFileDto.appFile
+  const formData = new FormData()
+  formData.append('nombre', uploadApkFileDto.nombre)
+  formData.append('tipo', uploadApkFileDto.tipo)
+  formData.append('app_file', uploadApkFileDto.appFile)
+  if (uploadApkFileDto.visible) {
+    formData.append('visible', 'true')
+  }
+
+  let accessToken = getCookie(accessTokenCookieName)
+
+  const redirectToLogin = () => {
+    window.location.replace('/login')
+  }
+
+  if (accessToken == null || accessToken.length < 1) {
+    const { data, error } = await refreshAccessToken()
+
+    if (error !== null) {
+      return {
+        data: null,
+        error: { message: error.message, action: redirectToLogin }
+      }
+    }
+
+    accessToken = data.accessToken
   }
 
   const res = await fetch(`${apiBaseUrl}/api/archivos/apk`, {
     method: 'POST',
     headers: {
-      'Content-type': 'application/json'
+      Authorization: accessToken
     },
-    credentials: 'include',
-    body: JSON.stringify(data)
+    body: formData,
+    credentials: 'include'
   })
 
   try {
