@@ -347,6 +347,27 @@ class VentasProvider extends ChangeNotifier {
         throw Exception(errorMsg);
       }
 
+      // Llamar a la API para declarar la venta
+      final result = await api.ventas.declararVenta(
+        ventaId,
+        sucursalId: _sucursalSeleccionada!.id,
+        enviarCliente: enviarCliente,
+      );
+
+      // Verificar si la respuesta es exitosa
+      if (result == null || result['status'] != 'success') {
+        final errorMsg = result?['message'] ?? 'Error al declarar la venta';
+        if (onError != null) {
+          onError(errorMsg);
+        } else {
+          mostrarMensaje(
+            mensaje: errorMsg,
+            backgroundColor: Colors.red,
+          );
+        }
+        return false;
+      }
+
       // Forzar recarga de los datos para obtener el estado actualizado
       await cargarVentas();
 
@@ -361,7 +382,7 @@ class VentasProvider extends ChangeNotifier {
         onSuccess();
       } else {
         mostrarMensaje(
-          mensaje: 'Venta declarada correctamente',
+          mensaje: 'Venta declarada correctamente a SUNAT',
           backgroundColor: Colors.green,
         );
       }
