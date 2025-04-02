@@ -577,55 +577,62 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
 
   Future<void> _mostrarDetalleVenta(
       BuildContext context, VentasProvider ventasProvider, String id) async {
+    // Buscamos primero si ya tenemos esta venta en nuestra lista
+    dynamic ventaPrevia;
+    for (var v in ventasProvider.ventas) {
+      if ((v is Venta && v.id.toString() == id) ||
+          (v is Map && v['id'].toString() == id)) {
+        ventaPrevia = v;
+        break;
+      }
+    }
+
+    // Creamos un ValueNotifier para gestionar los datos de la venta
+    final ValueNotifier<dynamic> ventaNotifier =
+        ValueNotifier<dynamic>(ventaPrevia);
+    // Notifier para controlar el estado de carga
+    final ValueNotifier<bool> isLoadingFullData = ValueNotifier<bool>(false);
+
+    // Mostramos un diálogo con la información cargada hasta el momento
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return const AlertDialog(
-          content: SizedBox(
-            height: 100,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Cargando detalles de la venta...'),
-                ],
-              ),
-            ),
-          ),
+        return ValueListenableBuilder<dynamic>(
+          valueListenable: ventaNotifier,
+          builder: (context, currentVenta, child) {
+            return ValueListenableBuilder<bool>(
+                valueListenable: isLoadingFullData,
+                builder: (context, isLoading, _) {
+                  return VentaDetalleDialog(
+                    venta: currentVenta,
+                    isLoadingFullData: isLoading,
+                  );
+                });
+          },
         );
       },
     );
 
     try {
-      final Venta? venta = await ventasProvider.cargarDetalleVenta(id);
+      // Marcamos que estamos cargando los datos completos
+      isLoadingFullData.value = true;
 
-      Navigator.of(context).pop();
+      // Obtener datos completos de la venta para mostrar todos los detalles
+      final ventaCompleta = await ventasProvider.cargarDetalleVenta(id);
 
-      if (venta == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(ventasProvider.ventaDetalleErrorMessage),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
+      // Actualizar los datos de la venta en el ValueNotifier
+      ventaNotifier.value = ventaCompleta;
 
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => VentaDetalleDialog(venta: venta),
-        );
-      }
+      // Marcar que ya no estamos cargando
+      isLoadingFullData.value = false;
     } catch (e) {
+      // En caso de error, cerrar el diálogo y mostrar un mensaje
       Navigator.of(context).pop();
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al cargar detalles: $e'),
+          content:
+              Text('Error al cargar los detalles de la venta: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
