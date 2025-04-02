@@ -10,7 +10,7 @@ export class ArchivosRoutes {
   static get routes() {
     const router = Router()
 
-    const sucursalesController = new ArchivosController()
+    const archivosController = new ArchivosController()
 
     router.post(
       '/apk',
@@ -18,7 +18,7 @@ export class ArchivosRoutes {
         AccessControlMiddleware.requests([permissionCodes.archivos.createAny]),
         FilesMiddleware.apk.single(ArchivosRoutes.fileFieldName)
       ],
-      sucursalesController.uploadApk
+      archivosController.uploadApk
     )
 
     router.post(
@@ -27,7 +27,7 @@ export class ArchivosRoutes {
         AccessControlMiddleware.requests([permissionCodes.archivos.createAny])
         // FilesMiddleware.desktopApp.single(ArchivosRoutes.fileFieldName)
       ],
-      sucursalesController.uploadDesktopApp
+      archivosController.uploadDesktopApp
     )
 
     router.get(
@@ -38,10 +38,14 @@ export class ArchivosRoutes {
           permissionCodes.archivos.getVisible
         ])
       ],
-      sucursalesController.getAll
+      archivosController.getAll
     )
 
-    router.delete('/:id', sucursalesController.delete)
+    router.delete(
+      '/:id',
+      [AccessControlMiddleware.requests([permissionCodes.archivos.deleteAny])],
+      archivosController.delete
+    )
 
     return router
   }
