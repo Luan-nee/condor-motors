@@ -43,7 +43,7 @@ export const FileList = () => {
   })
 
   const deleteItem = (id: number) => async () => {
-    const { data: apiData, error: apiError } = await deleteFile({ id })
+    const { error: apiError } = await deleteFile({ id })
 
     if (apiError != null) {
       setError(apiError.message)
@@ -56,13 +56,15 @@ export const FileList = () => {
 
   return (
     <>
-      {error().length > 0 && (
-        <div class="text-sm text-red-400 font-medium">{error()}</div>
-      )}
       {files().length > 0 &&
         files().map((item) => (
           <FileCard file={item} deleteItem={deleteItem(item.id)} />
         ))}
+      {error().length > 0 && (
+        <div class="flex flex-col justify-center items-center gap-4 h-full text-white/70">
+          <div class="text-sm text-red-400 font-medium">{error()}</div>
+        </div>
+      )}
       {!fetched() && (
         <div class="flex flex-col justify-center items-center gap-4 h-full text-white/70">
           <BubbleLoadingIcon class="w-8 h-8" />

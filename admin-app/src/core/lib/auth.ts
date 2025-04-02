@@ -1,42 +1,73 @@
 import { deleteCookie, getCookie, setCookie } from '@/core/lib/cookies'
 import { accessTokenCookieName, apiBaseUrl } from '@/core/consts'
+import { customFetch } from '../network/request'
+import { tryCatchAll } from './try-catch'
 
-export const refreshAccessToken: RefreshAccessToken = async () => {
-  const res = await fetch(`${apiBaseUrl}/api/auth/refresh`, {
-    method: 'POST',
-    headers: {
-      'Content-type': 'application/json'
-    },
-    credentials: 'include'
+const resToData = async (res: Response) => {
+  const { data: json, error: jsonError } = await tryCatchAll(async () => {
+    const textResponse = await res.text()
+    return JSON.parse(textResponse)
   })
 
-  const accessToken = res.headers.get('Authorization')
-
-  if (accessToken != null) {
-    setCookie(accessTokenCookieName, accessToken, 15)
-  }
-
-  try {
-    const textResponse = await res.text()
-    const json = JSON.parse(textResponse)
-
-    if (json.status !== 'success' || accessToken == null) {
-      return { data: null, error: { message: String(json.error) } }
-    }
-
-    return {
-      error: null,
-      data: {
-        accessToken,
-        user: json.data
-      }
-    }
-  } catch (error) {
+  if (jsonError != null) {
     return {
       error: {
         message: 'Unexpected format response'
+      }
+    }
+  }
+
+  if (json.status !== 'success') {
+    return {
+      error: {
+        message: String(json.error)
+      }
+    }
+  }
+
+  return {
+    data: json.data
+  }
+}
+
+export const refreshAccessToken: RefreshAccessToken = async () => {
+  const { res, fetchError } = await customFetch(
+    `${apiBaseUrl}/api/auth/refresh`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-type': 'application/json'
       },
-      data: null
+      credentials: 'include'
+    }
+  )
+
+  if (fetchError != null) {
+    return {
+      error: fetchError
+    }
+  }
+
+  const accessToken = res.headers.get('Authorization')
+
+  if (accessToken == null) {
+    return {
+      error: { message: 'Ocurrió un error al intentar refrescar la sesión' }
+    }
+  }
+
+  setCookie(accessTokenCookieName, accessToken, 15)
+
+  const { data, error } = await resToData(res)
+
+  if (error != null) {
+    return { error }
+  }
+
+  return {
+    data: {
+      accessToken: accessToken,
+      user: data
     }
   }
 }
@@ -51,7 +82,7 @@ export const testSession: TestSession = async () => {
   if (accessToken == null || accessToken.length < 1) {
     const { data, error } = await refreshAccessToken()
 
-    if (error !== null) {
+    if (error != null) {
       return {
         data: null,
         error: { message: error.message, action: redirectToLogin }

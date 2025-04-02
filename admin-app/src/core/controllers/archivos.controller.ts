@@ -5,12 +5,14 @@ import {
 } from '@/core/consts'
 import type {
   DeleteFileApi,
+  FileEntity,
   GetFilesApi,
   UploadApkFile,
   UploadApkFileDto
 } from '@/types/archivos'
 import { getCookie } from '@/core/lib/cookies'
 import { refreshAccessToken } from '@/core/lib/auth'
+import { httpRequest } from '@/core/network/request'
 
 export const uploadApk: UploadApkFile = async (
   uploadApkFileDto: UploadApkFileDto
@@ -80,52 +82,29 @@ export const uploadApk: UploadApkFile = async (
 }
 
 export const getFiles: GetFilesApi = async () => {
-  let accessToken = getCookie(accessTokenCookieName)
-
-  const redirectToLogin = () => {
-    window.location.replace('/login')
-  }
-
-  if (accessToken == null || accessToken.length < 1) {
-    const { data, error } = await refreshAccessToken()
-
-    if (error !== null) {
-      return {
-        data: null,
-        error: { message: error.message, action: redirectToLogin }
-      }
-    }
-
-    accessToken = data.accessToken
-  }
-
-  const res = await fetch(`${apiBaseUrl}/api/archivos`, {
-    method: 'GET',
-    headers: {
-      Authorization: accessToken
-    },
-    credentials: 'include'
-  })
+  console.log('fetching data')
 
   try {
-    const textResponse = await res.text()
-    const json = JSON.parse(textResponse)
+    const { data, error } = await httpRequest<FileEntity[]>(
+      '/api/archivos',
+      (accessToken) => ({
+        method: 'GET',
+        headers: {
+          Authorization: accessToken
+        },
+        credentials: 'include'
+      })
+    )
 
-    if (json.status !== 'success') {
-      return { data: null, error: { message: String(json.error) } }
+    console.log('fetching data after')
+
+    if (error != null) {
+      return { data, error: { message: error.message } }
     }
 
-    return {
-      error: null,
-      data: json.data
-    }
+    return { data, error }
   } catch (error) {
-    return {
-      error: {
-        message: 'Unexpected format response'
-      },
-      data: null
-    }
+    return { data: null, error: { message: 'Network error' } }
   }
 }
 

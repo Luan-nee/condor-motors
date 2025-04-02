@@ -1,55 +1,63 @@
 import { accessTokenCookieName, apiBaseUrl } from '@/core/consts'
 import { getCookie } from '@/core/lib/cookies'
 import { refreshAccessToken } from '@/core/lib/auth'
-import { tryCatch } from '@/core/lib/try-catch'
-import type { T } from 'node_modules/tailwindcss/dist/types-B254mqw1.d.mts'
+import { tryCatch, tryCatchAll } from '@/core/lib/try-catch'
 
-interface Success<T> {
-  data: T
-  error: null
-}
-
-interface Failure<E> {
-  data: null
-  error: E
-}
-
-type Result<T, E> = Success<T> | Failure<E>
-
-type HttpRequest = (
-  url: string,
-  options: (accessToken: string) => any
-) => Promise<Result<T, { message: string; action?: () => void }>>
-
-export const httpRequest: HttpRequest = async (url, options) => {
-  let accessToken = getCookie(accessTokenCookieName)
-
-  if (accessToken == null || accessToken.length < 1) {
-    const { data, error } = await refreshAccessToken()
-
-    if (error !== null) {
-      return {
-        data: null,
-        error: {
-          message: error.message,
-          action: () => {
-            window.location.replace('/login')
-          }
-        }
-      }
-    }
-
-    accessToken = data.accessToken
-  }
-
-  const { data: res, error } = await tryCatch(
-    fetch(`${apiBaseUrl}${url}`, options(accessToken))
-  )
+export async function customFetch(url: string, options?: RequestInit) {
+  const { data: res, error } = await tryCatchAll(fetch(url, options))
 
   if (error != null) {
     return {
-      error: { message: 'Network error' },
-      data: null
+      fetchError: {
+        message: 'Network error'
+      }
+    }
+  }
+
+  return { res }
+}
+
+export async function httpRequest<T>(
+  url: string,
+  options?: ((accessToken: string) => RequestInit) | RequestInit
+): Promise<ResultAll<T, { message: string; action?: () => void }>> {
+  const optionsIsFn = typeof options === 'function'
+
+  let requestOptions = undefined
+
+  if (optionsIsFn) {
+    let accessToken = getCookie(accessTokenCookieName)
+
+    if (accessToken == null || accessToken.length < 1) {
+      const { data, error } = await refreshAccessToken()
+
+      if (error != null) {
+        return {
+          error: {
+            message: error.message,
+            action: () => {
+              window.location.replace('/login')
+            }
+          }
+        }
+      }
+
+      accessToken = data.accessToken
+    }
+
+    requestOptions = options(accessToken)
+  } else {
+    requestOptions = options
+  }
+
+  const { res, fetchError } = await customFetch(
+    `${apiBaseUrl}${url}`,
+    requestOptions
+  )
+
+  if (fetchError != null) {
+    return {
+      error: fetchError
     }
   }
 
@@ -58,14 +66,13 @@ export const httpRequest: HttpRequest = async (url, options) => {
     const json = JSON.parse(textResponse)
 
     if (json.status !== 'success') {
-      return { data: null, error: { message: String(json.error) } }
+      return { error: { message: String(json.error) } }
     }
 
-    return { data: json.data as T, error: null } as Success<T>
+    return { data: json.data }
   } catch {
     return {
-      data: null,
       error: { message: 'Unexpected format response' }
-    } as Failure<{ message: string }>
+    }
   }
 }
