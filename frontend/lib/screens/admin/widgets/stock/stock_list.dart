@@ -1291,12 +1291,12 @@ class _InventarioResumenState extends State<InventarioResumen> {
               children: <Widget>[
                 Expanded(
                   child: _buildStatCard(
-                    'Productos agotados',
-                    agotadosCount.toString(),
-                    FontAwesomeIcons.ban,
-                    Colors.red.shade800,
-                    'Requieren atención urgente',
-                    agotadosCount > 0,
+                    'Disponibles',
+                    disponiblesCount.toString(),
+                    FontAwesomeIcons.check,
+                    Colors.green,
+                    'Productos con stock suficiente',
+                    false,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -1313,12 +1313,12 @@ class _InventarioResumenState extends State<InventarioResumen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildStatCard(
-                    'Disponibles',
-                    disponiblesCount.toString(),
-                    FontAwesomeIcons.check,
-                    Colors.green,
-                    'Productos con stock suficiente',
-                    false,
+                    'Productos agotados',
+                    agotadosCount.toString(),
+                    FontAwesomeIcons.ban,
+                    Colors.red.shade800,
+                    'Requieren atención urgente',
+                    agotadosCount > 0,
                   ),
                 ),
               ],
