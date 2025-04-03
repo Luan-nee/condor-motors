@@ -19,18 +19,14 @@ export interface SuccessUploadApk {
   }
 }
 
-export interface UploadApkFileDto {
+export interface UploadFileDto {
   nombre: string
   visible: boolean
   tipo: string
   appFile: File
 }
 
-export type UploadApkFile = MethodAll<
-  UploadApkFileDto,
-  SuccessUploadApk,
-  ApiError
->
+export type uploadFile = MethodAll<UploadFileDto, SuccessUploadApk, ApiError>
 
 export interface FileEntity {
   id: number

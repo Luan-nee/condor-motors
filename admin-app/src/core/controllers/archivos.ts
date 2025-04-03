@@ -1,31 +1,24 @@
-import { fileTypeValues } from '@/core/consts'
 import type {
   DeleteFileApi,
   FileEntity,
   GetFilesApi,
   SuccessUploadApk,
-  UploadApkFile,
-  UploadApkFileDto
+  uploadFile,
+  UploadFileDto
 } from '@/types/archivos'
 import { httpRequest } from '@/core/lib/network'
 
-export const uploadApk: UploadApkFile = async (
-  uploadApkFileDto: UploadApkFileDto
-) => {
-  if (uploadApkFileDto.tipo !== fileTypeValues.apk) {
-    return { error: { message: 'El tipo de archivo debe ser apk' } }
-  }
-
+export const uploadApk: uploadFile = async (uploadFileDto: UploadFileDto) => {
   const formData = new FormData()
-  formData.append('nombre', uploadApkFileDto.nombre)
-  formData.append('tipo', uploadApkFileDto.tipo)
-  formData.append('app_file', uploadApkFileDto.appFile)
-  if (uploadApkFileDto.visible) {
+  formData.append('nombre', uploadFileDto.nombre)
+  formData.append('tipo', uploadFileDto.tipo)
+  formData.append('app_file', uploadFileDto.appFile)
+  if (uploadFileDto.visible) {
     formData.append('visible', 'true')
   }
 
   const { data, error } = await httpRequest<SuccessUploadApk>(
-    '/api/archivos/apk',
+    '/api/archivos/upload',
     (accessToken) => ({
       method: 'POST',
       headers: {
