@@ -1,5 +1,4 @@
-import { accessTokenCookieName, apiBaseUrl } from '@/core/consts'
-import { getCookie } from '@/core/lib/cookies'
+import { apiBaseUrl } from '@/core/consts'
 import { getAccessToken, refreshAccessToken } from '@/core/controllers/auth'
 import { tryCatchAll } from '@/core/lib/try-catch'
 
@@ -45,7 +44,7 @@ export async function resToData<T = any>(res: Response) {
 }
 
 export async function httpRequest<T = any>(
-  url: `/${string}`,
+  url: string,
   options?: HttpRequestOptions
 ): HttpRequestResult<T> {
   let attempt = 0
@@ -62,10 +61,9 @@ export async function httpRequest<T = any>(
     const isOptionsFunction = typeof options === 'function'
     const requestOptions = isOptionsFunction ? options(accessToken) : options
 
-    const { res, fetchError } = await customFetch(
-      `${apiBaseUrl}${url}`,
-      requestOptions
-    )
+    const newUrl = url.startsWith('/') ? `${apiBaseUrl}${url}` : url
+
+    const { res, fetchError } = await customFetch(newUrl, requestOptions)
 
     if (fetchError) {
       return { error: fetchError }
