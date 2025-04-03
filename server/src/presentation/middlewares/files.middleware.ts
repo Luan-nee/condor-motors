@@ -16,8 +16,12 @@ const privateDiskStorage = multer.diskStorage({
 
     const { basename, extension } = getFileNameAndExtension(file.originalname)
     const formattedName = formatFileName(basename)
+    const fileBasename = `${Date.now().toString(16)}-${formattedName}`.slice(
+      0,
+      250
+    )
 
-    callback(null, `${Date.now().toString(16)}-${formattedName}${extension}`)
+    callback(null, `${fileBasename}${extension}`)
   }
 })
 

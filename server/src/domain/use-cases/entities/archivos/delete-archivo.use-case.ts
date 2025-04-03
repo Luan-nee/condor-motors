@@ -4,7 +4,7 @@ import { db } from '@/db/connection'
 import { archivosAppTable } from '@/db/schema'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { eq } from 'drizzle-orm'
-import { stat, unlink } from 'node:fs'
+import { stat, unlink } from 'node:fs/promises'
 
 export class DeleteArchivo {
   private readonly permissionAny = permissionCodes.archivos.deleteAny
@@ -16,7 +16,7 @@ export class DeleteArchivo {
 
   private async deleteArchivo(numericIdDto: NumericIdDto) {
     const files = await db
-      .select({ filename: archivosAppTable.filename })
+      .select({ id: archivosAppTable.id, filename: archivosAppTable.filename })
       .from(archivosAppTable)
       .where(eq(archivosAppTable.id, numericIdDto.id))
 
@@ -30,19 +30,23 @@ export class DeleteArchivo {
 
     const path = `storage/private/${fileToDelete.filename}`
 
-    stat(path, (err) => {
-      if (err != null) {
-        throw CustomError.badRequest(
-          'El archivo no se pudo eliminar (no encontrado)'
-        )
-      }
+    let fileExists = true
 
-      unlink(path, (err) => {
-        if (err != null) {
-          throw CustomError.internalServer()
-        }
-      })
-    })
+    try {
+      await stat(path)
+    } catch {
+      fileExists = false
+    }
+
+    if (fileExists) {
+      await unlink(`storage/private/${fileToDelete.filename}`)
+        .then()
+        .catch(() => {
+          throw CustomError.internalServer(
+            `File not found: ${JSON.stringify(fileToDelete)}`
+          )
+        })
+    }
 
     const [file] = await db
       .delete(archivosAppTable)
@@ -63,6 +67,6 @@ export class DeleteArchivo {
   async execute(numericIdDto: NumericIdDto) {
     this.validatePermissions()
 
-    return await this.deleteArchivo(numericIdDto)
+    await this.deleteArchivo(numericIdDto)
   }
 }
