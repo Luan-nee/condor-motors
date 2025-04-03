@@ -2,14 +2,14 @@ import { deleteFile, getFiles } from '@/core/controllers/archivos'
 import { FileCard } from './FileCard'
 import { createEffect, createSignal, For, Show } from 'solid-js'
 import type { FileEntity } from '@/types/archivos'
-import { BubbleLoadingIcon } from './icons/BubbleLoadingIcon'
 import { RefreshIcon } from './icons/RefreshIcon'
 import type { DOMElement } from 'solid-js/jsx-runtime'
+import { LoadingIcon } from './icons/LoadingIcon'
 
 const [fetchTrigger, setFetchTrigger] = createSignal(0)
 
 export const FetchButton = () => {
-  const classList = 'transition-transform rotate-180 duration-500'.split(' ')
+  const classList = 'animate-spin'.split(' ')
 
   const handleClick = (
     e: MouseEvent & {
@@ -85,8 +85,8 @@ export const FileList = () => {
       </Show>
       <Show when={!fetched()}>
         <div class="flex flex-col justify-center items-center gap-4 h-full text-white/70">
-          <BubbleLoadingIcon class="w-8 h-8" />
-          <p>Loading files</p>
+          <LoadingIcon class="w-6 h-6 animate-spin" />
+          <p class="text-sm font-semibold">Loading files...</p>
         </div>
       </Show>
       <For each={files()}>

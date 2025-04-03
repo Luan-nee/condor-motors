@@ -3,6 +3,7 @@ import { WindowsIcon } from '@/components/solidjs/icons/WindowsIcon'
 import { TrashIcon } from '@/components/solidjs/icons/TrashIcon'
 import { DownloadIcon } from '@/components/solidjs/icons/DownloadIcon'
 import type { FileEntity } from '@/types/archivos'
+import { createSignal, Show } from 'solid-js'
 
 interface Props {
   file: FileEntity
@@ -10,6 +11,8 @@ interface Props {
 }
 
 export const FileCard = ({ file, deleteItem }: Props) => {
+  const [confirmVisible, setConfirmVisible] = createSignal(false)
+
   return (
     <div
       class="rounded shadow p-3 text-sm space-y-2 transition-colors border
@@ -61,14 +64,45 @@ export const FileCard = ({ file, deleteItem }: Props) => {
         <p>{file.visible ? 'Si' : 'No'}</p>
       </div>
       <div class="flex flex-wrap gap-2 justify-end">
+        <Show when={confirmVisible()}>
+          <div
+            class="inset-0 bg-black/30 fixed z-10"
+            onclick={() => {
+              setConfirmVisible(false)
+            }}
+          ></div>
+          <button
+            class={`border border-white/10 p-1.5 rounded text-white
+              hover:bg-white/10 hover:text-green-400 z-50
+              transition-colors`}
+            onclick={() => {
+              setConfirmVisible(false)
+            }}
+          >
+            <span class="text-sm font-medium">Conservar</span>
+          </button>
+        </Show>
         <button
-          class="border border-white/10 p-1.5 rounded text-gray-400
-            hover:bg-white/10 hover:text-white
-            transition-colors"
+          class={`border border-white/10 p-1.5 rounded
+            hover:bg-white/10 flex gap-1
+            ${
+              confirmVisible()
+                ? 'hover:text-red-400 z-50 text-white'
+                : 'text-gray-400 hover:text-white'
+            }
+            transition-colors`}
           onclick={() => {
-            deleteItem()
+            if (confirmVisible()) {
+              deleteItem()
+              setConfirmVisible(false)
+            } else {
+              setConfirmVisible(true)
+            }
           }}
         >
+          <Show when={confirmVisible()}>
+            <span class="text-sm font-medium">Eliminar</span>
+          </Show>
           <TrashIcon class="w-5 h-5" />
         </button>
         <button
