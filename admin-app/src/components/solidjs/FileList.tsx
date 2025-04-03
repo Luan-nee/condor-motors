@@ -1,6 +1,6 @@
 import { deleteFile, getFiles } from '@/core/controllers/archivos'
 import { FileCard } from './FileCard'
-import { createEffect, createSignal } from 'solid-js'
+import { createEffect, createSignal, For, Show } from 'solid-js'
 import type { FileEntity } from '@/types/archivos'
 import { BubbleLoadingIcon } from './icons/BubbleLoadingIcon'
 import { RefreshIcon } from './icons/RefreshIcon'
@@ -60,22 +60,19 @@ export const FileList = () => {
   }
 
   return (
-    <>
-      {files().length > 0 &&
-        files().map((item) => (
-          <FileCard file={item} deleteItem={deleteItem(item.id)} />
-        ))}
-      {error().length > 0 && (
-        <div class="flex flex-col justify-center items-center gap-4 h-full text-white/70">
+    <div class="grow flex flex-col gap-3 px-3 overflow-y-auto scrollbar-thin">
+      <For each={files()}>
+        {(item) => <FileCard file={item} deleteItem={deleteItem(item.id)} />}
+      </For>
+      <div class="flex flex-col justify-center items-center gap-4 h-full text-white/70">
+        <Show when={error().length > 0}>
           <div class="text-sm text-red-400 font-medium">{error()}</div>
-        </div>
-      )}
-      {!fetched() && (
-        <div class="flex flex-col justify-center items-center gap-4 h-full text-white/70">
+        </Show>
+        <Show when={!fetched()}>
           <BubbleLoadingIcon class="w-8 h-8" />
           <p>Loading files</p>
-        </div>
-      )}
-    </>
+        </Show>
+      </div>
+    </div>
   )
 }
