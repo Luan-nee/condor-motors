@@ -1,6 +1,6 @@
 import { accessTokenCookieName, apiBaseUrl } from '@/core/consts'
 import { getCookie } from '@/core/lib/cookies'
-import { getAccessToken, refreshAccessToken } from '@/core/lib/auth'
+import { getAccessToken, refreshAccessToken } from '@/core/controllers/auth'
 import { tryCatchAll } from '@/core/lib/try-catch'
 
 export async function customFetch(url: string, options?: RequestInit) {

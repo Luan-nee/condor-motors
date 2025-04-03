@@ -1,4 +1,4 @@
-import { deleteFile, getFiles } from '@/core/controllers/archivos.controller'
+import { deleteFile, getFiles } from '@/core/controllers/archivos'
 import { FileCard } from './FileCard'
 import { createEffect, createSignal } from 'solid-js'
 import type { FileEntity } from '@/types/archivos'

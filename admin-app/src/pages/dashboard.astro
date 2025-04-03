@@ -140,8 +140,8 @@ import { FileList, FetchButton } from '@/components/solidjs/FileList'
 
 <script>
   import { fileTypeValues } from '@/core/consts'
-  import { uploadApk } from '@/core/controllers/archivos.controller'
-  import { testSession, logout } from '@/core/lib/auth'
+  import { uploadApk } from '@/core/controllers/archivos'
+  import { testSession, logout } from '@/core/controllers/auth'
   import { selectWith } from '@/core/lib/utils'
   ;(async () => {
     const { data, error } = await testSession()

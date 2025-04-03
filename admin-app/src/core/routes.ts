@@ -1,4 +1,4 @@
-import { login } from './lib/auth'
+import { login } from './controllers/auth'
 
 const baseUrl = import.meta.env.BASE_URL
 
