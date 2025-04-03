@@ -303,8 +303,9 @@ class SucursalDetalles extends StatelessWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<Sucursal>('sucursal', sucursal));
-    properties.add(ObjectFlagProperty<VoidCallback>.has('onEdit', onEdit));
+    properties
+      ..add(DiagnosticsProperty<Sucursal>('sucursal', sucursal))
+      ..add(ObjectFlagProperty<VoidCallback>.has('onEdit', onEdit));
     properties.add(ObjectFlagProperty<VoidCallback>.has('onDelete', onDelete));
   }
 }

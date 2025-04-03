@@ -363,11 +363,11 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Container(
-        width: 500,
-        padding: const EdgeInsets.all(20),
+        width: 420,
+        padding: const EdgeInsets.all(8),
         child:
             _isLoading ? _buildLoadingIndicator() : _buildForm(title, subtitle),
       ),
@@ -395,14 +395,14 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _buildHeader(title, subtitle),
-          const Divider(height: 24),
+          const Divider(height: 16),
           if (_errorMessage != null) _buildErrorMessage(),
           _buildInstructions(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           _buildUserFields(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _buildPasswordFields(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildActionButtons(),
         ],
       ),
@@ -476,7 +476,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
       ],
     );
   }

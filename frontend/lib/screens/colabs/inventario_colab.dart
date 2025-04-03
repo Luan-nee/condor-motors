@@ -1,5 +1,5 @@
 import 'package:condorsmotors/main.dart' show api;
-import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -21,7 +21,8 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
       'id': 1,
       'codigo': 'CAS001',
       'nombre': 'Casco MT Thunder',
-      'descripcion': 'Casco integral MT Thunder con sistema de ventilación avanzado',
+      'descripcion':
+          'Casco integral MT Thunder con sistema de ventilación avanzado',
       'precio': 299.99,
       'precioMayorista': 250.00,
       'stock': 15,
@@ -85,7 +86,8 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
       'id': 5,
       'codigo': 'AMO001',
       'nombre': 'Amortiguador YSS',
-      'descripcion': 'Amortiguador trasero YSS ajustable en compresión y rebote',
+      'descripcion':
+          'Amortiguador trasero YSS ajustable en compresión y rebote',
       'precio': 599.99,
       'precioMayorista': 520.00,
       'stock': 6,
@@ -122,7 +124,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
       if (!mounted) {
         return;
       }
-      
+
       setState(() {
         _sucursalId = sucId?.toString();
       });
@@ -137,9 +139,8 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
       return;
     }
 
-    setState(() {
-    });
-    
+    setState(() {});
+
     try {
       // Obtener productos usando la API
       final productos = await api.productos.getProductos(
@@ -160,10 +161,9 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
       if (!mounted) {
         return;
       }
-      
-      setState(() {
-      });
-      
+
+      setState(() {});
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cargar productos: $e'),
@@ -177,7 +177,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
     if (!mounted) {
       return;
     }
-    
+
     try {
       // Usar la API de stocks para actualizar el inventario
       await api.stocks.updateStock(
@@ -186,14 +186,14 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
         producto['stock'] as int,
         'incremento',
       );
-      
+
       // Recargar productos después del conteo
       await _cargarProductos();
-      
+
       if (!mounted) {
         return;
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Conteo de inventario realizado correctamente'),
@@ -204,7 +204,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
       if (!mounted) {
         return;
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al realizar el conteo: $e'),
@@ -218,7 +218,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
     if (!mounted) {
       return;
     }
-    
+
     try {
       // Usar la API de stocks para ajustar el inventario
       await api.stocks.registrarMovimientoStock(
@@ -228,14 +228,14 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
         'entrada',
         motivo: 'Ajuste de inventario',
       );
-      
+
       // Recargar productos después del ajuste
       await _cargarProductos();
-      
+
       if (!mounted) {
         return;
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Ajuste de inventario realizado correctamente'),
@@ -246,7 +246,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
       if (!mounted) {
         return;
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al realizar el ajuste: $e'),
@@ -262,15 +262,26 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
     }
 
     return _productos.where((Map<String, dynamic> producto) {
-      final bool matchesSearch = 
-          producto['codigo'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          producto['nombre'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          producto['marca'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          producto['ubicacion'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
-      
-      final bool matchesCategory = _selectedCategory == 'Todos' || 
+      final bool matchesSearch = producto['codigo']
+              .toString()
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()) ||
+          producto['nombre']
+              .toString()
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()) ||
+          producto['marca']
+              .toString()
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()) ||
+          producto['ubicacion']
+              .toString()
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase());
+
+      final bool matchesCategory = _selectedCategory == 'Todos' ||
           producto['categoria'] == _selectedCategory;
-      
+
       return matchesSearch && matchesCategory;
     }).toList();
   }
@@ -290,8 +301,9 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> productosFiltrados = _getProductosFiltrados();
-    
+    final List<Map<String, dynamic>> productosFiltrados =
+        _getProductosFiltrados();
+
     return Scaffold(
       body: Column(
         children: <Widget>[
@@ -389,7 +401,8 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: _getEstadoColor(producto['estado']).withOpacity(0.1),
+                        color: _getEstadoColor(producto['estado'])
+                            .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: FaIcon(
@@ -427,7 +440,8 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                            color:
+                                Theme.of(context).primaryColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(

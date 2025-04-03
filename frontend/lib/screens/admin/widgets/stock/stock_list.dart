@@ -702,8 +702,8 @@ class TableProducts extends StatelessWidget {
               children: <Widget>[
                 IconButton(
                   icon: const FaIcon(
-                    FontAwesomeIcons.chartLine,
-                    color: Colors.teal,
+                    FontAwesomeIcons.boxesStacked,
+                    color: Colors.blue,
                     size: 16,
                   ),
                   onPressed: () {
@@ -716,7 +716,7 @@ class TableProducts extends StatelessWidget {
                     minHeight: 30,
                   ),
                   padding: EdgeInsets.zero,
-                  tooltip: 'Ver stock',
+                  tooltip: 'Ver detalles del inventario',
                   splashRadius: 20,
                 ),
                 IconButton(
@@ -745,7 +745,7 @@ class TableProducts extends StatelessWidget {
                     minHeight: 30,
                   ),
                   padding: EdgeInsets.zero,
-                  tooltip: 'Ver stock por sucursal',
+                  tooltip: 'Ver detalles del producto',
                   splashRadius: 20,
                 ),
               ],
@@ -1011,7 +1011,7 @@ class TableProducts extends StatelessWidget {
                     minHeight: 30,
                   ),
                   padding: EdgeInsets.zero,
-                  tooltip: 'Ver detalles',
+                  tooltip: 'Ver detalles del producto',
                   splashRadius: 20,
                 ),
               ],

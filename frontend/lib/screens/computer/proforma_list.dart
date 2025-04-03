@@ -1,23 +1,12 @@
 import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart';
-import 'package:condorsmotors/screens/computer/widgets/proforma_conversion_utils.dart';
-import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_conversion_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
+import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
-// Definición de clase local para paginación
-class Paginacion {
-  final int total;
-  final int page;
-  final int pageSize;
-
-  Paginacion({
-    required this.total,
-    required this.page,
-    required this.pageSize,
-  });
-}
 
 /// Widget para mostrar una lista paginada de proformas
 class ProformaListWidget extends StatefulWidget {
@@ -563,40 +552,19 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
   }
 
   Widget _buildPagination() {
-    final int currentPage = widget.paginacion?.page ?? 1;
-    final int totalPages = widget.paginacion?.total ?? 1;
-
-    if (totalPages <= 1) {
+    // Comprobar si hay paginación
+    if (widget.paginacion == null || widget.onPageChanged == null) {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios, size: 16),
-            onPressed: currentPage > 1
-                ? () => widget.onPageChanged!(currentPage - 1)
-                : null,
-            color: Colors.white,
-            disabledColor: Colors.white38,
-          ),
-          Text(
-            'Página $currentPage de $totalPages',
-            style: const TextStyle(color: Colors.white),
-          ),
-          IconButton(
-            icon: const Icon(Icons.arrow_forward_ios, size: 16),
-            onPressed: currentPage < totalPages
-                ? () => widget.onPageChanged!(currentPage + 1)
-                : null,
-            color: Colors.white,
-            disabledColor: Colors.white38,
-          ),
-        ],
-      ),
+    // Usar el widget Paginador que ya tiene soporte para PaginacionProvider
+    return Paginador(
+      paginacion: widget.paginacion,
+      onPageChanged: widget.onPageChanged,
+      backgroundColor: const Color(0xFF2D2D2D),
+      textColor: Colors.white,
+      accentColor: const Color(0xFFE31E24),
+      forceCompactMode: true,
     );
   }
 

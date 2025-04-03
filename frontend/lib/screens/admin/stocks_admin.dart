@@ -421,58 +421,19 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                   0)
                             Padding(
                               padding: const EdgeInsets.only(top: 16.0),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: <Widget>[
-                                  // Info de cantidad
-                                  Row(
-                                    children: <Widget>[
-                                      const FaIcon(
-                                        FontAwesomeIcons.layerGroup,
-                                        size: 14,
-                                        color: Colors.white54,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Mostrando ${stockProvider.productosFiltrados.length} de ${stockProvider.paginatedProductos!.paginacion.totalItems} productos',
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(0.7),
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  // Paginador
-                                  Paginador(
-                                    paginacion: stockProvider
-                                        .paginatedProductos!.paginacion,
-                                    onPageChanged: stockProvider.cambiarPagina,
-                                  ),
-
-                                  // Selector de tamaño de página
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: <Widget>[
-                                      const FaIcon(
-                                        FontAwesomeIcons.tableList,
-                                        size: 14,
-                                        color: Colors.white54,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Mostrar:',
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(0.7),
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      _buildPageSizeDropdown(stockProvider),
-                                    ],
-                                  ),
-                                ],
+                              child: Center(
+                                child: Paginador(
+                                  paginacion: stockProvider
+                                      .paginatedProductos!.paginacion,
+                                  onPageChanged: stockProvider.cambiarPagina,
+                                  onPageSizeChanged:
+                                      stockProvider.cambiarTamanioPagina,
+                                  backgroundColor: const Color(0xFF2D2D2D),
+                                  textColor: Colors.white,
+                                  accentColor: const Color(0xFFE31E24),
+                                  radius: 4.0,
+                                  maxVisiblePages: 5,
+                                ),
                               ),
                             ),
                         ],
@@ -551,47 +512,6 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPageSizeDropdown(stock_provider.StockProvider stockProvider) {
-    final List<int> options = <int>[10, 20, 50, 100];
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int>(
-          value: stockProvider.pageSize,
-          items: options.map((int size) {
-            return DropdownMenuItem<int>(
-              value: size,
-              child: Text(
-                size.toString(),
-                style: const TextStyle(color: Colors.white),
-              ),
-            );
-          }).toList(),
-          onChanged: (int? value) {
-            if (value != null) {
-              stockProvider.cambiarTamanioPagina(value);
-            }
-          },
-          icon: const FaIcon(
-            FontAwesomeIcons.chevronDown,
-            color: Colors.white,
-            size: 14,
-          ),
-          style: const TextStyle(color: Colors.white),
-          dropdownColor: const Color(0xFF2D2D2D),
         ),
       ),
     );

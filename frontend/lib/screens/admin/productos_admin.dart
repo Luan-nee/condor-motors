@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/providers/admin/producto.provider.dart';
+import 'package:condorsmotors/providers/paginacion.provider.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/producto_detalle_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/productos_form.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/productos_table.dart';
@@ -24,6 +25,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
 
   // Estado del drawer
   bool _drawerOpen = true;
+
+  // Provider para paginación
+  final PaginacionProvider _paginacionProvider = PaginacionProvider();
 
   @override
   void initState() {
@@ -198,6 +202,12 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   Widget build(BuildContext context) {
     return Consumer<ProductoProvider>(
       builder: (context, productoProvider, child) {
+        // Actualizar paginación desde el provider de productos
+        if (productoProvider.paginatedProductos != null) {
+          _paginacionProvider.actualizarPaginacion(
+              productoProvider.paginatedProductos!.paginacion);
+        }
+
         return Scaffold(
           body: Row(
             children: <Widget>[
@@ -283,45 +293,31 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                               0)
                                         Padding(
                                           padding: const EdgeInsets.all(16.0),
-                                          child: Row(
+                                          child: Column(
                                             mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
+                                                MainAxisAlignment.center,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
                                             children: <Widget>[
-                                              // Info de cantidad
-                                              Text(
-                                                'Mostrando ${productoProvider.productosFiltrados.length} de ${productoProvider.paginatedProductos!.paginacion.totalItems} productos',
-                                                style: TextStyle(
-                                                  color: Colors.white
-                                                      .withOpacity(0.7),
-                                                  fontSize: 14,
+                                              // Paginador con provider
+                                              ChangeNotifierProvider.value(
+                                                value: _paginacionProvider,
+                                                child: Paginador(
+                                                  paginacion: productoProvider
+                                                      .paginatedProductos!
+                                                      .paginacion,
+                                                  onPageChanged:
+                                                      productoProvider
+                                                          .cambiarPagina,
+                                                  onPageSizeChanged:
+                                                      productoProvider
+                                                          .cambiarTamanioPagina,
+                                                  backgroundColor:
+                                                      const Color(0xFF2D2D2D),
+                                                  textColor: Colors.white,
+                                                  accentColor:
+                                                      const Color(0xFFE31E24),
                                                 ),
-                                              ),
-
-                                              // Paginador
-                                              Paginador(
-                                                paginacion: productoProvider
-                                                    .paginatedProductos!
-                                                    .paginacion,
-                                                onPageChanged: productoProvider
-                                                    .cambiarPagina,
-                                              ),
-
-                                              // Selector de tamaño de página
-                                              Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: <Widget>[
-                                                  Text(
-                                                    'Mostrar:',
-                                                    style: TextStyle(
-                                                      color: Colors.white
-                                                          .withOpacity(0.7),
-                                                      fontSize: 14,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  _buildPageSizeDropdown(
-                                                      productoProvider),
-                                                ],
                                               ),
                                             ],
                                           ),
@@ -370,43 +366,6 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildPageSizeDropdown(ProductoProvider productoProvider) {
-    final List<int> options = <int>[10, 20, 50, 100];
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int>(
-          value: productoProvider.pageSize,
-          items: options.map((int size) {
-            return DropdownMenuItem<int>(
-              value: size,
-              child: Text(
-                size.toString(),
-                style: const TextStyle(color: Colors.white),
-              ),
-            );
-          }).toList(),
-          onChanged: (int? value) {
-            if (value != null) {
-              productoProvider.cambiarTamanioPagina(value);
-            }
-          },
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-          style: const TextStyle(color: Colors.white),
-          dropdownColor: const Color(0xFF2D2D2D),
-        ),
-      ),
     );
   }
 
@@ -465,22 +424,6 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
           ),
           Row(
             children: <Widget>[
-              // Botón para mostrar/ocultar el panel de sucursales
-              IconButton(
-                icon: Icon(
-                  _drawerOpen
-                      ? Icons.view_sidebar_outlined
-                      : Icons.view_sidebar,
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _drawerOpen = !_drawerOpen;
-                  });
-                },
-                tooltip: 'Selector de sucursal',
-              ),
-              const SizedBox(width: 12),
               if (productoProvider.sucursalSeleccionada != null) ...<Widget>[
                 ElevatedButton.icon(
                   icon: const FaIcon(

@@ -71,6 +71,8 @@ class StockProvider extends ChangeNotifier {
   /// Inicializar el provider
   void inicializar() {
     cargarSucursales();
+    // Establecer stock bajo como filtro predeterminado
+    _filtroEstadoStock = StockStatus.stockBajo;
   }
 
   /// Obtiene el estado del stock como enumeración
@@ -163,7 +165,8 @@ class StockProvider extends ChangeNotifier {
     _selectedSucursalNombre = sucursal.nombre;
     _selectedSucursal = sucursal;
     _currentPage = 1; // Volver a la primera página al cambiar de sucursal
-    _filtroEstadoStock = null; // Resetear filtro al cambiar de sucursal
+    // Mantener el filtro actual o usar stock bajo como predeterminado
+    _filtroEstadoStock = _filtroEstadoStock ?? StockStatus.stockBajo;
     _mostrarVistaConsolidada =
         false; // Desactivar vista consolidada al cambiar de sucursal
     notifyListeners();

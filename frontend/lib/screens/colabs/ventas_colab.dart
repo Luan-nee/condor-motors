@@ -1,15 +1,14 @@
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/cliente.model.dart'; // Importamos el modelo de Cliente
-import 'package:condorsmotors/models/empleado.model.dart';
-import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' hide DetalleProforma;
-// Importamos la API de proformas para usar DetalleProforma
+import 'package:condorsmotors/providers/colabs/ventas.colab.provider.dart';
 import 'package:condorsmotors/screens/colabs/barcode_colab.dart';
 import 'package:condorsmotors/screens/colabs/widgets/busqueda_producto.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
 class VentasColabScreen extends StatefulWidget {
   const VentasColabScreen({super.key});
@@ -18,552 +17,89 @@ class VentasColabScreen extends StatefulWidget {
   State<VentasColabScreen> createState() => _VentasColabScreenState();
 }
 
-class _VentasColabScreenState extends State<VentasColabScreen> with SingleTickerProviderStateMixin {
-  bool _isLoading = false;
-  late final ProductosApi _productosApi;
-  late final ProformaVentaApi _proformasApi;
-  late final ClientesApi _clientesApi; // Agregamos la API de clientes
-  String _sucursalId = '9'; // Valor por defecto, se actualizará al inicializar
-  int _empleadoId = 1; // Valor por defecto, se actualizará al inicializar
-  List<Map<String, dynamic>> _productos = <Map<String, dynamic>>[]; // Lista de productos obtenidos de la API
-  bool _productosLoaded = false; // Flag para controlar si ya se cargaron los productos
-  
-  // Lista de productos en la venta actual
-  final List<Map<String, dynamic>> _productosVenta = <Map<String, dynamic>>[];
-  
-  // Cliente seleccionado (cambiamos de Map a Cliente)
-  Cliente? _clienteSeleccionado;
-  
-  // Lista de clientes cargados desde la API
-  List<Cliente> _clientes = <Cliente>[];
-  bool _clientesLoaded = false;
-  
-  // Controlador para el campo de búsqueda de productos
-  final TextEditingController _searchController = TextEditingController();
-  
-  // Controlador para el campo de búsqueda de clientes
-  final TextEditingController _clienteSearchController = TextEditingController();
-  
-  // Agregar las variables faltantes
-  List<String> _categorias = <String>['Todas']; // Lista de categorías de productos
-  bool _isLoadingProductos = false; // Flag para indicar si se están cargando productos
-  
-  String _loadingMessage = ''; // Variable para mostrar mensajes de carga
-  
+class _VentasColabScreenState extends State<VentasColabScreen>
+    with SingleTickerProviderStateMixin {
+  late final VentasColabProvider _provider;
+
   // Variables para la animación de promoción
   late AnimationController _animationController;
-  String _mensajePromocion = '';
-  String _nombreProductoPromocion = '';
   bool _mostrarMensajePromocion = false;
-  
+  String _nombreProductoPromocion = '';
+  String _mensajePromocion = '';
+
+  // Controladores para búsqueda
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _clienteSearchController =
+      TextEditingController();
+
+  // Accesos directos a propiedades del provider
+  List<Map<String, dynamic>> get _productos => _provider.productos;
+  List<Map<String, dynamic>> get _productosVenta => _provider.productosVenta;
+  Cliente? get _clienteSeleccionado => _provider.clienteSeleccionado;
+  bool get _isLoading => _provider.isLoading;
+  String get _loadingMessage => _provider.loadingMessage;
+  bool get _productosLoaded => _provider.productosLoaded;
+  String get _sucursalId => _provider.sucursalId;
+  double get _totalVenta => _provider.totalVenta;
+  int get _empleadoId => _provider.empleadoId;
+  ProductosApi get _productosApi => api.productos;
+  ProformaVentaApi get _proformasApi => api.proformas;
+
   @override
   void initState() {
     super.initState();
-    _productosApi = api.productos;
-    _proformasApi = api.proformas;
-    _clientesApi = api.clientes; // Inicializamos la API de clientes
-    
+    _provider = Provider.of<VentasColabProvider>(context, listen: false);
+
     // Inicializar el controlador de animación
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    
-    // Configurar los datos iniciales y cargar productos
-    _configurarDatosIniciales();
+
+    // Inicializar el provider
+    _provider.inicializar();
   }
 
-  // Método para configurar los datos iniciales de manera asíncrona
-  Future<void> _configurarDatosIniciales() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      // Obtener el ID de sucursal del usuario autenticado usando await
-      final Map<String, dynamic>? userData = await api.authService.getUserData();
-      if (userData != null && userData['sucursalId'] != null) {
-        _sucursalId = userData['sucursalId'].toString();
-        debugPrint('Usando sucursal del usuario autenticado: $_sucursalId');
-        
-        // Buscar el empleado asociado a esta cuenta de usuario
-        try {
-          String usuarioId = userData['id']?.toString() ?? '0';
-          debugPrint('ID de usuario/cuenta: $usuarioId');
-          
-          // Comprobar si userData contiene directamente el empleadoId
-          if (userData['empleadoId'] != null) {
-            // Si existe, usarlo directamente
-            _empleadoId = int.tryParse(userData['empleadoId'].toString()) ?? 0;
-            debugPrint('Usando empleadoId del userData: $_empleadoId');
-          } else {
-            // Si no existe, buscar empleados por sucursal
-            final List<Empleado> empleados = await api.empleados.getEmpleadosPorSucursal(
-              _sucursalId,
-              pageSize: 100, // Obtener más empleados para aumentar probabilidad de encontrar
-            );
-            
-            // Buscar empleado con cuentaEmpleadoId que coincida con el id del usuario
-            Empleado? empleadoEncontrado;
-            for (final Empleado empleado in empleados) {
-              if (empleado.cuentaEmpleadoId == usuarioId) {
-                empleadoEncontrado = empleado;
-                break;
-              }
-            }
-            
-            // Si no se encontró, usar el primer empleado como fallback
-            if (empleadoEncontrado == null && empleados.isNotEmpty) {
-              empleadoEncontrado = empleados.first;
-            }
-            
-            if (empleadoEncontrado != null) {
-              _empleadoId = int.tryParse(empleadoEncontrado.id) ?? 0;
-              debugPrint('Empleado encontrado por búsqueda: ${empleadoEncontrado.nombre} ${empleadoEncontrado.apellidos} (ID: $_empleadoId)');
-            } else {
-              // Si no se encontró, usar un ID por defecto
-              _empleadoId = 1; // ID genérico
-              debugPrint('No se encontró un empleado asociado, usando ID por defecto: $_empleadoId');
-            }
-          }
-        } catch (e) {
-          debugPrint('Error al determinar ID de empleado: $e');
-          _empleadoId = 1; // Valor por defecto en caso de error
-        }
-      } else {
-        // Fallback por si no se puede obtener el ID de sucursal
-        debugPrint('No se pudo obtener la sucursal del usuario, usando fallback: $_sucursalId');
-      }
-    } catch (e) {
-      debugPrint('Error al obtener datos del usuario: $e');
-    } finally {
-      // Cargar productos y clientes después de configurar la sucursal
-      await Future.wait(<Future<void>>[
-        _cargarProductos(),
-        _cargarClientes(),
-      ]);
-    }
-  }
-  
   @override
   void dispose() {
     _searchController.dispose();
-    _clienteSearchController.dispose(); // Eliminamos también el controlador de búsqueda de clientes
-    _animationController.dispose(); // Liberar recursos del controlador de animación
+    _clienteSearchController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
-  
-  // Cargar productos desde la API usando ProductosApi
-  Future<void> _cargarProductos() async {
-    if (_productosLoaded) {
-      return;
-    }
-    
-    setState(() {
-      _isLoadingProductos = true;
-    });
-    
-    try {
-      debugPrint('Cargando productos para sucursal ID: $_sucursalId (Sucursal del vendedor)');
-      
-      // Usar el método mejorado getProductosPorFiltros para obtener datos más relevantes
-      final PaginatedResponse<Producto> response = await _productosApi.getProductosPorFiltros(
-        sucursalId: _sucursalId,
-        stockPositivo: true, // Mostrar solo productos con stock disponible
-        pageSize: 100, // Obtener más productos por página
-      );
-      
-      // Extraer categorías únicas para el filtro
-      final Set<String> categoriasUnicas = <String>{'Todas'};
-      
-      // Lista para almacenar los productos formateados
-      final List<Map<String, dynamic>> productosFormateados = <Map<String, dynamic>>[];
-      
-      // Procesar la lista de productos obtenida
-      for (final Producto producto in response.items) {
-        // Agregar categoría a la lista de categorías únicas
-        categoriasUnicas.add(producto.categoria);
-        
-        // Verificar el tipo de promoción que tiene el producto
-        final bool tienePromocionGratis = producto.cantidadGratisDescuento != null && 
-                                        producto.cantidadGratisDescuento! > 0;
-        
-        final bool tieneDescuentoPorcentual = producto.porcentajeDescuento != null && 
-                                            producto.porcentajeDescuento! > 0 && 
-                                            producto.cantidadMinimaDescuento != null && 
-                                            producto.cantidadMinimaDescuento! > 0;
-        
-        // Formatear el producto para la interfaz
-        productosFormateados.add(<String, dynamic>{
-          'id': producto.id,
-          'nombre': producto.nombre,
-          'descripcion': producto.descripcion ?? '',
-          'categoria': producto.categoria,
-          'precio': producto.precioVenta,
-          'precioCompra': producto.precioCompra,
-          'stock': producto.stock,
-          'stockMinimo': producto.stockMinimo,
-          'stockBajo': producto.stockBajo,
-          'sku': producto.sku,
-          'codigo': producto.sku, // Duplicado para compatibilidad
-          'marca': producto.marca,
-          
-          // Campos para liquidación
-          'enLiquidacion': producto.liquidacion,
-          'precioLiquidacion': producto.precioOferta,
-          
-          // Campos para promoción "Lleva X, Paga Y"
-          'tienePromocionGratis': tienePromocionGratis,
-          'cantidadMinima': producto.cantidadMinimaDescuento,
-          'cantidadGratis': producto.cantidadGratisDescuento,
-          
-          // Campos para promoción de descuento porcentual
-          'tieneDescuentoPorcentual': tieneDescuentoPorcentual,
-          'descuentoPorcentaje': producto.porcentajeDescuento,
-          
-          // Para cálculos de descuento
-          'precioOriginal': producto.precioVenta,
-          
-          // Tener en un solo campo si hay alguna promoción
-          'tienePromocion': producto.liquidacion || tienePromocionGratis || tieneDescuentoPorcentual,
-        });
-      }
-      
-      // Actualizar el estado
-      setState(() {
-        _productos = productosFormateados;
-        _productosLoaded = true;
-        _categorias = categoriasUnicas.toList()..sort();
-        _isLoadingProductos = false;
-      });
-      
-      debugPrint('Productos cargados: ${_productos.length}');
-      debugPrint('Categorías detectadas: ${_categorias.length}');
-      debugPrint('Productos con promociones: ${productosFormateados.where((p) => p['tienePromocion'] == true).length}');
-      
-      // Añadir información detallada sobre las promociones para debug
-      final int productosLiquidacion = productosFormateados.where((p) => p['enLiquidacion'] == true).length;
-      final int productosPromoGratis = productosFormateados.where((p) => p['tienePromocionGratis'] == true).length;
-      final int productosDescuentoPorcentual = productosFormateados.where((p) => p['tieneDescuentoPorcentual'] == true).length;
-      
-      debugPrint('Detalle de promociones:');
-      debugPrint('- Productos en liquidación: $productosLiquidacion');
-      debugPrint('- Productos con promo "Lleva y Paga": $productosPromoGratis');
-      debugPrint('- Productos con descuento porcentual: $productosDescuentoPorcentual');
-      
-      // Mostrar ejemplos de cada tipo de promoción para verificación
-      if (productosLiquidacion > 0) {
-        final Map<String, dynamic> ejemploLiquidacion = productosFormateados.firstWhere((p) => p['enLiquidacion'] == true);
-        debugPrint('Ejemplo liquidación: ${ejemploLiquidacion['nombre']} - Precio: ${ejemploLiquidacion['precio']} - Precio liquidación: ${ejemploLiquidacion['precioLiquidacion']}');
-      }
-      
-      if (productosPromoGratis > 0) {
-        final Map<String, dynamic> ejemploPromoGratis = productosFormateados.firstWhere((p) => p['tienePromocionGratis'] == true);
-        debugPrint('Ejemplo promo gratis: ${ejemploPromoGratis['nombre']} - Lleva: ${ejemploPromoGratis['cantidadMinima']} - Gratis: ${ejemploPromoGratis['cantidadGratis']}');
-      }
-      
-      if (productosDescuentoPorcentual > 0) {
-        final Map<String, dynamic> ejemploDescuento = productosFormateados.firstWhere((p) => p['tieneDescuentoPorcentual'] == true);
-        debugPrint('Ejemplo descuento %: ${ejemploDescuento['nombre']} - Cantidad mínima: ${ejemploDescuento['cantidadMinima']} - Descuento: ${ejemploDescuento['descuentoPorcentaje']}%');
-      }
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-      
-      setState(() {
-        _isLoadingProductos = false;
-      });
-      
-      debugPrint('Error al cargar productos: $e');
-      
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al cargar productos: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-    }
-  }
-  
-  // Cargar clientes desde la API usando ClientesApi
-  Future<void> _cargarClientes() async {
-    if (_clientesLoaded) {
-      return; // Evitar cargar múltiples veces
-    }
-    
-    setState(() => _isLoading = true);
-    
-    try {
-      debugPrint('Cargando clientes desde la API...');
-      
-      // Obtener los clientes desde la API
-      final List<Cliente> clientesData = await _clientesApi.getClientes(
-        pageSize: 100, // Obtener más clientes por página
-        sortBy: 'denominacion', // Ordenar por nombre
-      );
-      
-      if (!mounted) {
-        return;
-      }
-      
-      setState(() {
-        _clientes = clientesData;
-        _clientesLoaded = true;
-        debugPrint('Clientes cargados: ${_clientes.length}');
-      });
-    } catch (e) {
-      debugPrint('Error al cargar clientes: $e');
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al cargar clientes: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-  
-  // Calcular el total de la venta
-  double get _totalVenta {
-    double total = 0;
-    for (final Map<String, dynamic> producto in _productosVenta) {
-      final int cantidad = producto['cantidad'];
-      final double precio = producto['precioVenta'] ?? 
-          (producto['enLiquidacion'] == true && producto['precioLiquidacion'] != null 
-              ? (producto['precioLiquidacion'] as num).toDouble() 
-              : (producto['precio'] as num).toDouble());
-      
-      total += precio * cantidad;
-    }
-    return total;
-  }
-  
-  // Agregar producto a la venta
-  void _agregarProducto(Map<String, dynamic> producto) {
-    // Verificar disponibilidad de stock antes de agregar el producto
-    final int stockDisponible = producto['stock'] ?? 0;
-    
-    if (stockDisponible <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No hay stock disponible de ${producto['nombre']}'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-    
-    // Determinar el precio correcto según si está en liquidación o no
-    final bool enLiquidacion = producto['enLiquidacion'] ?? false;
-    final double precioFinal = enLiquidacion && producto['precioLiquidacion'] != null 
-        ? (producto['precioLiquidacion'] as num).toDouble() 
-        : (producto['precio'] as num).toDouble();
-    
-    setState(() {
-      // Verificar si el producto ya está en la venta
-      final int index = _productosVenta.indexWhere((Map<String, dynamic> p) => p['id'] == producto['id']);
-      
-      if (index >= 0) {
-        // Si ya existe, verificar que no exceda el stock disponible
-        final int cantidadActual = _productosVenta[index]['cantidad'];
-        
-        if (cantidadActual < stockDisponible) {
-          // Solo incrementar si hay stock suficiente
-          _productosVenta[index]['cantidad']++;
-          // Aplicar descuentos basados en la nueva cantidad
-          _aplicarDescuentosPorCantidad(index);
-        } else {
-          // Mostrar mensaje indicando que se alcanzó el límite del stock
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('No se puede agregar más ${producto['nombre']}. Stock máximo: $stockDisponible'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-      } else {
-        // Si no existe, agregarlo con cantidad 1
-        _productosVenta.add(<String, dynamic>{
-          ...producto,
-          'cantidad': 1,
-          'stockDisponible': stockDisponible,
-          'precioVenta': precioFinal, // Guardar el precio final para cálculos
-        });
-        
-        // Aplicar descuentos si corresponde (para cantidad 1)
-        final int nuevoIndex = _productosVenta.length - 1;
-        _aplicarDescuentosPorCantidad(nuevoIndex);
-      }
-    });
-  }
-  
-  // Eliminar producto de la venta
-  void _eliminarProducto(int index) {
-    setState(() {
-      _productosVenta.removeAt(index);
-    });
-  }
-  
-  // Cambiar cantidad de un producto
-  void _cambiarCantidad(int index, int cantidad) {
-    if (cantidad <= 0) {
-      _eliminarProducto(index);
-      return;
-    }
-    
-    // Verificar que la nueva cantidad no exceda el stock disponible
-    final int stockDisponible = _productosVenta[index]['stockDisponible'] ?? 
-                               _productosVenta[index]['stock'] ?? 0;
-    
-    if (cantidad > stockDisponible) {
-      // Mostrar mensaje de error y limitar la cantidad al stock disponible
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No hay suficiente stock. Disponible: $stockDisponible ${_productosVenta[index]['nombre']}'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      
-      // Establecer la cantidad al máximo disponible
-      setState(() {
-        _productosVenta[index]['cantidad'] = stockDisponible;
-      });
-      return;
-    }
-    
-    setState(() {
-      _productosVenta[index]['cantidad'] = cantidad;
-      
-      // Reiniciar el estado de promociones si la cantidad cambió
-      final Map<String, dynamic> producto = _productosVenta[index];
-      final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
-      final int cantidadMinima = producto['cantidadMinima'] ?? 0;
-      
-      // Si tiene promoción de regalo y la cantidad está por debajo del mínimo, resetear el estado 
-      if (tienePromocionGratis && cantidadMinima > 0 && cantidad < cantidadMinima) {
-        producto['promocionActivada'] = false;
-      }
-      
-      // Calcular y aplicar descuentos según la cantidad (si corresponde)
-      _aplicarDescuentosPorCantidad(index);
-    });
-  }
-  
-  // Método para calcular y aplicar descuentos basados en la cantidad
-  void _aplicarDescuentosPorCantidad(int index) {
-    final Map<String, dynamic> producto = _productosVenta[index];
-    final int cantidad = producto['cantidad'];
-    
-    // Precio base del producto (sin descuentos)
-    final double precioBase = (producto['precio'] as num).toDouble();
-    double precioFinal = precioBase;
-    
-    // Flag para saber si se aplicó algún descuento
-    bool descuentoAplicado = false;
-    String mensajeDescuento = '';
-    
-    // Verificar si está en liquidación
-    final bool enLiquidacion = producto['enLiquidacion'] ?? false;
-    if (enLiquidacion && producto['precioLiquidacion'] != null) {
-      final double precioLiquidacion = (producto['precioLiquidacion'] as num).toDouble();
-      // Usar el precio de liquidación
-      precioFinal = precioLiquidacion;
-      descuentoAplicado = true;
-      mensajeDescuento = 'Precio de liquidación aplicado';
-    }
-    
-    // Verificar si tiene promoción de unidades gratis (solo para información visual)
-    final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
-    if (tienePromocionGratis) {
-      final int cantidadMinima = producto['cantidadMinima'] ?? 0;
-      final int cantidadGratis = producto['cantidadGratis'] ?? 0;
-      
-      if (cantidad >= cantidadMinima && cantidadMinima > 0 && cantidadGratis > 0) {
-        // Solo marcar como que la promoción está activada para visualización
-        producto['promocionActivada'] = true;
-        
-        // Solo actualizar el mensaje si no hay otro descuento aplicado o es más relevante
-        if (!descuentoAplicado) {
-          final int promocionesCompletas = cantidad ~/ cantidadMinima;
-          final int unidadesGratis = promocionesCompletas * cantidadGratis;
-          mensajeDescuento = '$unidadesGratis unidades gratis serán incluidas por el servidor';
-          descuentoAplicado = true;
-        }
-      } else {
-        // Si ya no cumple con la cantidad mínima, desactivar la promoción
-        producto['promocionActivada'] = false;
-      }
-    }
-    
-    // Verificar si tiene descuento porcentual (solo para información visual)
-    final bool tieneDescuentoPorcentual = producto['tieneDescuentoPorcentual'] ?? false;
-    if (tieneDescuentoPorcentual && !descuentoAplicado) {
-      final int cantidadMinima = producto['cantidadMinima'] ?? 0;
-      final int porcentaje = producto['descuentoPorcentaje'] ?? 0;
-      
-      if (cantidad >= cantidadMinima && cantidadMinima > 0 && porcentaje > 0) {
-        // El server aplicará este descuento, solo mostrar el mensaje
-        mensajeDescuento = '$porcentaje% de descuento será aplicado por el servidor';
-        descuentoAplicado = true;
-      }
-    }
-    
-    // Actualizar el precio de venta y el mensaje de descuento
-    _productosVenta[index]['precioVenta'] = precioFinal;
-    _productosVenta[index]['descuentoAplicado'] = descuentoAplicado;
-    _productosVenta[index]['mensajeDescuento'] = mensajeDescuento;
-    
-    // Mostrar mensaje al usuario si se aplicó algún descuento (con animación)
-    if (descuentoAplicado && mensajeDescuento.isNotEmpty) {
-      _mostrarMensajePromocionConAnimacion(producto['nombre'], mensajeDescuento);
-    }
-  }
-  
-  // Limpiar la venta actual
-  void _limpiarVenta() {
-    setState(() {
-      _productosVenta.clear();
-      _clienteSeleccionado = null;
-    });
-  }
-  
+
   // Mostrar diálogo para seleccionar cliente
   void _mostrarDialogoClientes() {
     // Asegurarse de que los clientes estén cargados
-    if (!_clientesLoaded) {
-      _cargarClientes();
+    if (!_provider.clientesLoaded) {
+      _provider.cargarClientes();
     }
-    
+
     // Resetear el controlador de búsqueda
     _clienteSearchController.text = '';
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) => StatefulBuilder(
         builder: (BuildContext context, setState) {
           // Filtrar clientes según la búsqueda
-          List<Cliente> clientesFiltrados = _clientes;
-          
+          List<Cliente> clientesFiltrados = _provider.clientes;
+
           if (_clienteSearchController.text.isNotEmpty) {
             final String query = _clienteSearchController.text.toLowerCase();
-            clientesFiltrados = _clientes.where((Cliente cliente) {
-              return cliente.denominacion.toLowerCase().contains(query) || 
-                     cliente.numeroDocumento.toLowerCase().contains(query);
+            clientesFiltrados = _provider.clientes.where((Cliente cliente) {
+              return cliente.denominacion.toLowerCase().contains(query) ||
+                  cliente.numeroDocumento.toLowerCase().contains(query);
             }).toList();
           }
-          
+
           return AlertDialog(
             title: const Text('Seleccionar Cliente'),
-            content: SingleChildScrollView( // Usar SingleChildScrollView para responsividad
-              child: SizedBox( // SizedBox para limitar el ancho máximo si es necesario
+            content: SingleChildScrollView(
+              child: SizedBox(
                 width: double.maxFinite,
                 child: Column(
-                  mainAxisSize: MainAxisSize.min, // Ajustar al contenido verticalmente
+                  mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     // Campo de búsqueda
                     TextField(
@@ -578,40 +114,41 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                       },
                     ),
                     const SizedBox(height: 16),
-                    // Lista de clientes (sin Expanded, con shrinkWrap)
-                    _isLoading && !_clientesLoaded
+                    // Lista de clientes
+                    _provider.isLoading && !_provider.clientesLoaded
                         ? const Center(
-                            child: Padding( // Añadir padding para el indicador
+                            child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 32.0),
                               child: CircularProgressIndicator(),
                             ),
                           )
                         : clientesFiltrados.isEmpty
-                          ? const Center(
-                              child: Padding( // Añadir padding para el mensaje
-                                padding: EdgeInsets.symmetric(vertical: 32.0),
-                                child: Text('No se encontraron clientes con esa búsqueda'),
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 32.0),
+                                  child: Text(
+                                      'No se encontraron clientes con esa búsqueda'),
+                                ),
+                              )
+                            : ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: clientesFiltrados.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  final Cliente cliente =
+                                      clientesFiltrados[index];
+                                  return ListTile(
+                                    title: Text(cliente.denominacion),
+                                    subtitle:
+                                        Text('Doc: ${cliente.numeroDocumento}'),
+                                    onTap: () {
+                                      // Seleccionar cliente usando el provider
+                                      _provider.seleccionarCliente(cliente);
+                                      Navigator.pop(context);
+                                    },
+                                  );
+                                },
                               ),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true, // Esencial dentro de SingleChildScrollView/Column
-                              physics: const NeverScrollableScrollPhysics(), // Evitar scroll anidado
-                              itemCount: clientesFiltrados.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                final Cliente cliente = clientesFiltrados[index];
-                                return ListTile(
-                                  title: Text(cliente.denominacion),
-                                  subtitle: Text('Doc: ${cliente.numeroDocumento}'),
-                                  onTap: () {
-                                    // Actualizar el cliente seleccionado
-                                    this.setState(() { // setState del _VentasColabScreenState
-                                      _clienteSeleccionado = cliente;
-                                    });
-                                    Navigator.pop(context); // Cerrar diálogo
-                                  },
-                                );
-                              },
-                            ),
                   ],
                 ),
               ),
@@ -631,18 +168,20 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       ),
     );
   }
-  
+
   // Mostrar diálogo para crear nuevo cliente
   void _mostrarDialogoNuevoCliente() {
-    final TextEditingController denominacionController = TextEditingController();
-    final TextEditingController numeroDocumentoController = TextEditingController();
+    final TextEditingController denominacionController =
+        TextEditingController();
+    final TextEditingController numeroDocumentoController =
+        TextEditingController();
     final TextEditingController telefonoController = TextEditingController();
     final TextEditingController direccionController = TextEditingController();
     final TextEditingController correoController = TextEditingController();
-    
+
     // Cerrar diálogo anterior
     Navigator.pop(context);
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) => AlertDialog(
@@ -695,25 +234,24 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
           ElevatedButton(
             onPressed: () async {
               // Validar campos obligatorios
-              if (denominacionController.text.isEmpty || numeroDocumentoController.text.isEmpty) {
+              if (denominacionController.text.isEmpty ||
+                  numeroDocumentoController.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Nombre y número de documento son obligatorios'),
+                    content:
+                        Text('Nombre y número de documento son obligatorios'),
                     backgroundColor: Colors.red,
                   ),
                 );
                 return;
               }
-              
+
               // Cerrar el diálogo
               Navigator.pop(context);
-              
-              // Mostrar indicador de carga
-              setState(() => _isLoading = true);
-              
+
               try {
-                // Crear cliente en la API
-                final Cliente nuevoCliente = await _clientesApi.createCliente(<String, dynamic>{
+                // Crear cliente usando el provider
+                await _provider.crearCliente(<String, dynamic>{
                   'tipoDocumentoId': 1,
                   'numeroDocumento': numeroDocumentoController.text,
                   'denominacion': denominacionController.text,
@@ -721,26 +259,18 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                   'direccion': direccionController.text,
                   'correo': correoController.text,
                 });
-                
-                // Actualizar la lista de clientes y seleccionar el nuevo cliente
-                setState(() {
-                  _clientes.add(nuevoCliente);
-                  _clienteSeleccionado = nuevoCliente;
-                  _isLoading = false;
-                });
-                
+
                 // Mostrar mensaje de éxito
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Cliente ${nuevoCliente.denominacion} creado exitosamente'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          'Cliente ${denominacionController.text} creado exitosamente'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
               } catch (e) {
-                debugPrint('Error al crear cliente: $e');
-                
-                setState(() => _isLoading = false);
-                
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -757,14 +287,14 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       ),
     );
   }
-  
+
   // Mostrar diálogo para buscar productos
   void _mostrarDialogoProductos() {
     // Asegurarse de que los productos estén cargados
     if (!_productosLoaded) {
-      _cargarProductos();
+      _provider.cargarProductos();
     }
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -772,14 +302,15 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           child: Container(
             width: MediaQuery.of(context).size.width * 0.9,
             height: MediaQuery.of(context).size.height * 0.8,
             padding: const EdgeInsets.all(16),
-          child: Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
+              children: <Widget>[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
@@ -797,12 +328,12 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                   ],
                 ),
                 const SizedBox(height: 8),
-              Expanded(
+                Expanded(
                   child: BusquedaProductoWidget(
-                    productos: _productos,
-                    categorias: _categorias,
-                    isLoading: _isLoadingProductos,
-                    sucursalId: _sucursalId,
+                    productos: _provider.productos,
+                    categorias: _provider.categorias,
+                    isLoading: _provider.isLoadingProductos,
+                    sucursalId: _provider.sucursalId,
                     onProductoSeleccionado: (Map<String, dynamic> producto) {
                       // Mostrar detalles de promoción antes de agregar
                       _mostrarDetallesPromocion(producto);
@@ -816,20 +347,21 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       },
     );
   }
-  
+
   // Mostrar detalles de promoción
   void _mostrarDetallesPromocion(Map<String, dynamic> producto) {
     final bool enLiquidacion = producto['enLiquidacion'] ?? false;
     final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
-    final bool tieneDescuentoPorcentual = producto['tieneDescuentoPorcentual'] ?? false;
-    
+    final bool tieneDescuentoPorcentual =
+        producto['tieneDescuentoPorcentual'] ?? false;
+
     // Si no hay promociones, agregar directamente
     if (!enLiquidacion && !tienePromocionGratis && !tieneDescuentoPorcentual) {
       Navigator.pop(context);
       _agregarProducto(producto);
       return;
     }
-    
+
     // Mostrar diálogo con los detalles de promoción
     showDialog(
       context: context,
@@ -872,23 +404,19 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                   ),
                 ),
                 const SizedBox(height: 16),
-                
-                if (enLiquidacion)
-                  _buildPromocionLiquidacionCard(producto),
-                  
+                if (enLiquidacion) _buildPromocionLiquidacionCard(producto),
                 if (tienePromocionGratis) ...<Widget>[
                   const SizedBox(height: 16),
                   _buildPromocionGratisCard(producto),
                 ],
-                
                 if (tieneDescuentoPorcentual) ...<Widget>[
                   const SizedBox(height: 16),
                   _buildPromocionDescuentoCard(producto),
                 ],
-                
-                if ((enLiquidacion && tienePromocionGratis) || 
+                if ((enLiquidacion && tienePromocionGratis) ||
                     (enLiquidacion && tieneDescuentoPorcentual) ||
-                    (tienePromocionGratis && tieneDescuentoPorcentual)) ...<Widget>[
+                    (tienePromocionGratis &&
+                        tieneDescuentoPorcentual)) ...<Widget>[
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -945,20 +473,19 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       },
     );
   }
-  
+
   // Método para mostrar la promoción de liquidación
   Widget _buildPromocionLiquidacionCard(Map<String, dynamic> producto) {
     final double precioOriginal = (producto['precio'] as num).toDouble();
-    final double precioLiquidacion = producto['precioLiquidacion'] is num 
-        ? (producto['precioLiquidacion'] as num).toDouble() 
+    final double precioLiquidacion = producto['precioLiquidacion'] is num
+        ? (producto['precioLiquidacion'] as num).toDouble()
         : precioOriginal;
-    
+
     // Calcular el porcentaje de descuento
     final double ahorro = precioOriginal - precioLiquidacion;
-    final int porcentaje = precioOriginal > 0 
-        ? ((ahorro / precioOriginal) * 100).round() 
-        : 0;
-    
+    final int porcentaje =
+        precioOriginal > 0 ? ((ahorro / precioOriginal) * 100).round() : 0;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -966,11 +493,11 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.amber.withOpacity(0.3)),
       ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
               const Icon(
                 Icons.local_offer,
                 color: Colors.amber,
@@ -987,9 +514,9 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                   ),
                 ),
               ),
-                Container(
+              Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.amber.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -1007,10 +534,10 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
           const SizedBox(height: 8),
           Row(
             children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
                     const Text(
                       'Precio regular',
                       style: TextStyle(
@@ -1018,10 +545,10 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                         fontSize: 12,
                       ),
                     ),
-                      Text(
+                    Text(
                       'S/ ${precioOriginal.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                      style: const TextStyle(
+                        color: Colors.white,
                         decoration: TextDecoration.lineThrough,
                         fontSize: 14,
                       ),
@@ -1033,41 +560,41 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
+                  children: <Widget>[
                     const Text(
                       'Precio liquidación',
-                              style: TextStyle(
+                      style: TextStyle(
                         color: Colors.white70,
                         fontSize: 12,
-                              ),
-                            ),
-                            Text(
+                      ),
+                    ),
+                    Text(
                       'S/ ${precioLiquidacion.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                color: Colors.amber,
-                                fontWeight: FontWeight.bold,
+                      style: const TextStyle(
+                        color: Colors.amber,
+                        fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                   ],
-                              ),
-                            ),
-                          ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
-  
+
   // Método para mostrar la promoción de productos gratis
   Widget _buildPromocionGratisCard(Map<String, dynamic> producto) {
     final int cantidadMinima = producto['cantidadMinima'] ?? 0;
     final int cantidadGratis = producto['cantidadGratis'] ?? 0;
-    
+
     if (cantidadMinima <= 0 || cantidadGratis <= 0) {
       return const SizedBox();
     }
-    
+
     return Card(
       color: const Color(0xFF263238), // Azul grisáceo oscuro
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -1125,12 +652,12 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       ),
     );
   }
-  
+
   // Método para mostrar la promoción de descuento porcentual
   Widget _buildPromocionDescuentoCard(Map<String, dynamic> producto) {
     final int cantidadMinima = producto['cantidadMinima'] ?? 0;
     final int porcentaje = producto['descuentoPorcentaje'] ?? 0;
-    
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1182,15 +709,16 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       ),
     );
   }
-  
+
   // Método para mostrar el mensaje de promoción con animación
-  void _mostrarMensajePromocionConAnimacion(String nombreProducto, String mensaje) {
+  void _mostrarMensajePromocionConAnimacion(
+      String nombreProducto, String mensaje) {
     setState(() {
       _nombreProductoPromocion = nombreProducto;
       _mensajePromocion = mensaje;
       _mostrarMensajePromocion = true;
     });
-    
+
     // Animar la entrada
     _animationController.forward().then((_) {
       // Esperar un momento antes de comenzar a desvanecer
@@ -1209,27 +737,31 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       });
     });
   }
-  
+
   // Método para construir cada elemento de producto en la venta
   Widget _buildProductoVentaItem(Map<String, dynamic> producto, int index) {
     final int cantidad = producto['cantidad'];
-    final double precio = producto['precioVenta'] ?? 
-        (producto['enLiquidacion'] == true && producto['precioLiquidacion'] != null 
-            ? (producto['precioLiquidacion'] as num).toDouble() 
+    final double precio = producto['precioVenta'] ??
+        (producto['enLiquidacion'] == true &&
+                producto['precioLiquidacion'] != null
+            ? (producto['precioLiquidacion'] as num).toDouble()
             : (producto['precio'] as num).toDouble());
-    final int stockDisponible = producto['stockDisponible'] ?? producto['stock'] ?? 0;
+    final int stockDisponible =
+        producto['stockDisponible'] ?? producto['stock'] ?? 0;
     final bool stockLimitado = cantidad >= stockDisponible;
     final bool promocionActivada = producto['promocionActivada'] == true;
     final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: promocionActivada && tienePromocionGratis
-            ? const BorderSide(color: Color(0xFF2E7D32), width: 1.5) // Borde verde oscuro para productos con promoción
-            : (stockLimitado 
+            ? const BorderSide(
+                color: Color(0xFF2E7D32),
+                width: 1.5) // Borde verde oscuro para productos con promoción
+            : (stockLimitado
                 ? const BorderSide(color: Colors.orange)
                 : BorderSide.none),
       ),
@@ -1263,18 +795,20 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: promocionActivada && tienePromocionGratis ? const Color(0xFF2E7D32) : null,
+                      color: promocionActivada && tienePromocionGratis
+                          ? const Color(0xFF2E7D32)
+                          : null,
                     ),
                   ),
                 ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _eliminarProducto(index),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _eliminarProducto(index),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
+              ],
+            ),
             if (promocionActivada && tienePromocionGratis)
               Padding(
                 padding: const EdgeInsets.only(top: 4.0),
@@ -1295,10 +829,10 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                           color: Colors.grey[600],
                         ),
                       ),
-            ),
-          ],
-        ),
-      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 8),
             Row(
               children: <Widget>[
@@ -1306,17 +840,23 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                   'S/ ${precio.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: promocionActivada && tienePromocionGratis ? FontWeight.bold : null,
-                    color: promocionActivada && tienePromocionGratis ? const Color(0xFF2E7D32) : null,
+                    fontWeight: promocionActivada && tienePromocionGratis
+                        ? FontWeight.bold
+                        : null,
+                    color: promocionActivada && tienePromocionGratis
+                        ? const Color(0xFF2E7D32)
+                        : null,
                   ),
                 ),
                 const Spacer(),
-                
+
                 // Control de cantidad con indicador de stock
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 3),
                   decoration: BoxDecoration(
-                    color: stockLimitado ? Colors.orange.withOpacity(0.2) : Colors.blue.withOpacity(0.1),
+                    color: stockLimitado
+                        ? Colors.orange.withOpacity(0.2)
+                        : Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
@@ -1328,7 +868,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
-                      
+
                       // Cantidad actual
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1340,16 +880,18 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                           ),
                         ),
                       ),
-                      
+
                       // Botón para aumentar cantidad (deshabilitado si se alcanza el stock)
                       IconButton(
                         icon: Icon(
-                          Icons.add, 
+                          Icons.add,
                           size: 16,
-                          color: stockLimitado ? Colors.orange.withOpacity(0.5) : null,
+                          color: stockLimitado
+                              ? Colors.orange.withOpacity(0.5)
+                              : null,
                         ),
-                        onPressed: stockLimitado 
-                            ? null 
+                        onPressed: stockLimitado
+                            ? null
                             : () => _cambiarCantidad(index, cantidad + 1),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -1359,7 +901,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                 ),
               ],
             ),
-            
+
             // Mostrar información de stock disponible y promociones
             const SizedBox(height: 4),
             Row(
@@ -1373,15 +915,16 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                     fontStyle: FontStyle.italic,
                   ),
                 ),
-                
+
                 // Solo mostrar el botón si el producto tiene promociones
-                if (producto['enLiquidacion'] == true || 
-                    producto['tienePromocionGratis'] == true || 
+                if (producto['enLiquidacion'] == true ||
+                    producto['tienePromocionGratis'] == true ||
                     producto['tieneDescuentoPorcentual'] == true)
                   TextButton.icon(
-                    onPressed: () => _mostrarDetallesPromocion(producto), 
+                    onPressed: () => _mostrarDetallesPromocion(producto),
                     icon: const FaIcon(FontAwesomeIcons.tags, size: 12),
-                    label: const Text('Ver promociones', style: TextStyle(fontSize: 12)),
+                    label: const Text('Ver promociones',
+                        style: TextStyle(fontSize: 12)),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       minimumSize: Size.zero,
@@ -1395,7 +938,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       ),
     );
   }
-  
+
   // Método para finalizar venta (verificar stock y crear proforma)
   Future<void> _finalizarVenta() async {
     // Validar que haya productos y cliente seleccionado
@@ -1408,7 +951,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       );
       return;
     }
-    
+
     if (_clienteSeleccionado == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -1418,92 +961,81 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       );
       return;
     }
-    
+
     // Verificar stock antes de finalizar
     try {
-      setState(() {
-        _isLoading = true;
-        _loadingMessage = 'Verificando disponibilidad de stock...';
-      });
-      
+      _provider.setLoading(true,
+          message: 'Verificando disponibilidad de stock...');
+
       // Verificar stock de cada producto
       for (final Map<String, dynamic> producto in _productosVenta) {
         // Validar ID de producto
         final dynamic productoIdDynamic = producto['id'];
         int productoId;
-        
+
         if (productoIdDynamic is int) {
           productoId = productoIdDynamic;
         } else if (productoIdDynamic is String) {
           productoId = int.parse(productoIdDynamic);
         } else {
           // Si hay un error con el formato de ID, mostrar error y salir
-          setState(() {
-            _isLoading = false;
-            _loadingMessage = '';
-          });
-          
+          _provider.setLoading(false);
+
           if (!mounted) {
             return;
           }
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error con el ID del producto ${producto['nombre']}'),
+              content:
+                  Text('Error con el ID del producto ${producto['nombre']}'),
               backgroundColor: Colors.red,
             ),
           );
           return;
         }
-        
+
         final int cantidad = producto['cantidad'];
-        
+
         // Actualizar mensaje de loading
         if (mounted) {
-          setState(() {
-            _loadingMessage = 'Verificando stock de ${producto['nombre']}...';
-          });
+          _provider.setLoading(true,
+              message: 'Verificando stock de ${producto['nombre']}...');
         }
-        
+
         // Obtener producto actualizado para verificar stock
         final Producto productoActual = await _productosApi.getProducto(
           sucursalId: _sucursalId,
           productoId: productoId,
           useCache: false, // No usar caché para obtener datos actualizados
         );
-        
+
         if (!mounted) {
           return;
         }
-        
+
         if (productoActual.stock < cantidad) {
-          setState(() {
-            _isLoading = false;
-            _loadingMessage = '';
-          });
-          
+          _provider.setLoading(false);
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Stock insuficiente para ${productoActual.nombre}. Disponible: ${productoActual.stock}'),
+              content: Text(
+                  'Stock insuficiente para ${productoActual.nombre}. Disponible: ${productoActual.stock}'),
               backgroundColor: Colors.red,
             ),
           );
           return;
         }
       }
-      
+
       // Si hay stock suficiente, crear la proforma
       await _crearProformaVenta();
-      
     } catch (e) {
       debugPrint('Error al verificar stock: $e');
-      
+
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _loadingMessage = '';
-        });
-        
+        _provider.setLoading(false);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al verificar disponibilidad de productos: $e'),
@@ -1513,37 +1045,36 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       }
     }
   }
-  
+
   // Método para crear proforma de venta
   Future<void> _crearProformaVenta() async {
     // Mostrar indicador de carga con más contexto para reducir ansiedad
-    setState(() {
-      _isLoading = true;
-      _loadingMessage = 'Enviando datos al servidor...';
-    });
+    _provider.setLoading(true, message: 'Enviando datos al servidor...');
 
     try {
       // Actualizar mensaje para proporcionar retroalimentación del progreso
       if (mounted) {
-        setState(() {
-          _loadingMessage = 'Preparando detalles de la venta...';
-        });
+        _provider.setLoading(true,
+            message: 'Preparando detalles de la venta...');
       }
-      
+
       // Convertir los productos de la venta al formato esperado por la API
-      final List<DetalleProforma> detalles = _productosVenta.map((Map<String, dynamic> producto) {
+      final List<DetalleProforma> detalles =
+          _productosVenta.map((Map<String, dynamic> producto) {
         // Manejar caso donde id puede ser entero o cadena
-        final int productoId = producto['id'] is int ? 
-            producto['id'] : int.parse(producto['id'].toString());
-        
+        final int productoId = producto['id'] is int
+            ? producto['id']
+            : int.parse(producto['id'].toString());
+
         // Usar el precio con descuentos aplicados si existe
-        final double precioUnitario = producto['precioVenta'] ?? 
-            (producto['enLiquidacion'] == true && producto['precioLiquidacion'] != null 
-                ? (producto['precioLiquidacion'] as num).toDouble() 
+        final double precioUnitario = producto['precioVenta'] ??
+            (producto['enLiquidacion'] == true &&
+                    producto['precioLiquidacion'] != null
+                ? (producto['precioLiquidacion'] as num).toDouble()
                 : (producto['precio'] as num).toDouble());
-        
+
         final double subtotal = precioUnitario * producto['cantidad'];
-            
+
         return DetalleProforma(
           productoId: productoId,
           nombre: producto['nombre'],
@@ -1552,56 +1083,49 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
           precioUnitario: precioUnitario,
         );
       }).toList();
-      
+
       // Actualizar mensaje para proporcionar retroalimentación del progreso
       if (mounted) {
-        setState(() {
-          _loadingMessage = 'Comunicando con el servidor...';
-        });
+        _provider.setLoading(true, message: 'Comunicando con el servidor...');
       }
-      
+
       // Llamar a la API para crear la proforma - esta es la parte que potencialmente demora
-      final Map<String, dynamic> respuesta = await _proformasApi.createProformaVenta(
+      final Map<String, dynamic> respuesta =
+          await _proformasApi.createProformaVenta(
         sucursalId: _sucursalId,
         nombre: 'Proforma ${_clienteSeleccionado!.denominacion}',
         total: _totalVenta,
         detalles: detalles,
         empleadoId: _empleadoId,
-        clienteId: _clienteSeleccionado!.id, // Usar el ID del cliente seleccionado
+        clienteId:
+            _clienteSeleccionado!.id, // Usar el ID del cliente seleccionado
       );
-      
+
       if (!mounted) {
         return;
       }
-      
+
       // Actualizar mensaje para proporcionar retroalimentación del progreso
-      setState(() {
-        _loadingMessage = 'Procesando respuesta...';
-      });
-      
+      _provider.setLoading(true, message: 'Procesando respuesta...');
+
       // Convertir la respuesta a un objeto estructurado
-      final Proforma? proformaCreada = _proformasApi.parseProformaVenta(respuesta);
-      
+      final Proforma? proformaCreada =
+          _proformasApi.parseProformaVenta(respuesta);
+
       // Recargar productos para reflejar el stock actualizado por el backend
-      _productosLoaded = false;
-      
+      _provider.cargarProductos();
+
       if (mounted) {
-        setState(() {
-          _loadingMessage = 'Actualizando inventario...';
-        });
-      _cargarProductos();
+        _provider.setLoading(true, message: 'Actualizando inventario...');
       }
-      
+
       if (!mounted) {
         return;
       }
-      
+
       // Cambiar estado antes de mostrar el diálogo
-      setState(() {
-        _isLoading = false;
-        _loadingMessage = '';
-      });
-      
+      _provider.setLoading(false);
+
       // Mostrar diálogo de confirmación
       await showDialog(
         context: context,
@@ -1661,13 +1185,10 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       if (!mounted) {
         return;
       }
-      
+
       // Resetear estado de carga
-      setState(() {
-        _isLoading = false;
-        _loadingMessage = '';
-      });
-      
+      _provider.setLoading(false);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al crear la proforma: $e'),
@@ -1676,14 +1197,14 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
       );
     }
   }
-  
+
   // Mostrar overlay de carga para operaciones asíncronas
   Widget _buildLoadingOverlay(Widget child) {
     return Stack(
-          children: <Widget>[
+      children: <Widget>[
         child,
         if (_isLoading)
-            Container(
+          Container(
             color: Colors.black.withOpacity(0.7),
             width: double.infinity,
             height: double.infinity,
@@ -1718,15 +1239,15 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 8),
-            const Text(
+                            const Text(
                               'Por favor espere...',
-              style: TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white70,
-              ),
-            ),
-          ],
-        ),
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -1743,14 +1264,15 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
     if (!_productosLoaded) {
       await _cargarProductos();
     }
-    
+
     if (!mounted) {
       return;
     }
-    
+
     final String? codigoBarras = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (BuildContext context) => const BarcodeColabScreen()),
+      MaterialPageRoute(
+          builder: (BuildContext context) => const BarcodeColabScreen()),
     );
 
     if (!mounted) {
@@ -1763,13 +1285,14 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
         (Map<String, dynamic> p) => p['codigo'] == codigoBarras,
         orElse: () => <String, dynamic>{},
       );
-      
+
       if (productoEncontrado.isNotEmpty) {
         _agregarProducto(productoEncontrado);
         if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Producto agregado: ${productoEncontrado['nombre']}'),
+              content:
+                  Text('Producto agregado: ${productoEncontrado['nombre']}'),
               backgroundColor: Colors.green,
             ),
           );
@@ -1779,7 +1302,7 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
         if (!mounted) {
           return;
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Producto no encontrado con ese código'),
@@ -1790,34 +1313,71 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
     }
   }
 
+  // Métodos para delegar al provider
+  bool _agregarProducto(Map<String, dynamic> producto) {
+    bool resultado = _provider.agregarProducto(producto);
+    // Mostrar mensaje de promoción si existe
+    if (_provider.mensajePromocion.isNotEmpty) {
+      _mostrarMensajePromocionConAnimacion(
+        _provider.nombreProductoPromocion,
+        _provider.mensajePromocion,
+      );
+    }
+    return resultado;
+  }
+
+  void _eliminarProducto(int index) {
+    _provider.eliminarProducto(index);
+  }
+
+  bool _cambiarCantidad(int index, int cantidad) {
+    bool resultado = _provider.cambiarCantidad(index, cantidad);
+    // Actualizar mensaje de promoción si existe
+    if (_provider.mensajePromocion.isNotEmpty) {
+      _mostrarMensajePromocionConAnimacion(
+        _provider.nombreProductoPromocion,
+        _provider.mensajePromocion,
+      );
+    }
+    return resultado;
+  }
+
+  void _limpiarVenta() {
+    _provider.limpiarVenta();
+  }
+
+  Future<void> _cargarProductos() async {
+    await _provider.cargarProductos();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Calcular el total de la venta
     final double total = _totalVenta;
-    
+
     return _buildLoadingOverlay(
       Scaffold(
         appBar: AppBar(
           title: const Text('Ventas'),
         ),
         body: Column(
-        children: <Widget>[
+          children: <Widget>[
             // Sección de cliente
             Card(
               margin: EdgeInsets.zero,
-              shape: const RoundedRectangleBorder(
-                
-              ),
+              shape: const RoundedRectangleBorder(),
               child: ListTile(
                 leading: const FaIcon(FontAwesomeIcons.user),
                 title: Text(
-                  _clienteSeleccionado == null ? 'Cliente' : _clienteSeleccionado!.denominacion,
+                  _clienteSeleccionado == null
+                      ? 'Cliente'
+                      : _clienteSeleccionado!.denominacion,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                subtitle: _clienteSeleccionado == null 
-                    ? const Text('Seleccionar Cliente') 
+                subtitle: _clienteSeleccionado == null
+                    ? const Text('Seleccionar Cliente')
                     : Text('Doc: ${_clienteSeleccionado!.numeroDocumento}'),
                 trailing: IconButton(
                   icon: const FaIcon(FontAwesomeIcons.userPlus),
@@ -1825,89 +1385,92 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                 ),
               ),
             ),
-            
+
             // Botones de acción (escanear y buscar)
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
-              children: <Widget>[
-                Expanded(
+                children: <Widget>[
+                  Expanded(
                     child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
+                      style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6A1B9A), // Morado
-                      foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                      icon: const FaIcon(FontAwesomeIcons.barcode),
-                        label: const Text('Escanear'),
-                      onPressed: _escanearProducto,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                      flex: 2,
-                  child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1976D2), // Azul
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
+                      ),
+                      icon: const FaIcon(FontAwesomeIcons.barcode),
+                      label: const Text('Escanear'),
+                      onPressed: _escanearProducto,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1976D2), // Azul
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                       icon: const FaIcon(FontAwesomeIcons.magnifyingGlass),
                       label: const Text('Buscar Productos'),
                       onPressed: _mostrarDialogoProductos,
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
-          ),
 
             // Contenido principal (lista de productos)
-          Expanded(
+            Expanded(
               child: Stack(
                 children: <Widget>[
                   _productosVenta.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const <Widget>[
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const <Widget>[
                               FaIcon(
-                          FontAwesomeIcons.cartShopping,
+                                FontAwesomeIcons.cartShopping,
                                 size: 64,
                                 color: Colors.grey,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
+                              ),
+                              SizedBox(height: 16),
+                              Text(
                                 'No hay productos en la venta',
-                        style: TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   color: Colors.grey,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
                                 'Busca o escanea productos para agregarlos',
-                        style: TextStyle(
+                                style: TextStyle(
                                   color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                          padding: const EdgeInsets.only(bottom: 100), // Espacio para el botón de finalizar
-                  itemCount: _productosVenta.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final Map<String, dynamic> producto = _productosVenta[index];
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.only(
+                              bottom:
+                                  100), // Espacio para el botón de finalizar
+                          itemCount: _productosVenta.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            final Map<String, dynamic> producto =
+                                _productosVenta[index];
                             return _buildProductoVentaItem(producto, index);
                           },
                         ),
-                        
+
                   // Mensaje de promoción animado
                   if (_mostrarMensajePromocion)
                     Positioned(
@@ -1919,13 +1482,14 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                         child: Center(
                           child: Material(
                             elevation: 4,
-                        borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(8),
                             color: const Color(0xFF2E7D32), // Verde oscuro
-                      child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        child: Column(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 10),
+                              child: Column(
                                 mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
+                                children: <Widget>[
                                   Text(
                                     _nombreProductoPromocion,
                                     style: const TextStyle(
@@ -1934,15 +1498,15 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                Text(
+                                  Text(
                                     _mensajePromocion,
-                                  style: const TextStyle(
+                                    style: const TextStyle(
                                       color: Colors.white,
                                     ),
-                                      ),
-                                    ],
                                   ),
-                                ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -1950,9 +1514,9 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                 ],
               ),
             ),
-            
+
             // Barra inferior con total y botón de finalizar
-          Container(
+            Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 boxShadow: <BoxShadow>[
@@ -1964,9 +1528,9 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                 ],
               ),
               padding: const EdgeInsets.all(16),
-            child: Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
+                children: <Widget>[
                   // Información del total
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1979,32 +1543,33 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
                           color: const Color(0xFF1E88E5),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                  child: Column(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
-                    children: <Widget>[
-                      const Text(
-                        'TOTAL',
-                        style: TextStyle(
-                          color: Colors.white70,
+                          children: <Widget>[
+                            const Text(
+                              'TOTAL',
+                              style: TextStyle(
+                                color: Colors.white70,
                                 fontSize: 12,
-                        ),
-                      ),
-                      Text(
+                              ),
+                            ),
+                            Text(
                               'S/ ${total.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
                                 fontSize: 20,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -2014,9 +1579,9 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                       // Botón para limpiar la venta
                       Expanded(
                         child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
+                          style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF424242),
-                    foregroundColor: Colors.white,
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -2024,9 +1589,8 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                           ),
                           icon: const FaIcon(FontAwesomeIcons.trash, size: 16),
                           label: const Text('Limpiar'),
-                          onPressed: _productosVenta.isEmpty 
-                              ? null 
-                              : _limpiarVenta,
+                          onPressed:
+                              _productosVenta.isEmpty ? null : _limpiarVenta,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -2038,23 +1602,24 @@ class _VentasColabScreenState extends State<VentasColabScreen> with SingleTicker
                             backgroundColor: const Color(0xFF4CAF50),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          icon: const FaIcon(FontAwesomeIcons.check, size: 16),
+                          label: const Text('Finalizar Venta'),
+                          onPressed: _productosVenta.isEmpty ||
+                                  _clienteSeleccionado == null
+                              ? null
+                              : _finalizarVenta,
                         ),
                       ),
-                      icon: const FaIcon(FontAwesomeIcons.check, size: 16),
-                      label: const Text('Finalizar Venta'),
-                      onPressed: _productosVenta.isEmpty || _clienteSeleccionado == null 
-                          ? null 
-                          : _finalizarVenta,
-                        ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );

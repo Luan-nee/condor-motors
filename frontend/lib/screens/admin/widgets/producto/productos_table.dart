@@ -337,30 +337,108 @@ class _ProductosTableState extends State<ProductosTable>
       dataTextStyle: const TextStyle(
         color: Colors.white70,
       ),
-      columns: const <DataColumn>[
+      columns: <DataColumn>[
         DataColumn(
-          label: Text('Producto'),
+          label: Row(
+            children: <Widget>[
+              const Text('Producto'),
+              const SizedBox(width: 4),
+              if (widget.sortBy == 'nombre')
+                Icon(
+                  widget.sortOrder == 'asc'
+                      ? Icons.arrow_upward
+                      : Icons.arrow_downward,
+                  size: 16,
+                  color: Colors.white,
+                ),
+            ],
+          ),
           tooltip: 'Nombre del producto',
+          onSort: widget.onSort != null
+              ? (_, __) => widget.onSort!('nombre')
+              : null,
         ),
         DataColumn(
-          label: Text('SKU'),
+          label: Row(
+            children: <Widget>[
+              const Text('SKU'),
+              const SizedBox(width: 4),
+              if (widget.sortBy == 'sku')
+                Icon(
+                  widget.sortOrder == 'asc'
+                      ? Icons.arrow_upward
+                      : Icons.arrow_downward,
+                  size: 16,
+                  color: Colors.white,
+                ),
+            ],
+          ),
           tooltip: 'Código único del producto',
+          onSort:
+              widget.onSort != null ? (_, __) => widget.onSort!('sku') : null,
         ),
         DataColumn(
-          label: Text('Categoría'),
+          label: Row(
+            children: <Widget>[
+              const Text('Categoría'),
+              const SizedBox(width: 4),
+              if (widget.sortBy == 'categoria')
+                Icon(
+                  widget.sortOrder == 'asc'
+                      ? Icons.arrow_upward
+                      : Icons.arrow_downward,
+                  size: 16,
+                  color: Colors.white,
+                ),
+            ],
+          ),
           tooltip: 'Categoría del producto',
+          onSort: widget.onSort != null
+              ? (_, __) => widget.onSort!('categoria')
+              : null,
         ),
         DataColumn(
-          label: Text('Stock'),
+          label: Row(
+            children: <Widget>[
+              const Text('Stock'),
+              const SizedBox(width: 4),
+              if (widget.sortBy == 'stock')
+                Icon(
+                  widget.sortOrder == 'asc'
+                      ? Icons.arrow_upward
+                      : Icons.arrow_downward,
+                  size: 16,
+                  color: Colors.white,
+                ),
+            ],
+          ),
           tooltip: 'Cantidad disponible',
           numeric: true,
+          onSort:
+              widget.onSort != null ? (_, __) => widget.onSort!('stock') : null,
         ),
         DataColumn(
-          label: Text('Precio'),
+          label: Row(
+            children: <Widget>[
+              const Text('Precio'),
+              const SizedBox(width: 4),
+              if (widget.sortBy == 'precioVenta')
+                Icon(
+                  widget.sortOrder == 'asc'
+                      ? Icons.arrow_upward
+                      : Icons.arrow_downward,
+                  size: 16,
+                  color: Colors.white,
+                ),
+            ],
+          ),
           tooltip: 'Precio de venta',
           numeric: true,
+          onSort: widget.onSort != null
+              ? (_, __) => widget.onSort!('precioVenta')
+              : null,
         ),
-        DataColumn(
+        const DataColumn(
           label: Text('Acciones'),
           tooltip: 'Acciones disponibles',
         ),

@@ -1,9 +1,9 @@
 import 'dart:math' show min;
 
 import 'package:condorsmotors/models/proforma.model.dart';
-import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart';
-import 'package:condorsmotors/screens/computer/widgets/proforma_conversion_utils.dart';
-import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/proforma/form_proforma.dart';
+import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_conversion_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
@@ -27,33 +27,33 @@ class ProformaWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool puedeConvertirse = proforma.puedeConvertirseEnVenta();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Encabezado con información general
         _buildHeader(context),
-        
+
         const SizedBox(height: 24),
-        
+
         // Información del cliente
         _buildClientInfo(),
-        
+
         const SizedBox(height: 24),
-        
+
         // Lista de productos
         Expanded(
           child: _buildProductList(context),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Resumen y acciones
         _buildSummary(context, puedeConvertirse),
       ],
     );
   }
-  
+
   Widget _buildHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -118,12 +118,12 @@ class ProformaWidget extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildStatusBadge() {
     Color color;
     String text;
     IconData icon;
-    
+
     switch (proforma.estado) {
       case EstadoProforma.pendiente:
         if (proforma.haExpirado()) {
@@ -151,7 +151,7 @@ class ProformaWidget extends StatelessWidget {
         text = 'Desconocido';
         icon = Icons.help;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -180,10 +180,10 @@ class ProformaWidget extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildClientInfo() {
     final Map<String, dynamic>? cliente = proforma.cliente;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -213,7 +213,8 @@ class ProformaWidget extends StatelessWidget {
           const SizedBox(height: 16),
           if (cliente != null && cliente.isNotEmpty) ...[
             _buildClientField('Nombre', cliente['nombre'] ?? 'Sin nombre'),
-            _buildClientField('Documento', cliente['numeroDocumento'] ?? 'Sin documento'),
+            _buildClientField(
+                'Documento', cliente['numeroDocumento'] ?? 'Sin documento'),
             if (cliente['telefono'] != null)
               _buildClientField('Teléfono', cliente['telefono']),
             if (cliente['email'] != null)
@@ -233,7 +234,7 @@ class ProformaWidget extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildClientField(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -262,7 +263,7 @@ class ProformaWidget extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildProductList(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -296,7 +297,7 @@ class ProformaWidget extends StatelessWidget {
             color: Colors.white.withOpacity(0.1),
             height: 1,
           ),
-          
+
           // Encabezados de la tabla
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -347,7 +348,7 @@ class ProformaWidget extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Lista de productos
           Expanded(
             child: proforma.detalles.isEmpty
@@ -369,7 +370,8 @@ class ProformaWidget extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final detalle = proforma.detalles[index];
                       return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                         child: Row(
                           children: [
                             // Descripción del producto
@@ -382,23 +384,24 @@ class ProformaWidget extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            
+
                             // Información de cantidad
                             Expanded(
                               child: _buildCantidadColumn(detalle),
                             ),
-                            
+
                             // Información de precio
                             Expanded(
                               flex: 2,
                               child: _buildPrecioColumn(detalle),
                             ),
-                            
+
                             // Subtotal
                             Expanded(
                               flex: 2,
                               child: Text(
-                                VentasUtils.formatearMontoTexto(detalle.subtotal),
+                                VentasUtils.formatearMontoTexto(
+                                    detalle.subtotal),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -416,12 +419,13 @@ class ProformaWidget extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildSummary(BuildContext context, bool puedeConvertirse) {
     // Calcular impuestos
-    final double subtotal = VentasUtils.calcularSubtotalDesdeTotal(proforma.total);
+    final double subtotal =
+        VentasUtils.calcularSubtotalDesdeTotal(proforma.total);
     final double igv = VentasUtils.calcularIGV(subtotal);
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -504,9 +508,9 @@ class ProformaWidget extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Botones de acción
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -519,7 +523,8 @@ class ProformaWidget extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.red),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                 ),
               const SizedBox(width: 16),
@@ -530,7 +535,8 @@ class ProformaWidget extends StatelessWidget {
                   label: const Text('Convertir a Venta'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                 ),
             ],
@@ -539,38 +545,42 @@ class ProformaWidget extends StatelessWidget {
       ),
     );
   }
-  
+
   Future<void> _handleConvert(BuildContext context) async {
     // Guardamos el contexto de construcción antes de operaciones asíncronas
     final BuildContext originalContext = context;
-    
+
     try {
       // Registrar inicio del proceso
-      Logger.debug('INICIO CONVERSIÓN UI: Iniciando conversión de proforma #${proforma.id}');
-      
+      Logger.debug(
+          'INICIO CONVERSIÓN UI: Iniciando conversión de proforma #${proforma.id}');
+
       // Mostrar diálogo para confirmar conversión
       showDialog(
         context: context,
         builder: (BuildContext dialogContext) => ProformaSaleDialog(
           proforma: proforma,
           onConfirm: (Map<String, dynamic> ventaData) async {
-            Logger.debug('Confirmación recibida con datos: ${ventaData.toString().substring(0, min(100, ventaData.toString().length))}...');
+            Logger.debug(
+                'Confirmación recibida con datos: ${ventaData.toString().substring(0, min(100, ventaData.toString().length))}...');
             Navigator.of(dialogContext).pop();
-            
+
             // Mostrar diálogo de procesamiento
             showDialog(
               context: originalContext,
               barrierDismissible: false,
-              builder: (BuildContext context) => _buildProcessingDialog(ventaData['tipoDocumento'].toLowerCase()),
+              builder: (BuildContext context) => _buildProcessingDialog(
+                  ventaData['tipoDocumento'].toLowerCase()),
             );
-            
+
             Logger.debug('Obteniendo ID de sucursal...');
             final String sucursalId = await _obtenerSucursalId();
             Logger.debug('ID de sucursal obtenido: $sucursalId');
-            
+
             // Intentar la conversión
             Logger.debug('Llamando a convertirProformaAVenta...');
-            bool success = await ProformaConversionManager.convertirProformaAVenta(
+            bool success =
+                await ProformaConversionManager.convertirProformaAVenta(
               context: originalContext,
               sucursalId: sucursalId,
               proformaId: proforma.id,
@@ -582,107 +592,120 @@ class ProformaWidget extends StatelessWidget {
                 }
               },
             );
-            
+
             // Verificar si el widget sigue montado antes de continuar
             if (!originalContext.mounted) {
               Logger.debug('Widget desmontado, deteniendo proceso');
               return;
             }
-            
+
             // Cerrar el diálogo de procesamiento
             Navigator.of(originalContext).pop();
-            
-            Logger.debug('Resultado de conversión: ${success ? 'Éxito' : 'Fallo'}');
-            
+
+            Logger.debug(
+                'Resultado de conversión: ${success ? 'Éxito' : 'Fallo'}');
+
             // Si falló, intentar con el método alternativo
             if (!success) {
-              Logger.debug('Primer intento fallido, buscando método alternativo...');
-              final sucursalId = await VentasPendientesUtils.obtenerSucursalId();
-              
+              Logger.debug(
+                  'Primer intento fallido, buscando método alternativo...');
+              final sucursalId =
+                  await VentasPendientesUtils.obtenerSucursalId();
+
               // Verificar nuevamente si el widget sigue montado
               if (!originalContext.mounted) {
-                Logger.debug('Widget desmontado durante obtención de sucursal alternativa');
+                Logger.debug(
+                    'Widget desmontado durante obtención de sucursal alternativa');
                 return;
               }
-              
+
               if (sucursalId != null) {
                 Logger.debug('Sucursal alternativa encontrada: $sucursalId');
                 // Mostrar diálogo preguntando si desea intentar el método alternativo
                 final bool intentarAlternativo = await showDialog<bool>(
-                  context: originalContext,
-                  builder: (BuildContext context) => AlertDialog(
-                    backgroundColor: const Color(0xFF2D2D2D),
-                    title: const Row(
-                      children: [
-                        Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                        SizedBox(width: 10),
-                        Text(
-                          'Error en la conversión',
-                          style: TextStyle(color: Colors.white),
+                      context: originalContext,
+                      builder: (BuildContext context) => AlertDialog(
+                        backgroundColor: const Color(0xFF2D2D2D),
+                        title: const Row(
+                          children: [
+                            Icon(Icons.warning_amber_rounded,
+                                color: Colors.orange),
+                            SizedBox(width: 10),
+                            Text(
+                              'Error en la conversión',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    content: const Text(
-                      'La conversión normal falló. ¿Desea intentar de nuevo?',
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text('Cancelar'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.blue,
-                          backgroundColor: Colors.blue.withOpacity(0.1),
+                        content: const Text(
+                          'La conversión normal falló. ¿Desea intentar de nuevo?',
+                          style: TextStyle(color: Colors.white70),
                         ),
-                        child: const Text('Intentar de nuevo'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text('Cancelar'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.blue,
+                              backgroundColor: Colors.blue.withOpacity(0.1),
+                            ),
+                            child: const Text('Intentar de nuevo'),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ) ?? false;
-                
+                    ) ??
+                    false;
+
                 // Verificar si el widget sigue montado antes de continuar
                 if (!originalContext.mounted) {
-                  Logger.debug('Widget desmontado durante confirmación de método alternativo');
+                  Logger.debug(
+                      'Widget desmontado durante confirmación de método alternativo');
                   return;
                 }
-                
+
                 if (intentarAlternativo) {
-                  Logger.debug('Usuario confirmó intento alternativo, procesando...');
+                  Logger.debug(
+                      'Usuario confirmó intento alternativo, procesando...');
                   // Mostrar diálogo de procesamiento nuevamente
                   showDialog(
                     context: originalContext,
                     barrierDismissible: false,
-                    builder: (BuildContext context) => _buildProcessingDialog(ventaData['tipoDocumento'].toLowerCase()),
+                    builder: (BuildContext context) => _buildProcessingDialog(
+                        ventaData['tipoDocumento'].toLowerCase()),
                   );
-                  
+
                   // Intentar nuevamente
                   Logger.debug('Segundo intento con sucursal alternativa...');
-                  final bool segundoResultado = await ProformaConversionManager.convertirProformaAVenta(
+                  final bool segundoResultado =
+                      await ProformaConversionManager.convertirProformaAVenta(
                     context: originalContext,
                     sucursalId: sucursalId.toString(),
                     proformaId: proforma.id,
                     tipoDocumento: ventaData['tipoDocumento'],
                     onSuccess: () {
-                      Logger.debug('Callback de éxito ejecutado en segundo intento');
+                      Logger.debug(
+                          'Callback de éxito ejecutado en segundo intento');
                       if (onConvert != null) {
                         onConvert!(proforma);
                       }
                     },
                   );
-                  
+
                   // Verificar si el widget sigue montado antes de continuar
                   if (!originalContext.mounted) {
-                    Logger.debug('Widget desmontado después del segundo intento');
+                    Logger.debug(
+                        'Widget desmontado después del segundo intento');
                     return;
                   }
-                  
+
                   // Cerrar el diálogo de procesamiento
                   Navigator.of(originalContext).pop();
-                  
-                  Logger.debug('Resultado del segundo intento: ${segundoResultado ? 'Éxito' : 'Fallo'}');
+
+                  Logger.debug(
+                      'Resultado del segundo intento: ${segundoResultado ? 'Éxito' : 'Fallo'}');
                 }
               } else {
                 Logger.debug('No se pudo encontrar sucursal alternativa');
@@ -727,7 +750,7 @@ class ProformaWidget extends StatelessWidget {
       }
     }
   }
-  
+
   Widget _buildProcessingDialog(String tipoDocumento) {
     return Dialog(
       backgroundColor: const Color(0xFF2D2D2D),
@@ -779,7 +802,7 @@ class ProformaWidget extends StatelessWidget {
       return false;
     }
   }
-  
+
   /// Obtener el valor del descuento formateado
   String _getDescuento(DetalleProforma detalle) {
     try {
@@ -792,7 +815,7 @@ class ProformaWidget extends StatelessWidget {
       return '0';
     }
   }
-  
+
   /// Obtener el precio original antes del descuento
   double? _getPrecioOriginal(DetalleProforma detalle) {
     try {
@@ -805,7 +828,7 @@ class ProformaWidget extends StatelessWidget {
       return null;
     }
   }
-  
+
   /// Verificar si hay unidades gratis
   bool _tieneUnidadesGratis(DetalleProforma detalle) {
     try {
@@ -815,7 +838,7 @@ class ProformaWidget extends StatelessWidget {
       return false;
     }
   }
-  
+
   /// Obtener cantidad de unidades gratis
   int _getCantidadGratis(DetalleProforma detalle) {
     try {
@@ -828,7 +851,7 @@ class ProformaWidget extends StatelessWidget {
       return 0;
     }
   }
-  
+
   /// Obtener cantidad de unidades pagadas
   int _getCantidadPagada(DetalleProforma detalle) {
     try {
@@ -843,13 +866,13 @@ class ProformaWidget extends StatelessWidget {
       return detalle.cantidad;
     }
   }
-  
+
   /// Construye la columna de información de cantidad
   Widget _buildCantidadColumn(DetalleProforma detalle) {
     final bool tieneGratis = _tieneUnidadesGratis(detalle);
     final cantidadGratis = _getCantidadGratis(detalle);
     final cantidadPagada = _getCantidadPagada(detalle);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -861,7 +884,7 @@ class ProformaWidget extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        
+
         // Si hay unidades gratis, mostrar el desglose
         if (tieneGratis)
           Tooltip(
@@ -877,13 +900,13 @@ class ProformaWidget extends StatelessWidget {
       ],
     );
   }
-  
+
   /// Construye la columna de información de precio
   Widget _buildPrecioColumn(DetalleProforma detalle) {
     final bool tieneDescuento = _tieneDescuento(detalle);
     final String descuento = _getDescuento(detalle);
     final double? precioOriginal = _getPrecioOriginal(detalle);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -897,7 +920,7 @@ class ProformaWidget extends StatelessWidget {
               decoration: TextDecoration.lineThrough,
             ),
           ),
-          
+
         // Precio unitario actual
         Text(
           VentasUtils.formatearMontoTexto(detalle.precioUnitario),
@@ -906,7 +929,7 @@ class ProformaWidget extends StatelessWidget {
             fontWeight: tieneDescuento ? FontWeight.bold : FontWeight.normal,
           ),
         ),
-        
+
         // Información del descuento
         if (tieneDescuento)
           Tooltip(
@@ -917,7 +940,7 @@ class ProformaWidget extends StatelessWidget {
               children: [
                 Icon(
                   Icons.discount_outlined,
-                  size: 10, 
+                  size: 10,
                   color: Colors.orange.shade300,
                 ),
                 const SizedBox(width: 2),
@@ -935,29 +958,16 @@ class ProformaWidget extends StatelessWidget {
       ],
     );
   }
-  
+
   /// Verificar si hay información especial sobre cantidad
   bool _tieneInfoCantidadEspecial(DetalleProforma detalle) {
     try {
       final dynamic cantidadGratis = (detalle as dynamic).cantidadGratis;
       final dynamic cantidadPagada = (detalle as dynamic).cantidadPagada;
-      return (cantidadGratis != null && cantidadGratis > 0) || 
-             (cantidadPagada != null && cantidadPagada < detalle.cantidad);
+      return (cantidadGratis != null && cantidadGratis > 0) ||
+          (cantidadPagada != null && cantidadPagada < detalle.cantidad);
     } catch (e) {
       return false;
-    }
-  }
-  
-  /// Obtener información sobre cantidades especiales
-  String _getInfoCantidad(DetalleProforma detalle) {
-    try {
-      final dynamic cantidadGratis = (detalle as dynamic).cantidadGratis;
-      if (cantidadGratis != null && cantidadGratis is num && cantidadGratis > 0) {
-        return '${cantidadGratis.toInt()} gratis';
-      }
-      return '';
-    } catch (e) {
-      return '';
     }
   }
 
@@ -993,7 +1003,8 @@ class ProformaSaleDialog extends StatefulWidget {
     super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty<Proforma>('proforma', proforma))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has('onConfirm', onConfirm))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has(
+          'onConfirm', onConfirm))
       ..add(ObjectFlagProperty<VoidCallback>.has('onCancel', onCancel));
   }
 }
@@ -1003,14 +1014,14 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
   String _customerName = '';
   String _paymentAmount = '';
   bool _isProcessing = false;
-  
+
   @override
   void initState() {
     super.initState();
     // Inicializar con el nombre del cliente de la proforma
     _customerName = widget.proforma.getNombreCliente();
   }
-  
+
   /// Verificar si un detalle de proforma tiene descuento
   bool _tieneDescuento(DetalleProforma detalle) {
     try {
@@ -1020,7 +1031,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
       return false;
     }
   }
-  
+
   /// Obtener el valor del descuento formateado
   String _getDescuento(DetalleProforma detalle) {
     try {
@@ -1033,7 +1044,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
       return '0';
     }
   }
-  
+
   /// Obtener el precio original antes del descuento
   double? _getPrecioOriginal(DetalleProforma detalle) {
     try {
@@ -1046,7 +1057,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
       return null;
     }
   }
-  
+
   /// Verificar si hay unidades gratis
   bool _tieneUnidadesGratis(DetalleProforma detalle) {
     try {
@@ -1056,7 +1067,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
       return false;
     }
   }
-  
+
   /// Obtener cantidad de unidades gratis
   int _getCantidadGratis(DetalleProforma detalle) {
     try {
@@ -1069,12 +1080,12 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
       return 0;
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final bool isLargeScreen = screenSize.width > 1200;
-    
+
     return Dialog(
       backgroundColor: const Color(0xFF2D2D2D),
       shape: RoundedRectangleBorder(
@@ -1125,7 +1136,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Resumen de la proforma
                   Expanded(
                     child: Container(
@@ -1163,151 +1174,201 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          
+
                           // Lista de productos (con scroll)
                           Expanded(
                             child: ListView.builder(
-                              itemCount: widget.proforma.detalles.length,
-                              itemBuilder: (context, index) {
-                                final detalle = widget.proforma.detalles[index];
-                                
-                                // Verificar si tiene descuentos o unidades gratis
-                                final bool tieneDescuento = _tieneDescuento(detalle);
-                                final bool tieneUnidadesGratis = _tieneUnidadesGratis(detalle);
-                                final double? precioOriginal = _getPrecioOriginal(detalle);
-                                final String descuento = _getDescuento(detalle);
-                                final int cantidadGratis = _getCantidadGratis(detalle);
-                                
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: <Widget>[
-                                          Expanded(
-                                            flex: 5,
-                                            child: Row(
-                                              children: [
-                                                Text(
-                                                  detalle.nombre,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
+                                itemCount: widget.proforma.detalles.length,
+                                itemBuilder: (context, index) {
+                                  final detalle =
+                                      widget.proforma.detalles[index];
+
+                                  // Verificar si tiene descuentos o unidades gratis
+                                  final bool tieneDescuento =
+                                      _tieneDescuento(detalle);
+                                  final bool tieneUnidadesGratis =
+                                      _tieneUnidadesGratis(detalle);
+                                  final double? precioOriginal =
+                                      _getPrecioOriginal(detalle);
+                                  final String descuento =
+                                      _getDescuento(detalle);
+                                  final int cantidadGratis =
+                                      _getCantidadGratis(detalle);
+
+                                  return Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 4),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: <Widget>[
+                                            Expanded(
+                                              flex: 5,
+                                              child: Row(
+                                                children: [
+                                                  Text(
+                                                    detalle.nombre,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                    ),
                                                   ),
+                                                  if (tieneDescuento ||
+                                                      tieneUnidadesGratis) ...[
+                                                    const SizedBox(width: 8),
+                                                    Icon(
+                                                      tieneDescuento
+                                                          ? Icons.discount
+                                                          : Icons.card_giftcard,
+                                                      size: 14,
+                                                      color: tieneDescuento
+                                                          ? Colors.orange
+                                                          : Colors.green,
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Text(
+                                                '${detalle.cantidad}x',
+                                                style: const TextStyle(
+                                                  color: Colors.white70,
                                                 ),
-                                                if (tieneDescuento || tieneUnidadesGratis) ...[
-                                                  const SizedBox(width: 8),
-                                                  Icon(
-                                                    tieneDescuento ? Icons.discount : Icons.card_giftcard,
-                                                    size: 14,
-                                                    color: tieneDescuento ? Colors.orange : Colors.green,
+                                                textAlign: TextAlign.right,
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.end,
+                                                children: [
+                                                  if (tieneDescuento &&
+                                                      precioOriginal != null)
+                                                    Text(
+                                                      VentasUtils
+                                                          .formatearMontoTexto(
+                                                              precioOriginal),
+                                                      style: const TextStyle(
+                                                        color: Colors.white38,
+                                                        fontSize: 10,
+                                                        decoration:
+                                                            TextDecoration
+                                                                .lineThrough,
+                                                      ),
+                                                    ),
+                                                  Text(
+                                                    VentasUtils
+                                                        .formatearMontoTexto(
+                                                            detalle
+                                                                .precioUnitario),
+                                                    style: TextStyle(
+                                                      color: tieneDescuento
+                                                          ? Colors
+                                                              .orange.shade200
+                                                          : Colors.white70,
+                                                      fontWeight: tieneDescuento
+                                                          ? FontWeight.bold
+                                                          : FontWeight.normal,
+                                                    ),
                                                   ),
                                                 ],
-                                              ],
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: Text(
-                                              '${detalle.cantidad}x',
-                                              style: const TextStyle(
-                                                color: Colors.white70,
                                               ),
-                                              textAlign: TextAlign.right,
                                             ),
-                                          ),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.end,
-                                              children: [
-                                                if (tieneDescuento && precioOriginal != null)
-                                                  Text(
-                                                    VentasUtils.formatearMontoTexto(precioOriginal),
-                                                    style: const TextStyle(
-                                                      color: Colors.white38,
-                                                      fontSize: 10,
-                                                      decoration: TextDecoration.lineThrough,
-                                                    ),
-                                                  ),
-                                                Text(
-                                                  VentasUtils.formatearMontoTexto(detalle.precioUnitario),
-                                                  style: TextStyle(
-                                                    color: tieneDescuento ? Colors.orange.shade200 : Colors.white70,
-                                                    fontWeight: tieneDescuento ? FontWeight.bold : FontWeight.normal,
-                                                  ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Text(
+                                                VentasUtils.formatearMontoTexto(
+                                                    detalle.subtotal),
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
                                                 ),
-                                              ],
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Text(
-                                              VentasUtils.formatearMontoTexto(detalle.subtotal),
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
+                                                textAlign: TextAlign.right,
                                               ),
-                                              textAlign: TextAlign.right,
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                      
-                                      // Mostrar información de promociones
-                                      if (tieneDescuento || tieneUnidadesGratis)
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 16, top: 2, bottom: 4),
-                                          child: Row(
-                                            children: [
-                                              if (tieneDescuento)
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.orange.withOpacity(0.1),
-                                                    borderRadius: BorderRadius.circular(4),
-                                                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                                                  ),
-                                                  child: Text(
-                                                    'Descuento $descuento%',
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      color: Colors.orange.shade300,
-                                                    ),
-                                                  ),
-                                                ),
-                                              
-                                              if (tieneDescuento && tieneUnidadesGratis)
-                                                const SizedBox(width: 8),
-                                                
-                                              if (tieneUnidadesGratis)
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.green.withOpacity(0.1),
-                                                    borderRadius: BorderRadius.circular(4),
-                                                    border: Border.all(color: Colors.green.withOpacity(0.3)),
-                                                  ),
-                                                  child: Text(
-                                                    '$cantidadGratis unidades gratis',
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      color: Colors.green.shade300,
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
+                                          ],
                                         ),
-                                      
-                                      if (index < widget.proforma.detalles.length - 1)
-                                        const Divider(height: 8, color: Colors.white12),
-                                    ],
-                                  ),
-                                );
-                              }
-                            ),
+
+                                        // Mostrar información de promociones
+                                        if (tieneDescuento ||
+                                            tieneUnidadesGratis)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                left: 16, top: 2, bottom: 4),
+                                            child: Row(
+                                              children: [
+                                                if (tieneDescuento)
+                                                  Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 1),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.orange
+                                                          .withOpacity(0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              4),
+                                                      border: Border.all(
+                                                          color: Colors.orange
+                                                              .withOpacity(
+                                                                  0.3)),
+                                                    ),
+                                                    child: Text(
+                                                      'Descuento $descuento%',
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        color: Colors
+                                                            .orange.shade300,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                if (tieneDescuento &&
+                                                    tieneUnidadesGratis)
+                                                  const SizedBox(width: 8),
+                                                if (tieneUnidadesGratis)
+                                                  Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 1),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.green
+                                                          .withOpacity(0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              4),
+                                                      border: Border.all(
+                                                          color: Colors.green
+                                                              .withOpacity(
+                                                                  0.3)),
+                                                    ),
+                                                    child: Text(
+                                                      '$cantidadGratis unidades gratis',
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        color: Colors
+                                                            .green.shade300,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+
+                                        if (index <
+                                            widget.proforma.detalles.length - 1)
+                                          const Divider(
+                                              height: 8, color: Colors.white12),
+                                      ],
+                                    ),
+                                  );
+                                }),
                           ),
-                          
+
                           const Divider(color: Colors.white24),
                           Row(
                             children: <Widget>[
@@ -1322,7 +1383,8 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                               ),
                               const SizedBox(width: 16),
                               Text(
-                                VentasUtils.formatearMontoTexto(widget.proforma.total),
+                                VentasUtils.formatearMontoTexto(
+                                    widget.proforma.total),
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -1338,12 +1400,12 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                 ],
               ),
             ),
-            
+
             // Separador vertical
             const SizedBox(width: 20),
             Container(width: 1, height: double.infinity, color: Colors.white24),
             const SizedBox(width: 20),
-            
+
             // Teclado numérico para cálculo de vuelto (lado derecho)
             Expanded(
               flex: 4,
@@ -1381,24 +1443,27 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                   // Crear los datos de venta y llamar a onConfirm
                   final Map<String, dynamic> ventaData = {
                     'tipoDocumento': _tipoDocumento,
-                    'productos': widget.proforma.detalles.map((detalle) => {
-                      'productoId': detalle.productoId,
-                      'cantidad': detalle.cantidad,
-                      'precio': detalle.precioUnitario,
-                      'subtotal': detalle.subtotal,
-                    }).toList(),
-                    'cliente': widget.proforma.cliente ?? {'nombre': _customerName},
+                    'productos': widget.proforma.detalles
+                        .map((detalle) => {
+                              'productoId': detalle.productoId,
+                              'cantidad': detalle.cantidad,
+                              'precio': detalle.precioUnitario,
+                              'subtotal': detalle.subtotal,
+                            })
+                        .toList(),
+                    'cliente':
+                        widget.proforma.cliente ?? {'nombre': _customerName},
                     'metodoPago': 'EFECTIVO', // Por defecto
                     'total': widget.proforma.total,
                     'montoRecibido': montoRecibido,
                     'vuelto': montoRecibido - widget.proforma.total,
                   };
-                  
+
                   // Iniciar procesamiento
                   setState(() {
                     _isProcessing = true;
                   });
-                  
+
                   // Invocar callback con los datos de venta
                   widget.onConfirm(ventaData);
                 },
@@ -1413,9 +1478,10 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(StringProperty('_tipoDocumento', _tipoDocumento))
-    ..add(StringProperty('_customerName', _customerName))
-    ..add(StringProperty('_paymentAmount', _paymentAmount))
-    ..add(DiagnosticsProperty<bool>('_isProcessing', _isProcessing));
+    properties
+      ..add(StringProperty('_tipoDocumento', _tipoDocumento))
+      ..add(StringProperty('_customerName', _customerName))
+      ..add(StringProperty('_paymentAmount', _paymentAmount))
+      ..add(DiagnosticsProperty<bool>('_isProcessing', _isProcessing));
   }
 }

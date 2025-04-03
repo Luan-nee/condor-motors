@@ -4,37 +4,40 @@ import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' as models;
-import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart' as form_widget show ProformaSaleDialog;
-import 'package:condorsmotors/screens/computer/widgets/form_proforma.dart' show NumericKeypad, ProcessingDialog;
-import 'package:condorsmotors/screens/computer/widgets/proforma_conversion_utils.dart';
-import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/proforma/form_proforma.dart'
+    as form_widget show ProformaSaleDialog;
+import 'package:condorsmotors/screens/computer/widgets/proforma/form_proforma.dart'
+    show NumericKeypad, ProcessingDialog;
+import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_conversion_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/venta/ventas_list_computer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 /// Clase utilitaria para operaciones con ventas y formateo de montos
-/// 
+///
 /// Esta clase centraliza todas las operaciones de cálculo y formateo
 /// relacionadas con ventas, precios y montos, lo que ayuda a mantener
 /// la consistencia en toda la aplicación.
 class VentasUtils {
   /// Calcula el subtotal para un producto (precio * cantidad)
-  /// 
+  ///
   /// Parámetros:
   /// - producto: Mapa con datos del producto que debe incluir 'precio' y 'cantidad'
-  /// 
+  ///
   /// Retorna el subtotal formateado a 2 decimales
   static double calcularSubtotal(Map<String, dynamic> producto) {
     final double precio = producto['precio'] as double;
     final int cantidad = producto['cantidad'] as int;
     return formatearMonto(precio * cantidad);
   }
-  
+
   /// Calcula el total para una venta completa sumando los subtotales de todos sus productos
-  /// 
+  ///
   /// Parámetros:
   /// - productos: Lista de productos, cada uno debe contener 'precio' y 'cantidad'
-  /// 
+  ///
   /// Retorna el total formateado a 2 decimales
   static double calcularTotalVenta(List<dynamic> productos) {
     double total = 0;
@@ -43,12 +46,12 @@ class VentasUtils {
     }
     return formatearMonto(total);
   }
-  
+
   /// Formatea un monto a 2 decimales, evitando problemas de precisión
   static double formatearMonto(double monto) {
     return double.parse(monto.toStringAsFixed(2));
   }
-  
+
   /// Formatea un monto como texto para mostrar, incluyendo el símbolo de moneda
   static String formatearMontoTexto(double monto) {
     return 'S/ ${monto.toStringAsFixed(2)}';
@@ -65,6 +68,11 @@ class Venta {
   final double total;
   final double? descuentoTotal;
   final List<DetalleVenta> detalles;
+  final String serieDocumento;
+  final String numeroDocumento;
+  final String horaEmision;
+  final bool declarada;
+  final bool anulada;
 
   Venta({
     required this.id,
@@ -75,24 +83,35 @@ class Venta {
     required this.total,
     this.descuentoTotal,
     required this.detalles,
+    this.serieDocumento = '',
+    this.numeroDocumento = '',
+    this.horaEmision = '',
+    this.declarada = false,
+    this.anulada = false,
   });
 
   factory Venta.fromJson(Map<String, dynamic> json) {
     return Venta(
       id: json['id'] ?? '',
-      fechaCreacion: json['fecha_creacion'] != null 
-          ? DateTime.parse(json['fecha_creacion']) 
+      fechaCreacion: json['fecha_creacion'] != null
+          ? DateTime.parse(json['fecha_creacion'])
           : null,
       estado: json['estado'] ?? 'PENDIENTE',
       subtotal: (json['subtotal'] ?? 0.0).toDouble(),
       igv: (json['igv'] ?? 0.0).toDouble(),
       total: (json['total'] ?? 0.0).toDouble(),
-      descuentoTotal: json['descuento_total'] != null 
-          ? (json['descuento_total']).toDouble() 
+      descuentoTotal: json['descuento_total'] != null
+          ? (json['descuento_total']).toDouble()
           : null,
       detalles: (json['detalles'] as List<dynamic>?)
-          ?.map((detalle) => DetalleVenta.fromJson(detalle))
-          .toList() ?? <DetalleVenta>[],
+              ?.map((detalle) => DetalleVenta.fromJson(detalle))
+              .toList() ??
+          <DetalleVenta>[],
+      serieDocumento: json['serie_documento'] ?? '',
+      numeroDocumento: json['numero_documento'] ?? '',
+      horaEmision: json['hora_emision'] ?? '',
+      declarada: json['declarada'] ?? false,
+      anulada: json['anulada'] ?? false,
     );
   }
 }
@@ -140,8 +159,9 @@ class SalesComputerScreen extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(IntProperty('sucursalId', sucursalId))
-    ..add(StringProperty('nombreSucursal', nombreSucursal));
+    properties
+      ..add(IntProperty('sucursalId', sucursalId))
+      ..add(StringProperty('nombreSucursal', nombreSucursal));
   }
 }
 
@@ -149,15 +169,17 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   late VentasApi _ventasApi;
   late ProformaVentaApi _proformasApi;
   final TextEditingController _searchController = TextEditingController();
+
   bool _isLoading = false;
+  final String _errorMessage = '';
   List<Venta> _ventas = <Venta>[];
   List<models.Proforma> _proformasObj = <models.Proforma>[];
   List<Map<String, dynamic>> _proformasFormateadas = <Map<String, dynamic>>[];
-  
+
   // Para actualización automática
   Timer? _actualizacionTimer;
   final int _intervaloActualizacion = 30; // Segundos
-  
+
   // Datos de prueba para ventas pendientes - Será reemplazado con proformas reales
   final List<Map<String, dynamic>> _ventasPendientes = <Map<String, dynamic>>[];
 
@@ -169,15 +191,18 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   bool _procesandoPago = false;
   final FocusNode _montoFocusNode = FocusNode();
 
+  // Variable para búsqueda
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
     _ventasApi = api.ventas;
     _proformasApi = api.proformas;
-    
+
     // Cargar datos iniciales
     _cargarDatos();
-    
+
     // Iniciar timer para actualización automática
     _iniciarActualizacionPeriodica();
   }
@@ -216,7 +241,8 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   void _clearAmount() {
     setState(() {
       if (_montoIngresado.isNotEmpty) {
-        _montoIngresado = _montoIngresado.substring(0, _montoIngresado.length - 1);
+        _montoIngresado =
+            _montoIngresado.substring(0, _montoIngresado.length - 1);
       }
     });
   }
@@ -246,22 +272,22 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         final int? sucId = await VentasPendientesUtils.obtenerSucursalId();
         sucursalIdParam = sucId?.toString();
       }
-      
+
       final Map<String, dynamic> ventasResponse = await _ventasApi.getVentas(
         sucursalId: sucursalIdParam,
       );
-      
+
       if (!mounted) {
         return;
       }
-      
+
       final List<Venta> ventasList = <Venta>[];
       if (ventasResponse['data'] != null && ventasResponse['data'] is List) {
         for (var item in ventasResponse['data']) {
           ventasList.add(Venta.fromJson(item));
         }
       }
-      
+
       setState(() {
         _ventas = ventasList;
       });
@@ -288,7 +314,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         venta.id,
         'Anulado por el usuario',
       );
-      
+
       if (!mounted) {
         return;
       }
@@ -298,7 +324,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      
+
       await _cargarVentas();
     } catch (e) {
       if (!mounted) {
@@ -312,20 +338,21 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       );
     }
   }
-  
+
   // Método para seleccionar una venta pendiente para procesar
   void _seleccionarVenta(Map<String, dynamic> venta) {
     debugPrint('Venta seleccionada: $venta');
-    
+
     // Verificar si es una proforma
     final bool esProforma = VentasPendientesUtils.esProforma(
       venta['id'].toString(),
       tipoVenta: venta['tipoVenta'] as String?,
     );
-    
+
     if (esProforma) {
       // Buscar la proforma en la lista de objetos
-      final int? proformaId = VentasPendientesUtils.extraerIdProforma(venta['id'].toString());
+      final int? proformaId =
+          VentasPendientesUtils.extraerIdProforma(venta['id'].toString());
       if (proformaId != null) {
         final models.Proforma proformaObj = _proformasObj.firstWhere(
           (models.Proforma p) => p.id == proformaId,
@@ -333,7 +360,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
             throw Exception('No se encontró la proforma con ID: $proformaId');
           },
         );
-        
+
         // Mostrar diálogo especializado para proformas
         showDialog(
           context: context,
@@ -357,7 +384,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         return;
       }
     }
-    
+
     // Comportamiento normal para ventas que no son proformas
     setState(() {
       _ventaSeleccionada = venta;
@@ -365,9 +392,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       _nombreCliente = _ventaSeleccionada!['cliente']['nombre'];
     });
   }
-  
+
   // Método para crear una copia profunda de una venta
-  
+
   // Método para mostrar el formulario de ventas como un popup
   void _mostrarFormularioVenta(Map<String, dynamic> venta) {
     showDialog(
@@ -434,7 +461,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                   ],
                 ),
               ),
-              
+
               // Cuerpo del popup (detalles de la venta y formulario)
               Expanded(
                 child: Padding(
@@ -466,7 +493,8 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: <Widget>[
                                         Text(
                                           venta['cliente']['nombre'],
@@ -491,12 +519,15 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                       vertical: 6,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFE31E24).withOpacity(0.1),
+                                      color: const Color(0xFFE31E24)
+                                          .withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
-                                      VentasUtils.formatearMontoTexto(venta['total']),
-                                      key: ValueKey('header-total-${venta['total']}'),
+                                      VentasUtils.formatearMontoTexto(
+                                          venta['total']),
+                                      key: ValueKey(
+                                          'header-total-${venta['total']}'),
                                       style: const TextStyle(
                                         color: Color(0xFFE31E24),
                                         fontWeight: FontWeight.bold,
@@ -508,7 +539,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                               const SizedBox(height: 16),
                               const Divider(color: Colors.white24),
                               const SizedBox(height: 8),
-                              
+
                               // Etiqueta de Productos
                               const Text(
                                 'PRODUCTOS',
@@ -519,21 +550,28 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              
+
                               // Lista de productos
                               Expanded(
                                 child: ListView.builder(
-                                  itemCount: (venta['productos'] as List<dynamic>).length,
-                                  itemBuilder: (BuildContext context, int index) {
+                                  itemCount:
+                                      (venta['productos'] as List<dynamic>)
+                                          .length,
+                                  itemBuilder:
+                                      (BuildContext context, int index) {
                                     final producto = venta['productos'][index];
-                                    final double subtotal = VentasUtils.calcularSubtotal(producto);
+                                    final double subtotal =
+                                        VentasUtils.calcularSubtotal(producto);
                                     return Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4.0),
                                       child: Container(
                                         decoration: BoxDecoration(
                                           color: const Color(0xFF1A1A1A),
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: Colors.white12),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border:
+                                              Border.all(color: Colors.white12),
                                         ),
                                         child: Row(
                                           children: <Widget>[
@@ -543,8 +581,10 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                               height: 40,
                                               margin: const EdgeInsets.all(8.0),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFF4CAF50).withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(8),
+                                                color: const Color(0xFF4CAF50)
+                                                    .withOpacity(0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
                                               child: const Center(
                                                 child: FaIcon(
@@ -557,35 +597,60 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                             // Información del producto
                                             Expanded(
                                               child: Padding(
-                                                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 8.0),
                                                 child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: <Widget>[
                                                     Text(
-                                                      producto['nombre'] as String,
+                                                      producto['nombre']
+                                                          as String,
                                                       style: const TextStyle(
-                                                        color: Colors.white, 
-                                                        fontWeight: FontWeight.bold
-                                                      ),
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.bold),
                                                     ),
                                                     Row(
                                                       children: <Widget>[
                                                         Text(
                                                           'Precio: S/ ${(producto['precio'] as double).toStringAsFixed(2)}',
-                                                          style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                                                          style: TextStyle(
+                                                              color: Colors
+                                                                  .grey[400],
+                                                              fontSize: 12),
                                                         ),
-                                                        const SizedBox(width: 4),
+                                                        const SizedBox(
+                                                            width: 4),
                                                         Container(
-                                                          padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
-                                                          decoration: BoxDecoration(
-                                                            color: const Color(0xFF4CAF50).withOpacity(0.1),
-                                                            borderRadius: BorderRadius.circular(4),
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      6.0,
+                                                                  vertical:
+                                                                      2.0),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: const Color(
+                                                                    0xFF4CAF50)
+                                                                .withOpacity(
+                                                                    0.1),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        4),
                                                           ),
                                                           child: Text(
                                                             'x${producto['cantidad']}',
-                                                            style: const TextStyle(
-                                                              color: Color(0xFF4CAF50),
-                                                              fontWeight: FontWeight.bold,
+                                                            style:
+                                                                const TextStyle(
+                                                              color: Color(
+                                                                  0xFF4CAF50),
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
                                                               fontSize: 11,
                                                             ),
                                                           ),
@@ -598,28 +663,43 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                             ),
                                             // Control de cantidad
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 8.0),
                                               child: Row(
                                                 children: <Widget>[
                                                   // Botón disminuir
                                                   _buildQuantityButton(
                                                     icon: Icons.remove,
-                                                    onPressed: () => _actualizarCantidadProducto(venta, index, -1),
-                                                    enabled: producto['cantidad'] > 1,
+                                                    onPressed: () =>
+                                                        _actualizarCantidadProducto(
+                                                            venta, index, -1),
+                                                    enabled:
+                                                        producto['cantidad'] >
+                                                            1,
                                                   ),
                                                   // Mostrar cantidad
                                                   Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                                                    margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 12.0,
+                                                        vertical: 6.0),
+                                                    margin: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 8.0),
                                                     decoration: BoxDecoration(
-                                                      color: const Color(0xFF2D2D2D),
-                                                      borderRadius: BorderRadius.circular(4),
+                                                      color: const Color(
+                                                          0xFF2D2D2D),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              4),
                                                     ),
                                                     child: Text(
                                                       '${producto['cantidad']}',
                                                       style: const TextStyle(
                                                         color: Colors.white,
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                         fontSize: 14,
                                                       ),
                                                     ),
@@ -627,7 +707,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                                   // Botón aumentar
                                                   _buildQuantityButton(
                                                     icon: Icons.add,
-                                                    onPressed: () => _actualizarCantidadProducto(venta, index, 1),
+                                                    onPressed: () =>
+                                                        _actualizarCantidadProducto(
+                                                            venta, index, 1),
                                                   ),
                                                 ],
                                               ),
@@ -635,11 +717,14 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                             // Subtotal
                                             Container(
                                               width: 80,
-                                              padding: const EdgeInsets.all(8.0),
+                                              padding:
+                                                  const EdgeInsets.all(8.0),
                                               alignment: Alignment.centerRight,
                                               child: Text(
-                                                VentasUtils.formatearMontoTexto(subtotal),
-                                                key: ValueKey('subtotal-$index-$subtotal'),
+                                                VentasUtils.formatearMontoTexto(
+                                                    subtotal),
+                                                key: ValueKey(
+                                                    'subtotal-$index-$subtotal'),
                                                 style: const TextStyle(
                                                   color: Colors.white,
                                                   fontWeight: FontWeight.bold,
@@ -653,12 +738,13 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                   },
                                 ),
                               ),
-                              
+
                               const Divider(color: Colors.white24),
-                              
+
                               // Total
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: <Widget>[
                                   const Text(
                                     'TOTAL',
@@ -671,17 +757,23 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: <Widget>[
                                       Text(
-                                        VentasUtils.formatearMontoTexto(venta['total']),
-                                        key: ValueKey('total-${venta['total']}'),
+                                        VentasUtils.formatearMontoTexto(
+                                            venta['total']),
+                                        key:
+                                            ValueKey('total-${venta['total']}'),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 18,
                                         ),
                                       ),
-                                      if (_ventaSeleccionada != null && 
-                                          _ventaSeleccionada!['total_original'] != null && 
-                                          _ventaSeleccionada!['total_original'] != _ventaSeleccionada!['total'])
+                                      if (_ventaSeleccionada != null &&
+                                          _ventaSeleccionada![
+                                                  'total_original'] !=
+                                              null &&
+                                          _ventaSeleccionada![
+                                                  'total_original'] !=
+                                              _ventaSeleccionada!['total'])
                                         Text(
                                           'Monto original: ${VentasUtils.formatearMontoTexto(_ventaSeleccionada!['total_original'])}',
                                           style: TextStyle(
@@ -698,9 +790,9 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(width: 16),
-                      
+
                       // Columna derecha: Teclado numérico y opciones de pago
                       Expanded(
                         flex: 4,
@@ -736,52 +828,55 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       ),
     );
   }
-  
+
   // Método para procesar el pago de una venta
   Future<void> _procesarPago() async {
     if (_ventaSeleccionada == null) {
       return;
     }
-    
-    debugPrint('Procesando pago para venta: ${_ventaSeleccionada!['id']} con monto: $_montoIngresado');
+
+    debugPrint(
+        'Procesando pago para venta: ${_ventaSeleccionada!['id']} con monto: $_montoIngresado');
     setState(() => _procesandoPago = true);
-    
+
     try {
       // Determinar si es una proforma que debemos convertir
       final bool esProforma = VentasPendientesUtils.esProforma(
         _ventaSeleccionada!['id'].toString(),
         tipoVenta: _ventaSeleccionada!['tipoVenta'] as String?,
       );
-      
+
       if (esProforma) {
         // Extraer ID numérico de la proforma
-        final int? proformaId = VentasPendientesUtils.extraerIdProforma(_ventaSeleccionada!['id'].toString());
+        final int? proformaId = VentasPendientesUtils.extraerIdProforma(
+            _ventaSeleccionada!['id'].toString());
         if (proformaId != null) {
           await _convertirProformaAVenta(proformaId, _ventaSeleccionada!);
         }
       } else {
         // Proceso original para ventas normales
         await _actualizarProductosVenta();
-        
+
         // Mostrar dialog de procesamiento
         if (mounted) {
           await showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (BuildContext context) => ProcessingDialog(documentType: _tipoDocumento),
+            builder: (BuildContext context) =>
+                ProcessingDialog(documentType: _tipoDocumento),
           );
         }
-        
+
         // Simular procesamiento (aquí harías la llamada a la API)
         await Future.delayed(const Duration(seconds: 2));
-        
+
         debugPrint('Pago procesado exitosamente');
         debugPrint('Marcando venta como procesada');
-        
+
         // Cerrar dialog de procesamiento
         if (mounted) {
           Navigator.of(context).pop();
-          
+
           // Mostrar mensaje de éxito
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -793,7 +888,7 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
           }
         }
       }
-      
+
       // Reiniciar estado
       setState(() {
         _ventaSeleccionada = null;
@@ -802,19 +897,18 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         _tipoDocumento = 'Boleta';
         _procesandoPago = false;
       });
-      
+
       // Recargar ventas y proformas
       await _cargarVentas();
       await _cargarProformas();
     } catch (e) {
       debugPrint('Error al procesar pago: $e');
-      
+
       if (mounted) {
         // Cerrar dialog de procesamiento si está abierto
-        Navigator.of(context, rootNavigator: true).popUntil(
-          (Route route) => route.isFirst || route.settings.name == 'ventas_dialog'
-        );
-        
+        Navigator.of(context, rootNavigator: true).popUntil((Route route) =>
+            route.isFirst || route.settings.name == 'ventas_dialog');
+
         // Mostrar mensaje de error
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -822,21 +916,22 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
             backgroundColor: Colors.red,
           ),
         );
-        
+
         setState(() => _procesandoPago = false);
       }
     }
   }
-  
+
   // Método para actualizar productos de la venta (cantidades modificadas)
   Future<void> _actualizarProductosVenta() async {
     if (_ventaSeleccionada == null) {
       return;
     }
-    
+
     try {
-      debugPrint('Actualizando cantidades de productos para venta: ${_ventaSeleccionada!['id']}');
-      
+      debugPrint(
+          'Actualizando cantidades de productos para venta: ${_ventaSeleccionada!['id']}');
+
       // Crear estructura de datos para enviar a la API
       final Map<String, dynamic> ventaData = <String, dynamic>{
         'productos': _ventaSeleccionada!['productos'].map((producto) {
@@ -848,15 +943,15 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         }).toList(),
         'total': _ventaSeleccionada!['total'],
       };
-      
+
       // Actualizar la venta en la API
       await _ventasApi.updateVenta(_ventaSeleccionada!['id'], ventaData);
-      
+
       debugPrint('Cantidades de productos actualizadas correctamente');
-      
     } catch (e) {
       debugPrint('Error al actualizar cantidades de productos: $e');
-      throw Exception('No se pudieron actualizar las cantidades de productos: $e');
+      throw Exception(
+          'No se pudieron actualizar las cantidades de productos: $e');
     }
   }
 
@@ -872,43 +967,46 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   }
 
   // Método para actualizar la cantidad de un producto
-  void _actualizarCantidadProducto(Map<String, dynamic> venta, int index, int cambio) {
+  void _actualizarCantidadProducto(
+      Map<String, dynamic> venta, int index, int cambio) {
     setState(() {
       final producto = venta['productos'][index];
       final int cantidadActual = producto['cantidad'] as int;
       final int nuevaCantidad = cantidadActual + cambio;
-      
+
       // Asegurar que la cantidad no sea menor que 1
       if (nuevaCantidad >= 1) {
         producto['cantidad'] = nuevaCantidad;
-        
+
         // Recalcular el total de la venta usando la clase utilitaria
         venta['total'] = VentasUtils.calcularTotalVenta(venta['productos']);
-        
+
         // Si hay una venta seleccionada, actualizarla también
-        if (_ventaSeleccionada != null && _ventaSeleccionada!['id'] == venta['id']) {
+        if (_ventaSeleccionada != null &&
+            _ventaSeleccionada!['id'] == venta['id']) {
           _ventaSeleccionada = Map<String, dynamic>.from(venta);
         }
-        
-        debugPrint('Cantidad actualizada para ${producto['nombre']}: $nuevaCantidad');
+
+        debugPrint(
+            'Cantidad actualizada para ${producto['nombre']}: $nuevaCantidad');
         debugPrint('Nuevo total de la venta: ${venta['total']}');
       }
     });
-    
+
     // Forzar una actualización más explícita
     // Usamos una variable local para capturar el estado actual
     final Map<String, dynamic>? ventaSeleccionadaActual = _ventaSeleccionada;
-    
+
     if (mounted) {
       Future.delayed(Duration.zero, () {
         // Verificar si el widget sigue montado después del delay
         if (!mounted) {
           return;
         }
-        
+
         // Forzar una reconstrucción completa del widget actual
         setState(() {});
-        
+
         // Forzar reconstrucción del diálogo si está abierto
         if (ventaSeleccionadaActual != null && mounted) {
           // Verificar si el contexto es válido antes de usarlo
@@ -954,52 +1052,59 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
           _isLoading = true;
         });
       }
-      
+
       final int? sucursalId = await VentasPendientesUtils.obtenerSucursalId();
       if (sucursalId == null) {
         debugPrint('Error: No se pudo obtener el ID de sucursal');
         return;
       }
-      
+
       // Configurar para obtención en tiempo real - sin caché
-      final Map<String, dynamic> proformasResponse = await _proformasApi.getProformasVenta(
+      final Map<String, dynamic> proformasResponse =
+          await _proformasApi.getProformasVenta(
         sucursalId: sucursalId.toString(),
         forceRefresh: true, // Forzar actualización para obtener datos frescos
-        useCache: false,     // No usar caché
+        useCache: false, // No usar caché
       );
-      
+
       if (!mounted) {
         return;
       }
-      
-      final List<models.Proforma> proformasObj = _proformasApi.parseProformasVenta(proformasResponse);
-      
+
+      final List<models.Proforma> proformasObj =
+          _proformasApi.parseProformasVenta(proformasResponse);
+
       // Filtrar solo proformas pendientes
       final List<models.Proforma> proformasFiltradas = proformasObj
-          .where((models.Proforma p) => p.estado == models.EstadoProforma.pendiente)
+          .where((models.Proforma p) =>
+              p.estado == models.EstadoProforma.pendiente)
           .toList();
-      
-      debugPrint('🔄 Proformas cargadas: ${proformasObj.length}, pendientes: ${proformasFiltradas.length}');
-      
+
+      debugPrint(
+          '🔄 Proformas cargadas: ${proformasObj.length}, pendientes: ${proformasFiltradas.length}');
+
       // Convertir proformas a formato para mostrar en la UI
-      final List<Map<String, dynamic>> proformasFormateadas = 
-          VentasPendientesUtils.convertirProformasAVentasPendientes(proformasFiltradas);
-      
+      final List<Map<String, dynamic>> proformasFormateadas =
+          VentasPendientesUtils.convertirProformasAVentasPendientes(
+              proformasFiltradas);
+
       // Registrar información sobre promociones en las proformas
       int proformasConPromociones = 0;
       for (final models.Proforma proforma in proformasFiltradas) {
-        final List<models.DetalleProforma> detallesConPromociones = proforma.detalles
+        final List<models.DetalleProforma> detallesConPromociones = proforma
+            .detalles
             .where((models.DetalleProforma d) => _tienePromocion(d))
             .toList();
-        
+
         if (detallesConPromociones.isNotEmpty) {
           proformasConPromociones++;
-          debugPrint('Proforma #${proforma.id} tiene ${detallesConPromociones.length} productos con promociones');
+          debugPrint(
+              'Proforma #${proforma.id} tiene ${detallesConPromociones.length} productos con promociones');
         }
       }
-      
+
       debugPrint('Proformas con promociones: $proformasConPromociones');
-      
+
       setState(() {
         _proformasObj = proformasFiltradas;
         _proformasFormateadas = proformasFormateadas;
@@ -1023,49 +1128,47 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
       }
     }
   }
-  
+
   // Verificar si un detalle de proforma tiene promociones
   bool _tienePromocion(models.DetalleProforma detalle) {
     if (detalle.producto == null) {
       return false;
     }
-    
+
     final Producto producto = detalle.producto!;
-    
+
     // Verificar si tiene liquidación
     if (producto.liquidacion && producto.precioOferta != null) {
       return true;
     }
-    
+
     // Verificar promoción de unidades gratis
-    if (producto.cantidadMinimaDescuento != null && 
+    if (producto.cantidadMinimaDescuento != null &&
         producto.cantidadMinimaDescuento! > 0 &&
-        producto.cantidadGratisDescuento != null && 
+        producto.cantidadGratisDescuento != null &&
         producto.cantidadGratisDescuento! > 0) {
       return true;
     }
-    
+
     // Verificar descuento porcentual
-    if (producto.cantidadMinimaDescuento != null && 
+    if (producto.cantidadMinimaDescuento != null &&
         producto.cantidadMinimaDescuento! > 0 &&
-        producto.porcentajeDescuento != null && 
+        producto.porcentajeDescuento != null &&
         producto.porcentajeDescuento! > 0) {
       return true;
     }
-    
+
     return false;
   }
-  
+
   // Método para convertir proforma a venta
   Future<void> _convertirProformaAVenta(
-    int proformaId, 
-    Map<String, dynamic> ventaData
-  ) async {
+      int proformaId, Map<String, dynamic> ventaData) async {
     try {
       setState(() {
         _isLoading = true;
       });
-      
+
       // Obtener sucursalId
       final int? sucursalId = await VentasPendientesUtils.obtenerSucursalId();
       if (sucursalId == null) {
@@ -1083,46 +1186,49 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
         }
         return;
       }
-      
+
       // Preparar tipo de documento (BOLETA o FACTURA)
-      final String tipoDocumento = ventaData['tipoDocumento'] as String? ?? 'BOLETA';
-      
+      final String tipoDocumento =
+          ventaData['tipoDocumento'] as String? ?? 'BOLETA';
+
       // Procesar la conversión usando la clase de utilidad
       await showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (BuildContext context) => ProcessingDialog(documentType: tipoDocumento.toLowerCase()),
+        builder: (BuildContext context) =>
+            ProcessingDialog(documentType: tipoDocumento.toLowerCase()),
       );
-      
-      final bool exito = await ProformaConversionManager.convertirProformaAVenta(
+
+      final bool exito =
+          await ProformaConversionManager.convertirProformaAVenta(
         context: context,
         sucursalId: sucursalId.toString(),
         proformaId: proformaId,
         tipoDocumento: tipoDocumento,
         onSuccess: () {
-          debugPrint('Proforma #$proformaId convertida exitosamente a $tipoDocumento');
+          debugPrint(
+              'Proforma #$proformaId convertida exitosamente a $tipoDocumento');
           _cargarVentas();
           _cargarProformas();
         },
       );
-      
+
       // Cerrar diálogo de procesamiento (la clase ProformaConversionManager ya se encarga de esto)
       if (context.mounted && Navigator.canPop(context)) {
         Navigator.of(context, rootNavigator: true).pop();
       }
-      
+
       if (!exito) {
         debugPrint('No se pudo convertir la proforma #$proformaId a venta');
       }
-      
     } catch (e) {
       debugPrint('Error al convertir proforma a venta: $e');
-      
+
       // Cerrar diálogo de procesamiento si está abierto
       if (context.mounted && Navigator.canPop(context)) {
         Navigator.of(context, rootNavigator: true).pop();
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1144,16 +1250,16 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   void _iniciarActualizacionPeriodica() {
     // Cancelar timer existente si hay uno
     _actualizacionTimer?.cancel();
-    
+
     // Crear nuevo timer para actualizar cada _intervaloActualizacion segundos
     _actualizacionTimer = Timer.periodic(
-      Duration(seconds: _intervaloActualizacion), 
-      (_) => _actualizarProformasEnTiempoReal()
-    );
-    
-    debugPrint('🔄 Timer de actualización de proformas iniciado (cada $_intervaloActualizacion segundos)');
+        Duration(seconds: _intervaloActualizacion),
+        (_) => _actualizarProformasEnTiempoReal());
+
+    debugPrint(
+        '🔄 Timer de actualización de proformas iniciado (cada $_intervaloActualizacion segundos)');
   }
-  
+
   // Actualizar solo proformas en tiempo real
   Future<void> _actualizarProformasEnTiempoReal() async {
     debugPrint('🔄 Actualizando proformas en tiempo real...');
@@ -1170,283 +1276,234 @@ class _SalesComputerScreenState extends State<SalesComputerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2D2D2D),
-        title: Row(
-          children: <Widget>[
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const FaIcon(
-                FontAwesomeIcons.cashRegister,
-                size: 20,
-                color: Color(0xFF4CAF50),
-              ),
+      body: Row(
+        children: [
+          // Panel izquierdo: Contenido principal (70%)
+          Expanded(
+            flex: 7,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
+                Expanded(
+                  child: _buildMainContent(context),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Text(
-              'Sistema de Ventas - ${widget.nombreSucursal}',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Recargar ventas',
-            onPressed: _cargarVentas,
           ),
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.fileInvoiceDollar, size: 20),
-            tooltip: 'Recargar proformas',
-            onPressed: _cargarProformas,
+
+          // Panel derecho: Historial de ventas (30%)
+          Container(
+            width: 300,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              border: Border(
+                left: BorderSide(
+                  color: Colors.white.withOpacity(0.1),
+                ),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Cabecera del panel de historial
+                Container(
+                  padding: const EdgeInsets.all(16.0),
+                  color: const Color(0xFF2D2D2D),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          FaIcon(
+                            FontAwesomeIcons.clockRotateLeft,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'HISTORIAL',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_isLoading)
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+                // Mensaje de error
+                if (_errorMessage.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      _errorMessage,
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ),
+
+                // Panel de historial de ventas
+                Expanded(
+                  child: VentasListComputer(
+                    ventas: _ventas,
+                    isLoading: _isLoading,
+                    onAnularVenta: _anularVenta,
+                    onRecargarVentas: _cargarVentas,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      body: Row(
-        children: <Widget>[
-          // Panel izquierdo: Ventas pendientes y proformas
-          Expanded(
-            flex: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: PendingSalesWidget(
-                onSaleSelected: _seleccionarVenta,
-                ventasPendientes: <Map<String, dynamic>>[..._ventasPendientes, ..._proformasFormateadas],
-                onReload: _cargarProformas,
-                intervaloActualizacion: _intervaloActualizacion,
-              ),
-            ),
-          ),
-          
-          // Panel derecho: Historial de ventas
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  const Text(
-                    'HISTORIAL DE VENTAS',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ListView.builder(
-                          itemCount: _ventas.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final Venta venta = _ventas[index];
-                            return Card(
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              color: const Color(0xFF2D2D2D),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: ExpansionTile(
-                                collapsedIconColor: Colors.white,
-                                iconColor: Colors.white,
-                                title: Text(
-                                  'Venta #${venta.id}',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Text(
-                                      'Fecha: ${_formatDateTime(venta.fechaCreacion)}',
-                                      style: TextStyle(color: Colors.grey[400]),
-                                    ),
-                                    Text(
-                                      'Estado: ${venta.estado}',
-                                      style: TextStyle(
-                                        color: venta.estado == EstadosVenta.completada
-                                            ? Colors.green
-                                            : venta.estado == EstadosVenta.anulada
-                                                ? Colors.red
-                                                : Colors.orange,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Total: S/ ${VentasUtils.formatearMontoTexto(venta.total)}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                children: <Widget>[
-                                  Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: <Widget>[
-                                        const Text(
-                                          'Detalles de la Venta',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        ...venta.detalles.map((DetalleVenta detalle) => ListTile(
-                                          title: Text(
-                                            'Producto #${detalle.productoId}',
-                                            style: const TextStyle(color: Colors.white),
-                                          ),
-                                          subtitle: Text(
-                                            'Cantidad: ${detalle.cantidad}',
-                                            style: TextStyle(color: Colors.grey[400]),
-                                          ),
-                                          trailing: Text(
-                                            'S/ ${detalle.subtotal.toStringAsFixed(2)}',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        )),
-                                        const Divider(color: Colors.white24),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: <Widget>[
-                                            const Text(
-                                              'Subtotal:',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            Text(
-                                              'S/ ${venta.subtotal.toStringAsFixed(2)}',
-                                              style: const TextStyle(color: Colors.white),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: <Widget>[
-                                            const Text(
-                                              'IGV:',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            Text(
-                                              'S/ ${venta.igv.toStringAsFixed(2)}',
-                                              style: const TextStyle(color: Colors.white),
-                                            ),
-                                          ],
-                                        ),
-                                        if (venta.descuentoTotal != null) ...<Widget>[
-                                          const SizedBox(height: 4),
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: <Widget>[
-                                              const Text(
-                                                'Descuento:',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              Text(
-                                                'S/ ${venta.descuentoTotal!.toStringAsFixed(2)}',
-                                                style: const TextStyle(color: Colors.white),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                        const SizedBox(height: 8),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: <Widget>[
-                                            const Text(
-                                              'Total:',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 18,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            Text(
-                                              VentasUtils.formatearMontoTexto(venta.total),
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 18,
-                                                color: Color(0xFF4CAF50),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                          children: <Widget>[
-                                            ElevatedButton.icon(
-                                              onPressed: () {
-                                              },
-                                              icon: const Icon(Icons.receipt),
-                                              label: const Text('Generar Boleta'),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: const Color(0xFF2196F3),
-                                              ),
-                                            ),
-                                            ElevatedButton.icon(
-                                              onPressed: () {
-                                              },
-                                              icon: const Icon(Icons.description),
-                                              label: const Text('Generar Factura'),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: const Color(0xFF9C27B0),
-                                              ),
-                                            ),
-                                            if (venta.estado != EstadosVenta.anulada)
-                                              ElevatedButton.icon(
-                                                onPressed: () => _anularVenta(venta),
-                                                icon: const Icon(Icons.cancel),
-                                                label: const Text('Anular'),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(0xFFE31E24),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                  ),
-                ],
-              ),
-            ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2D2D2D),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
         ],
+      ),
+      child: Row(
+        children: [
+          const FaIcon(
+            FontAwesomeIcons.cashRegister,
+            color: Color(0xFFE31E24),
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Sistema de Ventas - ${widget.nombreSucursal}',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 24),
+          Expanded(
+            child: _buildSearchField(),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton.icon(
+            icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
+            label: const Text('Nueva Venta'),
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: const Color(0xFFE31E24),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+            onPressed: () {
+              // Implementar creación de nueva venta
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Función en desarrollo'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.1),
+        ),
+      ),
+      child: TextField(
+        controller: _searchController,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          hintText: 'Buscar por cliente, número de documento o serie...',
+          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+          border: InputBorder.none,
+          prefixIcon: Icon(
+            Icons.search,
+            color: Colors.white.withOpacity(0.5),
+          ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon:
+                      const Icon(Icons.close, color: Colors.white70, size: 18),
+                  onPressed: () {
+                    // Limpiar búsqueda
+                    _searchController.clear();
+                    _actualizarBusqueda('');
+                  },
+                )
+              : null,
+        ),
+        onChanged: (value) {
+          // Actualizar búsqueda después de un pequeño retraso
+          Future.delayed(const Duration(milliseconds: 500), () {
+            _actualizarBusqueda(value);
+          });
+        },
+      ),
+    );
+  }
+
+  void _actualizarBusqueda(String query) {
+    setState(() {
+      _searchQuery = query;
+    });
+    _filtrarVentas();
+  }
+
+  void _filtrarVentas() {
+    // Aquí se implementaría la lógica para filtrar ventas según la búsqueda
+    // Por ahora, solo actualizamos el estado
+    _cargarVentas();
+  }
+
+  Widget _buildMainContent(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: PendingSalesWidget(
+        onSaleSelected: _seleccionarVenta,
+        ventasPendientes: <Map<String, dynamic>>[
+          ..._ventasPendientes,
+          ..._proformasFormateadas
+        ],
+        onReload: _cargarProformas,
+        intervaloActualizacion: _intervaloActualizacion,
       ),
     );
   }
@@ -1495,7 +1552,8 @@ class PendingSalesWidget extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF4CAF50),
                     borderRadius: BorderRadius.circular(10),
@@ -1530,7 +1588,7 @@ class PendingSalesWidget extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        
+
         // Lista de ventas pendientes
         Expanded(
           child: ventasPendientes.isEmpty
@@ -1544,16 +1602,20 @@ class PendingSalesWidget extends StatelessWidget {
                   itemCount: ventasPendientes.length,
                   itemBuilder: (BuildContext context, int index) {
                     final Map<String, dynamic> venta = ventasPendientes[index];
-                    final String tipoVenta = venta['tipoVenta'] as String? ?? 'Venta';
-                    final bool esProforma = tipoVenta.toLowerCase() == 'proforma';
-                    
+                    final String tipoVenta =
+                        venta['tipoVenta'] as String? ?? 'Venta';
+                    final bool esProforma =
+                        tipoVenta.toLowerCase() == 'proforma';
+
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       color: const Color(0xFF2D2D2D),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(
-                          color: esProforma ? const Color(0xFFE31E24) : Colors.transparent,
+                          color: esProforma
+                              ? const Color(0xFFE31E24)
+                              : Colors.transparent,
                           width: esProforma ? 1 : 0,
                         ),
                       ),
@@ -1569,11 +1631,11 @@ class PendingSalesWidget extends StatelessWidget {
                               Row(
                                 children: <Widget>[
                                   Icon(
-                                    esProforma 
-                                        ? Icons.file_copy_outlined 
+                                    esProforma
+                                        ? Icons.file_copy_outlined
                                         : Icons.shopping_cart,
-                                    color: esProforma 
-                                        ? const Color(0xFFE31E24) 
+                                    color: esProforma
+                                        ? const Color(0xFFE31E24)
                                         : Colors.green,
                                     size: 24,
                                   ),
@@ -1590,20 +1652,21 @@ class PendingSalesWidget extends StatelessWidget {
                                   ),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, 
+                                      horizontal: 8,
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: esProforma 
-                                          ? const Color(0xFFE31E24).withOpacity(0.2) 
+                                      color: esProforma
+                                          ? const Color(0xFFE31E24)
+                                              .withOpacity(0.2)
                                           : Colors.green.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
                                       'S/ ${venta['total']}',
                                       style: TextStyle(
-                                        color: esProforma 
-                                            ? const Color(0xFFE31E24) 
+                                        color: esProforma
+                                            ? const Color(0xFFE31E24)
                                             : Colors.green,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -1612,18 +1675,20 @@ class PendingSalesWidget extends StatelessWidget {
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              
+
                               // Información del cliente
-                              if (venta.containsKey('cliente') && venta['cliente'] != null)
+                              if (venta.containsKey('cliente') &&
+                                  venta['cliente'] != null)
                                 Text(
                                   'Cliente: ${venta['cliente']['nombre'] ?? 'Sin nombre'}',
                                   style: const TextStyle(
                                     color: Colors.white70,
                                   ),
                                 ),
-                              
+
                               // Fecha de creación
-                              if (venta.containsKey('fechaCreacion') && venta['fechaCreacion'] != null)
+                              if (venta.containsKey('fechaCreacion') &&
+                                  venta['fechaCreacion'] != null)
                                 Text(
                                   'Fecha: ${venta['fechaCreacion']}',
                                   style: const TextStyle(
@@ -1631,14 +1696,14 @@ class PendingSalesWidget extends StatelessWidget {
                                     fontSize: 12,
                                   ),
                                 ),
-                                
+
                               // Etiquetas o información adicional
                               const SizedBox(height: 8),
                               Row(
                                 children: <Widget>[
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, 
+                                      horizontal: 8,
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
@@ -1646,7 +1711,9 @@ class PendingSalesWidget extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
-                                      esProforma ? 'Pendiente de conversión' : 'Pendiente de pago',
+                                      esProforma
+                                          ? 'Pendiente de conversión'
+                                          : 'Pendiente de pago',
                                       style: const TextStyle(
                                         color: Colors.white70,
                                         fontSize: 12,
@@ -1672,8 +1739,10 @@ class PendingSalesWidget extends StatelessWidget {
     super.debugFillProperties(properties);
     properties
       ..add(ObjectFlagProperty<VoidCallback>.has('onReload', onReload))
-      ..add(IterableProperty<Map<String, dynamic>>('ventasPendientes', ventasPendientes))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic> p1)>.has('onSaleSelected', onSaleSelected))
+      ..add(IterableProperty<Map<String, dynamic>>(
+          'ventasPendientes', ventasPendientes))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic> p1)>.has(
+          'onSaleSelected', onSaleSelected))
       ..add(IntProperty('intervaloActualizacion', intervaloActualizacion));
   }
-} 
+}

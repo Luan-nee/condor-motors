@@ -1,7 +1,7 @@
 import 'dart:developer' as developer;
 
 import 'package:condorsmotors/models/proforma.model.dart';
-import 'package:condorsmotors/screens/computer/widgets/proforma_utils.dart';
+import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -104,13 +104,16 @@ class NumericKeypad extends StatefulWidget {
     properties
       ..add(StringProperty('customerName', customerName))
       ..add(ObjectFlagProperty<VoidCallback>.has('onSubmit', onSubmit))
-      ..add(ObjectFlagProperty<Function(String)>.has('onKeyPressed', onKeyPressed))
+      ..add(ObjectFlagProperty<Function(String)>.has(
+          'onKeyPressed', onKeyPressed))
       ..add(ObjectFlagProperty<VoidCallback>.has('onClear', onClear))
       ..add(StringProperty('currentAmount', currentAmount))
       ..add(StringProperty('paymentAmount', paymentAmount))
       ..add(StringProperty('documentType', documentType))
-      ..add(ObjectFlagProperty<Function(String)>.has('onCustomerNameChanged', onCustomerNameChanged))
-      ..add(ObjectFlagProperty<Function(String)>.has('onDocumentTypeChanged', onDocumentTypeChanged))
+      ..add(ObjectFlagProperty<Function(String)>.has(
+          'onCustomerNameChanged', onCustomerNameChanged))
+      ..add(ObjectFlagProperty<Function(String)>.has(
+          'onDocumentTypeChanged', onDocumentTypeChanged))
       ..add(DiagnosticsProperty<bool>('isProcessing', isProcessing))
       ..add(DoubleProperty('minAmount', minAmount))
       ..add(ObjectFlagProperty<Function(double)>.has('onCharge', onCharge));
@@ -139,9 +142,9 @@ class _NumericKeypadState extends State<NumericKeypad> {
   @override
   void didUpdateWidget(NumericKeypad oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // Actualizar el monto si cambia desde el componente padre
-    if (widget.paymentAmount != oldWidget.paymentAmount && 
+    if (widget.paymentAmount != oldWidget.paymentAmount &&
         widget.paymentAmount != _enteredAmount) {
       setState(() {
         _enteredAmount = widget.paymentAmount;
@@ -162,7 +165,8 @@ class _NumericKeypadState extends State<NumericKeypad> {
       return double.tryParse(_changeController.text) ?? 0;
     }
     final double total = double.tryParse(widget.currentAmount) ?? 0;
-    final double payment = double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
+    final double payment =
+        double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
     return payment - total;
   }
 
@@ -172,10 +176,12 @@ class _NumericKeypadState extends State<NumericKeypad> {
 
   void _handleKeyEvent(String key) {
     developer.log('Tecla presionada: $key');
-    
+
     if (key == 'Enter') {
-      developer.log('Intentando ejecutar onCharge - Monto ingresado: $_enteredAmount');
-      final double montoIngresado = double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
+      developer.log(
+          'Intentando ejecutar onCharge - Monto ingresado: $_enteredAmount');
+      final double montoIngresado =
+          double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0;
       if (_enteredAmount.isNotEmpty && montoIngresado >= widget.minAmount) {
         developer.log('Ejecutando onCharge con monto: $montoIngresado');
         widget.onCharge(montoIngresado);
@@ -184,35 +190,36 @@ class _NumericKeypadState extends State<NumericKeypad> {
       }
       return;
     }
-    
+
     if (key == 'Backspace') {
       developer.log('Borrando último dígito');
       if (_enteredAmount.isNotEmpty) {
         setState(() {
-          _enteredAmount = _enteredAmount.substring(0, _enteredAmount.length - 1);
+          _enteredAmount =
+              _enteredAmount.substring(0, _enteredAmount.length - 1);
           // Sincronizar con el componente padre
           widget.onKeyPressed(_enteredAmount);
         });
       }
       return;
     }
-    
+
     // Si es un número y no sobrepasa el máximo de dígitos
     if (_enteredAmount.length < 10) {
       setState(() {
         // Si estamos empezando y el usuario presiona el punto, agregamos "0."
         if (_enteredAmount.isEmpty && key == '.') {
           _enteredAmount = '0.';
-        } 
+        }
         // Si ya existe un punto, no permitir agregar otro
         else if (key == '.' && _enteredAmount.contains('.')) {
           return;
-        } 
+        }
         // Agregar dígito normalmente
         else {
           _enteredAmount += key;
         }
-        
+
         // Sincronizar con el componente padre
         widget.onKeyPressed(_enteredAmount);
       });
@@ -240,32 +247,44 @@ class _NumericKeypadState extends State<NumericKeypad> {
 
         final LogicalKeyboardKey key = event.logicalKey;
         developer.log('Tecla física presionada: ${key.keyLabel}');
-        
-        if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.numpadEnter) {
+
+        if (key == LogicalKeyboardKey.enter ||
+            key == LogicalKeyboardKey.numpadEnter) {
           _handleKeyEvent('Enter');
         } else if (key == LogicalKeyboardKey.backspace) {
           _handleKeyEvent('Backspace');
-        } else if (key == LogicalKeyboardKey.digit0 || key == LogicalKeyboardKey.numpad0) {
+        } else if (key == LogicalKeyboardKey.digit0 ||
+            key == LogicalKeyboardKey.numpad0) {
           _handleKeyEvent('0');
-        } else if (key == LogicalKeyboardKey.digit1 || key == LogicalKeyboardKey.numpad1) {
+        } else if (key == LogicalKeyboardKey.digit1 ||
+            key == LogicalKeyboardKey.numpad1) {
           _handleKeyEvent('1');
-        } else if (key == LogicalKeyboardKey.digit2 || key == LogicalKeyboardKey.numpad2) {
+        } else if (key == LogicalKeyboardKey.digit2 ||
+            key == LogicalKeyboardKey.numpad2) {
           _handleKeyEvent('2');
-        } else if (key == LogicalKeyboardKey.digit3 || key == LogicalKeyboardKey.numpad3) {
+        } else if (key == LogicalKeyboardKey.digit3 ||
+            key == LogicalKeyboardKey.numpad3) {
           _handleKeyEvent('3');
-        } else if (key == LogicalKeyboardKey.digit4 || key == LogicalKeyboardKey.numpad4) {
+        } else if (key == LogicalKeyboardKey.digit4 ||
+            key == LogicalKeyboardKey.numpad4) {
           _handleKeyEvent('4');
-        } else if (key == LogicalKeyboardKey.digit5 || key == LogicalKeyboardKey.numpad5) {
+        } else if (key == LogicalKeyboardKey.digit5 ||
+            key == LogicalKeyboardKey.numpad5) {
           _handleKeyEvent('5');
-        } else if (key == LogicalKeyboardKey.digit6 || key == LogicalKeyboardKey.numpad6) {
+        } else if (key == LogicalKeyboardKey.digit6 ||
+            key == LogicalKeyboardKey.numpad6) {
           _handleKeyEvent('6');
-        } else if (key == LogicalKeyboardKey.digit7 || key == LogicalKeyboardKey.numpad7) {
+        } else if (key == LogicalKeyboardKey.digit7 ||
+            key == LogicalKeyboardKey.numpad7) {
           _handleKeyEvent('7');
-        } else if (key == LogicalKeyboardKey.digit8 || key == LogicalKeyboardKey.numpad8) {
+        } else if (key == LogicalKeyboardKey.digit8 ||
+            key == LogicalKeyboardKey.numpad8) {
           _handleKeyEvent('8');
-        } else if (key == LogicalKeyboardKey.digit9 || key == LogicalKeyboardKey.numpad9) {
+        } else if (key == LogicalKeyboardKey.digit9 ||
+            key == LogicalKeyboardKey.numpad9) {
           _handleKeyEvent('9');
-        } else if (key == LogicalKeyboardKey.period || key == LogicalKeyboardKey.numpadDecimal) {
+        } else if (key == LogicalKeyboardKey.period ||
+            key == LogicalKeyboardKey.numpadDecimal) {
           _handleKeyEvent('.');
         }
       },
@@ -291,11 +310,8 @@ class _NumericKeypadState extends State<NumericKeypad> {
                   // Campo de nombre del cliente
                   Row(
                     children: <Widget>[
-                      const FaIcon(
-                        FontAwesomeIcons.user, 
-                        color: Color(0xFFE31E24), 
-                        size: 16
-                      ),
+                      const FaIcon(FontAwesomeIcons.user,
+                          color: Color(0xFFE31E24), size: 16),
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
@@ -318,7 +334,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Selector de tipo de documento
                   Row(
                     children: <Widget>[
@@ -327,39 +343,40 @@ class _NumericKeypadState extends State<NumericKeypad> {
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () {
-                              developer.log('Seleccionado tipo de documento: Boleta');
+                              developer.log(
+                                  'Seleccionado tipo de documento: Boleta');
                               widget.onDocumentTypeChanged('Boleta');
                             },
                             borderRadius: BorderRadius.circular(8),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: widget.documentType == 'Boleta' 
-                                  ? const Color(0xFFE31E24).withOpacity(0.1) 
-                                  : Colors.transparent,
+                                color: widget.documentType == 'Boleta'
+                                    ? const Color(0xFFE31E24).withOpacity(0.1)
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: widget.documentType == 'Boleta' 
-                                    ? const Color(0xFFE31E24) 
-                                    : Colors.white24,
+                                  color: widget.documentType == 'Boleta'
+                                      ? const Color(0xFFE31E24)
+                                      : Colors.white24,
                                 ),
                               ),
                               child: Column(
                                 children: <Widget>[
                                   FaIcon(
                                     FontAwesomeIcons.receipt,
-                                    color: widget.documentType == 'Boleta' 
-                                      ? const Color(0xFFE31E24) 
-                                      : Colors.white54,
+                                    color: widget.documentType == 'Boleta'
+                                        ? const Color(0xFFE31E24)
+                                        : Colors.white54,
                                     size: 16,
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     'Boleta',
                                     style: TextStyle(
-                                      color: widget.documentType == 'Boleta' 
-                                        ? const Color(0xFFE31E24) 
-                                        : Colors.white54,
+                                      color: widget.documentType == 'Boleta'
+                                          ? const Color(0xFFE31E24)
+                                          : Colors.white54,
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -376,39 +393,40 @@ class _NumericKeypadState extends State<NumericKeypad> {
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () {
-                              developer.log('Seleccionado tipo de documento: Factura');
+                              developer.log(
+                                  'Seleccionado tipo de documento: Factura');
                               widget.onDocumentTypeChanged('Factura');
                             },
                             borderRadius: BorderRadius.circular(8),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: widget.documentType == 'Factura' 
-                                  ? const Color(0xFFE31E24).withOpacity(0.1) 
-                                  : Colors.transparent,
+                                color: widget.documentType == 'Factura'
+                                    ? const Color(0xFFE31E24).withOpacity(0.1)
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: widget.documentType == 'Factura' 
-                                    ? const Color(0xFFE31E24) 
-                                    : Colors.white24,
+                                  color: widget.documentType == 'Factura'
+                                      ? const Color(0xFFE31E24)
+                                      : Colors.white24,
                                 ),
                               ),
                               child: Column(
                                 children: <Widget>[
                                   FaIcon(
                                     FontAwesomeIcons.fileInvoiceDollar,
-                                    color: widget.documentType == 'Factura' 
-                                      ? const Color(0xFFE31E24) 
-                                      : Colors.white54,
+                                    color: widget.documentType == 'Factura'
+                                        ? const Color(0xFFE31E24)
+                                        : Colors.white54,
                                     size: 16,
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     'Factura',
                                     style: TextStyle(
-                                      color: widget.documentType == 'Factura' 
-                                        ? const Color(0xFFE31E24) 
-                                        : Colors.white54,
+                                      color: widget.documentType == 'Factura'
+                                          ? const Color(0xFFE31E24)
+                                          : Colors.white54,
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -449,7 +467,8 @@ class _NumericKeypadState extends State<NumericKeypad> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          VentasUtils.formatearMontoTexto(double.tryParse(widget.currentAmount) ?? 0),
+                          VentasUtils.formatearMontoTexto(
+                              double.tryParse(widget.currentAmount) ?? 0),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 24,
@@ -473,11 +492,19 @@ class _NumericKeypadState extends State<NumericKeypad> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          VentasUtils.formatearMontoTexto(double.tryParse(_enteredAmount.isEmpty ? '0' : _enteredAmount) ?? 0),
+                          VentasUtils.formatearMontoTexto(double.tryParse(
+                                  _enteredAmount.isEmpty
+                                      ? '0'
+                                      : _enteredAmount) ??
+                              0),
                           style: TextStyle(
-                            color: _enteredAmount.isNotEmpty && double.parse(_enteredAmount.isEmpty ? '0' : _enteredAmount) >= widget.minAmount 
-                              ? const Color(0xFF4CAF50) 
-                              : Colors.white,
+                            color: _enteredAmount.isNotEmpty &&
+                                    double.parse(_enteredAmount.isEmpty
+                                            ? '0'
+                                            : _enteredAmount) >=
+                                        widget.minAmount
+                                ? const Color(0xFF4CAF50)
+                                : Colors.white,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
@@ -558,7 +585,8 @@ class _NumericKeypadState extends State<NumericKeypad> {
                         _buildNumberKeyButton('.'),
                         _buildNumberKeyButton('0'),
                         _buildActionButton(
-                          icon: const Icon(Icons.backspace, color: Colors.white70),
+                          icon: const Icon(Icons.backspace,
+                              color: Colors.white70),
                           label: 'Borrar',
                           onPressed: _handleClearClick,
                         ),
@@ -570,7 +598,8 @@ class _NumericKeypadState extends State<NumericKeypad> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 4.0),
                       child: _buildActionButton(
-                        icon: const Icon(Icons.payment, color: Color(0xFFE31E24), size: 20),
+                        icon: const Icon(Icons.payment,
+                            color: Color(0xFFE31E24), size: 20),
                         label: 'Cobrar',
                         onPressed: () => _handleKeyEvent('Enter'),
                         isEnabled: _esMontoSuficiente(),
@@ -637,20 +666,26 @@ class _NumericKeypadState extends State<NumericKeypad> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: isEnabled ? () {
-                developer.log('Botón de acción presionado: $label');
-                onPressed();
-              } : null,
+              onTap: isEnabled
+                  ? () {
+                      developer.log('Botón de acción presionado: $label');
+                      onPressed();
+                    }
+                  : null,
               borderRadius: BorderRadius.circular(8),
               child: Container(
                 decoration: BoxDecoration(
-                  color: isEnabled 
-                    ? (label == 'Cobrar' ? const Color(0xFFE31E24).withOpacity(0.1) : Colors.transparent)
-                    : Colors.grey.withOpacity(0.1),
+                  color: isEnabled
+                      ? (label == 'Cobrar'
+                          ? const Color(0xFFE31E24).withOpacity(0.1)
+                          : Colors.transparent)
+                      : Colors.grey.withOpacity(0.1),
                   border: Border.all(
-                    color: isEnabled 
-                      ? (label == 'Cobrar' ? const Color(0xFFE31E24) : Colors.white24)
-                      : Colors.grey,
+                    color: isEnabled
+                        ? (label == 'Cobrar'
+                            ? const Color(0xFFE31E24)
+                            : Colors.white24)
+                        : Colors.grey,
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -663,9 +698,11 @@ class _NumericKeypadState extends State<NumericKeypad> {
                       label,
                       style: TextStyle(
                         fontSize: 11,
-                        color: isEnabled 
-                          ? (label == 'Cobrar' ? const Color(0xFFE31E24) : Colors.white)
-                          : Colors.grey,
+                        color: isEnabled
+                            ? (label == 'Cobrar'
+                                ? const Color(0xFFE31E24)
+                                : Colors.white)
+                            : Colors.grey,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -680,10 +717,10 @@ class _NumericKeypadState extends State<NumericKeypad> {
   }
 
   /// Verifica si el monto ingresado es suficiente para realizar el pago
-  /// 
-  /// Compara _enteredAmount con widget.minAmount para determinar si 
+  ///
+  /// Compara _enteredAmount con widget.minAmount para determinar si
   /// se puede proceder con el cobro.
-  /// 
+  ///
   /// Retorna true si el monto es suficiente, false en caso contrario.
   bool _esMontoSuficiente() {
     if (_enteredAmount.isEmpty) {
@@ -760,7 +797,7 @@ class ProformaSaleDialog extends StatelessWidget {
             ),
             const Divider(color: Colors.white24),
             const SizedBox(height: 16),
-            
+
             // Detalles de la proforma
             Text(
               'Proforma #${proforma.id} - ${VentasPendientesUtils.formatearFecha(proforma.fechaCreacion)}',
@@ -785,7 +822,7 @@ class ProformaSaleDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Lista de productos
             const Text(
               'Productos:',
@@ -830,7 +867,8 @@ class ProformaSaleDialog extends StatelessWidget {
                           Expanded(
                             flex: 2,
                             child: Text(
-                              VentasUtils.formatearMontoTexto(detalle.precioUnitario),
+                              VentasUtils.formatearMontoTexto(
+                                  detalle.precioUnitario),
                               style: const TextStyle(
                                 color: Colors.white70,
                               ),
@@ -877,7 +915,7 @@ class ProformaSaleDialog extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -886,7 +924,8 @@ class ProformaSaleDialog extends StatelessWidget {
                   onPressed: onCancel,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.white54),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                   child: const Text(
                     'Cancelar',
@@ -897,12 +936,15 @@ class ProformaSaleDialog extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: () {
                     // Convertir proforma a formato para procesar venta
-                    final Map<String, dynamic> ventaData = VentasPendientesUtils.convertirProformaAVentaPendiente(proforma);
+                    final Map<String, dynamic> ventaData =
+                        VentasPendientesUtils.convertirProformaAVentaPendiente(
+                            proforma);
                     onConfirm(ventaData);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4CAF50),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                   icon: const Icon(Icons.check),
                   label: const Text('Convertir a Venta'),
@@ -920,7 +962,8 @@ class ProformaSaleDialog extends StatelessWidget {
     super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty<Proforma>('proforma', proforma))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has('onConfirm', onConfirm))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has(
+          'onConfirm', onConfirm))
       ..add(ObjectFlagProperty<VoidCallback>.has('onCancel', onCancel));
   }
 }
