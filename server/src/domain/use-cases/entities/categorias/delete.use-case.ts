@@ -6,14 +6,14 @@ import { count, eq } from 'drizzle-orm'
 
 export class DeleteCategoria {
   private async deleteCategoria(numericIdDto: NumericIdDto) {
-    const [validarProductos] = await db
+    const [productosMismaCategoria] = await db
       .select({ count: count(productosTable.id) })
       .from(productosTable)
       .where(eq(productosTable.categoriaId, numericIdDto.id))
 
-    if (validarProductos.count > 0) {
+    if (productosMismaCategoria.count > 0) {
       throw CustomError.badRequest(
-        `No se pudo eliminar la categoria por que tienen datos relacionados`
+        `No se puede eliminar la categoria porque existen (${productosMismaCategoria.count}) productos asociados a esta`
       )
     }
 
@@ -23,7 +23,7 @@ export class DeleteCategoria {
       .returning({ id: categoriasTable.id })
     if (deleteCat.length <= 0) {
       throw CustomError.badRequest(
-        ` No se pudo eliminar la categoria por problemas internos`
+        'No se pudo eliminar la categoria por problemas internos'
       )
     }
     const [categoria] = deleteCat

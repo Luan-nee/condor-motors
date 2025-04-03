@@ -86,7 +86,14 @@ export const permissionCodes = {
     cancelRelated: 'facturacion:cancel_related'
   },
   categorias: {
-    createAny: 'categorias:create_any'
+    createAny: 'categorias:create_any',
+    updateAny: 'categorias:update_any',
+    deleteAny: 'categorias:delete_any'
+  },
+  marcas: {
+    createAny: 'marcas:create_any',
+    updateAny: 'marcas:update_any',
+    deleteAny: 'marcas:delete_any'
   },
   cuentasEmpleados: {
     createAny: 'cuentas_empleados:create_any',

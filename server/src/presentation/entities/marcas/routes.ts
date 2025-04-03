@@ -1,5 +1,7 @@
 import { Router } from 'express'
 import { MarcasController } from './controller'
+import { AccessControlMiddleware } from '@/presentation/middlewares/access-control.middleware'
+import { permissionCodes } from '@/consts'
 
 /**
  * Rutas para el manejo de marcas
@@ -18,20 +20,32 @@ export class MarcasRoutes {
     const router = Router()
     const controller = new MarcasController()
 
+    // Ruta para crear una nueva marca
+    router.post(
+      '/',
+      [AccessControlMiddleware.requests([permissionCodes.marcas.createAny])],
+      controller.create
+    )
+
     // Ruta para obtener todas las marcas (con paginación)
     router.get('/', controller.getAll)
 
     // Ruta para obtener una marca por ID
     router.get('/:id', controller.getById)
 
-    // Ruta para crear una nueva marca
-    router.post('/', controller.create)
-
     // Ruta para actualizar una marca existente
-    router.patch('/:id', controller.update)
+    router.patch(
+      '/:id',
+      [AccessControlMiddleware.requests([permissionCodes.marcas.updateAny])],
+      controller.update
+    )
 
     // Ruta para eliminar una marca
-    router.delete('/:id', controller.delete)
+    router.delete(
+      '/:id',
+      [AccessControlMiddleware.requests([permissionCodes.marcas.deleteAny])],
+      controller.delete
+    )
 
     return router
   }

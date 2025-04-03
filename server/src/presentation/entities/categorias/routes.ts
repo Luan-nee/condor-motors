@@ -1,5 +1,7 @@
 import { Router } from 'express'
 import { CategoriasController } from '@/presentation/entities/categorias/controller'
+import { AccessControlMiddleware } from '@/presentation/middlewares/access-control.middleware'
+import { permissionCodes } from '@/consts'
 
 export class CategoriasRoutes {
   static get routes() {
@@ -10,7 +12,14 @@ export class CategoriasRoutes {
     router.get('/:id', categoriasController.getById)
     router.get('/', categoriasController.getAll)
     router.patch('/:id', categoriasController.update)
-    router.delete('/id', categoriasController.delete)
+    router.delete(
+      '/:id',
+      [
+        AccessControlMiddleware.requests([permissionCodes.categorias.deleteAny])
+      ],
+      categoriasController.delete
+    )
+
     return router
   }
 }

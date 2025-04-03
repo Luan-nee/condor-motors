@@ -9,15 +9,14 @@ interface DeleteMarcasUseCase {
 
 export class DeleteMarcas implements DeleteMarcasUseCase {
   async execute(id: number): Promise<any> {
-    const [productosRelacionados] = await db
+    const [productosMismaMarca] = await db
       .select({ count: count(productosTable.id) })
       .from(productosTable)
       .where(eq(productosTable.marcaId, id))
 
-    if (productosRelacionados.count > 0) {
-      // return []
+    if (productosMismaMarca.count > 0) {
       throw CustomError.badRequest(
-        `No se puede eliminar la marca por que tienen datos relacionados `
+        `No se puede eliminar la categoria porque existen (${productosMismaMarca.count}) productos asociados a esta`
       )
     }
 
