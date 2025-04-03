@@ -61,9 +61,9 @@ export class GetReporteVentas {
 
     const sucursales = await db
       .select({
-        Sucursal: sucursalesTable.nombre,
-        Ventas: count(),
-        total: sum(totalesVentaTable.totalVenta)
+        nombre: sucursalesTable.nombre,
+        ventas: count(),
+        totalVentas: sum(totalesVentaTable.totalVenta)
       })
       .from(ventasTable)
       .innerJoin(
