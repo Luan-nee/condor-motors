@@ -1,8 +1,13 @@
-import { login } from './controllers/auth'
-
-const baseUrl = import.meta.env.BASE_URL
+import { apiBaseUrl, baseUrl } from './consts'
 
 export const routes = {
   dashboard: `${baseUrl}/dashboard`,
   login: `${baseUrl}/login`
+}
+
+export const backendRoutes = {
+  testSession: `${apiBaseUrl}/api/auth/testsession`,
+  login: `${apiBaseUrl}/api/auth/login`,
+  refresh: `${apiBaseUrl}/api/auth/refresh`,
+  logout: `${apiBaseUrl}/api/auth/logout`
 }

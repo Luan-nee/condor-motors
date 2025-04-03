@@ -5,6 +5,7 @@ import Button from '@/components/atoms/Button.astro'
 import Input from '@/components/atoms/Input.astro'
 import Label from '@/components/atoms/Label.astro'
 import { FileList, FetchButton } from '@/components/solidjs/FileList'
+import UserBadge from '@/components/ui/UserBadge.astro'
 ---
 
 <BaseLayout title="Dashboard">
@@ -18,29 +19,9 @@ import { FileList, FetchButton } from '@/components/solidjs/FileList'
           <h2 class="text-xl font-medium">Archivos</h2>
           <FetchButton client:visible />
         </header>
-        <div class="grow flex flex-col gap-3 px-3 overflow-y-auto">
-          <FileList client:load />
-        </div>
+        <FileList client:load />
         <footer class="p-3">
-          <div class="hidden text-sm space-y-2" id="user-container">
-            <div class="flex items-center gap-1">
-              <span class="font-semibold text-gray-300">Usuario:</span>
-              <span data-id="usuario"></span>
-            </div>
-            <div class="flex items-center gap-1">
-              <span class="font-semibold text-gray-300">Rol:</span>
-              <span data-id="rol"></span>
-            </div>
-            <div class="mt-3">
-              <button
-                class="px-4 py-2 rounded-md bg-red-500/50 text-red-200 text-sm font-semibold
-              hover:bg-red-600/50 hover:text-red-100 transition-colors"
-                id="logout"
-              >
-                Cerrar sesión
-              </button>
-            </div>
-          </div>
+          <UserBadge />
         </footer>
       </aside>
     </div>
@@ -61,7 +42,7 @@ import { FileList, FetchButton } from '@/components/solidjs/FileList'
                 <div class="flex flex-col space-y-4">
                   <Label text="Nombre">
                     <Input
-                      name="name"
+                      name="nombre"
                       type="text"
                       autocomplete="off"
                       placeholder="Apk en alpha version 0.216.58"
@@ -70,7 +51,7 @@ import { FileList, FetchButton } from '@/components/solidjs/FileList'
 
                   <Label text="Tipo">
                     <select
-                      name="fileType"
+                      name="tipo"
                       class="px-3 py-2 border border-white/30 h-full
                       bg-gray-500/5 hover:bg-gray-300/5
                       transition-colors rounded-md
@@ -111,6 +92,7 @@ import { FileList, FetchButton } from '@/components/solidjs/FileList'
 
               <div class="flex flex-wrap justify-end gap-4">
                 <button
+                  id="cancel"
                   type="button"
                   class="border-white/10 rounded-lg border text-sm px-5 py-3 hover:bg-white/15 hover:border-white/50 transition-colors"
                 >
@@ -139,34 +121,10 @@ import { FileList, FetchButton } from '@/components/solidjs/FileList'
 </BaseLayout>
 
 <script>
-  import { fileTypeValues } from '@/core/consts'
   import { uploadApk } from '@/core/controllers/archivos'
-  import { testSession, logout } from '@/core/controllers/auth'
   import { selectWith } from '@/core/lib/utils'
+  import { uploadFileValidator } from '@/core/validators/uploadFileDto'
   ;(async () => {
-    const { data, error } = await testSession()
-
-    if (error != null) {
-      error.action()
-      return
-    }
-
-    const $userContainer = selectWith<HTMLDivElement>('#user-container')
-    const $username = selectWith<HTMLSpanElement>(
-      '[data-id="usuario"]',
-      $userContainer
-    )
-    const $rol = selectWith<HTMLSpanElement>('[data-id="rol"]', $userContainer)
-
-    $userContainer.classList.remove('hidden')
-    $username.innerText = data.user.usuario
-    $rol.innerText = data.user.rol.nombre
-
-    const $logoutButton = selectWith<HTMLButtonElement>(
-      '#logout',
-      $userContainer
-    )
-
     const $uploadFileForm = selectWith<HTMLFormElement>('#upload-file-form')
     const $uploadFileFormSuccessMessage = selectWith<HTMLFormElement>(
       '#success-message-upload-file-form'
@@ -199,60 +157,34 @@ import { FileList, FetchButton } from '@/components/solidjs/FileList'
       $uploadFileFormErrorMessage.innerText = ''
 
       const formData = new FormData($uploadFileForm)
-      const { name, fileType, visible } = Object.fromEntries(formData)
 
-      console.log(formData)
+      const { data, error } = uploadFileValidator(Object.fromEntries(formData))
 
-      if (name == null || typeof name !== 'string' || name === '') {
-        $uploadFileFormErrorMessage.innerText =
-          'Ingrese un nombre para identificar su archivo'
+      if (error != null) {
+        $uploadFileFormErrorMessage.innerText = error.message
+        console.log(error)
         return
       }
 
-      if (fileType == null || typeof fileType !== 'string') {
-        $uploadFileFormErrorMessage.innerText =
-          'Seleccione el tipo de archivo que está subiendo'
+      if (selectedFile == null) {
+        $uploadFileFormErrorMessage.innerText = 'Seleccione el archivo a subir'
         return
       }
 
-      if (!Object.values(fileTypeValues).includes(fileType as any)) {
-        $uploadFileFormErrorMessage.innerText =
-          'El tipo de archivo seleccionado es inválido'
-        return
-      }
-
-      if (!selectedFile) {
-        $uploadFileFormErrorMessage.innerText =
-          'Seleccione un archivo antes de subirlo'
-        return
-      }
-
-      const { data, error } = await uploadApk({
-        nombre: name,
-        tipo: fileType as any,
-        visible: String(visible) === 'on',
+      const { data: uploadData, error: uploadError } = await uploadApk({
+        nombre: data.nombre,
+        tipo: data.tipo,
+        visible: data.visible,
         appFile: selectedFile
       })
 
-      if (error) {
-        $uploadFileFormErrorMessage.innerText = error.message
+      if (uploadError) {
+        $uploadFileFormErrorMessage.innerText = uploadError.message
         return
       }
 
-      $uploadFileFormSuccessMessage.innerText = JSON.stringify(data)
-    })
-
-    $logoutButton.addEventListener('click', async () => {
-      const { data, error } = await logout()
-
-      console.log(data, error)
-
-      if (error != null) {
-        error.action()
-        return
-      }
-
-      data.action()
+      $uploadFileFormSuccessMessage.innerText = JSON.stringify(uploadData)
+      // 'El archivo se ha subido correctamente'
     })
   })()
 </script>

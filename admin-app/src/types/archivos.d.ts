@@ -22,7 +22,7 @@ export interface SuccessUploadApk {
 export interface UploadApkFileDto {
   nombre: string
   visible: boolean
-  tipo: FileTypeValues
+  tipo: string
   appFile: File
 }
 

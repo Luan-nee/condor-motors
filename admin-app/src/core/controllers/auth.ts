@@ -1,19 +1,16 @@
 import { deleteCookie, getCookie, setCookie } from '@/core/lib/cookies'
-import { accessTokenCookieName, apiBaseUrl } from '@/core/consts'
-import { customFetch, resToData } from '@/core/lib/network'
-import { routes } from '@/core/routes'
+import { accessTokenCookieName } from '@/core/consts'
+import { customFetch, httpRequest, resToData } from '@/core/lib/network'
+import { backendRoutes, routes } from '@/core/routes'
 
 export const refreshAccessToken: RefreshAccessToken = async () => {
-  const { res, fetchError } = await customFetch(
-    `${apiBaseUrl}/api/auth/refresh`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-type': 'application/json'
-      },
-      credentials: 'include'
-    }
-  )
+  const { res, fetchError } = await customFetch(backendRoutes.refresh, {
+    method: 'POST',
+    headers: {
+      'Content-type': 'application/json'
+    },
+    credentials: 'include'
+  })
 
   if (fetchError != null) {
     return {
@@ -62,87 +59,34 @@ export async function getAccessToken() {
 }
 
 export const testSession: TestSession = async () => {
-  let accessToken = getCookie(accessTokenCookieName)
+  const { data, error } = await httpRequest<TestUserSuccess>(
+    backendRoutes.testSession,
+    (accessToken) => ({
+      method: 'POST',
+      headers: {
+        'Content-type': 'application/json',
+        Authorization: accessToken
+      },
+      credentials: 'include'
+    })
+  )
 
-  const redirectToLogin = () => {
-    window.location.replace(routes.login)
-  }
-
-  if (accessToken == null || accessToken.length < 1) {
-    const { data, error } = await refreshAccessToken()
-
-    if (error != null) {
-      return {
-        data: null,
-        error: { message: error.message, action: redirectToLogin }
-      }
-    }
-
+  if (error != null) {
     return {
-      error: null,
-      data: {
-        user: data
-      }
-    }
-  }
-
-  const res = await fetch(`${apiBaseUrl}/api/auth/testsession`, {
-    method: 'POST',
-    headers: {
-      'Content-type': 'application/json',
-      Authorization: accessToken
-    },
-    credentials: 'include'
-  })
-
-  try {
-    const textResponse = await res.text()
-    const json = JSON.parse(textResponse)
-
-    if (json.status === 'success') {
-      return {
-        error: null,
-        data: {
-          user: json.data
+      error: {
+        message: error.message,
+        action: () => {
+          window.location.replace(routes.login)
         }
       }
     }
-
-    if (res.status !== 401) {
-      return {
-        data: null,
-        error: { message: String(json.error), action: redirectToLogin }
-      }
-    }
-
-    const { data, error } = await refreshAccessToken()
-
-    if (error !== null) {
-      return {
-        data: null,
-        error: { message: String(json.error), action: redirectToLogin }
-      }
-    }
-
-    return {
-      error: null,
-      data: {
-        user: data
-      }
-    }
-  } catch (error) {
-    return {
-      error: {
-        message: 'Unexpected format response',
-        action: redirectToLogin
-      },
-      data: null
-    }
   }
+
+  return { data }
 }
 
 export const login: AuthLogin = async ({ username, password }) => {
-  const res = await fetch(`${apiBaseUrl}/api/auth/login`, {
+  const { res, fetchError } = await customFetch(backendRoutes.login, {
     method: 'POST',
     headers: {
       'Content-type': 'application/json'
@@ -154,94 +98,61 @@ export const login: AuthLogin = async ({ username, password }) => {
     credentials: 'include'
   })
 
+  if (fetchError != null) {
+    return { error: fetchError }
+  }
+
   const accessToken = res.headers.get('Authorization')
 
   if (accessToken != null) {
-    setCookie(accessTokenCookieName, accessToken, 1)
+    setCookie(accessTokenCookieName, accessToken, 15)
   }
 
-  try {
-    const textResponse = await res.text()
-    const json = JSON.parse(textResponse)
+  const { data, error } = await resToData(res)
 
-    if (json.status !== 'success') {
-      return { data: null, error: { message: String(json.error) } }
-    }
+  if (error != null) {
+    return { error }
+  }
 
-    return {
-      error: null,
-      data: {
-        message: 'Bienvenido ' + json.data.usuario,
-        action: () => {
-          window.location.replace(routes.dashboard)
-        }
+  return {
+    data: {
+      message: 'Bienvenido ' + data.usuario,
+      action: () => {
+        window.location.replace(routes.dashboard)
       }
-    }
-  } catch (error) {
-    return {
-      error: {
-        message: 'Unexpected format response'
-      },
-      data: null
     }
   }
 }
 
 export const logout: AuthLogout = async () => {
-  let accessToken = getCookie(accessTokenCookieName)
-
-  const redirectToLogin = () => {
-    window.location.replace(routes.login)
-  }
-
-  if (accessToken == null || accessToken.length < 1) {
-    return {
-      data: null,
-      error: { message: 'Invalid session', action: redirectToLogin }
-    }
-  }
-
-  const res = await fetch(`${apiBaseUrl}/api/auth/logout`, {
+  const { error } = await httpRequest(backendRoutes.logout, (accessToken) => ({
     method: 'POST',
     headers: {
       'Content-type': 'application/json',
       Authorization: accessToken
     },
     credentials: 'include'
-  })
+  }))
 
-  try {
-    const textResponse = await res.text()
-    const json = JSON.parse(textResponse)
+  const redirectToLogin = () => {
+    window.location.replace(routes.login)
+  }
 
-    console.log(json)
-
-    if (json.status !== 'success') {
-      return {
-        data: null,
-        error: {
-          message: String(json.error ?? 'Unexpected error'),
-          action: redirectToLogin
-        }
-      }
-    }
-
-    deleteCookie(accessTokenCookieName)
-
+  if (error != null) {
     return {
-      error: null,
-      data: {
-        message: json.message,
+      error: {
+        message: error.message,
         action: redirectToLogin
       }
     }
-  } catch (error) {
-    return {
-      error: {
-        message: 'Unexpected format response',
-        action: () => {}
-      },
-      data: null
+  }
+
+  deleteCookie(accessTokenCookieName)
+
+  return {
+    data: {
+      message: 'Sesión terminada exitosamente',
+      action: redirectToLogin
     }
   }
 }

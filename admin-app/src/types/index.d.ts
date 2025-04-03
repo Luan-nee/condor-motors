@@ -30,7 +30,7 @@ interface ApiErrorWithAction {
   action: () => void
 }
 
-type AuthLogin = Method<
+type AuthLogin = MethodAll<
   {
     username: string
     password: string
@@ -40,19 +40,17 @@ type AuthLogin = Method<
 >
 
 interface TestUserSuccess {
-  user: {
-    id: number
-    usuario: string
-    rol: {
-      codigo: string
-      nombre: string
-    }
+  id: number
+  usuario: string
+  rol: {
+    codigo: string
+    nombre: string
   }
 }
 
-type TestSession = Method<void, TestUserSuccess, ApiErrorWithAction>
+type TestSession = MethodAll<void, TestUserSuccess, ApiErrorWithAction>
 
-type AuthLogout = Method<void, ApiSuccessWithAction, ApiErrorWithAction>
+type AuthLogout = MethodAll<void, ApiSuccessWithAction, ApiErrorWithAction>
 
 type SuccessAll<T> = {
   data: T
@@ -72,7 +70,7 @@ type MethodAll<A, T, E> = (args: A) => Promise<ResultAll<T, E>>
 
 type RefreshAccessToken = MethodAll<
   void,
-  TestUserSuccess & { accessToken: string },
+  { user: TestUserSuccess; accessToken: string },
   ApiError
 >
 

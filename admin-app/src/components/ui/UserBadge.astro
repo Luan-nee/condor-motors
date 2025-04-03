@@ -1,0 +1,52 @@
+<div class="text-sm space-y-2">
+  <div class="flex items-center gap-1">
+    <span class="font-semibold text-gray-300">Usuario:</span>
+    <span data-id="nombre-usuario"></span>
+  </div>
+  <div class="flex items-center gap-1">
+    <span class="font-semibold text-gray-300">Rol:</span>
+    <span data-id="rol-usuario"></span>
+  </div>
+  <div class="mt-3">
+    <button
+      class="px-4 py-2 rounded-md bg-red-500/50 text-red-200 text-sm font-semibold
+    hover:bg-red-600/50 hover:text-red-100 transition-colors"
+      id="logout"
+    >
+      Cerrar sesión
+    </button>
+  </div>
+</div>
+
+<script>
+  import { selectWith } from '@/core/lib/utils'
+  import { testSession, logout } from '@/core/controllers/auth'
+  ;(async () => {
+    const { data, error } = await testSession()
+
+    if (error != null) {
+      error.action()
+      return
+    }
+
+    const $username = selectWith<HTMLSpanElement>('[data-id="nombre-usuario"]')
+    const $rol = selectWith<HTMLSpanElement>('[data-id="rol-usuario"]')
+
+    $username.innerText = data.usuario
+    $rol.innerText = data.rol.nombre
+
+    selectWith<HTMLButtonElement>('#logout').addEventListener(
+      'click',
+      async () => {
+        const { data, error } = await logout()
+
+        if (error != null) {
+          error.action()
+          return
+        }
+
+        data.action()
+      }
+    )
+  })()
+</script>
