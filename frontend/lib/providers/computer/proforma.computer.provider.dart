@@ -10,128 +10,54 @@ import 'package:flutter/material.dart';
 /// Provider para gestionar el estado y lógica de negocio de las proformas
 /// en la versión de computadora de la aplicación.
 class ProformaComputerProvider extends ChangeNotifier {
+  int _currentPage = 1;
+  String? _errorMessage;
+  bool _hayNuevasProformas = false;
+  final int _intervaloActualizacion = 8; // Segundos entre actualizaciones
+  bool _isLoading = false;
+  Paginacion? _paginacion;
   List<Proforma> _proformas = [];
   Set<int> _proformasIds = {}; // Para seguimiento de nuevas proformas
-  Proforma? _selectedProforma;
-  bool _isLoading = false;
-  String? _errorMessage;
-  Paginacion? _paginacion;
-  int _currentPage = 1;
+  Stream<List<Proforma>>? _proformasStream;
+  // Para streaming en tiempo real
+  StreamController<List<Proforma>>? _proformasStreamController;
 
-  // Para actualización automática
-  Timer? _actualizacionTimer;
-  final int _intervaloActualizacion = 10; // Segundos
-  bool _hayNuevasProformas = false;
+  StreamSubscription<List<Proforma>>? _proformasSubscription;
+  Proforma? _selectedProforma;
+
+  @override
+  void dispose() {
+    // Cancelar y cerrar streams al destruir el provider
+    _cerrarStream();
+    super.dispose();
+  }
 
   // Getters
   List<Proforma> get proformas => _proformas;
+
   Proforma? get selectedProforma => _selectedProforma;
+
   bool get isLoading => _isLoading;
+
   String? get errorMessage => _errorMessage;
+
   Paginacion? get paginacion => _paginacion;
+
   int get currentPage => _currentPage;
+
   int get intervaloActualizacion => _intervaloActualizacion;
+
   bool get hayNuevasProformas => _hayNuevasProformas;
+
+  Stream<List<Proforma>>? get proformasStream => _proformasStream;
 
   /// Inicializa el provider con la configuración necesaria
   Future<void> initialize(int? sucursalId) async {
     // Cargar proformas iniciales
     await loadProformas(sucursalId: sucursalId);
 
-    // Iniciar timer para actualización automática
-    _iniciarActualizacionPeriodica(sucursalId);
-  }
-
-  /// Inicia un timer para actualizar las proformas periódicamente
-  void _iniciarActualizacionPeriodica(int? sucursalId) {
-    // Cancelar timer existente si hay uno
-    _actualizacionTimer?.cancel();
-
-    // Crear nuevo timer para actualizar cada _intervaloActualizacion segundos
-    _actualizacionTimer = Timer.periodic(
-        Duration(seconds: _intervaloActualizacion),
-        (_) => _verificarNuevasProformas(sucursalId));
-
-    Logger.info(
-        '🔄 Timer de actualización de proformas iniciado (cada $_intervaloActualizacion segundos)');
-  }
-
-  @override
-  void dispose() {
-    // Cancelar el timer al destruir el provider
-    _actualizacionTimer?.cancel();
-    super.dispose();
-  }
-
-  /// Verifica si hay nuevas proformas sin interferir con la UI
-  Future<void> _verificarNuevasProformas(int? sucursalId) async {
-    Logger.debug('🔍 Verificando nuevas proformas...');
-    try {
-      // Obtener el ID de sucursal
-      String? sucursalIdStr = await _getSucursalId(sucursalId);
-      if (sucursalIdStr == null) {
-        return;
-      }
-
-      // Obtener proformas sin modificar el estado de carga
-      final response = await api.proformas.getProformasVenta(
-        sucursalId: sucursalIdStr,
-        pageSize: 20, // Aumentar tamaño para tener más visibilidad
-        forceRefresh: true, // Forzar actualización desde el servidor
-        useCache: false, // No usar caché
-      );
-
-      if (response.isNotEmpty) {
-        final nuevasProformas = api.proformas.parseProformasVenta(response);
-
-        // Verificar si hay nuevas proformas comparando con los IDs conocidos
-        Set<int> nuevosIds = nuevasProformas.map((p) => p.id).toSet();
-        Set<int> proformasNuevas = nuevosIds.difference(_proformasIds);
-
-        if (proformasNuevas.isNotEmpty) {
-          Logger.info(
-              '🔔 Se encontraron ${proformasNuevas.length} nuevas proformas!');
-
-          // Notificar por cada nueva proforma encontrada
-          for (var id in proformasNuevas) {
-            final nuevaProforma = nuevasProformas.firstWhere((p) => p.id == id);
-
-            // Mostrar notificación en Windows
-            await proformaNotification.notifyNewProformaPending(
-              nuevaProforma,
-              nuevaProforma.getNombreCliente(),
-            );
-
-            // Actualizar estado para mostrar indicador de nuevas proformas
-            _hayNuevasProformas = true;
-            notifyListeners();
-          }
-
-          // Actualizar lista completa de proformas silenciosamente
-          await loadProformas(sucursalId: sucursalId, silencioso: true);
-        } else {
-          Logger.debug('✓ No se encontraron nuevas proformas');
-        }
-      }
-    } catch (e) {
-      Logger.error('❌ Error al verificar nuevas proformas: $e');
-    }
-  }
-
-  /// Obtiene el ID de la sucursal (del parámetro o del usuario)
-  Future<String?> _getSucursalId(int? sucursalIdParam) async {
-    if (sucursalIdParam != null) {
-      // Usar el sucursalId pasado como parámetro
-      return sucursalIdParam.toString();
-    } else {
-      // Obtener el ID de sucursal del usuario
-      final userData = await api.authService.getUserData();
-      if (userData == null || !userData.containsKey('sucursalId')) {
-        Logger.error('No se pudo determinar la sucursal del usuario');
-        return null;
-      }
-      return userData['sucursalId'].toString();
-    }
+    // Iniciar stream para actualización en tiempo real
+    _iniciarStreamProformas(sucursalId);
   }
 
   /// Carga las proformas desde la API
@@ -143,7 +69,10 @@ class ProformaComputerProvider extends ChangeNotifier {
     if (!silencioso) {
       _isLoading = true;
       _errorMessage = null;
-      notifyListeners();
+      // Usar microtask para evitar llamar a notifyListeners durante el build
+      Future.microtask(() {
+        notifyListeners();
+      });
     }
 
     try {
@@ -153,7 +82,10 @@ class ProformaComputerProvider extends ChangeNotifier {
         if (!silencioso) {
           _errorMessage = 'No se pudo determinar la sucursal del usuario';
           _isLoading = false;
-          notifyListeners();
+          // Usar microtask para evitar llamar a notifyListeners durante el build
+          Future.microtask(() {
+            notifyListeners();
+          });
         }
         return;
       }
@@ -204,12 +136,18 @@ class ProformaComputerProvider extends ChangeNotifier {
           _selectedProforma = null;
         }
 
-        notifyListeners();
+        // Usar microtask para evitar llamar a notifyListeners durante el build
+        Future.microtask(() {
+          notifyListeners();
+        });
       } else {
         if (!silencioso) {
           _errorMessage = 'No se pudo cargar las proformas';
           _isLoading = false;
-          notifyListeners();
+          // Usar microtask para evitar llamar a notifyListeners durante el build
+          Future.microtask(() {
+            notifyListeners();
+          });
         }
       }
     } catch (e) {
@@ -217,7 +155,10 @@ class ProformaComputerProvider extends ChangeNotifier {
       if (!silencioso) {
         _errorMessage = 'Error: $e';
         _isLoading = false;
-        notifyListeners();
+        // Usar microtask para evitar llamar a notifyListeners durante el build
+        Future.microtask(() {
+          notifyListeners();
+        });
       }
     }
   }
@@ -225,20 +166,29 @@ class ProformaComputerProvider extends ChangeNotifier {
   /// Cambia la página actual y recarga las proformas
   void setPage(int page, {int? sucursalId}) {
     _currentPage = page;
-    notifyListeners();
+    // Usar microtask para evitar llamar a notifyListeners durante el build
+    Future.microtask(() {
+      notifyListeners();
+    });
     loadProformas(sucursalId: sucursalId);
   }
 
   /// Selecciona una proforma
   void selectProforma(Proforma proforma) {
     _selectedProforma = proforma;
-    notifyListeners();
+    // Usar microtask para evitar llamar a notifyListeners durante el build
+    Future.microtask(() {
+      notifyListeners();
+    });
   }
 
   /// Deselecciona la proforma actual
   void clearSelectedProforma() {
     _selectedProforma = null;
-    notifyListeners();
+    // Usar microtask para evitar llamar a notifyListeners durante el build
+    Future.microtask(() {
+      notifyListeners();
+    });
   }
 
   /// Maneja la conversión de una proforma a venta sin necesidad de un BuildContext
@@ -422,6 +372,164 @@ class ProformaComputerProvider extends ChangeNotifier {
     } catch (e) {
       Logger.error('Error al eliminar proforma: $e');
       return false;
+    }
+  }
+
+  /// Inicia un stream para actualización de proformas en tiempo real
+  void _iniciarStreamProformas(int? sucursalId) {
+    // Cerrar stream existente si hay uno
+    _cerrarStream();
+
+    // Crear nuevo stream controller
+    _proformasStreamController = StreamController<List<Proforma>>.broadcast();
+    _proformasStream = _proformasStreamController?.stream;
+
+    // Generar eventos periódicos que emiten la lista actual de proformas
+    Stream.periodic(Duration(seconds: _intervaloActualizacion))
+        .asyncMap((_) => _fetchProformasRealTime(sucursalId))
+        .listen((proformas) {
+      if (!(_proformasStreamController?.isClosed ?? true)) {
+        _proformasStreamController?.add(proformas);
+      }
+    });
+
+    // Suscribirse al stream para procesar nuevas proformas
+    _proformasSubscription = _proformasStream?.listen((proformasActualizadas) {
+      _procesarProformasActualizadas(proformasActualizadas, sucursalId);
+    });
+
+    Logger.info(
+        '🔄 Stream de proformas iniciado (cada $_intervaloActualizacion segundos)');
+  }
+
+  /// Cierra el stream y las suscripciones actuales
+  void _cerrarStream() {
+    _proformasSubscription?.cancel();
+    _proformasStreamController?.close();
+    _proformasStreamController = null;
+    _proformasStream = null;
+  }
+
+  /// Pausa las actualizaciones en tiempo real
+  void pausarActualizacionesEnTiempoReal() {
+    _proformasSubscription?.cancel();
+    _proformasSubscription = null;
+    Logger.info('🔄 Actualizaciones en tiempo real pausadas');
+  }
+
+  /// Reanuda las actualizaciones en tiempo real
+  void reanudarActualizacionesEnTiempoReal(int? sucursalId) {
+    // Si ya existe un stream controller pero no hay suscripción activa
+    if (_proformasStreamController != null && _proformasSubscription == null) {
+      _proformasSubscription =
+          _proformasStream?.listen((proformasActualizadas) {
+        _procesarProformasActualizadas(proformasActualizadas, sucursalId);
+      });
+
+      Logger.info('🔄 Actualizaciones en tiempo real reanudadas');
+    } else {
+      // Si no hay stream controller, iniciar todo el proceso
+      _iniciarStreamProformas(sucursalId);
+    }
+
+    // Cargar proformas inmediatamente
+    loadProformas(sucursalId: sucursalId);
+  }
+
+  /// Obtiene proformas en tiempo real sin afectar el estado de carga de la UI
+  Future<List<Proforma>> _fetchProformasRealTime(int? sucursalId) async {
+    try {
+      // Obtener el ID de sucursal
+      String? sucursalIdStr = await _getSucursalId(sucursalId);
+      if (sucursalIdStr == null) {
+        return [];
+      }
+
+      // Obtener proformas sin modificar el estado de carga
+      final response = await api.proformas.getProformasVenta(
+        sucursalId: sucursalIdStr,
+        pageSize: 30, // Aumentar tamaño para tener más visibilidad
+        forceRefresh: true, // Forzar actualización desde el servidor
+        useCache: false, // No usar caché
+      );
+
+      if (response.isNotEmpty) {
+        return api.proformas.parseProformasVenta(response);
+      }
+      return [];
+    } catch (e) {
+      Logger.error('❌ Error al obtener proformas en tiempo real: $e');
+      return [];
+    }
+  }
+
+  /// Procesa las proformas actualizadas para detectar nuevas
+  void _procesarProformasActualizadas(
+      List<Proforma> proformasActualizadas, int? sucursalId) {
+    if (proformasActualizadas.isEmpty) return;
+
+    // Verificar si hay nuevas proformas comparando con los IDs conocidos
+    Set<int> nuevosIds = proformasActualizadas.map((p) => p.id).toSet();
+    Set<int> proformasNuevas = nuevosIds.difference(_proformasIds);
+
+    if (proformasNuevas.isNotEmpty) {
+      Logger.info(
+          '🔔 Se detectaron ${proformasNuevas.length} nuevas proformas en tiempo real!');
+
+      // Mostrar notificación para cada nueva proforma
+      for (var id in proformasNuevas) {
+        final nuevaProforma =
+            proformasActualizadas.firstWhere((p) => p.id == id);
+
+        // Mostrar notificación en Windows
+        _notificarNuevaProforma(nuevaProforma);
+      }
+
+      // Actualizar estado para mostrar indicador de nuevas proformas
+      _hayNuevasProformas = true;
+
+      // Actualizar lista completa de proformas silenciosamente y programar
+      // la notificación de cambios para después del frame actual
+      loadProformas(sucursalId: sucursalId, silencioso: true).then((_) {
+        // Usar microtask para asegurarnos de que notifyListeners no se llama
+        // durante la fase de build
+        Future.microtask(() {
+          notifyListeners();
+        });
+      });
+    }
+  }
+
+  /// Muestra notificación para una nueva proforma
+  Future<void> _notificarNuevaProforma(Proforma proforma) async {
+    try {
+      // Verificar que la notificación esté habilitada
+      if (proformaNotification.isEnabled) {
+        await proformaNotification.notifyNewProformaPending(
+          proforma,
+          proforma.getNombreCliente(),
+        );
+        Logger.info(
+            '🔔 Notificación enviada para nueva proforma #${proforma.id}');
+      }
+    } catch (e) {
+      Logger.error('❌ Error al enviar notificación: $e');
+    }
+  }
+
+  /// Obtiene el ID de la sucursal (del parámetro o del usuario)
+  Future<String?> _getSucursalId(int? sucursalIdParam) async {
+    if (sucursalIdParam != null) {
+      // Usar el sucursalId pasado como parámetro
+      return sucursalIdParam.toString();
+    } else {
+      // Obtener el ID de sucursal del usuario
+      final userData = await api.authService.getUserData();
+      if (userData == null || !userData.containsKey('sucursalId')) {
+        Logger.error('No se pudo determinar la sucursal del usuario');
+        return null;
+      }
+      return userData['sucursalId'].toString();
     }
   }
 }

@@ -1,5 +1,5 @@
 import 'package:condorsmotors/models/producto.model.dart';
-import 'package:condorsmotors/providers/admin/stock.provider.dart'
+import 'package:condorsmotors/providers/admin/stock.admin.provider.dart'
     as stock_provider;
 import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalle_sucursal.dart';
@@ -431,8 +431,6 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                   backgroundColor: const Color(0xFF2D2D2D),
                                   textColor: Colors.white,
                                   accentColor: const Color(0xFFE31E24),
-                                  radius: 4.0,
-                                  maxVisiblePages: 5,
                                 ),
                               ),
                             ),

@@ -2,3 +2,4 @@
 // Exporta todos los providers disponibles para facilitar su importación
 
 export 'proforma.computer.provider.dart';
+export 'ventas.computer.provider.dart';

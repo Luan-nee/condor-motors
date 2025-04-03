@@ -1,7 +1,7 @@
 import 'dart:math' show min;
 
 import 'package:condorsmotors/models/ventas.model.dart';
-import 'package:condorsmotors/providers/admin/ventas.admin.provider.dart';
+import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,12 +9,12 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-class VentaDetalleDialog extends StatefulWidget {
+class VentaDetalleComputer extends StatefulWidget {
   final Venta? venta;
   final bool isLoadingFullData;
   final Function(String)? onDeclararPressed;
 
-  const VentaDetalleDialog({
+  const VentaDetalleComputer({
     super.key,
     required this.venta,
     this.isLoadingFullData = false,
@@ -22,7 +22,7 @@ class VentaDetalleDialog extends StatefulWidget {
   });
 
   @override
-  State<VentaDetalleDialog> createState() => _VentaDetalleDialogState();
+  State<VentaDetalleComputer> createState() => _VentaDetalleComputerState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -35,7 +35,7 @@ class VentaDetalleDialog extends StatefulWidget {
   }
 }
 
-class _VentaDetalleDialogState extends State<VentaDetalleDialog>
+class _VentaDetalleComputerState extends State<VentaDetalleComputer>
     with SingleTickerProviderStateMixin {
   final NumberFormat _formatoMoneda = NumberFormat.currency(
     symbol: 'S/ ',
@@ -48,8 +48,8 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
   late Animation<double> _opacityAnimation;
 
   // Obtener referencia al provider
-  VentasProvider get _ventasProvider =>
-      Provider.of<VentasProvider>(context, listen: false);
+  VentasComputerProvider get _ventasProvider =>
+      Provider.of<VentasComputerProvider>(context, listen: false);
 
   @override
   void initState() {
@@ -70,7 +70,7 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
   }
 
   @override
-  void didUpdateWidget(VentaDetalleDialog oldWidget) {
+  void didUpdateWidget(VentaDetalleComputer oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     // Si cambiaron los datos o el estado de carga, animar

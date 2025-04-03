@@ -5,7 +5,7 @@ import 'package:condorsmotors/models/marca.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
-import 'package:condorsmotors/providers/admin/producto.provider.dart';
+import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
 import 'package:condorsmotors/utils/productos_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

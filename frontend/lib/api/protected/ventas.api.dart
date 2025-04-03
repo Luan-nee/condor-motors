@@ -1,6 +1,5 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
-import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/utils/logger.dart';
 
@@ -177,16 +176,28 @@ class VentasApi {
       }
 
       // Procesar paginación si existe
-      Paginacion? paginacion;
+      // La API ahora devuelve un objeto paginación con la estructura esperada
+      // No intentamos convertir directamente, sino que creamos un objeto Paginacion con valores extraídos
+      Map<String, dynamic>? paginationMap;
       if (response.containsKey('pagination') && response['pagination'] is Map) {
-        paginacion = Paginacion.fromJson(response['pagination']);
+        // Extraer el mapa de paginación y crear copia para evitar problemas de tipado
+        paginationMap =
+            Map<String, dynamic>.from(response['pagination'] as Map);
+        Logger.debug('Datos de paginación originales: $paginationMap');
+      }
+
+      // Extraer metadata si existe
+      Map<String, dynamic>? metadata;
+      if (response.containsKey('metadata') && response['metadata'] is Map) {
+        metadata = Map<String, dynamic>.from(response['metadata'] as Map);
       }
 
       // Devolver datos procesados
       return {
         'data': ventasConvertidas.isNotEmpty ? ventasConvertidas : ventasData,
         'ventasRaw': ventasData,
-        'pagination': paginacion,
+        'pagination': paginationMap,
+        'metadata': metadata,
         'status': response['status'] ?? 'error',
         'message': response['message'] ?? '',
       };

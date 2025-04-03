@@ -4,6 +4,7 @@ import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/components/proforma_notification.dart';
 import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
 import 'package:condorsmotors/providers/computer/index.computer.provider.dart';
+import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
 import 'package:condorsmotors/providers/paginacion.provider.dart';
 import 'package:condorsmotors/routes/routes.dart' as routes;
 import 'package:condorsmotors/services/token_service.dart';
@@ -210,10 +211,53 @@ void main() async {
     debugPrint('No se encontró un token válido, redirigiendo a login');
   }
 
-  runApp(CondorMotorsApp(
-    initialRoute: initialRoute,
-    userData: userData,
-  ));
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => VentasComputerProvider()),
+        // Provider para paginación global
+        ChangeNotifierProvider<PaginacionProvider>(
+          create: (_) => PaginacionProvider(),
+        ),
+        // Providers de administración
+        ChangeNotifierProvider<CategoriasProvider>(
+          create: (_) => CategoriasProvider(),
+        ),
+        ChangeNotifierProvider<MarcasProvider>(
+          create: (_) => MarcasProvider(),
+        ),
+        ChangeNotifierProvider<EmpleadoProvider>(
+          create: (_) => EmpleadoProvider(),
+        ),
+        ChangeNotifierProvider<MovimientoProvider>(
+          create: (_) => MovimientoProvider(),
+        ),
+        ChangeNotifierProvider<ProductoProvider>(
+          create: (_) => ProductoProvider(),
+        ),
+        ChangeNotifierProvider<StockProvider>(
+          create: (_) => StockProvider(),
+        ),
+        ChangeNotifierProvider<SucursalProvider>(
+          create: (_) => SucursalProvider(),
+        ),
+        ChangeNotifierProvider<DashboardProvider>(
+          create: (_) => DashboardProvider(),
+        ),
+        // Providers para módulo de computadora
+        ChangeNotifierProvider<ProformaComputerProvider>(
+          create: (_) => ProformaComputerProvider(),
+        ),
+        // Aquí puedes agregar más providers según sea necesario
+      ],
+      child: ConnectionStatusWidget(
+        child: CondorMotorsApp(
+          initialRoute: initialRoute,
+          userData: userData,
+        ),
+      ),
+    ),
+  );
 }
 
 class CondorMotorsApp extends StatelessWidget {
@@ -272,9 +316,9 @@ class CondorMotorsApp extends StatelessWidget {
         ChangeNotifierProvider<StockProvider>(
           create: (_) => StockProvider(),
         ),
-        ChangeNotifierProvider<VentasProvider>(
+        ChangeNotifierProvider<VentasComputerProvider>(
           create: (_) {
-            final provider = VentasProvider();
+            final provider = VentasComputerProvider();
             provider.messengerKey = scaffoldMessengerKey;
             return provider;
           },

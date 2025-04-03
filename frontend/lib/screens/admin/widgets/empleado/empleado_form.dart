@@ -1,5 +1,5 @@
 import 'package:condorsmotors/models/empleado.model.dart';
-import 'package:condorsmotors/providers/admin/empleado.provider.dart';
+import 'package:condorsmotors/providers/admin/empleado.admin.provider.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_cuenta_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_horario_dialog.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';

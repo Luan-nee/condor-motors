@@ -2,6 +2,8 @@ import 'dart:math' show min;
 import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
+import 'package:condorsmotors/screens/admin/widgets/venta/venta_detalle_dialog.dart';
+import 'package:condorsmotors/screens/computer/widgets/venta/ventas_list_computer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -91,6 +93,9 @@ class _HistorialVentasComputerScreenState
         forceRefresh: forceRefresh,
       );
 
+      // Verificar que la respuesta esté en el formato esperado
+      if (!mounted) return;
+
       setState(() {
         if (response.containsKey('data') && response['data'] is List<Venta>) {
           _ventas = response['data'] as List<Venta>;
@@ -105,17 +110,41 @@ class _HistorialVentasComputerScreenState
           _ventas = [];
         }
 
-        _paginacion = response['pagination'] as Paginacion?;
+        // Procesar la paginación desde el mapa
+        if (response.containsKey('pagination') &&
+            response['pagination'] is Map<String, dynamic>) {
+          final paginationMap = response['pagination'] as Map<String, dynamic>;
+          debugPrint('Datos de paginación recibidos: $paginationMap');
+
+          try {
+            _paginacion = Paginacion(
+              totalItems: paginationMap['totalItems'] as int? ?? 0,
+              totalPages: paginationMap['totalPages'] as int? ?? 1,
+              currentPage: paginationMap['currentPage'] as int? ?? 1,
+              hasNext: paginationMap['hasNext'] as bool? ?? false,
+              hasPrev: paginationMap['hasPrev'] as bool? ?? false,
+            );
+            debugPrint('Paginación procesada correctamente: $_paginacion');
+          } catch (e) {
+            debugPrint('Error al procesar paginación: $e');
+            _paginacion = null;
+          }
+        } else {
+          _paginacion = null;
+        }
+
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('Error al cargar ventas: $e');
-      setState(() {
-        _ventas = [];
-        _isLoading = false;
-      });
-      // Mostrar error al usuario
       if (mounted) {
+        setState(() {
+          _ventas = [];
+          _paginacion = null;
+          _isLoading = false;
+        });
+
+        // Mostrar error al usuario
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al cargar ventas: $e'),
@@ -176,297 +205,48 @@ class _HistorialVentasComputerScreenState
     }
   }
 
+  // Método actualizado para usar el componente VentaDetalleDialog
   Future<void> _mostrarDetalleVenta(Venta venta) async {
+    // Buscar detalles completos de la venta si es necesario
+    if (venta.detalles.isEmpty) {
+      try {
+        final sucursalIdParam = widget.sucursalId?.toString();
+        final dynamic ventaCompleta = await api.ventas.getVenta(
+          venta.id.toString(),
+          sucursalId: sucursalIdParam ?? '',
+          forceRefresh: true,
+        );
+
+        // Manejar diferentes tipos de respuesta de la API
+        if (ventaCompleta != null) {
+          if (ventaCompleta is Venta) {
+            // Si la API devuelve un objeto Venta directamente
+            venta = ventaCompleta;
+          } else if (ventaCompleta is Map<String, dynamic>) {
+            // Si la API devuelve un Map
+            final data = ventaCompleta['data'];
+            if (data != null && data is Map<String, dynamic>) {
+              venta = Venta.fromJson(data);
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('Error al cargar detalles de venta: $e');
+        // Continuamos con la venta actual si hay un error
+      }
+    }
+
+    if (!mounted) return;
+
+    // Mostrar el diálogo con la venta
     await showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.6,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Encabezado
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Detalle de ${venta.getNombreFormateado()}',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      _buildEstadoChip(venta.estado),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const FaIcon(FontAwesomeIcons.xmark),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const Divider(height: 24),
-
-              // Información principal
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Columna izquierda - información básica
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildInfoCard(
-                            'Información de Venta',
-                            const FaIcon(FontAwesomeIcons.fileInvoice,
-                                size: 16, color: Color(0xFFE31E24)),
-                            [
-                              _buildInfoRow('Documento',
-                                  '${venta.serieDocumento}-${venta.numeroDocumento}'),
-                              _buildInfoRow(
-                                  'Fecha', venta.getFechaFormateada()),
-                              _buildInfoRow('Estado', venta.estado.toText()),
-                              _buildInfoRow(
-                                  'Total',
-                                  venta.totales != null
-                                      ? _currencyFormat
-                                          .format(venta.totales!.totalVenta)
-                                      : _currencyFormat
-                                          .format(venta.calcularTotal()),
-                                  isHighlighted: true),
-                            ]),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(width: 16),
-
-                  // Columna derecha - resumen de totales
-                  if (venta.totales != null)
-                    Expanded(
-                      child: _buildInfoCard(
-                          'Resumen de Totales',
-                          const FaIcon(FontAwesomeIcons.moneyBillWave,
-                              size: 16, color: Colors.green),
-                          [
-                            _buildInfoRow(
-                                'Base Gravada',
-                                _currencyFormat
-                                    .format(venta.totales!.totalGravadas)),
-                            _buildInfoRow(
-                                'Exonerado',
-                                _currencyFormat
-                                    .format(venta.totales!.totalExoneradas)),
-                            _buildInfoRow(
-                                'Gratuito',
-                                _currencyFormat
-                                    .format(venta.totales!.totalGratuitas)),
-                            _buildInfoRow(
-                                'Impuestos',
-                                _currencyFormat
-                                    .format(venta.totales!.totalTax)),
-                            _buildInfoRow(
-                                'Total',
-                                _currencyFormat
-                                    .format(venta.totales!.totalVenta),
-                                isHighlighted: true),
-                          ]),
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              // Lista de productos
-              _buildInfoCard(
-                  'Productos',
-                  const FaIcon(FontAwesomeIcons.boxesStacked,
-                      size: 16, color: Color(0xFF5B9BD5)),
-                  [
-                    // Cabecera de la tabla
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Row(
-                        children: const [
-                          SizedBox(
-                              width: 40,
-                              child: Text('Cant.',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold))),
-                          SizedBox(width: 8),
-                          Expanded(
-                              child: Text('Producto',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold))),
-                          SizedBox(width: 8),
-                          SizedBox(
-                              width: 100,
-                              child: Text('Precio',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold))),
-                          SizedBox(
-                              width: 100,
-                              child: Text('Total',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                  textAlign: TextAlign.right)),
-                        ],
-                      ),
-                    ),
-
-                    // Divisor
-                    const Divider(height: 1),
-
-                    // Productos (lista con scroll si hay muchos)
-                    Container(
-                      constraints: BoxConstraints(
-                        maxHeight: 200,
-                        minHeight: min(venta.detalles.length * 40.0, 200),
-                      ),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: venta.detalles
-                              .map((detalle) => Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 8.0),
-                                    child: Row(
-                                      children: [
-                                        SizedBox(
-                                            width: 40,
-                                            child: Text('${detalle.cantidad}x',
-                                                style: const TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold))),
-                                        const SizedBox(width: 8),
-                                        Expanded(child: Text(detalle.nombre)),
-                                        const SizedBox(width: 8),
-                                        SizedBox(
-                                            width: 100,
-                                            child: Text(_currencyFormat
-                                                .format(detalle.precioConIgv))),
-                                        SizedBox(
-                                            width: 100,
-                                            child: Text(
-                                              _currencyFormat
-                                                  .format(detalle.total),
-                                              textAlign: TextAlign.right,
-                                              style: const TextStyle(
-                                                  fontWeight: FontWeight.bold),
-                                            )),
-                                      ],
-                                    ),
-                                  ))
-                              .toList(),
-                        ),
-                      ),
-                    ),
-                  ]),
-
-              const SizedBox(height: 20),
-
-              // Botones de acción
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (venta.estado == EstadoVenta.pendiente)
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        _mostrarAnularVentaDialog(venta);
-                      },
-                      icon: const FaIcon(FontAwesomeIcons.ban, size: 14),
-                      label: const Text('Anular Venta'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                      ),
-                    ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const FaIcon(FontAwesomeIcons.circleCheck, size: 14),
-                    label: const Text('Aceptar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A1A1A),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoCard(String title, Widget icon, List<Widget> children) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF242424),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              icon,
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value,
-      {bool isHighlighted = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 90,
-            child: Text(
-              '$label:',
-              style: TextStyle(
-                color: isHighlighted ? Colors.white : Colors.grey[400],
-                fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
-                color: isHighlighted ? Colors.white : null,
-                fontSize: isHighlighted ? 16 : null,
-              ),
-            ),
-          ),
-        ],
+      builder: (context) => VentaDetalleDialog(
+        venta: venta,
+        isLoadingFullData: false,
+        onDeclararPressed: (venta.estado == EstadoVenta.pendiente)
+            ? (_) => _mostrarAnularVentaDialog(venta)
+            : null,
       ),
     );
   }
@@ -750,153 +530,14 @@ class _HistorialVentasComputerScreenState
             ),
           ),
 
-          // Lista de ventas
+          // Lista de ventas usando el componente VentasListComputer
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _ventas.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No se encontraron ventas',
-                          style: TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: _ventas.length,
-                        itemBuilder: (context, index) {
-                          final venta = _ventas[index];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            color: const Color(0xFF1A1A1A),
-                            child: InkWell(
-                              onTap: () => _mostrarDetalleVenta(venta),
-                              borderRadius: BorderRadius.circular(4),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Encabezado: ID y Estado
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        // Izquierda: ID y estado
-                                        Row(
-                                          children: [
-                                            Text(
-                                              venta.getNombreFormateado(),
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            _buildEstadoChip(venta.estado),
-                                          ],
-                                        ),
-
-                                        // Derecha: Total y botón
-                                        Row(
-                                          children: [
-                                            Text(
-                                              venta.totales != null
-                                                  ? _currencyFormat.format(
-                                                      venta.totales!.totalVenta)
-                                                  : _currencyFormat.format(
-                                                      venta.calcularTotal()),
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 18,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 16),
-                                            ElevatedButton(
-                                              onPressed: () =>
-                                                  _mostrarDetalleVenta(venta),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor:
-                                                    const Color(0xFFE31E24),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 6),
-                                              ),
-                                              child: const Text('Detalles'),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-
-                                    const SizedBox(height: 12),
-
-                                    // Información secundaria
-                                    Row(
-                                      children: [
-                                        // Serie y número
-                                        const FaIcon(FontAwesomeIcons.receipt,
-                                            size: 12, color: Colors.grey),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          '${venta.serieDocumento}-${venta.numeroDocumento}',
-                                          style: const TextStyle(
-                                              color: Colors.grey),
-                                        ),
-                                        const SizedBox(width: 16),
-
-                                        // Fecha
-                                        const FaIcon(FontAwesomeIcons.calendar,
-                                            size: 12, color: Colors.grey),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          venta.getFechaFormateada(),
-                                          style: const TextStyle(
-                                              color: Colors.grey),
-                                        ),
-                                      ],
-                                    ),
-
-                                    // Mostrar productos solo si hay
-                                    if (venta.detalles.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        children: [
-                                          const FaIcon(
-                                              FontAwesomeIcons.cartShopping,
-                                              size: 12,
-                                              color: Colors.grey),
-                                          const SizedBox(width: 4),
-                                          Expanded(
-                                            child: Text(
-                                              venta.detalles
-                                                      .take(2)
-                                                      .map((d) =>
-                                                          '${d.cantidad}x ${d.nombre}')
-                                                      .join(', ') +
-                                                  (venta.detalles.length > 2
-                                                      ? ' y ${venta.detalles.length - 2} más'
-                                                      : ''),
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+            child: VentasListComputer(
+              ventas: _ventas,
+              isLoading: _isLoading,
+              onAnularVenta: (venta) => _mostrarAnularVentaDialog(venta),
+              onRecargarVentas: () => _cargarVentas(forceRefresh: true),
+            ),
           ),
 
           // Paginación

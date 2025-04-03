@@ -58,6 +58,7 @@ class DetalleVenta {
   final double total;
   final int? productoId;
   final int? ventaId;
+  final String tipoUnidad;
 
   DetalleVenta({
     this.id,
@@ -72,13 +73,14 @@ class DetalleVenta {
     required this.total,
     this.productoId,
     this.ventaId,
+    this.tipoUnidad = 'NIU',
   });
 
   /// Crea un detalle de venta desde un JSON
   factory DetalleVenta.fromJson(Map<String, dynamic> json) {
     return DetalleVenta(
       id: json['id'] is String ? int.tryParse(json['id']) : json['id'],
-      sku: json['sku'] ?? '',
+      sku: json['codigo'] ?? json['sku'] ?? '',
       nombre: json['nombre'] ?? '',
       cantidad: json['cantidad'] ?? 0,
       precioSinIgv: _parseDouble(json['precioSinIgv']) ?? 0.0,
@@ -95,6 +97,7 @@ class DetalleVenta {
       ventaId: json['ventaId'] is String
           ? int.tryParse(json['ventaId'])
           : json['ventaId'],
+      tipoUnidad: json['tipoUnidad'] ?? 'NIU',
     );
   }
 
@@ -111,6 +114,7 @@ class DetalleVenta {
       'totalBaseTax': totalBaseTax,
       'totalTax': totalTax,
       'total': total,
+      'tipoUnidad': tipoUnidad,
       if (productoId != null) 'productoId': productoId,
       if (ventaId != null) 'ventaId': ventaId,
     };
@@ -188,6 +192,10 @@ class DocumentoFacturacion {
   final String? linkCdrAnulado;
   final String? ticketAnulado;
   final Map<String, dynamic>? informacionSunat;
+  final String? linkPdfA4;
+  final String? linkPdfTicket;
+  final String? identificadorAnulado;
+  final String? descripcionEstado;
 
   DocumentoFacturacion({
     required this.id,
@@ -204,6 +212,10 @@ class DocumentoFacturacion {
     this.linkCdrAnulado,
     this.ticketAnulado,
     this.informacionSunat,
+    this.linkPdfA4,
+    this.linkPdfTicket,
+    this.identificadorAnulado,
+    this.descripcionEstado,
   });
 
   factory DocumentoFacturacion.fromJson(Map<String, dynamic> json) {
@@ -211,7 +223,7 @@ class DocumentoFacturacion {
       id: json['id'] is String
           ? int.tryParse(json['id']) ?? 0
           : json['id'] ?? 0,
-      codigoEstadoSunat: json['codigoEstadoSunat'],
+      codigoEstadoSunat: json['codigoEstadoSunat'] ?? json['estadoRawId'],
       factproDocumentId: json['factproDocumentId'],
       hash: json['hash'],
       qr: json['qr'],
@@ -224,6 +236,10 @@ class DocumentoFacturacion {
       linkCdrAnulado: json['linkCdrAnulado'],
       ticketAnulado: json['ticketAnulado'],
       informacionSunat: json['informacionSunat'],
+      linkPdfA4: json['linkPdfA4'],
+      linkPdfTicket: json['linkPdfTicket'],
+      identificadorAnulado: json['identificadorAnulado'],
+      descripcionEstado: json['descripcionEstado'],
     );
   }
 }
@@ -325,6 +341,7 @@ class Venta {
   final String horaEmision;
   final bool declarada;
   final bool anulada;
+  final bool cancelada;
   final DateTime fechaCreacion;
   final DateTime fechaActualizacion;
   final List<DetalleVenta> detalles;
@@ -356,6 +373,7 @@ class Venta {
     required this.horaEmision,
     this.declarada = false,
     this.anulada = false,
+    this.cancelada = false,
     required this.fechaCreacion,
     required this.fechaActualizacion,
     required this.detalles,
@@ -504,6 +522,7 @@ class Venta {
       horaEmision: json['horaEmision'] ?? '00:00:00',
       declarada: json['declarada'] ?? false,
       anulada: json['anulada'] ?? false,
+      cancelada: json['cancelada'] ?? false,
       fechaCreacion: fechaCreacion,
       fechaActualizacion: fechaActualizacion,
       detalles: detalles,
@@ -534,6 +553,8 @@ class Venta {
       'fechaEmision': dateFormat.format(fechaEmision),
       'horaEmision': horaEmision,
       'declarada': declarada,
+      'anulada': anulada,
+      'cancelada': cancelada,
       'detalles': detalles.map((detalle) => detalle.toJson()).toList(),
       'estado': estado.toText(),
     };

@@ -1,6 +1,6 @@
 // Importamos la variable global api
 import 'package:condorsmotors/models/movimiento.model.dart';
-import 'package:condorsmotors/providers/admin/movimiento.provider.dart';
+import 'package:condorsmotors/providers/admin/movimiento.admin.provider.dart';
 import 'package:condorsmotors/screens/admin/widgets/movimiento/movimiento_detail_dialog.dart'; // Importamos el nuevo widget unificado
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';

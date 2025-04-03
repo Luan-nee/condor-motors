@@ -15,6 +15,12 @@ class ProformaNotification {
   bool _notificationsEnabled = true;
   bool _isInitialized = false;
 
+  // Control de limitación para evitar spam de notificaciones
+  DateTime? _lastNotificationTime;
+  final Set<int> _recentlyNotifiedProformaIds = {};
+  final int _notificationThrottleSeconds =
+      5; // Limitar frecuencia de notificaciones
+
   // Singleton pattern
   factory ProformaNotification() {
     return _instance;
@@ -66,9 +72,46 @@ class ProformaNotification {
         'Notificaciones ${enabled ? 'habilitadas' : 'deshabilitadas'}');
   }
 
+  /// Verifica si una proforma ya fue notificada recientemente para evitar duplicados
+  bool _fueNotificadaRecientemente(int proformaId) {
+    // Verificar si la proforma está en el conjunto de notificadas recientemente
+    return _recentlyNotifiedProformaIds.contains(proformaId);
+  }
+
+  /// Registra una proforma como notificada recientemente
+  void _registrarProformaNotificada(int proformaId) {
+    // Actualizar el timestamp de la última notificación
+    _lastNotificationTime = DateTime.now();
+
+    // Añadir el ID a la lista de notificadas recientemente
+    _recentlyNotifiedProformaIds.add(proformaId);
+
+    // Limpiar IDs antiguos después de un tiempo (30 minutos)
+    Future.delayed(const Duration(minutes: 30), () {
+      _recentlyNotifiedProformaIds.remove(proformaId);
+    });
+  }
+
+  /// Verifica si debemos limitar la frecuencia de notificaciones
+  bool _deberiaLimitarNotificaciones() {
+    if (_lastNotificationTime == null) return false;
+
+    final ahora = DateTime.now();
+    final diferencia = ahora.difference(_lastNotificationTime!).inSeconds;
+
+    return diferencia < _notificationThrottleSeconds;
+  }
+
   /// Notifica sobre una nueva proforma creada
   Future<void> notifyNewProforma(Proforma proforma) async {
     if (!isEnabled || !kIsWeb && !Platform.isWindows) {
+      return;
+    }
+
+    // Verificar limitación de frecuencia y duplicados
+    if (_fueNotificadaRecientemente(proforma.id) ||
+        _deberiaLimitarNotificaciones()) {
+      Logger.debug('🔔 Notificación limitada para proforma #${proforma.id}');
       return;
     }
 
@@ -82,6 +125,9 @@ class ProformaNotification {
         tag: 'new_proforma_${proforma.id}',
       );
 
+      // Registrar esta proforma como notificada
+      _registrarProformaNotificada(proforma.id);
+
       Logger.info('🔔 Notificación enviada: Nueva proforma #${proforma.id}');
     } catch (e) {
       Logger.error('Error al mostrar notificación: $e');
@@ -94,6 +140,12 @@ class ProformaNotification {
       return;
     }
 
+    // Para conversiones, no necesitamos limitar la frecuencia ya que son eventos importantes
+    // pero evitamos duplicados
+    if (_fueNotificadaRecientemente(proforma.id)) {
+      return;
+    }
+
     try {
       final String message =
           'La proforma #${proforma.id} ha sido convertida a venta';
@@ -103,6 +155,9 @@ class ProformaNotification {
         body: message,
         tag: 'converted_proforma_${proforma.id}',
       );
+
+      // Registrar esta proforma como notificada
+      _registrarProformaNotificada(proforma.id);
 
       Logger.info(
           '🔔 Notificación enviada: Proforma convertida #${proforma.id}');
@@ -118,6 +173,14 @@ class ProformaNotification {
       return;
     }
 
+    // Verificar limitación de frecuencia y duplicados para proformas pendientes
+    if (_fueNotificadaRecientemente(proforma.id) ||
+        _deberiaLimitarNotificaciones()) {
+      Logger.debug(
+          '🔔 Notificación limitada para proforma pendiente #${proforma.id}');
+      return;
+    }
+
     try {
       final String message = clienteName.isNotEmpty
           ? '¡NUEVA PROFORMA! Cliente: $clienteName - Monto: S/ ${proforma.total.toStringAsFixed(2)}'
@@ -129,11 +192,21 @@ class ProformaNotification {
         tag: 'pending_proforma_${proforma.id}',
       );
 
+      // Registrar esta proforma como notificada
+      _registrarProformaNotificada(proforma.id);
+
       Logger.info(
           '🔔 Notificación enviada: Proforma pendiente #${proforma.id}');
     } catch (e) {
       Logger.error('Error al mostrar notificación: $e');
     }
+  }
+
+  /// Limpia el historial de notificaciones recientes
+  void limpiarHistorialNotificaciones() {
+    _recentlyNotifiedProformaIds.clear();
+    _lastNotificationTime = null;
+    Logger.debug('🧹 Historial de notificaciones limpiado');
   }
 
   /// Muestra una notificación en Windows usando win_toast

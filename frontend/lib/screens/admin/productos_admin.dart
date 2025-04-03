@@ -1,5 +1,5 @@
 import 'package:condorsmotors/models/producto.model.dart';
-import 'package:condorsmotors/providers/admin/producto.provider.dart';
+import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
 import 'package:condorsmotors/providers/paginacion.provider.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/producto_detalle_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/productos_form.dart';
@@ -24,7 +24,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       ValueNotifier<String>('productos_inicial');
 
   // Estado del drawer
-  bool _drawerOpen = true;
+  final bool _drawerOpen = true;
 
   // Provider para paginación
   final PaginacionProvider _paginacionProvider = PaginacionProvider();
@@ -296,8 +296,6 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                           child: Column(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.center,
                                             children: <Widget>[
                                               // Paginador con provider
                                               ChangeNotifierProvider.value(

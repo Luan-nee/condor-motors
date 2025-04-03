@@ -1,5 +1,5 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
-import 'package:condorsmotors/providers/admin/sucursal.provider.dart';
+import 'package:condorsmotors/providers/admin/sucursal.admin.provider.dart';
 import 'package:condorsmotors/screens/admin/widgets/sucursal/sucursal_detalles.dart';
 import 'package:condorsmotors/screens/admin/widgets/sucursal/sucursal_form.dart';
 import 'package:flutter/foundation.dart';

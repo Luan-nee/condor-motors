@@ -1,6 +1,6 @@
 import 'package:condorsmotors/main.dart' show api; // Importamos el API global
 import 'package:condorsmotors/models/producto.model.dart';
-import 'package:condorsmotors/providers/admin/stock.provider.dart';
+import 'package:condorsmotors/providers/admin/stock.admin.provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';

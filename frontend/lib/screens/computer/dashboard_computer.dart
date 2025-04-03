@@ -27,15 +27,15 @@ class Venta {
   factory Venta.fromJson(Map<String, dynamic> json) {
     return Venta(
       id: json['id'] ?? '',
-      fechaCreacion: json['fecha_creacion'] != null 
-          ? DateTime.parse(json['fecha_creacion']) 
+      fechaCreacion: json['fecha_creacion'] != null
+          ? DateTime.parse(json['fecha_creacion'])
           : null,
       estado: json['estado'] ?? 'PENDIENTE',
       subtotal: (json['subtotal'] ?? 0.0).toDouble(),
       igv: (json['igv'] ?? 0.0).toDouble(),
       total: (json['total'] ?? 0.0).toDouble(),
-      descuentoTotal: json['descuento_total'] != null 
-          ? (json['descuento_total']).toDouble() 
+      descuentoTotal: json['descuento_total'] != null
+          ? (json['descuento_total']).toDouble()
           : null,
     );
   }
@@ -65,11 +65,11 @@ class ProductoStockBajo {
       nombre: json['nombre'] ?? 'Producto sin nombre',
       stock: (json['stockActual'] ?? json['stock'] ?? 0) as int,
       stockMinimo: (json['stockMinimo'] ?? 0) as int,
-      categoria: json['categoria'] is Map 
-          ? json['categoria']['nombre'] 
+      categoria: json['categoria'] is Map
+          ? json['categoria']['nombre']
           : (json['categoria'] as String?),
-      marca: json['marca'] is Map 
-          ? json['marca']['nombre'] 
+      marca: json['marca'] is Map
+          ? json['marca']['nombre']
           : (json['marca'] as String?),
     );
   }
@@ -80,19 +80,21 @@ class DashboardComputerScreen extends StatefulWidget {
   final String nombreSucursal;
 
   const DashboardComputerScreen({
-    super.key, 
+    super.key,
     this.sucursalId,
     this.nombreSucursal = 'Sucursal',
   });
 
   @override
-  State<DashboardComputerScreen> createState() => _DashboardComputerScreenState();
+  State<DashboardComputerScreen> createState() =>
+      _DashboardComputerScreenState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(IntProperty('sucursalId', sucursalId))
-    ..add(StringProperty('nombreSucursal', nombreSucursal));
+    properties
+      ..add(IntProperty('sucursalId', sucursalId))
+      ..add(StringProperty('nombreSucursal', nombreSucursal));
   }
 }
 
@@ -103,7 +105,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
   List<Venta> _ultimasVentas = <Venta>[];
   List<ProductoStockBajo> _productosBajos = <ProductoStockBajo>[];
   bool _mostrandoTodosProductos = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -119,16 +121,16 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
       // IMPORTANTE: Usamos el ID 7 según la información del usuario autenticado
       final String sucursalIdString = widget.sucursalId?.toString() ?? '7';
       debugPrint('Cargando datos para sucursal ID: $sucursalIdString');
-      
+
       // Cargar últimas ventas
       final Map<String, dynamic> ventasResponse = await _ventasApi.getVentas(
         sucursalId: sucursalIdString,
       );
-      
+
       if (!mounted) {
         return;
       }
-      
+
       // Convertir los datos de la API a objetos Venta
       final List<Venta> ventasList = <Venta>[];
       if (ventasResponse['data'] != null && ventasResponse['data'] is List) {
@@ -136,41 +138,42 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
           ventasList.add(Venta.fromJson(item));
         }
       }
-      
+
       // Ordenar por fecha y tomar las últimas 5
-      ventasList.sort((Venta a, Venta b) => 
-        (b.fechaCreacion ?? DateTime.now())
-            .compareTo(a.fechaCreacion ?? DateTime.now())
-      );
-      
+      ventasList.sort((Venta a, Venta b) => (b.fechaCreacion ?? DateTime.now())
+          .compareTo(a.fechaCreacion ?? DateTime.now()));
+
       _ultimasVentas = ventasList.take(5).toList();
-      
+
       // Cargar productos con stock bajo usando la API de stocks
       try {
-        debugPrint('Obteniendo productos con stock bajo para sucursal ID: $sucursalIdString');
-        
+        debugPrint(
+            'Obteniendo productos con stock bajo para sucursal ID: $sucursalIdString');
+
         final List stocksResponse = await _stocksApi.getStockBySucursal(
           sucursalId: sucursalIdString,
           stockBajo: true,
         );
-        
+
         if (!mounted) {
           return;
         }
-        
-        final List<ProductoStockBajo> productosBajosList = <ProductoStockBajo>[];
+
+        final List<ProductoStockBajo> productosBajosList =
+            <ProductoStockBajo>[];
         for (var item in stocksResponse) {
           productosBajosList.add(ProductoStockBajo.fromJson(item));
         }
-              
+
         _productosBajos = productosBajosList;
         _mostrandoTodosProductos = false;
-        debugPrint('Productos con stock bajo cargados: ${_productosBajos.length}');
+        debugPrint(
+            'Productos con stock bajo cargados: ${_productosBajos.length}');
       } catch (stockError) {
         debugPrint('Error al cargar productos con stock bajo: $stockError');
         // Si hay error, mostrar un mensaje más detallado para depuración
         debugPrint('Detalles del error: $stockError');
-        
+
         // Si hay error, mantener los datos demo
         _productosBajos = <ProductoStockBajo>[
           ProductoStockBajo(
@@ -187,7 +190,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
           ),
         ];
       }
-      
+
       setState(() {});
     } catch (e) {
       if (!mounted) {
@@ -195,7 +198,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
       }
       // Mostrar más detalles del error para depuración
       debugPrint('Error detallado al cargar datos: $e');
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cargar datos: $e'),
@@ -237,7 +240,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                   // Resumen de ventas
                   _buildVentasCard(),
                   const SizedBox(height: 16),
-                  
+
                   // Productos con stock bajo
                   _buildStockBajoCard(),
                 ],
@@ -342,24 +345,26 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: _mostrandoTodosProductos 
-                            ? const Color(0xFF2196F3).withOpacity(0.1) 
+                        color: _mostrandoTodosProductos
+                            ? const Color(0xFF2196F3).withOpacity(0.1)
                             : const Color(0xFFE31E24).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: FaIcon(
-                        _mostrandoTodosProductos 
-                            ? FontAwesomeIcons.boxOpen 
+                        _mostrandoTodosProductos
+                            ? FontAwesomeIcons.boxOpen
                             : FontAwesomeIcons.triangleExclamation,
                         size: 16,
-                        color: _mostrandoTodosProductos 
-                            ? const Color(0xFF2196F3) 
+                        color: _mostrandoTodosProductos
+                            ? const Color(0xFF2196F3)
                             : const Color(0xFFE31E24),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      _mostrandoTodosProductos ? 'Todos los Productos' : 'Stock Bajo',
+                      _mostrandoTodosProductos
+                          ? 'Todos los Productos'
+                          : 'Stock Bajo',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -372,37 +377,41 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                   onPressed: () async {
                     try {
                       setState(() => _isLoading = true);
-                      final String sucursalIdString = widget.sucursalId?.toString() ?? '7';
-                      
+                      final String sucursalIdString =
+                          widget.sucursalId?.toString() ?? '7';
+
                       // Si ya estamos mostrando todos los productos, volver a stock bajo
-                      final List stocksResponse = await _stocksApi.getStockBySucursal(
+                      final List stocksResponse =
+                          await _stocksApi.getStockBySucursal(
                         sucursalId: sucursalIdString,
-                        stockBajo: !_mostrandoTodosProductos, // Si estábamos mostrando todos, ahora filtramos para stock bajo
+                        stockBajo:
+                            !_mostrandoTodosProductos, // Si estábamos mostrando todos, ahora filtramos para stock bajo
                       );
-                      
+
                       if (!mounted) {
                         return;
                       }
-                      
-                      final List<ProductoStockBajo> productosList = <ProductoStockBajo>[];
+
+                      final List<ProductoStockBajo> productosList =
+                          <ProductoStockBajo>[];
                       for (var item in stocksResponse) {
                         productosList.add(ProductoStockBajo.fromJson(item));
                       }
-                                          
+
                       setState(() {
                         _productosBajos = productosList;
                         _isLoading = false;
-                        _mostrandoTodosProductos = !_mostrandoTodosProductos; // Alternar el modo
+                        _mostrandoTodosProductos =
+                            !_mostrandoTodosProductos; // Alternar el modo
                       });
-                      
+
                       final bool nuevoEstado = _mostrandoTodosProductos;
-                      
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(nuevoEstado
                               ? 'Mostrando todos los productos'
-                              : 'Mostrando productos con stock bajo'
-                          ),
+                              : 'Mostrando productos con stock bajo'),
                           backgroundColor: Colors.green,
                         ),
                       );
@@ -411,7 +420,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                         return;
                       }
                       setState(() => _isLoading = false);
-                      
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('Error al actualizar la lista: $e'),
@@ -421,8 +430,8 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                     }
                   },
                   icon: FaIcon(
-                    _mostrandoTodosProductos 
-                        ? FontAwesomeIcons.filter 
+                    _mostrandoTodosProductos
+                        ? FontAwesomeIcons.filter
                         : FontAwesomeIcons.arrowsRotate,
                     size: 14,
                     color: const Color(0xFF2196F3),
@@ -508,15 +517,18 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                     itemCount: _productosBajos.length,
                     itemBuilder: (BuildContext context, int index) {
                       final ProductoStockBajo producto = _productosBajos[index];
-                      final bool tieneStockBajo = producto.stock < producto.stockMinimo;
-                      
+                      final bool tieneStockBajo =
+                          producto.stock < producto.stockMinimo;
+
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
                         title: Text(
                           producto.nombre,
                           style: TextStyle(
                             color: Colors.white,
-                            fontWeight: tieneStockBajo ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: tieneStockBajo
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                         subtitle: Row(
@@ -533,7 +545,8 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF2196F3).withOpacity(0.1),
+                                  color:
+                                      const Color(0xFF2196F3).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -553,7 +566,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: tieneStockBajo 
+                            color: tieneStockBajo
                                 ? const Color(0xFFE31E24).withOpacity(0.1)
                                 : const Color(0xFF4CAF50).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
@@ -561,7 +574,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                           child: Text(
                             '${producto.stock}',
                             style: TextStyle(
-                              color: tieneStockBajo 
+                              color: tieneStockBajo
                                   ? const Color(0xFFE31E24)
                                   : const Color(0xFF4CAF50),
                               fontWeight: FontWeight.bold,

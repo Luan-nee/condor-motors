@@ -96,8 +96,8 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
   /// Recarga los datos de proformas para mantener la lista actualizada
   Future<void> _recargarDatosProformas() async {
     try {
-      // Verificar si estamos procesando
-      if (_procesandoConversion) {
+      // Verificar si estamos procesando o si el widget ya no está montado
+      if (_procesandoConversion || !mounted) {
         return;
       }
 
@@ -112,7 +112,7 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
       api.proformas.invalidateCache(sucursalId.toString());
 
       // Si hay un método de recarga, utilizarlo
-      if (widget.onRefresh != null) {
+      if (widget.onRefresh != null && mounted) {
         await widget.onRefresh!();
       }
     } catch (e) {
@@ -122,6 +122,8 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
 
   // Filtra las proformas según el término de búsqueda
   void _filterProformas() {
+    if (!mounted) return;
+
     if (_searchQuery.isEmpty) {
       _filteredProformas = List.from(widget.proformas);
     } else {
@@ -147,11 +149,17 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
             contieneProducto;
       }).toList();
     }
-    setState(() {});
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   // Convertir proforma a venta con manejo de errores mejorado
   void _handleConvertToSale(Proforma proforma) {
+    // Verificar si el widget aún está montado
+    if (!mounted) return;
+
     if (_procesandoConversion) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -171,6 +179,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
         onConfirm: (Map<String, dynamic> ventaData) async {
           Navigator.of(context).pop(); // Cerrar diálogo de confirmación
 
+          // Verificar si el widget sigue montado después de cerrar el diálogo
+          if (!mounted) return;
+
           // Marcar como procesando para evitar múltiples intentos
           setState(() {
             _procesandoConversion = true;
@@ -182,6 +193,10 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
 
           // Obtener sucursalId
           final sucursalId = await VentasPendientesUtils.obtenerSucursalId();
+
+          // Verificar nuevamente si el widget sigue montado
+          if (!mounted) return;
+
           if (sucursalId == null) {
             setState(() {
               _procesandoConversion = false;
@@ -206,6 +221,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
             proformaId: proforma.id,
             tipoDocumento: tipoDocumento,
             onSuccess: () {
+              // Verificar si el widget sigue montado antes de actualizar el estado
+              if (!mounted) return;
+
               // Actualizar estado
               setState(() {
                 _procesandoConversion = false;
@@ -223,6 +241,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
             },
           );
 
+          // Verificar si el widget sigue montado antes de actualizar el estado
+          if (!mounted) return;
+
           if (!exito) {
             // El error ya fue mostrado en el gestor
             setState(() {
@@ -231,7 +252,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
           }
 
           // Recargar datos siempre después de intentar la conversión
-          _recargarDatosProformas();
+          if (mounted) {
+            _recargarDatosProformas();
+          }
         },
         onCancel: () => Navigator.of(context).pop(),
       ),
@@ -256,6 +279,8 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                   child: TextField(
                     controller: _searchController,
                     onChanged: (String query) {
+                      if (!mounted) return;
+
                       setState(() {
                         _searchQuery = query;
                       });
@@ -279,6 +304,8 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                               icon: const Icon(Icons.clear,
                                   color: Colors.white54),
                               onPressed: () {
+                                if (!mounted) return;
+
                                 setState(() {
                                   _searchQuery = '';
                                   _searchController.clear();
@@ -365,13 +392,18 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Row(
+                      // Limitamos el tamaño de la fila para evitar overflow
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          proforma.nombre ?? 'Proforma #${proforma.id}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                        Flexible(
+                          child: Text(
+                            proforma.nombre ?? 'Proforma #${proforma.id}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (tienePromociones) ...[
@@ -557,14 +589,21 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
       return const SizedBox.shrink();
     }
 
+    // Verificar que la paginación tiene los datos necesarios
+    if (widget.paginacion!.totalPages <= 0) {
+      return const SizedBox.shrink();
+    }
+
     // Usar el widget Paginador que ya tiene soporte para PaginacionProvider
+    // y acepta un objeto Paginacion directamente
     return Paginador(
-      paginacion: widget.paginacion,
-      onPageChanged: widget.onPageChanged,
+      paginacion: widget.paginacion!,
+      onPageChanged: widget.onPageChanged!,
       backgroundColor: const Color(0xFF2D2D2D),
       textColor: Colors.white,
       accentColor: const Color(0xFFE31E24),
       forceCompactMode: true,
+      radius: 8.0,
     );
   }
 

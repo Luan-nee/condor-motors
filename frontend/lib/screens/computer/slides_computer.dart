@@ -1,7 +1,7 @@
 import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/screens/computer/dashboard_computer.dart';
-import 'package:condorsmotors/screens/computer/historial_ventas_computer.dart';
 import 'package:condorsmotors/screens/computer/proforma_computer.dart';
+import 'package:condorsmotors/screens/computer/ventas_computer.dart';
 import 'package:condorsmotors/services/token_service.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/material.dart';
@@ -139,7 +139,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
         <String, dynamic>{
           'title': 'Historial de Ventas',
           'icon': FontAwesomeIcons.fileInvoiceDollar,
-          'screen': HistorialVentasComputerScreen(
+          'screen': VentasComputerScreen(
               sucursalId: _sucursalId, nombreSucursal: _nombreSucursal),
           'description': 'Ver y gestionar ventas realizadas',
         },

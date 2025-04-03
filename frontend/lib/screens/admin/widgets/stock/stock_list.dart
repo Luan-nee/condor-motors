@@ -1,6 +1,6 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
-import 'package:condorsmotors/providers/admin/stock.provider.dart';
+import 'package:condorsmotors/providers/admin/stock.admin.provider.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalle_sucursal.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

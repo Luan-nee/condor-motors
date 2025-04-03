@@ -1,4 +1,3 @@
-import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/providers/paginacion.provider.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:flutter/foundation.dart';
@@ -77,8 +76,8 @@ class Paginador extends StatelessWidget {
         ? PaginacionProvider.fromPaginacion(paginacion)
         : PaginacionProvider();
 
-    final provider = paginacionProvider ??
-        Provider.of<PaginacionProvider>(context, listen: true);
+    final provider =
+        paginacionProvider ?? Provider.of<PaginacionProvider>(context);
 
     logDebug(
         'Paginador: Constructor - Provider actual: $provider, itemsPerPage: ${provider.itemsPerPage}');
@@ -486,9 +485,12 @@ class Paginador extends StatelessWidget {
                       'Paginador: Usuario seleccionó tamaño de página: $value');
 
                   // Actualizar el estado local para ver el cambio inmediatamente
-                  setState(() {
-                    currentValue = value;
-                  });
+                  // Verificar si el widget está montado antes de actualizar el estado
+                  if (context.mounted) {
+                    setState(() {
+                      currentValue = value;
+                    });
+                  }
 
                   // Llamar al método del provider
                   provider.cambiarItemsPorPagina(value);
@@ -507,8 +509,11 @@ class Paginador extends StatelessWidget {
 
                   // Verificar si el cambio se aplicó correctamente
                   Future.delayed(const Duration(milliseconds: 100), () {
-                    logDebug(
-                        'Paginador: Verificando cambio - Nuevo valor en provider: ${provider.itemsPerPage}');
+                    // Verificar que el contexto sigue montado antes de acceder a él
+                    if (context.mounted) {
+                      logDebug(
+                          'Paginador: Verificando cambio - Nuevo valor en provider: ${provider.itemsPerPage}');
+                    }
                   });
                 }
               },

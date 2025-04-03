@@ -1,7 +1,8 @@
 import 'package:condorsmotors/models/ventas.model.dart';
-import 'package:condorsmotors/providers/admin/ventas.provider.dart';
+import 'package:condorsmotors/providers/admin/ventas.admin.provider.dart';
 import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
 import 'package:condorsmotors/screens/admin/widgets/venta/venta_detalle_dialog.dart';
+import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +23,9 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
   final DateFormat _formatoFecha = DateFormat('dd/MM/yyyy');
   late VentasProvider _ventasProvider;
 
+  // Variables para controlar el estado de operaciones asíncronas
+  bool _isInitialized = false;
+
   @override
   void initState() {
     super.initState();
@@ -31,10 +35,19 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _ventasProvider = Provider.of<VentasProvider>(context, listen: false);
 
-    // Inicializamos el provider si es necesario
-    _cargarDatos();
+    // Solo realizar la inicialización una vez
+    if (!_isInitialized) {
+      _ventasProvider = Provider.of<VentasProvider>(context, listen: false);
+      // Programar la carga de datos para después del primer frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Verificar si el widget sigue montado cuando se ejecute el callback
+        if (mounted) {
+          _cargarDatos();
+        }
+      });
+      _isInitialized = true;
+    }
   }
 
   void _cargarDatos() {
@@ -250,9 +263,15 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
         ),
         onChanged: (value) {
           // Actualizar búsqueda después de un pequeño retraso
-          Future.delayed(const Duration(milliseconds: 500), () {
-            ventasProvider.actualizarBusqueda(value);
-          });
+          // Verificar que el widget esté montado antes de continuar
+          if (mounted) {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              // Verificar nuevamente que el widget está montado antes de actualizar
+              if (mounted) {
+                ventasProvider.actualizarBusqueda(value);
+              }
+            });
+          }
         },
       ),
     );
@@ -301,65 +320,146 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           color: const Color(0xFF222222),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Mostrando ${ventasProvider.ventas.length} ventas',
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
+              Row(
+                children: [
+                  const Spacer(),
+                  OutlinedButton.icon(
+                    icon: const FaIcon(
+                      FontAwesomeIcons.calendarDays,
+                      size: 14,
+                    ),
+                    label: const Text('Filtrar por fecha'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                    onPressed: () {
+                      if (mounted) {
+                        _mostrarSelectorFechas(context, ventasProvider);
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    icon: const FaIcon(
+                      FontAwesomeIcons.filter,
+                      size: 14,
+                    ),
+                    label: const Text('Filtrar por estado'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                    onPressed: () {
+                      if (mounted) {
+                        _mostrarMenuEstados(context, ventasProvider);
+                      }
+                    },
+                  ),
+                  // Botón para limpiar filtros (visible solo si hay filtros activos)
+                  if (ventasProvider.fechaInicio != null ||
+                      ventasProvider.fechaFin != null ||
+                      ventasProvider.estadoFiltro != null ||
+                      ventasProvider.searchQuery.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      icon: const FaIcon(
+                        FontAwesomeIcons.filterCircleXmark,
+                        size: 14,
+                        color: Color(0xFFE31E24),
+                      ),
+                      label: const Text('Limpiar filtros'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFE31E24),
+                        side: const BorderSide(color: Color(0xFFE31E24)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      onPressed: () {
+                        ventasProvider.limpiarFiltros();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Filtros eliminados'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ],
               ),
-              const Spacer(),
-              OutlinedButton.icon(
-                icon: const FaIcon(
-                  FontAwesomeIcons.calendarDays,
-                  size: 14,
-                ),
-                label: const Text('Filtrar por fecha'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white70,
-                  side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+
+              // Indicador de filtros activos
+              if (ventasProvider.fechaInicio != null ||
+                  ventasProvider.fechaFin != null ||
+                  ventasProvider.estadoFiltro != null ||
+                  ventasProvider.searchQuery.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const FaIcon(
+                        FontAwesomeIcons.filter,
+                        size: 12,
+                        color: Color(0xFFE31E24),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Filtros activos:',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (ventasProvider.searchQuery.isNotEmpty)
+                        _buildFiltroChip(
+                          'Búsqueda: "${ventasProvider.searchQuery}"',
+                          () {
+                            ventasProvider.actualizarBusqueda('');
+                          },
+                        ),
+                      if (ventasProvider.fechaInicio != null &&
+                          ventasProvider.fechaFin != null)
+                        _buildFiltroChip(
+                          'Período: ${DateFormat('dd/MM/yyyy').format(ventasProvider.fechaInicio!)} - ${DateFormat('dd/MM/yyyy').format(ventasProvider.fechaFin!)}',
+                          () {
+                            ventasProvider.actualizarFiltrosFecha(null, null);
+                          },
+                        ),
+                      if (ventasProvider.estadoFiltro != null)
+                        _buildFiltroChip(
+                          'Estado: ${ventasProvider.estadoFiltro}',
+                          () {
+                            ventasProvider.actualizarFiltroEstado(null);
+                          },
+                        ),
+                    ],
                   ),
                 ),
-                onPressed: () {
-                  // TODO: Implementar filtro por fecha
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Función en desarrollo'),
-                      backgroundColor: Colors.blue,
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                icon: const FaIcon(
-                  FontAwesomeIcons.filter,
-                  size: 14,
-                ),
-                label: const Text('Filtrar por estado'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white70,
-                  side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                ),
-                onPressed: () {
-                  // TODO: Implementar filtro por estado
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Función en desarrollo'),
-                      backgroundColor: Colors.blue,
-                    ),
-                  );
-                },
-              ),
             ],
           ),
         ),
@@ -372,6 +472,25 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
             },
           ),
         ),
+        // Paginador al final de la columna
+        if (ventasProvider.paginacion.totalPages > 0)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Paginador(
+                  paginacion: ventasProvider.paginacion,
+                  backgroundColor: const Color(0xFF2D2D2D),
+                  textColor: Colors.white,
+                  accentColor: const Color(0xFFE31E24),
+                  radius: 8.0,
+                  onPageChanged: ventasProvider.cambiarPagina,
+                  onPageSizeChanged: ventasProvider.cambiarItemsPorPagina,
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -425,86 +544,47 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
   }
 
   Widget _buildVentaItem(
-      BuildContext context, VentasProvider ventasProvider, venta) {
-    final bool isVenta = venta is Venta;
+      BuildContext context, VentasProvider ventasProvider, Venta venta) {
+    final String id = venta.id.toString();
+    final String serie = venta.serieDocumento;
+    final String numero = venta.numeroDocumento;
+    final DateTime fecha = venta.fechaCreacion;
+    final String horaEmision = venta.horaEmision;
+    final double total = venta.calcularTotal();
 
-    final String id = isVenta ? venta.id.toString() : venta['id'].toString();
+    final String empleado = venta.empleadoDetalle != null
+        ? venta.empleadoDetalle!.getNombreCompleto()
+        : 'No especificado';
 
-    final String serie =
-        isVenta ? venta.serieDocumento : venta['serieDocumento'] ?? '';
+    final bool tienePdf = venta.documentoFacturacion?.linkPdf != null;
+    final String? pdfLink = venta.documentoFacturacion?.linkPdf;
 
-    final String numero =
-        isVenta ? venta.numeroDocumento : venta['numeroDocumento'] ?? '';
+    final bool declarada = venta.declarada;
+    final bool anulada = venta.anulada;
 
-    final DateTime fecha = isVenta
-        ? venta.fechaCreacion
-        : (venta['fechaCreacion'] != null
-            ? DateTime.parse(venta['fechaCreacion'])
-            : (venta['fechaEmision'] != null
-                ? DateTime.parse(venta['fechaEmision'])
-                : DateTime.now()));
-
-    final String horaEmision =
-        isVenta ? venta.horaEmision : venta['horaEmision'] ?? '';
-
-    final double total = isVenta
-        ? venta.calcularTotal()
-        : (venta['totalesVenta'] != null &&
-                venta['totalesVenta']['totalVenta'] != null
-            ? (venta['totalesVenta']['totalVenta'] is String
-                ? double.tryParse(venta['totalesVenta']['totalVenta']) ?? 0.0
-                : venta['totalesVenta']['totalVenta'].toDouble())
-            : 0.0);
-
-    // El empleado siempre está disponible en las ventas
-    final String empleado = isVenta
-        ? (venta.empleadoDetalle != null
-            ? '${venta.empleadoDetalle!.nombre} ${venta.empleadoDetalle!.apellidos}'
-            : 'No especificado')
-        : (venta['empleado'] != null
-            ? '${venta['empleado']['nombre']} ${venta['empleado']['apellidos']}'
-            : 'No especificado');
-
-    // Verifica si hay PDF
-    final bool tienePdf = isVenta
-        ? (venta.documentoFacturacion != null &&
-            venta.documentoFacturacion!.linkPdf != null)
-        : (venta['documentoFacturacion'] != null &&
-            venta['documentoFacturacion']['linkPdf'] != null);
-
-    final String? pdfLink = isVenta
-        ? (venta.documentoFacturacion?.linkPdf)
-        : (tienePdf ? venta['documentoFacturacion']['linkPdf'] : null);
-
-    // Estados adicionales (declarada/anulada)
-    final bool declarada =
-        isVenta ? venta.declarada : venta['declarada'] ?? false;
-
-    final bool anulada = isVenta ? venta.anulada : venta['anulada'] ?? false;
-
-    // Estado de SUNAT
-    final String estado = isVenta
-        ? venta.estado.toText()
-        : (venta['estado'] is Map
-            ? venta['estado']['nombre'] ?? 'PENDIENTE'
-            : (anulada ? 'ANULADA' : (declarada ? 'DECLARADA' : 'PENDIENTE')));
+    final String estado = venta.estado.toText();
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
-        onTap: () => _mostrarDetalleVenta(context, ventasProvider, id),
+        onTap: () {
+          if (mounted) {
+            _mostrarDetalleVenta(context, ventasProvider, id);
+          }
+        },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Icono principal con indicador de estado
               Stack(
                 children: [
                   Container(
                     width: 50,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: _getEstadoColor(estado).withOpacity(0.1),
+                      color: ventasProvider
+                          .getEstadoColor(estado)
+                          .withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
@@ -512,11 +592,10 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                         tienePdf
                             ? FontAwesomeIcons.filePdf
                             : FontAwesomeIcons.fileInvoiceDollar,
-                        color: _getEstadoColor(estado),
+                        color: ventasProvider.getEstadoColor(estado),
                       ),
                     ),
                   ),
-                  // Indicador visual para declarada o anulada
                   if (declarada || anulada)
                     Positioned(
                       right: 0,
@@ -589,13 +668,15 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: _getEstadoColor(estado).withOpacity(0.1),
+                          color: ventasProvider
+                              .getEstadoColor(estado)
+                              .withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           estado,
                           style: TextStyle(
-                            color: _getEstadoColor(estado),
+                            color: ventasProvider.getEstadoColor(estado),
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -603,7 +684,7 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                       ),
                       if (tienePdf)
                         IconButton(
-                          icon: FaIcon(
+                          icon: const FaIcon(
                             FontAwesomeIcons.fileArrowDown,
                             size: 14,
                             color: Colors.blue,
@@ -611,7 +692,11 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                           tooltip: 'Descargar PDF',
                           constraints: const BoxConstraints(),
                           padding: const EdgeInsets.symmetric(horizontal: 8),
-                          onPressed: () => _abrirPdf(pdfLink!),
+                          onPressed: () {
+                            if (mounted && pdfLink != null) {
+                              _abrirPdf(pdfLink);
+                            }
+                          },
                         ),
                     ],
                   ),
@@ -624,99 +709,95 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     );
   }
 
-  Color _getEstadoColor(String estado) {
-    switch (estado.toUpperCase()) {
-      case 'COMPLETADA':
-        return Colors.green;
-      case 'ANULADA':
-        return Colors.red;
-      case 'DECLARADA':
-        return Colors.blue;
-      case 'ACEPTADO-SUNAT':
-        return Colors.green;
-      case 'ACEPTADO ANTE LA SUNAT':
-        return Colors.green;
-      case 'PENDIENTE':
-      default:
-        return Colors.orange;
-    }
-  }
-
   Future<void> _mostrarDetalleVenta(
       BuildContext context, VentasProvider ventasProvider, String id) async {
-    // Buscamos primero si ya tenemos esta venta en nuestra lista
-    dynamic ventaPrevia;
-    for (var v in ventasProvider.ventas) {
-      if ((v is Venta && v.id.toString() == id) ||
-          (v is Map && v['id'].toString() == id)) {
-        ventaPrevia = v;
-        break;
-      }
+    final ValueNotifier<Venta?> ventaNotifier = ValueNotifier<Venta?>(null);
+    final ValueNotifier<bool> isLoadingFullData = ValueNotifier<bool>(true);
+
+    Venta? ventaBasica;
+    try {
+      ventaBasica =
+          ventasProvider.ventas.firstWhere((v) => v.id.toString() == id);
+      ventaNotifier.value = ventaBasica;
+      isLoadingFullData.value = true;
+    } catch (e) {
+      debugPrint("Venta básica no encontrada en la lista: $id");
     }
 
-    // Creamos un ValueNotifier para gestionar los datos de la venta
-    final ValueNotifier<dynamic> ventaNotifier =
-        ValueNotifier<dynamic>(ventaPrevia);
-    // Notifier para controlar el estado de carga
-    final ValueNotifier<bool> isLoadingFullData = ValueNotifier<bool>(false);
-
-    // Función para declarar la venta a SUNAT usando los callbacks del provider
     Future<void> declararVenta(String ventaId) async {
-      // Actualizamos el estado de carga
+      if (!mounted) {
+        return;
+      }
+
       isLoadingFullData.value = true;
 
-      // Llamar al provider para declarar la venta usando callbacks para manejar éxito y error
       await ventasProvider.declararVenta(
         ventaId,
         onSuccess: () async {
-          // Recargar los detalles completos de la venta
+          if (!mounted) {
+            return;
+          }
+
           final ventaActualizada =
               await ventasProvider.cargarDetalleVenta(ventaId);
+
+          if (!mounted) {
+            return;
+          }
+
           ventaNotifier.value = ventaActualizada;
           isLoadingFullData.value = false;
         },
         onError: (errorMsg) {
-          // No necesitamos mostrar el error aquí, lo manejará el provider
+          if (!mounted) {
+            return;
+          }
+
           isLoadingFullData.value = false;
         },
       );
     }
 
-    // Mostramos un diálogo con la información cargada hasta el momento
+    if (!mounted) {
+      return;
+    }
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return ValueListenableBuilder<dynamic>(
+      builder: (_) => ChangeNotifierProvider.value(
+        value: ventasProvider,
+        child: ValueListenableBuilder<Venta?>(
           valueListenable: ventaNotifier,
-          builder: (context, currentVenta, child) {
+          builder: (dialogContext, currentVenta, child) {
             return ValueListenableBuilder<bool>(
-                valueListenable: isLoadingFullData,
-                builder: (context, isLoading, _) {
-                  return VentaDetalleDialog(
-                    venta: currentVenta,
-                    isLoadingFullData: isLoading,
-                    onDeclararPressed: declararVenta,
-                  );
-                });
+              valueListenable: isLoadingFullData,
+              builder: (dialogContextLoading, isLoading, _) {
+                return VentaDetalleDialog(
+                  venta: currentVenta,
+                  isLoadingFullData: isLoading,
+                  onDeclararPressed: declararVenta,
+                );
+              },
+            );
           },
-        );
-      },
+        ),
+      ),
     );
 
     try {
-      // Marcamos que estamos cargando los datos completos
-      isLoadingFullData.value = true;
-
-      // Obtener datos completos de la venta para mostrar todos los detalles
       final ventaCompleta = await ventasProvider.cargarDetalleVenta(id);
 
-      // Actualizar los datos de la venta en el ValueNotifier
+      if (!mounted) {
+        return;
+      }
+
       ventaNotifier.value = ventaCompleta;
 
-      // Marcar que ya no estamos cargando
       isLoadingFullData.value = false;
     } catch (e) {
-      // En caso de error, actualizar el estado y mostrar el mensaje desde el provider
+      if (!mounted) {
+        return;
+      }
+
       ventasProvider.mostrarMensaje(
         mensaje: 'Error al cargar los detalles de la venta: ${e.toString()}',
         backgroundColor: Colors.red,
@@ -725,10 +806,180 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     }
   }
 
-  // Método para abrir PDFs usando el método del provider
   Future<void> _abrirPdf(String url) async {
-    // Utilizamos el método del provider para abrir PDFs
-    await Provider.of<VentasProvider>(context, listen: false)
-        .abrirPdf(url, context);
+    if (!mounted) {
+      return;
+    }
+
+    await Provider.of<VentasProvider>(context, listen: false).abrirPdf(url);
+  }
+
+  Future<void> _mostrarSelectorFechas(
+      BuildContext context, VentasProvider ventasProvider) async {
+    if (!mounted) {
+      return;
+    }
+
+    final DateTimeRange? rango = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+      initialDateRange:
+          ventasProvider.fechaInicio != null && ventasProvider.fechaFin != null
+              ? DateTimeRange(
+                  start: ventasProvider.fechaInicio!,
+                  end: ventasProvider.fechaFin!,
+                )
+              : null,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFFE31E24),
+              onPrimary: Colors.white,
+              surface: Color(0xFF2D2D2D),
+            ),
+            dialogBackgroundColor: const Color(0xFF1A1A1A),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (rango != null) {
+      ventasProvider.actualizarFiltrosFecha(
+        rango.start,
+        rango.end,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Filtrando desde ${DateFormat('dd/MM/yyyy').format(rango.start)} hasta ${DateFormat('dd/MM/yyyy').format(rango.end)}',
+            ),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'Limpiar',
+              textColor: Colors.white,
+              onPressed: () {
+                if (mounted) {
+                  ventasProvider.actualizarFiltrosFecha(null, null);
+                }
+              },
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  void _mostrarMenuEstados(
+      BuildContext context, VentasProvider ventasProvider) {
+    if (!mounted) {
+      return;
+    }
+
+    final estados = [
+      {'id': null, 'nombre': 'Todos los estados'},
+      {'id': 'PENDIENTE', 'nombre': 'Pendiente'},
+      {'id': 'COMPLETADA', 'nombre': 'Completada'},
+      {'id': 'ANULADA', 'nombre': 'Anulada'},
+      {'id': 'DECLARADA', 'nombre': 'Declarada'},
+      {'id': 'ACEPTADO-SUNAT', 'nombre': 'Aceptado SUNAT'},
+    ];
+
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero),
+            ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    showMenu<String>(
+      context: context,
+      position: position,
+      color: const Color(0xFF2D2D2D),
+      items: estados.map((estado) {
+        final esSeleccionado = ventasProvider.estadoFiltro == estado['id'];
+        return PopupMenuItem<String>(
+          value: estado['id'],
+          child: Row(
+            children: [
+              Container(
+                width: 14,
+                height: 14,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: esSeleccionado
+                      ? const Color(0xFFE31E24)
+                      : Colors.transparent,
+                  border: Border.all(
+                    color: esSeleccionado
+                        ? const Color(0xFFE31E24)
+                        : Colors.white.withOpacity(0.5),
+                  ),
+                ),
+                child: esSeleccionado
+                    ? const Icon(
+                        Icons.check,
+                        size: 10,
+                        color: Colors.white,
+                      )
+                    : null,
+              ),
+              Text(
+                estado['nombre'] as String,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight:
+                      esSeleccionado ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    ).then((String? seleccionado) {
+      if (!mounted) {
+        return;
+      }
+
+      if (seleccionado != null || seleccionado == null) {
+        ventasProvider.actualizarFiltroEstado(seleccionado);
+
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Filtrando por estado: ${seleccionado ?? 'Todos'}',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    });
+  }
+
+  Widget _buildFiltroChip(String label, VoidCallback onPressed) {
+    return Chip(
+      label: Text(label),
+      onDeleted: onPressed,
+      deleteIconColor: Colors.white,
+      backgroundColor: const Color(0xFF1A1A1A),
+      labelStyle: const TextStyle(color: Colors.white70),
+    );
   }
 }

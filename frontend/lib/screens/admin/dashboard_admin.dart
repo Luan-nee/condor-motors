@@ -1,5 +1,5 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
-import 'package:condorsmotors/providers/admin/dashboard.provider.dart';
+import 'package:condorsmotors/providers/admin/dashboard.admin.provider.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';

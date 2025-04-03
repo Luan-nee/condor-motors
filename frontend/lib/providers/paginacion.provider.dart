@@ -314,7 +314,7 @@ class PaginacionProvider extends ChangeNotifier {
   /// Establecer filtro y su valor
   void aplicarFiltro({
     required String filtro,
-    required dynamic valor,
+    required valor,
     String tipoFiltro = 'eq',
   }) {
     logInfo(
@@ -399,14 +399,15 @@ class PaginacionProvider extends ChangeNotifier {
     logInfo('PaginacionProvider: Creando desde objeto paginación');
     final provider = PaginacionProvider();
     if (paginacion != null) {
-      provider._paginacion = Paginacion(
-        totalItems: paginacion.totalItems ?? 0,
-        totalPages: paginacion.totalPages ?? 1,
-        currentPage: paginacion.currentPage ?? 1,
-        hasNext: (paginacion.currentPage ?? 1) < (paginacion.totalPages ?? 1),
-        hasPrev: (paginacion.currentPage ?? 1) > 1,
-      );
-      provider._metadata = metadata;
+      provider
+        .._paginacion = Paginacion(
+          totalItems: paginacion.totalItems ?? 0,
+          totalPages: paginacion.totalPages ?? 1,
+          currentPage: paginacion.currentPage ?? 1,
+          hasNext: (paginacion.currentPage ?? 1) < (paginacion.totalPages ?? 1),
+          hasPrev: (paginacion.currentPage ?? 1) > 1,
+        )
+        .._metadata = metadata;
       logDebug('PaginacionProvider: Inicializado con paginación y metadata');
     } else {
       logWarning('PaginacionProvider: Se recibió un objeto paginación nulo');
@@ -419,8 +420,9 @@ class PaginacionProvider extends ChangeNotifier {
     logInfo(
         'PaginacionProvider: Creando desde PaginatedResponse con ${response.items.length} items');
     final provider = PaginacionProvider();
-    provider.actualizarPaginacion(response.paginacion);
-    provider.actualizarMetadata(response.metadata);
+    provider
+      ..actualizarPaginacion(response.paginacion)
+      ..actualizarMetadata(response.metadata);
     return provider;
   }
 

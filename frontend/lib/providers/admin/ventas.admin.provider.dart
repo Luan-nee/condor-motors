@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +18,7 @@ class VentasProvider extends ChangeNotifier {
   bool _isSucursalesLoading = false;
 
   // Estado para ventas
-  List<dynamic> _ventas = [];
+  List<Venta> _ventas = []; // Usar tipo específico Venta
   bool _isVentasLoading = false;
   String _ventasErrorMessage = '';
 
@@ -31,6 +32,18 @@ class VentasProvider extends ChangeNotifier {
   Venta? _ventaSeleccionada;
   bool _isVentaDetalleLoading = false;
   String _ventaDetalleErrorMessage = '';
+
+  // Estado para paginación
+  Paginacion _paginacion = Paginacion(
+    totalItems: 0,
+    totalPages: 1,
+    currentPage: 1,
+    hasNext: false,
+    hasPrev: false,
+  );
+  int _itemsPerPage = 10;
+  String _orden = 'desc';
+  String? _ordenarPor = 'fechaCreacion'; // Ordenar por fecha por defecto
 
   // Referencia global al messenger
   GlobalKey<ScaffoldMessengerState>? messengerKey;
@@ -197,122 +210,53 @@ class VentasProvider extends ChangeNotifier {
     }
   }
 
-  /// Calcula el total de una venta a partir de un Map
-  double calcularTotalVenta(Map<String, dynamic> venta) {
-    // Primero intentamos con el formato del ejemplo JSON (totalesVenta)
-    if (venta.containsKey('totalesVenta') && venta['totalesVenta'] != null) {
-      if (venta['totalesVenta']['totalVenta'] != null) {
-        final value = venta['totalesVenta']['totalVenta'];
-        if (value is String) {
-          return double.tryParse(value) ?? 0.0;
-        } else {
-          return (value ?? 0.0).toDouble();
-        }
-      }
-    }
+  // --- Métodos Helper Eliminados ---
+  // La lógica de calcularTotalVenta, obtenerNumeroDocumento, tienePdfDisponible,
+  // y obtenerUrlPdf debe residir en el modelo Venta o ser accedida directamente
+  // desde sus propiedades.
 
-    // Luego intentamos con el formato anterior
-    if (venta.containsKey('total')) {
-      final value = venta['total'];
-      if (value is String) {
-        return double.tryParse(value) ?? 0.0;
-      } else {
-        return (value ?? 0.0).toDouble();
-      }
-    } else if (venta.containsKey('subtotal') && venta.containsKey('igv')) {
-      final subtotal = venta['subtotal'] is String
-          ? double.tryParse(venta['subtotal']) ?? 0.0
-          : (venta['subtotal'] ?? 0.0).toDouble();
-      final igv = venta['igv'] is String
-          ? double.tryParse(venta['igv']) ?? 0.0
-          : (venta['igv'] ?? 0.0).toDouble();
-      return subtotal + igv;
-    }
-
-    // Si no hay total, intentamos sumando los detalles
-    double totalCalculado = 0.0;
-    if (venta.containsKey('detallesVenta') && venta['detallesVenta'] is List) {
-      for (var detalle in venta['detallesVenta']) {
-        if (detalle is Map && detalle.containsKey('total')) {
-          final total = detalle['total'] is String
-              ? double.tryParse(detalle['total']) ?? 0.0
-              : (detalle['total'] ?? 0.0).toDouble();
-          totalCalculado += total;
-        }
-      }
-      return totalCalculado;
-    }
-
-    return 0.0;
-  }
-
-  /// Obtiene el color según el estado de una venta
+  /// Obtiene el color según el estado de una venta (se mantiene por ser UI-related)
   Color getEstadoColor(String estado) {
     switch (estado.toUpperCase()) {
       case 'COMPLETADA':
+      case 'ACEPTADO-SUNAT':
+      case 'ACEPTADO ANTE LA SUNAT':
         return Colors.green;
       case 'ANULADA':
         return Colors.red;
+      case 'CANCELADA':
+        return Colors.orange.shade900; // Nuevo estado para ventas canceladas
       case 'DECLARADA':
         return Colors.blue;
-      case 'ACEPTADO-SUNAT':
-        return Colors.green;
-      case 'ACEPTADO ANTE LA SUNAT':
-        return Colors.green;
       case 'PENDIENTE':
       default:
         return Colors.orange;
     }
   }
 
-  /// Obtiene el formato de serie-número o ID de una venta
-  String obtenerNumeroDocumento(venta) {
-    final bool isMap = venta is Map;
-    final bool isVenta = venta is Venta;
+  /// Verifica si una venta tiene PDF en formato ticket disponible
+  bool tienePdfTicketDisponible(Venta venta) {
+    return venta.documentoFacturacion != null &&
+        venta.documentoFacturacion!.linkPdfTicket != null;
+  }
 
-    final String serie = isMap
-        ? (venta['serieDocumento'] ?? '').toString()
-        : isVenta
-            ? venta.serieDocumento
-            : '';
-    final String numero = isMap
-        ? (venta['numeroDocumento'] ?? '').toString()
-        : isVenta
-            ? venta.numeroDocumento
-            : '';
-
-    if (serie.isNotEmpty && numero.isNotEmpty) {
-      return '$serie-$numero';
+  /// Obtiene la URL del PDF de una venta en el formato solicitado
+  String? obtenerUrlPdf(Venta venta, {bool formatoTicket = false}) {
+    if (venta.documentoFacturacion == null) {
+      return null;
     }
 
-    final String id = isMap
-        ? venta['id'].toString()
-        : isVenta
-            ? venta.id.toString()
-            : '';
-    return id;
+    if (formatoTicket) {
+      return venta.documentoFacturacion!.linkPdfTicket ??
+          venta.documentoFacturacion!.linkPdf;
+    }
+    return venta.documentoFacturacion!.linkPdfA4 ??
+        venta.documentoFacturacion!.linkPdf;
   }
 
-  /// Verifica si una venta tiene PDF disponible
-  bool tienePdfDisponible(venta) {
-    final bool isVenta = venta is Venta;
-
-    return isVenta
-        ? (venta.documentoFacturacion != null &&
-            venta.documentoFacturacion!.linkPdf != null)
-        : (venta is Map &&
-            venta['documentoFacturacion'] != null &&
-            venta['documentoFacturacion']['linkPdf'] != null);
-  }
-
-  /// Obtiene la URL del PDF de una venta si existe
-  String? obtenerUrlPdf(venta) {
-    final bool isVenta = venta is Venta;
-    final bool tienePdf = tienePdfDisponible(venta);
-
-    return isVenta
-        ? venta.documentoFacturacion?.linkPdf
-        : (tienePdf ? venta['documentoFacturacion']['linkPdf'] : null);
+  /// Verifica si una venta está cancelada
+  bool estaVentaCancelada(Venta venta) {
+    return venta.cancelada;
   }
 
   /// Declara una venta a SUNAT
@@ -418,7 +362,7 @@ class VentasProvider extends ChangeNotifier {
   bool get isSucursalesLoading => _isSucursalesLoading;
 
   // Getters para ventas
-  List<dynamic> get ventas => _ventas;
+  List<Venta> get ventas => _ventas; // Usar tipo específico Venta
   bool get isVentasLoading => _isVentasLoading;
   String get ventasErrorMessage => _ventasErrorMessage;
 
@@ -432,6 +376,12 @@ class VentasProvider extends ChangeNotifier {
   Venta? get ventaSeleccionada => _ventaSeleccionada;
   bool get isVentaDetalleLoading => _isVentaDetalleLoading;
   String get ventaDetalleErrorMessage => _ventaDetalleErrorMessage;
+
+  // Getters para paginación
+  Paginacion get paginacion => _paginacion;
+  int get itemsPerPage => _itemsPerPage;
+  String get orden => _orden;
+  String? get ordenarPor => _ordenarPor;
 
   /// Inicializa el provider cargando los datos necesarios
   void inicializar() {
@@ -519,6 +469,79 @@ class VentasProvider extends ChangeNotifier {
     }
   }
 
+  /// Establece una sucursal directamente por su ID sin necesidad de cargar la lista completa
+  /// Útil cuando el usuario tiene permisos para una sucursal específica pero no para listar todas
+  Future<bool> establecerSucursalPorId(dynamic sucursalId) async {
+    try {
+      if (sucursalId == null) {
+        debugPrint('⚠️ ID de sucursal no proporcionado');
+        return false;
+      }
+
+      String sucursalIdStr = sucursalId.toString();
+      debugPrint('🔍 Estableciendo sucursal por ID: $sucursalIdStr');
+
+      // Primero verificar si la sucursal ya está en nuestra lista cargada
+      if (_sucursales.isNotEmpty) {
+        for (var sucursal in _sucursales) {
+          if (sucursal.id.toString() == sucursalIdStr) {
+            debugPrint(
+                '✅ Sucursal encontrada en lista local, seleccionando: ${sucursal.nombre}');
+            _sucursalSeleccionada = sucursal;
+            notifyListeners();
+            return true;
+          }
+        }
+      }
+
+      // Si no está en la lista o la lista está vacía, crear una sucursal provisional
+      // con la información mínima necesaria para funcionar
+      final DateTime ahora = DateTime.now();
+      final Sucursal sucursalProvisional = Sucursal(
+        id: sucursalIdStr,
+        nombre: 'Sucursal $sucursalIdStr',
+        direccion: '',
+        sucursalCentral: false,
+        serieFactura: '',
+        serieBoleta: '',
+        tieneNotificaciones: false,
+        fechaCreacion: ahora,
+        fechaActualizacion: ahora,
+        activo: true,
+      );
+
+      // Intentar cargar los datos completos de la sucursal si se tienen permisos
+      try {
+        debugPrint('🔄 Intentando obtener datos completos de la sucursal');
+        final sucursalCompleta = await api.sucursales.getSucursalData(
+            sucursalIdStr,
+            useCache: false,
+            forceRefresh: true);
+
+        // Si se pudo obtener, usar esta sucursal
+        debugPrint(
+            '✅ Datos de sucursal obtenidos con éxito: ${sucursalCompleta.nombre}');
+        _sucursalSeleccionada = sucursalCompleta;
+
+        // Agregar a la lista si no está ya
+        if (!_sucursales.any((s) => s.id.toString() == sucursalIdStr)) {
+          _sucursales.add(sucursalCompleta);
+        }
+      } catch (e) {
+        // Si hay error al obtener datos completos, usar la sucursal provisional
+        debugPrint(
+            '⚠️ No se pudieron obtener datos completos, usando información mínima: $e');
+        _sucursalSeleccionada = sucursalProvisional;
+      }
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error al establecer sucursal por ID: $e');
+      return false;
+    }
+  }
+
   /// Cambia la sucursal seleccionada
   void cambiarSucursal(Sucursal sucursal) {
     _sucursalSeleccionada = sucursal;
@@ -536,7 +559,23 @@ class VentasProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Carga las ventas de la sucursal seleccionada
+  /// Actualiza la información de paginación basándose en los resultados
+  void _actualizarPaginacion(int totalItems) {
+    final int totalPages = (totalItems / _itemsPerPage).ceil();
+    final int currentPage = _paginacion.currentPage > totalPages
+        ? totalPages
+        : _paginacion.currentPage;
+
+    _paginacion = Paginacion(
+      totalItems: totalItems,
+      totalPages: totalPages > 0 ? totalPages : 1,
+      currentPage: currentPage > 0 ? currentPage : 1,
+      hasNext: currentPage < totalPages,
+      hasPrev: currentPage > 1,
+    );
+  }
+
+  /// Carga las ventas según los filtros actuales
   Future<void> cargarVentas() async {
     if (_sucursalSeleccionada == null) {
       _ventasErrorMessage = 'Debe seleccionar una sucursal';
@@ -550,54 +589,105 @@ class VentasProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('Cargando ventas para sucursal: ${_sucursalSeleccionada!.id}');
-      final Map<String, dynamic> response = await api.ventas.getVentas(
+      // Llamar a la API para obtener las ventas
+      final response = await api.ventas.getVentas(
         sucursalId: _sucursalSeleccionada!.id,
+        page: _paginacion.currentPage,
+        pageSize: _itemsPerPage,
         search: _searchQuery.isEmpty ? null : _searchQuery,
         fechaInicio: _fechaInicio,
         fechaFin: _fechaFin,
         estado: _estadoFiltro,
+        forceRefresh: true,
       );
 
-      debugPrint(
-          'Respuesta de ventas recibida, tipo de datos: ${response['data']?.runtimeType}');
+      debugPrint('Respuesta recibida: ${response.keys.join(', ')}');
 
-      List<dynamic> ventasList = [];
-      if (response['data'] != null) {
-        if (response['data'] is List) {
-          // Si los datos son una lista, los usamos directamente
-          ventasList = response['data'];
-          debugPrint(
-              'Datos recibidos como lista: ${ventasList.length} elementos');
-
-          // Si son Maps, los convertimos a objetos Venta
-          if (ventasList.isNotEmpty &&
-              ventasList.first is Map<String, dynamic>) {
-            try {
-              debugPrint('Convirtiendo Maps a objetos Venta');
-              ventasList = ventasList
-                  .map((item) => Venta.fromJson(item as Map<String, dynamic>))
-                  .toList();
-            } catch (e) {
-              debugPrint('Error al convertir Maps a Venta: $e');
-              // Si hay error, mantenemos los datos originales como Map
-            }
-          }
-        } else if (response['ventasRaw'] != null &&
-            response['ventasRaw'] is List) {
-          // En caso de que la API ya haya convertido los datos pero también proporcione los datos raw
-          ventasList = response['data'];
-          debugPrint(
-              'Usando datos procesados de la API: ${ventasList.length} elementos');
-        }
+      // Procesar la respuesta para obtener List<Venta>
+      if (response.containsKey('data') && response['data'] is List) {
+        final rawList = response['data'] as List<dynamic>;
+        _ventas = rawList
+            .map((item) {
+              try {
+                // Si ya es Venta, devolverlo. Si es Map, intentar convertir.
+                if (item is Venta) {
+                  return item;
+                } else if (item is Map<String, dynamic>) {
+                  // Asumiendo que Venta.fromJson existe y maneja la estructura
+                  return Venta.fromJson(item);
+                } else {
+                  debugPrint(
+                      'Item inesperado en la lista de ventas: ${item.runtimeType}');
+                  return null; // Marcar para filtrar
+                }
+              } catch (e) {
+                debugPrint(
+                    'Error al convertir venta Map a Venta: $e - Item: $item');
+                return null; // Marcar para filtrar
+              }
+            })
+            .whereType<
+                Venta>() // Filtrar los nulos (errores o tipos inesperados)
+            .toList();
+        debugPrint('Ventas convertidas a List<Venta>: ${_ventas.length}');
+      } else {
+        _ventas =
+            []; // Limpiar si no hay datos o la clave 'data' no existe/no es lista
+        debugPrint(
+            'No se encontraron datos de ventas en la respuesta o el formato es incorrecto.');
       }
 
-      _ventas = ventasList;
+      // Actualizar información de paginación si está disponible en la respuesta
+      if (response.containsKey('pagination') &&
+          response['pagination'] is Map<String, dynamic>) {
+        // Extraer el mapa para depuración
+        final Map<String, dynamic> paginationMap =
+            Map<String, dynamic>.from(response['pagination'] as Map);
+        debugPrint('Datos de paginación recibidos: $paginationMap');
+
+        try {
+          // Crear una instancia de Paginacion con valores predeterminados
+          // en caso de que falten campos en el mapa
+          final int totalItems = paginationMap['totalItems'] as int? ?? 0;
+          final int totalPages = paginationMap['totalPages'] as int? ?? 1;
+          final int currentPage = paginationMap['currentPage'] as int? ?? 1;
+
+          _paginacion = Paginacion(
+            totalItems: totalItems,
+            totalPages: totalPages > 0 ? totalPages : 1,
+            currentPage: currentPage > 0 ? currentPage : 1,
+            hasNext: currentPage < totalPages,
+            hasPrev: currentPage > 1,
+          );
+
+          debugPrint('Paginación convertida correctamente: $_paginacion');
+        } catch (e) {
+          debugPrint('Error al procesar paginación: $e');
+          // Si falla, usar el método de respaldo
+          if (paginationMap.containsKey('totalItems')) {
+            final dynamic totalItems = paginationMap['totalItems'];
+            _actualizarPaginacion(totalItems is int
+                ? totalItems
+                : int.tryParse(totalItems.toString()) ?? _ventas.length);
+          } else {
+            _actualizarPaginacion(_ventas.length);
+          }
+        }
+      } else if (response.containsKey('total')) {
+        final dynamic total = response['total'];
+        _actualizarPaginacion(total is int
+            ? total
+            : int.tryParse(total.toString()) ?? _ventas.length);
+      } else {
+        _actualizarPaginacion(_ventas.length);
+      }
+
       _isVentasLoading = false;
       notifyListeners();
 
       debugPrint(
           'Ventas cargadas: ${_ventas.length}, tipo: ${_ventas.isNotEmpty ? _ventas.first.runtimeType : "N/A"}');
+      debugPrint('Paginación final: $_paginacion');
     } catch (e) {
       debugPrint('Error al cargar ventas: $e');
       _isVentasLoading = false;
@@ -649,5 +739,70 @@ class VentasProvider extends ChangeNotifier {
       notifyListeners();
       return null;
     }
+  }
+
+  /// Cambia la página actual de resultados
+  Future<void> cambiarPagina(int nuevaPagina) async {
+    if (nuevaPagina < 1 || nuevaPagina > _paginacion.totalPages) {
+      return; // No hacer nada si la página solicitada está fuera de rango
+    }
+
+    _paginacion = Paginacion(
+      totalItems: _paginacion.totalItems,
+      totalPages: _paginacion.totalPages,
+      currentPage: nuevaPagina,
+      hasNext: nuevaPagina < _paginacion.totalPages,
+      hasPrev: nuevaPagina > 1,
+    );
+
+    notifyListeners();
+
+    // Recargar los datos con la nueva página
+    await cargarVentas();
+  }
+
+  /// Cambia el número de elementos por página
+  Future<void> cambiarItemsPorPagina(int nuevoTamano) async {
+    if (nuevoTamano < 1 || nuevoTamano > 200) {
+      return; // Validar límites razonables
+    }
+
+    _itemsPerPage = nuevoTamano;
+
+    // Resetear a la primera página cuando cambiamos el tamaño
+    _paginacion = Paginacion(
+      totalItems: _paginacion.totalItems,
+      totalPages: (_paginacion.totalItems / nuevoTamano).ceil(),
+      currentPage: 1,
+      hasNext: _paginacion.totalItems > nuevoTamano,
+      hasPrev: false,
+    );
+
+    notifyListeners();
+
+    // Recargar los datos con el nuevo tamaño de página
+    await cargarVentas();
+  }
+
+  /// Cambia el campo por el cual ordenar
+  Future<void> cambiarOrdenarPor(String? campo) async {
+    _ordenarPor = campo;
+    notifyListeners();
+
+    // Recargar datos con la nueva ordenación
+    await cargarVentas();
+  }
+
+  /// Cambia la dirección de ordenación (asc/desc)
+  Future<void> cambiarOrden(String nuevoOrden) async {
+    if (nuevoOrden != 'asc' && nuevoOrden != 'desc') {
+      return; // Solo aceptar valores válidos
+    }
+
+    _orden = nuevoOrden;
+    notifyListeners();
+
+    // Recargar datos con la nueva dirección de ordenación
+    await cargarVentas();
   }
 }

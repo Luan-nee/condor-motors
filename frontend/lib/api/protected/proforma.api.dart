@@ -1,6 +1,5 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
-import 'package:condorsmotors/main.dart' show proformaNotification, api;
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' as proforma_model;
 import 'package:condorsmotors/utils/logger.dart';
@@ -428,44 +427,6 @@ class ProformaVentaApi {
       // Invalidar caché después de crear
       invalidateCache(sucursalId);
 
-      // Enviar notificación si la respuesta fue exitosa
-      if (response.containsKey('status') &&
-          response['status'] == 'success' &&
-          response.containsKey('data')) {
-        // Intentar obtener la proforma creada
-        final proforma_model.Proforma? nuevaProforma =
-            parseProformaVenta(response);
-
-        if (nuevaProforma != null) {
-          // Buscar el nombre del cliente si existe
-          String nombreCliente = '';
-          if (clienteId != null) {
-            try {
-              final userData = await api.authService.getUserData();
-              nombreCliente = userData?['nombre'] ?? '';
-            } catch (e) {
-              // Ignorar errores al obtener el nombre del cliente
-              Logger.warn(
-                  '⚠️ No se pudo obtener el nombre del cliente para la notificación: $e');
-            }
-          }
-
-          // Enviamos siempre la notificación de nueva proforma
-          Logger.info(
-              '🔔 Enviando notificación de nueva proforma #${nuevaProforma.id}');
-          await proformaNotification.notifyNewProforma(nuevaProforma);
-
-          // Siempre enviamos la notificación de proforma pendiente, para que aparezca en la barra de Windows
-          // sin tener que verificar el rol (simplificando el flujo)
-          await proformaNotification.notifyNewProformaPending(
-            nuevaProforma,
-            nombreCliente,
-          );
-          Logger.info(
-              '🔔 Notificación de proforma pendiente enviada para #${nuevaProforma.id}');
-        }
-      }
-
       return response;
     } catch (e) {
       Logger.error('❌ Error al crear proforma de venta: $e');
@@ -524,34 +485,6 @@ class ProformaVentaApi {
 
       // Invalidar caché para esta proforma
       invalidateCache(sucursalId);
-
-      // Enviar notificación si se cambió el estado a "convertida"
-      if (estado == 'convertida' &&
-          response.containsKey('status') &&
-          response['status'] == 'success') {
-        try {
-          // Obtener los detalles de la proforma para la notificación
-          final Map<String, dynamic> proformaResponse = await getProformaVenta(
-            sucursalId: sucursalId,
-            proformaId: proformaId,
-            useCache: false, // No usar caché para obtener datos actualizados
-          );
-
-          final proforma_model.Proforma? proforma =
-              parseProformaVenta(proformaResponse);
-
-          if (proforma != null) {
-            // Enviar notificación de proforma convertida
-            Logger.info(
-                '🔔 Enviando notificación de proforma convertida #$proformaId');
-            await proformaNotification.notifyProformaConverted(proforma);
-          }
-        } catch (e) {
-          // Ignorar errores al enviar la notificación
-          Logger.warn(
-              '⚠️ Error al enviar notificación de proforma convertida: $e');
-        }
-      }
 
       return response;
     } catch (e) {
