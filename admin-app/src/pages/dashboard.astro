@@ -32,89 +32,111 @@ import UserBadge from '@/components/ui/UserBadge.astro'
       >
         <h1 class="text-2xl font-medium mb-6">Subir archivos</h1>
 
-        <section class="container mx-auto">
+        <section class="max-w-3xl">
           <div class="space-y-4">
             <h2 class="font-medium text-gray-300">
               Subir apk o aplicación de escritorio
             </h2>
             <form class="flex flex-col space-y-4" id="upload-file-form">
-              <div class="grid md:grid-cols-2 gap-4">
-                <div class="flex flex-col space-y-4">
-                  <Label text="Nombre">
-                    <Input
-                      name="nombre"
-                      type="text"
-                      autocomplete="off"
-                      placeholder="Apk en alpha version 0.216.58"
-                    />
-                  </Label>
+              <div class="flex flex-col gap-6">
+                <Label text="Nombre">
+                  <Input
+                    name="nombre"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="Apk en alpha version 0.216.58"
+                  />
+                </Label>
 
-                  <Label text="Tipo">
-                    <select
-                      name="tipo"
-                      class="px-3 py-2 border border-white/30 h-full
+                <Label text="Tipo">
+                  <select
+                    name="tipo"
+                    class="px-3 py-2 border border-white/30 h-full
                       bg-gray-500/5 hover:bg-gray-300/5
                       transition-colors rounded-md
                       hover:border-white/60"
-                    >
-                      <option value="null" selected disabled>
-                        Seleccione un tipo
-                      </option>
-                      <option value={fileTypeValues.apk}> APK </option>
-                      <option value={fileTypeValues.desktopApp}>
-                        Aplicación de escritorio
-                      </option>
-                    </select>
-                  </Label>
+                  >
+                    <option value="null" selected disabled>
+                      Seleccione un tipo
+                    </option>
+                    <option value={fileTypeValues.apk}> APK </option>
+                    <option value={fileTypeValues.desktopApp}>
+                      Aplicación de escritorio
+                    </option>
+                  </select>
+                </Label>
 
-                  <label class="flex items-center gap-2">
-                    <input type="checkbox" name="visible" />
-                    <span class="text-sm select-none">
-                      Visible para todos los usuarios
-                    </span>
-                  </label>
-                </div>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" name="visible" />
+                  <span class="text-sm select-none">
+                    Visible para todos los usuarios
+                  </span>
+                </label>
 
                 <label
-                  class="border-3 border-dashed rounded-2xl p-8 min-h-48 md:min-h-72
-                  border-white/30 bg-gray-500/5 hover:bg-gray-300/5 transition-colors
-                  text-gray-400 hover:text-gray-300 flex justify-center items-center"
+                  class="border-3 border-dashed rounded-2xl p-6 mt-4
+                  min-h-36 md:min-h-48 h-full
+                  border-white/30 bg-gray-500/5 text-gray-400
+                  hover:bg-gray-300/5 hover:text-gray-300
+                  transition-colors
+                  flex justify-center items-center relative isolate"
                 >
-                  <span class="font-semibold">Seleccione un archivo</span>
+                  <span class="font-semibold select-none" id="file-span">
+                    Seleccione un archivo
+                  </span>
+                  <div
+                    id="file-message-container"
+                    class="hidden rounded shadow p-3 text-sm space-y-2 transition-colors border
+                    bg-black/20 text-gray-300 border-white/10
+                    hover:bg-black/30 hover:border-white/20"
+                  >
+                  </div>
+                  <!-- <div
+                    id="fake-button"
+                    class="rounded shadow p-3 text-sm font-semibold
+                    absolute right-2 -top-14 transition-colors
+                    bg-black/30 text-gray-400 border-white/10
+                    hover:bg-black/50 hover:border-white/20 cursor-pointer select-none"
+                  >
+                    Seleccionar otro archivo
+                  </div> -->
                   <input
                     id="app-file-input"
                     name="app_file"
                     type="file"
+                    accept=".apk,.msi"
                     hidden
                   />
                 </label>
               </div>
 
-              <div class="flex flex-wrap justify-end gap-4">
-                <button
-                  id="cancel"
-                  type="button"
-                  class="border-white/10 rounded-lg border text-sm px-5 py-3 hover:bg-white/15 hover:border-white/50 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <Button type="submit">Subir</Button>
-              </div>
-              <div
-                id="error-message-upload-file-form"
-                class="text-sm font-medium text-red-300"
-              >
-              </div>
-              <div
-                id="success-message-upload-file-form"
-                class="text-sm font-medium text-green-300 mt-3"
-              >
+              <div class="flex flex-wrap justify-between gap-4">
+                <div>
+                  <p
+                    id="error-message-upff"
+                    class="text-sm font-medium text-red-300"
+                  >
+                  </p>
+                  <p
+                    id="success-message-upff"
+                    class="text-sm font-medium text-green-300"
+                  >
+                  </p>
+                </div>
+                <div class="flex flex-wrap gap-4 ml-auto justify-end">
+                  <button
+                    id="cancel"
+                    type="button"
+                    class="font-semibold border-white/10 rounded-lg border text-sm px-5 py-3 hover:bg-white/15 hover:border-white/50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <Button type="submit">Subir</Button>
+                </div>
               </div>
             </form>
           </div>
         </section>
-
-        <p id="error-message" class="text-sm font-medium text-red-300"></p>
       </div>
     </div>
   </section>
@@ -122,56 +144,99 @@ import UserBadge from '@/components/ui/UserBadge.astro'
 
 <script>
   import { uploadApk } from '@/core/controllers/archivos'
+  import { maxFileSizeAllowed } from '@/core/consts'
   import { selectWith } from '@/core/lib/utils'
   import { uploadFileValidator } from '@/core/validators/uploadFileDto'
   ;(async () => {
     const $uploadFileForm = selectWith<HTMLFormElement>('#upload-file-form')
-    const $uploadFileFormSuccessMessage = selectWith<HTMLFormElement>(
-      '#success-message-upload-file-form'
-    )
-    const $uploadFileFormErrorMessage = selectWith<HTMLFormElement>(
-      '#error-message-upload-file-form'
+    const $successMessage = selectWith<HTMLFormElement>('#success-message-upff')
+    const $errorMessage = selectWith<HTMLFormElement>('#error-message-upff')
+    const $fileInput = selectWith<HTMLInputElement>('#app-file-input')
+    const $fileSpan = selectWith<HTMLSpanElement>('#file-span')
+    const $fileMessageContainer = selectWith<HTMLDivElement>(
+      '#file-message-container'
     )
 
-    const $appFileInput = selectWith<HTMLInputElement>('#app-file-input')
     let selectedFile: null | File = null
 
-    $appFileInput.addEventListener('change', (e) => {
-      const input = e.target as HTMLInputElement
-      if (input.files && input.files.length > 0) {
-        selectedFile = input.files[0]
+    $fileInput.addEventListener('change', () => {
+      $fileSpan.innerText = 'Cargando el archivo...'
+      $errorMessage.innerText = ''
+      $successMessage.innerText = ''
 
-        if (selectedFile.type === '' && selectedFile.name.endsWith('.apk')) {
-          selectedFile = new File([selectedFile], selectedFile.name, {
-            type: 'application/vnd.android.package-archive'
-          })
+      requestIdleCallback(() => {
+        if ($fileInput.files == null || $fileInput.files[0] == null) {
+          $errorMessage.innerText = 'No se ha seleccionado un archivo'
+          return
         }
 
-        console.log('Selected file', selectedFile)
-      }
+        const [file] = $fileInput.files
+
+        if (file.size > maxFileSizeAllowed) {
+          $errorMessage.innerText = `El archivo no puede pesar más de 150 MB (peso del archivo actual: ${(file.size / (1024 * 1024)).toFixed(2)} MB)`
+          return
+        }
+
+        if (file.type === '' && file.name.endsWith('.apk')) {
+          selectedFile = new File([file], file.name, {
+            type: 'application/vnd.android.package-archive'
+          })
+        } else if (file.name.endsWith('.msi')) {
+          selectedFile = file
+        } else {
+          $errorMessage.innerText =
+            'Tipo de archivo no permitido, solo se admiten estos tipos (.apk | .msi)'
+          return
+        }
+
+        $fileSpan.classList.add('hidden')
+        $fileMessageContainer.innerHTML = `
+          <div>
+            <p class="text-gray-200 font-semibold">Archivo seleccionado:</p>
+          </div>
+          <div>
+            <p class="text-gray-400">Tipo:</p>
+            <p class="text-gray-200 font-medium">
+              ${selectedFile.name.endsWith('.apk') ? 'Android App' : 'Aplicación de escritorio'}
+            </p>
+          </div>
+          <div>
+            <p class="text-gray-400 mr-1">Tamaño:</p>
+            <p>${(Number(file.size) / (1024 * 1024)).toFixed(2)} MB</p>
+          </div>
+          <div>
+            <p class="text-gray-400">Archivo:</p>
+            <p class="overflow-hidden overflow-ellipsis">${selectedFile.name}</p>
+          </div>
+          <div class="mt-4">
+            <div class="text-gray-400">Click para seleccionar otro archivo</div>
+          </div>
+        `
+        $fileMessageContainer.classList.remove('hidden')
+      })
     })
 
     $uploadFileForm.addEventListener('submit', async (e) => {
       e.preventDefault()
-      $uploadFileFormSuccessMessage.innerText = ''
-      $uploadFileFormErrorMessage.innerText = ''
+      $successMessage.innerText = ''
+      $errorMessage.innerText = ''
 
       const formData = new FormData($uploadFileForm)
 
       const { data, error } = uploadFileValidator(Object.fromEntries(formData))
 
       if (error != null) {
-        $uploadFileFormErrorMessage.innerText = error.message
+        $errorMessage.innerText = error.message
         console.log(error)
         return
       }
 
       if (selectedFile == null) {
-        $uploadFileFormErrorMessage.innerText = 'Seleccione el archivo a subir'
+        $errorMessage.innerText = 'Seleccione el archivo a subir'
         return
       }
 
-      const { data: uploadData, error: uploadError } = await uploadApk({
+      const { error: uploadError } = await uploadApk({
         nombre: data.nombre,
         tipo: data.tipo,
         visible: data.visible,
@@ -179,12 +244,11 @@ import UserBadge from '@/components/ui/UserBadge.astro'
       })
 
       if (uploadError) {
-        $uploadFileFormErrorMessage.innerText = uploadError.message
+        $errorMessage.innerText = uploadError.message
         return
       }
 
-      $uploadFileFormSuccessMessage.innerText = JSON.stringify(uploadData)
-      // 'El archivo se ha subido correctamente'
+      $successMessage.innerText = 'El archivo se ha subido correctamente'
     })
   })()
 </script>

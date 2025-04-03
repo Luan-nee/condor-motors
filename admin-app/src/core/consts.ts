@@ -10,3 +10,5 @@ export const fileTypeValues = {
   apk: 'apk',
   desktopApp: 'desktop-app'
 } as const
+
+export const maxFileSizeAllowed = 150 * 1024 * 1024

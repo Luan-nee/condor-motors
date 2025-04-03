@@ -70,3 +70,37 @@ export const validateAndFormatFileName = (value: string) => {
     .replace(/(^-|-$)/g, '')
     .replace(/-+/g, '-')
 }
+
+export const readFileFromInput = (input: HTMLInputElement) => {
+  let selectedFile: File | null = null
+
+  requestIdleCallback(() => {
+    if (input.files == null || input.files[0] == null) {
+      return {
+        error: {
+          message: 'No se ha seleccionado un archivo'
+        }
+      }
+    }
+
+    const [file] = input.files
+
+    if (file.size > 150 * 1024 * 1024) {
+      return {
+        error: {
+          message: `El archivo no puede pesar más de 150 MB (peso del archivo actual: ${(file.size * 1024 * 1024).toFixed(2)} MB)`
+        }
+      }
+    }
+
+    if (file.type === '' && file.name.endsWith('.apk')) {
+      selectedFile = new File([file], file.name, {
+        type: 'application/vnd.android.package-archive'
+      })
+    }
+
+    selectedFile = file
+  })
+
+  return selectedFile
+}
