@@ -1,7 +1,5 @@
 import { z } from 'astro/zod'
 import { Validator } from './validator'
-import { fileTypeValues } from '../consts'
-import type { FileTypeValues } from '@/types/consts'
 
 const uploadFileSchema = z.object({
   nombre: z.coerce
@@ -17,20 +15,6 @@ const uploadFileSchema = z.object({
       message:
         'El nombre solo puede contener este set de caracteres: a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ.,¡!¿?-()[]{}$%&*\'_"@#+'
     }),
-  tipo: z.coerce
-    .string()
-    .trim()
-    .refine(
-      (value) => {
-        if (Object.values(fileTypeValues).includes(value as FileTypeValues)) {
-          return true
-        }
-      },
-      {
-        message:
-          'El tipo de archivo es inválido solo se permiten estos tipos (apk | desktop-app)'
-      }
-    ),
   visible: z.coerce.boolean().default(false)
 })
 
@@ -40,7 +24,7 @@ export const uploadFileValidator = (input: unknown) => {
   if (!result.success) {
     const errors = result.error.format()
 
-    const fields = ['nombre', 'tipo', 'visible'] as const
+    const fields = ['nombre', 'visible'] as const
 
     try {
       for (const field of fields) {

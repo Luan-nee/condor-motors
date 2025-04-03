@@ -48,24 +48,6 @@ import UserBadge from '@/components/ui/UserBadge.astro'
                   />
                 </Label>
 
-                <Label text="Tipo">
-                  <select
-                    name="tipo"
-                    class="px-3 py-2 border border-white/30 h-full
-                      bg-gray-500/5 hover:bg-gray-300/5
-                      transition-colors rounded-md
-                      hover:border-white/60"
-                  >
-                    <option value="null" selected disabled>
-                      Seleccione un tipo
-                    </option>
-                    <option value={fileTypeValues.apk}> APK </option>
-                    <option value={fileTypeValues.desktopApp}>
-                      Aplicación de escritorio
-                    </option>
-                  </select>
-                </Label>
-
                 <label class="flex items-center gap-2">
                   <input type="checkbox" name="visible" />
                   <span class="text-sm select-none">
@@ -135,7 +117,7 @@ import UserBadge from '@/components/ui/UserBadge.astro'
 
 <script>
   import { uploadApk } from '@/core/controllers/archivos'
-  import { maxFileSizeAllowed } from '@/core/consts'
+  import { fileTypeValues, maxFileSizeAllowed } from '@/core/consts'
   import { selectWith } from '@/core/lib/utils'
   import { uploadFileValidator } from '@/core/validators/uploadFileDto'
   ;(async () => {
@@ -149,6 +131,7 @@ import UserBadge from '@/components/ui/UserBadge.astro'
     )
 
     let selectedFile: null | File = null
+    let fileType: string = ''
 
     $fileInput.addEventListener('change', () => {
       $errorMessage.innerText = ''
@@ -171,8 +154,13 @@ import UserBadge from '@/components/ui/UserBadge.astro'
           selectedFile = new File([file], file.name, {
             type: 'application/vnd.android.package-archive'
           })
-        } else if (file.name.endsWith('.apk') || file.name.endsWith('.msi')) {
+          fileType = fileTypeValues.apk
+        } else if (file.name.endsWith('.apk')) {
           selectedFile = file
+          fileType = fileTypeValues.apk
+        } else if (file.name.endsWith('.msi')) {
+          selectedFile = file
+          fileType = fileTypeValues.desktopApp
         } else {
           $errorMessage.innerText =
             'Tipo de archivo no permitido, solo se admiten estos tipos (.apk | .msi)'
@@ -228,7 +216,7 @@ import UserBadge from '@/components/ui/UserBadge.astro'
 
       const { error: uploadError } = await uploadApk({
         nombre: data.nombre,
-        tipo: data.tipo,
+        tipo: fileType,
         visible: data.visible,
         appFile: selectedFile
       })
@@ -246,6 +234,7 @@ import UserBadge from '@/components/ui/UserBadge.astro'
     $clearFormButton.addEventListener('click', () => {
       $uploadFileForm.reset()
       selectedFile = null
+      fileType = ''
       $fileSpan.classList.remove('hidden')
       $fileMessageContainer.classList.add('hidden')
       $fileMessageContainer.innerHTML = ''
