@@ -4,21 +4,39 @@ import { createEffect, createSignal, For, Show } from 'solid-js'
 import type { FileEntity } from '@/types/archivos'
 import { BubbleLoadingIcon } from './icons/BubbleLoadingIcon'
 import { RefreshIcon } from './icons/RefreshIcon'
+import type { DOMElement } from 'solid-js/jsx-runtime'
 
 const [fetchTrigger, setFetchTrigger] = createSignal(0)
 
 export const FetchButton = () => {
+  const classList = 'transition-transform rotate-180 duration-500'.split(' ')
+
+  const handleClick = (
+    e: MouseEvent & {
+      currentTarget: HTMLButtonElement
+      target: DOMElement
+    }
+  ) => {
+    const $svg = e.target.querySelector('svg')
+
+    if ($svg != null) {
+      $svg.classList.add(...classList)
+      setTimeout(() => {
+        $svg.classList.remove(...classList)
+      }, 500)
+    }
+
+    setFetchTrigger(fetchTrigger() + 1)
+  }
+
   return (
     <button
-      onClick={() => {
-        setFetchTrigger(fetchTrigger() + 1)
-      }}
+      onClick={handleClick}
       class="p-2 rounded text-white/50
         hover:bg-white/5 hover:text-white/70
-        active:bg-white/10 active:text-white/80
-        hover:[&>svg]:rotate-180"
+        active:bg-white/10 active:text-white/80"
     >
-      <RefreshIcon class="w-6 h-6 transition-transform duration-500" />
+      <RefreshIcon class="w-6 h-6 pointer-events-none" />
     </button>
   )
 }
@@ -38,6 +56,7 @@ export const FileList = () => {
       return
     }
 
+    setError('')
     setFiles(apiData)
   }
 
@@ -60,19 +79,19 @@ export const FileList = () => {
   }
 
   return (
-    <div class="grow flex flex-col gap-3 px-3 overflow-y-auto scrollbar-thin">
+    <div class="grow flex flex-col gap-3 px-3 overflow-y-auto scrollbar-thin relative">
+      <Show when={error().length > 0}>
+        <div class="text-sm text-red-400 font-semibold">{error()}</div>
+      </Show>
+      <Show when={!fetched()}>
+        <div class="flex flex-col justify-center items-center gap-4 h-full text-white/70">
+          <BubbleLoadingIcon class="w-8 h-8" />
+          <p>Loading files</p>
+        </div>
+      </Show>
       <For each={files()}>
         {(item) => <FileCard file={item} deleteItem={deleteItem(item.id)} />}
       </For>
-      <div class="flex flex-col justify-center items-center gap-4 h-full text-white/70">
-        <Show when={error().length > 0}>
-          <div class="text-sm text-red-400 font-medium">{error()}</div>
-        </Show>
-        <Show when={!fetched()}>
-          <BubbleLoadingIcon class="w-8 h-8" />
-          <p>Loading files</p>
-        </Show>
-      </div>
     </div>
   )
 }

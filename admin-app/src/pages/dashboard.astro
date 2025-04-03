@@ -1,5 +1,4 @@
 ---
-import { fileTypeValues } from '@/core/consts'
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import Button from '@/components/atoms/Button.astro'
 import Input from '@/components/atoms/Input.astro'
@@ -85,14 +84,11 @@ import UserBadge from '@/components/ui/UserBadge.astro'
 
               <div class="flex flex-wrap justify-between gap-4">
                 <div>
-                  <p
-                    id="error-message-upff"
-                    class="text-sm font-medium text-red-300"
-                  >
+                  <p id="error-message-upff" class="font-medium text-red-300">
                   </p>
                   <p
                     id="success-message-upff"
-                    class="text-sm font-medium text-green-300"
+                    class="font-medium text-green-300"
                   >
                   </p>
                 </div>
@@ -194,6 +190,15 @@ import UserBadge from '@/components/ui/UserBadge.astro'
       })
     })
 
+    const clearForm = () => {
+      $uploadFileForm.reset()
+      selectedFile = null
+      fileType = ''
+      $fileSpan.classList.remove('hidden')
+      $fileMessageContainer.classList.add('hidden')
+      $fileMessageContainer.innerHTML = ''
+    }
+
     $uploadFileForm.addEventListener('submit', async (e) => {
       e.preventDefault()
       $successMessage.innerText = ''
@@ -226,18 +231,14 @@ import UserBadge from '@/components/ui/UserBadge.astro'
         return
       }
 
+      clearForm()
       $successMessage.innerText = 'El archivo se ha subido correctamente'
     })
 
     const $clearFormButton = selectWith<HTMLButtonElement>('#clear-form')
 
     $clearFormButton.addEventListener('click', () => {
-      $uploadFileForm.reset()
-      selectedFile = null
-      fileType = ''
-      $fileSpan.classList.remove('hidden')
-      $fileMessageContainer.classList.add('hidden')
-      $fileMessageContainer.innerHTML = ''
+      clearForm()
     })
   })()
 </script>
