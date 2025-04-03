@@ -14,10 +14,6 @@ export class DeleteArchivo {
     private readonly permissionsList: Permission[]
   ) {}
 
-  private readonly errorNotFound = CustomError.badRequest(
-    'El archivo no se pudo eliminar (no encontrado)'
-  )
-
   private async deleteArchivo(numericIdDto: NumericIdDto) {
     const files = await db
       .select({ filename: archivosAppTable.filename })
@@ -25,7 +21,9 @@ export class DeleteArchivo {
       .where(eq(archivosAppTable.id, numericIdDto.id))
 
     if (files.length < 1) {
-      throw this.errorNotFound
+      throw CustomError.badRequest(
+        'El archivo no se pudo eliminar (no encontrado)'
+      )
     }
 
     const [fileToDelete] = files
@@ -34,7 +32,9 @@ export class DeleteArchivo {
 
     stat(path, (err) => {
       if (err != null) {
-        throw this.errorNotFound
+        throw CustomError.badRequest(
+          'El archivo no se pudo eliminar (no encontrado)'
+        )
       }
 
       unlink(path, (err) => {
