@@ -104,3 +104,13 @@ export const readFileFromInput = (input: HTMLInputElement) => {
 
   return selectedFile
 }
+
+export const getFileSize = (size: number) => {
+  if (size < 1e3) {
+    return `${size} bytes`
+  } else if (size >= 1e3 && size < 1e6) {
+    return `${(size / 1e3).toFixed(2)} KB`
+  }
+
+  return `${(size / 1e6).toFixed(2)} MB`
+}

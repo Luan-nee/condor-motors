@@ -4,6 +4,7 @@ import { TrashIcon } from '@/components/solidjs/icons/TrashIcon'
 import { DownloadIcon } from '@/components/solidjs/icons/DownloadIcon'
 import type { FileEntity } from '@/types/archivos'
 import { createSignal, Show } from 'solid-js'
+import { getFileSize } from '@/core/lib/utils'
 
 interface Props {
   file: FileEntity
@@ -37,7 +38,7 @@ export const FileCard = ({ file, deleteItem }: Props) => {
           </div>
           <div>
             <span class="text-gray-500 mr-1">Tamaño:</span>
-            <span>{(Number(file.size) / (1024 * 1024)).toFixed(2)} MB</span>
+            <span>{getFileSize(Number(file.size))}</span>
           </div>
         </div>
       </div>

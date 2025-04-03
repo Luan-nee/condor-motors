@@ -5,6 +5,7 @@ import Input from '@/components/atoms/Input.astro'
 import Label from '@/components/atoms/Label.astro'
 import { FileList, FetchButton } from '@/components/solidjs/FileList'
 import UserBadge from '@/components/ui/UserBadge.astro'
+import SpinnerIcon from '@/components/icons/SpinnerIcon.astro'
 ---
 
 <BaseLayout title="Dashboard">
@@ -60,11 +61,16 @@ import UserBadge from '@/components/ui/UserBadge.astro'
                   border-white/30 bg-gray-500/5 text-gray-400
                   hover:bg-gray-300/5 hover:text-gray-300
                   transition-colors
-                  flex justify-center items-center relative isolate"
+                  flex flex-col justify-center items-center relative isolate"
+                  id="file-input-label"
                 >
-                  <span class="font-semibold select-none" id="file-span">
+                  <div id="file-input-spinner" class="hidden">
+                    <SpinnerIcon class="mx-auto w-6 h-6 animate-spin" />
+                    <p class="font-semibold select-none">Cargando archivo...</p>
+                  </div>
+                  <p class="font-semibold select-none" id="file-span">
                     Seleccione un archivo
-                  </span>
+                  </p>
                   <div
                     id="file-message-container"
                     class="hidden rounded shadow p-3 text-sm space-y-2 transition-colors border
@@ -114,12 +120,14 @@ import UserBadge from '@/components/ui/UserBadge.astro'
 <script>
   import { uploadApk } from '@/core/controllers/archivos'
   import { fileTypeValues, maxFileSizeAllowed } from '@/core/consts'
-  import { selectWith } from '@/core/lib/utils'
+  import { selectWith, getFileSize } from '@/core/lib/utils'
   import { uploadFileValidator } from '@/core/validators/uploadFileDto'
-  ;(async () => {
+  ;(() => {
     const $uploadFileForm = selectWith<HTMLFormElement>('#upload-file-form')
     const $successMessage = selectWith<HTMLFormElement>('#success-message-upff')
     const $errorMessage = selectWith<HTMLFormElement>('#error-message-upff')
+    const $fileInputLabel = selectWith<HTMLLabelElement>('#file-input-label')
+    const $fileInputSpinner = selectWith<HTMLDivElement>('#file-input-spinner')
     const $fileInput = selectWith<HTMLInputElement>('#app-file-input')
     const $fileSpan = selectWith<HTMLSpanElement>('#file-span')
     const $fileMessageContainer = selectWith<HTMLDivElement>(
@@ -129,13 +137,31 @@ import UserBadge from '@/components/ui/UserBadge.astro'
     let selectedFile: null | File = null
     let fileType: string = ''
 
-    $fileInput.addEventListener('change', () => {
+    $fileInputLabel.addEventListener('click', () => {
       $errorMessage.innerText = ''
       $successMessage.innerText = ''
+      $fileSpan.classList.add('hidden')
+      if (fileType === '') {
+        $fileInputSpinner.classList.remove('hidden')
+      }
+    })
 
+    const tryRemoveSpinner = () => {
+      if (fileType === '') {
+        $fileSpan.classList.remove('hidden')
+        $fileInputSpinner.classList.add('hidden')
+      }
+    }
+
+    $fileInput.addEventListener('cancel', () => {
+      tryRemoveSpinner()
+    })
+
+    $fileInput.addEventListener('change', () => {
       requestIdleCallback(() => {
         if ($fileInput.files == null || $fileInput.files[0] == null) {
           $errorMessage.innerText = 'No se ha seleccionado un archivo'
+          tryRemoveSpinner()
           return
         }
 
@@ -143,6 +169,7 @@ import UserBadge from '@/components/ui/UserBadge.astro'
 
         if (file.size > maxFileSizeAllowed) {
           $errorMessage.innerText = `El archivo no puede pesar más de 150 MB (peso del archivo actual: ${(file.size / (1024 * 1024)).toFixed(2)} MB)`
+          tryRemoveSpinner()
           return
         }
 
@@ -160,10 +187,11 @@ import UserBadge from '@/components/ui/UserBadge.astro'
         } else {
           $errorMessage.innerText =
             'Tipo de archivo no permitido, solo se admiten estos tipos (.apk | .msi)'
+          tryRemoveSpinner()
           return
         }
 
-        $fileSpan.classList.add('hidden')
+        $fileInputSpinner.classList.add('hidden')
         $fileMessageContainer.innerHTML = `
           <div>
             <p class="text-gray-200 font-semibold">Archivo seleccionado:</p>
@@ -176,7 +204,7 @@ import UserBadge from '@/components/ui/UserBadge.astro'
           </div>
           <div>
             <p class="text-gray-400 mr-1">Tamaño:</p>
-            <p>${(Number(file.size) / (1024 * 1024)).toFixed(2)} MB</p>
+            <p>${getFileSize(file.size)}</p>
           </div>
           <div>
             <p class="text-gray-400">Archivo:</p>
@@ -193,9 +221,12 @@ import UserBadge from '@/components/ui/UserBadge.astro'
     const clearForm = () => {
       $uploadFileForm.reset()
       selectedFile = null
+      $successMessage.innerText = ''
+      $errorMessage.innerText = ''
       fileType = ''
       $fileSpan.classList.remove('hidden')
       $fileMessageContainer.classList.add('hidden')
+      $fileInputSpinner.classList.add('hidden')
       $fileMessageContainer.innerHTML = ''
     }
 
