@@ -1,1 +1,18 @@
 @import 'tailwindcss';
+
+@layer {
+  :root {
+    color-scheme: dark dark;
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+}
