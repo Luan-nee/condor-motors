@@ -1,4 +1,3 @@
-import { fileTypeValues } from '@/consts'
 import { handleError } from '@/core/errors/handle.error'
 import { CustomResponse } from '@/core/responses/custom.response'
 import { CreateArchivoDto } from '@/domain/dtos/entities/archivos/create-archivo.dto'
@@ -9,7 +8,7 @@ import { GetArchivos } from '@/domain/use-cases/entities/archivos/get-archivos.u
 import type { Request, Response } from 'express'
 
 export class ArchivosController {
-  uploadApk = (req: Request, res: Response) => {
+  uploadFile = (req: Request, res: Response) => {
     if (req.authPayload == null || req.permissions == null) {
       CustomResponse.unauthorized({ res })
       return
@@ -29,14 +28,6 @@ export class ArchivosController {
       return
     }
 
-    if (createArchivoDto.tipo !== fileTypeValues.apk) {
-      CustomResponse.badRequest({
-        res,
-        error: 'El tipo de archivo solo puede ser `apk`'
-      })
-      return
-    }
-
     const { authPayload, permissions, file } = req
 
     const createArchivo = new CreateArchivo(authPayload, permissions)
@@ -49,15 +40,6 @@ export class ArchivosController {
       .catch((error: unknown) => {
         handleError(error, res)
       })
-  }
-
-  uploadDesktopApp = (req: Request, res: Response) => {
-    if (req.authPayload == null) {
-      CustomResponse.unauthorized({ res })
-      return
-    }
-
-    CustomResponse.notImplemented({ res })
   }
 
   getAll = (req: Request, res: Response) => {

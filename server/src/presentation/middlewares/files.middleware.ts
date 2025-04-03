@@ -47,25 +47,25 @@ export class FilesMiddleware {
     }
   })
 
-  static readonly apk = multer({
+  static readonly apkDesktopApp = multer({
     storage: privateDiskStorage,
-    limits: { fileSize: 500 * 1024 * 1024 },
+    limits: { fileSize: 150 * 1024 * 1024 },
     fileFilter: (_req, file, callback) => {
-      const extName = path
-        .extname(file.originalname)
-        .toLowerCase()
-        .includes('apk')
+      const allowedTypes = /apk|msi/
 
-      const mimeType =
-        file.mimetype === 'application/vnd.android.package-archive'
+      const extName = allowedTypes.test(
+        path.extname(file.originalname).toLowerCase()
+      )
 
-      if (extName && mimeType) {
+      if (extName) {
         callback(null, true)
         return
       }
 
       callback(
-        CustomError.badRequest('Invalid file type. Only APK files are allowed')
+        CustomError.badRequest(
+          'Invalid file type. Only .apk or .msi files are allowed'
+        )
       )
     }
   })

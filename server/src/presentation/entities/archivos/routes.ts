@@ -13,21 +13,12 @@ export class ArchivosRoutes {
     const archivosController = new ArchivosController()
 
     router.post(
-      '/apk',
+      '/upload',
       [
         AccessControlMiddleware.requests([permissionCodes.archivos.createAny]),
-        FilesMiddleware.apk.single(ArchivosRoutes.fileFieldName)
+        FilesMiddleware.apkDesktopApp.single(ArchivosRoutes.fileFieldName)
       ],
-      archivosController.uploadApk
-    )
-
-    router.post(
-      '/desktop-app',
-      [
-        AccessControlMiddleware.requests([permissionCodes.archivos.createAny])
-        // FilesMiddleware.desktopApp.single(ArchivosRoutes.fileFieldName)
-      ],
-      archivosController.uploadDesktopApp
+      archivosController.uploadFile
     )
 
     router.get(
