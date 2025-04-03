@@ -8,10 +8,22 @@ export class CategoriasRoutes {
     const router = Router()
     const categoriasController = new CategoriasController()
 
-    router.post('/', categoriasController.create)
+    router.post(
+      '/',
+      [
+        AccessControlMiddleware.requests([permissionCodes.categorias.createAny])
+      ],
+      categoriasController.create
+    )
     router.get('/:id', categoriasController.getById)
     router.get('/', categoriasController.getAll)
-    router.patch('/:id', categoriasController.update)
+    router.patch(
+      '/:id',
+      [
+        AccessControlMiddleware.requests([permissionCodes.categorias.updateAny])
+      ],
+      categoriasController.update
+    )
     router.delete(
       '/:id',
       [
