@@ -73,10 +73,15 @@ export class JwtAdapter {
     const expiresAt = Date.now() + duration
     const data = `${orderedPayload}:${expiresAt}`
 
-    return createHmac('sha256', privateSecret)
+    const token = createHmac('sha256', privateSecret)
       .update(data)
       .digest('base64url')
       .substring(0, 32)
+
+    return {
+      token,
+      expiresAt
+    }
   }
 
   static validateDownloadToken: validateDownloadTokenType = ({

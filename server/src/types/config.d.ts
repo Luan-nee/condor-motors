@@ -39,7 +39,10 @@ export type generateDownloadTokenType = (args: {
   payload: Record<string, any>
   durationMs?: number
   secret?: string
-}) => string
+}) => {
+  token: string
+  expiresAt: number
+}
 
 export type validateDownloadTokenType = (args: {
   token: string

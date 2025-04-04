@@ -4,12 +4,14 @@ import type {
   consultDocumentType,
   decodeType,
   generateAccessTokenType,
+  generateDownloadTokenType,
   generateRefreshTokenType,
   randomSecretType,
   refreshAccessTokenType,
   refreshTokenCookieType,
   searchClientType,
   sendDocumentType,
+  validateDownloadTokenType,
   verifyType
 } from '@/types/config'
 
@@ -19,6 +21,8 @@ export interface TokenAuthenticator {
   decode: decodeType
   verify: verifyType
   randomSecret: randomSecretType
+  generateDownloadToken: generateDownloadTokenType
+  validateDownloadToken: validateDownloadTokenType
 }
 
 export interface Encryptor {
