@@ -14,6 +14,7 @@ import { ShareIcon } from './icons/ShareIcon'
 interface Props {
   file: FileEntity
   deleteItem: () => void
+  shareFile: () => void
 }
 
 const CardButton = (props: JSX.ButtonHTMLAttributes<HTMLButtonElement>) => {
@@ -27,7 +28,7 @@ const CardButton = (props: JSX.ButtonHTMLAttributes<HTMLButtonElement>) => {
   )
 }
 
-export const FileCard = ({ file, deleteItem }: Props) => {
+export const FileCard = ({ file, deleteItem, shareFile }: Props) => {
   const [confirmVisible, setConfirmVisible] = createSignal(false)
   const [message, setMessage] = createSignal('')
   const [downloading, setDownloading] = createSignal(false)
@@ -65,24 +66,6 @@ export const FileCard = ({ file, deleteItem }: Props) => {
     }
 
     updateMessage(data.message)
-  }
-
-  const handleShareClick = async () => {
-    const { data, error } = await shareFile({
-      filename: file.filename,
-      duration: 60 * 1000
-    })
-
-    if (error != null) {
-      console.error(error)
-      updateMessage(error.message)
-      return
-    }
-
-    console.info(data)
-    updateMessage(data.message)
-
-    navigator.clipboard.writeText(data.downloadUrl)
   }
 
   return (
@@ -208,7 +191,11 @@ export const FileCard = ({ file, deleteItem }: Props) => {
         <CardButton disabled={downloading()} onclick={handleDownloadClick}>
           <DownloadIcon class="w-5 h-5" />
         </CardButton>
-        <CardButton onclick={handleShareClick}>
+        <CardButton
+          onclick={() => {
+            shareFile()
+          }}
+        >
           <ShareIcon class="w-5 h-5" />
         </CardButton>
       </div>

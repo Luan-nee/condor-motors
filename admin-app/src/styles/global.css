@@ -15,4 +15,15 @@
   .scrollbar-thin {
     scrollbar-width: thin;
   }
+
+  input[type='number'].hide-arrows::-webkit-outer-spin-button,
+  input[type='number'].hide-arrows::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type='number'].hide-arrows {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
 }

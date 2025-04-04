@@ -166,8 +166,7 @@ export const shareFile: ShareFileApi = async ({ filename, duration }) => {
 
   return {
     data: {
-      message:
-        'El enlace para compartir el archivo se ha creado de forma exitosa',
+      message: 'Enlace creado',
       sharedFile,
       downloadUrl
     }
