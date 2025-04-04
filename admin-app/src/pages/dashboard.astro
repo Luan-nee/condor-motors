@@ -6,6 +6,7 @@ import Label from '@/components/atoms/Label.astro'
 import { FileList, FetchButton } from '@/components/solidjs/FileList'
 import UserBadge from '@/components/ui/UserBadge.astro'
 import SpinnerIcon from '@/components/icons/SpinnerIcon.astro'
+import LoadingIcon from '@/components/icons/LoadingIcon.astro'
 ---
 
 <BaseLayout title="Dashboard">
@@ -102,6 +103,12 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon.astro'
                     class="font-medium text-green-300"
                   >
                   </p>
+                  <div id="uploading-file-message" class="space-x-2 hidden">
+                    <span class="font-medium text-white inline-block"
+                      >Subiendo archivo</span
+                    >
+                    <LoadingIcon class="w-4 h-4 animate-spin inline-block" />
+                  </div>
                 </div>
                 <div class="flex flex-wrap gap-4 ml-auto justify-end">
                   <button
@@ -129,6 +136,9 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon.astro'
   import { uploadFileValidator } from '@/core/validators/uploadFileDto'
   ;(() => {
     const $uploadFileForm = selectWith<HTMLFormElement>('#upload-file-form')
+    const $uploadingFileMessage = selectWith<HTMLFormElement>(
+      '#uploading-file-message'
+    )
     const $successMessage = selectWith<HTMLFormElement>('#success-message-upff')
     const $errorMessage = selectWith<HTMLFormElement>('#error-message-upff')
     const $fileInputLabel = selectWith<HTMLLabelElement>('#file-input-label')
@@ -282,7 +292,6 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon.astro'
 
       if (error != null) {
         $errorMessage.innerText = error.message
-        console.log(error)
         return
       }
 
@@ -291,14 +300,17 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon.astro'
         return
       }
 
+      $uploadingFileMessage.classList.remove('hidden')
       const { error: uploadError } = await uploadApk({
         nombre: data.nombre,
         tipo: fileType,
         version: data.version,
         appFile: selectedFile
       })
+      $uploadingFileMessage.classList.add('hidden')
 
       if (uploadError) {
+        console.log(error)
         $errorMessage.innerText = uploadError.message
         return
       }
