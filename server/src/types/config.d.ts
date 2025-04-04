@@ -9,12 +9,12 @@ import type {
 type duration = SignOptions['expiresIn']
 
 export type generateAccessTokenType = (args: {
-  payload: object
+  payload: Record<string, any>
   duration?: duration
 }) => string
 
 export type generateRefreshTokenType = (args: {
-  payload: object
+  payload: Record<string, any>
   duration?: duration
   secret?: string
 }) => {
@@ -34,6 +34,22 @@ export type verifyType = (args: {
 }) => string | JwtPayload | Jwt
 
 export type randomSecretType = () => string
+
+export type generateDownloadTokenType = (args: {
+  payload: Record<string, any>
+  durationMs?: number
+  secret?: string
+}) => {
+  token: string
+  expiresAt: number
+}
+
+export type validateDownloadTokenType = (args: {
+  token: string
+  payload: Record<string, any>
+  expiresAt: number
+  secret?: string
+}) => boolean
 
 export type refreshTokenCookieType = (args: { refreshToken: string }) => string
 

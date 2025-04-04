@@ -9,6 +9,7 @@ export const envs = {
   DATABASE_URL: get('DATABASE_URL').required().asString(),
   DATABASE_ENABLE_SSL: get('DATABASE_ENABLE_SSL').asBool(),
   JWT_SEED: get('JWT_SEED').required().asString(),
+  JWT_DOWNLOAD_SEED: get('JWT_DOWNLOAD_SEED').asString(),
   REFRESH_TOKEN_DURATION: get('REFRESH_TOKEN_DURATION')
     .default(60 * 60 * 24 * 7)
     .asIntPositive(),
