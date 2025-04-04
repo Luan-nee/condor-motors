@@ -55,3 +55,21 @@ export type DownloadFileApi = MethodAll<
   { message: string },
   ApiError
 >
+
+export interface SharedFileEntity {
+  token: string
+  expiresAt: number
+  filename: string
+}
+
+export type ShareFileApi = MethodAll<
+  {
+    filename: string
+    duration: number
+  },
+  {
+    message: string
+    sharedFile: SharedFileEntity
+  },
+  ApiError
+>

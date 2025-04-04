@@ -3,6 +3,8 @@ import type {
   DownloadFileApi,
   FileEntity,
   GetFilesApi,
+  SharedFileEntity,
+  ShareFileApi,
   SuccessUploadApk,
   uploadFile,
   UploadFileDto
@@ -130,6 +132,33 @@ export const downloadFile: DownloadFileApi = async ({ filename }) => {
   return {
     data: {
       message: 'Archivo descargado'
+    }
+  }
+}
+
+export const shareFile: ShareFileApi = async ({ filename, duration }) => {
+  const { data: sharedFile, error } = await httpRequest<SharedFileEntity>(
+    backendRoutes.shareFile,
+    (accessToken) => ({
+      method: 'POST',
+      headers: {
+        'Content-type': 'application/json',
+        Authorization: accessToken
+      },
+      body: JSON.stringify({ filename, duration }),
+      credentials: 'include'
+    })
+  )
+
+  if (error != null) {
+    return { error: error }
+  }
+
+  return {
+    data: {
+      message:
+        'El enlace para compartir el archivo se ha creado de forma exitosa',
+      sharedFile
     }
   }
 }
