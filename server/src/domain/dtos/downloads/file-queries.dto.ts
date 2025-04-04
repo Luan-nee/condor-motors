@@ -1,8 +1,8 @@
 import { fileQueriesValidator } from '@/domain/validators/downloads/file-queries.validator'
 
 export class FileQueriesDto {
-  exp: number
-  tk: string
+  public exp: number
+  public tk: string
 
   private constructor({ exp, tk }: FileQueriesDto) {
     this.exp = exp
