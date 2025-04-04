@@ -8,6 +8,7 @@ import {
 import z from 'zod'
 import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
 import { Validator } from '@/domain/validators/validator'
+import path from 'node:path'
 
 export const paramsBaseSchema = {
   numericId: idTypeBaseSchema.numericId,
@@ -17,7 +18,18 @@ export const paramsBaseSchema = {
     .trim()
     .min(8)
     .max(11)
-    .refine((val) => Validator.isOnlyNumbers(val))
+    .refine((val) => Validator.isOnlyNumbers(val)),
+  filename: z.coerce
+    .string()
+    .trim()
+    .refine((val) => {
+      const allowedTypes = /apk|msi/
+      const isValidExtension = allowedTypes.test(
+        path.extname(val).toLowerCase()
+      )
+
+      return isValidExtension
+    })
 }
 
 export const queriesBaseSchema = {

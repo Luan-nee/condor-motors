@@ -32,6 +32,17 @@ export class ArchivosRoutes {
       archivosController.getAll
     )
 
+    router.get(
+      '/download/:filename',
+      [
+        AccessControlMiddleware.requests([
+          permissionCodes.archivos.getAny,
+          permissionCodes.archivos.getVisible
+        ])
+      ],
+      archivosController.download
+    )
+
     router.delete(
       '/:id',
       [AccessControlMiddleware.requests([permissionCodes.archivos.deleteAny])],

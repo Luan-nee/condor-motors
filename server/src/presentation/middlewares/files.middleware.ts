@@ -15,7 +15,7 @@ const privateDiskStorage = multer.diskStorage({
     }
 
     const { basename, extension } = getFileNameAndExtension(file.originalname)
-    const formattedName = formatFileName(basename)
+    const formattedName = formatFileName(basename).toLocaleLowerCase()
     const fileBasename = `${Date.now().toString(16)}-${formattedName}`.slice(
       0,
       250

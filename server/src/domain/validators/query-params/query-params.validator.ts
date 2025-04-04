@@ -47,6 +47,13 @@ const ParamsDoubleNumericIdSchema = z.object({
 export const paramsDoubleNumericIdValidator = (object: unknown) =>
   ParamsDoubleNumericIdSchema.safeParse(object)
 
+const ParamsFilenameSchema = z.object({
+  filename: paramsBaseSchema.filename
+})
+
+export const paramsFilenameValidator = (object: unknown) =>
+  ParamsFilenameSchema.safeParse(object)
+
 export const QueriesSchema = z.object({
   sort_by: queriesBaseSchema.sort_by,
   order: queriesBaseSchema.order,
