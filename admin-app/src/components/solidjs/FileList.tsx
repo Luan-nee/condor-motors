@@ -1,42 +1,39 @@
 import { deleteFile, getFiles } from '@/core/controllers/archivos'
 import { FileCard } from './FileCard'
-import { createEffect, createSignal, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, on, Show } from 'solid-js'
 import type { FileEntity } from '@/types/archivos'
 import { RefreshIcon } from './icons/RefreshIcon'
-import type { DOMElement } from 'solid-js/jsx-runtime'
 import { LoadingIcon } from './icons/LoadingIcon'
+import { debounce } from '@/core/lib/utils'
 
 const [fetchTrigger, setFetchTrigger] = createSignal(0)
 
 export const FetchButton = () => {
-  const classList = 'animate-spin'.split(' ')
+  const [fetching, setFetching] = createSignal(false)
 
-  const handleClick = (
-    e: MouseEvent & {
-      currentTarget: HTMLButtonElement
-      target: DOMElement
+  const debounceSetFetching = debounce(setFetching, 500)
+
+  const refreshData = () => {
+    if (fetching()) {
+      return
     }
-  ) => {
-    const $svg = e.target.querySelector('svg')
-
-    if ($svg != null) {
-      $svg.classList.add(...classList)
-      setTimeout(() => {
-        $svg.classList.remove(...classList)
-      }, 500)
-    }
-
     setFetchTrigger(fetchTrigger() + 1)
+    setFetching(true)
+    debounceSetFetching(false)
   }
 
   return (
     <button
-      onClick={handleClick}
-      class="p-2 rounded text-white/50
-        hover:bg-white/5 hover:text-white/70
-        active:bg-white/10 active:text-white/80"
+      class="p-2 rounded text-white/50 flex items-center gap-1 hover:not-disabled:bg-white/5 hover:not-disabled:text-white/70 active:not-disabled:bg-white/10 active:not-disabled:text-white/80"
+      disabled={fetching()}
+      onClick={refreshData}
     >
-      <RefreshIcon class="w-6 h-6 pointer-events-none" />
+      <Show when={fetching()}>
+        <span class="text-sm font-medium">Actualizando...</span>
+      </Show>
+      <RefreshIcon
+        class={`w-6 h-6 pointer-events-none ${fetching() ? 'animate-spin' : ''}`}
+      />
     </button>
   )
 }
@@ -60,11 +57,11 @@ export const FileList = () => {
     setFiles(apiData)
   }
 
-  createEffect(() => {
-    if (fetchTrigger() >= 0) {
+  createEffect(
+    on(fetchTrigger, () => {
       fetchData()
-    }
-  })
+    })
+  )
 
   const deleteItem = (id: number) => async () => {
     const { error: apiError } = await deleteFile({ id })
