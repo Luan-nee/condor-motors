@@ -3,6 +3,7 @@ import z from 'zod'
 import { Validator } from '@/domain/validators/validator'
 import { fileTypeValues } from '@/consts'
 import type { FileTypeValues } from '@/types/zod'
+import { paramsBaseSchema } from '@/domain/validators/query-params/query-params.schema'
 
 const createArchivoSchema = z.object({
   nombre: z.coerce
@@ -33,3 +34,11 @@ const createArchivoSchema = z.object({
 
 export const createArchivoValidator = (object: unknown) =>
   createArchivoSchema.safeParse(object)
+
+const shareArchivoSchema = z.object({
+  filename: paramsBaseSchema.filename,
+  duration: z.number().positive().optional()
+})
+
+export const shareArchivoValidator = (object: unknown) =>
+  shareArchivoSchema.safeParse(object)

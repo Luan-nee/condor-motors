@@ -3,6 +3,7 @@ import { ArchivosController } from '@/presentation/entities/archivos/controller'
 import { FilesMiddleware } from '@/presentation/middlewares/files.middleware'
 import { AccessControlMiddleware } from '@/presentation/middlewares/access-control.middleware'
 import { permissionCodes } from '@/consts'
+import { JwtAdapter } from '@/config/jwt'
 
 export class ArchivosRoutes {
   private static readonly fileFieldName = 'app_file'
@@ -10,7 +11,7 @@ export class ArchivosRoutes {
   static get routes() {
     const router = Router()
 
-    const archivosController = new ArchivosController()
+    const archivosController = new ArchivosController(JwtAdapter)
 
     router.post(
       '/upload',
@@ -19,6 +20,12 @@ export class ArchivosRoutes {
         FilesMiddleware.apkDesktopApp.single(ArchivosRoutes.fileFieldName)
       ],
       archivosController.uploadFile
+    )
+
+    router.post(
+      '/share',
+      [AccessControlMiddleware.requests([permissionCodes.archivos.createAny])],
+      archivosController.share
     )
 
     router.get(

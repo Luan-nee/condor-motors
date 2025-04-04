@@ -8,7 +8,6 @@ import {
 import z from 'zod'
 import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
 import { Validator } from '@/domain/validators/validator'
-import path from 'node:path'
 
 export const paramsBaseSchema = {
   numericId: idTypeBaseSchema.numericId,
@@ -22,13 +21,8 @@ export const paramsBaseSchema = {
   filename: z.coerce
     .string()
     .trim()
-    .refine((val) => {
-      const allowedTypes = /apk|msi/
-      const isValidExtension = allowedTypes.test(
-        path.extname(val).toLowerCase()
-      )
-
-      return isValidExtension
+    .refine((val) => Validator.isValidFileName(val), {
+      message: 'El nombre del archivo es inválido'
     })
 }
 
