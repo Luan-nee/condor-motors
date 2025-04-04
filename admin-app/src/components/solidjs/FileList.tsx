@@ -39,14 +39,14 @@ export const FetchButton = () => {
 }
 
 export const FileList = () => {
-  const [fetched, setFetched] = createSignal<boolean>(false)
+  const [isLoading, setLoading] = createSignal<boolean>(true)
   const [files, setFiles] = createSignal<FileEntity[]>([])
   const [error, setError] = createSignal<string>('')
 
   const fetchData = async () => {
+    setLoading(true)
     const { data: apiData, error: apiError } = await getFiles()
-
-    setFetched(true)
+    setLoading(false)
 
     if (apiError != null) {
       setError(apiError.message)
@@ -76,11 +76,14 @@ export const FileList = () => {
   }
 
   return (
-    <div class="grow flex flex-col gap-3 px-3 overflow-y-auto scrollbar-thin relative">
+    <div class="grow flex flex-col gap-3 px-3 overflow-y-auto scrollbar-thin">
       <Show when={error().length > 0}>
         <div class="text-sm text-red-400 font-semibold">{error()}</div>
       </Show>
-      <Show when={!fetched()}>
+      <Show when={files().length < 1 && error().length < 1}>
+        <p class="text-sm font-semibold">Aún no ha subido ningún archivo</p>
+      </Show>
+      <Show when={isLoading() && files().length < 1}>
         <div class="flex flex-col justify-center items-center gap-4 h-full text-white/70">
           <LoadingIcon class="w-6 h-6 animate-spin" />
           <p class="text-sm font-semibold">Loading files...</p>
