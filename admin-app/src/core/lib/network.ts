@@ -43,9 +43,36 @@ export async function resToData<T = any>(res: Response) {
   }
 }
 
+export async function resToBlob(res: Response) {
+  const { data: blob, error: blobError } = await tryCatchAll(async () => {
+    return await res.blob()
+  })
+
+  if (blobError != null) {
+    return {
+      error: {
+        message: 'Unexpected format response'
+      }
+    }
+  }
+
+  return {
+    data: blob
+  }
+}
+
+async function transformRes<T = any>(res: Response, resType?: 'json' | 'blob') {
+  if (resType === 'blob') {
+    return await resToBlob(res)
+  }
+
+  return await resToData<T>(res)
+}
+
 export async function httpRequest<T = any>(
   url: string,
-  options?: HttpRequestOptions
+  options: HttpRequestOptions,
+  resType?: 'json' | 'blob'
 ): HttpRequestResult<T> {
   let attempt = 0
   const maxAttempts = 2
@@ -80,7 +107,15 @@ export async function httpRequest<T = any>(
       continue
     }
 
-    const { data, error } = await resToData(res)
+    if (res.status >= 400) {
+      const { error } = await transformRes(res, 'json')
+
+      if (error != null) {
+        return { error }
+      }
+    }
+
+    const { data, error } = await transformRes(res, resType)
 
     if (error != null) {
       return { error }
