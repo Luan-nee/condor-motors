@@ -4,7 +4,9 @@ import { TrashIcon } from '@/components/solidjs/icons/TrashIcon'
 import { DownloadIcon } from '@/components/solidjs/icons/DownloadIcon'
 import type { FileEntity } from '@/types/archivos'
 import { createSignal, Show } from 'solid-js'
-import { getFileSize } from '@/core/lib/utils'
+import { debounce, getFileSize } from '@/core/lib/utils'
+import { downloadFile } from '@/core/controllers/archivos'
+import { LoadingIcon } from './icons/LoadingIcon'
 
 interface Props {
   file: FileEntity
@@ -13,6 +15,31 @@ interface Props {
 
 export const FileCard = ({ file, deleteItem }: Props) => {
   const [confirmVisible, setConfirmVisible] = createSignal(false)
+  const [message, setMessage] = createSignal('')
+  const [downloading, setDownloading] = createSignal(false)
+
+  const debounceSetMessage = debounce(setMessage, 5000)
+  const updateMessage = (val: string) => {
+    setMessage(val)
+    debounceSetMessage('')
+  }
+
+  const handleDownloadClick = async () => {
+    setDownloading(true)
+
+    const { data, error } = await downloadFile({
+      filename: file.filename
+    })
+
+    setDownloading(false)
+
+    if (error != null) {
+      updateMessage(error.message)
+      return
+    }
+
+    updateMessage(data.message)
+  }
 
   return (
     <div
@@ -20,6 +47,16 @@ export const FileCard = ({ file, deleteItem }: Props) => {
                 bg-black/20 text-gray-300 border-white/10
                 hover:bg-black/30 hover:border-white/20"
     >
+      <Show when={downloading()}>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="font-semibold text-white">Descargando archivo</span>
+          <LoadingIcon class="w-4 h-4 animate-spin" />
+        </div>
+      </Show>
+      <Show when={message().length > 0}>
+        <p class="font-semibold text-cyan-300">{message()}</p>
+      </Show>
+
       <div class="flex flex-wrap gap-2">
         {file.tipo === 'apk' ? (
           <span class="bg-emerald-500/10 p-2 inline-block rounded border border-emerald-900">
@@ -108,8 +145,9 @@ export const FileCard = ({ file, deleteItem }: Props) => {
         </button>
         <button
           class="border border-white/10 p-1.5 rounded text-gray-400
-            hover:bg-white/10 hover:text-white
-            transition-colors"
+          hover:bg-white/10 hover:text-white
+          transition-colors"
+          onclick={handleDownloadClick}
         >
           <DownloadIcon class="w-5 h-5" />
         </button>

@@ -9,5 +9,6 @@ export const backendRoutes = {
   testSession: `${apiBaseUrl}/api/auth/testsession`,
   login: `${apiBaseUrl}/api/auth/login`,
   refresh: `${apiBaseUrl}/api/auth/refresh`,
-  logout: `${apiBaseUrl}/api/auth/logout`
+  logout: `${apiBaseUrl}/api/auth/logout`,
+  downloadFile: `${apiBaseUrl}/api/archivos/download`
 }
