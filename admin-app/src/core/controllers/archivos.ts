@@ -136,6 +136,14 @@ export const downloadFile: DownloadFileApi = async ({ filename }) => {
   }
 }
 
+const createDownloadUrl = (file: SharedFileEntity) => {
+  const url = new URL(`${backendRoutes.downloadFilePublic}/${file.filename}`)
+  url.searchParams.set('exp', file.expiresAt.toString())
+  url.searchParams.set('tk', file.token)
+
+  return url.toString()
+}
+
 export const shareFile: ShareFileApi = async ({ filename, duration }) => {
   const { data: sharedFile, error } = await httpRequest<SharedFileEntity>(
     backendRoutes.shareFile,
@@ -154,11 +162,14 @@ export const shareFile: ShareFileApi = async ({ filename, duration }) => {
     return { error: error }
   }
 
+  const downloadUrl = createDownloadUrl(sharedFile)
+
   return {
     data: {
       message:
         'El enlace para compartir el archivo se ha creado de forma exitosa',
-      sharedFile
+      sharedFile,
+      downloadUrl
     }
   }
 }

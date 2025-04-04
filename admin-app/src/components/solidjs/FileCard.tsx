@@ -1,6 +1,6 @@
 import { createSignal, Match, Show, Switch, type JSX } from 'solid-js'
 import { debounce, getFileSize } from '@/core/lib/utils'
-import { downloadFile } from '@/core/controllers/archivos'
+import { downloadFile, shareFile } from '@/core/controllers/archivos'
 import { AndroidIcon } from '@/components/solidjs/icons/AndroidIcon'
 import { DownloadIcon } from '@/components/solidjs/icons/DownloadIcon'
 import { WindowsIcon } from '@/components/solidjs/icons/WindowsIcon'
@@ -65,6 +65,24 @@ export const FileCard = ({ file, deleteItem }: Props) => {
     }
 
     updateMessage(data.message)
+  }
+
+  const handleShareClick = async () => {
+    const { data, error } = await shareFile({
+      filename: file.filename,
+      duration: 60 * 1000
+    })
+
+    if (error != null) {
+      console.error(error)
+      updateMessage(error.message)
+      return
+    }
+
+    console.info(data)
+    updateMessage(data.message)
+
+    navigator.clipboard.writeText(data.downloadUrl)
   }
 
   return (
@@ -190,7 +208,7 @@ export const FileCard = ({ file, deleteItem }: Props) => {
         <CardButton disabled={downloading()} onclick={handleDownloadClick}>
           <DownloadIcon class="w-5 h-5" />
         </CardButton>
-        <CardButton>
+        <CardButton onclick={handleShareClick}>
           <ShareIcon class="w-5 h-5" />
         </CardButton>
       </div>

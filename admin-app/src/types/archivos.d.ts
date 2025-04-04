@@ -65,11 +65,12 @@ export interface SharedFileEntity {
 export type ShareFileApi = MethodAll<
   {
     filename: string
-    duration: number
+    duration?: number
   },
   {
     message: string
     sharedFile: SharedFileEntity
+    downloadUrl: string
   },
   ApiError
 >
