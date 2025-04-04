@@ -1,14 +1,22 @@
 import { orderValues } from '@/consts'
 import { db } from '@/db/connection'
-import { productosTable } from '@/db/schema'
+import { coloresTable, marcasTable, productosTable } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
-import { asc, desc, ilike, or } from 'drizzle-orm'
+import { asc, desc, eq, ilike, or } from 'drizzle-orm'
 
 export class GetProductosNombre {
   private readonly selectFields = {
     id: productosTable.id,
     nombre: productosTable.nombre,
-    descripcion: productosTable.descripcion
+    sku: productosTable.sku,
+    descripcion: productosTable.descripcion,
+    maxDiassinReastecer: productosTable.maxDiasSinReabastecer,
+    stockMinimo: productosTable.stockMinimo,
+    porcentajeDescuento: productosTable.porcentajeDescuento,
+    cantidadMinimaDescuento: productosTable.cantidadMinimaDescuento,
+    cantidadGratisDescuento: productosTable.cantidadGratisDescuento,
+    marca: marcasTable.nombre,
+    color: coloresTable.nombre
   }
 
   private readonly validSortBy = {
@@ -51,6 +59,8 @@ export class GetProductosNombre {
     const productos = await db
       .select(this.selectFields)
       .from(productosTable)
+      .innerJoin(marcasTable, eq(marcasTable.id, productosTable.marcaId))
+      .innerJoin(coloresTable, eq(coloresTable.id, productosTable.colorId))
       .where(whereCondition)
       .orderBy(order)
 
