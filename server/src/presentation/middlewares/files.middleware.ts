@@ -1,9 +1,12 @@
+import { envs } from '@/config/envs'
 import { CustomError } from '@/core/errors/custom.error'
 import { formatFileName } from '@/core/lib/format-values'
 import { getFileNameAndExtension } from '@/core/lib/utils'
 import { Validator } from '@/domain/validators/validator'
 import multer from 'multer'
 import path from 'node:path'
+
+const { MAX_UPLOAD_FILE_SIZE_MB: maxFileSizeMB } = envs
 
 const privateDiskStorage = multer.diskStorage({
   destination: function (_req, _file, callback) {
@@ -53,7 +56,7 @@ export class FilesMiddleware {
 
   static readonly apkDesktopApp = multer({
     storage: privateDiskStorage,
-    limits: { fileSize: 150 * 1024 * 1024 },
+    limits: { fileSize: maxFileSizeMB * 1024 * 1024 },
     fileFilter: (_req, file, callback) => {
       const allowedTypes = /apk|msi/
 

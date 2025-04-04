@@ -11,4 +11,5 @@ export const fileTypeValues = {
   desktopApp: 'desktop-app'
 } as const
 
-export const maxFileSizeAllowed = 150 * 1024 * 1024
+const maxFileSizeMB = import.meta.env.MAX_UPLOAD_FILE_SIZE_MB
+export const maxFileSizeAllowed = Number(maxFileSizeMB) * 1024 * 1024
