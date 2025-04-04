@@ -39,7 +39,7 @@ export interface FileEntity {
     mimetype: string
     originalName: string
   }
-  visible: boolean
+  version: string
   fechaCreacion: string
   user: {
     id: number
@@ -49,12 +49,6 @@ export interface FileEntity {
 
 export type GetFilesApi = MethodAll<void, FileEntity[], ApiError>
 export type DeleteFileApi = MethodAll<{ id: number }, { id: number }, ApiError>
-
-export interface FileDownloadData {
-  id: number
-  filename: string
-  path: string
-}
 
 export type DownloadFileApi = MethodAll<
   { filename: string },

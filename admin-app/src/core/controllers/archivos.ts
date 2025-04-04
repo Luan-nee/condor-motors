@@ -1,7 +1,6 @@
 import type {
   DeleteFileApi,
   DownloadFileApi,
-  FileDownloadData,
   FileEntity,
   GetFilesApi,
   SuccessUploadApk,

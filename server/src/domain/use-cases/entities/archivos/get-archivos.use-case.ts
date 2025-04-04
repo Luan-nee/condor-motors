@@ -6,7 +6,6 @@ import { desc, eq } from 'drizzle-orm'
 
 export class GetArchivos {
   private readonly permissionAny = permissionCodes.archivos.getAny
-  private readonly permissionVisible = permissionCodes.archivos.getVisible
   private readonly selectFields = {
     id: archivosAppTable.id,
     nombre: archivosAppTable.nombre,
@@ -14,7 +13,7 @@ export class GetArchivos {
     tipo: archivosAppTable.tipo,
     size: archivosAppTable.size,
     metadata: archivosAppTable.metadata,
-    visible: archivosAppTable.visible,
+    version: archivosAppTable.version,
     fechaCreacion: archivosAppTable.fechaCreacion,
     user: {
       id: cuentasEmpleadosTable.id,
@@ -22,16 +21,9 @@ export class GetArchivos {
     }
   }
 
-  constructor(
-    // private readonly authPayload: AuthPayload,
-    private readonly permissionsList: Permission[]
-  ) {}
+  constructor(private readonly permissionsList: Permission[]) {}
 
-  private async getArchivos(hasPermissionAny: boolean) {
-    const whereCondition = hasPermissionAny
-      ? undefined
-      : eq(archivosAppTable.visible, true)
-
+  private async getArchivos() {
     const files = await db
       .select(this.selectFields)
       .from(archivosAppTable)
@@ -39,36 +31,22 @@ export class GetArchivos {
         cuentasEmpleadosTable,
         eq(archivosAppTable.userId, cuentasEmpleadosTable.id)
       )
-      .where(whereCondition)
       .orderBy(desc(archivosAppTable.fechaCreacion))
 
     return files
   }
 
   private validatePermissions() {
-    let hasPermissionAny = false
-    let hasPermissionVisible = false
-
-    for (const permission of this.permissionsList) {
-      if (permission.codigoPermiso === this.permissionAny) {
-        hasPermissionAny = true
-      }
-
-      if (permission.codigoPermiso === this.permissionVisible) {
-        hasPermissionVisible = true
-      }
-
-      if (hasPermissionAny || hasPermissionVisible) {
-        return { hasPermissionAny }
-      }
+    if (
+      !this.permissionsList.some((p) => p.codigoPermiso === this.permissionAny)
+    ) {
+      throw CustomError.forbidden()
     }
-
-    throw CustomError.forbidden()
   }
 
   async execute() {
-    const { hasPermissionAny } = this.validatePermissions()
+    this.validatePermissions()
 
-    return await this.getArchivos(hasPermissionAny)
+    return await this.getArchivos()
   }
 }

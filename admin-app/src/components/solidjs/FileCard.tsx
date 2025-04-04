@@ -135,6 +135,10 @@ export const FileCard = ({ file, deleteItem }: Props) => {
         <p class="overflow-hidden overflow-ellipsis">{file.filename}</p>
       </div>
       <div>
+        <p class="text-gray-500 block">Version:</p>
+        <p class="overflow-hidden overflow-ellipsis">{file.version}</p>
+      </div>
+      <div>
         <p class="text-gray-500 block">Subido:</p>
         <p class="overflow-hidden overflow-ellipsis">
           {new Date(file.fechaCreacion).toLocaleString()}
