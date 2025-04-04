@@ -1,6 +1,11 @@
 import { orderValues } from '@/consts'
 import { db } from '@/db/connection'
-import { coloresTable, marcasTable, productosTable } from '@/db/schema'
+import {
+  categoriasTable,
+  coloresTable,
+  marcasTable,
+  productosTable
+} from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { asc, desc, eq, ilike, or } from 'drizzle-orm'
 
@@ -16,7 +21,8 @@ export class GetProductosNombre {
     cantidadMinimaDescuento: productosTable.cantidadMinimaDescuento,
     cantidadGratisDescuento: productosTable.cantidadGratisDescuento,
     marca: marcasTable.nombre,
-    color: coloresTable.nombre
+    color: coloresTable.nombre,
+    categoria: categoriasTable.nombre
   }
 
   private readonly validSortBy = {
@@ -61,6 +67,10 @@ export class GetProductosNombre {
       .from(productosTable)
       .innerJoin(marcasTable, eq(marcasTable.id, productosTable.marcaId))
       .innerJoin(coloresTable, eq(coloresTable.id, productosTable.colorId))
+      .innerJoin(
+        categoriasTable,
+        eq(categoriasTable.id, productosTable.categoriaId)
+      )
       .where(whereCondition)
       .orderBy(order)
 
