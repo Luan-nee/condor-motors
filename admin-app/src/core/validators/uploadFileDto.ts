@@ -15,7 +15,7 @@ const uploadFileSchema = z.object({
       message:
         'El nombre solo puede contener este set de caracteres: a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ.,¡!¿?-()[]{}$%&*\'_"@#+'
     }),
-  visible: z.coerce.boolean().default(false)
+  version: z.coerce.string().trim()
 })
 
 export const uploadFileValidator = (input: unknown) => {
@@ -24,7 +24,7 @@ export const uploadFileValidator = (input: unknown) => {
   if (!result.success) {
     const errors = result.error.format()
 
-    const fields = ['nombre', 'visible'] as const
+    const fields = ['nombre', 'version'] as const
 
     try {
       for (const field of fields) {

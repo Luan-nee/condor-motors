@@ -17,9 +17,7 @@ export const uploadApk: uploadFile = async (uploadFileDto: UploadFileDto) => {
   formData.append('nombre', uploadFileDto.nombre)
   formData.append('tipo', uploadFileDto.tipo)
   formData.append('app_file', uploadFileDto.appFile)
-  if (uploadFileDto.visible) {
-    formData.append('visible', 'true')
-  }
+  formData.append('version', uploadFileDto.version)
 
   const { data, error } = await httpRequest<SuccessUploadApk>(
     '/api/archivos/upload',

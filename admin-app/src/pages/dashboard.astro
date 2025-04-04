@@ -253,7 +253,7 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon.astro'
       const { error: uploadError } = await uploadApk({
         nombre: data.nombre,
         tipo: fileType,
-        visible: data.visible,
+        version: data.version,
         appFile: selectedFile
       })
 

@@ -21,7 +21,7 @@ export interface SuccessUploadApk {
 
 export interface UploadFileDto {
   nombre: string
-  visible: boolean
+  version: string
   tipo: string
   appFile: File
 }
