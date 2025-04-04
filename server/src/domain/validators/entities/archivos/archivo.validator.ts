@@ -28,7 +28,7 @@ const createArchivoSchema = z.object({
           'El tipo de archivo es inválido solo se permiten estos tipos (apk | desktop-app)'
       }
     ),
-  visible: z.coerce.boolean().default(false)
+  version: z.coerce.string().trim()
 })
 
 export const createArchivoValidator = (object: unknown) =>

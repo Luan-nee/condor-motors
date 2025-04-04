@@ -552,7 +552,7 @@ export const archivosAppTable = pgTable('archivos_app', {
   tipo: text('tipo', { enum: ['apk', 'desktop-app'] }).notNull(),
   size: text('size').notNull(),
   metadata: jsonb('metadata').notNull(),
-  visible: boolean('visible').notNull().default(true),
+  version: text('version').notNull(),
   userId: integer().references(() => cuentasEmpleadosTable.id, {
     onDelete: 'set null'
   }),

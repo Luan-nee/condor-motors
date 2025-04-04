@@ -56,7 +56,7 @@ export class CreateArchivo {
           encoding: fileMetadata.encoding,
           mimetype: fileMetadata.mimetype
         },
-        visible: createArchivoDto.visible,
+        version: createArchivoDto.version,
         userId: this.authPayload.id,
         fechaCreacion: now,
         fechaActualizacion: now

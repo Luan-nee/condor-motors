@@ -5,12 +5,12 @@ import type { FileTypeValues } from '@/types/zod'
 
 export class CreateArchivoDto {
   public nombre: string
-  public visible: boolean
   public tipo: FileTypeValues
+  public version: string
 
-  private constructor({ nombre, visible, tipo }: CreateArchivoDto) {
+  private constructor({ nombre, version, tipo }: CreateArchivoDto) {
     this.nombre = nombre
-    this.visible = visible
+    this.version = version
     this.tipo = tipo
   }
   private static isValidFileType(type: string): type is FileTypeValues {
@@ -37,8 +37,8 @@ export class CreateArchivoDto {
       undefined,
       new CreateArchivoDto({
         nombre: data.nombre,
-        visible: data.visible,
-        tipo: data.tipo
+        tipo: data.tipo,
+        version: data.version
       })
     ]
   }
