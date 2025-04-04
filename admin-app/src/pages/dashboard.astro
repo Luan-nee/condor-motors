@@ -60,16 +60,21 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon.astro'
                   min-h-36 md:min-h-48 h-full
                   border-white/30 bg-gray-500/5 text-gray-400
                   hover:bg-gray-300/5 hover:text-gray-300
+                  active:bg-gray-300/10 active:text-gray-200
                   transition-colors
-                  flex flex-col justify-center items-center relative isolate"
+                  flex flex-col justify-center items-center relative isolate overflow-hidden"
                   id="file-input-label"
                 >
                   <div id="file-input-spinner" class="hidden">
                     <SpinnerIcon class="mx-auto w-6 h-6 animate-spin" />
                     <p class="font-semibold select-none">Cargando archivo...</p>
                   </div>
-                  <p class="font-semibold select-none" id="file-span">
-                    Seleccione un archivo
+                  <p
+                    class="font-semibold select-none inset-0 absolute -z-10 flex justify-center items-center p-6"
+                    id="file-span"
+                  >
+                    Arrastra y suelta un archivo o haz click para seleccionar
+                    uno
                   </p>
                   <div
                     id="file-message-container"
@@ -146,29 +151,33 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon.astro'
       }
     })
 
-    const tryRemoveSpinner = () => {
-      if (fileType === '') {
-        $fileSpan.classList.remove('hidden')
-        $fileInputSpinner.classList.add('hidden')
-      }
-    }
+    const dropFileMessage = 'Suelta el archivo aquí'
+    const dragDropFileMessage =
+      'Arrastra y suelta un archivo o haz click para seleccionar uno'
 
-    $fileInput.addEventListener('cancel', () => {
-      tryRemoveSpinner()
+    $fileInputLabel.addEventListener('dragover', (e) => {
+      e.preventDefault()
+      $fileSpan.textContent = dropFileMessage
+      $fileSpan.classList.add('bg-white/5', 'text-white/70')
     })
 
-    $fileInput.addEventListener('change', () => {
+    $fileInputLabel.addEventListener('dragleave', (e) => {
+      e.preventDefault()
+      $fileSpan.textContent = dragDropFileMessage
+    })
+
+    const handleFiles = (files: FileList | null) => {
       requestIdleCallback(() => {
-        if ($fileInput.files == null || $fileInput.files[0] == null) {
+        if (files == null || files[0] == null) {
           $errorMessage.innerText = 'No se ha seleccionado un archivo'
           tryRemoveSpinner()
           return
         }
 
-        const [file] = $fileInput.files
+        const [file] = files
 
         if (file.size > maxFileSizeAllowed) {
-          $errorMessage.innerText = `El archivo no puede pesar más de 150 MB (peso del archivo actual: ${(file.size / (1024 * 1024)).toFixed(2)} MB)`
+          $errorMessage.innerText = `El archivo no puede pesar más de ${maxFileSizeAllowed} MB (peso del archivo actual: ${(file.size / (1024 * 1024)).toFixed(2)} MB)`
           tryRemoveSpinner()
           return
         }
@@ -191,7 +200,6 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon.astro'
           return
         }
 
-        $fileInputSpinner.classList.add('hidden')
         $fileMessageContainer.innerHTML = `
           <div>
             <p class="text-gray-200 font-semibold">Archivo seleccionado:</p>
@@ -205,17 +213,48 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon.astro'
           <div>
             <p class="text-gray-400 mr-1">Tamaño:</p>
             <p>${getFileSize(file.size)}</p>
-          </div>
+            </div>
           <div>
             <p class="text-gray-400">Archivo:</p>
             <p class="overflow-hidden overflow-ellipsis">${selectedFile.name}</p>
           </div>
           <div class="mt-4">
             <div class="text-gray-400">Click para seleccionar otro archivo</div>
-          </div>
-        `
+          </div>`
+
+        $fileInputSpinner.classList.add('hidden')
         $fileMessageContainer.classList.remove('hidden')
       })
+    }
+
+    $fileInputLabel.addEventListener('drop', (e) => {
+      e.preventDefault()
+
+      $fileSpan.classList.add('hidden')
+      $fileSpan.textContent = dragDropFileMessage
+      $fileSpan.classList.remove('bg-white/5', 'text-white/70')
+      if (fileType === '') {
+        $fileInputSpinner.classList.remove('hidden')
+      }
+
+      if (e.dataTransfer != null) {
+        handleFiles(e.dataTransfer.files)
+      }
+    })
+
+    const tryRemoveSpinner = () => {
+      if (fileType === '') {
+        $fileSpan.classList.remove('hidden')
+        $fileInputSpinner.classList.add('hidden')
+      }
+    }
+
+    $fileInput.addEventListener('cancel', () => {
+      tryRemoveSpinner()
+    })
+
+    $fileInput.addEventListener('change', () => {
+      handleFiles($fileInput.files)
     })
 
     const clearForm = () => {
@@ -228,6 +267,8 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon.astro'
       $fileMessageContainer.classList.add('hidden')
       $fileInputSpinner.classList.add('hidden')
       $fileMessageContainer.innerHTML = ''
+      $fileSpan.textContent = dragDropFileMessage
+      $fileSpan.classList.remove('bg-white/5', 'text-white/70')
     }
 
     $uploadFileForm.addEventListener('submit', async (e) => {
