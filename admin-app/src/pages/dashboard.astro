@@ -28,35 +28,35 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon.astro'
 
     <div class="grow p-2 flex flex-col">
       <div
-        class="border-white/10 rounded-lg bg-black/10 h-full border-3 border-dashed p-4"
+        class="border-white/10 rounded-lg bg-black/10 h-full border-3 border-dashed p-4 flex"
       >
-        <h1 class="text-2xl font-medium mb-6">Subir archivos</h1>
-
-        <section class="max-w-3xl">
+        <section class="max-w-3xl w-full mx-auto my-auto">
+          <h1 class="text-2xl font-medium mb-6">Archivo a subir</h1>
           <div class="space-y-4">
-            <h2 class="font-medium text-gray-300">
-              Subir apk o aplicación de escritorio
-            </h2>
             <form class="flex flex-col space-y-4" id="upload-file-form">
               <div class="flex flex-col gap-6">
-                <Label text="Nombre">
-                  <Input
-                    name="nombre"
-                    type="text"
-                    autocomplete="off"
-                    placeholder="Apk en alpha version 0.216.58"
-                  />
-                </Label>
+                <div class="grid md:grid-cols-2 w-full gap-4">
+                  <Label text="Nombre">
+                    <Input
+                      name="nombre"
+                      type="text"
+                      autocomplete="off"
+                      placeholder="Apk en alpha"
+                    />
+                  </Label>
 
-                <label class="flex items-center gap-2">
-                  <input type="checkbox" name="visible" />
-                  <span class="text-sm select-none">
-                    Visible para todos los usuarios
-                  </span>
-                </label>
+                  <Label text="Version">
+                    <Input
+                      name="version"
+                      type="text"
+                      autocomplete="off"
+                      placeholder="0.216.58"
+                    />
+                  </Label>
+                </div>
 
                 <label
-                  class="border-3 border-dashed rounded-2xl p-6 mt-4
+                  class="border-3 border-dashed rounded-2xl p-6 mt-2
                   min-h-36 md:min-h-48 h-full
                   border-white/30 bg-gray-500/5 text-gray-400
                   hover:bg-gray-300/5 hover:text-gray-300
