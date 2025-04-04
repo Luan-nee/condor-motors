@@ -1,13 +1,15 @@
 import { orderValues } from '@/consts'
+import { parseBoolString } from '@/core/lib/utils'
 import { db } from '@/db/connection'
 import {
   categoriasTable,
   coloresTable,
+  detallesProductoTable,
   marcasTable,
   productosTable
 } from '@/db/schema'
-import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
-import { asc, desc, eq, ilike, or } from 'drizzle-orm'
+import type { QueriesProductoDto } from '@/domain/dtos/entities/productos/queries-producto.dto'
+import { and, asc, desc, eq, ilike, or, type SQL } from 'drizzle-orm'
 
 export class GetProductosNombre {
   private readonly selectFields = {
@@ -23,6 +25,19 @@ export class GetProductosNombre {
     marca: marcasTable.nombre,
     color: coloresTable.nombre,
     categoria: categoriasTable.nombre
+  }
+
+  private getFilterCondition(queriesProductoDto: QueriesProductoDto) {
+    const { stockBajo } = queriesProductoDto
+    const conditions: SQL[] = []
+    if (stockBajo !== undefined) {
+      const stockBajoBoolean = parseBoolString(stockBajo)
+
+      if (stockBajoBoolean !== undefined) {
+        conditions.push(eq(detallesProductoTable.stockBajo, stockBajoBoolean))
+      }
+    }
+    return and(...conditions)
   }
 
   private readonly validSortBy = {
@@ -46,7 +61,7 @@ export class GetProductosNombre {
 
     return this.validSortBy.fechaCreacion
   }
-  private async getProductos(queriesDto: QueriesDto) {
+  private async getProductos(queriesDto: QueriesProductoDto) {
     const sortByColumn = this.getSortByColumn(queriesDto.sort_by)
 
     const order =
@@ -54,13 +69,17 @@ export class GetProductosNombre {
         ? asc(sortByColumn)
         : desc(sortByColumn)
 
-    const whereCondition =
+    const busquedaCondition =
       queriesDto.search.length > 0
         ? or(
             ilike(productosTable.nombre, `%${queriesDto.search}%`),
             ilike(productosTable.descripcion, `%${queriesDto.search}%`)
           )
         : undefined
+
+    const filterCondition = this.getFilterCondition(queriesDto)
+
+    const whereCondition = and(busquedaCondition, filterCondition)
 
     const productos = await db
       .select(this.selectFields)
@@ -79,7 +98,7 @@ export class GetProductosNombre {
     return productos
   }
 
-  async execute(queriesDto: QueriesDto) {
+  async execute(queriesDto: QueriesProductoDto) {
     const productos = await this.getProductos(queriesDto)
     return productos
   }
