@@ -50,6 +50,7 @@
     "dotenv": "^16.4.7",
     "drizzle-seed": "0.3.1",
     "env-var": "^7.5.0",
+    "exceljs": "4.4.0",
     "express": "4.21.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "1.4.5-lts.2",
