@@ -209,5 +209,6 @@ export const computadoraPermissions = transformPermissionsCodesFromArray([
   permissionCodes.proformasVenta.deleteRelated,
   permissionCodes.ventas.createRelated,
   permissionCodes.ventas.getRelated,
+  permissionCodes.ventas.cancelRelated,
   permissionCodes.cuentasEmpleados.getRelated
 ])
