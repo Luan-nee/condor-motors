@@ -10,5 +10,7 @@ export const backendRoutes = {
   login: `${apiBaseUrl}/api/auth/login`,
   refresh: `${apiBaseUrl}/api/auth/refresh`,
   logout: `${apiBaseUrl}/api/auth/logout`,
-  downloadFile: `${apiBaseUrl}/api/archivos/download`
+  downloadFile: `${apiBaseUrl}/api/archivos/download`,
+  downloadFilePublic: `${apiBaseUrl}/downloads`,
+  shareFile: `${apiBaseUrl}/api/archivos/share`
 }

@@ -3,6 +3,8 @@ import type {
   DownloadFileApi,
   FileEntity,
   GetFilesApi,
+  SharedFileEntity,
+  ShareFileApi,
   SuccessUploadApk,
   uploadFile,
   UploadFileDto
@@ -130,6 +132,43 @@ export const downloadFile: DownloadFileApi = async ({ filename }) => {
   return {
     data: {
       message: 'Archivo descargado'
+    }
+  }
+}
+
+const createDownloadUrl = (file: SharedFileEntity) => {
+  const url = new URL(`${backendRoutes.downloadFilePublic}/${file.filename}`)
+  url.searchParams.set('exp', file.expiresAt.toString())
+  url.searchParams.set('tk', file.token)
+
+  return url.toString()
+}
+
+export const shareFile: ShareFileApi = async ({ filename, duration }) => {
+  const { data: sharedFile, error } = await httpRequest<SharedFileEntity>(
+    backendRoutes.shareFile,
+    (accessToken) => ({
+      method: 'POST',
+      headers: {
+        'Content-type': 'application/json',
+        Authorization: accessToken
+      },
+      body: JSON.stringify({ filename, duration }),
+      credentials: 'include'
+    })
+  )
+
+  if (error != null) {
+    return { error: error }
+  }
+
+  const downloadUrl = createDownloadUrl(sharedFile)
+
+  return {
+    data: {
+      message: 'Enlace creado',
+      sharedFile,
+      downloadUrl
     }
   }
 }

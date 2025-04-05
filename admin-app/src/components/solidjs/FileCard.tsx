@@ -1,6 +1,6 @@
 import { createSignal, Match, Show, Switch, type JSX } from 'solid-js'
 import { debounce, getFileSize } from '@/core/lib/utils'
-import { downloadFile } from '@/core/controllers/archivos'
+import { downloadFile, shareFile } from '@/core/controllers/archivos'
 import { AndroidIcon } from '@/components/solidjs/icons/AndroidIcon'
 import { DownloadIcon } from '@/components/solidjs/icons/DownloadIcon'
 import { WindowsIcon } from '@/components/solidjs/icons/WindowsIcon'
@@ -14,6 +14,7 @@ import { ShareIcon } from './icons/ShareIcon'
 interface Props {
   file: FileEntity
   deleteItem: () => void
+  shareFile: () => void
 }
 
 const CardButton = (props: JSX.ButtonHTMLAttributes<HTMLButtonElement>) => {
@@ -27,7 +28,7 @@ const CardButton = (props: JSX.ButtonHTMLAttributes<HTMLButtonElement>) => {
   )
 }
 
-export const FileCard = ({ file, deleteItem }: Props) => {
+export const FileCard = ({ file, deleteItem, shareFile }: Props) => {
   const [confirmVisible, setConfirmVisible] = createSignal(false)
   const [message, setMessage] = createSignal('')
   const [downloading, setDownloading] = createSignal(false)
@@ -190,7 +191,11 @@ export const FileCard = ({ file, deleteItem }: Props) => {
         <CardButton disabled={downloading()} onclick={handleDownloadClick}>
           <DownloadIcon class="w-5 h-5" />
         </CardButton>
-        <CardButton>
+        <CardButton
+          onclick={() => {
+            shareFile()
+          }}
+        >
           <ShareIcon class="w-5 h-5" />
         </CardButton>
       </div>

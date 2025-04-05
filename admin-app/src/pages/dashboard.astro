@@ -13,14 +13,13 @@ import LoadingIcon from '@/components/icons/LoadingIcon.astro'
   <section class="flex w-full items-stretch">
     <div class="hidden md:flex p-2">
       <aside
-        class="left-2 top-2 bottom-2 w-[280px] rounded-lg h-full
-        bg-gray-300/5 backdrop-blur-md border border-white/10 flex flex-col justify-between"
+        class="w-80 rounded-lg h-full bg-gray-300/5 border-white/10 border flex flex-col justify-between"
       >
         <header class="p-3 flex items-center justify-between">
           <h2 class="text-xl font-medium">Archivos</h2>
           <FetchButton client:visible />
         </header>
-        <FileList client:load />
+        <FileList client:visible />
         <footer class="p-3">
           <UserBadge />
         </footer>
