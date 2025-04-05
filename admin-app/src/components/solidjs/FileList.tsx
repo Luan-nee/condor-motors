@@ -1,6 +1,14 @@
 import { deleteFile, getFiles, shareFile } from '@/core/controllers/archivos'
 import { FileCard } from './FileCard'
-import { createEffect, createSignal, For, on, Show } from 'solid-js'
+import {
+  createEffect,
+  createSignal,
+  For,
+  Match,
+  on,
+  Show,
+  Switch
+} from 'solid-js'
 import type { FileEntity } from '@/types/archivos'
 import { RefreshIcon } from './icons/RefreshIcon'
 import { LoadingIcon } from './icons/LoadingIcon'
@@ -53,6 +61,7 @@ interface Props {
 }
 
 const SharingFileForm = ({ closeOverlay, sharingFile }: Props) => {
+  const [isLoading, setLoading] = createSignal<boolean>(false)
   const [message, setMessage] = createSignal<string>('')
   const [downloadUrl, setDowloadUrl] = createSignal<string>('')
   const [duration, setDuration] = createSignal<number>(15)
@@ -77,10 +86,12 @@ const SharingFileForm = ({ closeOverlay, sharingFile }: Props) => {
       return
     }
 
+    setLoading(true)
     const { data, error } = await shareFile({
       filename: sharingFile.filename,
       duration: duration() * durationMultiplier() * 1000
     })
+    setLoading(false)
 
     if (error != null) {
       updateMessage(error.message)
@@ -216,7 +227,13 @@ const SharingFileForm = ({ closeOverlay, sharingFile }: Props) => {
                 transition-colors text-nowrap"
               type="submit"
             >
-              Crear enlace
+              <Switch>
+                <Match when={isLoading()}>
+                  Generando
+                  <LoadingIcon class="ml-2 inline-block w-4 h-4 animate-spin" />
+                </Match>
+                <Match when={!isLoading()}>Crear enlace</Match>
+              </Switch>
             </button>
           </div>
         </form>
