@@ -1,4 +1,4 @@
-# Obtener venta por id
+# Obtener ventas
 
 ## Método: GET
 
