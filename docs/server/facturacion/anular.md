@@ -1,4 +1,4 @@
-# Crear venta
+# Anular venta
 
 ## Método: POST
 

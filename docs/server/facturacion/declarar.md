@@ -1,4 +1,4 @@
-# Crear venta
+# Declarar venta
 
 ## Método: POST
 
