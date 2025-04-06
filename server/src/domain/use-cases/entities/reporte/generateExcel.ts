@@ -8,7 +8,7 @@ async function createExcelFile() {
     { header: 'ID', key: 'id', width: 10 },
     { header: 'SKU', key: 'sku', width: 15 },
     { header: 'Nombre', key: 'name', width: 30 },
-    { header: 'DESCRIPCION', key: 'desc', width: 30 },
+    { header: 'DESCRIPCION', key: 'desc', width: 30 },a
     { header: 'stockMinimo', key: 'minimo', width: 10 },
     { header: 'Cantidad Descuento', key: 'descuento', width: 10 },
     { header: '' }
