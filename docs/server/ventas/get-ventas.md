@@ -33,7 +33,6 @@ a la derecha de estas separada por ":" se encuentra el tipo de dato aceptado por
 - filter: string
 - filter_value: any
 - filter_type: string
-- stockBajo: boolean
 
 Notas:
 Si alguna query tiene un valor no procesable, simplemente será ignorada
