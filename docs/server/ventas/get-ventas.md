@@ -26,10 +26,10 @@ A continuación se detalla una lista con el nombre de las queries aceptadas en e
 a la derecha de estas separada por ":" se encuentra el tipo de dato aceptado por estas
 
 - search: string
-- sort_by: string (solo las columnas que se mencionan en la sección "Sort by")
+- sort_by: string (solo los valores que se mencionan en la sección "Sort by")
 - order: string (Solo se aceptan los siguientes valores "asc", "desc")
 - page: number
-- page_size: number (valor entre 1 y 150)
+- page_size: number (valor entre 1 y 150) valor por defecto: 30
 - filter: string
 - filter_value: any
 - filter_type: string
