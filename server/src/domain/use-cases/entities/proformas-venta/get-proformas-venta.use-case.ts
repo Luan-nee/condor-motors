@@ -10,7 +10,7 @@ import {
 } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { and, asc, desc, eq, ilike, or } from 'drizzle-orm'
+import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm'
 
 export class GetProformasVenta {
   private readonly authPayload: AuthPayload
@@ -54,10 +54,7 @@ export class GetProformasVenta {
   }
 
   private getSortByColumn(sortBy: string) {
-    if (
-      Object.keys(this.validSortBy).includes(sortBy) &&
-      this.isValidSortBy(sortBy)
-    ) {
+    if (this.isValidSortBy(sortBy)) {
       return this.validSortBy[sortBy]
     }
 
@@ -105,6 +102,55 @@ export class GetProformasVenta {
     return proformasVenta
   }
 
+  private getMetadata() {
+    return {
+      sortByOptions: Object.keys(this.validSortBy)
+    }
+  }
+
+  private async getPagination(
+    queriesDto: QueriesDto,
+    sucursalId: SucursalIdType
+  ) {
+    const whereCondition =
+      queriesDto.search.length > 0
+        ? or(ilike(proformasVentaTable.nombre, `%${queriesDto.search}%`))
+        : undefined
+
+    const results = await db
+      .select({ count: count(proformasVentaTable.id) })
+      .from(proformasVentaTable)
+      .innerJoin(
+        empleadosTable,
+        eq(proformasVentaTable.empleadoId, empleadosTable.id)
+      )
+      .innerJoin(
+        sucursalesTable,
+        eq(proformasVentaTable.sucursalId, sucursalesTable.id)
+      )
+      .leftJoin(
+        clientesTable,
+        eq(proformasVentaTable.clienteId, clientesTable.id)
+      )
+      .where(
+        and(eq(proformasVentaTable.sucursalId, sucursalId), whereCondition)
+      )
+
+    const [totalItems] = results
+
+    const totalPages = Math.ceil(totalItems.count / queriesDto.page_size)
+    const hasNext = queriesDto.page < totalPages && queriesDto.page >= 1
+    const hasPrev = queriesDto.page > 1 && queriesDto.page <= totalPages
+
+    return {
+      totalItems: totalItems.count,
+      totalPages,
+      currentPage: queriesDto.page,
+      hasNext,
+      hasPrev
+    }
+  }
+
   private async validatePermissions(sucursalId: SucursalIdType) {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
@@ -136,8 +182,22 @@ export class GetProformasVenta {
   async execute(queriesDto: QueriesDto, sucursalId: SucursalIdType) {
     await this.validatePermissions(sucursalId)
 
-    const proformasVenta = await this.getProformasVenta(queriesDto, sucursalId)
+    const metadata = this.getMetadata()
+    const pagination = await this.getPagination(queriesDto, sucursalId)
 
-    return proformasVenta
+    const isValidPage =
+      (pagination.currentPage <= pagination.totalPages ||
+        pagination.currentPage >= 1) &&
+      pagination.totalItems > 0
+
+    const results = isValidPage
+      ? await this.getProformasVenta(queriesDto, sucursalId)
+      : []
+
+    return {
+      results,
+      pagination,
+      metadata
+    }
   }
 }

@@ -69,7 +69,12 @@ export class ProformasVentaController {
     getProformasVenta
       .execute(queriesDto, sucursalId)
       .then((proformasVenta) => {
-        CustomResponse.success({ res, data: proformasVenta })
+        CustomResponse.success({
+          res,
+          data: proformasVenta.results,
+          pagination: proformasVenta.pagination,
+          metadata: proformasVenta.metadata
+        })
       })
       .catch((error: unknown) => {
         handleError(error, res)
