@@ -29,6 +29,7 @@ export class GetVentaById {
     id: ventasTable.id,
     declarada: ventasTable.declarada,
     anulada: ventasTable.anulada,
+    cancelada: ventasTable.cancelada,
     serieDocumento: ventasTable.serieDocumento,
     numeroDocumento: ventasTable.numeroDocumento,
     observaciones: ventasTable.observaciones,
