@@ -4,7 +4,7 @@ import z from 'zod'
 const createProformaVentaSchema = z.object({
   nombre: proformaVentaSchema.nombre,
   empleadoId: proformaVentaSchema.empleadoId,
-  clienteId: proformaVentaSchema.empleadoId,
+  clienteId: proformaVentaSchema.clienteId,
   detalles: proformaVentaSchema.detalles
 })
 
