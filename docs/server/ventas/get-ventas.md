@@ -18,7 +18,25 @@ El rol `computadora` es capaz de obtener ventas pero solo en la sucursal a la qu
 
 No existe cuerpo de la petición
 
-### Queries (request)
+### Queries
+
+#### Queries disponibles
+
+A continuación se detalla una lista con el nombre de las queries aceptadas en este endpoint,
+a la derecha de estas separada por ":" se encuentra el tipo de dato aceptado por estas
+
+- search: string
+- sort_by: string (solo las columnas que se mencionan en la sección "Sort by")
+- order: string (Solo se aceptan los siguientes valores "asc", "desc")
+- page: number
+- page_size: number (valor entre 1 y 150)
+- filter: string
+- filter_value: any
+- filter_type: string
+- stockBajo: boolean
+
+Notas:
+Si alguna query tiene un valor no procesable, simplemente será ignorada
 
 #### Sort by (sort_by)
 
@@ -27,6 +45,8 @@ es tan simple como agregar al query "sort_by" con el nombre de la columna involu
 
 Ejemplo:
 {{base_url}}/api/{{sucursalId}}/ventas?sort_by=fechaEmision
+
+Posibles valores:
 
 - declarada
 - anulada
