@@ -23,9 +23,9 @@ para más detalles acerca de eso revisar la documentación acerca de "sincroniza
 
 ## Explicación de los permisos
 
-El rol `administrador` es capaz de anular una venta en cualquier sucursal
-El rol `vendedor` es capaz de anular ventas pero solo en la sucursal a la que pertenece
-El rol `computadora` es capaz de anular ventas pero solo en la sucursal a la que pertenece
+- El rol `administrador` es capaz de anular una venta en cualquier sucursal
+- El rol `vendedor` es capaz de anular ventas pero solo en la sucursal a la que pertenece
+- El rol `computadora` es capaz de anular ventas pero solo en la sucursal a la que pertenece
 
 ## Request
 

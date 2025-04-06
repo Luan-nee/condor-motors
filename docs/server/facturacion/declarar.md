@@ -13,9 +13,9 @@ Al realizar la accion de forma exitosa los datos de la venta se actualizarán, y
 
 ## Explicación de los permisos
 
-El rol `administrador` es capaz de declarar una venta en cualquier sucursal
-El rol `vendedor` es capaz de declarar ventas pero solo en la sucursal a la que pertenece
-El rol `computadora` es capaz de declarar ventas pero solo en la sucursal a la que pertenece
+- El rol `administrador` es capaz de declarar una venta en cualquier sucursal
+- El rol `vendedor` es capaz de declarar ventas pero solo en la sucursal a la que pertenece
+- El rol `computadora` es capaz de declarar ventas pero solo en la sucursal a la que pertenece
 
 ## Request
 

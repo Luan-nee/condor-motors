@@ -13,9 +13,9 @@ Solo puede ser aplicado una vez por cada venta
 
 ## Explicación de los permisos
 
-El rol `administrador` es capaz de cancelar una venta en cualquier sucursal
-El rol `vendedor` es capaz de cancelar ventas pero solo en la sucursal a la que pertenece
-El rol `computadora` es capaz de cancelar ventas pero solo en la sucursal a la que pertenece
+- El rol `administrador` es capaz de cancelar una venta en cualquier sucursal
+- El rol `vendedor` es capaz de cancelar ventas pero solo en la sucursal a la que pertenece
+- El rol `computadora` es capaz de cancelar ventas pero solo en la sucursal a la que pertenece
 
 ## Request
 
