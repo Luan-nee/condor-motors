@@ -16,7 +16,7 @@ El rol `computadora` es capaz de crear ventas pero solo en la sucursal a la que 
 
 ### Body (request)
 
-```json
+```jsonc
 {
   "observaciones": "Observaciones acerca de la venta", // opcional
   "tipoDocumentoId": 6,
@@ -27,13 +27,13 @@ El rol `computadora` es capaz de crear ventas pero solo en la sucursal a la que 
       "productoId": 335,
       "cantidad": 4,
       "tipoTaxId": 30,
-      "aplicarOferta": false
+      "aplicarOferta": false,
     },
     {
       "productoId": 68,
       "cantidad": 1,
       "tipoTaxId": 8,
-      "aplicarOferta": true
+      "aplicarOferta": true,
     },
     // También se pueden incluir productos que no existen
     // Para ser considerados como producto no existente la propiedad productoId debe ser null
@@ -42,20 +42,20 @@ El rol `computadora` es capaz de crear ventas pero solo en la sucursal a la que 
       "cantidad": 4,
       "tipoTaxId": 7,
       "nombre": "Producto especial",
-      "precio": 100
+      "precio": 100,
     },
     {
       "productoId": null,
       "cantidad": 10,
       "tipoTaxId": 9,
       "nombre": "Producto especial 2",
-      "precio": 100
-    }
+      "precio": 100,
+    },
   ],
   "clienteId": 12,
   "empleadoId": 28,
   "fechaEmision": "2025-03-25", // opcional
-  "horaEmision": "16:57:42" // opcional
+  "horaEmision": "16:57:42", // opcional
 }
 ```
 
@@ -63,12 +63,12 @@ El rol `computadora` es capaz de crear ventas pero solo en la sucursal a la que 
 
 ### Body (success 200 response)
 
-```json
+```jsonc
 {
   "status": "success",
   "data": {
-    "id": 20 // Id de la venta creada
-  }
+    "id": 20, // Id de la venta creada
+  },
 }
 ```
 
@@ -76,9 +76,9 @@ El rol `computadora` es capaz de crear ventas pero solo en la sucursal a la que 
 
 ### Body (fail 400 response)
 
-```json
+```jsonc
 {
   "status": "fail",
-  "error": "El tipo de documento que intentó asignar no existe" // el mensaje de error varía dependiendo del tipo de error
+  "error": "El tipo de documento que intentó asignar no existe", // el mensaje de error varía dependiendo del tipo de error
 }
 ```

@@ -20,7 +20,7 @@ No existe cuerpo de la petición
 
 ### Body (success 200 response)
 
-```json
+```jsonc
 {
   "status": "success",
   "data": {
@@ -28,63 +28,63 @@ No existe cuerpo de la petición
       {
         "id": 10,
         "nombre": "Gravado (Con 18% de impuestos)",
-        "codigo": "gravado"
+        "codigo": "gravado",
       },
       {
         "id": 11,
         "nombre": "Exonerado (Sin impuestos)",
-        "codigo": "exonerado"
+        "codigo": "exonerado",
       },
       {
         "id": 12,
         "nombre": "Gratuito (Producto gratuito)",
-        "codigo": "gratuito"
-      }
+        "codigo": "gratuito",
+      },
     ],
     "tiposDocFacturacion": [
       {
         "id": 7,
         "nombre": "Factura electrónica",
-        "codigo": "factura"
+        "codigo": "factura",
       },
       {
         "id": 8,
         "nombre": "Boleta de venta electrónica",
-        "codigo": "boleta"
-      }
+        "codigo": "boleta",
+      },
     ],
     "tiposDocCliente": [
       {
         "id": 19,
         "nombre": "RUC",
-        "codigo": "ruc"
+        "codigo": "ruc",
       },
       {
         "id": 20,
         "nombre": "DNI",
-        "codigo": "dni"
+        "codigo": "dni",
       },
       {
         "id": 21,
         "nombre": "CARNET DE EXTRANJERÍA",
-        "codigo": "carnet_extranjeria"
+        "codigo": "carnet_extranjeria",
       },
       {
         "id": 22,
         "nombre": "PASAPORTE",
-        "codigo": "pasaporte"
+        "codigo": "pasaporte",
       },
       {
         "id": 23,
         "nombre": "CÉDULA DIPLOMÁTICA DE IDENTIDAD",
-        "codigo": "cedula_diplomática_identidad"
+        "codigo": "cedula_diplomática_identidad",
       },
       {
         "id": 24,
         "nombre": "NO DOMICILIADO, SIN RUC",
-        "codigo": "no_domiciliado_sin_ruc"
-      }
-    ]
-  }
+        "codigo": "no_domiciliado_sin_ruc",
+      },
+    ],
+  },
 }
 ```

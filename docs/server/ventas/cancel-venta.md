@@ -21,9 +21,9 @@ El rol `computadora` es capaz de cancelar ventas pero solo en la sucursal a la q
 
 ### Body (request)
 
-```json
+```jsonc
 {
-  "motivoAnulado": "Por favor anula esta venta"
+  "motivoAnulado": "Por favor anula esta venta",
 }
 ```
 
@@ -31,14 +31,14 @@ El rol `computadora` es capaz de cancelar ventas pero solo en la sucursal a la q
 
 ### Body (success 200 response)
 
-```json
+```jsonc
 {
   "status": "success",
   "data": [
     {
-      "id": 20 // Id de la venta cancelada
-    }
-  ]
+      "id": 20, // Id de la venta cancelada
+    },
+  ],
 }
 ```
 
@@ -46,10 +46,10 @@ El rol `computadora` es capaz de cancelar ventas pero solo en la sucursal a la q
 
 ### Body (fail 400 response)
 
-```json
+```jsonc
 {
   "status": "fail",
-  "error": "Esta venta no se puede cancelar porque ya ha sido cancelada"
+  "error": "Esta venta no se puede cancelar porque ya ha sido cancelada",
 }
 ```
 
@@ -57,9 +57,9 @@ El rol `computadora` es capaz de cancelar ventas pero solo en la sucursal a la q
 
 ### Body (fail 404 response)
 
-```json
+```jsonc
 {
   "status": "fail",
-  "error": "La venta que intentó cancelar no existe"
+  "error": "La venta que intentó cancelar no existe",
 }
 ```

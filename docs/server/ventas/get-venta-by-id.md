@@ -24,7 +24,7 @@ No existe cuerpo de la petición
 
 Venta realizada pero no declarada
 
-```json
+```jsonc
 {
   "status": "success",
   "data": {
@@ -45,23 +45,23 @@ Venta realizada pero no declarada
       "id": 19,
       "tipoDocumento": "DNI",
       "numeroDocumento": "36569991",
-      "denominacion": "John Cremin"
+      "denominacion": "John Cremin",
     },
     "empleado": {
       "id": 37,
       "nombre": "Administrador",
-      "apellidos": "Principal"
+      "apellidos": "Principal",
     },
     "sucursal": {
       "id": 13,
-      "nombre": "Sucursal Principal"
+      "nombre": "Sucursal Principal",
     },
     "totalesVenta": {
       "totalGravadas": "400.00",
       "totalExoneradas": "172.15",
       "totalGratuitas": "1000.00",
       "totalTax": "72.00",
-      "totalVenta": "644.15"
+      "totalVenta": "644.15",
     },
     "estado": null,
     "documentoFacturacion": null,
@@ -78,7 +78,7 @@ Venta realizada pero no declarada
         "totalBaseTax": "172.15",
         "totalTax": "0.00",
         "total": "172.15",
-        "productoId": 98
+        "productoId": 98,
       },
       {
         "id": 38,
@@ -92,7 +92,7 @@ Venta realizada pero no declarada
         "totalBaseTax": "400.00",
         "totalTax": "72.00",
         "total": "472.00",
-        "productoId": null
+        "productoId": null,
       },
       {
         "id": 39,
@@ -106,16 +106,16 @@ Venta realizada pero no declarada
         "totalBaseTax": "1000.00",
         "totalTax": "0.00",
         "total": "1000.00",
-        "productoId": null
-      }
-    ]
-  }
+        "productoId": null,
+      },
+    ],
+  },
 }
 ```
 
 Venta declarada
 
-```json
+```jsonc
 {
   "status": "success",
   "data": {
@@ -136,27 +136,27 @@ Venta declarada
       "id": 19,
       "tipoDocumento": "DNI",
       "numeroDocumento": "36569991",
-      "denominacion": "John Cremin"
+      "denominacion": "John Cremin",
     },
     "empleado": {
       "id": 37,
       "nombre": "Administrador",
-      "apellidos": "Principal"
+      "apellidos": "Principal",
     },
     "sucursal": {
       "id": 13,
-      "nombre": "Sucursal Principal"
+      "nombre": "Sucursal Principal",
     },
     "totalesVenta": {
       "totalGravadas": "400.00",
       "totalExoneradas": "172.15",
       "totalGratuitas": "1000.00",
       "totalTax": "72.00",
-      "totalVenta": "644.15"
+      "totalVenta": "644.15",
     },
     "estado": {
       "codigo": "aceptado-sunat",
-      "nombre": "Aceptado ante la sunat"
+      "nombre": "Aceptado ante la sunat",
     },
     "documentoFacturacion": {
       "id": 5,
@@ -175,10 +175,10 @@ Venta declarada
       "informacionSunat": {
         "code": "0",
         "notes": [],
-        "description": "La Boleta numero B001-14, ha sido aceptada"
+        "description": "La Boleta numero B001-14, ha sido aceptada",
       },
       "linkPdfA4": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f1759d562106550bee64f0?type=a4",
-      "linkPdfTicket": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f1759d562106550bee64f0?type=ticket"
+      "linkPdfTicket": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f1759d562106550bee64f0?type=ticket",
     },
     "detallesVenta": [
       {
@@ -193,7 +193,7 @@ Venta declarada
         "totalBaseTax": "172.15",
         "totalTax": "0.00",
         "total": "172.15",
-        "productoId": 98
+        "productoId": 98,
       },
       {
         "id": 38,
@@ -207,7 +207,7 @@ Venta declarada
         "totalBaseTax": "400.00",
         "totalTax": "72.00",
         "total": "472.00",
-        "productoId": null
+        "productoId": null,
       },
       {
         "id": 39,
@@ -221,16 +221,16 @@ Venta declarada
         "totalBaseTax": "1000.00",
         "totalTax": "0.00",
         "total": "1000.00",
-        "productoId": null
-      }
-    ]
-  }
+        "productoId": null,
+      },
+    ],
+  },
 }
 ```
 
 Venta anulada
 
-```json
+```jsonc
 {
   "status": "success",
   "data": {
@@ -251,27 +251,27 @@ Venta anulada
       "id": 19,
       "tipoDocumento": "DNI",
       "numeroDocumento": "36569991",
-      "denominacion": "John Cremin"
+      "denominacion": "John Cremin",
     },
     "empleado": {
       "id": 37,
       "nombre": "Administrador",
-      "apellidos": "Principal"
+      "apellidos": "Principal",
     },
     "sucursal": {
       "id": 13,
-      "nombre": "Sucursal Principal"
+      "nombre": "Sucursal Principal",
     },
     "totalesVenta": {
       "totalGravadas": "400.00",
       "totalExoneradas": "172.15",
       "totalGratuitas": "1000.00",
       "totalTax": "72.00",
-      "totalVenta": "644.15"
+      "totalVenta": "644.15",
     },
     "estado": {
       "codigo": "por-anular",
-      "nombre": "Por anular "
+      "nombre": "Por anular ",
     },
     "documentoFacturacion": {
       "id": 6,
@@ -290,10 +290,10 @@ Venta anulada
       "informacionSunat": {
         "code": "0",
         "notes": [],
-        "description": "La Boleta numero B001-15, ha sido aceptada"
+        "description": "La Boleta numero B001-15, ha sido aceptada",
       },
       "linkPdfA4": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f190ac562106550bee8f62?type=a4",
-      "linkPdfTicket": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f190ac562106550bee8f62?type=ticket"
+      "linkPdfTicket": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f190ac562106550bee8f62?type=ticket",
     },
     "detallesVenta": [
       {
@@ -308,7 +308,7 @@ Venta anulada
         "totalBaseTax": "172.15",
         "totalTax": "0.00",
         "total": "172.15",
-        "productoId": 98
+        "productoId": 98,
       },
       {
         "id": 41,
@@ -322,7 +322,7 @@ Venta anulada
         "totalBaseTax": "400.00",
         "totalTax": "72.00",
         "total": "472.00",
-        "productoId": null
+        "productoId": null,
       },
       {
         "id": 42,
@@ -336,10 +336,10 @@ Venta anulada
         "totalBaseTax": "1000.00",
         "totalTax": "0.00",
         "total": "1000.00",
-        "productoId": null
-      }
-    ]
-  }
+        "productoId": null,
+      },
+    ],
+  },
 }
 ```
 
@@ -347,9 +347,9 @@ Venta anulada
 
 ### Body (fail 404 response)
 
-```json
+```jsonc
 {
   "status": "fail",
-  "error": "La venta no se encontró"
+  "error": "La venta no se encontró",
 }
 ```

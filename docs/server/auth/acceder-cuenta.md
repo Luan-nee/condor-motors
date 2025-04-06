@@ -8,10 +8,10 @@ Endpoint para iniciar sesión con las credenciales del usuario
 
 ### Body (request)
 
-```json
+```jsonc
 {
   "usuario": "Administrador",
-  "clave": "Admin123"
+  "clave": "Admin123",
 }
 ```
 
@@ -19,7 +19,7 @@ Endpoint para iniciar sesión con las credenciales del usuario
 
 ### Body (success response )
 
-```json
+```jsonc
 {
   "status": "success",
   "data": {
@@ -31,8 +31,8 @@ Endpoint para iniciar sesión con las credenciales del usuario
     "fechaCreacion": "2025-03-29T10:32:53.675Z",
     "fechaActualizacion": "2025-03-29T10:32:53.675Z",
     "sucursal": "Sucursal Principal",
-    "sucursalId": 10
-  }
+    "sucursalId": 10,
+  },
 }
 ```
 
@@ -50,10 +50,10 @@ refresh_token: Json Web Token que se utiliza para obtener un nuevo token de acce
 
 ### Body (fail response)
 
-```json
+```jsonc
 {
   "status": "fail",
-  "error": "Nombre de usuario o contraseña incorrectos"
+  "error": "Nombre de usuario o contraseña incorrectos",
 }
 ```
 

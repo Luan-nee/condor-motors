@@ -21,10 +21,10 @@ El rol `computadora` es capaz de declarar ventas pero solo en la sucursal a la q
 
 ### Body (request)
 
-```json
+```jsonc
 {
   "enviarCliente": false,
-  "ventaId": 21
+  "ventaId": 21,
 }
 ```
 
@@ -32,12 +32,12 @@ El rol `computadora` es capaz de declarar ventas pero solo en la sucursal a la q
 
 ### Body (success 200 response)
 
-```json
+```jsonc
 {
   "status": "success",
   "data": {
-    "id": 6 // Id del documento de facturación generado para la venta declarada
-  }
+    "id": 6, // Id del documento de facturación generado para la venta declarada
+  },
 }
 ```
 
@@ -45,10 +45,10 @@ El rol `computadora` es capaz de declarar ventas pero solo en la sucursal a la q
 
 ### Body (fail 400 response)
 
-```json
+```jsonc
 {
   "status": "fail",
-  "error": "No se encontró la venta con id 21 en la sucursal especificada" // El mensaje de error varía dependiendo del tipo de error
+  "error": "No se encontró la venta con id 21 en la sucursal especificada", // El mensaje de error varía dependiendo del tipo de error
 }
 ```
 
@@ -56,10 +56,10 @@ El rol `computadora` es capaz de declarar ventas pero solo en la sucursal a la q
 
 ### Body (fail 401 response)
 
-```json
+```jsonc
 {
   "status": "fail",
-  "error": "Token de facturación inválido"
+  "error": "Token de facturación inválido",
 }
 ```
 
@@ -67,10 +67,10 @@ El rol `computadora` es capaz de declarar ventas pero solo en la sucursal a la q
 
 ### Body (error 500 response)
 
-```json
+```jsonc
 {
   "status": "error",
-  "error": "El servicio de facturación no se encuentra activo en este momento"
+  "error": "El servicio de facturación no se encuentra activo en este momento",
 }
 ```
 
@@ -78,9 +78,9 @@ El rol `computadora` es capaz de declarar ventas pero solo en la sucursal a la q
 
 ### Body (error 503 response)
 
-```json
+```jsonc
 {
   "status": "fail",
-  "error": "No se especificó un token de facturación, por lo que no se puede utilizar este servicio."
+  "error": "No se especificó un token de facturación, por lo que no se puede utilizar este servicio.",
 }
 ```

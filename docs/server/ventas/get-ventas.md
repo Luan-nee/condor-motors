@@ -64,7 +64,7 @@ Posibles valores:
 
 ### Body (success 200 response)
 
-```json
+```jsonc
 {
   "status": "success",
   "data": [
@@ -81,30 +81,30 @@ Posibles valores:
       "empleado": {
         "id": 37,
         "nombre": "Administrador",
-        "apellidos": "Principal"
+        "apellidos": "Principal",
       },
       "sucursal": {
         "id": 13,
-        "nombre": "Sucursal Principal"
+        "nombre": "Sucursal Principal",
       },
       "totalesVenta": {
         "totalGravadas": "400.00",
         "totalExoneradas": "172.15",
         "totalGratuitas": "1000.00",
         "totalTax": "72.00",
-        "totalVenta": "644.15"
+        "totalVenta": "644.15",
       },
       "estado": {
         "codigo": "por-anular",
-        "nombre": "Por anular "
+        "nombre": "Por anular ",
       },
       "documentoFacturacion": {
         "id": 6,
         "codigoEstadoSunat": "13",
         "linkPdf": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f190ac562106550bee8f62?type=a4",
         "linkPdfA4": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f190ac562106550bee8f62?type=a4",
-        "linkPdfTicket": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f190ac562106550bee8f62?type=ticket"
-      }
+        "linkPdfTicket": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f190ac562106550bee8f62?type=ticket",
+      },
     },
     {
       "id": 20,
@@ -119,38 +119,38 @@ Posibles valores:
       "empleado": {
         "id": 37,
         "nombre": "Administrador",
-        "apellidos": "Principal"
+        "apellidos": "Principal",
       },
       "sucursal": {
         "id": 13,
-        "nombre": "Sucursal Principal"
+        "nombre": "Sucursal Principal",
       },
       "totalesVenta": {
         "totalGravadas": "400.00",
         "totalExoneradas": "172.15",
         "totalGratuitas": "1000.00",
         "totalTax": "72.00",
-        "totalVenta": "644.15"
+        "totalVenta": "644.15",
       },
       "estado": {
         "codigo": "aceptado-sunat",
-        "nombre": "Aceptado ante la sunat"
+        "nombre": "Aceptado ante la sunat",
       },
       "documentoFacturacion": {
         "id": 5,
         "codigoEstadoSunat": "05",
         "linkPdf": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f1759d562106550bee64f0?type=a4",
         "linkPdfA4": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f1759d562106550bee64f0?type=a4",
-        "linkPdfTicket": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f1759d562106550bee64f0?type=ticket"
-      }
-    }
+        "linkPdfTicket": "https://cpe.factpro.la/documents/67dcb02df91586b81056d566/print/pdf/67f1759d562106550bee64f0?type=ticket",
+      },
+    },
   ],
   "pagination": {
     "totalItems": 2,
     "totalPages": 1,
     "currentPage": 1,
     "hasNext": false,
-    "hasPrev": false
+    "hasPrev": false,
   },
   "metadata": {
     "sortByOptions": [
@@ -164,8 +164,8 @@ Posibles valores:
       "nombreEmpleado",
       "tipoDocumentoCliente",
       "fechaEmision",
-      "fechaCreacion"
-    ]
-  }
+      "fechaCreacion",
+    ],
+  },
 }
 ```
