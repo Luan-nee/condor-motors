@@ -109,7 +109,9 @@ export class CreateTransferenciaInv {
     return result
   }
 
-  private async validatePermissions() {
+  private async validatePermissions(
+    createTransferenciaInvDto: CreateTransferenciaInvDto
+  ) {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
       [this.permissionAny, this.permissionRelated]
@@ -117,7 +119,7 @@ export class CreateTransferenciaInv {
 
     let hasPermissionAny = false
     let hasPermissionRelated = false
-    // let isSameSucursal = false
+    let isSameSucursal = false
 
     for (const permission of validPermissions) {
       if (permission.codigoPermiso === this.permissionAny) {
@@ -126,11 +128,13 @@ export class CreateTransferenciaInv {
       if (permission.codigoPermiso === this.permissionRelated) {
         hasPermissionRelated = true
       }
-      // if (permission.sucursalId === sucursalId) {
-      //   isSameSucursal = true
-      // }
+      if (
+        permission.sucursalId === createTransferenciaInvDto.sucursalDestinoId
+      ) {
+        isSameSucursal = true
+      }
 
-      if (hasPermissionAny || hasPermissionRelated) {
+      if (hasPermissionAny || (hasPermissionRelated && isSameSucursal)) {
         return
       }
     }
@@ -139,7 +143,7 @@ export class CreateTransferenciaInv {
   }
 
   async execute(createTransferenciaInvDto: CreateTransferenciaInvDto) {
-    await this.validatePermissions()
+    await this.validatePermissions(createTransferenciaInvDto)
 
     const transferenciaInventario = await this.createTransferenciaInv(
       createTransferenciaInvDto
