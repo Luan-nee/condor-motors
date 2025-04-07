@@ -5,8 +5,8 @@ import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' hide DetalleProforma;
 import 'package:condorsmotors/providers/colabs/ventas.colab.provider.dart';
 import 'package:condorsmotors/screens/colabs/barcode_colab.dart';
-import 'package:condorsmotors/screens/colabs/widgets/busqueda_producto.dart';
 import 'package:condorsmotors/screens/colabs/widgets/busqueda_cliente.dart';
+import 'package:condorsmotors/screens/colabs/widgets/busqueda_producto.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
@@ -1409,7 +1409,24 @@ class _VentasColabScreenState extends State<VentasColabScreen>
   Future<void> _escanearProducto() async {
     // Asegurarse de que los productos estén cargados
     if (!_productosLoaded) {
-      await _cargarProductos();
+      _provider.setLoading(true, message: 'Cargando productos...');
+      try {
+        await _cargarProductos();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al cargar productos: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      } finally {
+        if (mounted) {
+          _provider.setLoading(false);
+        }
+      }
     }
 
     if (!mounted) {
@@ -1423,8 +1440,9 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         builder: (BuildContext context) => BarcodeColabScreen(
           productos: _productos,
           onProductoSeleccionado: (Map<String, dynamic> producto) {
-            // Mostrar detalles de promoción antes de agregar
-            _mostrarDetallesPromocion(producto);
+            debugPrint('✅ Producto escaneado: ${producto['nombre']}');
+            // Agregar el producto directamente al carrito
+            _agregarProductoConVerificacion(producto);
           },
           isLoading: _isLoading,
         ),
@@ -1664,7 +1682,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                                   ),
                                   SizedBox(height: 16),
                                   Text(
-                                    'No hay productos en la venta',
+                                    'No hay productos en el carrito',
                                     style: TextStyle(
                                       fontSize: 18,
                                       color: Colors.grey,

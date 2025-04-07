@@ -31,7 +31,7 @@ class Cliente {
     debugPrint('🔄 Procesando datos de cliente: ${json.keys.join(', ')}');
 
     // Función auxiliar para parsear fechas con manejo de errores
-    DateTime parseDate(dynamic date) {
+    DateTime parseDate(date) {
       if (date == null) {
         return DateTime.now();
       }

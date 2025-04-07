@@ -99,7 +99,7 @@ class ClientesApi {
 
       // Convertir a lista de Cliente
       final List<Cliente> clientes = items
-          .map((dynamic item) => Cliente.fromJson(item as Map<String, dynamic>))
+          .map((item) => Cliente.fromJson(item as Map<String, dynamic>))
           .toList();
 
       debugPrint(
