@@ -11,6 +11,8 @@
 Este endpoint permite declarar ante sunat una venta realizada, siempre en cuando esta no haya sido cancelada
 Al realizar la accion de forma exitosa los datos de la venta se actualizarán, y a partir de ese momento tendrá información acerca del documento emitido en la propiedad documento de la respuesta
 
+Aclaración: Para que una sucursal sea capaz de declarar una venta, la sucursal debe contar con un "codigoEstablecimiento" definido
+
 ## Explicación de los permisos
 
 - El rol `administrador` es capaz de declarar una venta en cualquier sucursal
