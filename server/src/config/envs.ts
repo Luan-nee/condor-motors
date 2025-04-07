@@ -7,7 +7,7 @@ export const envs = {
   SERVER_HOST: get('SERVER_HOST').default('localhost').asString(),
   SERVER_PORT: get('SERVER_PORT').default(3000).asPortNumber(),
   DATABASE_URL: get('DATABASE_URL').required().asString(),
-  DATABASE_ENABLE_SSL: get('DATABASE_ENABLE_SSL').asBool(),
+  DATABASE_ENABLE_SSL: get('DATABASE_ENABLE_SSL').default('false').asBool(),
   JWT_SEED: get('JWT_SEED').required().asString(),
   JWT_DOWNLOAD_SEED: get('JWT_DOWNLOAD_SEED').asString(),
   REFRESH_TOKEN_DURATION: get('REFRESH_TOKEN_DURATION')
@@ -31,5 +31,6 @@ export const envs = {
     .asString(),
   PUBLIC_STORAGE_PATH: get('PUBLIC_STORAGE_PATH')
     .default('storage/public')
-    .asString()
+    .asString(),
+  SERVE_PUBLIC_STORAGE: get('SERVE_PUBLIC_STORAGE').default('true').asBool()
 }
