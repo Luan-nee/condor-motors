@@ -25,5 +25,11 @@ export const envs = {
   LOGS: get('LOGS').default('console').asString(),
   MAX_UPLOAD_FILE_SIZE_MB: get('MAX_UPLOAD_FILE_SIZE_MB')
     .default(150)
-    .asIntPositive()
+    .asIntPositive(),
+  PRIVATE_STORAGE_PATH: get('PRIVATE_STORAGE_PATH')
+    .default('storage/private')
+    .asString(),
+  PUBLIC_STORAGE_PATH: get('PUBLIC_STORAGE_PATH')
+    .default('storage/public')
+    .asString()
 }
