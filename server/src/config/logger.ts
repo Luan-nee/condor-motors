@@ -3,6 +3,7 @@ import { isProduction, logsDestination } from '@/consts'
 import fs from 'fs'
 import path from 'path'
 import { envs } from './envs'
+import { access, constants, mkdir } from 'fs/promises'
 
 enum LogLevel {
   DEBUG = 'DEBUG',
@@ -56,13 +57,41 @@ class FileLogger extends BaseLogger implements Logger {
   private readonly logFilePath: string
   private readonly errorLogFilePath: string
 
-  constructor(logFileName: string, errorLogFileName: string) {
-    const logsDir = path.join(process.cwd(), 'logs/')
-    if (!fs.existsSync(logsDir)) {
-      fs.mkdirSync(logsDir, { recursive: true })
-    }
+  private async checkDirectory(dirPath: string) {
+    try {
+      await access(dirPath, constants.R_OK | constants.W_OK)
+    } catch (error: any) {
+      if (error?.code === 'ENOENT') {
+        await mkdir(dirPath, { recursive: true })
+        return
+      }
 
+      console.error(
+        `Error al verificar o crear el directorio ${dirPath}:`,
+        error
+      )
+
+      if (error instanceof Error) {
+        throw error
+      }
+    }
+  }
+
+  constructor(logFileName: string, errorLogFileName: string) {
     super()
+
+    const logsDir = path.join(process.cwd(), 'logs/')
+
+    this.checkDirectory(logsDir)
+      .then()
+      .catch((error: unknown) => {
+        if (error instanceof Error) {
+          throw error
+        }
+
+        console.error(error)
+        throw new Error('Unexpected error')
+      })
 
     this.logFilePath = path.join(logsDir, logFileName)
     this.errorLogFilePath = path.join(logsDir, errorLogFileName)
