@@ -4,6 +4,7 @@ import { FilesMiddleware } from '@/presentation/middlewares/files.middleware'
 import { AccessControlMiddleware } from '@/presentation/middlewares/access-control.middleware'
 import { permissionCodes } from '@/consts'
 import { JwtAdapter } from '@/config/jwt'
+import { envs } from '@/config/envs'
 
 export class ArchivosRoutes {
   private static readonly fileFieldName = 'app_file'
@@ -11,7 +12,10 @@ export class ArchivosRoutes {
   static get routes() {
     const router = Router()
 
-    const archivosController = new ArchivosController(JwtAdapter)
+    const archivosController = new ArchivosController(
+      JwtAdapter,
+      envs.PRIVATE_STORAGE_PATH
+    )
 
     router.post(
       '/upload',

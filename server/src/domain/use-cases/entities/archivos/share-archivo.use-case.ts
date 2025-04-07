@@ -8,7 +8,10 @@ import { stat } from 'node:fs/promises'
 import path from 'node:path'
 
 export class ShareArchivo {
-  constructor(private readonly tokenAuthenticator: TokenAuthenticator) {}
+  constructor(
+    private readonly tokenAuthenticator: TokenAuthenticator,
+    private readonly privateStoragePath: string
+  ) {}
 
   private async shareFile(shareArchivoDto: ShareArchivoDto) {
     const files = await db
@@ -20,15 +23,13 @@ export class ShareArchivo {
       throw CustomError.notFound('El archivo no existe')
     }
 
-    const basePrivatePath = 'storage/private/'
-    const filepath = path.join(
-      process.cwd(),
-      basePrivatePath,
+    const filePath = path.join(
+      this.privateStoragePath,
       shareArchivoDto.filename
     )
 
     try {
-      await stat(filepath)
+      await stat(filePath)
     } catch {
       throw CustomError.notFound('El archivo no existe')
     }

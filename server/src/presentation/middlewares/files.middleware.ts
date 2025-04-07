@@ -6,11 +6,9 @@ import { Validator } from '@/domain/validators/validator'
 import multer from 'multer'
 import path from 'node:path'
 
-const { MAX_UPLOAD_FILE_SIZE_MB: maxFileSizeMB } = envs
-
 const privateDiskStorage = multer.diskStorage({
   destination: function (_req, _file, callback) {
-    callback(null, 'storage/private')
+    callback(null, envs.PRIVATE_STORAGE_PATH)
   },
   filename: function (_req, file, callback) {
     if (!Validator.isValidFileName(file.originalname)) {
@@ -56,7 +54,7 @@ export class FilesMiddleware {
 
   static readonly apkDesktopApp = multer({
     storage: privateDiskStorage,
-    limits: { fileSize: maxFileSizeMB * 1024 * 1024 },
+    limits: { fileSize: envs.MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024 },
     fileFilter: (_req, file, callback) => {
       const allowedTypes = /apk|msi/
 

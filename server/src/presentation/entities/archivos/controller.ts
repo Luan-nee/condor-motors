@@ -11,10 +11,12 @@ import { GetArchivos } from '@/domain/use-cases/entities/archivos/get-archivos.u
 import { ShareArchivo } from '@/domain/use-cases/entities/archivos/share-archivo.use-case'
 import type { TokenAuthenticator } from '@/types/interfaces'
 import type { Request, Response } from 'express'
-import path from 'node:path'
 
 export class ArchivosController {
-  constructor(private readonly tokenAuthenticator: TokenAuthenticator) {}
+  constructor(
+    private readonly tokenAuthenticator: TokenAuthenticator,
+    private readonly privateStoragePath: string
+  ) {}
 
   uploadFile = (req: Request, res: Response) => {
     if (req.authPayload == null || req.permissions == null) {
@@ -82,13 +84,12 @@ export class ArchivosController {
       return
     }
 
-    const descargarArchivo = new DescargarArchivo()
+    const descargarArchivo = new DescargarArchivo(this.privateStoragePath)
 
     descargarArchivo
       .execute(filenameDto)
       .then((file) => {
-        const filePath = path.join(process.cwd(), file.path)
-        res.download(filePath, (error) => {
+        res.download(file.path, (error) => {
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           if (error != null) {
             CustomResponse.internalServer({ res, error })
@@ -112,7 +113,10 @@ export class ArchivosController {
       return
     }
 
-    const shareArchivo = new ShareArchivo(this.tokenAuthenticator)
+    const shareArchivo = new ShareArchivo(
+      this.tokenAuthenticator,
+      this.privateStoragePath
+    )
 
     shareArchivo
       .execute(shareArchivoDto)
@@ -138,7 +142,10 @@ export class ArchivosController {
 
     const { permissions } = req
 
-    const deleteArchivo = new DeleteArchivo(permissions)
+    const deleteArchivo = new DeleteArchivo(
+      permissions,
+      this.privateStoragePath
+    )
 
     deleteArchivo
       .execute(numericIdDto)

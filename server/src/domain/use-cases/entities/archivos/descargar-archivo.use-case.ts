@@ -4,8 +4,11 @@ import { archivosAppTable } from '@/db/schema'
 import type { FilenameDto } from '@/domain/dtos/query-params/filename.dto'
 import { like } from 'drizzle-orm'
 import { stat } from 'node:fs/promises'
+import path from 'node:path'
 
 export class DescargarArchivo {
+  constructor(private readonly privateStoragePath: string) {}
+
   async execute(filenameDto: FilenameDto) {
     const files = await db
       .select({ id: archivosAppTable.id, filename: archivosAppTable.filename })
@@ -18,17 +21,17 @@ export class DescargarArchivo {
 
     const [file] = files
 
-    const path = `storage/private/${file.filename}`
+    const filePath = path.join(this.privateStoragePath, file.filename)
 
     try {
-      await stat(path)
+      await stat(filePath)
     } catch {
       throw CustomError.notFound('El archivo no existe')
     }
 
     return {
       ...file,
-      path
+      path: filePath
     }
   }
 }

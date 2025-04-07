@@ -7,7 +7,10 @@ import type { TokenAuthenticator } from '@/types/interfaces'
 import type { Request, Response } from 'express'
 
 export class DownloadsController {
-  constructor(private readonly tokenAuthenticator: TokenAuthenticator) {}
+  constructor(
+    private readonly tokenAuthenticator: TokenAuthenticator,
+    private readonly privateStoragePath: string
+  ) {}
 
   apkDesktopApp = (req: Request, res: Response) => {
     const [error, filenameDto] = FilenameDto.create(req.params)
@@ -23,13 +26,14 @@ export class DownloadsController {
     }
 
     const downloadApkDesktopApp = new DownloadApkDesktopApp(
-      this.tokenAuthenticator
+      this.tokenAuthenticator,
+      this.privateStoragePath
     )
 
     downloadApkDesktopApp
       .execute(filenameDto, fileQueriesDto)
       .then((file) => {
-        res.download(file.filepath, (error) => {
+        res.download(file.filePath, (error) => {
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           if (error != null) {
             CustomResponse.internalServer({ res, error })

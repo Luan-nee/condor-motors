@@ -5,13 +5,15 @@ import { archivosAppTable } from '@/db/schema'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { eq } from 'drizzle-orm'
 import { stat, unlink } from 'node:fs/promises'
+import path from 'node:path'
 
 export class DeleteArchivo {
   private readonly permissionAny = permissionCodes.archivos.deleteAny
 
   constructor(
     // private readonly authPayload: AuthPayload,
-    private readonly permissionsList: Permission[]
+    private readonly permissionsList: Permission[],
+    private readonly privateStoragePath: string
   ) {}
 
   private async deleteArchivo(numericIdDto: NumericIdDto) {
@@ -28,18 +30,18 @@ export class DeleteArchivo {
 
     const [fileToDelete] = files
 
-    const path = `storage/private/${fileToDelete.filename}`
+    const filePath = path.join(this.privateStoragePath, fileToDelete.filename)
 
     let fileExists = true
 
     try {
-      await stat(path)
+      await stat(filePath)
     } catch {
       fileExists = false
     }
 
     if (fileExists) {
-      await unlink(`storage/private/${fileToDelete.filename}`)
+      await unlink(filePath)
         .then()
         .catch(() => {
           throw CustomError.internalServer(

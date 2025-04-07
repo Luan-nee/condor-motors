@@ -6,7 +6,10 @@ import { stat } from 'node:fs/promises'
 import path from 'node:path'
 
 export class DownloadApkDesktopApp {
-  constructor(private readonly tokenAuthenticator: TokenAuthenticator) {}
+  constructor(
+    private readonly tokenAuthenticator: TokenAuthenticator,
+    private readonly privateStoragePath: string
+  ) {}
 
   async execute(filenameDto: FilenameDto, fileQueriesDto: FileQueriesDto) {
     if (
@@ -19,19 +22,14 @@ export class DownloadApkDesktopApp {
       throw CustomError.unauthorized('El token de descarga ha vencido')
     }
 
-    const basePrivatePath = 'storage/private/'
-    const filepath = path.join(
-      process.cwd(),
-      basePrivatePath,
-      filenameDto.filename
-    )
+    const filePath = path.join(this.privateStoragePath, filenameDto.filename)
 
     try {
-      await stat(filepath)
+      await stat(filePath)
     } catch {
       throw CustomError.notFound('El archivo no existe')
     }
 
-    return { filepath }
+    return { filePath }
   }
 }
