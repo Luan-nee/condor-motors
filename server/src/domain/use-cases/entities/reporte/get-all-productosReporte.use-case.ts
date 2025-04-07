@@ -1,4 +1,6 @@
 import { db } from '@/db/connection'
+import { Workbook } from 'exceljs'
+
 import {
   coloresTable,
   detallesProductoTable,
@@ -7,6 +9,7 @@ import {
   sucursalesTable
 } from '@/db/schema'
 import { eq } from 'drizzle-orm'
+import { CustomError } from '@/core/errors/custom.error'
 
 interface ProductoPlano {
   id: number
@@ -74,9 +77,28 @@ export class GetProductosReporte {
       this.actualizarStockPorSucursal(fila, detallesproducto)
     }
 
-    const reporteFinal: FilaReporte[] = []
+    for (const fila of reporteMap.values()) {
+      const total = Object.entries(fila).reduce((acc, [key, value]) => {
+        if (
+          ![
+            'id',
+            'nombre',
+            'descripcion',
+            'descuento',
+            'color',
+            'marca',
+            'Total'
+          ].includes(key) &&
+          typeof value === 'number'
+        ) {
+          return acc + value
+        }
+        return acc
+      }, 0)
+      fila.Total = total
+    }
 
-    return reporteFinal
+    return Array.from(reporteMap.values())
   }
 
   private async getProductos() {
@@ -97,19 +119,45 @@ export class GetProductosReporte {
       .from(productosTable)
       .innerJoin(coloresTable, eq(coloresTable.id, productosTable.colorId))
       .innerJoin(marcasTable, eq(marcasTable.id, productosTable.marcaId))
-      .leftJoin(
+      .innerJoin(
         detallesProductoTable,
         eq(detallesProductoTable.productoId, productosTable.id)
       )
-      .leftJoin(
+      .innerJoin(
         sucursalesTable,
         eq(sucursalesTable.id, detallesProductoTable.sucursalId)
       )
+    if (datos.length <= 0) {
+      return []
+    }
+
     return this.pivotarProductosPorSucursal(datos)
   }
+  private async createExcelFile() {
+    const valores = await this.getProductos()
+    if (valores.length === 0) {
+      CustomError.serviceUnavailable('No existen productos por ahora')
+    }
+    const cabecera = Object.keys(valores[0])
 
+    const workbook = new Workbook()
+    const worksheet = workbook.addWorksheet('Datos')
+
+    worksheet.columns = cabecera.map((key) => ({
+      header: key.charAt(0).toUpperCase() + key.slice(1),
+      key,
+      width: 20
+    }))
+
+    valores.forEach((row) => {
+      worksheet.addRow(row)
+    })
+
+    await workbook.xlsx.writeFile('storage/private/reportes/archivo.xlsx')
+    return { archivo: 'archivo.xlsx' }
+  }
   async execute() {
-    const resultado = await this.getProductos()
+    const resultado = await this.createExcelFile()
     return resultado
   }
 }

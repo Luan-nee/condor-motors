@@ -11,6 +11,8 @@ export class ProductosRouter {
 
     router.get('/:id/detalles', productosController.detalles)
 
+    router.get('/reporte', productosController.getReporteProducto)
+
     router.get(
       '/',
       [

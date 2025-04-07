@@ -4,6 +4,7 @@ import { QueriesProductoDto } from '@/domain/dtos/entities/productos/queries-pro
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { GetProductosNombre } from '@/domain/use-cases/entities/productos/get-all-productos-nombre-use-case'
 import { GetByIdData } from '@/domain/use-cases/entities/productos/get-bt-id-dates-use-case'
+import { GetProductosReporte } from '@/domain/use-cases/entities/reporte/get-all-productosReporte.use-case'
 import type { Request, Response } from 'express'
 
 export class ProductosController {
@@ -47,6 +48,19 @@ export class ProductosController {
       .execute(queriesDto)
       .then((productos) => {
         CustomResponse.success({ res, data: productos })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
+
+  getReporteProducto = (_req: Request, res: Response) => {
+    const getresporte = new GetProductosReporte()
+
+    getresporte
+      .execute()
+      .then((reporte) => {
+        CustomResponse.success({ res, data: reporte })
       })
       .catch((error: unknown) => {
         handleError(error, res)
