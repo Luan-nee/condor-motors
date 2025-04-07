@@ -7,20 +7,20 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 class ListItemBusquedaProducto extends StatelessWidget {
   /// El producto a mostrar
   final Map<String, dynamic> producto;
-  
+
   /// Callback cuando se selecciona el producto
   final Function(Map<String, dynamic>) onProductoSeleccionado;
-  
+
   /// Lista de colores disponibles para mostrar la información del color
   final List<ColorApp> colores;
-  
+
   /// Colores para el tema oscuro
   final Color darkBackground;
   final Color darkSurface;
-  
+
   /// Filtro de categoría actual (para resaltar si coincide)
   final String filtroCategoria;
-  
+
   /// Si estamos en modo móvil
   final bool isMobile;
 
@@ -40,11 +40,13 @@ class ListItemBusquedaProducto extends StatelessWidget {
     // Verificar las promociones del producto
     final bool enLiquidacion = producto['enLiquidacion'] ?? false;
     final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
-    final bool tieneDescuentoPorcentual = producto['tieneDescuentoPorcentual'] ?? false;
+    final bool tieneDescuentoPorcentual =
+        producto['tieneDescuentoPorcentual'] ?? false;
     final bool tieneStock = producto['stock'] > 0;
-    
+
     // Verificar si el producto tiene alguna promoción
-    final bool tienePromocion = enLiquidacion || tienePromocionGratis || tieneDescuentoPorcentual;
+    final bool tienePromocion =
+        enLiquidacion || tienePromocionGratis || tieneDescuentoPorcentual;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -60,10 +62,12 @@ class ListItemBusquedaProducto extends StatelessWidget {
           padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
           child: Row(
             children: <Widget>[
-              _buildProductIcon(tienePromocion, tieneStock, tienePromocionGratis, tieneDescuentoPorcentual),
+              _buildProductIcon(context, tienePromocion, tieneStock,
+                  tienePromocionGratis, tieneDescuentoPorcentual),
               SizedBox(width: isMobile ? 12 : 16),
               Expanded(
-                child: _buildProductInfo(tienePromocion, enLiquidacion, tienePromocionGratis, tieneDescuentoPorcentual),
+                child: _buildProductInfo(tienePromocion, enLiquidacion,
+                    tienePromocionGratis, tieneDescuentoPorcentual),
               ),
             ],
           ),
@@ -72,30 +76,42 @@ class ListItemBusquedaProducto extends StatelessWidget {
     );
   }
 
-  Widget _buildProductIcon(bool tienePromocion, bool tieneStock, bool tienePromocionGratis, bool tieneDescuentoPorcentual) {
+  Widget _buildProductIcon(
+      BuildContext context,
+      bool tienePromocion,
+      bool tieneStock,
+      bool tienePromocionGratis,
+      bool tieneDescuentoPorcentual) {
     return Stack(
       alignment: Alignment.bottomRight,
       children: <Widget>[
-        Container(
-          width: isMobile ? 50 : 60,
-          height: isMobile ? 50 : 60,
-          decoration: BoxDecoration(
-            color: darkBackground,
-            borderRadius: BorderRadius.circular(10),
-            border: tienePromocion 
-                ? Border.all(
-                    color: _getPromocionColor(tienePromocionGratis, tieneDescuentoPorcentual),
-                    width: 2,
-                  )
-                : null,
-          ),
-          child: Center(
-            child: FaIcon(
-              FontAwesomeIcons.box,
-              size: isMobile ? 22 : 26,
-              color: tieneStock
-                  ? (tienePromocion ? Colors.amber : Colors.green)
-                  : Colors.red,
+        GestureDetector(
+          onTap: () => _mostrarDetallesProducto(context),
+          child: Hero(
+            tag: 'producto_${producto['id']}',
+            child: Container(
+              width: isMobile ? 50 : 60,
+              height: isMobile ? 50 : 60,
+              decoration: BoxDecoration(
+                color: darkBackground,
+                borderRadius: BorderRadius.circular(10),
+                border: tienePromocion
+                    ? Border.all(
+                        color: _getPromocionColor(
+                            tienePromocionGratis, tieneDescuentoPorcentual),
+                        width: 2,
+                      )
+                    : null,
+              ),
+              child: Center(
+                child: FaIcon(
+                  FontAwesomeIcons.box,
+                  size: isMobile ? 22 : 26,
+                  color: tieneStock
+                      ? (tienePromocion ? Colors.amber : Colors.green)
+                      : Colors.red,
+                ),
+              ),
             ),
           ),
         ),
@@ -123,29 +139,31 @@ class ListItemBusquedaProducto extends StatelessWidget {
     );
   }
 
-  Widget _buildProductInfo(bool tienePromocion, bool enLiquidacion, bool tienePromocionGratis, bool tieneDescuentoPorcentual) {
+  Widget _buildProductInfo(bool tienePromocion, bool enLiquidacion,
+      bool tienePromocionGratis, bool tieneDescuentoPorcentual) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         // Pasar flags de promoción a _buildProductHeader
-        _buildProductHeader(enLiquidacion, tienePromocionGratis, tieneDescuentoPorcentual),
+        _buildProductHeader(
+            enLiquidacion, tienePromocionGratis, tieneDescuentoPorcentual),
         const SizedBox(height: 8),
         _buildProductDetails(),
         const SizedBox(height: 8),
         _buildCategoryAndColor(),
         const SizedBox(height: 10),
         _buildPrice(enLiquidacion),
-        if (tienePromocionGratis || tieneDescuentoPorcentual) ...<Widget>[ // Ya no incluye enLiquidacion aquí porque se indica en el nombre
+        if (tienePromocionGratis || tieneDescuentoPorcentual) ...<Widget>[
           const SizedBox(height: 10),
-          _buildPromotionChips(tienePromocionGratis, tieneDescuentoPorcentual), // Ya no necesita enLiquidacion
+          _buildPromotionChips(tienePromocionGratis, tieneDescuentoPorcentual),
         ],
       ],
     );
   }
 
-  // Modificar firma y lógica de estilo
-  Widget _buildProductHeader(bool enLiquidacion, bool tienePromocionGratis, bool tieneDescuentoPorcentual) {
-    Color nombreColor = Colors.white; // Color por defecto
+  Widget _buildProductHeader(bool enLiquidacion, bool tienePromocionGratis,
+      bool tieneDescuentoPorcentual) {
+    Color nombreColor = Colors.white;
     if (enLiquidacion) {
       nombreColor = Colors.amber;
     } else if (tienePromocionGratis) {
@@ -160,47 +178,259 @@ class ListItemBusquedaProducto extends StatelessWidget {
         Expanded(
           child: Text(
             producto['nombre'],
-            // Aplicar estilo condicional para cualquier promoción
             style: TextStyle(
-              fontWeight: FontWeight.bold, // Mantener negrita siempre
+              fontWeight: FontWeight.bold,
               fontSize: isMobile ? 16 : 18,
-              color: nombreColor, // Usar el color determinado
+              color: nombreColor,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        _buildDetailsButton(),
       ],
     );
   }
 
-  Widget _buildDetailsButton() {
-    return Container(
-      margin: const EdgeInsets.only(left: 8),
-      width: isMobile ? 38 : 42,
-      height: isMobile ? 38 : 42,
-      decoration: BoxDecoration(
-        color: Colors.blue.shade700,
-        shape: BoxShape.circle,
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: IconButton(
-        icon: const Icon(
-          Icons.search,
-          color: Colors.white,
-          size: 22,
+  void _mostrarDetallesProducto(BuildContext context) {
+    final bool enLiquidacion = producto['enLiquidacion'] ?? false;
+    final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
+    final bool tieneDescuentoPorcentual =
+        producto['tieneDescuentoPorcentual'] ?? false;
+    final bool tieneStock = producto['stock'] > 0;
+    final Color colorPromocion =
+        _getPromocionColor(tienePromocionGratis, tieneDescuentoPorcentual);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => Dialog(
+        backgroundColor: darkSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
-        padding: EdgeInsets.zero,
-        onPressed: () => onProductoSeleccionado(producto),
-        tooltip: 'Ver detalle',
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              // Encabezado con icono y nombre
+              Row(
+                children: <Widget>[
+                  Hero(
+                    tag: 'producto_${producto['id']}',
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: darkBackground,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colorPromocion,
+                          width: 2,
+                        ),
+                      ),
+                      child: Center(
+                        child: FaIcon(
+                          FontAwesomeIcons.box,
+                          size: 28,
+                          color: tieneStock
+                              ? (enLiquidacion ||
+                                      tienePromocionGratis ||
+                                      tieneDescuentoPorcentual
+                                  ? Colors.amber
+                                  : Colors.green)
+                              : Colors.red,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          producto['nombre'],
+                          style: TextStyle(
+                            color: colorPromocion,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Código: ${producto['codigo']}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white60),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Información de stock y precio
+              _buildDetalleItem(
+                icon: Icons.inventory_2,
+                color: tieneStock ? Colors.green : Colors.red,
+                titulo: 'Stock Disponible',
+                subtitulo: '${producto['stock']} unidades',
+                small: true,
+              ),
+              const SizedBox(height: 16),
+
+              _buildDetalleItem(
+                icon: Icons.attach_money,
+                color: Colors.green,
+                titulo: 'Precio Regular',
+                subtitulo: '\$${producto['precio']}',
+              ),
+
+              if (enLiquidacion) ...[
+                const SizedBox(height: 16),
+                _buildDetalleItem(
+                  icon: Icons.local_fire_department,
+                  color: Colors.amber,
+                  titulo: 'Precio Liquidación',
+                  subtitulo: '\$${producto['precioLiquidacion']}',
+                ),
+              ],
+
+              // Información de promociones
+              if (tienePromocionGratis) ...[
+                const SizedBox(height: 16),
+                _buildDetalleItem(
+                  icon: Icons.card_giftcard,
+                  color: Colors.green,
+                  titulo: 'Promoción "Lleva y Paga"',
+                  subtitulo:
+                      'Lleva ${producto['cantidadMinima']} y paga ${producto['cantidadMinima'] - producto['cantidadGratis']}',
+                ),
+              ],
+
+              if (tieneDescuentoPorcentual) ...[
+                const SizedBox(height: 16),
+                _buildDetalleItem(
+                  icon: Icons.percent,
+                  color: Colors.purple,
+                  titulo: 'Descuento por Cantidad',
+                  subtitulo:
+                      '${producto['descuentoPorcentaje']}% al llevar ${producto['cantidadMinima']} o más',
+                ),
+              ],
+
+              const SizedBox(height: 16),
+              // Categoría y marca
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: _buildDetalleItem(
+                      icon: Icons.category,
+                      color: Colors.blue,
+                      titulo: 'Categoría',
+                      subtitulo: producto['categoria'] ?? 'Sin categoría',
+                      small: true,
+                    ),
+                  ),
+                  if (producto['marca'] != null &&
+                      producto['marca'].toString().isNotEmpty) ...[
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildDetalleItem(
+                        icon: Icons.business,
+                        color: Colors.orange,
+                        titulo: 'Marca',
+                        subtitulo: producto['marca'],
+                        small: true,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+
+              const SizedBox(height: 24),
+              // Botón de seleccionar
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    onProductoSeleccionado(producto);
+                  },
+                  icon: const Icon(Icons.check_circle),
+                  label: const Text('Seleccionar Producto'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorPromocion,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+
+  Widget _buildDetalleItem({
+    required IconData icon,
+    required Color color,
+    required String titulo,
+    required String subtitulo,
+    bool small = false,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: color,
+            size: small ? 16 : 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                titulo,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: small ? 12 : 14,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitulo,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: small ? 13 : 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -240,15 +470,16 @@ class ListItemBusquedaProducto extends StatelessWidget {
               'Categoría: ${producto['categoria']}',
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: _isCategoriaHighlighted() ? FontWeight.bold : FontWeight.w500,
+                fontWeight: _isCategoriaHighlighted()
+                    ? FontWeight.bold
+                    : FontWeight.w500,
                 color: _isCategoriaHighlighted() ? Colors.blue : Colors.white60,
               ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
         const SizedBox(width: 8),
-        if (producto['color'] != null)
-          _buildColorInfo(producto['color']),
+        if (producto['color'] != null) _buildColorInfo(producto['color']),
       ],
     );
   }
@@ -308,24 +539,20 @@ class ListItemBusquedaProducto extends StatelessWidget {
     );
   }
 
-  // Corregir firma: eliminar el parámetro enLiquidacion que ya no se usa aquí
-  Widget _buildPromotionChips(bool tienePromocionGratis, bool tieneDescuentoPorcentual) {
-    // Chip de liquidación eliminado de aquí
+  Widget _buildPromotionChips(
+      bool tienePromocionGratis, bool tieneDescuentoPorcentual) {
     return Wrap(
       spacing: 6,
       runSpacing: 6,
       children: <Widget>[
         if (tienePromocionGratis)
           _buildPromoChip(
-            'Lleva ${producto['cantidadMinima']}, paga ${producto['cantidadMinima'] - producto['cantidadGratis']}',
-            Colors.green
-          ),
+              'Lleva ${producto['cantidadMinima']}, paga ${producto['cantidadMinima'] - producto['cantidadGratis']}',
+              Colors.green),
         if (tieneDescuentoPorcentual)
           _buildPromoChip(
-            '${producto['descuentoPorcentaje']}% x ${producto['cantidadMinima']}+',
-            Colors.purple
-          ),
-        // El chip de liquidación ya no se muestra aquí
+              '${producto['descuentoPorcentaje']}% x ${producto['cantidadMinima']}+',
+              Colors.purple),
       ],
     );
   }
@@ -353,7 +580,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
     if (colorNombre == null || colorNombre.isEmpty) {
       return const SizedBox.shrink();
     }
-    
+
     ColorApp? color;
     for (ColorApp c in colores) {
       if (c.nombre.toLowerCase() == colorNombre.toString().toLowerCase()) {
@@ -361,7 +588,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
         break;
       }
     }
-    
+
     if (color == null) {
       return Text(
         'Color: $colorNombre',
@@ -372,7 +599,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
         ),
       );
     }
-    
+
     return Row(
       children: <Widget>[
         Container(
@@ -405,27 +632,30 @@ class ListItemBusquedaProducto extends StatelessWidget {
   }
 
   /// Calcula el porcentaje de descuento entre dos precios
-  int _calcularDescuentoPorcentaje(double precioOriginal, double precioDescuento) {
+  int _calcularDescuentoPorcentaje(
+      double precioOriginal, double precioDescuento) {
     if (precioOriginal <= 0) {
       return 0;
     }
-    final double descuento = ((precioOriginal - precioDescuento) / precioOriginal) * 100;
+    final double descuento =
+        ((precioOriginal - precioDescuento) / precioOriginal) * 100;
     return descuento.round();
   }
 
-  Color _getPromocionColor(bool tienePromocionGratis, bool tieneDescuentoPorcentual) {
+  Color _getPromocionColor(
+      bool tienePromocionGratis, bool tieneDescuentoPorcentual) {
     if (tienePromocionGratis) {
       return Colors.green;
-    }
-    if (tieneDescuentoPorcentual) {
+    } else if (tieneDescuentoPorcentual) {
       return Colors.purple;
     }
-    return Colors.amber;
+    return Colors.blue;
   }
 
   bool _isCategoriaHighlighted() {
-    return filtroCategoria != 'Todos' && 
-           producto['categoria'].toString().toLowerCase() == filtroCategoria.toLowerCase();
+    return filtroCategoria != 'Todos' &&
+        producto['categoria'].toString().toLowerCase() ==
+            filtroCategoria.toLowerCase();
   }
 
   @override
@@ -433,7 +663,8 @@ class ListItemBusquedaProducto extends StatelessWidget {
     super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty<Map<String, dynamic>>('producto', producto))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has('onProductoSeleccionado', onProductoSeleccionado))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has(
+          'onProductoSeleccionado', onProductoSeleccionado))
       ..add(IterableProperty<ColorApp>('colores', colores))
       ..add(ColorProperty('darkBackground', darkBackground))
       ..add(ColorProperty('darkSurface', darkSurface))

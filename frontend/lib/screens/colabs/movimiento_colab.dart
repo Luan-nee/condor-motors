@@ -42,17 +42,19 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
   // Obtener datos del usuario y cargar movimientos
   Future<void> _obtenerDatosUsuario() async {
     setState(() => _isLoading = true);
-    
+
     try {
       // Obtener datos del usuario autenticado
-      final Map<String, dynamic>? userData = await api.authService.getUserData();
+      final Map<String, dynamic>? userData =
+          await api.authService.getUserData();
       if (userData != null) {
         setState(() {
           _sucursalId = userData['sucursalId']?.toString();
           _empleadoId = int.tryParse(userData['id']?.toString() ?? '0');
         });
-        
-        debugPrint('Usuario obtenido: ID=$_empleadoId, SucursalID=$_sucursalId');
+
+        debugPrint(
+            'Usuario obtenido: ID=$_empleadoId, SucursalID=$_sucursalId');
       } else {
         debugPrint('No se pudieron obtener datos del usuario');
       }
@@ -67,45 +69,47 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
   // Cargar movimientos desde la API
   Future<void> _cargarMovimientos() async {
     if (_sucursalId == null) {
-      debugPrint('No se puede cargar movimientos: ID de sucursal no disponible');
+      debugPrint(
+          'No se puede cargar movimientos: ID de sucursal no disponible');
       setState(() => _isLoading = false);
       return;
     }
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
       debugPrint('Cargando movimientos para sucursal ID: $_sucursalId');
-      
+
       // Determinar si se debe aplicar un filtro de estado
       String? estadoFiltro;
       if (_selectedFilter != 'Todos') {
         estadoFiltro = _selectedFilter.toUpperCase().replaceAll('ES', '');
       }
-      
+
       // Obtener movimientos desde la API
-      final List<Movimiento> movimientosData = await _movimientosApi.getMovimientos(
+      final List<Movimiento> movimientosData =
+          await _movimientosApi.getMovimientos(
         sucursalId: _sucursalId,
         estado: estadoFiltro,
         forceRefresh: true, // Forzar actualización desde el servidor
       );
-      
+
       if (!mounted) {
         return;
       }
-      
+
       setState(() {
         _movimientos = movimientosData;
         _isLoading = false;
       });
-      
+
       debugPrint('Movimientos cargados: ${_movimientos.length}');
     } catch (e) {
       debugPrint('Error al cargar movimientos: $e');
-      
+
       if (mounted) {
         setState(() => _isLoading = false);
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al cargar movimientos: $e'),
@@ -121,9 +125,12 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
     if (_selectedFilter == 'Todos') {
       return _movimientos;
     }
-    
-    final String estadoFiltro = _selectedFilter.toUpperCase().replaceAll('ES', '');
-    return _movimientos.where((Movimiento m) => m.estado == estadoFiltro).toList();
+
+    final String estadoFiltro =
+        _selectedFilter.toUpperCase().replaceAll('ES', '');
+    return _movimientos
+        .where((Movimiento m) => m.estado == estadoFiltro)
+        .toList();
   }
 
   @override
@@ -131,7 +138,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
     final List<Movimiento> movimientosFiltrados = _getMovimientosFiltrados();
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       appBar: AppBar(
@@ -176,15 +183,15 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                 ],
               ),
               tooltip: 'Filtrar por estado',
-              itemBuilder: (BuildContext context) => _filters.map((String filter) {
+              itemBuilder: (BuildContext context) =>
+                  _filters.map((String filter) {
                 final bool isSelected = _selectedFilter == filter;
                 Color? stateColor;
                 if (filter != 'Todos') {
                   stateColor = _getEstadoColor(
-                    filter.toUpperCase().replaceAll('ES', '')
-                  );
+                      filter.toUpperCase().replaceAll('ES', ''));
                 }
-                
+
                 return PopupMenuItem<String>(
                   value: filter,
                   child: Row(
@@ -192,7 +199,8 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                       if (isSelected)
                         const Padding(
                           padding: EdgeInsets.only(right: 8),
-                          child: Icon(Icons.check, size: 18, color: Colors.white),
+                          child:
+                              Icon(Icons.check, size: 18, color: Colors.white),
                         ),
                       if (stateColor != null)
                         Padding(
@@ -287,35 +295,36 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: _getEstadoColor(
-                            _selectedFilter.toUpperCase().replaceAll('ES', '')
-                          ).withOpacity(0.1),
+                          color: _getEstadoColor(_selectedFilter
+                                  .toUpperCase()
+                                  .replaceAll('ES', ''))
+                              .withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: _getEstadoColor(
-                              _selectedFilter.toUpperCase().replaceAll('ES', '')
-                            ),
+                            color: _getEstadoColor(_selectedFilter
+                                .toUpperCase()
+                                .replaceAll('ES', '')),
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
                             FaIcon(
-                              _getEstadoIcon(
-                                _selectedFilter.toUpperCase().replaceAll('ES', '')
-                              ),
+                              _getEstadoIcon(_selectedFilter
+                                  .toUpperCase()
+                                  .replaceAll('ES', '')),
                               size: 14,
-                              color: _getEstadoColor(
-                                _selectedFilter.toUpperCase().replaceAll('ES', '')
-                              ),
+                              color: _getEstadoColor(_selectedFilter
+                                  .toUpperCase()
+                                  .replaceAll('ES', '')),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               _selectedFilter,
                               style: TextStyle(
-                                color: _getEstadoColor(
-                                  _selectedFilter.toUpperCase().replaceAll('ES', '')
-                                ),
+                                color: _getEstadoColor(_selectedFilter
+                                    .toUpperCase()
+                                    .replaceAll('ES', '')),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
@@ -334,7 +343,8 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
             child: _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
                     ),
                   )
                 : movimientosFiltrados.isEmpty
@@ -362,7 +372,8 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                         padding: EdgeInsets.all(isMobile ? 8 : 16),
                         itemCount: movimientosFiltrados.length,
                         itemBuilder: (BuildContext context, int index) {
-                          final Movimiento movimiento = movimientosFiltrados[index];
+                          final Movimiento movimiento =
+                              movimientosFiltrados[index];
                           return _buildMovimientoCard(movimiento, isMobile);
                         },
                       ),
@@ -374,22 +385,23 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
           if (_sucursalId == null || _empleadoId == null) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Error: No se pudo obtener información del usuario'),
+                content:
+                    Text('Error: No se pudo obtener información del usuario'),
                 backgroundColor: Colors.red,
               ),
             );
             return;
           }
-          
+
           showDialog(
             context: context,
             builder: (BuildContext context) => MovimientoRequestDialog(
               onSave: (MovimientoStock movimientoData) async {
                 try {
                   setState(() => _isLoading = true);
-                  
+
                   // Crear movimiento usando la API
-                  
+
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -397,7 +409,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                         backgroundColor: Colors.green,
                       ),
                     );
-                    
+
                     // Recargar movimientos para mostrar el nuevo
                     await _cargarMovimientos();
                   }
@@ -475,7 +487,8 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: _getEstadoColor(movimiento.estado).withOpacity(0.1),
+                              color: _getEstadoColor(movimiento.estado)
+                                  .withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -503,7 +516,8 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                 if (movimiento.estado == 'DESPACHADO')
                   ElevatedButton.icon(
                     onPressed: () => _showValidationDialog(movimiento),
-                    icon: FaIcon(FontAwesomeIcons.check, size: isMobile ? 14 : 16),
+                    icon: FaIcon(FontAwesomeIcons.check,
+                        size: isMobile ? 14 : 16),
                     label: Text(
                       'Validar',
                       style: TextStyle(fontSize: isMobile ? 12 : 14),
@@ -520,7 +534,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
               ],
             ),
           ),
-          
+
           // Línea de tiempo
           Padding(
             padding: EdgeInsets.all(isMobile ? 8 : 16),
@@ -545,13 +559,15 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                 ),
               ),
               children: <Widget>[
-                if (movimiento.productos != null && movimiento.productos!.isNotEmpty)
+                if (movimiento.productos != null &&
+                    movimiento.productos!.isNotEmpty)
                   ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: movimiento.productos!.length,
                     itemBuilder: (BuildContext context, int index) {
-                      final DetalleProducto detalle = movimiento.productos![index];
+                      final DetalleProducto detalle =
+                          movimiento.productos![index];
                       return Container(
                         margin: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -608,7 +624,8 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE31E24).withOpacity(0.1),
+                                    color: const Color(0xFFE31E24)
+                                        .withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
@@ -676,16 +693,16 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
         'title': 'Preparado',
         'icon': FontAwesomeIcons.boxOpen,
         'date': null,
-        'isCompleted': movimiento.estado == 'PREPARADO' || 
-                       movimiento.estado == 'DESPACHADO' || 
-                       movimiento.estado == 'RECIBIDO',
+        'isCompleted': movimiento.estado == 'PREPARADO' ||
+            movimiento.estado == 'DESPACHADO' ||
+            movimiento.estado == 'RECIBIDO',
       },
       <String, Object?>{
         'title': 'Despachado',
         'icon': FontAwesomeIcons.truckFast,
         'date': null,
-        'isCompleted': movimiento.estado == 'DESPACHADO' || 
-                       movimiento.estado == 'RECIBIDO',
+        'isCompleted': movimiento.estado == 'DESPACHADO' ||
+            movimiento.estado == 'RECIBIDO',
       },
       <String, Object?>{
         'title': 'Recibido',
@@ -696,12 +713,15 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
     ];
 
     return Row(
-      children: steps.asMap().entries.map((MapEntry<int, Map<String, Object?>> entry) {
+      children: steps
+          .asMap()
+          .entries
+          .map((MapEntry<int, Map<String, Object?>> entry) {
         final int index = entry.key;
         final Map<String, Object?> step = entry.value;
         final bool isLast = index == steps.length - 1;
         final DateTime? date = step['date'] as DateTime?;
-        final String? formattedDate = date != null 
+        final String? formattedDate = date != null
             ? '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}'
             : null;
 
@@ -928,8 +948,10 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                     ),
                     const SizedBox(height: 8),
                     // Lista de productos
-                    if (movimiento.productos != null && movimiento.productos!.isNotEmpty)
-                      ...movimiento.productos!.map<Widget>((DetalleProducto detalle) {
+                    if (movimiento.productos != null &&
+                        movimiento.productos!.isNotEmpty)
+                      ...movimiento.productos!
+                          .map<Widget>((DetalleProducto detalle) {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(12),
@@ -942,7 +964,8 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFE31E24).withOpacity(0.1),
+                                  color:
+                                      const Color(0xFFE31E24).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const FaIcon(
@@ -979,7 +1002,8 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFE31E24).withOpacity(0.1),
+                                  color:
+                                      const Color(0xFFE31E24).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -1047,11 +1071,11 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
       ),
     );
   }
-  
+
   // Método para validar la recepción de un movimiento
   Future<void> _validarRecepcion(Movimiento movimiento) async {
     setState(() => _isLoading = true);
-    
+
     try {
       // Actualizar estado del movimiento a RECIBIDO
       await _movimientosApi.cambiarEstado(
@@ -1059,7 +1083,7 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
         'RECIBIDO',
         observacion: 'Recepción validada correctamente',
       );
-      
+
       // Mostrar mensaje de éxito
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1069,12 +1093,12 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
           ),
         );
       }
-      
+
       // Recargar movimientos
       await _cargarMovimientos();
     } catch (e) {
       debugPrint('Error al validar recepción: $e');
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1086,4 +1110,4 @@ class _MovimientosColabScreenState extends State<MovimientosColabScreen> {
       }
     }
   }
-} 
+}

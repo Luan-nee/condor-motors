@@ -69,10 +69,10 @@ class StockProvider extends ChangeNotifier {
   bool get mostrarVistaConsolidada => _mostrarVistaConsolidada;
 
   /// Inicializar el provider
-  void inicializar() {
-    cargarSucursales();
+  Future<void> inicializar() async {
     // Establecer stock bajo como filtro predeterminado
     _filtroEstadoStock = StockStatus.stockBajo;
+    await cargarSucursales();
   }
 
   /// Obtiene el estado del stock como enumeración
@@ -139,28 +139,29 @@ class StockProvider extends ChangeNotifier {
 
   /// Cargar las sucursales disponibles
   Future<void> cargarSucursales() async {
-    _isLoadingSucursales = true;
-    notifyListeners();
+    if (!_isLoadingSucursales) {
+      _isLoadingSucursales = true;
+      notifyListeners();
+    }
 
     try {
       final List<Sucursal> sucursales = await api.sucursales.getSucursales();
-
       _sucursales = sucursales;
-      _isLoadingSucursales = false;
-      notifyListeners();
 
       // Seleccionar automáticamente la primera sucursal si hay sucursales disponibles
       if (sucursales.isNotEmpty && _selectedSucursalId.isEmpty) {
-        seleccionarSucursal(sucursales.first);
+        await seleccionarSucursal(sucursales.first);
       }
     } catch (e) {
+      debugPrint('Error cargando sucursales: $e');
+    } finally {
       _isLoadingSucursales = false;
       notifyListeners();
     }
   }
 
   /// Selecciona una sucursal y carga sus productos
-  void seleccionarSucursal(Sucursal sucursal) {
+  Future<void> seleccionarSucursal(Sucursal sucursal) async {
     _selectedSucursalId = sucursal.id;
     _selectedSucursalNombre = sucursal.nombre;
     _selectedSucursal = sucursal;
@@ -171,7 +172,7 @@ class StockProvider extends ChangeNotifier {
         false; // Desactivar vista consolidada al cambiar de sucursal
     notifyListeners();
 
-    cargarProductos(sucursal.id);
+    await cargarProductos(sucursal.id);
   }
 
   /// Método para cargar productos de la sucursal seleccionada (vista individual)

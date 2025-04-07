@@ -37,11 +37,12 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
   // Estado de la lista
   bool _isListScrollable = false;
 
+  bool _isInitialized = false;
+
   @override
   void initState() {
     super.initState();
     _sucursalProvider = Provider.of<SucursalProvider>(context, listen: false);
-    _sucursalProvider.inicializar();
 
     // Configurar animaciones
     _animationController = AnimationController(
@@ -56,6 +57,18 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
 
     // Escuchar cambios en el scroll para mostrar botón "ir arriba"
     _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      // Inicializar de manera asíncrona
+      Future<void>.microtask(() async {
+        await _sucursalProvider.inicializar();
+      });
+      _isInitialized = true;
+    }
   }
 
   void _onScroll() {

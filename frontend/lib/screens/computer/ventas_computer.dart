@@ -2,7 +2,9 @@ import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
 import 'package:condorsmotors/screens/admin/widgets/venta/venta_detalle_dialog.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -18,6 +20,13 @@ class VentasComputerScreen extends StatefulWidget {
 
   @override
   State<VentasComputerScreen> createState() => _VentasComputerScreenState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(IntProperty('sucursalId', sucursalId));
+    properties.add(StringProperty('nombreSucursal', nombreSucursal));
+  }
 }
 
 class _VentasComputerScreenState extends State<VentasComputerScreen> {
@@ -762,12 +771,15 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
 
   Future<void> _mostrarSelectorFechas(
       BuildContext context, VentasComputerProvider ventasProvider) async {
+    // Guardar el contexto en una variable local
+    final BuildContext currentContext = context;
+
     if (!mounted) {
       return;
     }
 
     final DateTimeRange? rango = await showDateRangePicker(
-      context: context,
+      context: currentContext,
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 1)),
       initialDateRange:
@@ -802,30 +814,35 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
         rango.end,
       );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Filtrando desde ${DateFormat('dd/MM/yyyy').format(rango.start)} hasta ${DateFormat('dd/MM/yyyy').format(rango.end)}',
-            ),
-            backgroundColor: Colors.green,
-            action: SnackBarAction(
-              label: 'Limpiar',
-              textColor: Colors.white,
-              onPressed: () {
-                if (mounted) {
-                  ventasProvider.actualizarFiltrosFecha(null, null);
-                }
-              },
-            ),
-          ),
-        );
+      if (!mounted) {
+        return;
       }
+
+      ScaffoldMessenger.of(currentContext).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Filtrando desde ${DateFormat('dd/MM/yyyy').format(rango.start)} hasta ${DateFormat('dd/MM/yyyy').format(rango.end)}',
+          ),
+          backgroundColor: Colors.green,
+          action: SnackBarAction(
+            label: 'Limpiar',
+            textColor: Colors.white,
+            onPressed: () {
+              if (mounted) {
+                ventasProvider.actualizarFiltrosFecha(null, null);
+              }
+            },
+          ),
+        ),
+      );
     }
   }
 
   void _mostrarMenuEstados(
       BuildContext context, VentasComputerProvider ventasProvider) {
+    // Guardar el contexto en una variable local
+    final BuildContext currentContext = context;
+
     if (!mounted) {
       return;
     }
@@ -839,9 +856,9 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
       {'id': 'ACEPTADO-SUNAT', 'nombre': 'Aceptado SUNAT'},
     ];
 
-    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox button = currentContext.findRenderObject() as RenderBox;
     final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
+        Overlay.of(currentContext).context.findRenderObject() as RenderBox;
     final RelativeRect position = RelativeRect.fromRect(
       Rect.fromPoints(
         button.localToGlobal(Offset.zero, ancestor: overlay),
@@ -852,7 +869,7 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
     );
 
     showMenu<String>(
-      context: context,
+      context: currentContext,
       position: position,
       color: const Color(0xFF2D2D2D),
       items: estados.map((estado) {
@@ -907,7 +924,7 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
         if (!mounted) {
           return;
         }
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(currentContext).showSnackBar(
           SnackBar(
             content: Text(
               'Filtrando por estado: ${seleccionado ?? 'Todos'}',

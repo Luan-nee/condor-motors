@@ -1012,8 +1012,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
         VentasUtils.tienePdfTicketDisponible(widget.venta!);
 
     // Obtener URLs de PDFs en diferentes formatos
-    final String? pdfLinkA4 =
-        VentasUtils.obtenerUrlPdf(widget.venta!, formatoTicket: false);
+    final String? pdfLinkA4 = VentasUtils.obtenerUrlPdf(widget.venta!);
     final String? pdfLinkTicket =
         VentasUtils.obtenerUrlPdf(widget.venta!, formatoTicket: true);
 

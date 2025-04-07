@@ -1,13 +1,972 @@
-import 'dart:math' as math;
+import 'dart:convert';
 
 import 'package:condorsmotors/api/main.api.dart';
-import 'package:condorsmotors/services/token_service.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Clase para representar los datos del usuario autenticado
+/// Servicio para gestionar tokens de autenticación
+///
+/// Proporciona métodos para guardar, recuperar y gestionar tokens JWT
+class TokenService {
+  static final TokenService _instance = TokenService._internal();
+
+  // Singleton
+  static TokenService get instance => _instance;
+
+  // Claves para almacenamiento en SharedPreferences
+  static const String _accessTokenKey = 'access_token';
+  static const String _refreshTokenKey = 'refresh_token';
+  static const String _expiryTimeKey = 'expiry_time';
+  static const String _lastUsernameKey = 'last_username';
+  static const String _lastPasswordKey = 'last_password';
+
+  // URL base del API (será configurada por la aplicación)
+  String _baseUrl = '';
+
+  // Variables en memoria
+  String? _accessToken;
+  String? _refreshToken;
+  DateTime? _expiryTime;
+
+  // Control de recursividad para evitar ciclos infinitos
+  bool _isRefreshingToken = false;
+  int _requestRetryCount = 0;
+  static const int _maxRetryCount = 2;
+
+  // Constructor privado
+  TokenService._internal();
+
+  // Configurar URL base
+  void setBaseUrl(String baseUrl) {
+    _baseUrl = baseUrl;
+    debugPrint('TokenService: URL base configurada: $_baseUrl');
+  }
+
+  // Getters
+  String? get accessToken => _accessToken;
+  String? get refreshToken => _refreshToken;
+  DateTime? get expiryTime => _expiryTime;
+
+  /// Verifica si el token está expirado o a punto de expirar
+  bool get isTokenExpired {
+    if (_accessToken == null || _expiryTime == null) {
+      return true;
+    }
+
+    // Considerar expirado solo si ya ha expirado realmente
+    final DateTime now = DateTime.now();
+    return now.isAfter(_expiryTime!);
+  }
+
+  /// Verifica si hay un token de refresco disponible
+  bool get hasRefreshToken =>
+      _refreshToken != null && _refreshToken!.isNotEmpty;
+
+  /// Verifica si hay un token de acceso válido
+  bool get hasValidToken => _accessToken != null && !isTokenExpired;
+
+  /// Carga los tokens desde SharedPreferences
+  Future<bool> loadTokens() async {
+    try {
+      debugPrint('TokenService: Cargando tokens desde SharedPreferences');
+
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      _accessToken = prefs.getString(_accessTokenKey);
+      _refreshToken = prefs.getString(_refreshTokenKey);
+
+      final String? expiryTimeStr = prefs.getString(_expiryTimeKey);
+      if (expiryTimeStr != null) {
+        _expiryTime = DateTime.parse(expiryTimeStr);
+      }
+
+      // Verificar si el token está expirado
+      if (isTokenExpired) {
+        debugPrint('TokenService: Token expirado o a punto de expirar');
+
+        // Intentar hacer login automático si hay credenciales guardadas
+        if (await _attemptAutoLogin()) {
+          debugPrint(
+              'TokenService: Login automático exitoso, token actualizado');
+          return true;
+        }
+
+        return false;
+      }
+
+      debugPrint('TokenService: Tokens cargados correctamente');
+      return _accessToken != null;
+    } catch (e) {
+      debugPrint('TokenService: ERROR al cargar tokens: $e');
+      return false;
+    }
+  }
+
+  /// Intenta hacer login automático con credenciales guardadas
+  Future<bool> _attemptAutoLogin() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? username = prefs.getString(_lastUsernameKey);
+      final String? password = prefs.getString(_lastPasswordKey);
+
+      if (username == null ||
+          password == null ||
+          username.isEmpty ||
+          password.isEmpty) {
+        debugPrint(
+            'TokenService: No hay credenciales guardadas para login automático');
+        return false;
+      }
+
+      if (_baseUrl.isEmpty) {
+        debugPrint(
+            'TokenService: URL base no configurada, no se puede hacer login automático');
+        return false;
+      }
+
+      debugPrint(
+          'TokenService: Intentando login automático para usuario: $username');
+
+      // Construir URL completa para login
+      final String loginUrl = '$_baseUrl/auth/login';
+
+      // Realizar solicitud de login
+      final http.Response response = await http
+          .post(
+            Uri.parse(loginUrl),
+            headers: <String, String>{'Content-Type': 'application/json'},
+            body: json.encode(<String, String>{
+              'usuario': username,
+              'clave': password,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      // Verificar respuesta
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final responseData = json.decode(response.body);
+
+        // Buscar token en la respuesta
+        String? accessToken;
+        String? refreshToken;
+        int expiryInSeconds = 3600; // 1 hora por defecto
+
+        if (responseData is Map<String, dynamic>) {
+          // Buscar token en diferentes ubicaciones posibles
+          if (responseData.containsKey('token')) {
+            accessToken = responseData['token']?.toString();
+          } else if (responseData.containsKey('access_token')) {
+            accessToken = responseData['access_token']?.toString();
+          } else if (responseData.containsKey('data') &&
+              responseData['data'] is Map) {
+            final Map<String, dynamic> data =
+                responseData['data'] as Map<String, dynamic>;
+            if (data.containsKey('token')) {
+              accessToken = data['token']?.toString();
+            } else if (data.containsKey('access_token')) {
+              accessToken = data['access_token']?.toString();
+            }
+          }
+
+          // Buscar refresh token
+          if (responseData.containsKey('refresh_token')) {
+            refreshToken = responseData['refresh_token']?.toString();
+          } else if (responseData.containsKey('refreshToken')) {
+            refreshToken = responseData['refreshToken']?.toString();
+          } else if (responseData.containsKey('data') &&
+              responseData['data'] is Map) {
+            final Map<String, dynamic> data =
+                responseData['data'] as Map<String, dynamic>;
+            if (data.containsKey('refresh_token')) {
+              refreshToken = data['refresh_token']?.toString();
+            } else if (data.containsKey('refreshToken')) {
+              refreshToken = data['refreshToken']?.toString();
+            }
+          }
+
+          // Buscar tiempo de expiración
+          if (responseData.containsKey('expires_in')) {
+            expiryInSeconds = responseData['expires_in'] is int
+                ? responseData['expires_in']
+                : int.tryParse(responseData['expires_in'].toString()) ?? 3600;
+          } else if (responseData.containsKey('expiresIn')) {
+            expiryInSeconds = responseData['expiresIn'] is int
+                ? responseData['expiresIn']
+                : int.tryParse(responseData['expiresIn'].toString()) ?? 3600;
+          }
+        }
+
+        // Si se encontró un token, guardarlo
+        if (accessToken != null && accessToken.isNotEmpty) {
+          await saveTokens(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            expiryInSeconds: expiryInSeconds,
+          );
+
+          debugPrint('TokenService: Login automático exitoso, token guardado');
+          return true;
+        }
+      }
+
+      debugPrint(
+          'TokenService: Login automático falló: ${response.statusCode}');
+      return false;
+    } catch (e) {
+      debugPrint('TokenService: ERROR en login automático: $e');
+      return false;
+    }
+  }
+
+  /// Guarda los tokens en SharedPreferences
+  Future<void> saveTokens({
+    required String accessToken,
+    String? refreshToken,
+    int expiryInSeconds = 3600, // 1 hora por defecto
+  }) async {
+    try {
+      debugPrint('TokenService: Guardando tokens en SharedPreferences');
+
+      // Actualizar variables en memoria primero
+      _accessToken = accessToken;
+      if (refreshToken != null) {
+        _refreshToken = refreshToken;
+      }
+
+      // Calcular tiempo de expiración
+      _expiryTime = DateTime.now().add(Duration(seconds: expiryInSeconds));
+
+      // Guardar en SharedPreferences
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      await prefs.setString(_accessTokenKey, accessToken);
+      if (refreshToken != null) {
+        await prefs.setString(_refreshTokenKey, refreshToken);
+      }
+      await prefs.setString(_expiryTimeKey, _expiryTime!.toIso8601String());
+
+      debugPrint('TokenService: Tokens guardados correctamente');
+    } catch (e) {
+      debugPrint('TokenService: ERROR al guardar tokens: $e');
+    }
+  }
+
+  /// Guarda las credenciales del usuario para futuros login automáticos
+  Future<void> saveCredentials(String username, String password) async {
+    try {
+      debugPrint('TokenService: Guardando credenciales para login automático');
+
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_lastUsernameKey, username);
+      await prefs.setString(_lastPasswordKey, password);
+
+      debugPrint('TokenService: Credenciales guardadas correctamente');
+    } catch (e) {
+      debugPrint('TokenService: ERROR al guardar credenciales: $e');
+    }
+  }
+
+  /// Elimina los tokens del almacenamiento
+  Future<void> clearTokens() async {
+    try {
+      debugPrint('TokenService: Eliminando tokens');
+
+      // Limpiar memoria
+      _accessToken = null;
+      _refreshToken = null;
+      _expiryTime = null;
+
+      // Limpiar SharedPreferences
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_accessTokenKey);
+      await prefs.remove(_refreshTokenKey);
+      await prefs.remove(_expiryTimeKey);
+
+      debugPrint('TokenService: Tokens eliminados correctamente');
+    } catch (e) {
+      debugPrint('TokenService: ERROR al eliminar tokens: $e');
+      // No propagar el error, para asegurarnos de que por lo menos en memoria se eliminan
+    }
+  }
+
+  /// Decodifica un token JWT y devuelve su payload
+  Map<String, dynamic>? decodeToken(String token) {
+    try {
+      // Dividir el token en partes
+      final List<String> parts = token.split('.');
+      if (parts.length < 2) {
+        debugPrint('TokenService: Formato de token inválido');
+        return null;
+      }
+
+      // Decodificar la parte del payload (segunda parte)
+      final String payload = parts[1];
+      final String normalized = base64Url.normalize(payload);
+      final String decodedPayload = utf8.decode(base64Url.decode(normalized));
+
+      return json.decode(decodedPayload) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('TokenService: ERROR al decodificar token: $e');
+      return null;
+    }
+  }
+
+  /// Extraer información específica del usuario del token
+  Map<String, dynamic> extractUserInfoFromToken() {
+    if (_accessToken == null) {
+      return <String, dynamic>{};
+    }
+
+    final Map<String, dynamic>? decodedToken = decodeToken(_accessToken!);
+    if (decodedToken == null) {
+      return <String, dynamic>{};
+    }
+
+    // Normalizar el rol
+    final String? rolOriginal = decodedToken['rolCuentaEmpleadoCodigo'];
+    String rolNormalizado = 'DESCONOCIDO';
+
+    if (rolOriginal != null) {
+      // Normalizar el rol según las reglas conocidas
+      switch (rolOriginal.toUpperCase()) {
+        case 'ADMINISTRADOR':
+        case 'ADMINSTRADOR': // Typo en backend
+        case 'ADM':
+        case 'ADMIN':
+          rolNormalizado = 'ADMINISTRADOR';
+          break;
+        case 'VENDEDOR':
+        case 'VEN':
+          rolNormalizado = 'VENDEDOR';
+          break;
+        case 'COMPUTADORA':
+        case 'COMP':
+          rolNormalizado = 'COMPUTADORA';
+          break;
+        default:
+          rolNormalizado = 'DESCONOCIDO';
+      }
+    }
+
+    return <String, dynamic>{
+      'id': decodedToken['id']?.toString() ?? '',
+      'usuario': decodedToken['usuario']?.toString() ?? '',
+      'rol': rolNormalizado,
+      'rolOriginal': rolOriginal,
+      'sucursalId': decodedToken['sucursalId']?.toString() ?? '',
+    };
+  }
+
+  /// Actualiza solo el refresh token manteniendo el access token existente
+  Future<void> updateRefreshToken(String refreshToken) async {
+    try {
+      debugPrint('TokenService: Actualizando solo el refresh token');
+
+      _refreshToken = refreshToken;
+
+      // Guardar en SharedPreferences
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_refreshTokenKey, refreshToken);
+
+      debugPrint('TokenService: Refresh token actualizado correctamente');
+    } catch (e) {
+      debugPrint('TokenService: ERROR al actualizar refresh token: $e');
+    }
+  }
+
+  /// Realiza una solicitud HTTP autenticada con manejo de tokens
+  Future<Map<String, dynamic>> authenticatedRequest({
+    required String endpoint,
+    required String method,
+    Map<String, dynamic>? body,
+    Map<String, String>? queryParams,
+    Map<String, String>? headers,
+  }) async {
+    if (_baseUrl.isEmpty) {
+      throw Exception('URL base no configurada en TokenService');
+    }
+
+    // Construir URL completa
+    String url = endpoint.startsWith('http')
+        ? endpoint
+        : '$_baseUrl${endpoint.startsWith('/') ? endpoint : '/$endpoint'}';
+
+    // Agregar parámetros de consulta si existen
+    if (queryParams != null && queryParams.isNotEmpty) {
+      final String queryString = queryParams.entries
+          .map((MapEntry<String, String> e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      url = '$url${url.contains('?') ? '&' : '?'}$queryString';
+    }
+
+    // Verificar si necesitamos refrescar el token antes de hacer la solicitud
+    if (_accessToken != null &&
+        isTokenExpired &&
+        hasRefreshToken &&
+        !_isRefreshingToken) {
+      debugPrint(
+          'TokenService: Token expirado, intentando refrescar antes de la solicitud');
+      try {
+        await _refreshTokenRequest();
+      } catch (e) {
+        debugPrint('TokenService: Error al refrescar token expirado: $e');
+        // Si no podemos refrescar, continuamos con el token actual (podría ser rechazado)
+      }
+    }
+
+    // Preparar encabezados
+    final Map<String, String> requestHeaders = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (headers != null) ...headers,
+    };
+
+    // Agregar token de autorización si existe
+    if (_accessToken != null && _accessToken!.isNotEmpty) {
+      requestHeaders['Authorization'] = 'Bearer $_accessToken';
+    } else {
+      debugPrint(
+          'TokenService: ADVERTENCIA - Realizando solicitud sin token de autenticación');
+    }
+
+    http.Response response;
+
+    // Realizar la solicitud HTTP según el método
+    try {
+      debugPrint('TokenService: Enviando solicitud $method a $url');
+
+      // Para solicitudes PATCH, añadir más detalles
+      if (method.toUpperCase() == 'PATCH') {
+        debugPrint('TokenService: [PATCH] URL completa: $url');
+        debugPrint('TokenService: [PATCH] Headers: $requestHeaders');
+        if (body != null) {
+          debugPrint('TokenService: [PATCH] Body: ${json.encode(body)}');
+        }
+      }
+
+      switch (method.toUpperCase()) {
+        case 'GET':
+          response = await http
+              .get(
+                Uri.parse(url),
+                headers: requestHeaders,
+              )
+              .timeout(const Duration(seconds: 30));
+          break;
+        case 'POST':
+          response = await http
+              .post(
+                Uri.parse(url),
+                headers: requestHeaders,
+                body: body != null ? json.encode(body) : null,
+              )
+              .timeout(const Duration(seconds: 30));
+          break;
+        case 'PUT':
+          response = await http
+              .put(
+                Uri.parse(url),
+                headers: requestHeaders,
+                body: body != null ? json.encode(body) : null,
+              )
+              .timeout(const Duration(seconds: 30));
+          break;
+        case 'PATCH':
+          response = await http
+              .patch(
+                Uri.parse(url),
+                headers: requestHeaders,
+                body: body != null ? json.encode(body) : null,
+              )
+              .timeout(const Duration(seconds: 30));
+          break;
+        case 'DELETE':
+          response = await http
+              .delete(
+                Uri.parse(url),
+                headers: requestHeaders,
+                body: body != null ? json.encode(body) : null,
+              )
+              .timeout(const Duration(seconds: 30));
+          break;
+        default:
+          throw Exception('Método HTTP no soportado: $method');
+      }
+
+      // Procesar la respuesta
+      final int statusCode = response.statusCode;
+
+      // Extraer token de la respuesta si existe
+      _processTokenFromResponse(response);
+
+      if (statusCode >= 200 && statusCode < 300) {
+        // Respuesta exitosa
+        if (response.body.isEmpty) {
+          return <String, dynamic>{'status': 'success'};
+        }
+
+        try {
+          final responseData = json.decode(response.body);
+          if (responseData is Map<String, dynamic>) {
+            return responseData;
+          } else {
+            return <String, dynamic>{'status': 'success', 'data': responseData};
+          }
+        } catch (e) {
+          return <String, dynamic>{'status': 'success', 'data': response.body};
+        }
+      } else if (statusCode == 401 &&
+          _accessToken != null &&
+          _requestRetryCount < _maxRetryCount) {
+        // Token rechazado, verificar si debemos intentar refrescar el token
+        // Si se ha especificado que no se debe reintentar con el header x-no-retry-on-401, respetarlo
+        final bool noRetryOn401 = headers != null &&
+            headers.containsKey('x-no-retry-on-401') &&
+            headers['x-no-retry-on-401'] == 'true';
+
+        if (noRetryOn401) {
+          debugPrint(
+              'TokenService: Token rechazado (401), pero no se reintentará debido al header x-no-retry-on-401');
+          // Convertir a una respuesta que indique claramente "no encontrado" (404)
+          if (response.body.toLowerCase().contains('not found') ||
+              response.body.toLowerCase().contains('no encontrado') ||
+              response.body.toLowerCase().contains('no existe')) {
+            throw Exception('404 - Resource not found: ${response.body}');
+          }
+          // Propagar el error original
+          throw _createExceptionFromResponse(statusCode, response.body);
+        }
+
+        debugPrint(
+            'TokenService: Token rechazado (401), intentando refrescar y reintentar');
+
+        _requestRetryCount++;
+
+        try {
+          // Intentar refrescar el token
+          await _refreshTokenRequest();
+
+          // Reintentar la solicitud original con el nuevo token
+          final Map<String, dynamic> retriedResponse =
+              await authenticatedRequest(
+            endpoint: endpoint,
+            method: method,
+            body: body,
+            queryParams: queryParams,
+            headers: headers,
+          );
+
+          _requestRetryCount = 0;
+          return retriedResponse;
+        } catch (refreshError) {
+          debugPrint(
+              'TokenService: Error al refrescar token rechazado: $refreshError');
+          _requestRetryCount = 0;
+
+          // Propagar el error original
+          throw _createExceptionFromResponse(statusCode, response.body);
+        }
+      } else {
+        // Otro tipo de error
+        throw _createExceptionFromResponse(statusCode, response.body);
+      }
+    } catch (e) {
+      if (e is Exception) {
+        rethrow;
+      }
+      throw Exception('Error en la solicitud: $e');
+    } finally {
+      _requestRetryCount = 0;
+    }
+  }
+
+  /// Procesa y extrae tokens de la respuesta HTTP si existen
+  void _processTokenFromResponse(http.Response response) {
+    try {
+      final Map<String, String> headers = response.headers;
+      final body = response.body.isNotEmpty ? json.decode(response.body) : null;
+
+      // Verificar si hay token en los encabezados
+      final String authHeader = headers['authorization'] ?? '';
+      if (authHeader.startsWith('Bearer ')) {
+        final String token = authHeader.substring(7);
+        if (token.isNotEmpty) {
+          debugPrint(
+              'TokenService: Token encontrado en encabezados de respuesta');
+
+          // Decodificar token para obtener tiempo de expiración
+          final Map<String, dynamic>? decodedToken = decodeToken(token);
+          int expiryInSeconds = 3600; // 1 hora por defecto
+
+          if (decodedToken != null && decodedToken.containsKey('exp')) {
+            final int expTimestamp = decodedToken['exp'] as int;
+            final int now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+            expiryInSeconds = expTimestamp - now;
+          }
+
+          // Guardar el token
+          saveTokens(
+            accessToken: token,
+            expiryInSeconds: expiryInSeconds,
+          );
+        }
+      }
+
+      // Si no hay token en los encabezados, buscar en el cuerpo
+      if (body != null && body is Map<String, dynamic>) {
+        String? accessToken;
+        String? refreshToken;
+        int expiryInSeconds = 3600; // 1 hora por defecto
+
+        // Buscar token de acceso en diferentes ubicaciones posibles
+        if (body.containsKey('token')) {
+          accessToken = body['token']?.toString();
+        } else if (body.containsKey('access_token')) {
+          accessToken = body['access_token']?.toString();
+        } else if (body.containsKey('data') && body['data'] is Map) {
+          final Map<String, dynamic> data =
+              body['data'] as Map<String, dynamic>;
+          if (data.containsKey('token')) {
+            accessToken = data['token']?.toString();
+          } else if (data.containsKey('access_token')) {
+            accessToken = data['access_token']?.toString();
+          }
+        }
+
+        // Buscar refresh token
+        if (body.containsKey('refresh_token')) {
+          refreshToken = body['refresh_token']?.toString();
+        } else if (body.containsKey('refreshToken')) {
+          refreshToken = body['refreshToken']?.toString();
+        } else if (body.containsKey('data') && body['data'] is Map) {
+          final Map<String, dynamic> data =
+              body['data'] as Map<String, dynamic>;
+          if (data.containsKey('refresh_token')) {
+            refreshToken = data['refresh_token']?.toString();
+          } else if (data.containsKey('refreshToken')) {
+            refreshToken = data['refreshToken']?.toString();
+          }
+        }
+
+        // Buscar tiempo de expiración
+        if (body.containsKey('expires_in')) {
+          expiryInSeconds = body['expires_in'] is int
+              ? body['expires_in']
+              : int.tryParse(body['expires_in'].toString()) ?? 3600;
+        } else if (body.containsKey('expiresIn')) {
+          expiryInSeconds = body['expiresIn'] is int
+              ? body['expiresIn']
+              : int.tryParse(body['expiresIn'].toString()) ?? 3600;
+        }
+
+        // Si el token fue encontrado en el cuerpo, guardarlo
+        if (accessToken != null && accessToken.isNotEmpty) {
+          debugPrint('TokenService: Token encontrado en cuerpo de respuesta');
+
+          // Decodificar token para verificar/ajustar tiempo de expiración
+          final Map<String, dynamic>? decodedToken = decodeToken(accessToken);
+          if (decodedToken != null && decodedToken.containsKey('exp')) {
+            final int expTimestamp = decodedToken['exp'] as int;
+            final int now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+            expiryInSeconds = expTimestamp - now;
+          }
+
+          // Guardar tokens
+          saveTokens(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            expiryInSeconds: expiryInSeconds,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('TokenService: ERROR al procesar tokens de respuesta: $e');
+    }
+  }
+
+  /// Refresca el token usando el endpoint /auth/refresh
+  Future<void> _refreshTokenRequest() async {
+    if (_isRefreshingToken) {
+      debugPrint(
+          'TokenService: Ya hay una operación de refresh en curso, esperando...');
+      // Esperar a que termine la operación actual
+      int attempts = 0;
+      while (_isRefreshingToken && attempts < 10) {
+        await Future.delayed(const Duration(milliseconds: 300));
+        attempts++;
+      }
+
+      if (_isRefreshingToken) {
+        throw Exception('Timeout esperando por operación de refresh token');
+      }
+
+      // Si ya no estamos refrescando y el token es válido, regresar
+      if (!isTokenExpired) {
+        return;
+      }
+    }
+
+    // Verificar que tenemos un refresh token
+    if (!hasRefreshToken) {
+      throw Exception('No hay refresh token disponible para renovar el token');
+    }
+
+    // Marcar que estamos refrescando para evitar llamadas simultáneas
+    _isRefreshingToken = true;
+
+    try {
+      debugPrint(
+          'TokenService: Intentando refrescar token con endpoint /auth/refresh');
+
+      // Construir URL para refresh
+      final String url = '$_baseUrl/auth/refresh';
+
+      // Preparar encabezados con el refresh token
+      final Map<String, String> headers = <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      // Incluir refresh token en body
+      final Map<String, String?> body = <String, String?>{
+        'refresh_token': _refreshToken,
+      };
+
+      // Realizar solicitud POST
+      final http.Response response = await http
+          .post(
+            Uri.parse(url),
+            headers: headers,
+            body: json.encode(body),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      final int statusCode = response.statusCode;
+
+      if (statusCode >= 200 && statusCode < 300) {
+        // Procesar tokens de la respuesta
+        _processTokenFromResponse(response);
+
+        // Verificar que se haya actualizado el token
+        if (isTokenExpired) {
+          throw Exception('Token sigue expirado después de refresh');
+        }
+
+        debugPrint('TokenService: Token refrescado exitosamente');
+      } else {
+        // Error al refrescar token
+        debugPrint('TokenService: Error al refrescar token: $statusCode');
+        throw _createExceptionFromResponse(statusCode, response.body);
+      }
+    } catch (e) {
+      debugPrint('TokenService: ERROR durante refresh token: $e');
+      // Si hay un error durante el refresh, limpiar tokens
+      await clearTokens();
+      rethrow;
+    } finally {
+      // Marcar que ya no estamos refrescando
+      _isRefreshingToken = false;
+    }
+  }
+
+  /// Crea una excepción a partir de la respuesta HTTP
+  Exception _createExceptionFromResponse(int statusCode, String responseBody) {
+    try {
+      // Intentar parsear el cuerpo para obtener mensaje de error
+      if (responseBody.isNotEmpty) {
+        final responseData = json.decode(responseBody);
+        if (responseData is Map<String, dynamic>) {
+          final message = responseData['message'] ??
+              responseData['error'] ??
+              'Error en la solicitud HTTP';
+          return Exception('$statusCode - $message');
+        }
+      }
+    } catch (e) {
+      // Si no se puede parsear, usar mensaje genérico
+    }
+
+    return Exception('$statusCode - Error en la solicitud HTTP');
+  }
+}
+
+/// Clase para gestionar la autenticación y tokens
+class AuthApi {
+  final ApiClient _api;
+  static const String _accessTokenKey = 'access_token';
+  static const String _refreshTokenKey = 'refresh_token';
+  static const String _userDataKey = 'user_data';
+
+  AuthApi(this._api);
+
+  /// Verifica si hay un token válido almacenado
+  Future<bool> isAuthenticated() async {
+    try {
+      final bool hasToken = await _hasValidToken();
+      if (!hasToken) {
+        return false;
+      }
+
+      // Verificar con el backend si el token es válido
+      return await verificarToken();
+    } catch (e) {
+      debugPrint('Error verificando autenticación: $e');
+      return false;
+    }
+  }
+
+  /// Verifica si hay un token almacenado y es válido
+  Future<bool> _hasValidToken() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString(_accessTokenKey);
+    return token != null && token.isNotEmpty;
+  }
+
+  /// Limpia los tokens y datos de usuario almacenados
+  Future<void> clearTokens() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await Future.wait([
+      prefs.remove(_accessTokenKey),
+      prefs.remove(_refreshTokenKey),
+      prefs.remove(_userDataKey),
+    ]);
+  }
+
+  /// Verifica si el token actual es válido con el backend
+  Future<bool> verificarToken() async {
+    try {
+      await _api.request(
+        endpoint: '/auth/testsession',
+        method: 'POST',
+        requiresAuth: true,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('Error verificando token: $e');
+      return false;
+    }
+  }
+
+  /// Inicia sesión con usuario y contraseña
+  Future<UsuarioAutenticado> login(String usuario, String clave) async {
+    try {
+      final Map<String, dynamic> response = await _api.request(
+        endpoint: '/auth/login',
+        method: 'POST',
+        body: <String, String>{
+          'usuario': usuario,
+          'clave': clave,
+        },
+      );
+
+      if (response['data'] == null ||
+          response['data'] is! Map<String, dynamic>) {
+        throw ApiException(
+          statusCode: 500,
+          message: 'Error: Formato de datos de usuario inválido',
+        );
+      }
+
+      // Guardar datos del usuario
+      final Map<String, dynamic> userData =
+          response['data'] as Map<String, dynamic>;
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_userDataKey, json.encode(userData));
+
+      // Obtener token de la respuesta - el backend lo envía en authorization header
+      final String? token =
+          response['authorization']?.toString().replaceAll('Bearer ', '');
+
+      if (token == null || token.isEmpty) {
+        debugPrint('Respuesta completa del servidor: $response');
+        throw ApiException(
+          statusCode: 401,
+          message: 'Error: No se pudo obtener el token de autenticación',
+          errorCode: ApiException.errorUnauthorized,
+        );
+      }
+
+      // Guardar refresh token si existe
+      final String? refreshToken = response['cookie']?.toString();
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await prefs.setString(_refreshTokenKey, refreshToken);
+        debugPrint('Refresh token guardado');
+      }
+
+      debugPrint(
+          'Login exitoso - Token guardado: ${token.substring(0, 10)}...');
+      return UsuarioAutenticado.fromJson(userData, token);
+    } catch (e) {
+      debugPrint('Error durante login: $e');
+      rethrow;
+    }
+  }
+
+  /// Cierra la sesión del usuario
+  Future<void> logout() async {
+    try {
+      await _api.request(
+        endpoint: '/auth/logout',
+        method: 'POST',
+        requiresAuth: true,
+      );
+      await clearTokens();
+    } catch (e) {
+      debugPrint('Error durante logout: $e');
+      // Limpiar tokens incluso si hay error en el backend
+      await clearTokens();
+      rethrow;
+    }
+  }
+
+  /// Refresca el token de acceso usando el refresh token
+  Future<void> refreshToken() async {
+    try {
+      final Map<String, dynamic> response = await _api.request(
+        endpoint: '/auth/refresh',
+        method: 'POST',
+        requiresAuth: true,
+      );
+
+      final String? newToken =
+          response['authorization']?.toString().replaceAll('Bearer ', '');
+      if (newToken == null || newToken.isEmpty) {
+        throw ApiException(
+          statusCode: 401,
+          message: 'Error: No se pudo obtener el nuevo token',
+          errorCode: ApiException.errorUnauthorized,
+        );
+      }
+
+      // Guardar nuevo token
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_accessTokenKey, newToken);
+    } catch (e) {
+      debugPrint('Error durante refresh token: $e');
+      rethrow;
+    }
+  }
+
+  /// Obtiene los datos del usuario almacenados localmente
+  Future<Map<String, dynamic>?> getUserData() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? userData = prefs.getString(_userDataKey);
+      if (userData == null) {
+        return null;
+      }
+      return json.decode(userData) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Error obteniendo datos del usuario: $e');
+      return null;
+    }
+  }
+}
+
+/// Clase para representar los datos del usuario autenticado
 class UsuarioAutenticado {
   final String id;
   final String usuario;
@@ -35,11 +994,11 @@ class UsuarioAutenticado {
 
   // Convertir a Map para almacenamiento o navegación
   Map<String, dynamic> toMap() {
-    // Convertir el código de rol a un formato reconocido por la aplicación
-    final String rolNormalizado = role_utils.normalizeRole(rolCuentaEmpleadoCodigo);
-    
-    debugPrint('Convirtiendo rol de "$rolCuentaEmpleadoCodigo" a "$rolNormalizado" para toMap');
-    
+    final String rolNormalizado =
+        role_utils.normalizeRole(rolCuentaEmpleadoCodigo);
+    debugPrint(
+        'Convirtiendo rol de "$rolCuentaEmpleadoCodigo" a "$rolNormalizado"');
+
     return <String, String>{
       'id': id,
       'usuario': usuario,
@@ -55,7 +1014,7 @@ class UsuarioAutenticado {
   // Crear desde respuesta JSON
   factory UsuarioAutenticado.fromJson(Map<String, dynamic> json, String token) {
     debugPrint('Procesando datos de usuario: ${json.toString()}');
-    
+
     // Extraer sucursalId con manejo seguro de tipos
     int sucursalId;
     try {
@@ -66,467 +1025,139 @@ class UsuarioAutenticado {
         debugPrint('Convertido sucursalId de String a int: $sucursalId');
       } else {
         sucursalId = 0;
-        debugPrint('ADVERTENCIA: sucursalId no es int ni String, usando valor por defecto 0');
+        debugPrint(
+            'ADVERTENCIA: sucursalId no es int ni String, usando valor por defecto 0');
       }
     } catch (e) {
       sucursalId = 0;
       debugPrint('ERROR al procesar sucursalId: $e');
     }
-    
+
     return UsuarioAutenticado(
       id: json['id']?.toString() ?? '',
       usuario: json['usuario'] ?? '',
       rolCuentaEmpleadoId: json['rolCuentaEmpleadoId']?.toString() ?? '',
       rolCuentaEmpleadoCodigo: json['rolCuentaEmpleadoCodigo'] ?? '',
       empleadoId: json['empleadoId']?.toString() ?? '',
-      fechaCreacion: json['fechaCreacion'] != null 
-          ? DateTime.parse(json['fechaCreacion']) 
+      fechaCreacion: json['fechaCreacion'] != null
+          ? DateTime.parse(json['fechaCreacion'])
           : DateTime.now(),
-      fechaActualizacion: json['fechaActualizacion'] != null 
-          ? DateTime.parse(json['fechaActualizacion']) 
+      fechaActualizacion: json['fechaActualizacion'] != null
+          ? DateTime.parse(json['fechaActualizacion'])
           : DateTime.now(),
       sucursal: json['sucursal'] ?? '',
       sucursalId: sucursalId,
       token: token,
     );
   }
-  
+
   @override
   String toString() {
     return 'UsuarioAutenticado{id: $id, usuario: $usuario, rol: $rolCuentaEmpleadoCodigo, sucursal: $sucursal, sucursalId: $sucursalId}';
   }
 }
 
-class AuthApi {
-  final ApiClient _api;
-  
-  AuthApi(this._api);
-  
-  /// Inicia sesión con usuario y contraseña
-  /// 
-  /// Retorna los datos del usuario y configura los tokens de autenticación
-  Future<UsuarioAutenticado> login(String usuario, String clave) async {
-    debugPrint('Intentando login para usuario: $usuario');
-    try {
-      // La solicitud a /auth/login configura automáticamente los tokens en TokenService
-      // gracias a nuestro método _processTokenFromResponse modificado
-      final Map<String, dynamic> response = await _api.request(
-        endpoint: '/auth/login',
-        method: 'POST',
-        body: <String, String>{
-          'usuario': usuario,
-          'clave': clave,
-        },
-      );
-      
-      debugPrint('Respuesta de login recibida: ${response.toString()}');
-      
-      // Verificar que data existe y es un Map
-      if (response['data'] == null) {
-        throw ApiException(
-          statusCode: 500,
-          message: 'Error: Datos de usuario no encontrados en la respuesta',
-        );
-      }
-      
-      if (response['data'] is! Map<String, dynamic>) {
-        debugPrint('ERROR: data no es un Map<String, dynamic>. Tipo actual: ${response['data'].runtimeType}');
-        debugPrint('Contenido de data: ${response['data']}');
-        throw ApiException(
-          statusCode: 500,
-          message: 'Error: Formato de datos de usuario inválido',
-        );
-      }
-      
-      final Map<String, dynamic> userData = response['data'] as Map<String, dynamic>;
-      
-      // Obtener el token ya procesado por ApiClient
-      final String? token = TokenService.instance.accessToken;
-      
-      if (token == null || token.isEmpty) {
-        debugPrint('ADVERTENCIA: No se encontró token después del login');
-        throw ApiException(
-          statusCode: 401,
-          message: 'Error: No se pudo obtener el token de autenticación',
-          errorCode: ApiException.errorUnauthorized,
-        );
-      }
-      
-      // Guardar credenciales para futuros reintentos
-      try {
-        // Guardar credenciales en el TokenService para login automático
-        await TokenService.instance.saveCredentials(usuario, clave);
-        debugPrint('Credenciales guardadas en TokenService para futuros reintentos de autenticación');
-      } catch (e) {
-        // No interrumpir el flujo si hay error al guardar credenciales
-        debugPrint('ADVERTENCIA: No se pudieron guardar credenciales: $e');
-      }
-      
-      // Crear y retornar el objeto de usuario autenticado
-      final UsuarioAutenticado usuarioAutenticado = UsuarioAutenticado.fromJson(userData, token);
-      
-      debugPrint('Usuario autenticado creado: $usuarioAutenticado');
-      return usuarioAutenticado;
-    } catch (e) {
-      debugPrint('ERROR durante login: $e');
-      rethrow;
-    }
-  }
-  
-  
-  /// Registra un nuevo usuario
-  /// 
-  /// Retorna los datos del usuario registrado y configura los tokens de autenticación
-  Future<UsuarioAutenticado> register(Map<String, dynamic> userData) async {
-    debugPrint('Intentando registrar nuevo usuario: ${userData['usuario']}');
-    try {
-      final Map<String, dynamic> response = await _api.request(
-        endpoint: '/auth/register',
-        method: 'POST',
-        body: userData,
-      );
-      
-      debugPrint('Respuesta de registro recibida: ${response.toString()}');
-      
-      // El token se configuró automáticamente en TokenService
-      final String? token = TokenService.instance.accessToken;
-      
-      if (token == null || token.isEmpty) {
-        debugPrint('ADVERTENCIA: Token vacío después del registro');
-        throw ApiException(
-          statusCode: 401,
-          message: 'Error: No se pudo obtener el token de autenticación',
-          errorCode: ApiException.errorUnauthorized,
-        );
-      }
-      
-      // Crear y retornar el objeto de usuario autenticado
-      final UsuarioAutenticado usuarioAutenticado = UsuarioAutenticado.fromJson(response['data'], token);
-      debugPrint('Usuario registrado creado: $usuarioAutenticado');
-      return usuarioAutenticado;
-    } catch (e) {
-      debugPrint('ERROR durante registro: $e');
-      rethrow;
-    }
-  }
-  
-  /// Refresca el token de acceso usando el token de refresco
-  /// 
-  /// Retorna un nuevo token de acceso
-  Future<String> refreshToken() async {
-    debugPrint('Intentando refrescar token');
-    try {
-      await Future.delayed(const Duration(milliseconds: 100));
-      
-      // Obtener el nuevo token
-      final String? token = TokenService.instance.accessToken;
-      
-      if (token == null || token.isEmpty) {
-        debugPrint('ADVERTENCIA: No se encontró token después del refresh');
-        throw ApiException(
-          statusCode: 401,
-          message: 'No se pudo obtener un token válido al refrescar',
-          errorCode: ApiException.errorUnauthorized,
-        );
-      }
-      
-      debugPrint('Token refrescado correctamente: ${token.substring(0, 20)}...');
-      return token;
-    } catch (e) {
-      debugPrint('ERROR durante refresh token: $e');
-      
-      // Si el error indica que el refresh token es inválido, eliminar todos los tokens
-      if (e is ApiException && 
-          (e.statusCode == 401 || e.message.contains('refresh token'))) {
-        debugPrint('Eliminando tokens debido a refresh token inválido');
-        await TokenService.instance.clearTokens();
-      }
-      
-      rethrow;
-    }
-  }
-
-  /// Método simple para verificar la conectividad con el servidor
-  /// 
-  /// Útil para detectar si el servidor está disponible
-  Future<bool> ping() async {
-    try {
-      // Intentamos hacer una petición simple a la raíz del servidor
-      // Este endpoint debería ser público y no requerir autenticación
-      final String serverUrl = _api.baseUrl.replaceAll('/api', '');
-      debugPrint('AuthApi: Haciendo ping a $serverUrl');
-      
-      final http.Response response = await http.get(
-        Uri.parse(serverUrl),
-        headers: <String, String>{'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 5));
-      
-      // Si la respuesta tiene código 200-299, el servidor está disponible
-      final bool isSuccess = response.statusCode >= 200 && response.statusCode < 300;
-      
-      debugPrint('AuthApi: Ping al servidor - Status: ${response.statusCode}, Éxito: $isSuccess');
-      return isSuccess;
-    } catch (e) {
-      debugPrint('AuthApi: Error al hacer ping al servidor: $e');
-      return false;
-    }
-  }
-  
-  /// Verifica si el token actual es válido o intenta renovarlo
-  ///
-  /// Este método verifica si el token está expirado y lo renueva si es necesario
-  Future<bool> verificarToken() async {
-    try {
-      // Si no hay token, fallar inmediatamente
-      final String? token = TokenService.instance.accessToken;
-      if (token == null) {
-        debugPrint('AuthApi: No hay token para verificar');
-        return false;
-      }
-      
-      // Verificar si el token está expirado según la fecha almacenada
-      if (TokenService.instance.isTokenExpired) {
-        debugPrint('AuthApi: Token expirado según fecha local: ${TokenService.instance.expiryTime}');
-        
-        // Si tenemos refresh token, intentar renovar
-        if (TokenService.instance.hasRefreshToken) {
-          debugPrint('AuthApi: Intentando renovar token expirado...');
-          try {
-            // Usar el método authenticatedRequest del TokenService
-            await TokenService.instance.authenticatedRequest(
-              endpoint: '/auth/refresh',
-              method: 'POST',
-            );
-            
-            debugPrint('AuthApi: Token renovado exitosamente');
-            return true;
-          } catch (e) {
-            debugPrint('AuthApi: Error al renovar token expirado: $e');
-            await TokenService.instance.clearTokens();
-            return false;
-          }
-        } else {
-          debugPrint('AuthApi: No hay refresh token para renovar token expirado');
-          await TokenService.instance.clearTokens();
-          return false;
-        }
-      }
-      
-      debugPrint('AuthApi: Verificando token con el servidor...');
-      debugPrint('AuthApi: Token actual (primeros 20 caracteres): ${token.substring(0, math.min(20, token.length))}...');
-      
-      // En lugar de usar /auth/status que no existe, verificamos la validez del token
-      // intentando obtener información desde el token mismo
-      try {
-        // Intentar decodificar el token para verificar si es válido
-        final Map<String, dynamic> tokenInfo = TokenService.instance.extractUserInfoFromToken();
-        if (tokenInfo.isEmpty) {
-          debugPrint('AuthApi: Token no contiene información válida');
-          return false;
-        }
-        
-        debugPrint('AuthApi: Token contiene información válida: ${tokenInfo['usuario']}, Rol: ${tokenInfo['rol']}');
-        
-        // Como verificación adicional, podemos hacer una petición a un endpoint que sabemos que existe
-        // Por ejemplo, podemos usar /cuentasempleados que requiere autenticación
-        try {
-          await TokenService.instance.authenticatedRequest(
-            endpoint: '/cuentasempleados',
-            method: 'GET',
-          );
-          debugPrint('AuthApi: Token verificado correctamente con petición a /cuentasempleados');
-          return true;
-        } catch (e) {
-          // Si hay un error 401, intentar refrescar el token
-          if (e.toString().contains('401')) {
-            debugPrint('AuthApi: Token rechazado por el servidor (401)');
-            
-            // Verificar si tenemos un refresh token para intentar renovar
-            if (TokenService.instance.hasRefreshToken) {
-              try {
-                debugPrint('AuthApi: Intentando renovar token rechazado...');
-                
-                // Usar el método authenticatedRequest del TokenService
-                await TokenService.instance.authenticatedRequest(
-                  endpoint: '/auth/refresh',
-                  method: 'POST',
-                );
-                
-                debugPrint('AuthApi: Token renovado exitosamente después de rechazo');
-                return true;
-              } catch (refreshError) {
-                debugPrint('AuthApi: Error al renovar token rechazado: $refreshError');
-                await TokenService.instance.clearTokens();
-                return false;
-              }
-            } else {
-              debugPrint('AuthApi: No hay refresh token disponible para renovar token rechazado');
-              await TokenService.instance.clearTokens();
-              return false;
-            }
-          }
-          
-          // Para otros errores que no sean 401, podríamos tener problemas de red
-          // pero el token todavía podría ser válido
-          debugPrint('AuthApi: Error al verificar token con el servidor (no 401): $e');
-          return !TokenService.instance.isTokenExpired;
-        }
-      } catch (e) {
-        debugPrint('AuthApi: Error al extraer información del token: $e');
-        return false;
-      }
-    } catch (e) {
-      debugPrint('AuthApi: Error al verificar token: $e');
-      return false;
-    }
-  }
-}
-
 class AuthService {
-  final TokenService _tokenService;
-  
-  // Claves para almacenamiento de datos de usuario
+  final AuthApi _auth;
   static const String _userIdKey = 'user_id';
   static const String _usernameKey = 'username';
   static const String _userRoleKey = 'user_role';
   static const String _userSucursalKey = 'user_sucursal';
   static const String _userSucursalIdKey = 'user_sucursal_id';
-  
-  AuthService(this._tokenService);
-  
-  // Guardar datos del usuario
+
+  AuthService(this._auth);
+
   Future<void> saveUserData(UsuarioAutenticado usuario) async {
-    debugPrint('Guardando datos de usuario: $usuario');
-    try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      
-      await prefs.setString(_userIdKey, usuario.id);
-      await prefs.setString(_usernameKey, usuario.usuario);
-      await prefs.setString(_userRoleKey, usuario.rolCuentaEmpleadoCodigo);
-      await prefs.setString(_userSucursalKey, usuario.sucursal);
-      await prefs.setString(_userSucursalIdKey, usuario.sucursalId.toString());
-      
-      debugPrint('Datos de usuario guardados correctamente');
-    } catch (e) {
-      debugPrint('ERROR al guardar datos de usuario: $e');
-      rethrow;
-    }
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userIdKey, usuario.id);
+    await prefs.setString(_usernameKey, usuario.usuario);
+    await prefs.setString(_userRoleKey, usuario.rolCuentaEmpleadoCodigo);
+    await prefs.setString(_userSucursalKey, usuario.sucursal);
+    await prefs.setString(_userSucursalIdKey, usuario.sucursalId.toString());
   }
-  
-  // Cargar tokens al iniciar la app
-  Future<bool> loadTokens() async {
-    return await _tokenService.loadTokens();
-  }
-  
-  // Obtener datos del usuario guardados
+
   Future<Map<String, dynamic>?> getUserData() async {
-    debugPrint('Obteniendo datos de usuario guardados');
-    try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      
-      final String? userId = prefs.getString(_userIdKey);
-      final String? username = prefs.getString(_usernameKey);
-      final String? userRole = prefs.getString(_userRoleKey);
-      final String? token = _tokenService.accessToken;
-      
-      if (userId != null && username != null && userRole != null && token != null) {
-        // Normalizar el rol para que coincida con los roles de la aplicación
-        final String rolNormalizado = role_utils.normalizeRole(userRole);
-        
-        debugPrint('Rol normalizado de "$userRole" a "$rolNormalizado" en getUserData');
-        
-        final Map<String, Object> userData = <String, Object>{
-          'id': userId,
-          'usuario': username,
-          'rol': rolNormalizado,
-          'token': token,
-          'sucursal': prefs.getString(_userSucursalKey) ?? '',
-          'sucursalId': int.tryParse(prefs.getString(_userSucursalIdKey) ?? '0') ?? 0,
-        };
-        debugPrint('Datos de usuario recuperados: $userData');
-        return userData;
-      }
-      
-      debugPrint('No se encontraron datos de usuario completos');
-      return null;
-    } catch (e) {
-      debugPrint('ERROR al obtener datos de usuario: $e');
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? id = prefs.getString(_userIdKey);
+    final String? username = prefs.getString(_usernameKey);
+    final String? role = prefs.getString(_userRoleKey);
+    final String? sucursal = prefs.getString(_userSucursalKey);
+    final String? sucursalId = prefs.getString(_userSucursalIdKey);
+
+    if (id == null || username == null || role == null) {
       return null;
     }
+
+    return <String, dynamic>{
+      'id': id,
+      'usuario': username,
+      'rol': role,
+      'sucursal': sucursal,
+      'sucursalId': sucursalId,
+    };
   }
-  
-  // Limpiar tokens y datos de usuario al cerrar sesión
+
   Future<void> logout() async {
-    debugPrint('Cerrando sesión, limpiando datos');
-    try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      
-      await prefs.remove(_userIdKey);
-      await prefs.remove(_usernameKey);
-      await prefs.remove(_userRoleKey);
-      await prefs.remove(_userSucursalKey);
-      await prefs.remove(_userSucursalIdKey);
-      await _tokenService.clearTokens();
-      
-      debugPrint('Sesión cerrada correctamente, todos los datos eliminados');
-    } catch (e) {
-      debugPrint('ERROR al cerrar sesión: $e');
-      rethrow;
-    }
+    await _auth.clearTokens();
   }
 }
 
 /// Clase para manejar operaciones relacionadas con cuentas de empleados
-/// 
+///
 /// Esta clase proporciona métodos para interactuar con el endpoint /api/cuentasempleados
 class CuentasEmpleadosApi {
   final ApiClient _api;
-  
+
   CuentasEmpleadosApi(this._api);
-  
+
   /// Obtiene todas las cuentas de empleados con información detallada
-  /// 
+  ///
   /// Retorna una lista con todas las cuentas de empleados incluyendo información
   /// sobre el empleado, rol y sucursal asociados
   Future<List<Map<String, dynamic>>> getCuentasEmpleados() async {
     try {
-      debugPrint('CuentasEmpleadosApi: Obteniendo lista de cuentas de empleados');
-      
+      debugPrint(
+          'CuentasEmpleadosApi: Obteniendo lista de cuentas de empleados');
+
       final Map<String, dynamic> response = await _api.request(
         endpoint: '/cuentasempleados',
         method: 'GET',
         requiresAuth: true,
       );
-      
+
       // Procesar la respuesta
       final List<dynamic> data = response['data'];
-      final List<Map<String, dynamic>> items = data.map((item) => item as Map<String, dynamic>).toList();
-      
-      debugPrint('CuentasEmpleadosApi: Total de cuentas encontradas: ${items.length}');
+      final List<Map<String, dynamic>> items =
+          data.map((item) => item as Map<String, dynamic>).toList();
+
+      debugPrint(
+          'CuentasEmpleadosApi: Total de cuentas encontradas: ${items.length}');
       return items;
     } catch (e) {
-      debugPrint('CuentasEmpleadosApi: ERROR al obtener cuentas de empleados: $e');
+      debugPrint(
+          'CuentasEmpleadosApi: ERROR al obtener cuentas de empleados: $e');
       rethrow;
     }
   }
-  
+
   /// Obtiene una cuenta de empleado por su ID
-  /// 
+  ///
   /// Retorna la información completa de una cuenta específica
   Future<Map<String, dynamic>?> getCuentaEmpleadoById(int id) async {
     try {
-      debugPrint('CuentasEmpleadosApi: Obteniendo cuenta de empleado con ID $id');
-      
+      debugPrint(
+          'CuentasEmpleadosApi: Obteniendo cuenta de empleado con ID $id');
+
       final Map<String, dynamic> response = await _api.request(
         endpoint: '/cuentasempleados/$id',
         method: 'GET',
         requiresAuth: true,
       );
-      
+
       if (response['data'] is Map<String, dynamic>) {
         return response['data'];
       }
-      
+
       return null;
     } catch (e) {
       // Si el error es 404, simplemente retornar null
@@ -534,14 +1165,15 @@ class CuentasEmpleadosApi {
         debugPrint('CuentasEmpleadosApi: No se encontró la cuenta con ID $id');
         return null;
       }
-      
-      debugPrint('CuentasEmpleadosApi: ERROR al obtener cuenta de empleado: $e');
+
+      debugPrint(
+          'CuentasEmpleadosApi: ERROR al obtener cuenta de empleado: $e');
       rethrow;
     }
   }
-  
+
   /// Actualiza la información de una cuenta de empleado
-  /// 
+  ///
   /// Permite modificar el usuario o el rol de una cuenta existente
   Future<Map<String, dynamic>> updateCuentaEmpleado({
     required int id,
@@ -550,8 +1182,9 @@ class CuentasEmpleadosApi {
     int? rolCuentaEmpleadoId,
   }) async {
     try {
-      debugPrint('CuentasEmpleadosApi: Actualizando cuenta de empleado con ID $id');
-      
+      debugPrint(
+          'CuentasEmpleadosApi: Actualizando cuenta de empleado con ID $id');
+
       // Verificar que se haya proporcionado al menos un campo
       if (usuario == null && clave == null && rolCuentaEmpleadoId == null) {
         throw ApiException(
@@ -559,7 +1192,7 @@ class CuentasEmpleadosApi {
           message: 'Debe proporcionar al menos un campo para actualizar',
         );
       }
-      
+
       // Construir cuerpo de la solicitud
       final Map<String, dynamic> body = <String, dynamic>{};
       if (usuario != null) {
@@ -571,108 +1204,115 @@ class CuentasEmpleadosApi {
       if (rolCuentaEmpleadoId != null) {
         body['rolCuentaEmpleadoId'] = rolCuentaEmpleadoId;
       }
-      
+
       final Map<String, dynamic> response = await _api.request(
         endpoint: '/cuentasempleados/$id',
         method: 'PATCH',
         body: body,
         requiresAuth: true,
       );
-      
+
       if (response['data'] is Map<String, dynamic>) {
         return response['data'];
       }
-      
+
       throw ApiException(
         statusCode: 500,
         message: 'Formato de respuesta inesperado',
       );
     } catch (e) {
-      debugPrint('CuentasEmpleadosApi: ERROR al actualizar cuenta de empleado: $e');
+      debugPrint(
+          'CuentasEmpleadosApi: ERROR al actualizar cuenta de empleado: $e');
       rethrow;
     }
   }
-  
+
   /// Elimina una cuenta de empleado
-  /// 
+  ///
   /// Elimina permanentemente una cuenta de usuario
   Future<bool> deleteCuentaEmpleado(int id) async {
     try {
-      debugPrint('CuentasEmpleadosApi: Eliminando cuenta de empleado con ID $id');
-      
+      debugPrint(
+          'CuentasEmpleadosApi: Eliminando cuenta de empleado con ID $id');
+
       await _api.request(
         endpoint: '/cuentasempleados/$id',
         method: 'DELETE',
         requiresAuth: true,
       );
-      
-      debugPrint('CuentasEmpleadosApi: Cuenta de empleado eliminada correctamente');
+
+      debugPrint(
+          'CuentasEmpleadosApi: Cuenta de empleado eliminada correctamente');
       return true;
     } catch (e) {
-      debugPrint('CuentasEmpleadosApi: ERROR al eliminar cuenta de empleado: $e');
+      debugPrint(
+          'CuentasEmpleadosApi: ERROR al eliminar cuenta de empleado: $e');
       return false;
     }
   }
-  
+
   /// Obtiene la cuenta de un empleado por su ID de empleado
-  /// 
+  ///
   /// Útil para verificar si un empleado ya tiene una cuenta asociada
   Future<Map<String, dynamic>?> getCuentaByEmpleadoId(String empleadoId) async {
     try {
-      debugPrint('CuentasEmpleadosApi: Obteniendo cuenta para empleado con ID $empleadoId');
-      
+      debugPrint(
+          'CuentasEmpleadosApi: Obteniendo cuenta para empleado con ID $empleadoId');
+
       final Map<String, dynamic> response = await _api.request(
         endpoint: '/cuentasempleados/empleado/$empleadoId',
         method: 'GET',
         requiresAuth: true,
       );
-      
+
       if (response['data'] is Map<String, dynamic>) {
         return response['data'];
       }
-      
+
       return null;
     } catch (e) {
       // Si el error es 404 o 401, simplemente retornar null (el empleado no tiene cuenta)
       // El backend a veces devuelve 401 en lugar de 404 para este caso específico
       if (e is ApiException && (e.statusCode == 404 || e.statusCode == 401)) {
-        debugPrint('CuentasEmpleadosApi: El empleado $empleadoId no tiene cuenta asociada (${e.statusCode})');
+        debugPrint(
+            'CuentasEmpleadosApi: El empleado $empleadoId no tiene cuenta asociada (${e.statusCode})');
         return null;
       }
-      
-      debugPrint('CuentasEmpleadosApi: ERROR al obtener cuenta por empleado: $e');
+
+      debugPrint(
+          'CuentasEmpleadosApi: ERROR al obtener cuenta por empleado: $e');
       rethrow;
     }
   }
-  
+
   /// Obtiene los roles disponibles para cuentas de empleados
-  /// 
+  ///
   /// Retorna una lista de todos los roles que pueden asignarse a una cuenta
   Future<List<Map<String, dynamic>>> getRolesCuentas() async {
     try {
       debugPrint('CuentasEmpleadosApi: Obteniendo roles para cuentas');
-      
+
       final Map<String, dynamic> response = await _api.request(
         endpoint: '/rolescuentas',
         method: 'GET',
         requiresAuth: true,
       );
-      
+
       if (response['data'] is List) {
         return (response['data'] as List)
             .map((item) => item as Map<String, dynamic>)
             .toList();
       }
-      
+
       return <Map<String, dynamic>>[];
     } catch (e) {
       debugPrint('CuentasEmpleadosApi: ERROR al obtener roles de cuentas: $e');
       return <Map<String, dynamic>>[];
     }
   }
-  
+
   /// Registra una nueva cuenta para un empleado
-  /// 
+  ///
   /// Crea una cuenta de usuario asociada a un empleado existente
   Future<Map<String, dynamic>> registerEmpleadoAccount({
     required String empleadoId,
@@ -681,8 +1321,9 @@ class CuentasEmpleadosApi {
     required int rolCuentaEmpleadoId,
   }) async {
     try {
-      debugPrint('CuentasEmpleadosApi: Registrando cuenta para empleado con ID $empleadoId');
-      
+      debugPrint(
+          'CuentasEmpleadosApi: Registrando cuenta para empleado con ID $empleadoId');
+
       // Preparar datos para la petición
       final Map<String, dynamic> body = <String, dynamic>{
         'empleadoId': empleadoId,
@@ -690,7 +1331,7 @@ class CuentasEmpleadosApi {
         'clave': clave,
         'rolCuentaEmpleadoId': rolCuentaEmpleadoId,
       };
-      
+
       // Hacer la petición al endpoint adecuado
       final Map<String, dynamic> response = await _api.request(
         endpoint: '/cuentasempleados',
@@ -698,19 +1339,20 @@ class CuentasEmpleadosApi {
         body: body,
         requiresAuth: true,
       );
-      
+
       // Verificar y devolver la respuesta
       if (response['data'] is Map<String, dynamic>) {
         debugPrint('CuentasEmpleadosApi: Cuenta registrada exitosamente');
         return response['data'];
       }
-      
+
       throw ApiException(
         statusCode: 500,
         message: 'Formato de respuesta inesperado al registrar cuenta',
       );
     } catch (e) {
-      debugPrint('CuentasEmpleadosApi: ERROR al registrar cuenta de empleado: $e');
+      debugPrint(
+          'CuentasEmpleadosApi: ERROR al registrar cuenta de empleado: $e');
       rethrow;
     }
   }

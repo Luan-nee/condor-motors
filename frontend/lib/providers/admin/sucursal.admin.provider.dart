@@ -11,32 +11,113 @@ class SucursalProvider extends ChangeNotifier {
   List<Sucursal> _todasLasSucursales = [];
   String _terminoBusqueda = '';
 
+  // Nuevos estados para ayuda en la interfaz
+  final List<String> tiposSucursal = ['Local', 'Central'];
+  final Map<String, String> prefijosDocumentos = {
+    'factura': 'F',
+    'boleta': 'B',
+  };
+
   // Getters
   bool get isLoading => _isLoading;
   List<Sucursal> get sucursales => _sucursales;
   String get errorMessage => _errorMessage;
   String get terminoBusqueda => _terminoBusqueda;
 
+  // Nuevos getters para ayuda en la interfaz
+  List<String> get seriesFacturaDisponibles => _generarSeriesDisponibles('F');
+  List<String> get seriesBoletaDisponibles => _generarSeriesDisponibles('B');
+  List<String> get codigosEstablecimientoDisponibles =>
+      _generarCodigosEstablecimiento();
+
   /// Inicializa el provider cargando los datos necesarios
-  void inicializar() {
-    cargarSucursales();
+  Future<void> inicializar() async {
+    await cargarSucursales();
+  }
+
+  /// Genera series disponibles para documentos
+  List<String> _generarSeriesDisponibles(String prefijo) {
+    final Set<String> seriesUsadas = _sucursales
+        .map((s) => prefijo == 'F' ? s.serieFactura : s.serieBoleta)
+        .whereType<String>()
+        .toSet();
+
+    final List<String> seriesDisponibles = [];
+    for (int i = 1; i <= 999; i++) {
+      final String serie = '$prefijo${i.toString().padLeft(3, '0')}';
+      if (!seriesUsadas.contains(serie)) {
+        seriesDisponibles.add(serie);
+      }
+    }
+    return seriesDisponibles;
+  }
+
+  /// Genera códigos de establecimiento disponibles
+  List<String> _generarCodigosEstablecimiento() {
+    final Set<String> codigosUsados = _sucursales
+        .map((s) => s.codigoEstablecimiento)
+        .whereType<String>()
+        .toSet();
+
+    final List<String> codigosDisponibles = [];
+    for (int i = 1; i <= 999; i++) {
+      final String codigo = 'E${i.toString().padLeft(3, '0')}';
+      if (!codigosUsados.contains(codigo)) {
+        codigosDisponibles.add(codigo);
+      }
+    }
+    return codigosDisponibles;
+  }
+
+  /// Verifica si una serie de factura está disponible
+  bool isSerieFacturaDisponible(String serie) {
+    return !_sucursales.any((s) => s.serieFactura == serie);
+  }
+
+  /// Verifica si una serie de boleta está disponible
+  bool isSerieBoletaDisponible(String serie) {
+    return !_sucursales.any((s) => s.serieBoleta == serie);
+  }
+
+  /// Verifica si un código de establecimiento está disponible
+  bool isCodigoEstablecimientoDisponible(String codigo) {
+    return !_sucursales.any((s) => s.codigoEstablecimiento == codigo);
+  }
+
+  /// Obtiene el siguiente número disponible para facturas
+  int getSiguienteNumeroFactura() {
+    final List<int> numerosUsados =
+        _sucursales.map((s) => s.numeroFacturaInicial ?? 1).toList();
+    return numerosUsados.isEmpty
+        ? 1
+        : numerosUsados.reduce((a, b) => a > b ? a : b) + 1;
+  }
+
+  /// Obtiene el siguiente número disponible para boletas
+  int getSiguienteNumeroBoleta() {
+    final List<int> numerosUsados =
+        _sucursales.map((s) => s.numeroBoletaInicial ?? 1).toList();
+    return numerosUsados.isEmpty
+        ? 1
+        : numerosUsados.reduce((a, b) => a > b ? a : b) + 1;
   }
 
   /// Carga las sucursales disponibles
   Future<void> cargarSucursales() async {
-    _isLoading = true;
-    _errorMessage = '';
-    notifyListeners();
+    if (!_isLoading) {
+      _isLoading = true;
+      _errorMessage = '';
+      notifyListeners();
+    }
 
     try {
       final List<Sucursal> sucursales = await api.sucursales.getSucursales();
-
       _todasLasSucursales = sucursales;
       _aplicarFiltroBusqueda();
-      _isLoading = false;
-      notifyListeners();
     } catch (e) {
       _errorMessage = 'Error al cargar sucursales: $e';
+      debugPrint('Error cargando sucursales: $e');
+    } finally {
       _isLoading = false;
       notifyListeners();
     }
@@ -72,12 +153,58 @@ class SucursalProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Guarda una sucursal (nueva o actualizada)
+  /// Guarda una sucursal (nueva o actualizada) con validaciones mejoradas
   Future<String?> guardarSucursal(Map<String, dynamic> data) async {
     _isLoading = true;
     notifyListeners();
 
     try {
+      // Validaciones adicionales
+      if (data['nombre']?.toString().trim().isEmpty ?? true) {
+        return 'El nombre de la sucursal es requerido';
+      }
+
+      if (data['direccion']?.toString().trim().isEmpty ?? true) {
+        return 'La dirección de la sucursal es requerida';
+      }
+
+      // Validar series y códigos únicos
+      if (data['serieFactura'] != null) {
+        if (!isSerieFacturaDisponible(data['serieFactura']) &&
+            (data['id'] == null ||
+                _sucursales
+                        .firstWhere(
+                            (s) => s.serieFactura == data['serieFactura'])
+                        .id !=
+                    data['id'])) {
+          return 'La serie de factura ya está en uso';
+        }
+      }
+
+      if (data['serieBoleta'] != null) {
+        if (!isSerieBoletaDisponible(data['serieBoleta']) &&
+            (data['id'] == null ||
+                _sucursales
+                        .firstWhere((s) => s.serieBoleta == data['serieBoleta'])
+                        .id !=
+                    data['id'])) {
+          return 'La serie de boleta ya está en uso';
+        }
+      }
+
+      if (data['codigoEstablecimiento'] != null) {
+        if (!isCodigoEstablecimientoDisponible(data['codigoEstablecimiento']) &&
+            (data['id'] == null ||
+                _sucursales
+                        .firstWhere((s) =>
+                            s.codigoEstablecimiento ==
+                            data['codigoEstablecimiento'])
+                        .id !=
+                    data['id'])) {
+          return 'El código de establecimiento ya está en uso';
+        }
+      }
+
       final SucursalRequest request = SucursalRequest(
         nombre: data['nombre'],
         direccion: data['direccion'] ?? '',
@@ -97,9 +224,9 @@ class SucursalProvider extends ChangeNotifier {
       }
 
       await cargarSucursales();
-      return null; // Sin error
+      return null;
     } catch (e) {
-      return 'Error al guardar sucursal: $e'; // Devuelve el mensaje de error
+      return 'Error al guardar sucursal: $e';
     } finally {
       _isLoading = false;
       notifyListeners();

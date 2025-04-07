@@ -23,19 +23,26 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   late stock_provider.StockProvider _stockProvider;
   // Estado del drawer
   final bool _drawerOpen = true;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Se moverá la inicialización al didChangeDependencies
+    // No inicializamos aquí, lo haremos en didChangeDependencies
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _stockProvider =
-        Provider.of<stock_provider.StockProvider>(context, listen: false);
-    _stockProvider.inicializar();
+    if (!_isInitialized) {
+      _stockProvider =
+          Provider.of<stock_provider.StockProvider>(context, listen: false);
+      // Inicializar de manera asíncrona
+      Future<void>.microtask(() async {
+        await _stockProvider.inicializar();
+      });
+      _isInitialized = true;
+    }
   }
 
   @override

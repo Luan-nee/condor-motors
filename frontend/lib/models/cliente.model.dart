@@ -4,36 +4,38 @@ import 'package:flutter/foundation.dart';
 class Cliente {
   final int id;
   final int tipoDocumentoId;
+  final String nombre; // Nombre del tipo de documento
   final String numeroDocumento;
   final String denominacion;
   final String? direccion;
   final String? correo;
   final String? telefono;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime fechaCreacion;
+  final DateTime fechaActualizacion;
 
   Cliente({
     required this.id,
     required this.tipoDocumentoId,
+    required this.nombre,
     required this.numeroDocumento,
     required this.denominacion,
     this.direccion,
     this.correo,
     this.telefono,
-    required this.createdAt,
-    required this.updatedAt,
+    required this.fechaCreacion,
+    required this.fechaActualizacion,
   });
 
   /// Crea una instancia de Cliente desde un mapa JSON
   factory Cliente.fromJson(Map<String, dynamic> json) {
     debugPrint('🔄 Procesando datos de cliente: ${json.keys.join(', ')}');
-    
+
     // Función auxiliar para parsear fechas con manejo de errores
-    DateTime parseDate(date) {
+    DateTime parseDate(dynamic date) {
       if (date == null) {
         return DateTime.now();
       }
-      
+
       try {
         if (date is String) {
           return DateTime.parse(date);
@@ -46,34 +48,40 @@ class Cliente {
         return DateTime.now();
       }
     }
-    
+
     // Extraer y validar campos obligatorios
-    final id = json['id'] is int ? json['id'] : int.parse(json['id'].toString());
-    final tipoDocumentoId = json['tipoDocumentoId'] is int 
-        ? json['tipoDocumentoId'] 
+    final id =
+        json['id'] is int ? json['id'] : int.parse(json['id'].toString());
+    final tipoDocumentoId = json['tipoDocumentoId'] is int
+        ? json['tipoDocumentoId']
         : int.parse((json['tipoDocumentoId'] ?? '1').toString());
+    final String nombre = json['nombre']?.toString() ?? 'DOCUMENTO SIN TIPO';
     final String numeroDocumento = json['numeroDocumento']?.toString() ?? '';
-    final String denominacion = json['denominacion']?.toString() ?? 'Cliente sin nombre';
-    
+    final String denominacion =
+        json['denominacion']?.toString() ?? 'Cliente sin nombre';
+
     // Extraer campos opcionales
     final String? direccion = json['direccion']?.toString();
     final String? correo = json['correo']?.toString();
     final String? telefono = json['telefono']?.toString();
-    
-    // Parsear fechas
-    final DateTime createdAt = parseDate(json['createdAt']);
-    final DateTime updatedAt = parseDate(json['updatedAt']);
-    
+
+    // Parsear fechas usando los nuevos nombres de campos
+    final DateTime fechaCreacion =
+        parseDate(json['fechaCreacion'] ?? json['createdAt']);
+    final DateTime fechaActualizacion =
+        parseDate(json['fechaActualizacion'] ?? json['updatedAt']);
+
     return Cliente(
       id: id,
       tipoDocumentoId: tipoDocumentoId,
+      nombre: nombre,
       numeroDocumento: numeroDocumento,
       denominacion: denominacion,
       direccion: direccion,
       correo: correo,
       telefono: telefono,
-      createdAt: createdAt,
-      updatedAt: updatedAt,
+      fechaCreacion: fechaCreacion,
+      fechaActualizacion: fechaActualizacion,
     );
   }
 
@@ -82,13 +90,14 @@ class Cliente {
     return <String, dynamic>{
       'id': id,
       'tipoDocumentoId': tipoDocumentoId,
+      'nombre': nombre,
       'numeroDocumento': numeroDocumento,
       'denominacion': denominacion,
       if (direccion != null) 'direccion': direccion,
       if (correo != null) 'correo': correo,
       if (telefono != null) 'telefono': telefono,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'fechaCreacion': fechaCreacion.toIso8601String(),
+      'fechaActualizacion': fechaActualizacion.toIso8601String(),
     };
   }
 
@@ -96,29 +105,31 @@ class Cliente {
   Cliente copyWith({
     int? id,
     int? tipoDocumentoId,
+    String? nombre,
     String? numeroDocumento,
     String? denominacion,
     String? direccion,
     String? correo,
     String? telefono,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    DateTime? fechaCreacion,
+    DateTime? fechaActualizacion,
   }) {
     return Cliente(
       id: id ?? this.id,
       tipoDocumentoId: tipoDocumentoId ?? this.tipoDocumentoId,
+      nombre: nombre ?? this.nombre,
       numeroDocumento: numeroDocumento ?? this.numeroDocumento,
       denominacion: denominacion ?? this.denominacion,
       direccion: direccion ?? this.direccion,
       correo: correo ?? this.correo,
       telefono: telefono ?? this.telefono,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      fechaCreacion: fechaCreacion ?? this.fechaCreacion,
+      fechaActualizacion: fechaActualizacion ?? this.fechaActualizacion,
     );
   }
 
   @override
   String toString() {
-    return 'Cliente(id: $id, denominacion: $denominacion, documento: $numeroDocumento)';
+    return 'Cliente(id: $id, denominacion: $denominacion, documento: $numeroDocumento, tipo: $nombre)';
   }
-} 
+}

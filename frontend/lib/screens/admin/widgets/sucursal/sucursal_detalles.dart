@@ -39,7 +39,9 @@ class SucursalDetalles extends StatelessWidget {
   }
 
   Widget _buildInfoSection(String title, String primaryInfo,
-      String secondaryInfo, bool isConfigured) {
+      {String? secondaryInfo,
+      bool isConfigured = true,
+      String? warningMessage}) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -80,12 +82,22 @@ class SucursalDetalles extends StatelessWidget {
               color: Colors.white.withOpacity(0.7),
             ),
           ),
-          if (secondaryInfo.isNotEmpty) ...[
+          if (secondaryInfo != null) ...[
             const SizedBox(height: 4),
             Text(
               secondaryInfo,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.7),
+              ),
+            ),
+          ],
+          if (warningMessage != null && !isConfigured) ...[
+            const SizedBox(height: 8),
+            Text(
+              warningMessage,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 12,
               ),
             ),
           ],
@@ -222,19 +234,25 @@ class SucursalDetalles extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _buildInfoSection(
-                        'Factura',
+                        'Facturación',
                         'Serie: ${sucursal.serieFactura ?? 'No configurada'}',
-                        'Inicio: ${sucursal.numeroFacturaInicial ?? 1}',
-                        sucursal.serieFactura != null,
+                        secondaryInfo: sucursal.serieFactura != null
+                            ? 'Inicio: ${sucursal.numeroFacturaInicial ?? 1}'
+                            : null,
+                        isConfigured: sucursal.serieFactura != null,
+                        warningMessage: 'Configure la serie de facturación',
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildInfoSection(
-                        'Boleta',
+                        'Boletas',
                         'Serie: ${sucursal.serieBoleta ?? 'No configurada'}',
-                        'Inicio: ${sucursal.numeroBoletaInicial ?? 1}',
-                        sucursal.serieBoleta != null,
+                        secondaryInfo: sucursal.serieBoleta != null
+                            ? 'Inicio: ${sucursal.numeroBoletaInicial ?? 1}'
+                            : null,
+                        isConfigured: sucursal.serieBoleta != null,
+                        warningMessage: 'Configure la serie de boletas',
                       ),
                     ),
                   ],
@@ -245,8 +263,8 @@ class SucursalDetalles extends StatelessWidget {
                 _buildInfoSection(
                   'Código de Establecimiento',
                   sucursal.codigoEstablecimiento ?? 'No configurado',
-                  '',
-                  sucursal.codigoEstablecimiento != null,
+                  isConfigured: sucursal.codigoEstablecimiento != null,
+                  warningMessage: 'Configure el código de establecimiento',
                 ),
 
                 const SizedBox(height: 16),
@@ -256,12 +274,24 @@ class SucursalDetalles extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Creado: ${_formatDate(sucursal.fechaCreacion)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withOpacity(0.6),
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Creado: ${_formatDate(sucursal.fechaCreacion)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                        ),
+                        Text(
+                          'Última actualización: ${_formatDate(sucursal.fechaActualizacion)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
                     ),
                     Row(
                       children: [
@@ -305,7 +335,7 @@ class SucursalDetalles extends StatelessWidget {
     super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty<Sucursal>('sucursal', sucursal))
-      ..add(ObjectFlagProperty<VoidCallback>.has('onEdit', onEdit));
-    properties.add(ObjectFlagProperty<VoidCallback>.has('onDelete', onDelete));
+      ..add(ObjectFlagProperty<VoidCallback>.has('onEdit', onEdit))
+      ..add(ObjectFlagProperty<VoidCallback>.has('onDelete', onDelete));
   }
 }

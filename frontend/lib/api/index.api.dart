@@ -1,7 +1,7 @@
 import 'package:condorsmotors/api/auth.api.dart';
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/index.protected.dart';
-import 'package:condorsmotors/services/token_service.dart';
+import 'package:flutter/foundation.dart';
 
 export 'auth.api.dart';
 export 'main.api.dart';
@@ -25,39 +25,74 @@ class CondorMotorsApi {
   late final ColoresApi colores;
   late final ClientesApi clientes;
   late final DocumentoApi documentos;
-  late final TokenService tokenService;
-  
+
   /// Inicializa todas las APIs con la URL base
-  CondorMotorsApi({required String baseUrl, required this.tokenService}) {
-    // Crear el cliente API con el servicio de tokens
-    _apiClient = ApiClient(
-      baseUrl: baseUrl,
-      tokenService: tokenService,
-    );
-    
-    // Inicializar todas las APIs
-    auth = AuthApi(_apiClient);
-    empleados = EmpleadosApi(_apiClient);
-    sucursales = SucursalesApi(_apiClient);
-    marcas = MarcasApi(_apiClient);
-    ventas = VentasApi(_apiClient);
-    movimientos = MovimientosApi(_apiClient);
-    productos = ProductosApi(_apiClient);
-    stocks = StocksApi(_apiClient);
-    categorias = CategoriasApi(_apiClient);
-    cuentasEmpleados = CuentasEmpleadosApi(_apiClient);
-    proformas = ProformaVentaApi(_apiClient);
-    colores = ColoresApi(apiClient: _apiClient);
-    clientes = ClientesApi(_apiClient);
-    documentos = DocumentoApi(_apiClient);
-    
-    // Inicializar el AuthService con las nuevas dependencias
-    authService = AuthService(tokenService);
+  CondorMotorsApi({required String baseUrl}) {
+    debugPrint('Inicializando CondorMotorsApi con URL base: $baseUrl');
+
+    try {
+      // Crear el cliente API
+      _apiClient = ApiClient(baseUrl: baseUrl);
+
+      // Inicializar APIs de autenticación
+      auth = AuthApi(_apiClient);
+      authService = AuthService(auth);
+
+      // Inicializar APIs protegidas
+      sucursales = SucursalesApi(_apiClient);
+      empleados = EmpleadosApi(_apiClient);
+      marcas = MarcasApi(_apiClient);
+      ventas = VentasApi(_apiClient);
+      movimientos = MovimientosApi(_apiClient);
+      productos = ProductosApi(_apiClient);
+      stocks = StocksApi(_apiClient);
+      categorias = CategoriasApi(_apiClient);
+      cuentasEmpleados = CuentasEmpleadosApi(_apiClient);
+      proformas = ProformaVentaApi(_apiClient);
+      colores = ColoresApi(apiClient: _apiClient);
+      clientes = ClientesApi(_apiClient);
+      documentos = DocumentoApi(_apiClient);
+
+      debugPrint('APIs inicializadas correctamente');
+    } catch (e) {
+      debugPrint('Error al inicializar APIs: $e');
+      rethrow;
+    }
   }
-  
-  /// Inicializa el servicio de autenticación y de tokens
-  Future<void> initAuthService() async {
-    // No es necesario inicializar TokenService, ya que se pasa como parámetro
-    // Mantenemos este método para compatibilidad con el código existente
+
+  /// Verifica la conectividad con el servidor
+  Future<bool> checkConnectivity() async {
+    try {
+      await auth.verificarToken();
+      debugPrint('Conectividad verificada correctamente');
+      return true;
+    } catch (e) {
+      debugPrint('Error al verificar conectividad: $e');
+      return false;
+    }
   }
-} 
+
+  /// Verifica si hay una sesión activa
+  Future<bool> hasActiveSession() async {
+    try {
+      final bool isAuthenticated = await auth.isAuthenticated();
+      debugPrint(
+          'Estado de sesión: ${isAuthenticated ? 'activa' : 'inactiva'}');
+      return isAuthenticated;
+    } catch (e) {
+      debugPrint('Error al verificar sesión: $e');
+      return false;
+    }
+  }
+
+  /// Cierra la sesión y limpia todos los datos
+  Future<void> logout() async {
+    try {
+      await auth.logout();
+      debugPrint('Sesión cerrada correctamente');
+    } catch (e) {
+      debugPrint('Error al cerrar sesión: $e');
+      rethrow;
+    }
+  }
+}

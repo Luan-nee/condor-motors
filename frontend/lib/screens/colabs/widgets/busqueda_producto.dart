@@ -3,7 +3,8 @@ import 'package:condorsmotors/models/categoria.model.dart';
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/screens/colabs/widgets/list_busqueda_producto.dart';
-import 'package:condorsmotors/utils/busqueda_producto_utils.dart' show BusquedaProductoUtils, TipoDescuento;
+import 'package:condorsmotors/utils/busqueda_producto_utils.dart'
+    show BusquedaProductoUtils, TipoDescuento;
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -34,46 +35,48 @@ class BusquedaProductoWidget extends StatefulWidget {
     properties
       ..add(IterableProperty<Map<String, dynamic>>('productos', productos))
       ..add(IterableProperty<String>('categorias', categorias))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has('onProductoSeleccionado', onProductoSeleccionado))
+      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has(
+          'onProductoSeleccionado', onProductoSeleccionado))
       ..add(DiagnosticsProperty<bool>('isLoading', isLoading))
       ..add(StringProperty('sucursalId', sucursalId));
   }
 }
 
-class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with TickerProviderStateMixin {
+class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
+    with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _searchAnimationController;
   bool _isSearchExpanded = false;
-  
+
   // Nuevos controladores y estados para dropdowns plegables
   late AnimationController _categoriaAnimationController;
   bool _isCategoriaExpanded = false;
-  
+
   late AnimationController _promocionAnimationController;
   bool _isPromocionExpanded = false;
-  
+
   String _filtroCategoria = 'Todos';
   List<Map<String, dynamic>> _productosFiltrados = <Map<String, dynamic>>[];
-  
+
   // Lista de categorías cargadas desde la API
   List<Categoria> _categoriasFromApi = <Categoria>[];
   List<String> _categoriasList = <String>['Todos'];
   bool _loadingCategorias = false;
-  
+
   // Lista de colores disponibles
   List<ColorApp> _colores = <ColorApp>[];
-  
+
   // Paginación (local)
   int _itemsPorPagina = 10;
   int _paginaActual = 0;
   int _totalPaginas = 0;
-  
+
   // Filtrado por tipo de descuento
   TipoDescuento _tipoDescuentoSeleccionado = TipoDescuento.todos;
-  
+
   // Estado para indicar que estamos cargando
   bool _isLoadingLocal = false;
-  
+
   // Colores para el tema oscuro
   final Color darkBackground = const Color(0xFF1A1A1A);
   final Color darkSurface = const Color(0xFF2D2D2D);
@@ -81,79 +84,84 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
   @override
   void initState() {
     super.initState();
-    
+
     // Inicializar controladores de animación
     _searchAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    
-    
-    // Inicializar controladores para dropdowns plegables
+
     _categoriaAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    
-    
+
     _promocionAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    
-    
+
+    // Inicializar productos filtrados con los productos proporcionados
+    _productosFiltrados = List<Map<String, dynamic>>.from(widget.productos);
+
     // Configuramos los ítems por página después de que el widget esté renderizado
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _actualizarItemsPorPaginaSegunDispositivo();
       _cargarCategorias();
       _cargarColores();
-      _filtrarProductos();
+      _filtrarProductos(); // Esto actualizará _productosFiltrados con los filtros iniciales
     });
   }
 
   @override
   void didUpdateWidget(BusquedaProductoWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Si cambia la lista de productos o las categorías, actualizar
-    if (oldWidget.productos != widget.productos || 
-        oldWidget.categorias != widget.categorias) {
+    // Si cambia la lista de productos, actualizar productos filtrados
+    if (oldWidget.productos != widget.productos) {
+      debugPrint(
+          '📦 Actualizando productos: ${widget.productos.length} productos recibidos');
+      _productosFiltrados = List<Map<String, dynamic>>.from(widget.productos);
       _filtrarProductos();
     }
   }
-  
+
   /// Carga las categorías desde la API o usa las proporcionadas como fallback
   Future<void> _cargarCategorias() async {
     setState(() {
       _loadingCategorias = true;
     });
-    
+
     try {
       // Intentar cargar desde API
-      final List<Categoria> categoriasApi = await api.categorias.getCategoriasObjetos();
-      
+      final List<Categoria> categoriasApi =
+          await api.categorias.getCategoriasObjetos();
+
       // Usar el método de utilidades para combinar categorías
-      final List<String> categoriasCombinadas = BusquedaProductoUtils.combinarCategorias(
+      final List<String> categoriasCombinadas =
+          BusquedaProductoUtils.combinarCategorias(
         productos: widget.productos,
         categoriasFallback: widget.categorias,
         categoriasApi: categoriasApi,
       );
-      
+
       setState(() {
         _categoriasFromApi = categoriasApi;
         _categoriasList = categoriasCombinadas;
         _loadingCategorias = false;
       });
-      
+
       debugPrint('🔍 Categorías cargadas: ${categoriasCombinadas.length}');
     } catch (e) {
       debugPrint('🚨 Error al cargar categorías: $e');
       setState(() {
         _loadingCategorias = false;
-        _categoriasList = <String>['Todos']; // Al menos tener "Todos" como opción
+        _categoriasList = <String>[
+          'Todos'
+        ]; // Al menos tener "Todos" como opción
       });
     }
   }
-  
+
   /// Carga los colores desde la API
   Future<void> _cargarColores() async {
     try {
@@ -172,121 +180,95 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
     setState(() {
       _isLoadingLocal = true;
     });
-    
-    final List<Map<String, dynamic>> resultados = BusquedaProductoUtils.filtrarProductos(
+
+    debugPrint('🔍 Iniciando filtrado de productos...');
+    debugPrint(
+        '📊 Total productos antes de filtrar: ${widget.productos.length}');
+
+    final List<Map<String, dynamic>> resultados =
+        BusquedaProductoUtils.filtrarProductos(
       productos: widget.productos,
       filtroTexto: _searchController.text.toLowerCase(),
       filtroCategoria: _filtroCategoria,
       tipoDescuento: _tipoDescuentoSeleccionado,
       debugMode: true,
     );
-    
+
+    debugPrint('✅ Productos filtrados: ${resultados.length}');
+
     setState(() {
       _productosFiltrados = resultados;
-      _paginaActual = 0; // Reiniciar a la primera página al cambiar filtros
+      _paginaActual = 0; // Reiniciar a primera página
       _calcularTotalPaginas();
       _isLoadingLocal = false;
     });
-    
-    // Depuración de promociones en los resultados filtrados
-    if (_tipoDescuentoSeleccionado != TipoDescuento.todos) {
-      final int totalProductos = widget.productos.length;
-      final int totalFiltrados = _productosFiltrados.length;
-      
-      debugPrint('🔍 Filtro por promoción: $_tipoDescuentoSeleccionado');
-      debugPrint('📊 Productos totales: $totalProductos, Productos filtrados: $totalFiltrados');
-      
-      // Verificar si hay productos con la promoción seleccionada 
-      switch (_tipoDescuentoSeleccionado) {
-        case TipoDescuento.liquidacion:
-          final int productosConLiquidacion = widget.productos.where((p) => p['enLiquidacion'] == true).length;
-          debugPrint('💰 Productos con liquidación: $productosConLiquidacion');
-          break;
-        case TipoDescuento.promoGratis:
-          final int productosConPromoGratis = widget.productos.where((p) => p['tienePromocionGratis'] == true).length;
-          debugPrint('🎁 Productos con promo "Lleva y Paga": $productosConPromoGratis');
-          if (productosConPromoGratis > 0) {
-            try {
-              final Map<String, dynamic> ejemplo = widget.productos.firstWhere((p) => p['tienePromocionGratis'] == true);
-              debugPrint('📦 Ejemplo: ${ejemplo['nombre']} - Lleva: ${ejemplo['cantidadMinima']}, Gratis: ${ejemplo['cantidadGratis']}');
-            } catch (e) {
-              debugPrint('⚠️ Error al buscar ejemplo: $e');
-            }
-          }
-          break;
-        case TipoDescuento.descuentoPorcentual:
-          final int productosConDescuento = widget.productos.where((p) => p['tieneDescuentoPorcentual'] == true).length;
-          debugPrint('🔻 Productos con descuento porcentual: $productosConDescuento');
-          if (productosConDescuento > 0) {
-            try {
-              final Map<String, dynamic> ejemplo = widget.productos.firstWhere((p) => p['tieneDescuentoPorcentual'] == true);
-              debugPrint('📦 Ejemplo: ${ejemplo['nombre']} - Cantidad: ${ejemplo['cantidadMinima']}, Descuento: ${ejemplo['descuentoPorcentaje']}%');
-            } catch (e) {
-              debugPrint('⚠️ Error al buscar ejemplo: $e');
-            }
-          }
-          break;
-        default:
-          break;
-      }
-    }
+
+    // Depuración detallada del resultado
+    debugPrint('📊 Resumen de filtrado:');
+    debugPrint('- Productos totales: ${widget.productos.length}');
+    debugPrint('- Productos filtrados: ${_productosFiltrados.length}');
+    debugPrint('- Filtro categoría: $_filtroCategoria');
+    debugPrint('- Filtro texto: "${_searchController.text}"');
+    debugPrint('- Tipo descuento: $_tipoDescuentoSeleccionado');
   }
-  
+
   void _calcularTotalPaginas() {
-    _totalPaginas = (_productosFiltrados.length / _itemsPorPagina).ceil();
+    final int totalProductos = _productosFiltrados.length;
+    _totalPaginas = (totalProductos / _itemsPorPagina).ceil();
     if (_totalPaginas == 0) {
       _totalPaginas = 1; // Mínimo 1 página aunque esté vacía
     }
+    debugPrint(
+        '📊 Total páginas calculadas: $_totalPaginas (total productos: $totalProductos, items por página: $_itemsPorPagina)');
   }
-  
+
   List<Map<String, dynamic>> _getProductosPaginaActual() {
     if (_productosFiltrados.isEmpty) {
+      debugPrint('⚠️ No hay productos filtrados disponibles');
       return <Map<String, dynamic>>[];
     }
-    
+
     final int inicio = _paginaActual * _itemsPorPagina;
-    
+
     // Validación para evitar errores de rango
     if (inicio >= _productosFiltrados.length) {
-      // Si el inicio está fuera de rango, resetear a la primera página
-      debugPrint('⚠️ Inicio de paginación fuera de rango: $_paginaActual de $_totalPaginas (inicio=$inicio, total=${_productosFiltrados.length})');
+      debugPrint(
+          '⚠️ Inicio de paginación fuera de rango: $_paginaActual de $_totalPaginas (inicio=$inicio, total=${_productosFiltrados.length})');
       _paginaActual = 0;
       return _getProductosPaginaActual();
     }
-    
-    final int fin = (inicio + _itemsPorPagina < _productosFiltrados.length) 
-        ? inicio + _itemsPorPagina 
+
+    final int fin = (inicio + _itemsPorPagina < _productosFiltrados.length)
+        ? inicio + _itemsPorPagina
         : _productosFiltrados.length;
-    
-    // Validación adicional para asegurar que el rango sea válido
-    if (inicio < 0 || fin > _productosFiltrados.length || inicio >= fin) {
-      debugPrint('⚠️ Advertencia: Rango inválido para paginación: inicio=$inicio, fin=$fin, total=${_productosFiltrados.length}');
-      if (_productosFiltrados.isNotEmpty) {
-        return <Map<String, dynamic>>[_productosFiltrados.first]; // Devolver al menos un elemento para mostrar algo
-      }
-      return <Map<String, dynamic>>[];
-    }
-    
+
+    debugPrint(
+        '📄 Obteniendo productos página $_paginaActual: $inicio-$fin de ${_productosFiltrados.length}');
+
     try {
-      return _productosFiltrados.sublist(inicio, fin);
+      final List<Map<String, dynamic>> productosEnPagina =
+          _productosFiltrados.sublist(inicio, fin);
+      debugPrint('✅ Productos en página actual: ${productosEnPagina.length}');
+      return productosEnPagina;
     } catch (e) {
       debugPrint('🚨 Error al obtener productos de la página: $e');
       // En caso de error, intentar mostrar la primera página
       _paginaActual = 0;
       if (_productosFiltrados.isNotEmpty) {
         // Intentar obtener algunos productos para mostrar
-        final int elementosAMostrar = _productosFiltrados.length > 5 ? 5 : _productosFiltrados.length;
+        final int elementosAMostrar =
+            _productosFiltrados.length > 5 ? 5 : _productosFiltrados.length;
         return _productosFiltrados.sublist(0, elementosAMostrar);
       }
       return <Map<String, dynamic>>[];
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
-    
+
     return Container(
       color: darkBackground,
       child: Column(
@@ -299,14 +281,12 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
               color: darkSurface,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: isMobile
-                ? _buildMobileFilters()
-                : _buildDesktopFilters(),
+            child: isMobile ? _buildMobileFilters() : _buildDesktopFilters(),
           ),
-          
+
           // Resumen de resultados con indicador del filtro activo
           _buildFilterSummary(),
-          
+
           // Resultados de la búsqueda usando el componente refactorizado
           Expanded(
             child: ListBusquedaProducto(
@@ -318,12 +298,13 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
               darkBackground: darkBackground,
               darkSurface: darkSurface,
               mensajeVacio: _filtroCategoria != 'Todos'
-                ? 'No hay productos en la categoría "$_filtroCategoria"'
-                : 'Intenta con otro filtro',
+                  ? 'No hay productos en la categoría "$_filtroCategoria"'
+                  : 'Intenta con otro filtro',
               onRestablecerFiltro: () {
                 _restablecerTodosFiltros();
-                debugPrint('🔄 Filtros restablecidos desde ListBusquedaProducto');
-                
+                debugPrint(
+                    '🔄 Filtros restablecidos desde ListBusquedaProducto');
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Se han restablecido todos los filtros'),
@@ -333,12 +314,12 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
                   ),
                 );
               },
-              tieneAlgunFiltroActivo: _filtroCategoria != 'Todos' || 
-                                      _searchController.text.isNotEmpty || 
-                                      _tipoDescuentoSeleccionado != TipoDescuento.todos,
+              tieneAlgunFiltroActivo: _filtroCategoria != 'Todos' ||
+                  _searchController.text.isNotEmpty ||
+                  _tipoDescuentoSeleccionado != TipoDescuento.todos,
             ),
           ),
-          
+
           // Paginador (solo en la parte inferior)
           if (_totalPaginas > 1)
             Padding(
@@ -349,13 +330,13 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       ),
     );
   }
-  
+
   Widget _buildMobileFilters() {
     // Verificar si hay algún filtro activo
-    final bool hayFiltrosActivos = _filtroCategoria != 'Todos' || 
-                                  _searchController.text.isNotEmpty || 
-                                  _tipoDescuentoSeleccionado != TipoDescuento.todos;
-    
+    final bool hayFiltrosActivos = _filtroCategoria != 'Todos' ||
+        _searchController.text.isNotEmpty ||
+        _tipoDescuentoSeleccionado != TipoDescuento.todos;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -369,7 +350,9 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
               // Botón de categoría
               Container(
                 decoration: BoxDecoration(
-                  color: _isCategoriaExpanded ? Colors.blue.withOpacity(0.2) : darkBackground,
+                  color: _isCategoriaExpanded
+                      ? Colors.blue.withOpacity(0.2)
+                      : darkBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: IconButton(
@@ -377,11 +360,17 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        _isCategoriaExpanded ? Icons.category : Icons.category_outlined,
-                        color: _isCategoriaExpanded || _filtroCategoria != 'Todos' ? Colors.blue : Colors.white70,
+                        _isCategoriaExpanded
+                            ? Icons.category
+                            : Icons.category_outlined,
+                        color:
+                            _isCategoriaExpanded || _filtroCategoria != 'Todos'
+                                ? Colors.blue
+                                : Colors.white70,
                         size: 20,
                       ),
-                      if (!_isCategoriaExpanded && _filtroCategoria != 'Todos') ...[
+                      if (!_isCategoriaExpanded &&
+                          _filtroCategoria != 'Todos') ...[
                         const SizedBox(width: 4),
                         Container(
                           width: 8,
@@ -395,14 +384,17 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
                     ],
                   ),
                   onPressed: _toggleCategoria,
-                  tooltip: _isCategoriaExpanded ? 'Cerrar categorías' : 'Categorías',
+                  tooltip:
+                      _isCategoriaExpanded ? 'Cerrar categorías' : 'Categorías',
                 ),
               ),
-              
+
               // Botón de promoción
               Container(
                 decoration: BoxDecoration(
-                  color: _isPromocionExpanded ? Colors.purple.withOpacity(0.2) : darkBackground,
+                  color: _isPromocionExpanded
+                      ? Colors.purple.withOpacity(0.2)
+                      : darkBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: IconButton(
@@ -410,11 +402,19 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        _isPromocionExpanded ? Icons.local_offer : Icons.local_offer_outlined,
-                        color: _isPromocionExpanded || _tipoDescuentoSeleccionado != TipoDescuento.todos ? Colors.purple : Colors.white70,
+                        _isPromocionExpanded
+                            ? Icons.local_offer
+                            : Icons.local_offer_outlined,
+                        color: _isPromocionExpanded ||
+                                _tipoDescuentoSeleccionado !=
+                                    TipoDescuento.todos
+                            ? Colors.purple
+                            : Colors.white70,
                         size: 20,
                       ),
-                      if (!_isPromocionExpanded && _tipoDescuentoSeleccionado != TipoDescuento.todos) ...[
+                      if (!_isPromocionExpanded &&
+                          _tipoDescuentoSeleccionado !=
+                              TipoDescuento.todos) ...[
                         const SizedBox(width: 4),
                         Container(
                           width: 8,
@@ -428,14 +428,18 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
                     ],
                   ),
                   onPressed: _togglePromocion,
-                  tooltip: _isPromocionExpanded ? 'Cerrar promociones' : 'Promociones',
+                  tooltip: _isPromocionExpanded
+                      ? 'Cerrar promociones'
+                      : 'Promociones',
                 ),
               ),
-              
+
               // Botón de búsqueda
               Container(
                 decoration: BoxDecoration(
-                  color: _isSearchExpanded ? Colors.orange.withOpacity(0.2) : darkBackground,
+                  color: _isSearchExpanded
+                      ? Colors.orange.withOpacity(0.2)
+                      : darkBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: IconButton(
@@ -444,10 +448,14 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
                     children: [
                       Icon(
                         _isSearchExpanded ? Icons.close : Icons.search,
-                        color: _isSearchExpanded || _searchController.text.isNotEmpty ? Colors.orange : Colors.white70,
+                        color: _isSearchExpanded ||
+                                _searchController.text.isNotEmpty
+                            ? Colors.orange
+                            : Colors.white70,
                         size: 20,
                       ),
-                      if (!_isSearchExpanded && _searchController.text.isNotEmpty) ...[
+                      if (!_isSearchExpanded &&
+                          _searchController.text.isNotEmpty) ...[
                         const SizedBox(width: 4),
                         Container(
                           width: 8,
@@ -464,11 +472,13 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
                   tooltip: _isSearchExpanded ? 'Cerrar búsqueda' : 'Buscar',
                 ),
               ),
-              
+
               // Nuevo botón de limpiar filtros
               Container(
                 decoration: BoxDecoration(
-                  color: hayFiltrosActivos ? Colors.red.withOpacity(0.2) : darkBackground,
+                  color: hayFiltrosActivos
+                      ? Colors.red.withOpacity(0.2)
+                      : darkBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: IconButton(
@@ -477,51 +487,48 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
                     color: hayFiltrosActivos ? Colors.red : Colors.white38,
                     size: 20,
                   ),
-                  onPressed: hayFiltrosActivos 
-                    ? () {
-                        // Cerrar cualquier dropdown expandido
-                        if (_isCategoriaExpanded) {
-                          _toggleCategoria();
+                  onPressed: hayFiltrosActivos
+                      ? () {
+                          // Cerrar cualquier dropdown expandido
+                          if (_isCategoriaExpanded) {
+                            _toggleCategoria();
+                          }
+                          if (_isPromocionExpanded) {
+                            _togglePromocion();
+                          }
+                          if (_isSearchExpanded) {
+                            _toggleSearch();
+                          }
+
+                          // Limpiar todos los filtros
+                          _restablecerTodosFiltros();
+
+                          // Mostrar feedback visual
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Filtros restablecidos'),
+                              backgroundColor: Colors.green,
+                              duration: Duration(seconds: 1),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
                         }
-                        if (_isPromocionExpanded) {
-                          _togglePromocion();
-                        }
-                        if (_isSearchExpanded) {
-                          _toggleSearch();
-                        }
-                        
-                        // Limpiar todos los filtros
-                        _restablecerTodosFiltros();
-                        
-                        // Mostrar feedback visual
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Filtros restablecidos'),
-                            backgroundColor: Colors.green,
-                            duration: Duration(seconds: 1),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      } 
-                    : null, // Deshabilitar si no hay filtros activos
+                      : null, // Deshabilitar si no hay filtros activos
                   tooltip: 'Limpiar filtros',
                 ),
               ),
             ],
           ),
         ),
-        
+
         // Contenido expandido (aparece debajo de los botones)
-        if (_isCategoriaExpanded)
-          _buildCategoriaExpandida(),
-        if (_isPromocionExpanded)
-          _buildPromocionExpandida(),
-        if (_isSearchExpanded)
-          _buildSearchExpandido(),
+        if (_isCategoriaExpanded) _buildCategoriaExpandida(),
+        if (_isPromocionExpanded) _buildPromocionExpandida(),
+        if (_isSearchExpanded) _buildSearchExpandido(),
       ],
     );
   }
-  
+
   Widget _buildDesktopFilters() {
     return Row(
       children: <Widget>[
@@ -584,8 +591,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       ],
     );
   }
-  
-  
+
   Widget _buildSearchField() {
     return Container(
       decoration: BoxDecoration(
@@ -626,7 +632,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       ),
     );
   }
-  
+
   Widget _buildFilterSummary() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -641,7 +647,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
               color: Colors.blue,
               onClear: () => _cambiarCategoria('Todos'),
             ),
-          
+
           // Mostrar filtro de búsqueda si hay uno
           if (_searchController.text.isNotEmpty)
             _buildActiveFilter(
@@ -653,18 +659,17 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
                 _filtrarProductos();
               },
             ),
-          
+
           // Mostrar filtro de promoción si hay uno activo
           if (_tipoDescuentoSeleccionado != TipoDescuento.todos)
             _buildActiveFilter(
-              icon: _tipoDescuentoSeleccionado == TipoDescuento.promoGratis 
-                  ? Icons.card_giftcard 
+              icon: _tipoDescuentoSeleccionado == TipoDescuento.promoGratis
+                  ? Icons.card_giftcard
                   : Icons.percent,
-              label: 'Promoción: ${_tipoDescuentoSeleccionado == TipoDescuento.promoGratis 
-                  ? 'Lleva y Paga' 
-                  : 'Descuento %'}',
-              color: _tipoDescuentoSeleccionado == TipoDescuento.promoGratis 
-                  ? Colors.green 
+              label:
+                  'Promoción: ${_tipoDescuentoSeleccionado == TipoDescuento.promoGratis ? 'Lleva y Paga' : 'Descuento %'}',
+              color: _tipoDescuentoSeleccionado == TipoDescuento.promoGratis
+                  ? Colors.green
                   : Colors.purple,
               onClear: () {
                 setState(() {
@@ -673,7 +678,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
                 _filtrarProductos();
               },
             ),
-          
+
           Text(
             'Mostrando ${_getProductosPaginaActual().length} de ${_productosFiltrados.length} productos',
             style: const TextStyle(
@@ -686,7 +691,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       ),
     );
   }
-  
+
   Widget _buildActiveFilter({
     required IconData icon,
     required String label,
@@ -730,7 +735,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       ),
     );
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -740,49 +745,46 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
     super.dispose();
   }
 
-  // Método para actualizar los ítems por página según el dispositivo
   void _actualizarItemsPorPaginaSegunDispositivo() {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
-    
-    if (isMobile && _itemsPorPagina != 100) {
+    final int nuevoItemsPorPagina = isMobile ? 100 : 10;
+
+    if (_itemsPorPagina != nuevoItemsPorPagina) {
+      debugPrint(
+          '📱 Cambiando a modo ${isMobile ? "móvil" : "escritorio"}: $nuevoItemsPorPagina productos por página');
       setState(() {
-        debugPrint('📱 Cambiando a modo móvil: 100 productos por página');
-        _itemsPorPagina = 100;
-        _paginaActual = 0; // Volver a la primera página para evitar problemas
-        _calcularTotalPaginas();
-      });
-    } else if (!isMobile && _itemsPorPagina != 10) {
-      setState(() {
-        debugPrint('🖥️ Cambiando a modo escritorio: 10 productos por página');
-        _itemsPorPagina = 10;
-        _paginaActual = 0; // Volver a la primera página para evitar problemas
+        _itemsPorPagina = nuevoItemsPorPagina;
+        _paginaActual = 0;
         _calcularTotalPaginas();
       });
     }
   }
 
-  // Método para cambiar la categoría seleccionada
   void _cambiarCategoria(String? nuevaCategoria) {
     if (nuevaCategoria == null) {
       debugPrint('⚠️ Se intentó cambiar a una categoría nula');
       return;
     }
-    
+
     // Usar el método de normalización
-    final String valorCategoriaFinal = BusquedaProductoUtils.normalizarCategoria(nuevaCategoria);
-    final bool esCategoriaTodos = BusquedaProductoUtils.esCategoriaTodos(valorCategoriaFinal);
-    
+    final String valorCategoriaFinal =
+        BusquedaProductoUtils.normalizarCategoria(nuevaCategoria);
+    final bool esCategoriaTodos =
+        BusquedaProductoUtils.esCategoriaTodos(valorCategoriaFinal);
+
     // Usar 'Todos' como forma estándar cuando es la categoría general
-    final String valorGuardar = esCategoriaTodos ? 'Todos' : valorCategoriaFinal;
-    
+    final String valorGuardar =
+        esCategoriaTodos ? 'Todos' : valorCategoriaFinal;
+
     if (valorGuardar != _filtroCategoria) {
-      debugPrint('🔄 Cambiando categoría: "$_filtroCategoria" → "$valorGuardar"');
-      
+      debugPrint(
+          '🔄 Cambiando categoría: "$_filtroCategoria" → "$valorGuardar"');
+
       // Verificar si la categoría existe en la lista (saltarse esta verificación para 'Todos')
       if (!esCategoriaTodos) {
         bool categoriaExiste = false;
-        
+
         // Buscar de manera más flexible, ignorando mayúsculas/minúsculas
         for (final String cat in _categoriasList) {
           if (cat.trim().toLowerCase() == valorCategoriaFinal.toLowerCase()) {
@@ -790,26 +792,29 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
             break;
           }
         }
-        
+
         if (!categoriaExiste) {
-          debugPrint('⚠️ Advertencia: La categoría "$valorCategoriaFinal" no existe en la lista de categorías');
+          debugPrint(
+              '⚠️ Advertencia: La categoría "$valorCategoriaFinal" no existe en la lista de categorías');
           // Mostrar las categorías disponibles para depuración
-          final List<String> categoriasNormalizadas = _categoriasList.map((String c) => c.toLowerCase()).toList();
-          debugPrint('📋 Categorías disponibles (normalizadas): $categoriasNormalizadas');
+          final List<String> categoriasNormalizadas =
+              _categoriasList.map((String c) => c.toLowerCase()).toList();
+          debugPrint(
+              '📋 Categorías disponibles (normalizadas): $categoriasNormalizadas');
         }
       }
-      
+
       setState(() {
         _filtroCategoria = valorGuardar;
         _paginaActual = 0; // Reiniciar a primera página
       });
-      
+
       _filtrarProductos(); // Volver a filtrar con la nueva categoría
     } else {
       debugPrint('ℹ️ La categoría seleccionada ya es: "$_filtroCategoria"');
     }
   }
-  
+
   Widget _buildPaginador() {
     // Creamos un objeto Paginacion basado en nuestros datos actuales
     final Paginacion paginacion = Paginacion(
@@ -819,14 +824,15 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       hasNext: _paginaActual < _totalPaginas - 1,
       hasPrev: _paginaActual > 0,
     );
-    
+
     // Determinar si estamos en una pantalla pequeña
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
-    
+
     return Paginador(
       paginacion: paginacion,
-      onPageChanged: (int page) => _irAPagina(page - 1), // Convertir de 1-indexed a 0-indexed
+      onPageChanged: (int page) =>
+          _irAPagina(page - 1), // Convertir de 1-indexed a 0-indexed
       backgroundColor: darkSurface,
       textColor: Colors.white,
       accentColor: Colors.blue,
@@ -835,32 +841,37 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       forceCompactMode: isMobile, // Forzar modo compacto en móviles
     );
   }
-  
-  // Método para construir el dropdown de categorías
+
   Widget _buildCategoriasDropdown() {
     // Normalizar el valor actual para asegurar consistencia
-    final String valorNormalizado = BusquedaProductoUtils.normalizarCategoria(_filtroCategoria);
-    
+    final String valorNormalizado =
+        BusquedaProductoUtils.normalizarCategoria(_filtroCategoria);
+
     // Verificar que el valor esté en la lista de categorías
-    final bool valorExisteEnLista = _categoriasList.any((String cat) => 
-        cat.toLowerCase() == valorNormalizado.toLowerCase());
-    
+    final bool valorExisteEnLista = _categoriasList.any(
+        (String cat) => cat.toLowerCase() == valorNormalizado.toLowerCase());
+
     // Si el valor no está en la lista y no es 'Todos', añadirlo temporalmente
     List<String> categoriasFinal = <String>[..._categoriasList];
-    if (!valorExisteEnLista && !BusquedaProductoUtils.esCategoriaTodos(valorNormalizado)) {
-      debugPrint('⚠️ Valor seleccionado "$valorNormalizado" no encontrado en la lista, añadiéndolo temporalmente');
+    if (!valorExisteEnLista &&
+        !BusquedaProductoUtils.esCategoriaTodos(valorNormalizado)) {
+      debugPrint(
+          '⚠️ Valor seleccionado "$valorNormalizado" no encontrado en la lista, añadiéndolo temporalmente');
       categoriasFinal.add(valorNormalizado);
     }
-    
+
     // Asegurar que 'Todos' está en la lista y solo una vez
-    categoriasFinal = categoriasFinal.where((String cat) => 
-        !BusquedaProductoUtils.esCategoriaTodos(cat) || cat == 'Todos').toList();
+    categoriasFinal = categoriasFinal
+        .where((String cat) =>
+            !BusquedaProductoUtils.esCategoriaTodos(cat) || cat == 'Todos')
+        .toList();
     if (!categoriasFinal.contains('Todos')) {
       categoriasFinal.insert(0, 'Todos');
     }
-    
-    debugPrint('🔍 DropdownButton categorías: valor=$valorNormalizado, items=${categoriasFinal.length}');
-    
+
+    debugPrint(
+        '🔍 DropdownButton categorías: valor=$valorNormalizado, items=${categoriasFinal.length}');
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
@@ -871,25 +882,26 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
         child: DropdownButton<String>(
           value: valorNormalizado,
           isExpanded: true,
-          icon: _loadingCategorias 
+          icon: _loadingCategorias
               ? const SizedBox(
-                  width: 16, 
-                  height: 16, 
-                  child: CircularProgressIndicator(strokeWidth: 2)
-                )
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.arrow_drop_down, color: Colors.white70),
           dropdownColor: darkSurface,
           items: categoriasFinal.map((String categoria) {
             // Si tenemos categorías de la API, podemos mostrar cuántos productos hay
             int totalProductos = 0;
-            if (categoria != 'Todos' && !BusquedaProductoUtils.esCategoriaTodos(categoria)) {
+            if (categoria != 'Todos' &&
+                !BusquedaProductoUtils.esCategoriaTodos(categoria)) {
               final Categoria catObj = _categoriasFromApi.firstWhere(
-                (Categoria c) => c.nombre.toLowerCase() == categoria.toLowerCase(),
+                (Categoria c) =>
+                    c.nombre.toLowerCase() == categoria.toLowerCase(),
                 orElse: () => Categoria(id: 0, nombre: categoria),
               );
               totalProductos = catObj.totalProductos;
             }
-            
+
             return DropdownMenuItem<String>(
               value: categoria,
               child: Row(
@@ -899,20 +911,23 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
                       categoria,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontWeight: categoria.toLowerCase() == valorNormalizado.toLowerCase() 
-                            ? FontWeight.bold 
+                        fontWeight: categoria.toLowerCase() ==
+                                valorNormalizado.toLowerCase()
+                            ? FontWeight.bold
                             : FontWeight.normal,
                         fontSize: 13,
                         color: Colors.white,
                       ),
                     ),
                   ),
-                  
+
                   // Mostrar cantidad de productos si es categoría de API y no es 'Todos'
-                  if (!BusquedaProductoUtils.esCategoriaTodos(categoria) && totalProductos > 0)
+                  if (!BusquedaProductoUtils.esCategoriaTodos(categoria) &&
+                      totalProductos > 0)
                     Container(
                       margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.blue.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(10),
@@ -935,11 +950,11 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       ),
     );
   }
-  
-  // Método para construir el dropdown del tipo de promoción
+
   Widget _buildTipoPromocionDropdown() {
     // Mapeo de tipos de promoción a sus etiquetas e iconos (sin liquidación)
-    final Map<TipoDescuento, Map<String, Object>> tiposPromocion = <TipoDescuento, Map<String, Object>>{
+    final Map<TipoDescuento, Map<String, Object>> tiposPromocion =
+        <TipoDescuento, Map<String, Object>>{
       TipoDescuento.todos: <String, Object>{
         'label': 'Todas',
         'icon': Icons.check_circle_outline,
@@ -965,19 +980,21 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<TipoDescuento>(
-          value: _tipoDescuentoSeleccionado == TipoDescuento.liquidacion 
-              ? TipoDescuento.todos  // Si está seleccionado liquidación, cambiar a todos
+          value: _tipoDescuentoSeleccionado == TipoDescuento.liquidacion
+              ? TipoDescuento
+                  .todos // Si está seleccionado liquidación, cambiar a todos
               : _tipoDescuentoSeleccionado,
           isExpanded: true,
           icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
           dropdownColor: darkSurface,
-          items: tiposPromocion.entries.map((MapEntry<TipoDescuento, Map<String, Object>> entry) {
+          items: tiposPromocion.entries
+              .map((MapEntry<TipoDescuento, Map<String, Object>> entry) {
             final TipoDescuento tipo = entry.key;
             final Map<String, Object> datos = entry.value;
-            final Color iconColor = _tipoDescuentoSeleccionado == tipo 
-                ? datos['color'] as Color 
+            final Color iconColor = _tipoDescuentoSeleccionado == tipo
+                ? datos['color'] as Color
                 : Colors.grey;
-            
+
             return DropdownMenuItem<TipoDescuento>(
               value: tipo,
               child: Row(
@@ -993,8 +1010,8 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
                       datos['label'] as String,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontWeight: _tipoDescuentoSeleccionado == tipo 
-                            ? FontWeight.bold 
+                        fontWeight: _tipoDescuentoSeleccionado == tipo
+                            ? FontWeight.bold
                             : FontWeight.normal,
                         color: Colors.white,
                       ),
@@ -1016,26 +1033,26 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       ),
     );
   }
-  
+
   /// Método para navegar a una página específica
   void _irAPagina(int pagina) {
     if (_totalPaginas <= 0) {
       debugPrint('ℹ️ No hay páginas disponibles para navegar');
       return;
     }
-    
+
     if (pagina < 0) {
       pagina = 0; // Evitar páginas negativas
       debugPrint('⚠️ Ajustando página negativa a 0');
     }
-    
+
     if (pagina >= _totalPaginas) {
       pagina = _totalPaginas - 1; // Evitar páginas fuera de rango
       debugPrint('⚠️ Ajustando página > $_totalPaginas a ${_totalPaginas - 1}');
     }
-    
+
     debugPrint('🔄 Cambiando a página ${pagina + 1} de $_totalPaginas');
-    
+
     // Solo actualizar si realmente cambiamos de página
     if (pagina != _paginaActual) {
       setState(() {
@@ -1047,36 +1064,39 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
   // Nuevo método para restablecer todos los filtros
   void _restablecerTodosFiltros() {
     debugPrint('🔄 Restableciendo todos los filtros');
-    
+
     // Guardar valores anteriores para diagnóstico
     final String categoriaAnterior = _filtroCategoria;
     final TipoDescuento tipoDescuentoAnterior = _tipoDescuentoSeleccionado;
     final String busquedaAnterior = _searchController.text;
-    
+
     // Primero actualizar los estados internos
     setState(() {
       // Restablecer categaría explícitamente a 'Todos'
       _filtroCategoria = 'Todos';
-      
+
       // Restablecer tipo de descuento a 'todos'
       _tipoDescuentoSeleccionado = TipoDescuento.todos;
-      
+
       // Limpiar campo de búsqueda
       _searchController.clear();
-      
+
       // Restablecer página actual
       _paginaActual = 0;
     });
-    
+
     // Logging detallado para diagnóstico
-    debugPrint('🔍 Filtros antes: Categoría="$categoriaAnterior", Búsqueda="$busquedaAnterior", Promoción=$tipoDescuentoAnterior');
-    debugPrint('🧹 Filtros limpiados. Aplicando: Categoría="Todos", Búsqueda="", Promoción=todos');
-    
+    debugPrint(
+        '🔍 Filtros antes: Categoría="$categoriaAnterior", Búsqueda="$busquedaAnterior", Promoción=$tipoDescuentoAnterior');
+    debugPrint(
+        '🧹 Filtros limpiados. Aplicando: Categoría="Todos", Búsqueda="", Promoción=todos');
+
     // Ahora filtrar los productos con los nuevos valores
     _filtrarProductos();
-    
+
     // Verificación post-restablecimiento
-    debugPrint('✅ Verificación: Categoría actual="$_filtroCategoria", Productos filtrados=${_productosFiltrados.length}');
+    debugPrint(
+        '✅ Verificación: Categoría actual="$_filtroCategoria", Productos filtrados=${_productosFiltrados.length}');
     debugPrint('✅ Todos los filtros han sido restablecidos');
   }
 
@@ -1091,7 +1111,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
         _togglePromocion();
       }
     }
-    
+
     setState(() {
       _isCategoriaExpanded = !_isCategoriaExpanded;
       if (_isCategoriaExpanded) {
@@ -1101,7 +1121,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       }
     });
   }
-  
+
   // Método para alternar la expansión del dropdown de promoción
   void _togglePromocion() {
     // Cerrar otros dropdowns si este se está abriendo
@@ -1113,7 +1133,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
         _toggleCategoria();
       }
     }
-    
+
     setState(() {
       _isPromocionExpanded = !_isPromocionExpanded;
       if (_isPromocionExpanded) {
@@ -1123,7 +1143,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       }
     });
   }
-  
+
   // Método para alternar la expansión de la barra de búsqueda
   void _toggleSearch() {
     // Cerrar otros dropdowns si este se está abriendo
@@ -1135,7 +1155,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
         _togglePromocion();
       }
     }
-    
+
     setState(() {
       _isSearchExpanded = !_isSearchExpanded;
       if (_isSearchExpanded) {
@@ -1209,7 +1229,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       ),
     );
   }
-  
+
   // Nuevo método: Contenido expandido para promoción
   Widget _buildPromocionExpandida() {
     return Container(
@@ -1268,7 +1288,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
       ),
     );
   }
-  
+
   // Nuevo método: Contenido expandido para búsqueda
   Widget _buildSearchExpandido() {
     return Container(
@@ -1330,7 +1350,8 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget> with Ti
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
-                prefixIcon: const Icon(Icons.search, color: Colors.white38, size: 18),
+                prefixIcon:
+                    const Icon(Icons.search, color: Colors.white38, size: 18),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear, size: 18),

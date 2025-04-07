@@ -40,14 +40,15 @@ class DashboardProvider extends ChangeNotifier {
   List<double> get ventasMensuales => _ventasMensuales;
 
   /// Inicializa el provider cargando todos los datos necesarios
-  void inicializar() {
-    _loadData();
+  Future<void> inicializar() async {
+    if (!_isLoading) {
+      _setLoading(true);
+    }
+    await _loadData();
   }
 
   /// Carga todos los datos del dashboard
   Future<void> _loadData() async {
-    setLoading(true);
-
     try {
       // Cargar sucursales primero
       final List<Sucursal> sucursalesResponse =
@@ -82,11 +83,10 @@ class DashboardProvider extends ChangeNotifier {
           _loadVentasStats(),
         ]);
       }
-
-      setLoading(false);
     } catch (e) {
       debugPrint('Error cargando datos iniciales: $e');
-      setLoading(false);
+    } finally {
+      _setLoading(false);
     }
   }
 
@@ -150,12 +150,11 @@ class DashboardProvider extends ChangeNotifier {
       final PaginatedResponse<Producto> sucProducts =
           await api.productos.getProductos(
         sucursalId: sucursal.id.toString(),
-        pageSize: 100, // Aumentar límite para tener más datos precisos
+        pageSize: 100,
       );
       productosBySucursal[sucursal.id.toString()] = sucProducts.items;
     } catch (e) {
       debugPrint('Error cargando productos para sucursal ${sucursal.id}: $e');
-      // En caso de error, mantenemos la lista vacía
       productosBySucursal[sucursal.id.toString()] = [];
     }
   }
@@ -174,17 +173,13 @@ class DashboardProvider extends ChangeNotifier {
   /// Carga estadísticas de ventas (simulado)
   Future<void> _loadVentasStats() async {
     try {
-      // Simulando datos de ventas mensuales
-      // En una implementación real, estos datos vendrían de la API
       _ventasMensuales.clear();
       final math.Random random = math.Random();
 
-      // Base de ventas con patrón creciente y algunas fluctuaciones
       final double baseVentas = 3500.0;
       final double maxFluctuacion = 800.0;
       final double tendenciaCrecimiento = 300.0;
 
-      // Generar datos para los últimos 7 meses
       for (int i = 0; i < 6; i++) {
         final double ventaMes = baseVentas +
             (tendenciaCrecimiento * i) +
@@ -192,15 +187,12 @@ class DashboardProvider extends ChangeNotifier {
         _ventasMensuales.add(ventaMes);
       }
 
-      // El mes actual (simulado como algo mayor para mostrar crecimiento)
       _totalVentas = baseVentas +
           (tendenciaCrecimiento * 6) +
           (random.nextDouble() * maxFluctuacion);
       _ventasMensuales.add(_totalVentas);
 
-      // Calcular ganancias (30% de las ventas)
       _totalGanancias = _totalVentas * 0.3;
-
       notifyListeners();
     } catch (e) {
       debugPrint('Error cargando estadísticas de ventas: $e');
@@ -251,22 +243,34 @@ class DashboardProvider extends ChangeNotifier {
       _sucursalSeleccionadaId = sucursalId;
       notifyListeners();
 
-      await Future.wait([
-        _loadProductos(),
-        _loadVentasStats(),
-      ]);
+      _setLoading(true);
+      try {
+        await Future.wait([
+          _loadProductos(),
+          _loadVentasStats(),
+        ]);
+      } finally {
+        _setLoading(false);
+      }
     }
   }
 
-  /// Actualiza el estado de carga y notifica a los listeners
-  void setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
+  /// Actualiza el estado de carga
+  void _setLoading(bool value) {
+    if (_isLoading != value) {
+      _isLoading = value;
+      notifyListeners();
+    }
   }
 
   /// Recarga todos los datos del dashboard
   Future<void> recargarDatos() async {
-    await _loadData();
+    _setLoading(true);
+    try {
+      await _loadData();
+    } finally {
+      _setLoading(false);
+    }
   }
 }
 

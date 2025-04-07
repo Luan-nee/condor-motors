@@ -27,26 +27,124 @@ class Sucursal {
     required this.fechaCreacion,
     required this.fechaActualizacion,
     this.activo = true,
-  });
+  }) {
+    // Validar formato de serie de factura
+    if (serieFactura != null) {
+      if (serieFactura!.length != 4 || !serieFactura!.startsWith('F')) {
+        throw FormatException(
+          'Serie de factura debe tener 4 caracteres y empezar con F',
+          serieFactura,
+        );
+      }
+    }
+
+    // Validar número inicial de factura
+    if (numeroFacturaInicial != null && numeroFacturaInicial! <= 0) {
+      throw FormatException(
+        'Número inicial de factura debe ser positivo',
+        numeroFacturaInicial.toString(),
+      );
+    }
+
+    // Validar formato de serie de boleta
+    if (serieBoleta != null) {
+      if (serieBoleta!.length != 4 || !serieBoleta!.startsWith('B')) {
+        throw FormatException(
+          'Serie de boleta debe tener 4 caracteres y empezar con B',
+          serieBoleta,
+        );
+      }
+    }
+
+    // Validar número inicial de boleta
+    if (numeroBoletaInicial != null && numeroBoletaInicial! <= 0) {
+      throw FormatException(
+        'Número inicial de boleta debe ser positivo',
+        numeroBoletaInicial.toString(),
+      );
+    }
+
+    // Validar código de establecimiento
+    if (codigoEstablecimiento != null && codigoEstablecimiento!.length != 4) {
+      throw FormatException(
+        'Código de establecimiento debe tener 4 caracteres',
+        codigoEstablecimiento,
+      );
+    }
+  }
 
   /// Crea una instancia de Sucursal a partir de un mapa JSON
   factory Sucursal.fromJson(Map<String, dynamic> json) {
+    // Validar y convertir serie de factura
+    final String? serieFactura = json['serieFactura']?.toString();
+    if (serieFactura != null) {
+      if (serieFactura.length != 4 || !serieFactura.startsWith('F')) {
+        throw FormatException(
+          'Serie de factura debe tener 4 caracteres y empezar con F',
+          serieFactura,
+        );
+      }
+    }
+
+    // Validar y convertir número inicial de factura
+    final int? numeroFacturaInicial = json['numeroFacturaInicial'] != null
+        ? int.parse(json['numeroFacturaInicial'].toString())
+        : null;
+    if (numeroFacturaInicial != null && numeroFacturaInicial <= 0) {
+      throw FormatException(
+        'Número inicial de factura debe ser positivo',
+        numeroFacturaInicial.toString(),
+      );
+    }
+
+    // Validar y convertir serie de boleta
+    final String? serieBoleta = json['serieBoleta']?.toString();
+    if (serieBoleta != null) {
+      if (serieBoleta.length != 4 || !serieBoleta.startsWith('B')) {
+        throw FormatException(
+          'Serie de boleta debe tener 4 caracteres y empezar con B',
+          serieBoleta,
+        );
+      }
+    }
+
+    // Validar y convertir número inicial de boleta
+    final int? numeroBoletaInicial = json['numeroBoletaInicial'] != null
+        ? int.parse(json['numeroBoletaInicial'].toString())
+        : null;
+    if (numeroBoletaInicial != null && numeroBoletaInicial <= 0) {
+      throw FormatException(
+        'Número inicial de boleta debe ser positivo',
+        numeroBoletaInicial.toString(),
+      );
+    }
+
+    // Validar y convertir código de establecimiento
+    final String? codigoEstablecimiento =
+        json['codigoEstablecimiento']?.toString();
+    if (codigoEstablecimiento != null && codigoEstablecimiento.length != 4) {
+      throw FormatException(
+        'Código de establecimiento debe tener 4 caracteres',
+        codigoEstablecimiento,
+      );
+    }
+
     return Sucursal(
       id: json['id']?.toString() ?? '',
       nombre: json['nombre'] ?? '',
       direccion: json['direccion'],
       sucursalCentral: json['sucursalCentral'] ?? false,
-      serieFactura: json['serieFactura'],
-      numeroFacturaInicial: json['numeroFacturaInicial'],
-      serieBoleta: json['serieBoleta'],
-      numeroBoletaInicial: json['numeroBoletaInicial'],
-      codigoEstablecimiento: json['codigoEstablecimiento'],
+      serieFactura: serieFactura,
+      numeroFacturaInicial: numeroFacturaInicial,
+      serieBoleta: serieBoleta,
+      numeroBoletaInicial: numeroBoletaInicial,
+      codigoEstablecimiento: codigoEstablecimiento,
       tieneNotificaciones: json['tieneNotificaciones'] ?? false,
-      fechaCreacion: json['fechaCreacion'] != null 
-          ? DateTime.parse(json['fechaCreacion']) 
+      fechaCreacion: json['fechaCreacion'] != null
+          ? DateTime.parse(json['fechaCreacion'])
           : DateTime.now(),
-      fechaActualizacion: json['fechaActualizacion'] != null 
-          ? DateTime.parse(json['fechaActualizacion']) 
+      fechaActualizacion: json['fechaActualizacion'] != null
+          ? DateTime.parse(json['fechaActualizacion'])
           : DateTime.now(),
       activo: json['activo'] ?? true,
     );
@@ -60,10 +158,13 @@ class Sucursal {
       if (direccion != null) 'direccion': direccion,
       'sucursalCentral': sucursalCentral,
       if (serieFactura != null) 'serieFactura': serieFactura,
-      if (numeroFacturaInicial != null) 'numeroFacturaInicial': numeroFacturaInicial,
+      if (numeroFacturaInicial != null)
+        'numeroFacturaInicial': numeroFacturaInicial,
       if (serieBoleta != null) 'serieBoleta': serieBoleta,
-      if (numeroBoletaInicial != null) 'numeroBoletaInicial': numeroBoletaInicial,
-      if (codigoEstablecimiento != null) 'codigoEstablecimiento': codigoEstablecimiento,
+      if (numeroBoletaInicial != null)
+        'numeroBoletaInicial': numeroBoletaInicial,
+      if (codigoEstablecimiento != null)
+        'codigoEstablecimiento': codigoEstablecimiento,
       'tieneNotificaciones': tieneNotificaciones,
       'fechaCreacion': fechaCreacion.toIso8601String(),
       'fechaActualizacion': fechaActualizacion.toIso8601String(),
@@ -96,7 +197,8 @@ class Sucursal {
       numeroFacturaInicial: numeroFacturaInicial ?? this.numeroFacturaInicial,
       serieBoleta: serieBoleta ?? this.serieBoleta,
       numeroBoletaInicial: numeroBoletaInicial ?? this.numeroBoletaInicial,
-      codigoEstablecimiento: codigoEstablecimiento ?? this.codigoEstablecimiento,
+      codigoEstablecimiento:
+          codigoEstablecimiento ?? this.codigoEstablecimiento,
       tieneNotificaciones: tieneNotificaciones ?? this.tieneNotificaciones,
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
       fechaActualizacion: fechaActualizacion ?? this.fechaActualizacion,
@@ -107,5 +209,37 @@ class Sucursal {
   @override
   String toString() {
     return 'Sucursal(id: $id, nombre: $nombre, central: $sucursalCentral)';
+  }
+
+  /// Valida si una serie de factura es válida
+  static bool isValidSerieFactura(String? serie) {
+    if (serie == null) {
+      return true;
+    }
+    return serie.length == 4 && serie.startsWith('F');
+  }
+
+  /// Valida si una serie de boleta es válida
+  static bool isValidSerieBoleta(String? serie) {
+    if (serie == null) {
+      return true;
+    }
+    return serie.length == 4 && serie.startsWith('B');
+  }
+
+  /// Valida si un código de establecimiento es válido
+  static bool isValidCodigoEstablecimiento(String? codigo) {
+    if (codigo == null) {
+      return true;
+    }
+    return codigo.length == 4;
+  }
+
+  /// Valida si un número inicial es válido
+  static bool isValidNumeroInicial(int? numero) {
+    if (numero == null) {
+      return true;
+    }
+    return numero > 0;
   }
 }

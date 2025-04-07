@@ -4,14 +4,13 @@ import 'package:condorsmotors/api/auth.api.dart';
 import 'package:condorsmotors/api/index.api.dart' show CondorMotorsApi;
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/main.dart' show api;
-import 'package:condorsmotors/services/token_service.dart'; // Importar TokenService
-import 'package:condorsmotors/utils/role_utils.dart' as role_utils; // Importar utilidad de roles con alias
+import 'package:condorsmotors/utils/role_utils.dart'
+    as role_utils; // Importar utilidad de roles con alias
 import 'package:condorsmotors/widgets/background.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';  // Importar para KeyboardListener
+import 'package:flutter/services.dart'; // Importar para KeyboardListener
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Importamos SharedPreferences
-
 
 // Clase para manejar el ciclo de vida de la aplicación
 class LifecycleObserver extends WidgetsBindingObserver {
@@ -40,7 +39,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -66,14 +66,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     // para que el loop sea menos perceptible
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10), // Aumentamos la duración para un ciclo más largo
+      duration: const Duration(
+          seconds: 10), // Aumentamos la duración para un ciclo más largo
     );
-    
+
     // Iniciamos con una curva de animación suave
     _animationController.repeat();
-    
+
     _loadServerIp();
-    
+
     // Intentamos auto-login antes de cargar las credenciales normales
     _tryAutoLogin().then((_) {
       // Si no hubo auto-login exitoso, cargamos las credenciales guardadas
@@ -82,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         _loadStayLoggedInPreference();
       }
     });
-    
+
     // Reducir la velocidad de la animación cuando la app está en segundo plano
     _lifecycleObserver = LifecycleObserver(
       resumeCallBack: () {
@@ -133,15 +134,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       _isCheckingAutoLogin = true;
       _isLoading = true;
     });
-    
+
     try {
       // Obtenemos las SharedPreferences
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      
+
       // Verificamos si "Permanecer conectado" está activado
       final bool stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
-      debugPrint('Auto-login: Permanecer conectado está ${stayLoggedIn ? 'activado' : 'desactivado'}');
-      
+      debugPrint(
+          'Auto-login: Permanecer conectado está ${stayLoggedIn ? 'activado' : 'desactivado'}');
+
       if (!stayLoggedIn) {
         debugPrint('Auto-login: No está activado "Permanecer conectado"');
         setState(() {
@@ -150,12 +152,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         });
         return;
       }
-      
+
       // Obtenemos las credenciales guardadas
       final String? username = prefs.getString('username_auto');
       final String? password = prefs.getString('password_auto');
-      
-      if (username == null || password == null || username.isEmpty || password.isEmpty) {
+
+      if (username == null ||
+          password == null ||
+          username.isEmpty ||
+          password.isEmpty) {
         debugPrint('Auto-login: No hay credenciales guardadas');
         setState(() {
           _isCheckingAutoLogin = false;
@@ -163,51 +168,55 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         });
         return;
       }
-      
-      debugPrint('Auto-login: Intentando iniciar sesión automáticamente con usuario: $username');
-      
+
+      debugPrint(
+          'Auto-login: Intentando iniciar sesión automáticamente con usuario: $username');
+
       // Intentamos el login
       final UsuarioAutenticado usuarioAutenticado = await api.auth.login(
         username,
         password,
       );
-      
-      debugPrint('Auto-login: Login exitoso, usuario autenticado: $usuarioAutenticado');
-      
+
+      debugPrint(
+          'Auto-login: Login exitoso, usuario autenticado: $usuarioAutenticado');
+
       // Guardar los datos del usuario en el servicio global de autenticación
       try {
         await api.authService.saveUserData(usuarioAutenticado);
-        debugPrint('Auto-login: Datos de usuario guardados correctamente en el servicio global');
+        debugPrint(
+            'Auto-login: Datos de usuario guardados correctamente en el servicio global');
       } catch (e) {
-        debugPrint('Auto-login: Error al guardar datos en el servicio global: $e');
+        debugPrint(
+            'Auto-login: Error al guardar datos en el servicio global: $e');
       }
-      
+
       // Si llegamos hasta aquí, el login fue exitoso, navegamos a la pantalla correspondiente
       if (!mounted) {
         return;
       }
-      
+
       // Determinamos la ruta inicial basada en el rol normalizado
       final String rolCodigo = usuarioAutenticado.rolCuentaEmpleadoCodigo;
       final String rolNormalizado = role_utils.normalizeRole(rolCodigo);
       final String initialRoute = role_utils.getInitialRoute(rolNormalizado);
-      
+
       debugPrint('Auto-login: Navegando a la ruta inicial: $initialRoute');
-      
+
       // Navegamos a la pantalla correspondiente
       if (!mounted) {
         return;
       }
-      
+
       await Navigator.pushReplacementNamed(
         context,
         initialRoute,
         arguments: usuarioAutenticado.toMap(),
       );
-      
     } catch (e) {
       // Si hay un error en el auto-login, simplemente mostramos la pantalla de login normal
-      debugPrint('Auto-login: Error durante el inicio de sesión automático: $e');
+      debugPrint(
+          'Auto-login: Error durante el inicio de sesión automático: $e');
       if (mounted) {
         setState(() {
           _isCheckingAutoLogin = false;
@@ -221,20 +230,22 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Future<void> _updateApiBaseUrl(String serverIp) async {
     debugPrint('Actualizando URL base de la API a: http://$serverIp:3000/api');
     try {
-      // Obtener la instancia de TokenService
-      final TokenService tokenService = TokenService.instance;
-      
       // Reinicializar la API global con la nueva URL base
       api = CondorMotorsApi(
         baseUrl: 'http://$serverIp:3000/api',
-        tokenService: tokenService,
       );
-      
-      // Inicializar el servicio de autenticación
-      await api.initAuthService();
+
+      // Verificar conectividad con el servidor
+      final bool isConnected = await api.checkConnectivity();
+      if (!isConnected) {
+        debugPrint('No se pudo establecer conexión con el servidor');
+        throw Exception('No se pudo establecer conexión con el servidor');
+      }
+
       debugPrint('API inicializada correctamente con nueva URL base');
     } catch (e) {
       debugPrint('Error al inicializar API con nueva URL base: $e');
+      rethrow;
     }
   }
 
@@ -253,8 +264,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   void _showServerConfigDialog() {
-    final TextEditingController ipController = TextEditingController(text: _serverIp);
-    
+    final TextEditingController ipController =
+        TextEditingController(text: _serverIp);
+
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
@@ -299,27 +311,27 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               if (newIp.isNotEmpty) {
                 // Cerrar el diálogo usando el contexto de ese diálogo
                 Navigator.pop(dialogContext);
-                
+
                 // Mostrar indicador de carga mientras se actualiza la URL
                 if (!mounted) {
                   return;
                 }
-                
+
                 setState(() {
                   _isLoading = true;
                 });
-                
+
                 await _saveServerIp(newIp);
-                
+
                 // Verificar si el widget sigue montado después de la operación asíncrona
                 if (!mounted) {
                   return;
                 }
-                
+
                 setState(() {
                   _isLoading = false;
                 });
-                
+
                 // Mostrar mensaje de confirmación (verificando nuevamente mounted)
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -366,7 +378,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       setState(() {
         _stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
       });
-      debugPrint('Cargada preferencia de permanencia de sesión: $_stayLoggedIn');
+      debugPrint(
+          'Cargada preferencia de permanencia de sesión: $_stayLoggedIn');
     } catch (e) {
       debugPrint('Error al cargar preferencia de permanencia de sesión: $e');
     }
@@ -405,12 +418,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       await _storage.delete(key: 'password');
       await _storage.delete(key: 'remember_me');
     }
-    
+
     // Guardar preferencia y credenciales para auto-login
     // Usamos SharedPreferences para "Permanecer conectado"
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('stay_logged_in', _stayLoggedIn);
-    
+
     // Si permanecer conectado está activo, guardamos las credenciales
     if (_stayLoggedIn) {
       await prefs.setString('username_auto', _usernameController.text);
@@ -422,7 +435,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       await prefs.remove('password_auto');
       debugPrint('Credenciales para auto-login eliminadas');
     }
-    
+
     debugPrint('Guardada preferencia de permanencia de sesión: $_stayLoggedIn');
   }
 
@@ -437,8 +450,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     });
 
     try {
-      debugPrint('Iniciando proceso de login con usuario: ${_usernameController.text}');
-      
+      debugPrint(
+          'Iniciando proceso de login con usuario: ${_usernameController.text}');
+
       // Usar la API global en lugar de la local
       final UsuarioAutenticado usuarioAutenticado = await api.auth.login(
         _usernameController.text,
@@ -446,16 +460,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       );
 
       debugPrint('Login exitoso, usuario autenticado: $usuarioAutenticado');
-      
+
       // Guardar los datos del usuario en el servicio global de autenticación
       try {
         await api.authService.saveUserData(usuarioAutenticado);
-        debugPrint('Datos de usuario guardados correctamente en el servicio global');
+        debugPrint(
+            'Datos de usuario guardados correctamente en el servicio global');
       } catch (e) {
         debugPrint('Error al guardar datos en el servicio global: $e');
         // Continuamos aunque haya error, ya que el token ya está configurado en el cliente API
       }
-      
+
       // Guardar credenciales y preferencias
       await _saveCredentials();
 
@@ -467,34 +482,35 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       // Navegar a la ruta correspondiente según el rol del usuario
       final Map<String, dynamic> userData = usuarioAutenticado.toMap();
       final String rolCodigo = usuarioAutenticado.rolCuentaEmpleadoCodigo;
-      
+
       debugPrint('Rol del usuario (código original): $rolCodigo');
-      
+
       // Normalizar el rol utilizando nuestra utilidad centralizada
       final String rolNormalizado = role_utils.normalizeRole(rolCodigo);
-      
+
       // Verificar si el rol no pudo ser normalizado
       if (rolNormalizado == 'DESCONOCIDO') {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Rol no válido: $rolCodigo. Contacte al administrador.';
+          _errorMessage =
+              'Rol no válido: $rolCodigo. Contacte al administrador.';
         });
         return;
       }
-      
+
       // Actualizar el rol en los datos de usuario
       userData['rol'] = rolNormalizado;
       debugPrint('Rol normalizado a: $rolNormalizado');
-      
+
       // Determinar la ruta inicial basada en el rol normalizado
       final String initialRoute = role_utils.getInitialRoute(rolNormalizado);
       debugPrint('Ruta inicial determinada: $initialRoute');
-      
+
       // Navigación segura después de operaciones asíncronas
       if (!mounted) {
         return;
       }
-      
+
       await Navigator.pushReplacementNamed(
         context,
         initialRoute,
@@ -505,16 +521,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       if (!mounted) {
         return;
       }
-      
+
       String errorMsg = 'Error de autenticación';
-      
+
       if (e is ApiException) {
         switch (e.errorCode) {
           case ApiException.errorUnauthorized:
             errorMsg = 'Usuario o contraseña incorrectos';
             break;
           case ApiException.errorNetwork:
-            errorMsg = 'Error de conexión. Verifique su conexión a internet o la configuración del servidor.';
+            errorMsg =
+                'Error de conexión. Verifique su conexión a internet o la configuración del servidor.';
             break;
           case ApiException.errorServer:
             errorMsg = 'Error en el servidor. Intente más tarde.';
@@ -525,7 +542,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       } else {
         errorMsg = 'Error inesperado: ${e.toString()}';
       }
-      
+
       setState(() {
         _isLoading = false;
         _errorMessage = errorMsg;
@@ -574,7 +591,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ),
       );
     }
-    
+
     // Pantalla normal de login
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
@@ -588,7 +605,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 return CustomPaint(
                   painter: BackgroundPainter(
                     animation: _animationController,
-                    speedFactor: 0.25, // Reducir aún más la velocidad de la animación
+                    speedFactor:
+                        0.25, // Reducir aún más la velocidad de la animación
                   ),
                 );
               },
@@ -610,7 +628,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               child: Center(
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 400),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1A1A1A).withOpacity(0.85),
                     borderRadius: BorderRadius.circular(24),
@@ -652,9 +671,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         // Title
                         Text(
                           'Iniciar Sesión',
-                          style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                            color: Colors.white,
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .displayMedium
+                              ?.copyWith(
+                                color: Colors.white,
+                              ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 32),
@@ -667,18 +689,22 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           decoration: InputDecoration(
                             labelText: 'Usuario',
                             labelStyle: const TextStyle(color: Colors.white70),
-                            prefixIcon: const Icon(Icons.person, color: Color(0xFFE31E24)),
+                            prefixIcon: const Icon(Icons.person,
+                                color: Color(0xFFE31E24)),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.white24),
+                              borderSide:
+                                  const BorderSide(color: Colors.white24),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.white24),
+                              borderSide:
+                                  const BorderSide(color: Colors.white24),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFE31E24), width: 2),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFFE31E24), width: 2),
                             ),
                           ),
                           validator: (String? value) {
@@ -703,10 +729,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           decoration: InputDecoration(
                             labelText: 'Clave',
                             labelStyle: const TextStyle(color: Colors.white70),
-                            prefixIcon: const Icon(Icons.lock, color: Color(0xFFE31E24)),
+                            prefixIcon: const Icon(Icons.lock,
+                                color: Color(0xFFE31E24)),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                                _obscurePassword
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
                                 color: const Color(0xFFE31E24),
                               ),
                               onPressed: () {
@@ -717,15 +746,18 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.white24),
+                              borderSide:
+                                  const BorderSide(color: Colors.white24),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.white24),
+                              borderSide:
+                                  const BorderSide(color: Colors.white24),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFE31E24), width: 2),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFFE31E24), width: 2),
                             ),
                           ),
                           validator: (String? value) {
@@ -774,9 +806,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                       _rememberMe = value ?? false;
                                     });
                                   },
-                                  fillColor: WidgetStateProperty.resolveWith<Color>(
+                                  fillColor:
+                                      WidgetStateProperty.resolveWith<Color>(
                                     (Set<WidgetState> states) {
-                                      if (states.contains(WidgetState.selected)) {
+                                      if (states
+                                          .contains(WidgetState.selected)) {
                                         return const Color(0xFFE31E24);
                                       }
                                       return Colors.white54;
@@ -792,7 +826,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 ),
                               ],
                             ),
-                            
+
                             // Permanecer conectado checkbox
                             Row(
                               children: <Widget>[
@@ -803,9 +837,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                       _stayLoggedIn = value ?? false;
                                     });
                                   },
-                                  fillColor: WidgetStateProperty.resolveWith<Color>(
+                                  fillColor:
+                                      WidgetStateProperty.resolveWith<Color>(
                                     (Set<WidgetState> states) {
-                                      if (states.contains(WidgetState.selected)) {
+                                      if (states
+                                          .contains(WidgetState.selected)) {
                                         return const Color(0xFFE31E24);
                                       }
                                       return Colors.white54;
@@ -820,7 +856,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   ),
                                 ),
                                 Tooltip(
-                                  message: 'Iniciar sesión automáticamente al abrir la aplicación',
+                                  message:
+                                      'Iniciar sesión automáticamente al abrir la aplicación',
                                   child: Icon(
                                     Icons.info_outline,
                                     size: 16,
@@ -865,7 +902,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   width: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
                                   ),
                                 )
                               : const Text(

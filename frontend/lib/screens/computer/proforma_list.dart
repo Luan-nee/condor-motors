@@ -122,7 +122,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
 
   // Filtra las proformas según el término de búsqueda
   void _filterProformas() {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     if (_searchQuery.isEmpty) {
       _filteredProformas = List.from(widget.proformas);
@@ -158,7 +160,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
   // Convertir proforma a venta con manejo de errores mejorado
   void _handleConvertToSale(Proforma proforma) {
     // Verificar si el widget aún está montado
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     if (_procesandoConversion) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -180,7 +184,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
           Navigator.of(context).pop(); // Cerrar diálogo de confirmación
 
           // Verificar si el widget sigue montado después de cerrar el diálogo
-          if (!mounted) return;
+          if (!mounted) {
+            return;
+          }
 
           // Marcar como procesando para evitar múltiples intentos
           setState(() {
@@ -195,7 +201,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
           final sucursalId = await VentasPendientesUtils.obtenerSucursalId();
 
           // Verificar nuevamente si el widget sigue montado
-          if (!mounted) return;
+          if (!mounted) {
+            return;
+          }
 
           if (sucursalId == null) {
             setState(() {
@@ -222,7 +230,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
             tipoDocumento: tipoDocumento,
             onSuccess: () {
               // Verificar si el widget sigue montado antes de actualizar el estado
-              if (!mounted) return;
+              if (!mounted) {
+                return;
+              }
 
               // Actualizar estado
               setState(() {
@@ -242,7 +252,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
           );
 
           // Verificar si el widget sigue montado antes de actualizar el estado
-          if (!mounted) return;
+          if (!mounted) {
+            return;
+          }
 
           if (!exito) {
             // El error ya fue mostrado en el gestor
@@ -279,7 +291,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                   child: TextField(
                     controller: _searchController,
                     onChanged: (String query) {
-                      if (!mounted) return;
+                      if (!mounted) {
+                        return;
+                      }
 
                       setState(() {
                         _searchQuery = query;
@@ -304,7 +318,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                               icon: const Icon(Icons.clear,
                                   color: Colors.white54),
                               onPressed: () {
-                                if (!mounted) return;
+                                if (!mounted) {
+                                  return;
+                                }
 
                                 setState(() {
                                   _searchQuery = '';

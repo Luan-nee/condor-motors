@@ -286,26 +286,49 @@ class VentasColabProvider extends ChangeNotifier {
 
   /// Calcular el total de la venta actual
   double get totalVenta {
+    debugPrint('💰 Calculando total de venta...');
     double total = 0;
-    for (final Map<String, dynamic> producto in _productosVenta) {
-      final int cantidad = producto['cantidad'];
-      final double precio = producto['precioVenta'] ??
-          (producto['enLiquidacion'] == true &&
-                  producto['precioLiquidacion'] != null
-              ? (producto['precioLiquidacion'] as num).toDouble()
-              : (producto['precio'] as num).toDouble());
 
-      total += precio * cantidad;
+    for (final Map<String, dynamic> producto in _productosVenta) {
+      final int cantidad = producto['cantidad'] ?? 0;
+
+      // Obtener el precio correcto según las promociones
+      double precioUnitario = producto['precioVenta'] ?? 0.0;
+
+      if (precioUnitario == 0) {
+        // Si no hay precioVenta, intentar obtener el precio según la liquidación
+        if (producto['enLiquidacion'] == true &&
+            producto['precioLiquidacion'] != null) {
+          precioUnitario = (producto['precioLiquidacion'] as num).toDouble();
+        } else {
+          precioUnitario = (producto['precio'] as num?)?.toDouble() ?? 0.0;
+        }
+      }
+
+      final double subtotal = precioUnitario * cantidad;
+      debugPrint('📊 Producto: ${producto['nombre']}');
+      debugPrint('   Cantidad: $cantidad');
+      debugPrint('   Precio unitario: S/ ${precioUnitario.toStringAsFixed(2)}');
+      debugPrint('   Subtotal: S/ ${subtotal.toStringAsFixed(2)}');
+
+      total += subtotal;
     }
+
+    debugPrint('💰 Total calculado: S/ ${total.toStringAsFixed(2)}');
     return total;
   }
 
   /// Agregar un producto a la venta actual
   bool agregarProducto(Map<String, dynamic> producto) {
+    debugPrint(
+        '🛒 Provider: Iniciando agregar producto: ${producto['nombre']}');
+
     // Verificar disponibilidad de stock
     final int stockDisponible = producto['stock'] ?? 0;
+    debugPrint('📦 Stock disponible: $stockDisponible');
 
     if (stockDisponible <= 0) {
+      debugPrint('❌ Sin stock disponible');
       return false;
     }
 
@@ -316,38 +339,60 @@ class VentasColabProvider extends ChangeNotifier {
             ? (producto['precioLiquidacion'] as num).toDouble()
             : (producto['precio'] as num).toDouble();
 
+    debugPrint('💰 Precio final calculado: $precioFinal');
+
     // Verificar si el producto ya está en la venta
     final int index = _productosVenta
         .indexWhere((Map<String, dynamic> p) => p['id'] == producto['id']);
 
-    if (index >= 0) {
-      // Si ya existe, verificar que no exceda el stock disponible
-      final int cantidadActual = _productosVenta[index]['cantidad'];
+    debugPrint('🔍 Producto en carrito: ${index >= 0 ? 'Sí' : 'No'}');
 
-      if (cantidadActual < stockDisponible) {
-        // Solo incrementar si hay stock suficiente
-        _productosVenta[index]['cantidad']++;
-        // Aplicar descuentos basados en la nueva cantidad
-        _aplicarDescuentosPorCantidad(index);
+    try {
+      if (index >= 0) {
+        // Si ya existe, verificar que no exceda el stock disponible
+        final int cantidadActual = _productosVenta[index]['cantidad'];
+        debugPrint('📊 Cantidad actual: $cantidadActual');
+
+        if (cantidadActual < stockDisponible) {
+          // Solo incrementar si hay stock suficiente
+          _productosVenta[index]['cantidad']++;
+          debugPrint(
+              '✅ Cantidad incrementada a: ${_productosVenta[index]['cantidad']}');
+
+          // Aplicar descuentos basados en la nueva cantidad
+          _aplicarDescuentosPorCantidad(index);
+          notifyListeners();
+          debugPrint(
+              '📢 Estado actualizado - Total productos en carrito: ${_productosVenta.length}');
+          return true;
+        } else {
+          debugPrint('❌ No hay suficiente stock para incrementar');
+          return false;
+        }
+      } else {
+        // Si no existe, agregarlo con cantidad 1
+        final Map<String, dynamic> nuevoProducto = <String, dynamic>{
+          ...producto,
+          'cantidad': 1,
+          'stockDisponible': stockDisponible,
+          'precioVenta': precioFinal,
+        };
+
+        _productosVenta.add(nuevoProducto);
+        debugPrint('✅ Nuevo producto agregado al carrito');
+
+        // Aplicar descuentos si corresponde (para cantidad 1)
+        final int nuevoIndex = _productosVenta.length - 1;
+        _aplicarDescuentosPorCantidad(nuevoIndex);
+
+        debugPrint(
+            '📢 Estado actualizado - Total productos en carrito: ${_productosVenta.length}');
         notifyListeners();
         return true;
-      } else {
-        return false; // No hay stock suficiente
       }
-    } else {
-      // Si no existe, agregarlo con cantidad 1
-      _productosVenta.add(<String, dynamic>{
-        ...producto,
-        'cantidad': 1,
-        'stockDisponible': stockDisponible,
-        'precioVenta': precioFinal, // Guardar el precio final para cálculos
-      });
-
-      // Aplicar descuentos si corresponde (para cantidad 1)
-      final int nuevoIndex = _productosVenta.length - 1;
-      _aplicarDescuentosPorCantidad(nuevoIndex);
-      notifyListeners();
-      return true;
+    } catch (e) {
+      debugPrint('🚨 Error al agregar producto: $e');
+      return false;
     }
   }
 

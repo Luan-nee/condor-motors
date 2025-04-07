@@ -471,7 +471,7 @@ class VentasComputerProvider extends ChangeNotifier {
 
   /// Establece una sucursal directamente por su ID sin necesidad de cargar la lista completa
   /// Útil cuando el usuario tiene permisos para una sucursal específica pero no para listar todas
-  Future<bool> establecerSucursalPorId(dynamic sucursalId) async {
+  Future<bool> establecerSucursalPorId(sucursalId) async {
     try {
       if (sucursalId == null) {
         debugPrint('⚠️ ID de sucursal no proporcionado');
@@ -504,10 +504,8 @@ class VentasComputerProvider extends ChangeNotifier {
         sucursalCentral: false,
         serieFactura: '',
         serieBoleta: '',
-        tieneNotificaciones: false,
         fechaCreacion: ahora,
         fechaActualizacion: ahora,
-        activo: true,
       );
 
       // Intentar cargar los datos completos de la sucursal si se tienen permisos

@@ -6,6 +6,7 @@ import 'package:condorsmotors/models/proforma.model.dart' hide DetalleProforma;
 import 'package:condorsmotors/providers/colabs/ventas.colab.provider.dart';
 import 'package:condorsmotors/screens/colabs/barcode_colab.dart';
 import 'package:condorsmotors/screens/colabs/widgets/busqueda_producto.dart';
+import 'package:condorsmotors/screens/colabs/widgets/busqueda_cliente.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
@@ -32,7 +33,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
   final TextEditingController _clienteSearchController =
       TextEditingController();
 
-  // Accesos directos a propiedades del provider
+  // Accesos directos a propiedades del provider con manejo de nulos
   List<Map<String, dynamic>> get _productos => _provider.productos;
   List<Map<String, dynamic>> get _productosVenta => _provider.productosVenta;
   Cliente? get _clienteSeleccionado => _provider.clienteSeleccionado;
@@ -48,6 +49,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
   @override
   void initState() {
     super.initState();
+
+    // Inicializar el provider inmediatamente
     _provider = Provider.of<VentasColabProvider>(context, listen: false);
 
     // Inicializar el controlador de animación
@@ -56,8 +59,12 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       duration: const Duration(milliseconds: 800),
     );
 
-    // Inicializar el provider
-    _provider.inicializar();
+    // Programar la inicialización del provider después del primer frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _provider.inicializar();
+      }
+    });
   }
 
   @override
@@ -75,96 +82,80 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       _provider.cargarClientes();
     }
 
-    // Resetear el controlador de búsqueda
-    _clienteSearchController.text = '';
-
     showDialog(
       context: context,
-      builder: (BuildContext context) => StatefulBuilder(
-        builder: (BuildContext context, setState) {
-          // Filtrar clientes según la búsqueda
-          List<Cliente> clientesFiltrados = _provider.clientes;
-
-          if (_clienteSearchController.text.isNotEmpty) {
-            final String query = _clienteSearchController.text.toLowerCase();
-            clientesFiltrados = _provider.clientes.where((Cliente cliente) {
-              return cliente.denominacion.toLowerCase().contains(query) ||
-                  cliente.numeroDocumento.toLowerCase().contains(query);
-            }).toList();
-          }
-
-          return AlertDialog(
-            title: const Text('Seleccionar Cliente'),
-            content: SingleChildScrollView(
-              child: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    // Campo de búsqueda
-                    TextField(
-                      controller: _clienteSearchController,
-                      decoration: const InputDecoration(
-                        labelText: 'Buscar por nombre o documento',
-                        prefixIcon: Icon(Icons.search),
-                      ),
-                      onChanged: (_) {
-                        // Actualizar la búsqueda en tiempo real
-                        setState(() {}); // setState del StatefulBuilder
-                      },
+      builder: (BuildContext context) => Dialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 8,
+        ),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.95,
+          height: MediaQuery.of(context).size.height * 0.95,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              // Encabezado del diálogo
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  const Text(
+                    'Seleccionar Cliente',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                    const SizedBox(height: 16),
-                    // Lista de clientes
-                    _provider.isLoading && !_provider.clientesLoaded
-                        ? const Center(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 32.0),
-                              child: CircularProgressIndicator(),
-                            ),
-                          )
-                        : clientesFiltrados.isEmpty
-                            ? const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 32.0),
-                                  child: Text(
-                                      'No se encontraron clientes con esa búsqueda'),
-                                ),
-                              )
-                            : ListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: clientesFiltrados.length,
-                                itemBuilder: (BuildContext context, int index) {
-                                  final Cliente cliente =
-                                      clientesFiltrados[index];
-                                  return ListTile(
-                                    title: Text(cliente.denominacion),
-                                    subtitle:
-                                        Text('Doc: ${cliente.numeroDocumento}'),
-                                    onTap: () {
-                                      // Seleccionar cliente usando el provider
-                                      _provider.seleccionarCliente(cliente);
-                                      Navigator.pop(context);
-                                    },
-                                  );
-                                },
-                              ),
-                  ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close,
+                        size: 20, color: Colors.white70),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              // Widget de búsqueda de cliente
+              Expanded(
+                child: BusquedaClienteWidget(
+                  clientes: _provider.clientes,
+                  onClienteSeleccionado: (Cliente cliente) {
+                    _provider.seleccionarCliente(cliente);
+                    Navigator.pop(context);
+                    // Mostrar mensaje de confirmación
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            'Cliente ${cliente.denominacion} seleccionado'),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  onNuevoCliente: () {
+                    Navigator.pop(context);
+                    _mostrarDialogoNuevoCliente();
+                  },
+                  isLoading: _provider.isLoading && !_provider.clientesLoaded,
                 ),
               ),
-            ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () => _mostrarDialogoNuevoCliente(),
-                child: const Text('Nuevo Cliente'),
-              ),
             ],
-          );
-        },
+          ),
+        ),
       ),
     );
   }
@@ -184,7 +175,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
     showDialog(
       context: context,
-      builder: (BuildContext context) => AlertDialog(
+      builder: (BuildContext dialogContext) => AlertDialog(
         title: const Text('Nuevo Cliente'),
         content: SingleChildScrollView(
           child: Column(
@@ -228,7 +219,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         ),
         actions: <Widget>[
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
@@ -236,7 +227,10 @@ class _VentasColabScreenState extends State<VentasColabScreen>
               // Validar campos obligatorios
               if (denominacionController.text.isEmpty ||
                   numeroDocumentoController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                if (!dialogContext.mounted) {
+                  return;
+                }
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
                   const SnackBar(
                     content:
                         Text('Nombre y número de documento son obligatorios'),
@@ -247,7 +241,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
               }
 
               // Cerrar el diálogo
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
 
               try {
                 // Crear cliente usando el provider
@@ -260,25 +254,27 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                   'correo': correoController.text,
                 });
 
-                // Mostrar mensaje de éxito
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          'Cliente ${denominacionController.text} creado exitosamente'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                if (!mounted) {
+                  return;
                 }
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                        'Cliente ${denominacionController.text} creado exitosamente'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error al crear cliente: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                if (!mounted) {
+                  return;
                 }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error al crear cliente: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             },
             child: const Text('Guardar'),
@@ -289,25 +285,65 @@ class _VentasColabScreenState extends State<VentasColabScreen>
   }
 
   // Mostrar diálogo para buscar productos
-  void _mostrarDialogoProductos() {
-    // Asegurarse de que los productos estén cargados
+  Future<void> _mostrarDialogoProductos() async {
+    // Mostrar indicador de carga mientras se cargan los productos
     if (!_productosLoaded) {
-      _provider.cargarProductos();
+      _provider.setLoading(true, message: 'Cargando productos...');
+      try {
+        await _provider.cargarProductos();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al cargar productos: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      } finally {
+        if (mounted) {
+          _provider.setLoading(false);
+        }
+      }
     }
 
-    showDialog(
+    if (!mounted) {
+      return;
+    }
+
+    // Verificar que tengamos productos para mostrar
+    if (_provider.productos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay productos disponibles'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    debugPrint(
+        '📦 Mostrando diálogo con ${_provider.productos.length} productos');
+
+    await showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          insetPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 8,
+          ),
           child: Container(
-            width: MediaQuery.of(context).size.width * 0.9,
-            height: MediaQuery.of(context).size.height * 0.8,
-            padding: const EdgeInsets.all(16),
+            width: MediaQuery.of(context).size.width * 0.95,
+            height: MediaQuery.of(context).size.height * 0.95,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -317,17 +353,22 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                     const Text(
                       'Buscar Producto',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Expanded(
                   child: BusquedaProductoWidget(
                     productos: _provider.productos,
@@ -335,6 +376,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                     isLoading: _provider.isLoadingProductos,
                     sucursalId: _provider.sucursalId,
                     onProductoSeleccionado: (Map<String, dynamic> producto) {
+                      debugPrint(
+                          '✅ Producto seleccionado: ${producto['nombre']}');
                       // Mostrar detalles de promoción antes de agregar
                       _mostrarDetallesPromocion(producto);
                     },
@@ -350,128 +393,80 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Mostrar detalles de promoción
   void _mostrarDetallesPromocion(Map<String, dynamic> producto) {
-    final bool enLiquidacion = producto['enLiquidacion'] ?? false;
-    final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
-    final bool tieneDescuentoPorcentual =
-        producto['tieneDescuentoPorcentual'] ?? false;
+    debugPrint('🔍 Verificando promociones para: ${producto['nombre']}');
+    Navigator.pop(context); // Cerrar diálogo de búsqueda
+    _agregarProductoConVerificacion(producto);
+  }
 
-    // Si no hay promociones, agregar directamente
-    if (!enLiquidacion && !tienePromocionGratis && !tieneDescuentoPorcentual) {
-      Navigator.pop(context);
-      _agregarProducto(producto);
+  // Nuevo método para verificar y agregar producto
+  void _agregarProductoConVerificacion(Map<String, dynamic> producto) {
+    debugPrint('🛒 Intentando agregar producto: ${producto['nombre']}');
+
+    // Verificar que el producto tenga los campos necesarios
+    if (!producto.containsKey('id') ||
+        !producto.containsKey('nombre') ||
+        !producto.containsKey('precio')) {
+      debugPrint('❌ Error: Producto no tiene los campos requeridos');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Producto inválido'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
-    // Mostrar diálogo con los detalles de promoción
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF222222),
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                producto['nombre'],
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Todas las promociones son aplicadas automáticamente por el servidor',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const Text(
-                  'Promociones disponibles:',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (enLiquidacion) _buildPromocionLiquidacionCard(producto),
-                if (tienePromocionGratis) ...<Widget>[
-                  const SizedBox(height: 16),
-                  _buildPromocionGratisCard(producto),
-                ],
-                if (tieneDescuentoPorcentual) ...<Widget>[
-                  const SizedBox(height: 16),
-                  _buildPromocionDescuentoCard(producto),
-                ],
-                if ((enLiquidacion && tienePromocionGratis) ||
-                    (enLiquidacion && tieneDescuentoPorcentual) ||
-                    (tienePromocionGratis &&
-                        tieneDescuentoPorcentual)) ...<Widget>[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                    ),
-                    child: const Row(
-                      children: <Widget>[
-                        Icon(
-                          Icons.info_outline,
-                          color: Colors.blue,
-                          size: 16,
-                        ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Este producto tiene múltiples promociones. El servidor aplicará la más beneficiosa para el cliente.',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Cerrar diálogo de promoción
-              },
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () {
-                Navigator.pop(context); // Cerrar diálogo de promoción
-                Navigator.pop(context); // Cerrar diálogo de búsqueda
-                _agregarProducto(producto);
-              },
-              child: const Text('Agregar'),
-            ),
-          ],
-        );
-      },
-    );
+    // Verificar stock disponible
+    final int stockDisponible = producto['stock'] ?? 0;
+    if (stockDisponible <= 0) {
+      debugPrint('❌ Error: Producto sin stock disponible');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${producto['nombre']} no tiene stock disponible'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Intentar agregar el producto
+    final bool resultado = _agregarProducto(producto);
+
+    if (resultado) {
+      debugPrint('✅ Producto agregado exitosamente');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${producto['nombre']} agregado al carrito'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      debugPrint('❌ Error al agregar el producto');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error al agregar el producto'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Métodos para delegar al provider
+  bool _agregarProducto(Map<String, dynamic> producto) {
+    debugPrint(
+        '➡️ Delegando agregar producto al provider: ${producto['nombre']}');
+    final bool resultado = _provider.agregarProducto(producto);
+
+    // Mostrar mensaje de promoción si existe
+    if (resultado && _provider.mensajePromocion.isNotEmpty) {
+      debugPrint('🎉 Mostrando mensaje de promoción');
+      _mostrarMensajePromocionConAnimacion(
+        _provider.nombreProductoPromocion,
+        _provider.mensajePromocion,
+      );
+    }
+
+    return resultado;
   }
 
   // Método para mostrar la promoción de liquidación
@@ -741,30 +736,84 @@ class _VentasColabScreenState extends State<VentasColabScreen>
   // Método para construir cada elemento de producto en la venta
   Widget _buildProductoVentaItem(Map<String, dynamic> producto, int index) {
     final int cantidad = producto['cantidad'];
-    final double precio = producto['precioVenta'] ??
-        (producto['enLiquidacion'] == true &&
-                producto['precioLiquidacion'] != null
-            ? (producto['precioLiquidacion'] as num).toDouble()
-            : (producto['precio'] as num).toDouble());
+    final double precioOriginal = (producto['precio'] as num).toDouble();
+    final int? porcentajeDescuento = producto['descuentoPorcentaje'] as int?;
+    final int? cantidadMinima = producto['cantidadMinima'] as int?;
+    final int? cantidadGratis = producto['cantidadGratis'] as int?;
     final int stockDisponible =
         producto['stockDisponible'] ?? producto['stock'] ?? 0;
     final bool stockLimitado = cantidad >= stockDisponible;
     final bool promocionActivada = producto['promocionActivada'] == true;
     final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
+    final bool tieneDescuentoPorcentual =
+        producto['tieneDescuentoPorcentual'] ?? false;
+    final bool enLiquidacion = producto['enLiquidacion'] ?? false;
+
+    // Calcular el precio con descuento si aplica
+    double precio;
+    if (producto['enLiquidacion'] == true &&
+        producto['precioLiquidacion'] != null) {
+      precio = (producto['precioLiquidacion'] as num).toDouble();
+    } else if (porcentajeDescuento != null &&
+        cantidad >= (cantidadMinima ?? 0)) {
+      // Aplicar el descuento porcentual
+      final double descuento = (precioOriginal * porcentajeDescuento) / 100;
+      precio = precioOriginal - descuento;
+    } else {
+      precio = producto['precioVenta'] ?? precioOriginal;
+    }
+
+    // Calcular el subtotal
+    final double subtotal = precio * cantidad;
+
+    // Calcular productos gratis si aplica
+    int productosGratis = 0;
+    if (tienePromocionGratis &&
+        cantidadMinima != null &&
+        cantidadGratis != null &&
+        cantidad >= cantidadMinima) {
+      final int gruposCompletos = cantidad ~/ cantidadMinima;
+      productosGratis = gruposCompletos * cantidadGratis;
+    }
+
+    // Determinar el color del borde según el tipo de promoción
+    Color? borderColor;
+    Color? backgroundColor;
+    IconData? promocionIcon;
+    String? promocionTooltip;
+
+    if (promocionActivada) {
+      if (tienePromocionGratis) {
+        borderColor = const Color(0xFF2E7D32); // Verde oscuro
+        backgroundColor = const Color(0xFF2E7D32).withOpacity(0.1);
+        promocionIcon = Icons.card_giftcard;
+        promocionTooltip = 'Promoción "Lleva y Paga" activada';
+      } else if (tieneDescuentoPorcentual &&
+          cantidad >= (cantidadMinima ?? 0)) {
+        borderColor = Colors.purple;
+        backgroundColor = Colors.purple.withOpacity(0.1);
+        promocionIcon = Icons.percent;
+        promocionTooltip = 'Descuento del $porcentajeDescuento% aplicado';
+      }
+    } else if (enLiquidacion) {
+      borderColor = Colors.amber;
+      backgroundColor = Colors.amber.withOpacity(0.1);
+      promocionIcon = Icons.local_offer;
+      promocionTooltip = 'Producto en liquidación';
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: promocionActivada && tienePromocionGratis
-            ? const BorderSide(
-                color: Color(0xFF2E7D32),
-                width: 1.5) // Borde verde oscuro para productos con promoción
+        side: borderColor != null
+            ? BorderSide(color: borderColor, width: 1.5)
             : (stockLimitado
                 ? const BorderSide(color: Colors.orange)
                 : BorderSide.none),
       ),
+      color: backgroundColor ?? Theme.of(context).cardColor,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -772,20 +821,23 @@ class _VentasColabScreenState extends State<VentasColabScreen>
           children: <Widget>[
             Row(
               children: <Widget>[
-                // Icono de regalo para productos con promoción activa
-                if (promocionActivada && tienePromocionGratis)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2E7D32).withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const FaIcon(
-                        FontAwesomeIcons.gift,
-                        size: 14,
-                        color: Color(0xFF2E7D32),
+                // Icono de promoción
+                if (promocionIcon != null)
+                  Tooltip(
+                    message: promocionTooltip ?? '',
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: borderColor?.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Icon(
+                          promocionIcon,
+                          size: 14,
+                          color: borderColor,
+                        ),
                       ),
                     ),
                   ),
@@ -795,9 +847,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: promocionActivada && tienePromocionGratis
-                          ? const Color(0xFF2E7D32)
-                          : null,
+                      color: borderColor,
                     ),
                   ),
                 ),
@@ -809,24 +859,31 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                 ),
               ],
             ),
-            if (promocionActivada && tienePromocionGratis)
+            if (promocionActivada)
               Padding(
                 padding: const EdgeInsets.only(top: 4.0),
                 child: Row(
                   children: <Widget>[
-                    const FaIcon(
-                      FontAwesomeIcons.circleInfo,
+                    Icon(
+                      Icons.info_outline,
                       size: 12,
-                      color: Color(0xFF2E7D32),
+                      color: borderColor,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        'El servidor aplicará las unidades gratis automáticamente',
+                        tienePromocionGratis &&
+                                cantidadMinima != null &&
+                                cantidadGratis != null
+                            ? 'Por cada $cantidadMinima unidades, recibirás $cantidadGratis gratis'
+                            : (tieneDescuentoPorcentual &&
+                                    cantidad >= (cantidadMinima ?? 0)
+                                ? 'Descuento del $porcentajeDescuento% aplicado por comprar $cantidad o más unidades'
+                                : 'Promoción aplicada automáticamente por el servidor'),
                         style: TextStyle(
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
-                          color: Colors.grey[600],
+                          color: borderColor?.withOpacity(0.7),
                         ),
                       ),
                     ),
@@ -836,52 +893,148 @@ class _VentasColabScreenState extends State<VentasColabScreen>
             const SizedBox(height: 8),
             Row(
               children: <Widget>[
-                Text(
-                  'S/ ${precio.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: promocionActivada && tienePromocionGratis
-                        ? FontWeight.bold
-                        : null,
-                    color: promocionActivada && tienePromocionGratis
-                        ? const Color(0xFF2E7D32)
-                        : null,
+                // Mostrar precios con descuento si aplica
+                if (tieneDescuentoPorcentual &&
+                    porcentajeDescuento != null &&
+                    cantidad >= (cantidadMinima ?? 0))
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'S/ ${precioOriginal.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                decoration: TextDecoration.lineThrough,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                '-$porcentajeDescuento%',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.purple,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'S/ ${precio.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: borderColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Subtotal: S/ ${subtotal.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: borderColor?.withOpacity(0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'S/ ${precio.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight:
+                                promocionActivada ? FontWeight.bold : null,
+                            color: borderColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Subtotal: S/ ${subtotal.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: borderColor?.withOpacity(0.8),
+                          ),
+                        ),
+                        if (tienePromocionGratis && productosGratis > 0) ...[
+                          const SizedBox(height: 2),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2E7D32).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: const Color(0xFF2E7D32).withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.card_giftcard,
+                                  size: 12,
+                                  color: Color(0xFF2E7D32),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Recibirás $productosGratis unidades gratis',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2E7D32),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
-                const Spacer(),
-
-                // Control de cantidad con indicador de stock
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 3),
                   decoration: BoxDecoration(
                     color: stockLimitado
                         ? Colors.orange.withOpacity(0.2)
-                        : Colors.blue.withOpacity(0.1),
+                        : (borderColor?.withOpacity(0.1) ??
+                            Colors.blue.withOpacity(0.1)),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
                     children: <Widget>[
-                      // Botón para disminuir cantidad
                       IconButton(
                         icon: const Icon(Icons.remove, size: 16),
                         onPressed: () => _cambiarCantidad(index, cantidad - 1),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
-
-                      // Cantidad actual
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
                           '$cantidad',
                           style: TextStyle(
-                            color: stockLimitado ? Colors.orange : null,
+                            color: stockLimitado ? Colors.orange : borderColor,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-
-                      // Botón para aumentar cantidad (deshabilitado si se alcanza el stock)
                       IconButton(
                         icon: Icon(
                           Icons.add,
@@ -901,37 +1054,14 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                 ),
               ],
             ),
-
-            // Mostrar información de stock disponible y promociones
             const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  'Disponible: $stockDisponible',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: stockLimitado ? Colors.orange : Colors.green,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-
-                // Solo mostrar el botón si el producto tiene promociones
-                if (producto['enLiquidacion'] == true ||
-                    producto['tienePromocionGratis'] == true ||
-                    producto['tieneDescuentoPorcentual'] == true)
-                  TextButton.icon(
-                    onPressed: () => _mostrarDetallesPromocion(producto),
-                    icon: const FaIcon(FontAwesomeIcons.tags, size: 12),
-                    label: const Text('Ver promociones',
-                        style: TextStyle(fontSize: 12)),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-              ],
+            Text(
+              'Disponible: $stockDisponible',
+              style: TextStyle(
+                fontSize: 12,
+                color: stockLimitado ? Colors.orange : Colors.green,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ],
         ),
@@ -941,6 +1071,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Método para finalizar venta (verificar stock y crear proforma)
   Future<void> _finalizarVenta() async {
+    debugPrint('🛍️ Iniciando proceso de finalización de venta...');
+
     // Validar que haya productos y cliente seleccionado
     if (_productosVenta.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1048,6 +1180,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Método para crear proforma de venta
   Future<void> _crearProformaVenta() async {
+    debugPrint('📝 Iniciando creación de proforma...');
+
     // Mostrar indicador de carga con más contexto para reducir ansiedad
     _provider.setLoading(true, message: 'Enviando datos al servidor...');
 
@@ -1089,7 +1223,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         _provider.setLoading(true, message: 'Comunicando con el servidor...');
       }
 
-      // Llamar a la API para crear la proforma - esta es la parte que potencialmente demora
+      // Llamar a la API para crear la proforma
       final Map<String, dynamic> respuesta =
           await _proformasApi.createProformaVenta(
         sucursalId: _sucursalId,
@@ -1097,8 +1231,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         total: _totalVenta,
         detalles: detalles,
         empleadoId: _empleadoId,
-        clienteId:
-            _clienteSeleccionado!.id, // Usar el ID del cliente seleccionado
+        clienteId: _clienteSeleccionado!.id,
       );
 
       if (!mounted) {
@@ -1129,6 +1262,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       // Mostrar diálogo de confirmación
       await showDialog(
         context: context,
+        barrierDismissible: false, // No permitir cerrar haciendo clic fuera
         builder: (BuildContext dialogContext) => AlertDialog(
           title: const Text('Proforma Creada Exitosamente'),
           content: Column(
@@ -1173,8 +1307,19 @@ class _VentasColabScreenState extends State<VentasColabScreen>
           actions: <Widget>[
             TextButton(
               onPressed: () {
+                debugPrint(
+                    '✅ Venta finalizada exitosamente. Limpiando carrito...');
                 Navigator.pop(dialogContext);
-                _limpiarVenta();
+                _provider
+                    .limpiarVenta(); // Limpiar el carrito usando el provider
+
+                // Mostrar mensaje de éxito
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Venta finalizada exitosamente'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
               },
               child: const Text('Aceptar'),
             ),
@@ -1182,6 +1327,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         ),
       );
     } catch (e) {
+      debugPrint('🚨 Error al crear la proforma: $e');
+
       if (!mounted) {
         return;
       }
@@ -1269,64 +1416,26 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       return;
     }
 
-    final String? codigoBarras = await Navigator.push(
+    // Navegar a la pantalla de escaneo con los productos
+    await Navigator.push(
       context,
-      MaterialPageRoute(
-          builder: (BuildContext context) => const BarcodeColabScreen()),
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => BarcodeColabScreen(
+          productos: _productos,
+          onProductoSeleccionado: (Map<String, dynamic> producto) {
+            // Mostrar detalles de promoción antes de agregar
+            _mostrarDetallesPromocion(producto);
+          },
+          isLoading: _isLoading,
+        ),
+      ),
     );
-
-    if (!mounted) {
-      return;
-    }
-
-    if (codigoBarras != null) {
-      // Buscar el producto por código de barras en la lista de productos
-      final Map<String, dynamic> productoEncontrado = _productos.firstWhere(
-        (Map<String, dynamic> p) => p['codigo'] == codigoBarras,
-        orElse: () => <String, dynamic>{},
-      );
-
-      if (productoEncontrado.isNotEmpty) {
-        _agregarProducto(productoEncontrado);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content:
-                  Text('Producto agregado: ${productoEncontrado['nombre']}'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } else {
-        // Si no se encuentra el producto, mostrar mensaje de error
-        if (!mounted) {
-          return;
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Producto no encontrado con ese código'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  // Métodos para delegar al provider
-  bool _agregarProducto(Map<String, dynamic> producto) {
-    bool resultado = _provider.agregarProducto(producto);
-    // Mostrar mensaje de promoción si existe
-    if (_provider.mensajePromocion.isNotEmpty) {
-      _mostrarMensajePromocionConAnimacion(
-        _provider.nombreProductoPromocion,
-        _provider.mensajePromocion,
-      );
-    }
-    return resultado;
   }
 
   void _eliminarProducto(int index) {
+    if (index < 0) {
+      return;
+    }
     _provider.eliminarProducto(index);
   }
 
@@ -1342,286 +1451,408 @@ class _VentasColabScreenState extends State<VentasColabScreen>
     return resultado;
   }
 
-  void _limpiarVenta() {
-    _provider.limpiarVenta();
-  }
-
   Future<void> _cargarProductos() async {
     await _provider.cargarProductos();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Calcular el total de la venta
-    final double total = _totalVenta;
+    return Consumer<VentasColabProvider>(
+      builder:
+          (BuildContext context, VentasColabProvider provider, Widget? child) {
+        debugPrint(
+            '🔄 Reconstruyendo VentasColabScreen - Productos en carrito: ${provider.productosVenta.length}');
+        debugPrint(
+            '💰 Total actual: S/ ${provider.totalVenta.toStringAsFixed(2)}');
 
-    return _buildLoadingOverlay(
-      Scaffold(
-        appBar: AppBar(
-          title: const Text('Ventas'),
-        ),
-        body: Column(
-          children: <Widget>[
-            // Sección de cliente
-            Card(
-              margin: EdgeInsets.zero,
-              shape: const RoundedRectangleBorder(),
-              child: ListTile(
-                leading: const FaIcon(FontAwesomeIcons.user),
-                title: Text(
-                  _clienteSeleccionado == null
-                      ? 'Cliente'
-                      : _clienteSeleccionado!.denominacion,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                subtitle: _clienteSeleccionado == null
-                    ? const Text('Seleccionar Cliente')
-                    : Text('Doc: ${_clienteSeleccionado!.numeroDocumento}'),
-                trailing: IconButton(
-                  icon: const FaIcon(FontAwesomeIcons.userPlus),
-                  onPressed: _mostrarDialogoClientes,
-                ),
-              ),
+        return _buildLoadingOverlay(
+          Scaffold(
+            appBar: AppBar(
+              title: const Text('Ventas'),
             ),
-
-            // Botones de acción (escanear y buscar)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6A1B9A), // Morado
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+            body: Column(
+              children: <Widget>[
+                // Sección de cliente
+                Card(
+                  margin: EdgeInsets.zero,
+                  shape: const RoundedRectangleBorder(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
+                    child: Row(
+                      children: <Widget>[
+                        // Icono o avatar del cliente
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: provider.clienteSeleccionado != null
+                                ? const Color(0xFF1976D2).withOpacity(0.1)
+                                : Colors.grey.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: FaIcon(
+                              provider.clienteSeleccionado != null
+                                  ? FontAwesomeIcons.userCheck
+                                  : FontAwesomeIcons.userPlus,
+                              size: 16,
+                              color: provider.clienteSeleccionado != null
+                                  ? const Color(0xFF1976D2)
+                                  : Colors.grey,
+                            ),
+                          ),
                         ),
-                      ),
-                      icon: const FaIcon(FontAwesomeIcons.barcode),
-                      label: const Text('Escanear'),
-                      onPressed: _escanearProducto,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1976D2), // Azul
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      icon: const FaIcon(FontAwesomeIcons.magnifyingGlass),
-                      label: const Text('Buscar Productos'),
-                      onPressed: _mostrarDialogoProductos,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Contenido principal (lista de productos)
-            Expanded(
-              child: Stack(
-                children: <Widget>[
-                  _productosVenta.isEmpty
-                      ? Center(
+                        const SizedBox(width: 16),
+                        // Información del cliente
+                        Expanded(
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const <Widget>[
-                              FaIcon(
-                                FontAwesomeIcons.cartShopping,
-                                size: 64,
-                                color: Colors.grey,
-                              ),
-                              SizedBox(height: 16),
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
                               Text(
-                                'No hay productos en la venta',
+                                provider.clienteSeleccionado?.denominacion ??
+                                    'Seleccionar Cliente',
                                 style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: provider.clienteSeleccionado != null
+                                      ? const Color.fromARGB(221, 255, 255, 255)
+                                      : Colors.grey,
                                 ),
                               ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Busca o escanea productos para agregarlos',
-                                style: TextStyle(
-                                  color: Colors.grey,
+                              if (provider.clienteSeleccionado != null) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: <Widget>[
+                                    const FaIcon(
+                                      FontAwesomeIcons.idCard,
+                                      size: 12,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      provider
+                                          .clienteSeleccionado!.numeroDocumento,
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    if (provider.clienteSeleccionado!
+                                                .telefono !=
+                                            null &&
+                                        provider.clienteSeleccionado!.telefono!
+                                            .isNotEmpty) ...[
+                                      const SizedBox(width: 16),
+                                      const FaIcon(
+                                        FontAwesomeIcons.phone,
+                                        size: 12,
+                                        color: Colors.grey,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        provider.clienteSeleccionado!.telefono!,
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
-                              ),
+                              ],
                             ],
                           ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.only(
-                              bottom:
-                                  100), // Espacio para el botón de finalizar
-                          itemCount: _productosVenta.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final Map<String, dynamic> producto =
-                                _productosVenta[index];
-                            return _buildProductoVentaItem(producto, index);
-                          },
                         ),
-
-                  // Mensaje de promoción animado
-                  if (_mostrarMensajePromocion)
-                    Positioned(
-                      bottom: 75,
-                      left: 0,
-                      right: 0,
-                      child: FadeTransition(
-                        opacity: _animationController,
-                        child: Center(
-                          child: Material(
-                            elevation: 4,
+                        // Botón para cambiar cliente
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _mostrarDialogoClientes,
                             borderRadius: BorderRadius.circular(8),
-                            color: const Color(0xFF2E7D32), // Verde oscuro
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10),
-                              child: Column(
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: <Widget>[
                                   Text(
-                                    _nombreProductoPromocion,
-                                    style: const TextStyle(
+                                    provider.clienteSeleccionado != null
+                                        ? 'Cambiar'
+                                        : 'Seleccionar',
+                                    style: TextStyle(
+                                      color:
+                                          provider.clienteSeleccionado != null
+                                              ? const Color(0xFF1976D2)
+                                              : Colors.grey,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _mensajePromocion,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                    ),
+                                  const SizedBox(width: 4),
+                                  FaIcon(
+                                    provider.clienteSeleccionado != null
+                                        ? FontAwesomeIcons.penToSquare
+                                        : FontAwesomeIcons.chevronRight,
+                                    size: 14,
+                                    color: provider.clienteSeleccionado != null
+                                        ? const Color(0xFF1976D2)
+                                        : Colors.grey,
                                   ),
                                 ],
                               ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                ],
-              ),
-            ),
+                  ),
+                ),
 
-            // Barra inferior con total y botón de finalizar
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  // Información del total
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // Botones de acción (escanear y buscar)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
                     children: <Widget>[
-                      const Text(
-                        'Total:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E88E5),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: <Widget>[
-                            const Text(
-                              'TOTAL',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              'S/ ${total.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // Botones de acción
-                  Row(
-                    children: <Widget>[
-                      // Botón para limpiar la venta
                       Expanded(
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF424242),
+                            backgroundColor: const Color(0xFF6A1B9A), // Morado
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          icon: const FaIcon(FontAwesomeIcons.trash, size: 16),
-                          label: const Text('Limpiar'),
-                          onPressed:
-                              _productosVenta.isEmpty ? null : _limpiarVenta,
+                          icon: const FaIcon(FontAwesomeIcons.barcode),
+                          label: const Text('Escanear'),
+                          onPressed: _escanearProducto,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      // Botón para finalizar venta
+                      const SizedBox(width: 8),
                       Expanded(
                         flex: 2,
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4CAF50),
+                            backgroundColor: const Color(0xFF1976D2), // Azul
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          icon: const FaIcon(FontAwesomeIcons.check, size: 16),
-                          label: const Text('Finalizar Venta'),
-                          onPressed: _productosVenta.isEmpty ||
-                                  _clienteSeleccionado == null
-                              ? null
-                              : _finalizarVenta,
+                          icon: const FaIcon(FontAwesomeIcons.magnifyingGlass),
+                          label: const Text('Buscar Productos'),
+                          onPressed: _mostrarDialogoProductos,
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+
+                // Contenido principal (lista de productos)
+                Expanded(
+                  child: Stack(
+                    children: <Widget>[
+                      provider.productosVenta.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const <Widget>[
+                                  FaIcon(
+                                    FontAwesomeIcons.cartShopping,
+                                    size: 64,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'No hay productos en la venta',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Busca o escanea productos para agregarlos',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.only(
+                                  bottom:
+                                      100), // Espacio para el botón de finalizar
+                              itemCount: provider.productosVenta.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                final Map<String, dynamic> producto =
+                                    provider.productosVenta[index];
+                                return _buildProductoVentaItem(producto, index);
+                              },
+                            ),
+
+                      // Mensaje de promoción animado
+                      if (_mostrarMensajePromocion)
+                        Positioned(
+                          bottom: 75,
+                          left: 0,
+                          right: 0,
+                          child: FadeTransition(
+                            opacity: _animationController,
+                            child: Center(
+                              child: Material(
+                                elevation: 4,
+                                borderRadius: BorderRadius.circular(8),
+                                color: const Color(0xFF2E7D32), // Verde oscuro
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 10),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      Text(
+                                        _nombreProductoPromocion,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _mensajePromocion,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+                // Barra inferior con total y botón de finalizar
+                Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      // Información del total
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: <Widget>[
+                          const Text(
+                            'Total:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: const Color.fromARGB(255, 255, 0, 0),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: <Widget>[
+                                const Text(
+                                  'TOTAL',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  'S/ ${provider.totalVenta.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Botones de acción
+                      Row(
+                        children: <Widget>[
+                          // Botón para limpiar la venta
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF424242),
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              icon: const FaIcon(FontAwesomeIcons.trash,
+                                  size: 16),
+                              label: const Text('Limpiar'),
+                              onPressed: provider.productosVenta.isEmpty
+                                  ? null
+                                  : () {
+                                      provider.limpiarVenta();
+                                      debugPrint('🧹 Carrito limpiado');
+                                    },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Botón para finalizar venta
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4CAF50),
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              icon: const FaIcon(FontAwesomeIcons.check,
+                                  size: 16),
+                              label: const Text('Finalizar Venta'),
+                              onPressed: provider.productosVenta.isEmpty ||
+                                      provider.clienteSeleccionado == null
+                                  ? null
+                                  : _finalizarVenta,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

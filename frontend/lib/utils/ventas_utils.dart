@@ -1,6 +1,6 @@
+import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:condorsmotors/models/ventas.model.dart';
 
 /// Utilidades para el manejo de ventas
 class VentasUtils {

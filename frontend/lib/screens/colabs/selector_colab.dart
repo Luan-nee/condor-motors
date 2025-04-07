@@ -1,4 +1,5 @@
 import 'package:condorsmotors/main.dart' as app_main;
+import 'package:condorsmotors/providers/colabs/ventas.colab.provider.dart';
 import 'package:condorsmotors/screens/colabs/movimiento_colab.dart';
 import 'package:condorsmotors/screens/colabs/productos_colab.dart';
 import 'package:condorsmotors/screens/colabs/ventas_colab.dart';
@@ -6,13 +7,14 @@ import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SelectorColabScreen extends StatelessWidget {
   final Map<String, dynamic>? empleadoData;
-  
+
   const SelectorColabScreen({
-    super.key, 
+    super.key,
     this.empleadoData,
   });
 
@@ -21,10 +23,10 @@ class SelectorColabScreen extends StatelessWidget {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
     final double cardWidth = isMobile ? screenWidth * 0.45 : 300.0;
-    
+
     // Obtener el nombre del empleado de los datos pasados
     final nombre = empleadoData?['nombre'] ?? 'Colaborador';
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       body: SafeArea(
@@ -130,7 +132,7 @@ class SelectorColabScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Título de sección
               Padding(
                 padding: EdgeInsets.symmetric(
@@ -148,7 +150,7 @@ class SelectorColabScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              
+
               // Grid de opciones
               Expanded(
                 child: GridView(
@@ -227,23 +229,20 @@ class SelectorColabScreen extends StatelessWidget {
     try {
       // Limpiar tokens de autenticación
       await app_main.api.authService.logout();
-      
+
       // Limpiar tokens almacenados en TokenService
-      await app_main.api.tokenService.clearTokens();
-      
+      await app_main.api.auth.clearTokens();
+
       // Desactivar la opción "Permanecer conectado" y eliminar credenciales auto-login
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('stay_logged_in', false);
       await prefs.remove('username_auto');
       await prefs.remove('password_auto');
-      
+
       // Navegar a la pantalla de login
       if (context.mounted) {
         await Navigator.pushNamedAndRemoveUntil(
-          context, 
-          role_utils.login, 
-          (Route route) => false
-        );
+            context, role_utils.login, (Route route) => false);
       }
     } catch (e) {
       // Mostrar error si ocurre algún problema
@@ -270,7 +269,16 @@ class SelectorColabScreen extends StatelessWidget {
     // Obtener el tamaño de la pantalla para hacer el diseño responsivo
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
-    
+
+    // Envolver la pantalla con su Provider si es necesario
+    Widget wrappedScreen = screen;
+    if (screen is VentasColabScreen) {
+      wrappedScreen = ChangeNotifierProvider(
+        create: (_) => VentasColabProvider(),
+        child: screen,
+      );
+    }
+
     return Card(
       elevation: 0,
       color: const Color(0xFF2D2D2D),
@@ -281,7 +289,7 @@ class SelectorColabScreen extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (BuildContext context) => screen),
+            MaterialPageRoute(builder: (BuildContext context) => wrappedScreen),
           );
         },
         borderRadius: BorderRadius.circular(16),
@@ -303,10 +311,10 @@ class SelectorColabScreen extends StatelessWidget {
                   color: color,
                 ),
               ),
-              
+
               // Espacio flexible para ajustar el diseño
               const SizedBox(height: 12),
-              
+
               // Título con tamaño adaptativo
               Text(
                 title,
@@ -318,7 +326,7 @@ class SelectorColabScreen extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              
+
               // Subtítulo
               Text(
                 subtitle,
@@ -329,10 +337,10 @@ class SelectorColabScreen extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              
+
               // Espacio flexible que se expande para llenar el espacio disponible
               const Spacer(),
-              
+
               // Botón de acceso en la parte inferior
               Container(
                 width: double.infinity,
@@ -373,6 +381,7 @@ class SelectorColabScreen extends StatelessWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<Map<String, dynamic>?>('empleadoData', empleadoData));
+    properties.add(DiagnosticsProperty<Map<String, dynamic>?>(
+        'empleadoData', empleadoData));
   }
-} 
+}

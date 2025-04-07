@@ -2,7 +2,6 @@ import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/screens/computer/dashboard_computer.dart';
 import 'package:condorsmotors/screens/computer/proforma_computer.dart';
 import 'package:condorsmotors/screens/computer/ventas_computer.dart';
-import 'package:condorsmotors/services/token_service.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -286,24 +285,16 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                   child: TextButton.icon(
                     onPressed: () async {
                       // 1. Limpiar tokens almacenados
-                      await TokenService.instance.clearTokens();
+                      await api.auth.clearTokens();
 
-                      // 2. Limpiar tokens a través de la API si está disponible
-                      try {
-                        await api.authService.logout();
-                      } catch (e) {
-                        debugPrint('Error al cerrar sesión en API: $e');
-                        // Continuamos aunque falle esta parte
-                      }
-
-                      // 3. Desactivar la opción "Permanecer conectado"
+                      // 2. Desactivar la opción "Permanecer conectado"
                       final SharedPreferences prefs =
                           await SharedPreferences.getInstance();
                       await prefs.setBool('stay_logged_in', false);
                       await prefs.remove('username_auto');
                       await prefs.remove('password_auto');
 
-                      // 4. Navegar a la pantalla de login
+                      // 3. Navegar a la pantalla de login
                       if (!context.mounted) {
                         return;
                       }

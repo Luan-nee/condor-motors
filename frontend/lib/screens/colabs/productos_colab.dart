@@ -18,13 +18,13 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
   String _selectedCategory = 'Todos';
   bool _isLoading = true;
   String? _error;
-  
+
   // Lista de productos
   List<Producto> _productos = <Producto>[];
-  
+
   // Información de paginación
   late Paginacion _paginacion;
-  
+
   // Categorías disponibles (se cargarán desde la API)
   List<String> _categorias = <String>['Todos'];
 
@@ -46,7 +46,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
 
     try {
       // Obtener el ID de la sucursal del usuario actual
-      final Map<String, dynamic>? userData = await app_main.api.authService.getUserData();
+      final Map<String, dynamic>? userData =
+          await app_main.api.authService.getUserData();
       final String sucursalId = userData?['sucursalId']?.toString() ?? '';
 
       if (sucursalId.isEmpty) {
@@ -92,7 +93,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     }
 
     try {
-      final Map<String, dynamic>? userData = await app_main.api.authService.getUserData();
+      final Map<String, dynamic>? userData =
+          await app_main.api.authService.getUserData();
       final String sucursalId = userData?['sucursalId']?.toString() ?? '';
 
       final response = await app_main.api.productos.getProductos(
@@ -161,7 +163,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
   @override
   Widget build(BuildContext context) {
     final List<Producto> productosFiltrados = _getProductosFiltrados();
-    
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF2D2D2D),
@@ -175,7 +177,9 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (BuildContext context) => const SelectorColabScreen()),
+              MaterialPageRoute(
+                  builder: (BuildContext context) =>
+                      const SelectorColabScreen()),
             );
           },
           tooltip: 'Volver al Selector',
@@ -298,7 +302,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
             Expanded(
               child: NotificationListener<ScrollNotification>(
                 onNotification: (ScrollNotification scrollInfo) {
-                  if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
+                  if (scrollInfo.metrics.pixels ==
+                      scrollInfo.metrics.maxScrollExtent) {
                     _cargarMasProductos();
                   }
                   return true;
@@ -312,7 +317,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                       producto.stock,
                       producto.stockMinimo ?? 0,
                     );
-                    
+
                     return Card(
                       margin: const EdgeInsets.only(bottom: 16),
                       child: ExpansionTile(
@@ -342,7 +347,9 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                                 producto.nombre,
                                 // Aplicar estilo condicional para liquidación
                                 style: producto.liquidacion
-                                    ? const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)
+                                    ? const TextStyle(
+                                        color: Colors.amber,
+                                        fontWeight: FontWeight.bold)
                                     : null,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -357,7 +364,9 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                color: Theme.of(context)
+                                    .primaryColor
+                                    .withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
@@ -377,7 +386,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                                   color: Colors.grey[600],
                                   fontSize: 12,
                                 ),
-                                overflow: TextOverflow.ellipsis, // Añadir ellipsis si es muy largo
+                                overflow: TextOverflow
+                                    .ellipsis, // Añadir ellipsis si es muy largo
                               ),
                             ),
                             // Chip de liquidación eliminado de aquí
@@ -387,7 +397,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: <Widget>[
-                            if (producto.liquidacion && producto.precioOferta != null)
+                            if (producto.liquidacion &&
+                                producto.precioOferta != null)
                               Text(
                                 'S/ ${producto.precioVenta.toStringAsFixed(2)}',
                                 style: const TextStyle(
@@ -401,7 +412,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
-                                color: producto.liquidacion ? Colors.amber : null,
+                                color:
+                                    producto.liquidacion ? Colors.amber : null,
                               ),
                             ),
                             Text(
@@ -431,16 +443,21 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                                 Text(producto.descripcion ?? 'Sin descripción'),
                                 const SizedBox(height: 16),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: <Widget>[
                                     Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: <Widget>[
-                                        if (producto.liquidacion && producto.precioOferta != null) ...<Widget>[
+                                        if (producto.liquidacion &&
+                                            producto.precioOferta !=
+                                                null) ...<Widget>[
                                           Text(
                                             'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
                                             style: const TextStyle(
-                                              decoration: TextDecoration.lineThrough,
+                                              decoration:
+                                                  TextDecoration.lineThrough,
                                               color: Colors.grey,
                                             ),
                                           ),
@@ -467,7 +484,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                                       ],
                                     ),
                                     Column(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
                                       children: <Widget>[
                                         Text(
                                           'Stock Actual: ${producto.stock}',
@@ -493,7 +511,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                                     ),
                                   ],
                                 ),
-                                if (producto.cantidadGratisDescuento != null || producto.porcentajeDescuento != null)
+                                if (producto.cantidadGratisDescuento != null ||
+                                    producto.porcentajeDescuento != null)
                                   Container(
                                     margin: const EdgeInsets.only(top: 16),
                                     padding: const EdgeInsets.all(12),
@@ -505,7 +524,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                                       ),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: <Widget>[
                                         const Text(
                                           'Promociones Activas:',
@@ -515,15 +535,19 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 8),
-                                        if (producto.cantidadGratisDescuento != null)
+                                        if (producto.cantidadGratisDescuento !=
+                                            null)
                                           Text(
                                             '• Lleva ${producto.cantidadMinimaDescuento}, paga ${producto.cantidadMinimaDescuento! - producto.cantidadGratisDescuento!}',
-                                            style: const TextStyle(color: Colors.blue),
+                                            style: const TextStyle(
+                                                color: Colors.blue),
                                           ),
-                                        if (producto.porcentajeDescuento != null)
+                                        if (producto.porcentajeDescuento !=
+                                            null)
                                           Text(
                                             '• ${producto.porcentajeDescuento}% de descuento por ${producto.cantidadMinimaDescuento}+ unidades',
-                                            style: const TextStyle(color: Colors.blue),
+                                            style: const TextStyle(
+                                                color: Colors.blue),
                                           ),
                                       ],
                                     ),

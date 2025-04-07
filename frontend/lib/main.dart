@@ -4,10 +4,8 @@ import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/components/proforma_notification.dart';
 import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
 import 'package:condorsmotors/providers/computer/index.computer.provider.dart';
-import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
 import 'package:condorsmotors/providers/paginacion.provider.dart';
 import 'package:condorsmotors/routes/routes.dart' as routes;
-import 'package:condorsmotors/services/token_service.dart';
 import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:condorsmotors/widgets/connection_status.dart';
@@ -25,6 +23,7 @@ final ProformaNotification proformaNotification = ProformaNotification();
 
 // Lista de servidores posibles para intentar conectarse
 final List<String> _serverUrls = <String>[
+  'http://192.168.1.66:3000/api', // IP del servidor en la red local
   'http://192.168.1.42:3000/api', // IP de tu PC en la red WiFi local
   'http://192.168.1.42:3000/api', // IP principal
   'http://localhost:3000/api', // Servidor local
@@ -118,21 +117,14 @@ void main() async {
     await _saveServerUrl(workingUrl);
   }
 
-  final TokenService tokenService = TokenService.instance;
-
-  // Configurar la URL base en TokenService
-  tokenService.setBaseUrl(baseUrl);
-
-  final CondorMotorsApi apiInstance =
-      CondorMotorsApi(baseUrl: baseUrl, tokenService: tokenService);
-
   // Inicializar la API global
+  final apiInstance = CondorMotorsApi(baseUrl: baseUrl);
   initializeApi(apiInstance);
   debugPrint('API inicializada correctamente');
 
   // Verificar autenticación del usuario
   debugPrint('Verificando autenticación del usuario...');
-  final bool isAuthenticated = await tokenService.loadTokens();
+  final bool isAuthenticated = await api.auth.isAuthenticated();
   String initialRoute = role_utils.login;
   Map<String, dynamic>? userData;
 
@@ -140,14 +132,12 @@ void main() async {
     // Verificar si el token es realmente válido intentando hacer una petición sencilla
     try {
       debugPrint('Validando token con el servidor...');
-      // En lugar de solo hacer ping, verificamos si el token es válido
-      // usando el endpoint específico para ello
-      final bool isTokenValid = await apiInstance.auth.verificarToken();
+      final bool isTokenValid = await api.auth.verificarToken();
 
       if (!isTokenValid) {
         debugPrint('Token no validado por el servidor, redirigiendo a login');
         // Limpiar token inválido
-        await tokenService.clearTokens();
+        await api.auth.clearTokens();
         initialRoute = role_utils.login;
       } else {
         debugPrint('Token validado correctamente con el servidor');
@@ -157,7 +147,7 @@ void main() async {
       // Si hay un error, considerar que no está autenticado
       initialRoute = role_utils.login;
       // Limpiar token inválido
-      await tokenService.clearTokens();
+      await api.auth.clearTokens();
     }
 
     if (initialRoute != role_utils.login) {
@@ -190,7 +180,7 @@ void main() async {
           } else {
             // Si el rol no es reconocido, forzar logout
             debugPrint('Rol no reconocido: $rol, forzando logout');
-            await api.authService.logout();
+            await api.auth.clearTokens();
             userData = null;
           }
         }

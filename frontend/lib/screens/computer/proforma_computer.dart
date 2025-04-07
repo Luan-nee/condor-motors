@@ -280,20 +280,6 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen>
                 );
               },
             ),
-
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () {
-                // TODO: Implementar creación de nueva proforma
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Crear nueva proforma (pendiente)'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              },
-              tooltip: 'Nueva proforma',
-            ),
           ],
         ),
         body: Consumer<ProformaComputerProvider>(
@@ -638,7 +624,8 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen>
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(IntProperty('sucursalId', widget.sucursalId));
-    properties.add(StringProperty('nombreSucursal', widget.nombreSucursal));
+    properties
+      ..add(IntProperty('sucursalId', widget.sucursalId))
+      ..add(StringProperty('nombreSucursal', widget.nombreSucursal));
   }
 }

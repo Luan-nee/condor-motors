@@ -466,7 +466,9 @@ class ProformaComputerProvider extends ChangeNotifier {
   /// Procesa las proformas actualizadas para detectar nuevas
   void _procesarProformasActualizadas(
       List<Proforma> proformasActualizadas, int? sucursalId) {
-    if (proformasActualizadas.isEmpty) return;
+    if (proformasActualizadas.isEmpty) {
+      return;
+    }
 
     // Verificar si hay nuevas proformas comparando con los IDs conocidos
     Set<int> nuevosIds = proformasActualizadas.map((p) => p.id).toSet();

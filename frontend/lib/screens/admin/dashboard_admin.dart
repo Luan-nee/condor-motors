@@ -51,6 +51,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
   late AnimationController _animationController;
   late Animation<double> _animation;
   late DashboardProvider _dashboardProvider;
+  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -66,9 +67,22 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
     );
     _animationController.forward();
 
-    // Inicializar provider
+    // Obtener el provider
     _dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
-    _dashboardProvider.inicializar();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Inicializar datos solo una vez
+    if (!_isInitialized) {
+      _initializeData();
+      _isInitialized = true;
+    }
+  }
+
+  Future<void> _initializeData() async {
+    await _dashboardProvider.inicializar();
   }
 
   @override
@@ -83,82 +97,83 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen>
     final bool isMobile = screenWidth < 768;
 
     return Consumer<DashboardProvider>(
-        builder: (context, dashboardProvider, child) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'Dashboard de Administración',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          backgroundColor: const Color(0xFF222222),
-          actions: <Widget>[
-            IconButton(
-              icon: const FaIcon(FontAwesomeIcons.rotate),
-              onPressed: dashboardProvider.recargarDatos,
-              tooltip: 'Recargar datos',
+      builder: (context, dashboardProvider, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'Dashboard de Administración',
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        body: dashboardProvider.isLoading
-            ? const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFFE31E24),
-                ),
-              )
-            : Container(
-                color: const Color(0xFF111111),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: ListView(
-                    children: <Widget>[
-                      // Sección de estadísticas principales
-                      FadeTransition(
-                        opacity: _animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, -0.1),
-                            end: Offset.zero,
-                          ).animate(_animation),
-                          child: _buildMainStatsSection(
-                              isMobile, dashboardProvider),
+            backgroundColor: const Color(0xFF222222),
+            actions: <Widget>[
+              IconButton(
+                icon: const FaIcon(FontAwesomeIcons.rotate),
+                onPressed: dashboardProvider.recargarDatos,
+                tooltip: 'Recargar datos',
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+          body: dashboardProvider.isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFFE31E24),
+                  ),
+                )
+              : Container(
+                  color: const Color(0xFF111111),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: ListView(
+                      children: <Widget>[
+                        // Sección de estadísticas principales
+                        FadeTransition(
+                          opacity: _animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, -0.1),
+                              end: Offset.zero,
+                            ).animate(_animation),
+                            child: _buildMainStatsSection(
+                                isMobile, dashboardProvider),
+                          ),
                         ),
-                      ),
 
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                      // Placeholder para gráfico de ventas (se implementará más adelante)
-                      FadeTransition(
-                        opacity: _animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.05),
-                            end: Offset.zero,
-                          ).animate(_animation),
-                          child: _buildVentasChart(dashboardProvider),
+                        // Placeholder para gráfico de ventas
+                        FadeTransition(
+                          opacity: _animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.05),
+                              end: Offset.zero,
+                            ).animate(_animation),
+                            child: _buildVentasChart(dashboardProvider),
+                          ),
                         ),
-                      ),
 
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                      // Distribución geográfica de sucursales
-                      FadeTransition(
-                        opacity: _animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.1),
-                            end: Offset.zero,
-                          ).animate(_animation),
-                          child: _buildSucursalesDistribution(
-                              isMobile, dashboardProvider),
+                        // Distribución geográfica de sucursales
+                        FadeTransition(
+                          opacity: _animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.1),
+                              end: Offset.zero,
+                            ).animate(_animation),
+                            child: _buildSucursalesDistribution(
+                                isMobile, dashboardProvider),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-      );
-    });
+        );
+      },
+    );
   }
 
   Widget _buildMainStatsSection(bool isMobile, DashboardProvider provider) {
