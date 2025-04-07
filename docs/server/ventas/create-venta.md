@@ -6,6 +6,12 @@
 
 {{base_url}}/api/{{sucursalId}}/ventas
 
+## Descripción
+
+Endpoint para realizar una venta, las ventas realizadas modifican el stock de los productos y no pueden ser modificadas por lo que se debe tener cuidado al generarlas y solo confirmarlas cuando el usuario decida que está esta realmente completa
+
+Aclaración: Para que una sucursal sea capaz de realizar una venta, esta debe contar con una serie correspondiente del tipo de documento al que pertenece la venta, por ejemplo si es una boleta la sucursal deberá contar con una "serieBoleta" definida, en caso de ser una factura deberá contar con una "serieFactura" definida
+
 ## Explicación de los permisos
 
 - El rol `administrador` es capaz de crear una venta en cualquier sucursal
