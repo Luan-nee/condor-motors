@@ -54,7 +54,11 @@ export class ProductosController {
       })
   }
 
-  getReporteProducto = (_req: Request, res: Response) => {
+  getReporteProducto = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.invalidAccessToken({ res })
+      return
+    }
     const getresporte = new GetProductosReporte()
 
     getresporte

@@ -22,6 +22,8 @@ interface ProductoPlano {
     stock: number | null
     liquidacion: boolean | null
     sucursal: string | null
+    precioCompra: number | string | null
+    precioVenta: number | string | null
   }
 }
 
@@ -32,20 +34,32 @@ interface FilaReporte {
   descuento: number | null
   color: string
   marca: number
+  precioCompra: number | string | null
+  precioVenta: number | string | null
   [sucursalNombre: string]: string | number | null | undefined
   Total?: number
 }
 
 export class GetProductosReporte {
   private crearFilaProducto(row: ProductoPlano): FilaReporte {
-    const { id, nombre, descripcion, descuento, color, marca } = row
+    const {
+      id,
+      nombre,
+      descripcion,
+      descuento,
+      color,
+      marca,
+      detallesproducto: { precioCompra, precioVenta }
+    } = row
     return {
       id,
       nombre,
       descripcion,
       descuento,
       color,
-      marca
+      marca,
+      precioCompra,
+      precioVenta
     }
   }
 
@@ -113,7 +127,9 @@ export class GetProductosReporte {
         detallesproducto: {
           stock: detallesProductoTable.stock,
           liquidacion: detallesProductoTable.liquidacion,
-          sucursal: sucursalesTable.nombre
+          sucursal: sucursalesTable.nombre,
+          precioCompra: detallesProductoTable.precioCompra,
+          precioVenta: detallesProductoTable.precioVenta
         }
       })
       .from(productosTable)
