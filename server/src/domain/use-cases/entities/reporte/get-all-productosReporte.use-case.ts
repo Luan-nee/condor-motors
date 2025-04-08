@@ -146,7 +146,17 @@ export class GetProductosReporte {
     worksheet.columns = cabecera.map((key) => ({
       header: key.charAt(0).toUpperCase() + key.slice(1),
       key,
-      width: 20
+      width: 20,
+      style: {
+        font: { bold: true },
+        color: {
+          fill: {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFCC00' }
+          }
+        }
+      }
     }))
 
     valores.forEach((row) => {
