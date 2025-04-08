@@ -13,15 +13,20 @@ export class GetTransferenciasInventarios {
     sucursalesTable,
     'sucursalOrigen'
   )
-  private readonly sucursalDestino = aliasedTable(
-    sucursalesTable,
-    'sucursalDestino'
-  )
   private readonly selectFields = {
     id: transferenciasInventariosTable.id,
-    estado: estadosTransferenciasInventarios.nombre,
-    nombreSucursalOrigen: this.sucursalOrigen.nombre,
-    nombreSucursalDestino: this.sucursalDestino.nombre,
+    estado: {
+      nombre: estadosTransferenciasInventarios.nombre,
+      codigo: estadosTransferenciasInventarios.codigo
+    },
+    sucursalOrigen: {
+      id: this.sucursalOrigen.id,
+      nombre: this.sucursalOrigen.nombre
+    },
+    sucursalDestino: {
+      id: sucursalesTable.id,
+      nombre: sucursalesTable.nombre
+    },
     modificable: transferenciasInventariosTable.modificable,
     salidaOrigen: transferenciasInventariosTable.salidaOrigen,
     llegadaDestino: transferenciasInventariosTable.llegadaDestino
@@ -55,9 +60,20 @@ export class GetTransferenciasInventarios {
         ? asc(sortByColumn)
         : desc(sortByColumn)
 
-    const TransferenciasInventario = await db
+    const transferenciasInventario = await db
       .select(this.selectFields)
       .from(transferenciasInventariosTable)
+      .innerJoin(
+        estadosTransferenciasInventarios,
+        eq(
+          estadosTransferenciasInventarios.id,
+          transferenciasInventariosTable.estadoTransferenciaId
+        )
+      )
+      .leftJoin(
+        sucursalesTable,
+        eq(transferenciasInventariosTable.sucursalDestinoId, sucursalesTable.id)
+      )
       .leftJoin(
         this.sucursalOrigen,
         eq(
@@ -65,25 +81,11 @@ export class GetTransferenciasInventarios {
           transferenciasInventariosTable.sucursalOrigenId
         )
       )
-      .leftJoin(
-        this.sucursalDestino,
-        eq(
-          this.sucursalDestino.id,
-          transferenciasInventariosTable.sucursalDestinoId
-        )
-      )
-      .leftJoin(
-        estadosTransferenciasInventarios,
-        eq(
-          estadosTransferenciasInventarios.id,
-          transferenciasInventariosTable.estadoTransferenciaId
-        )
-      )
       .orderBy(order)
       .limit(queriesDto.page_size)
       .offset(queriesDto.page_size * (queriesDto.page - 1))
 
-    return TransferenciasInventario
+    return transferenciasInventario
   }
 
   async execute(queriesDto: QueriesDto) {

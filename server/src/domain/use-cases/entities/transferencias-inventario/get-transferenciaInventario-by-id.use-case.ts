@@ -14,14 +14,20 @@ export class GetTransferenciasInventariosById {
     sucursalesTable,
     'sucursalOrigen'
   )
-  private readonly sucursalDestino = aliasedTable(
-    sucursalesTable,
-    'sucursalDestino'
-  )
   private readonly selectFields = {
-    estado: estadosTransferenciasInventarios.nombre,
-    nombreSucursalOrigen: this.sucursalOrigen.nombre,
-    nombreSucursalDestino: this.sucursalDestino.nombre,
+    id: transferenciasInventariosTable.id,
+    estado: {
+      nombre: estadosTransferenciasInventarios.nombre,
+      codigo: estadosTransferenciasInventarios.codigo
+    },
+    sucursalOrigen: {
+      id: this.sucursalOrigen.id,
+      nombre: this.sucursalOrigen.nombre
+    },
+    sucursalDestino: {
+      id: sucursalesTable.id,
+      nombre: sucursalesTable.nombre
+    },
     modificable: transferenciasInventariosTable.modificable,
     salidaOrigen: transferenciasInventariosTable.salidaOrigen,
     llegadaDestino: transferenciasInventariosTable.llegadaDestino
@@ -33,21 +39,18 @@ export class GetTransferenciasInventariosById {
   }
 
   private async getTransferenciaInventario(numericIdDto: NumericIdDto) {
-    const transVenta = await db
+    const [transferenciaInventario] = await db
       .select(this.selectFields)
       .from(transferenciasInventariosTable)
+      .leftJoin(
+        sucursalesTable,
+        eq(transferenciasInventariosTable.sucursalDestinoId, sucursalesTable.id)
+      )
       .leftJoin(
         this.sucursalOrigen,
         eq(
           this.sucursalOrigen.id,
           transferenciasInventariosTable.sucursalOrigenId
-        )
-      )
-      .leftJoin(
-        this.sucursalDestino,
-        eq(
-          this.sucursalDestino.id,
-          transferenciasInventariosTable.sucursalDestinoId
         )
       )
       .leftJoin(
@@ -73,10 +76,8 @@ export class GetTransferenciasInventariosById {
         )
       )
 
-    const [transfventa] = transVenta
-
     return {
-      ...transfventa,
+      ...transferenciaInventario,
       itemsVenta
     }
   }
