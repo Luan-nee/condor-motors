@@ -147,7 +147,7 @@ export const FileCard = ({ file, deleteItem, shareFile }: Props) => {
       </div>
       <div>
         <p class="text-gray-500 block">Autor:</p>
-        <p>{file.user.nombre}</p>
+        <p>{file.user?.nombre ?? 'Desconocido'}</p>
       </div>
       <div class="flex flex-wrap gap-2 justify-end">
         <div class="flex mr-auto gap-2">

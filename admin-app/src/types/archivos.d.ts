@@ -44,7 +44,7 @@ export interface FileEntity {
   user: {
     id: number
     nombre: string
-  }
+  } | null
 }
 
 export type GetFilesApi = MethodAll<void, FileEntity[], ApiError>
