@@ -91,4 +91,6 @@ interface SeedConfig {
   proformasVentaCount: number
   notificacionesCount: number
   clientesCount: number
+  transferenciasInventariosCount: number
+  ventasCount: number
 }

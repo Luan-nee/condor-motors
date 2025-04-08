@@ -2,7 +2,7 @@ import { envs } from '@/config/envs'
 
 export const refreshTokenCookieName = 'refresh_token'
 export const isProduction = envs.NODE_ENV === 'production'
-export const databaseEnableSSL = envs.DATABASE_ENABLE_SSL === true
+export const { DATABASE_ENABLE_SSL: databaseEnableSSL } = envs
 
 export const orderValues = {
   asc: 'asc',

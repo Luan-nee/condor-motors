@@ -175,7 +175,9 @@ export const seedConfig: SeedConfig = {
   productosCount: 30,
   proformasVentaCount: 16,
   notificacionesCount: 5,
-  clientesCount: 5
+  clientesCount: 5,
+  transferenciasInventariosCount: 10,
+  ventasCount: 15
 }
 
 export const adminPermissions = transformPermissionCodes(permissionCodes)
@@ -199,7 +201,14 @@ export const vendedorPermisssions = transformPermissionsCodesFromArray([
   permissionCodes.cuentasEmpleados.updateSelf,
   permissionCodes.reservasProductos.createAny,
   permissionCodes.reservasProductos.updateAny,
-  permissionCodes.reservasProductos.deleteAny
+  permissionCodes.reservasProductos.deleteAny,
+  permissionCodes.transferenciasInvs.createRelated,
+  permissionCodes.transferenciasInvs.sendRelated,
+  permissionCodes.transferenciasInvs.cancelRelated,
+  permissionCodes.transferenciasInvs.receiveRelated,
+  permissionCodes.transferenciasInvs.getRelated,
+  permissionCodes.transferenciasInvs.updateRelated,
+  permissionCodes.transferenciasInvs.deleteRelated
 ])
 
 export const computadoraPermissions = transformPermissionsCodesFromArray([
@@ -216,5 +225,12 @@ export const computadoraPermissions = transformPermissionsCodesFromArray([
   permissionCodes.facturacion.declareRelated,
   permissionCodes.facturacion.syncRelated,
   permissionCodes.facturacion.cancelRelated,
-  permissionCodes.cuentasEmpleados.getRelated
+  permissionCodes.cuentasEmpleados.getRelated,
+  permissionCodes.transferenciasInvs.createRelated,
+  permissionCodes.transferenciasInvs.sendRelated,
+  permissionCodes.transferenciasInvs.cancelRelated,
+  permissionCodes.transferenciasInvs.receiveRelated,
+  permissionCodes.transferenciasInvs.getRelated,
+  permissionCodes.transferenciasInvs.updateRelated,
+  permissionCodes.transferenciasInvs.deleteRelated
 ])
