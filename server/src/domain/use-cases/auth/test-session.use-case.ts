@@ -15,6 +15,11 @@ export class TestSession {
     rolCuentaEmpleadoId: cuentasEmpleadosTable.rolId,
     rolCuentaEmpleadoCodigo: rolesTable.codigo,
     empleadoId: cuentasEmpleadosTable.empleadoId,
+    empleado: {
+      activo: empleadosTable.activo,
+      nombres: empleadosTable.nombre,
+      apellidos: empleadosTable.apellidos
+    },
     fechaCreacion: cuentasEmpleadosTable.fechaCreacion,
     fechaActualizacion: cuentasEmpleadosTable.fechaActualizacion,
     sucursal: sucursalesTable.nombre,
@@ -43,6 +48,12 @@ export class TestSession {
     }
 
     const [user] = users
+
+    if (!user.empleado.activo) {
+      throw CustomError.badRequest(
+        'Su cuenta de usuario se encuentra desactivada, contacte al administrador para que este habilite su cuenta'
+      )
+    }
 
     return user
   }

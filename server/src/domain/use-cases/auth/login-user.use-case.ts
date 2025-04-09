@@ -21,6 +21,7 @@ export class LoginUser {
     rolCuentaEmpleadoCodigo: rolesTable.codigo,
     empleadoId: cuentasEmpleadosTable.empleadoId,
     empleado: {
+      activo: empleadosTable.activo,
       nombres: empleadosTable.nombre,
       apellidos: empleadosTable.apellidos
     },
@@ -55,6 +56,12 @@ export class LoginUser {
     }
 
     const [user] = users
+
+    if (!user.empleado.activo) {
+      throw CustomError.badRequest(
+        'Su cuenta de usuario se encuentra desactivada, contacte al administrador para que este habilite su cuenta'
+      )
+    }
 
     const isMatch = await this.encryptor.compare(loginUserDto.clave, user.clave)
 
@@ -105,6 +112,11 @@ export class LoginUser {
         rolCuentaEmpleadoId: user.rolCuentaEmpleadoId,
         rolCuentaEmpleadoCodigo: user.rolCuentaEmpleadoCodigo,
         empleadoId: user.empleadoId,
+        empleado: {
+          activo: user.empleado.activo,
+          nombres: user.empleado.nombres,
+          apellidos: user.empleado.apellidos
+        },
         fechaCreacion: user.fechaCreacion,
         fechaActualizacion: user.fechaActualizacion,
         sucursal: user.sucursal,
