@@ -35,7 +35,7 @@ export class GetTransferenciasInventariosById {
   private readonly selectFieldsItems = {
     id: itemsTransferenciaInventarioTable.id,
     cantidad: itemsTransferenciaInventarioTable.cantidad,
-    nombreProducto: productosTable.nombre
+    nombre: productosTable.nombre
   }
 
   private async getTransferenciaInventario(numericIdDto: NumericIdDto) {
@@ -62,7 +62,7 @@ export class GetTransferenciasInventariosById {
       )
       .where(eq(transferenciasInventariosTable.id, numericIdDto.id))
 
-    const itemsVenta = await db
+    const items = await db
       .select(this.selectFieldsItems)
       .from(itemsTransferenciaInventarioTable)
       .innerJoin(
@@ -78,7 +78,7 @@ export class GetTransferenciasInventariosById {
 
     return {
       ...transferenciaInventario,
-      itemsVenta
+      items
     }
   }
 
