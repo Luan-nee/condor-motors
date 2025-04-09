@@ -124,6 +124,33 @@ export class GetProductosReporte {
     return this.pivotarProductosPorSucursal(datos)
   }
 
+  private async getProductosSucursales(idSucursal: number) {
+    const datos = await db
+      .select({
+        id: detallesProductoTable.id,
+        nombre: productosTable.nombre,
+        precioCompra: detallesProductoTable.precioCompra,
+        stock: detallesProductoTable.stock
+      })
+      .from(detallesProductoTable)
+      .innerJoin(
+        productosTable,
+        eq(productosTable.id, detallesProductoTable.productoId)
+      )
+      .where(eq(detallesProductoTable.sucursalId, idSucursal))
+    return datos
+  }
+
+  private async getSucursales() {
+    const datos = await db
+      .select({
+        id: sucursalesTable.id,
+        nombre: sucursalesTable.nombre
+      })
+      .from(sucursalesTable)
+    return datos
+  }
+
   private crearHoja(
     tablaPrincipal: Workbook,
     titulo: string,
@@ -161,9 +188,17 @@ export class GetProductosReporte {
     }
 
     const workbook = new Workbook()
-    // const worksheet = workbook.addWorksheet('Datos')
 
     this.crearHoja(workbook, 'Principal', valores)
+    const sucursales = await this.getSucursales()
+    if (sucursales.length > 0) {
+      for (const valor of sucursales) {
+        const datosAux = await this.getProductosSucursales(valor.id)
+        if (datosAux.length > 0) {
+          this.crearHoja(workbook, valor.nombre, datosAux)
+        }
+      }
+    }
 
     await workbook.xlsx.writeFile('storage/private/reportes/archivo.xlsx')
     return { archivo: 'archivo.xlsx' }
