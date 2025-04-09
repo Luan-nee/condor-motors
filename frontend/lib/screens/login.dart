@@ -102,29 +102,32 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _loadServerIp() async {
     try {
-      final String? ip = await _storage.read(key: 'server_ip');
-      if (ip != null && ip.isNotEmpty) {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? serverUrl = prefs.getString('server_url');
+
+      if (serverUrl != null && serverUrl.isNotEmpty) {
+        final Uri uri = Uri.parse(serverUrl);
         setState(() {
-          _serverIp = ip;
+          _serverIp = uri.host;
         });
         // Actualizar la URL base de la API global
-        await _updateApiBaseUrl(_serverIp);
+        await _updateApiBaseUrl(serverUrl);
       } else {
-        // Si no hay IP guardada, usar localhost
+        // Si no hay URL guardada, usar localhost
         setState(() {
           _serverIp = 'localhost';
         });
-        // Actualizar la URL base de la API global
-        await _updateApiBaseUrl('localhost');
+        // Actualizar la URL base de la API global con localhost
+        await _updateApiBaseUrl('http://localhost:3000/api');
       }
     } catch (e) {
-      debugPrint('Error al cargar la IP del servidor: $e');
+      debugPrint('Error al cargar la URL del servidor: $e');
       // En caso de error, asegurar que se use localhost
       setState(() {
         _serverIp = 'localhost';
       });
       // Actualizar la URL base de la API global
-      await _updateApiBaseUrl('localhost');
+      await _updateApiBaseUrl('http://localhost:3000/api');
     }
   }
 
@@ -227,12 +230,12 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   // Método para actualizar la URL base de la API global
-  Future<void> _updateApiBaseUrl(String serverIp) async {
-    debugPrint('Actualizando URL base de la API a: http://$serverIp:3000/api');
+  Future<void> _updateApiBaseUrl(String serverUrl) async {
+    debugPrint('Actualizando URL base de la API a: $serverUrl');
     try {
       // Reinicializar la API global con la nueva URL base
       api = CondorMotorsApi(
-        baseUrl: 'http://$serverIp:3000/api',
+        baseUrl: serverUrl,
       );
 
       // Verificar conectividad con el servidor
@@ -249,17 +252,32 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  Future<void> _saveServerIp(String ip) async {
+  Future<void> _saveServerIp(String serverIp) async {
     try {
-      // Guardar la IP proporcionada
-      await _storage.write(key: 'server_ip', value: ip);
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      // Construir la URL completa
+      String fullUrl;
+      if (serverIp.startsWith('http://') || serverIp.startsWith('https://')) {
+        fullUrl = serverIp;
+      } else {
+        fullUrl = 'http://$serverIp:3000/api';
+      }
+
+      // Guardar la URL completa
+      await prefs.setString('server_url', fullUrl);
+
       setState(() {
-        _serverIp = ip;
+        _serverIp = serverIp;
       });
+
       // Actualizar la URL base de la API global
-      await _updateApiBaseUrl(ip);
+      await _updateApiBaseUrl(fullUrl);
+
+      debugPrint('URL del servidor guardada: $fullUrl');
     } catch (e) {
-      debugPrint('Error al guardar la IP del servidor: $e');
+      debugPrint('Error al guardar la URL del servidor: $e');
+      rethrow;
     }
   }
 
@@ -267,38 +285,103 @@ class _LoginScreenState extends State<LoginScreen>
     final TextEditingController ipController =
         TextEditingController(text: _serverIp);
 
+    // Lista de servidores disponibles desde main.dart
+    final List<String> serverUrls = <String>[
+      'http://192.168.1.42:3000/api',
+      'http://localhost:3000/api',
+      'http://127.0.0.1:3000/api',
+      'http://10.0.2.2:3000/api',
+      'https://fseh2hb1d1h2ra5822cdvo.top/api',
+    ];
+
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
         title: const Text('Configuración del Servidor'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Text(
-              'Ingrese la dirección IP del servidor:',
-              style: TextStyle(color: Colors.grey[700]),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: ipController,
-              decoration: InputDecoration(
-                labelText: 'Dirección IP',
-                hintText: 'Ej: localhost o 192.168.1.66',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'Seleccione un servidor predefinido:',
+                style: TextStyle(color: Colors.grey[700]),
               ),
-              keyboardType: TextInputType.text,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '• Para desarrollo local (PC): localhost o 127.0.0.1\n'
-              '• Para emuladores Android: 10.0.2.2\n'
-              '• Para dispositivos físicos: IP de tu PC en la red WiFi (ej: 192.168.1.66)\n'
-              '• Si estás fuera de la red local: IP pública + configurar port forwarding',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
+              const SizedBox(height: 8),
+              ...serverUrls.map((String url) => ListTile(
+                    title: Text(url, style: const TextStyle(fontSize: 14)),
+                    onTap: () async {
+                      Navigator.pop(dialogContext);
+                      setState(() {
+                        _isLoading = true;
+                      });
+
+                      try {
+                        // Extraer solo la IP/host del URL
+                        final Uri uri = Uri.parse(url);
+                        final String serverIp = uri.host;
+
+                        await _saveServerIp(serverIp);
+
+                        if (!mounted) {
+                          return;
+                        }
+
+                        setState(() {
+                          _isLoading = false;
+                        });
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Servidor actualizado a: $url'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } catch (e) {
+                        if (!mounted) {
+                          return;
+                        }
+
+                        setState(() {
+                          _isLoading = false;
+                        });
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error al actualizar servidor: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
+                  )),
+              const Divider(),
+              Text(
+                'O ingrese una dirección personalizada:',
+                style: TextStyle(color: Colors.grey[700]),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: ipController,
+                decoration: InputDecoration(
+                  labelText: 'Dirección del Servidor',
+                  hintText: 'Ej: localhost o 192.168.1.66',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                keyboardType: TextInputType.text,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '• Para desarrollo local (PC): localhost o 127.0.0.1\n'
+                '• Para emuladores Android: 10.0.2.2\n'
+                '• Para dispositivos físicos: IP de tu PC en la red WiFi (ej: 192.168.1.66)\n'
+                '• Si estás fuera de la red local: IP pública + configurar port forwarding',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
         ),
         actions: <Widget>[
           TextButton(
@@ -309,36 +392,44 @@ class _LoginScreenState extends State<LoginScreen>
             onPressed: () async {
               final String newIp = ipController.text.trim();
               if (newIp.isNotEmpty) {
-                // Cerrar el diálogo usando el contexto de ese diálogo
                 Navigator.pop(dialogContext);
-
-                // Mostrar indicador de carga mientras se actualiza la URL
-                if (!mounted) {
-                  return;
-                }
-
                 setState(() {
                   _isLoading = true;
                 });
 
-                await _saveServerIp(newIp);
+                try {
+                  await _saveServerIp(newIp);
 
-                // Verificar si el widget sigue montado después de la operación asíncrona
-                if (!mounted) {
-                  return;
+                  if (!mounted) {
+                    return;
+                  }
+
+                  setState(() {
+                    _isLoading = false;
+                  });
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Servidor actualizado a: $newIp'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) {
+                    return;
+                  }
+
+                  setState(() {
+                    _isLoading = false;
+                  });
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error al actualizar servidor: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
-
-                setState(() {
-                  _isLoading = false;
-                });
-
-                // Mostrar mensaje de confirmación (verificando nuevamente mounted)
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Servidor actualizado a: $newIp'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
               }
             },
             child: const Text('Guardar'),
