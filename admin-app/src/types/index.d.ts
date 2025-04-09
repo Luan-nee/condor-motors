@@ -42,10 +42,18 @@ type AuthLogin = MethodAll<
 interface TestUserSuccess {
   id: number
   usuario: string
-  rol: {
-    codigo: string
-    nombre: string
+  rolCuentaEmpleadoId: number
+  rolCuentaEmpleadoCodigo: string
+  empleadoId: number
+  empleado: {
+    activo: boolean
+    nombres: string
+    apellidos: string
   }
+  fechaCreacion: string
+  fechaActualizacion: string
+  sucursal: string
+  sucursalId: number
 }
 
 type TestSession = MethodAll<void, TestUserSuccess, ApiErrorWithAction>

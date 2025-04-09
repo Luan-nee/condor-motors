@@ -108,7 +108,7 @@ export const login: AuthLogin = async ({ username, password }) => {
     setCookie(accessTokenCookieName, accessToken, 15)
   }
 
-  const { data, error } = await resToData(res)
+  const { data, error } = await resToData<TestUserSuccess>(res)
 
   if (error != null) {
     return { error }

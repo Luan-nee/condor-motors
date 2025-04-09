@@ -33,7 +33,7 @@
     const $rol = selectWith<HTMLSpanElement>('[data-id="rol-usuario"]')
 
     $username.innerText = data.usuario
-    $rol.innerText = data.rol.nombre
+    $rol.innerText = data.rolCuentaEmpleadoCodigo
 
     selectWith<HTMLButtonElement>('#logout').addEventListener(
       'click',
