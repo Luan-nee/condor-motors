@@ -384,8 +384,36 @@ class VentasComputerProvider extends ChangeNotifier {
   String? get ordenarPor => _ordenarPor;
 
   /// Inicializa el provider cargando los datos necesarios
-  void inicializar() {
-    cargarSucursales();
+  Future<void> inicializar() async {
+    try {
+      debugPrint('🔄 Inicializando VentasComputerProvider...');
+
+      // Obtener datos del usuario autenticado
+      final userData = await api.auth.getUserData();
+      if (userData == null) {
+        throw Exception('No se encontraron datos del usuario autenticado');
+      }
+
+      debugPrint('👤 Datos de usuario obtenidos: ${userData.toString()}');
+
+      // Extraer ID de sucursal del usuario
+      final sucursalId = userData['sucursalId'];
+      if (sucursalId == null) {
+        throw Exception('El usuario no tiene una sucursal asignada');
+      }
+
+      debugPrint('🏢 ID de sucursal del usuario: $sucursalId');
+
+      // Establecer la sucursal del usuario
+      await establecerSucursalPorId(sucursalId);
+
+      // Cargar ventas iniciales
+      await cargarVentas();
+    } catch (e) {
+      debugPrint('❌ Error en inicialización: $e');
+      _errorMessage = 'Error al inicializar: $e';
+      notifyListeners();
+    }
   }
 
   /// Actualiza el término de búsqueda y recarga las ventas
@@ -469,9 +497,8 @@ class VentasComputerProvider extends ChangeNotifier {
     }
   }
 
-  /// Establece una sucursal directamente por su ID sin necesidad de cargar la lista completa
-  /// Útil cuando el usuario tiene permisos para una sucursal específica pero no para listar todas
-  Future<bool> establecerSucursalPorId(sucursalId) async {
+  /// Establece una sucursal directamente por su ID
+  Future<bool> establecerSucursalPorId(dynamic sucursalId) async {
     try {
       if (sucursalId == null) {
         debugPrint('⚠️ ID de sucursal no proporcionado');
@@ -481,59 +508,46 @@ class VentasComputerProvider extends ChangeNotifier {
       String sucursalIdStr = sucursalId.toString();
       debugPrint('🔍 Estableciendo sucursal por ID: $sucursalIdStr');
 
-      // Primero verificar si la sucursal ya está en nuestra lista cargada
-      if (_sucursales.isNotEmpty) {
-        for (var sucursal in _sucursales) {
-          if (sucursal.id.toString() == sucursalIdStr) {
-            debugPrint(
-                '✅ Sucursal encontrada en lista local, seleccionando: ${sucursal.nombre}');
-            _sucursalSeleccionada = sucursal;
-            notifyListeners();
-            return true;
-          }
-        }
-      }
-
-      // Si no está en la lista o la lista está vacía, crear una sucursal provisional
-      // con la información mínima necesaria para funcionar
-      final DateTime ahora = DateTime.now();
-      final Sucursal sucursalProvisional = Sucursal(
-        id: sucursalIdStr,
-        nombre: 'Sucursal $sucursalIdStr',
-        direccion: '',
-        sucursalCentral: false,
-        serieFactura: '',
-        serieBoleta: '',
-        fechaCreacion: ahora,
-        fechaActualizacion: ahora,
-      );
-
-      // Intentar cargar los datos completos de la sucursal si se tienen permisos
+      // Intentar obtener datos completos de la sucursal
       try {
-        debugPrint('🔄 Intentando obtener datos completos de la sucursal');
         final sucursalCompleta = await api.sucursales.getSucursalData(
-            sucursalIdStr,
-            useCache: false,
-            forceRefresh: true);
+          sucursalIdStr,
+          useCache: false,
+          forceRefresh: true,
+        );
 
-        // Si se pudo obtener, usar esta sucursal
-        debugPrint(
-            '✅ Datos de sucursal obtenidos con éxito: ${sucursalCompleta.nombre}');
+        debugPrint('✅ Datos de sucursal obtenidos: ${sucursalCompleta.nombre}');
         _sucursalSeleccionada = sucursalCompleta;
 
         // Agregar a la lista si no está ya
         if (!_sucursales.any((s) => s.id.toString() == sucursalIdStr)) {
-          _sucursales.add(sucursalCompleta);
+          _sucursales = [sucursalCompleta];
         }
-      } catch (e) {
-        // Si hay error al obtener datos completos, usar la sucursal provisional
-        debugPrint(
-            '⚠️ No se pudieron obtener datos completos, usando información mínima: $e');
-        _sucursalSeleccionada = sucursalProvisional;
-      }
 
-      notifyListeners();
-      return true;
+        notifyListeners();
+        return true;
+      } catch (e) {
+        debugPrint('⚠️ No se pudieron obtener datos completos de sucursal: $e');
+
+        // Crear una sucursal provisional con datos mínimos
+        final DateTime ahora = DateTime.now();
+        final Sucursal sucursalProvisional = Sucursal(
+          id: sucursalIdStr,
+          nombre: 'Sucursal $sucursalIdStr',
+          direccion: '',
+          sucursalCentral: false,
+          serieFactura: '',
+          serieBoleta: '',
+          fechaCreacion: ahora,
+          fechaActualizacion: ahora,
+        );
+
+        _sucursalSeleccionada = sucursalProvisional;
+        _sucursales = [sucursalProvisional];
+
+        notifyListeners();
+        return true;
+      }
     } catch (e) {
       debugPrint('❌ Error al establecer sucursal por ID: $e');
       return false;

@@ -1,8 +1,8 @@
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/providers/colabs/transferencias.colab.provider.dart';
-import 'package:condorsmotors/utils/transferencias_utils.dart';
 import 'package:condorsmotors/screens/colabs/transferencias_colab.dart';
 import 'package:condorsmotors/screens/colabs/widgets/transferencias/transferencia_comparar_colab.dart';
+import 'package:condorsmotors/utils/transferencias_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';

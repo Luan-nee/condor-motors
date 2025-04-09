@@ -2,14 +2,15 @@ import 'dart:async';
 
 import 'package:condorsmotors/api/auth.api.dart';
 import 'package:condorsmotors/api/index.api.dart' show CondorMotorsApi;
-import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/providers/login.provider.dart';
 import 'package:condorsmotors/utils/role_utils.dart'
     as role_utils; // Importar utilidad de roles con alias
 import 'package:condorsmotors/widgets/background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Importar para KeyboardListener
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Importamos SharedPreferences
 
 // Clase para manejar el ciclo de vida de la aplicación
@@ -53,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen>
   bool _rememberMe = false;
   bool _stayLoggedIn = false; // Variable para "Permanecer conectado"
   late final AnimationController _animationController;
-  String _errorMessage = '';
+  final String _errorMessage = '';
   String _serverIp = 'localhost'; // IP local para el servidor
   late final LifecycleObserver _lifecycleObserver;
   bool _isCheckingAutoLogin = true; // Flag para controlar el auto-login
@@ -497,39 +498,6 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  Future<void> _saveCredentials() async {
-    // Guardar credenciales normales (recordar credenciales)
-    if (_rememberMe) {
-      await _storage.write(key: 'username', value: _usernameController.text);
-      await _storage.write(key: 'password', value: _passwordController.text);
-      await _storage.write(key: 'remember_me', value: 'true');
-    } else {
-      // Solo eliminar las credenciales guardadas si "Recordar credenciales" está desactivado
-      await _storage.delete(key: 'username');
-      await _storage.delete(key: 'password');
-      await _storage.delete(key: 'remember_me');
-    }
-
-    // Guardar preferencia y credenciales para auto-login
-    // Usamos SharedPreferences para "Permanecer conectado"
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('stay_logged_in', _stayLoggedIn);
-
-    // Si permanecer conectado está activo, guardamos las credenciales
-    if (_stayLoggedIn) {
-      await prefs.setString('username_auto', _usernameController.text);
-      await prefs.setString('password_auto', _passwordController.text);
-      debugPrint('Credenciales para auto-login guardadas correctamente');
-    } else {
-      // Si se desactiva, eliminamos las credenciales
-      await prefs.remove('username_auto');
-      await prefs.remove('password_auto');
-      debugPrint('Credenciales para auto-login eliminadas');
-    }
-
-    debugPrint('Guardada preferencia de permanencia de sesión: $_stayLoggedIn');
-  }
-
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -537,107 +505,82 @@ class _LoginScreenState extends State<LoginScreen>
 
     setState(() {
       _isLoading = true;
-      _errorMessage = '';
     });
 
     try {
-      debugPrint(
-          'Iniciando proceso de login con usuario: ${_usernameController.text}');
-
-      // Usar la API global en lugar de la local
-      final UsuarioAutenticado usuarioAutenticado = await api.auth.login(
+      final loginProvider = Provider.of<LoginProvider>(context, listen: false);
+      final usuario = await loginProvider.login(
         _usernameController.text,
         _passwordController.text,
       );
 
-      debugPrint('Login exitoso, usuario autenticado: $usuarioAutenticado');
+      if (!mounted) return;
 
-      // Guardar los datos del usuario en el servicio global de autenticación
-      try {
-        await api.authService.saveUserData(usuarioAutenticado);
-        debugPrint(
-            'Datos de usuario guardados correctamente en el servicio global');
-      } catch (e) {
-        debugPrint('Error al guardar datos en el servicio global: $e');
-        // Continuamos aunque haya error, ya que el token ya está configurado en el cliente API
-      }
-
-      // Guardar credenciales y preferencias
-      await _saveCredentials();
-
-      // Comprobación de seguridad: si el widget ya no está montado, no hacer nada más
-      if (!mounted) {
-        return;
-      }
-
-      // Navegar a la ruta correspondiente según el rol del usuario
-      final Map<String, dynamic> userData = usuarioAutenticado.toMap();
-      final String rolCodigo = usuarioAutenticado.rolCuentaEmpleadoCodigo;
-
-      debugPrint('Rol del usuario (código original): $rolCodigo');
-
-      // Normalizar el rol utilizando nuestra utilidad centralizada
-      final String rolNormalizado = role_utils.normalizeRole(rolCodigo);
-
-      // Verificar si el rol no pudo ser normalizado
-      if (rolNormalizado == 'DESCONOCIDO') {
-        setState(() {
-          _isLoading = false;
-          _errorMessage =
-              'Rol no válido: $rolCodigo. Contacte al administrador.';
-        });
-        return;
-      }
-
-      // Actualizar el rol en los datos de usuario
-      userData['rol'] = rolNormalizado;
-      debugPrint('Rol normalizado a: $rolNormalizado');
-
-      // Determinar la ruta inicial basada en el rol normalizado
-      final String initialRoute = role_utils.getInitialRoute(rolNormalizado);
-      debugPrint('Ruta inicial determinada: $initialRoute');
-
-      // Navigación segura después de operaciones asíncronas
-      if (!mounted) {
-        return;
-      }
-
-      await Navigator.pushReplacementNamed(
-        context,
-        initialRoute,
-        arguments: userData,
-      );
-    } catch (e) {
-      debugPrint('Error durante el login: $e');
-      if (!mounted) {
-        return;
-      }
-
-      String errorMsg = 'Error de autenticación';
-
-      if (e is ApiException) {
-        switch (e.errorCode) {
-          case ApiException.errorUnauthorized:
-            errorMsg = 'Usuario o contraseña incorrectos';
-            break;
-          case ApiException.errorNetwork:
-            errorMsg =
-                'Error de conexión. Verifique su conexión a internet o la configuración del servidor.';
-            break;
-          case ApiException.errorServer:
-            errorMsg = 'Error en el servidor. Intente más tarde.';
-            break;
-          default:
-            errorMsg = 'Error: ${e.message}';
+      if (usuario != null) {
+        // Guardar credenciales si "Recordar me" está activado
+        if (_rememberMe) {
+          await _storage.write(
+              key: 'username', value: _usernameController.text);
+          await _storage.write(
+              key: 'password', value: _passwordController.text);
+          await _storage.write(key: 'remember_me', value: 'true');
         }
-      } else {
-        errorMsg = 'Error inesperado: ${e.toString()}';
+
+        // Guardar credenciales para auto-login si "Permanecer conectado" está activado
+        if (_stayLoggedIn) {
+          final SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('stay_logged_in', true);
+          await prefs.setString('username_auto', _usernameController.text);
+          await prefs.setString('password_auto', _passwordController.text);
+        }
+
+        // Extraer el código del rol del formato correcto
+        String rolCodigo = '';
+        final Map<String, dynamic> userData = usuario.toMap();
+
+        if (userData['rol'] is Map) {
+          rolCodigo = (userData['rol'] as Map)['codigo']?.toString() ?? '';
+        } else {
+          rolCodigo = userData['rol']?.toString() ?? '';
+        }
+
+        rolCodigo = rolCodigo.toLowerCase();
+        final String initialRoute = role_utils.getInitialRoute(rolCodigo);
+
+        debugPrint(
+            'Login exitoso, navegando a ruta: $initialRoute para rol: $rolCodigo');
+
+        if (!mounted) return;
+
+        await Navigator.pushReplacementNamed(
+          context,
+          initialRoute,
+          arguments: userData,
+        );
       }
+    } catch (e) {
+      if (!mounted) return;
 
       setState(() {
         _isLoading = false;
-        _errorMessage = errorMsg;
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al iniciar sesión: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          action: SnackBarAction(
+            label: 'Reintentar',
+            textColor: Colors.white,
+            onPressed: _handleLogin,
+          ),
+        ),
+      );
     }
   }
 
@@ -977,33 +920,68 @@ class _LoginScreenState extends State<LoginScreen>
                         const SizedBox(height: 24),
 
                         // Login button
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE31E24),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        Center(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            width: _isLoading
+                                ? 50
+                                : 320, // Ancho fijo en lugar de infinity
+                            height: 50,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE31E24),
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: _isLoading ? 0 : 24,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                      _isLoading ? 25 : 12),
+                                ),
+                                elevation: 2,
+                              ),
+                              onPressed:
+                                  _isLoading ? null : () => _handleLogin(),
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                transitionBuilder: (Widget child,
+                                    Animation<double> animation) {
+                                  return ScaleTransition(
+                                    scale: animation,
+                                    child: child,
+                                  );
+                                },
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            Colors.white,
+                                          ),
+                                        ),
+                                      )
+                                    : const Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.login, size: 20),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'Iniciar Sesión',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ),
                             ),
                           ),
-                          onPressed: _isLoading ? null : () => _handleLogin(),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
-                                  ),
-                                )
-                              : const Text(
-                                  'Iniciar Sesión',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
                         ),
                       ],
                     ),

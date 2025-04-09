@@ -43,9 +43,6 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen>
   late Animation<double> _notificationAnimation;
   StreamSubscription? _streamSubscription;
 
-  // Estado del control de actualización en tiempo real
-  bool _actualizacionAutomaticaActiva = true;
-
   @override
   void initState() {
     super.initState();
@@ -62,8 +59,6 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen>
         curve: Curves.easeInOut,
       ),
     );
-
-    // Inicialización se hará en didChangeDependencies
   }
 
   @override
@@ -75,19 +70,28 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen>
         Provider.of<ProformaComputerProvider>(context, listen: false);
     _initializeProvider();
 
-    // Suscribirse al stream de proformas
+    // Configurar suscripción al stream
     _suscribirseAStreamProformas();
   }
 
   void _suscribirseAStreamProformas() {
     // Cancelar suscripción existente
     _streamSubscription?.cancel();
+    _streamSubscription = null;
+
+    // Solo suscribirse si las actualizaciones automáticas están activas
+    if (!_proformaProvider.actualizacionAutomaticaActiva) {
+      return;
+    }
 
     // Obtener el stream del provider
     final stream = _proformaProvider.proformasStream;
 
     if (stream != null) {
       _streamSubscription = stream.listen((proformas) {
+        if (!mounted) {
+          return;
+        }
         // Animar el indicador de notificación cuando hay nuevas proformas
         if (_proformaProvider.hayNuevasProformas) {
           _notificationAnimController.reset();
@@ -106,43 +110,10 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen>
     await _proformaProvider.initialize(widget.sucursalId);
   }
 
-  /// Cambia el estado de actualización automática
-  void _toggleActualizacionAutomatica() {
-    setState(() {
-      _actualizacionAutomaticaActiva = !_actualizacionAutomaticaActiva;
-    });
-
-    if (_actualizacionAutomaticaActiva) {
-      // Reiniciar el stream de actualizaciones
-      _proformaProvider.reanudarActualizacionesEnTiempoReal(widget.sucursalId);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Actualización automática activada'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } else {
-      // Pausar el stream de actualizaciones
-      _proformaProvider.pausarActualizacionesEnTiempoReal();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Actualización automática pausada'),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
   @override
   void dispose() {
-    // Cancelar suscripción al stream
     _streamSubscription?.cancel();
-
-    // Liberar recursos de animación
     _notificationAnimController.dispose();
-
     super.dispose();
   }
 
@@ -203,45 +174,71 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen>
           ),
           elevation: 0,
           actions: [
-            // Información del temporizador
+            // Control de intervalo de actualización
             Consumer<ProformaComputerProvider>(
               builder: (context, provider, _) {
-                return Center(
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      onTap: () {
-                        // Mostrar información detallada sobre el temporizador
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                'Intervalo de actualización: ${provider.intervaloActualizacion} segundos'),
-                            backgroundColor: Colors.blueGrey,
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2D2D2D),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                return PopupMenuButton<int>(
+                  tooltip: 'Cambiar intervalo de actualización',
+                  onSelected: (int intervalo) {
+                    provider.setIntervaloActualizacion(
+                        intervalo, widget.sucursalId);
+                  },
+                  itemBuilder: (BuildContext context) {
+                    return ProformaComputerProvider.intervalosDisponibles
+                        .map((int intervalo) {
+                      return PopupMenuItem<int>(
+                        value: intervalo,
                         child: Row(
                           children: [
-                            const Icon(Icons.timer, size: 14),
-                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.timer,
+                              size: 16,
+                              color:
+                                  provider.intervaloActualizacion == intervalo
+                                      ? Colors.blue
+                                      : Colors.grey,
+                            ),
+                            const SizedBox(width: 8),
                             Text(
-                              '${provider.intervaloActualizacion}s',
+                              '$intervalo segundos',
                               style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[400],
+                                color:
+                                    provider.intervaloActualizacion == intervalo
+                                        ? Colors.blue
+                                        : null,
                               ),
                             ),
+                            if (provider.intervaloActualizacion == intervalo)
+                              const Padding(
+                                padding: EdgeInsets.only(left: 8),
+                                child: Icon(
+                                  Icons.check,
+                                  size: 16,
+                                  color: Colors.blue,
+                                ),
+                              ),
                           ],
                         ),
-                      ),
+                      );
+                    }).toList();
+                  },
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2D2D2D),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.timer, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${provider.intervaloActualizacion}s',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        const Icon(Icons.arrow_drop_down, size: 16),
+                      ],
                     ),
                   ),
                 );
@@ -249,27 +246,53 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen>
             ),
             const SizedBox(width: 8),
 
-            // Botón de recarga
+            // Botón de control de actualización
             Consumer<ProformaComputerProvider>(
               builder: (context, provider, _) {
                 return Stack(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: () {
-                        provider.loadProformas(sucursalId: widget.sucursalId);
-                        // Detener animación al recargar manualmente
-                        _notificationAnimController.stop();
+                      icon: Icon(
+                        provider.actualizacionAutomaticaActiva
+                            ? Icons.sync
+                            : Icons.sync_disabled,
+                        color: provider.actualizacionAutomaticaActiva
+                            ? Colors.green
+                            : Colors.orange,
+                      ),
+                      onPressed: () async {
+                        await provider
+                            .toggleActualizacionAutomatica(widget.sucursalId);
+                        _suscribirseAStreamProformas();
+
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                provider.actualizacionAutomaticaActiva
+                                    ? 'Actualización automática activada'
+                                    : 'Actualización automática pausada',
+                              ),
+                              backgroundColor:
+                                  provider.actualizacionAutomaticaActiva
+                                      ? Colors.green
+                                      : Colors.orange,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
                       },
-                      tooltip: 'Recargar proformas',
+                      tooltip: provider.actualizacionAutomaticaActiva
+                          ? 'Pausar actualizaciones'
+                          : 'Reanudar actualizaciones',
                     ),
                     if (provider.hayNuevasProformas)
                       Positioned(
                         right: 8,
                         top: 8,
                         child: Container(
-                          width: 10,
-                          height: 10,
+                          width: 8,
+                          height: 8,
                           decoration: const BoxDecoration(
                             color: Colors.red,
                             shape: BoxShape.circle,
@@ -296,9 +319,6 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen>
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Barra de control de actualización automática
-                _buildControlActualizacion(provider),
-
                 // Contenido principal
                 Expanded(
                   child: Row(
@@ -372,127 +392,6 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen>
             );
           },
         ),
-      ),
-    );
-  }
-
-  /// Construye la barra de control de actualización automática
-  Widget _buildControlActualizacion(ProformaComputerProvider provider) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: _actualizacionAutomaticaActiva
-              ? const Color(0xFF1E3B29)
-              : const Color(0xFF3D3223),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Indicador de estado actual
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _actualizacionAutomaticaActiva
-                  ? const Color(0xFF1E3B29)
-                  : const Color(0xFF3D3223),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _actualizacionAutomaticaActiva ? Icons.wifi : Icons.wifi_off,
-                  size: 16,
-                  color: _actualizacionAutomaticaActiva
-                      ? const Color(0xFF4CAF50)
-                      : Colors.orange,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _actualizacionAutomaticaActiva
-                      ? 'Actualización automática activa'
-                      : 'Actualización automática pausada',
-                  style: TextStyle(
-                    color: _actualizacionAutomaticaActiva
-                        ? const Color(0xFF4CAF50)
-                        : Colors.orange,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // Badge que muestra el intervalo
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.timer, size: 12, color: Colors.white54),
-                const SizedBox(width: 4),
-                Text(
-                  'Cada ${provider.intervaloActualizacion} segundos',
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const Spacer(),
-
-          // Botón de acción
-          ElevatedButton.icon(
-            onPressed: _toggleActualizacionAutomatica,
-            icon: Icon(
-              _actualizacionAutomaticaActiva
-                  ? Icons.pause_circle_outline
-                  : Icons.play_circle_outline,
-            ),
-            label: Text(
-              _actualizacionAutomaticaActiva
-                  ? 'Pausar actualizaciones'
-                  : 'Reanudar actualizaciones',
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _actualizacionAutomaticaActiva
-                  ? Colors.orange.withOpacity(0.8)
-                  : const Color(0xFF4CAF50),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
-          ),
-
-          // Solo mostrar cuando hay nuevas proformas
-          if (provider.hayNuevasProformas) ...[
-            const SizedBox(width: 12),
-            OutlinedButton.icon(
-              onPressed: () {
-                provider.loadProformas(sucursalId: widget.sucursalId);
-                _notificationAnimController.stop();
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Cargar nuevas proformas'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.red),
-                backgroundColor: Colors.red.withOpacity(0.1),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-            ),
-          ],
-        ],
       ),
     );
   }

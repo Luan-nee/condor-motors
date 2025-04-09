@@ -182,24 +182,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: TextButton.icon(
-                    onPressed: () async {
-                      // 1. Limpiar tokens almacenados
-                      await api.auth.clearTokens();
-
-                      // 2. Desactivar la opción "Permanecer conectado"
-                      final SharedPreferences prefs =
-                          await SharedPreferences.getInstance();
-                      await prefs.setBool('stay_logged_in', false);
-                      await prefs.remove('username_auto');
-                      await prefs.remove('password_auto');
-
-                      // 3. Navegar a la pantalla de login
-                      if (!context.mounted) {
-                        return;
-                      }
-                      await Navigator.pushReplacementNamed(
-                          context, role_utils.login);
-                    },
+                    onPressed: () => _showLogoutDialog(context),
                     icon: const FaIcon(
                       FontAwesomeIcons.rightFromBracket,
                       color: Colors.white54,
@@ -353,5 +336,90 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
         ),
       ),
     );
+  }
+
+  // Método para mostrar el diálogo de confirmación de cierre de sesión
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Cerrar Sesión'),
+        content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => _handleLogout(context),
+            child: const Text('Cerrar Sesión'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Método para manejar el cierre de sesión
+  Future<void> _handleLogout(BuildContext context) async {
+    try {
+      debugPrint('Iniciando proceso de cierre de sesión...');
+
+      // 1. Limpiar datos de la API y tokens
+      await api.auth.logout();
+      await api.auth.clearTokens();
+
+      // 2. Limpiar todas las preferencias de autenticación
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await Future.wait([
+        prefs.setBool('stay_logged_in', false),
+        prefs.remove('username_auto'),
+        prefs.remove('password_auto'),
+        prefs.remove('remember_me'),
+        prefs.remove('username'),
+        prefs.remove('password'),
+      ]);
+
+      debugPrint('Sesión cerrada exitosamente');
+
+      // 3. Navegar al login y limpiar el stack de navegación
+      if (!context.mounted) return;
+
+      await Navigator.of(context).pushNamedAndRemoveUntil(
+        role_utils.login,
+        (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      debugPrint('Error durante el cierre de sesión: $e');
+
+      // Mostrar error si ocurre algún problema
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cerrar sesión: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Reintentar',
+            textColor: Colors.white,
+            onPressed: () => _handleLogout(context),
+          ),
+        ),
+      );
+
+      // Intentar forzar la navegación al login en caso de error
+      try {
+        await Navigator.of(context).pushNamedAndRemoveUntil(
+          role_utils.login,
+          (Route<dynamic> route) => false,
+        );
+      } catch (navError) {
+        debugPrint('Error al navegar al login: $navError');
+      }
+    }
   }
 }

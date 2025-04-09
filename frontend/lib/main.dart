@@ -5,6 +5,7 @@ import 'package:condorsmotors/components/proforma_notification.dart';
 import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
 import 'package:condorsmotors/providers/colabs/index.colab.provider.dart';
 import 'package:condorsmotors/providers/computer/index.computer.provider.dart';
+import 'package:condorsmotors/providers/login.provider.dart';
 import 'package:condorsmotors/providers/paginacion.provider.dart';
 import 'package:condorsmotors/routes/routes.dart' as routes;
 import 'package:condorsmotors/theme/apptheme.dart';
@@ -131,73 +132,42 @@ void main() async {
   Map<String, dynamic>? userData;
 
   if (isAuthenticated) {
-    // Verificar si el token es realmente válido intentando hacer una petición sencilla
     try {
       debugPrint('Validando token con el servidor...');
       final bool isTokenValid = await api.auth.verificarToken();
 
       if (!isTokenValid) {
         debugPrint('Token no validado por el servidor, redirigiendo a login');
-        // Limpiar token inválido
         await api.auth.clearTokens();
         initialRoute = role_utils.login;
       } else {
         debugPrint('Token validado correctamente con el servidor');
+        userData = await api.authService.getUserData();
+
+        if (userData != null && userData['rol'] != null) {
+          // Extraer el código del rol correctamente
+          String rolCodigo;
+          if (userData['rol'] is Map) {
+            rolCodigo = userData['rol']['codigo']?.toString() ?? '';
+          } else {
+            rolCodigo = userData['rol'].toString();
+          }
+
+          // Normalizar y obtener la ruta inicial
+          final String rolNormalizado = role_utils.normalizeRole(rolCodigo);
+          initialRoute = role_utils.getInitialRoute(rolNormalizado);
+
+          debugPrint(
+              'Usuario autenticado con rol: $rolCodigo, redirigiendo a $initialRoute');
+        } else {
+          debugPrint('No se encontraron datos de usuario válidos');
+          initialRoute = role_utils.login;
+        }
       }
     } catch (e) {
       debugPrint('Error al validar token: $e');
-      // Si hay un error, considerar que no está autenticado
-      initialRoute = role_utils.login;
-      // Limpiar token inválido
       await api.auth.clearTokens();
-    }
-
-    if (initialRoute != role_utils.login) {
-      // Obtener datos del usuario guardados de forma segura
-      userData = await api.authService.getUserData();
-
-      if (userData != null && userData['rol'] != null) {
-        // Normalizar el rol para asegurarnos de que es válido
-        final String rol = userData['rol'] as String;
-
-        // Verificar si necesitamos normalizar el rol
-        if (!role_utils.roles.containsKey(rol)) {
-          // Intentar con versión en mayúsculas
-          final String rolUpper = rol.toUpperCase();
-          if (role_utils.roles.containsKey(rolUpper)) {
-            userData['rol'] = rolUpper;
-            debugPrint('Rol normalizado a mayúsculas: ${userData['rol']}');
-          }
-          // Verificar casos específicos conocidos
-          else if (rol == 'adminstrador' || rolUpper == 'ADMINSTRADOR') {
-            userData['rol'] = 'ADMINISTRADOR';
-            debugPrint(
-                'Rol normalizado manualmente de "$rol" a "ADMINISTRADOR"');
-          } else if (rol == 'computadora' || rolUpper == 'COMPUTADORA') {
-            userData['rol'] = 'COMPUTADORA';
-            debugPrint('Rol normalizado manualmente de "$rol" a "COMPUTADORA"');
-          } else if (rol == 'vendedor' || rolUpper == 'VENDEDOR') {
-            userData['rol'] = 'VENDEDOR';
-            debugPrint('Rol normalizado manualmente de "$rol" a "VENDEDOR"');
-          } else {
-            // Si el rol no es reconocido, forzar logout
-            debugPrint('Rol no reconocido: $rol, forzando logout');
-            await api.auth.clearTokens();
-            userData = null;
-          }
-        }
-
-        // Si tenemos un rol normalizado válido, obtener la ruta inicial
-        if (userData != null) {
-          initialRoute = role_utils.getInitialRoute(userData['rol'] as String);
-          debugPrint(
-              'Usuario autenticado con rol: ${userData['rol']}, redirigiendo a $initialRoute');
-        }
-      } else {
-        debugPrint('No se encontró un token válido, redirigiendo a login');
-      }
-    } else {
-      debugPrint('No se encontró un token válido, redirigiendo a login');
+      initialRoute = role_utils.login;
     }
   } else {
     debugPrint('No se encontró un token válido, redirigiendo a login');
@@ -206,6 +176,9 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(
+          create: (_) => LoginProvider(api: api),
+        ),
         ChangeNotifierProvider(create: (_) => VentasComputerProvider()),
         // Provider para paginación global
         ChangeNotifierProvider<PaginacionProvider>(

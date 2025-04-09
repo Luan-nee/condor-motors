@@ -227,32 +227,59 @@ class SelectorColabScreen extends StatelessWidget {
   // Método para realizar el cierre de sesión
   Future<void> _logout(BuildContext context) async {
     try {
-      // Limpiar tokens de autenticación
-      await app_main.api.authService.logout();
+      debugPrint('Iniciando proceso de cierre de sesión...');
 
-      // Limpiar tokens almacenados en TokenService
+      // 1. Limpiar datos de la API y tokens
+      await app_main.api.auth.logout();
       await app_main.api.auth.clearTokens();
 
-      // Desactivar la opción "Permanecer conectado" y eliminar credenciales auto-login
+      // 2. Limpiar todas las preferencias de autenticación
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('stay_logged_in', false);
-      await prefs.remove('username_auto');
-      await prefs.remove('password_auto');
+      await Future.wait([
+        prefs.setBool('stay_logged_in', false),
+        prefs.remove('username_auto'),
+        prefs.remove('password_auto'),
+        prefs.remove('remember_me'),
+        prefs.remove('username'),
+        prefs.remove('password'),
+      ]);
 
-      // Navegar a la pantalla de login
-      if (context.mounted) {
-        await Navigator.pushNamedAndRemoveUntil(
-            context, role_utils.login, (Route route) => false);
-      }
+      debugPrint('Sesión cerrada exitosamente');
+
+      // 3. Navegar al login y limpiar el stack de navegación
+      if (!context.mounted) return;
+
+      await Navigator.of(context).pushNamedAndRemoveUntil(
+        role_utils.login,
+        (Route<dynamic> route) => false,
+      );
     } catch (e) {
+      debugPrint('Error durante el cierre de sesión: $e');
+
       // Mostrar error si ocurre algún problema
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al cerrar sesión: $e'),
-            backgroundColor: Colors.red,
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cerrar sesión: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Reintentar',
+            textColor: Colors.white,
+            onPressed: () => _logout(context),
           ),
+        ),
+      );
+
+      // Intentar forzar la navegación al login en caso de error
+      try {
+        await Navigator.of(context).pushNamedAndRemoveUntil(
+          role_utils.login,
+          (Route<dynamic> route) => false,
         );
+      } catch (navError) {
+        debugPrint('Error al navegar al login: $navError');
       }
     }
   }

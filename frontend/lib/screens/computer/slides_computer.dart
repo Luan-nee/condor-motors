@@ -1,10 +1,12 @@
 import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/providers/computer/dash.computer.provider.dart';
 import 'package:condorsmotors/screens/computer/dashboard_computer.dart';
 import 'package:condorsmotors/screens/computer/proforma_computer.dart';
 import 'package:condorsmotors/screens/computer/ventas_computer.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SlidesComputerScreen extends StatefulWidget {
@@ -39,6 +41,12 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
         'icon': FontAwesomeIcons.cashRegister,
         'screen': const ProformaComputerScreen(),
         'description': 'Procesar ventas pendientes',
+      },
+      <String, dynamic>{
+        'title': 'Historial de Ventas',
+        'icon': FontAwesomeIcons.fileInvoiceDollar,
+        'screen': const VentasComputerScreen(),
+        'description': 'Ver y gestionar ventas realizadas',
       },
     ];
 
@@ -141,6 +149,8 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
           'screen': VentasComputerScreen(
               sucursalId: _sucursalId, nombreSucursal: _nombreSucursal),
           'description': 'Ver y gestionar ventas realizadas',
+          'badge':
+              true, // Indicador para mostrar que es una nueva funcionalidad
         },
       ];
     });
@@ -148,187 +158,175 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        children: <Widget>[
-          // Menú lateral
-          Container(
-            width: 250,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              border: Border(
-                right: BorderSide(
-                  color: Colors.white.withOpacity(0.1),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => DashboardComputerProvider()),
+      ],
+      child: Scaffold(
+        body: Row(
+          children: <Widget>[
+            // Menú lateral
+            Container(
+              width: 250,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                border: Border(
+                  right: BorderSide(
+                    color: Colors.white.withOpacity(0.1),
+                  ),
                 ),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(2, 0),
+                  ),
+                ],
               ),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(2, 0),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                // Logo y título
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              image: DecorationImage(
-                                image: AssetImage(
-                                    'assets/images/condor-motors-logo.webp'),
-                                fit: BoxFit.cover,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  // Logo y título
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Row(
+                          children: <Widget>[
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                image: DecorationImage(
+                                  image: AssetImage(
+                                      'assets/images/condor-motors-logo.webp'),
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Condor Motors',
-                            style: TextStyle(
-                              color: Color(0xFFE31E24),
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Condor Motors',
+                              style: TextStyle(
+                                color: Color(0xFFE31E24),
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      // Información de la sucursal
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE31E24).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
+                          ],
                         ),
-                        child: Row(
+                        const SizedBox(height: 8),
+                        // Información de la sucursal
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE31E24).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            children: <Widget>[
+                              const FaIcon(
+                                FontAwesomeIcons.store,
+                                color: Color(0xFFE31E24),
+                                size: 12,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _nombreSucursal,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        // Información del usuario
+                        Row(
                           children: <Widget>[
                             const FaIcon(
-                              FontAwesomeIcons.store,
-                              color: Color(0xFFE31E24),
+                              FontAwesomeIcons.user,
+                              color: Colors.white54,
                               size: 12,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                _nombreSucursal,
+                                _nombreUsuario,
                                 style: const TextStyle(
-                                  color: Colors.white,
+                                  color: Colors.white54,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.bold,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      // Información del usuario
-                      Row(
-                        children: <Widget>[
-                          const FaIcon(
-                            FontAwesomeIcons.user,
-                            color: Colors.white54,
-                            size: 12,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _nombreUsuario,
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 12,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Menú de opciones
-                ..._menuItems
-                    .asMap()
-                    .entries
-                    .map((MapEntry<int, Map<String, dynamic>> entry) {
-                  final int index = entry.key;
-                  final Map<String, dynamic> item = entry.value;
-                  return _buildMenuItem(
-                    icon: item['icon'] as IconData,
-                    text: item['title'] as String,
-                    description: item['description'] as String,
-                    isSelected: _selectedIndex == index,
-                    onTap: () => setState(() => _selectedIndex = index),
-                  );
-                }),
-
-                const Spacer(),
-
-                // Botón de salir
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      // 1. Limpiar tokens almacenados
-                      await api.auth.clearTokens();
-
-                      // 2. Desactivar la opción "Permanecer conectado"
-                      final SharedPreferences prefs =
-                          await SharedPreferences.getInstance();
-                      await prefs.setBool('stay_logged_in', false);
-                      await prefs.remove('username_auto');
-                      await prefs.remove('password_auto');
-
-                      // 3. Navegar a la pantalla de login
-                      if (!context.mounted) {
-                        return;
-                      }
-                      await Navigator.pushReplacementNamed(
-                          context, role_utils.login);
-                    },
-                    icon: const FaIcon(
-                      FontAwesomeIcons.rightFromBracket,
-                      color: Colors.white54,
-                      size: 18,
+                      ],
                     ),
-                    label: const Text(
-                      'Salir',
-                      style: TextStyle(
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Menú de opciones
+                  ..._menuItems
+                      .asMap()
+                      .entries
+                      .map((MapEntry<int, Map<String, dynamic>> entry) {
+                    final int index = entry.key;
+                    final Map<String, dynamic> item = entry.value;
+                    return _buildMenuItem(
+                      icon: item['icon'] as IconData,
+                      text: item['title'] as String,
+                      description: item['description'] as String,
+                      isSelected: _selectedIndex == index,
+                      onTap: () => setState(() => _selectedIndex = index),
+                    );
+                  }),
+
+                  const Spacer(),
+
+                  // Botón de salir
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: TextButton.icon(
+                      onPressed: () => _showLogoutDialog(context),
+                      icon: const FaIcon(
+                        FontAwesomeIcons.rightFromBracket,
                         color: Colors.white54,
+                        size: 18,
                       ),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                      label: const Text(
+                        'Salir',
+                        style: TextStyle(
+                          color: Colors.white54,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          // Contenido principal
-          Expanded(
-            child: _menuItems[_selectedIndex]['screen'] as Widget,
-          ),
-        ],
+            // Contenido principal
+            Expanded(
+              child: _menuItems[_selectedIndex]['screen'] as Widget,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -392,5 +390,105 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
         ),
       ),
     );
+  }
+
+  // Método para mostrar el diálogo de confirmación de cierre de sesión
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        backgroundColor: const Color(0xFF2D2D2D),
+        title: const Text(
+          'Cerrar Sesión',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          '¿Estás seguro de que deseas cerrar sesión?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE31E24),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => _handleLogout(context),
+            child: const Text('Cerrar Sesión'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Método para manejar el cierre de sesión
+  Future<void> _handleLogout(BuildContext context) async {
+    try {
+      debugPrint('Iniciando proceso de cierre de sesión...');
+
+      // 1. Obtener SharedPreferences primero para asegurar que podemos limpiar los datos
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      // 2. Intentar hacer logout en la API, pero no esperar por ello
+      api.auth.logout().catchError((dynamic error) {
+        debugPrint('Error en logout de API (ignorando): $error');
+      });
+
+      // 3. Limpiar tokens y datos de autenticación
+      await Future.wait([
+        api.auth.clearTokens(),
+        // Limpiar todas las preferencias de autenticación
+        prefs.setBool('stay_logged_in', false),
+        prefs.remove('username_auto'),
+        prefs.remove('password_auto'),
+        prefs.remove('remember_me'),
+        prefs.remove('username'),
+        prefs.remove('password'),
+        // Agregar cualquier otra preferencia que necesite ser limpiada
+        prefs.remove('last_sucursal'),
+        prefs.remove('user_data'),
+      ]);
+
+      debugPrint('Sesión cerrada exitosamente');
+
+      // 4. Navegar al login y limpiar el stack de navegación
+      if (!context.mounted) return;
+
+      await Navigator.of(context).pushNamedAndRemoveUntil(
+        role_utils.login,
+        (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      debugPrint('Error durante el cierre de sesión: $e');
+
+      // Intentar forzar la limpieza de datos críticos incluso si hubo error
+      try {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.clear(); // Limpiar todas las preferencias
+        await api.auth.clearTokens();
+      } catch (cleanupError) {
+        debugPrint('Error en limpieza de emergencia: $cleanupError');
+      }
+
+      if (!context.mounted) return;
+
+      // Mostrar error pero igual intentar navegar al login
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hubo un error, pero la sesión ha sido cerrada'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 4),
+        ),
+      );
+
+      // Forzar navegación al login independientemente del error
+      await Navigator.of(context).pushNamedAndRemoveUntil(
+        role_utils.login,
+        (Route<dynamic> route) => false,
+      );
+    }
   }
 }

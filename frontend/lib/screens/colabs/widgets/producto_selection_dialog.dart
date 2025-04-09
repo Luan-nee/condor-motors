@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/transferencias.model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -16,12 +17,21 @@ class ProductoSelectionDialog extends StatefulWidget {
   @override
   State<ProductoSelectionDialog> createState() =>
       _ProductoSelectionDialogState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(IterableProperty<DetalleProducto>(
+          'productosSeleccionados', productosSeleccionados))
+      ..add(StringProperty('sucursalId', sucursalId));
+  }
 }
 
 class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
   bool _isLoading = true;
   String? _error;
-  List<Producto> _productos = [];
+  final List<Producto> _productos = [];
   final TextEditingController _searchController = TextEditingController();
   final Map<int, int> _cantidades = {};
 
@@ -53,7 +63,9 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
 
   List<Producto> _getFilteredProductos() {
     final String query = _searchController.text.toLowerCase();
-    if (query.isEmpty) return _productos;
+    if (query.isEmpty) {
+      return _productos;
+    }
 
     return _productos
         .where((p) =>

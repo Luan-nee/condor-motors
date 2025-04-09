@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:condorsmotors/api/main.api.dart';
-import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -827,12 +826,20 @@ class AuthApi {
 
   /// Limpia los tokens y datos de usuario almacenados
   Future<void> clearTokens() async {
+    debugPrint('Limpiando tokens y datos de usuario...');
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await Future.wait([
       prefs.remove(_accessTokenKey),
       prefs.remove(_refreshTokenKey),
       prefs.remove(_userDataKey),
+      prefs.remove('remember_me'),
+      prefs.remove('username'),
+      prefs.remove('password'),
+      prefs.remove('username_auto'),
+      prefs.remove('password_auto'),
+      prefs.setBool('stay_logged_in', false),
     ]);
+    debugPrint('Tokens y datos de usuario limpiados correctamente');
   }
 
   /// Verifica si el token actual es válido con el backend
@@ -846,6 +853,24 @@ class AuthApi {
       return true;
     } catch (e) {
       debugPrint('Error verificando token: $e');
+
+      // Si el error contiene "Invalid or missing authorization token", consideramos que estamos deslogueados
+      if (e
+          .toString()
+          .toLowerCase()
+          .contains('invalid or missing authorization token')) {
+        debugPrint('Token inválido o faltante, usuario deslogueado');
+        await clearTokens(); // Limpiar tokens por seguridad
+        return false;
+      }
+
+      // Para otros tipos de errores, verificar si es un error de autorización
+      if (e is ApiException && (e.statusCode == 401 || e.statusCode == 403)) {
+        debugPrint('Error de autorización, limpiando tokens');
+        await clearTokens();
+        return false;
+      }
+
       return false;
     }
   }
@@ -994,15 +1019,13 @@ class UsuarioAutenticado {
 
   // Convertir a Map para almacenamiento o navegación
   Map<String, dynamic> toMap() {
-    final String rolNormalizado =
-        role_utils.normalizeRole(rolCuentaEmpleadoCodigo);
-    debugPrint(
-        'Convirtiendo rol de "$rolCuentaEmpleadoCodigo" a "$rolNormalizado"');
-
-    return <String, String>{
+    return <String, dynamic>{
       'id': id,
       'usuario': usuario,
-      'rol': rolNormalizado,
+      'rol': {
+        'codigo': rolCuentaEmpleadoCodigo.toLowerCase(),
+        'nombre': rolCuentaEmpleadoCodigo
+      },
       'rolId': rolCuentaEmpleadoId,
       'empleadoId': empleadoId,
       'sucursal': sucursal,
@@ -1037,7 +1060,8 @@ class UsuarioAutenticado {
       id: json['id']?.toString() ?? '',
       usuario: json['usuario'] ?? '',
       rolCuentaEmpleadoId: json['rolCuentaEmpleadoId']?.toString() ?? '',
-      rolCuentaEmpleadoCodigo: json['rolCuentaEmpleadoCodigo'] ?? '',
+      rolCuentaEmpleadoCodigo:
+          json['rolCuentaEmpleadoCodigo']?.toString().toLowerCase() ?? '',
       empleadoId: json['empleadoId']?.toString() ?? '',
       fechaCreacion: json['fechaCreacion'] != null
           ? DateTime.parse(json['fechaCreacion'])
@@ -1071,7 +1095,11 @@ class AuthService {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userIdKey, usuario.id);
     await prefs.setString(_usernameKey, usuario.usuario);
-    await prefs.setString(_userRoleKey, usuario.rolCuentaEmpleadoCodigo);
+
+    // Guardar el código del rol
+    final String rolCodigo = usuario.rolCuentaEmpleadoCodigo.toLowerCase();
+    await prefs.setString(_userRoleKey, rolCodigo);
+
     await prefs.setString(_userSucursalKey, usuario.sucursal);
     await prefs.setString(_userSucursalIdKey, usuario.sucursalId.toString());
   }
@@ -1080,18 +1108,22 @@ class AuthService {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? id = prefs.getString(_userIdKey);
     final String? username = prefs.getString(_usernameKey);
-    final String? role = prefs.getString(_userRoleKey);
+    final String? rolCodigo = prefs.getString(_userRoleKey);
     final String? sucursal = prefs.getString(_userSucursalKey);
     final String? sucursalId = prefs.getString(_userSucursalIdKey);
 
-    if (id == null || username == null || role == null) {
+    if (id == null || username == null || rolCodigo == null) {
       return null;
     }
 
     return <String, dynamic>{
       'id': id,
       'usuario': username,
-      'rol': role,
+      'rol': {
+        'codigo': rolCodigo,
+        'nombre':
+            rolCodigo // Por simplicidad, usamos el mismo código como nombre
+      },
       'sucursal': sucursal,
       'sucursalId': sucursalId,
     };

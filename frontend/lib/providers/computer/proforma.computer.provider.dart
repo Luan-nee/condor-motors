@@ -6,6 +6,7 @@ import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provider para gestionar el estado y lógica de negocio de las proformas
 /// en la versión de computadora de la aplicación.
@@ -13,51 +14,95 @@ class ProformaComputerProvider extends ChangeNotifier {
   int _currentPage = 1;
   String? _errorMessage;
   bool _hayNuevasProformas = false;
-  final int _intervaloActualizacion = 8; // Segundos entre actualizaciones
+  int _intervaloActualizacion = 8; // Segundos entre actualizaciones
   bool _isLoading = false;
+  bool _actualizacionAutomaticaActiva = true;
   Paginacion? _paginacion;
   List<Proforma> _proformas = [];
   Set<int> _proformasIds = {}; // Para seguimiento de nuevas proformas
   Stream<List<Proforma>>? _proformasStream;
   // Para streaming en tiempo real
   StreamController<List<Proforma>>? _proformasStreamController;
-
+  Timer? _actualizacionTimer;
   StreamSubscription<List<Proforma>>? _proformasSubscription;
   Proforma? _selectedProforma;
 
+  static const List<int> intervalosDisponibles = [8, 15, 30];
+  static const String actualizacionAutomaticaKey =
+      'proforma_actualizacion_automatica';
+
   @override
   void dispose() {
-    // Cancelar y cerrar streams al destruir el provider
     _cerrarStream();
+    _actualizacionTimer?.cancel();
     super.dispose();
   }
 
   // Getters
+  bool get actualizacionAutomaticaActiva => _actualizacionAutomaticaActiva;
   List<Proforma> get proformas => _proformas;
-
   Proforma? get selectedProforma => _selectedProforma;
-
   bool get isLoading => _isLoading;
-
   String? get errorMessage => _errorMessage;
-
   Paginacion? get paginacion => _paginacion;
-
   int get currentPage => _currentPage;
-
   int get intervaloActualizacion => _intervaloActualizacion;
-
   bool get hayNuevasProformas => _hayNuevasProformas;
-
   Stream<List<Proforma>>? get proformasStream => _proformasStream;
 
   /// Inicializa el provider con la configuración necesaria
   Future<void> initialize(int? sucursalId) async {
+    // Cargar estado de actualización automática
+    await _cargarEstadoActualizacionAutomatica();
+
     // Cargar proformas iniciales
     await loadProformas(sucursalId: sucursalId);
 
-    // Iniciar stream para actualización en tiempo real
-    _iniciarStreamProformas(sucursalId);
+    // Iniciar stream si la actualización automática está activa
+    if (_actualizacionAutomaticaActiva) {
+      _iniciarStreamProformas(sucursalId);
+    }
+  }
+
+  /// Carga el estado guardado de actualización automática
+  Future<void> _cargarEstadoActualizacionAutomatica() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      _actualizacionAutomaticaActiva =
+          prefs.getBool(actualizacionAutomaticaKey) ?? true;
+      notifyListeners();
+      Logger.info(
+          'Estado de actualización automática cargado: $_actualizacionAutomaticaActiva');
+    } catch (e) {
+      Logger.error('Error al cargar estado de actualización automática: $e');
+    }
+  }
+
+  /// Guarda el estado de actualización automática
+  Future<void> _guardarEstadoActualizacionAutomatica(bool estado) async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(actualizacionAutomaticaKey, estado);
+      Logger.info('Estado de actualización automática guardado: $estado');
+    } catch (e) {
+      Logger.error('Error al guardar estado de actualización automática: $e');
+    }
+  }
+
+  /// Cambia el estado de actualización automática
+  Future<void> toggleActualizacionAutomatica(int? sucursalId) async {
+    _actualizacionAutomaticaActiva = !_actualizacionAutomaticaActiva;
+    await _guardarEstadoActualizacionAutomatica(_actualizacionAutomaticaActiva);
+
+    if (_actualizacionAutomaticaActiva) {
+      reanudarActualizacionesEnTiempoReal(sucursalId);
+    } else {
+      pausarActualizacionesEnTiempoReal();
+      // Realizar una última actualización manual
+      await loadProformas(sucursalId: sucursalId);
+    }
+
+    notifyListeners();
   }
 
   /// Carga las proformas desde la API
@@ -375,6 +420,24 @@ class ProformaComputerProvider extends ChangeNotifier {
     }
   }
 
+  /// Cambia el intervalo de actualización y reinicia el stream si está activo
+  void setIntervaloActualizacion(int nuevoIntervalo, int? sucursalId) {
+    if (!intervalosDisponibles.contains(nuevoIntervalo)) {
+      return;
+    }
+
+    _intervaloActualizacion = nuevoIntervalo;
+
+    // Si hay un timer activo, reiniciar el stream con el nuevo intervalo
+    if (_actualizacionTimer != null) {
+      _iniciarStreamProformas(sucursalId);
+    }
+
+    notifyListeners();
+    Logger.info(
+        '⏱️ Intervalo de actualización cambiado a $_intervaloActualizacion segundos');
+  }
+
   /// Inicia un stream para actualización de proformas en tiempo real
   void _iniciarStreamProformas(int? sucursalId) {
     // Cerrar stream existente si hay uno
@@ -384,14 +447,17 @@ class ProformaComputerProvider extends ChangeNotifier {
     _proformasStreamController = StreamController<List<Proforma>>.broadcast();
     _proformasStream = _proformasStreamController?.stream;
 
-    // Generar eventos periódicos que emiten la lista actual de proformas
-    Stream.periodic(Duration(seconds: _intervaloActualizacion))
-        .asyncMap((_) => _fetchProformasRealTime(sucursalId))
-        .listen((proformas) {
-      if (!(_proformasStreamController?.isClosed ?? true)) {
+    // Usar Timer en lugar de Stream.periodic para mejor control
+    _actualizacionTimer = Timer.periodic(
+      Duration(seconds: _intervaloActualizacion),
+      (_) async {
+        if (_proformasStreamController?.isClosed ?? true) {
+          return;
+        }
+        final proformas = await _fetchProformasRealTime(sucursalId);
         _proformasStreamController?.add(proformas);
-      }
-    });
+      },
+    );
 
     // Suscribirse al stream para procesar nuevas proformas
     _proformasSubscription = _proformasStream?.listen((proformasActualizadas) {
@@ -404,34 +470,26 @@ class ProformaComputerProvider extends ChangeNotifier {
 
   /// Cierra el stream y las suscripciones actuales
   void _cerrarStream() {
+    _actualizacionTimer?.cancel();
+    _actualizacionTimer = null;
     _proformasSubscription?.cancel();
+    _proformasSubscription = null;
     _proformasStreamController?.close();
     _proformasStreamController = null;
     _proformasStream = null;
+    Logger.info('🔄 Stream de proformas cerrado completamente');
   }
 
   /// Pausa las actualizaciones en tiempo real
   void pausarActualizacionesEnTiempoReal() {
-    _proformasSubscription?.cancel();
-    _proformasSubscription = null;
-    Logger.info('🔄 Actualizaciones en tiempo real pausadas');
+    _cerrarStream();
+    Logger.info('🔄 Actualizaciones en tiempo real pausadas completamente');
   }
 
   /// Reanuda las actualizaciones en tiempo real
   void reanudarActualizacionesEnTiempoReal(int? sucursalId) {
-    // Si ya existe un stream controller pero no hay suscripción activa
-    if (_proformasStreamController != null && _proformasSubscription == null) {
-      _proformasSubscription =
-          _proformasStream?.listen((proformasActualizadas) {
-        _procesarProformasActualizadas(proformasActualizadas, sucursalId);
-      });
-
-      Logger.info('🔄 Actualizaciones en tiempo real reanudadas');
-    } else {
-      // Si no hay stream controller, iniciar todo el proceso
-      _iniciarStreamProformas(sucursalId);
-    }
-
+    _iniciarStreamProformas(sucursalId);
+    Logger.info('🔄 Actualizaciones en tiempo real reanudadas');
     // Cargar proformas inmediatamente
     loadProformas(sucursalId: sucursalId);
   }

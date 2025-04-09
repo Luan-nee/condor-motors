@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -554,7 +554,6 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: color.withOpacity(0.3),
-          width: 1,
         ),
       ),
       child: Row(

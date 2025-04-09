@@ -26,10 +26,11 @@ class TransferenciaFormColab extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(ObjectFlagProperty<
-        Function(int sucursalDestinoId,
-            List<DetalleProducto> productos)>.has('onSave', onSave));
-    properties.add(StringProperty('sucursalId', sucursalId));
+    properties
+      ..add(ObjectFlagProperty<
+          Function(int sucursalDestinoId,
+              List<DetalleProducto> productos)>.has('onSave', onSave))
+      ..add(StringProperty('sucursalId', sucursalId));
   }
 }
 
@@ -376,9 +377,9 @@ class _ProductSelectionDialog extends StatefulWidget {
     super.debugFillProperties(properties);
     properties.add(StringProperty('sucursalId', sucursalId));
     properties
-        .add(DiagnosticsProperty<ProductosApi>('productosApi', productosApi));
-    properties.add(IterableProperty<DetalleProducto>(
-        'productosSeleccionados', productosSeleccionados));
+      ..add(DiagnosticsProperty<ProductosApi>('productosApi', productosApi))
+      ..add(IterableProperty<DetalleProducto>(
+          'productosSeleccionados', productosSeleccionados));
   }
 }
 
