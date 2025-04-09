@@ -898,7 +898,9 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
   }
 
   String _formatearFecha(DateTime? fecha) {
-    if (fecha == null) return 'No disponible';
+    if (fecha == null) {
+      return 'No disponible';
+    }
 
     final List<String> meses = <String>[
       'Ene',

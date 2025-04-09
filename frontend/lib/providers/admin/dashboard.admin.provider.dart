@@ -1,9 +1,6 @@
-import 'dart:math' as math;
-
 import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
-import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:flutter/material.dart';
 
@@ -15,29 +12,47 @@ class DashboardProvider extends ChangeNotifier {
 
   // Datos del dashboard
   List<Sucursal> _sucursales = [];
-  List<Producto> _productos = [];
+  List<dynamic> _productos = [];
+  List<Map<String, dynamic>> _productosStockBajoDetalle = [];
   double _totalVentas = 0;
   double _totalGanancias = 0;
+  double _ventasHoy = 0;
+  double _ingresosHoy = 0;
   int _totalEmpleados = 0;
+  int _productosStockBajo = 0;
   int _productosAgotados = 0;
+  final int _productosLiquidacion = 0;
+  List<VentaReciente> _ventasRecientes = [];
 
   // Datos para gráficos
   final List<double> _ventasMensuales = [];
 
   // Mapa para agrupar productos por sucursal
-  Map<String, List<Producto>> _productosPorSucursal = {};
+  Map<String, List<dynamic>> _productosPorSucursal = {};
+
+  // Estadísticas por sucursal
+  final Map<String, Map<String, dynamic>> _estadisticasSucursales = {};
 
   // Getters
   bool get isLoading => _isLoading;
   String get sucursalSeleccionadaId => _sucursalSeleccionadaId;
   List<Sucursal> get sucursales => _sucursales;
-  List<Producto> get productos => _productos;
+  List<dynamic> get productos => _productos;
+  List<Map<String, dynamic>> get productosStockBajoDetalle =>
+      _productosStockBajoDetalle;
   double get totalVentas => _totalVentas;
   double get totalGanancias => _totalGanancias;
+  double get ventasHoy => _ventasHoy;
+  double get ingresosHoy => _ingresosHoy;
   int get totalEmpleados => _totalEmpleados;
+  int get productosStockBajo => _productosStockBajo;
   int get productosAgotados => _productosAgotados;
-  Map<String, List<Producto>> get productosPorSucursal => _productosPorSucursal;
+  int get productosLiquidacion => _productosLiquidacion;
+  Map<String, List<dynamic>> get productosPorSucursal => _productosPorSucursal;
   List<double> get ventasMensuales => _ventasMensuales;
+  List<VentaReciente> get ventasRecientes => _ventasRecientes;
+  Map<String, Map<String, dynamic>> get estadisticasSucursales =>
+      _estadisticasSucursales;
 
   /// Inicializa el provider cargando todos los datos necesarios
   Future<void> inicializar() async {
@@ -80,7 +95,7 @@ class DashboardProvider extends ChangeNotifier {
         await Future.wait([
           _loadProductos(),
           _loadEmpleados(),
-          _loadVentasStats(),
+          _loadEstadisticas(),
         ]);
       }
     } catch (e) {
@@ -94,7 +109,7 @@ class DashboardProvider extends ChangeNotifier {
   Future<void> _loadProductos() async {
     try {
       // Mapa para organizar productos por sucursal
-      final Map<String, List<Producto>> productosBySucursal = {};
+      final Map<String, List<dynamic>> productosBySucursal = {};
 
       // Inicializar listas vacías para cada sucursal
       for (Sucursal sucursal in _sucursales) {
@@ -102,7 +117,7 @@ class DashboardProvider extends ChangeNotifier {
       }
 
       // Cargar productos para la sucursal seleccionada primero
-      final PaginatedResponse<Producto> paginatedProductos =
+      final PaginatedResponse<dynamic> paginatedProductos =
           await api.productos.getProductos(
         sucursalId: _sucursalSeleccionadaId,
         pageSize: 100, // Aumentar límite para tener más datos precisos
@@ -111,7 +126,7 @@ class DashboardProvider extends ChangeNotifier {
       int agotados = 0;
 
       // Procesar los datos de productos de la sucursal seleccionada
-      for (Producto producto in paginatedProductos.items) {
+      for (dynamic producto in paginatedProductos.items) {
         if (producto.stock <= 0) {
           agotados++;
         }
@@ -144,10 +159,10 @@ class DashboardProvider extends ChangeNotifier {
   }
 
   /// Carga productos para una sucursal específica
-  Future<void> _loadProductosPorSucursal(Sucursal sucursal,
-      Map<String, List<Producto>> productosBySucursal) async {
+  Future<void> _loadProductosPorSucursal(
+      Sucursal sucursal, Map<String, List<dynamic>> productosBySucursal) async {
     try {
-      final PaginatedResponse<Producto> sucProducts =
+      final PaginatedResponse<dynamic> sucProducts =
           await api.productos.getProductos(
         sucursalId: sucursal.id.toString(),
         pageSize: 100,
@@ -170,32 +185,83 @@ class DashboardProvider extends ChangeNotifier {
     }
   }
 
-  /// Carga estadísticas de ventas (simulado)
-  Future<void> _loadVentasStats() async {
+  /// Carga estadísticas de ventas y productos
+  Future<void> _loadEstadisticas() async {
     try {
-      _ventasMensuales.clear();
-      final math.Random random = math.Random();
+      // Cargar productos con stock bajo para cada sucursal
+      _productosStockBajoDetalle = [];
+      for (final sucursal in _sucursales) {
+        try {
+          final stockBajoResponse =
+              await api.productos.getProductosConStockBajo(
+            sucursalId: sucursal.id.toString(),
+            pageSize: 100,
+            useCache: false,
+          );
 
-      final double baseVentas = 3500.0;
-      final double maxFluctuacion = 800.0;
-      final double tendenciaCrecimiento = 300.0;
-
-      for (int i = 0; i < 6; i++) {
-        final double ventaMes = baseVentas +
-            (tendenciaCrecimiento * i) +
-            (random.nextDouble() * maxFluctuacion - maxFluctuacion / 2);
-        _ventasMensuales.add(ventaMes);
+          for (final producto in stockBajoResponse.items) {
+            _productosStockBajoDetalle.add({
+              'sucursalId': sucursal.id.toString(),
+              'sucursalNombre': sucursal.nombre,
+              'productoId': producto.id,
+              'productoNombre': producto.nombre,
+              'stock': producto.stock,
+              'stockMinimo': producto.stockMinimo,
+            });
+          }
+        } catch (e) {
+          debugPrint(
+              'Error al cargar productos con stock bajo para sucursal ${sucursal.id}: $e');
+        }
       }
 
-      _totalVentas = baseVentas +
-          (tendenciaCrecimiento * 6) +
-          (random.nextDouble() * maxFluctuacion);
-      _ventasMensuales.add(_totalVentas);
+      final resumen = await api.estadisticas.getResumenEstadisticas(
+        useCache: false,
+        forceRefresh: true,
+      );
 
-      _totalGanancias = _totalVentas * 0.3;
-      notifyListeners();
+      if (resumen['status'] == 'success' && resumen['data'] != null) {
+        final data = resumen['data'] as Map<String, dynamic>;
+
+        // Procesar estadísticas de productos
+        _productos = data['productos'] as List<dynamic>? ?? [];
+        _productosStockBajo = data['productos_stock_bajo'] as int? ?? 0;
+        _productosAgotados = data['productos_agotados'] as int? ?? 0;
+
+        // Procesar estadísticas de ventas
+        _totalVentas = (data['total_ventas'] as num?)?.toDouble() ?? 0.0;
+        _ventasHoy = (data['ventas_hoy'] as num?)?.toDouble() ?? 0.0;
+        _totalGanancias = _totalVentas * 0.30; // 30% de margen
+        _ingresosHoy = _ventasHoy * 0.30;
+
+        // Procesar ventas recientes
+        final List<dynamic> ventasData =
+            data['ventas_recientes'] as List<dynamic>? ?? [];
+        _ventasRecientes = ventasData
+            .map((venta) =>
+                VentaReciente.fromJson(venta as Map<String, dynamic>))
+            .toList();
+
+        // Actualizar empleados
+        _totalEmpleados = data['total_empleados'] as int? ?? 0;
+
+        // Procesar estadísticas por sucursal
+        if (data['sucursales'] != null) {
+          final List<dynamic> sucursalesStats =
+              data['sucursales'] as List<dynamic>;
+          for (final sucursalStat in sucursalesStats) {
+            final String sucursalId = sucursalStat['id'].toString();
+            _estadisticasSucursales[sucursalId] = {
+              'stockBajo': int.parse(sucursalStat['stockBajo'].toString()),
+              'liquidacion': int.parse(sucursalStat['liquidacion'].toString()),
+            };
+          }
+        }
+
+        notifyListeners();
+      }
     } catch (e) {
-      debugPrint('Error cargando estadísticas de ventas: $e');
+      debugPrint('Error al cargar estadísticas: $e');
     }
   }
 
@@ -216,16 +282,23 @@ class DashboardProvider extends ChangeNotifier {
     final double ultimoMes = _ventasMensuales.last;
     final double penultimoMes = _ventasMensuales[_ventasMensuales.length - 2];
 
+    if (penultimoMes == 0) {
+      return "N/A";
+    }
+
     final double crecimiento =
         ((ultimoMes - penultimoMes) / penultimoMes) * 100;
-
     return "${crecimiento.toStringAsFixed(1)}%";
   }
 
-  /// Proyecta las ventas para el próximo mes basado en la tendencia
+  /// Proyecta las ventas para el próximo mes basado en la tendencia actual
   double getProyeccionVentas() {
-    if (_ventasMensuales.length < 2) {
-      return _totalVentas;
+    if (_ventasMensuales.isEmpty) {
+      return 0;
+    }
+
+    if (_ventasMensuales.length == 1) {
+      return _ventasMensuales.first;
     }
 
     // Usamos una proyección lineal simple basada en los últimos dos meses
@@ -233,8 +306,8 @@ class DashboardProvider extends ChangeNotifier {
     final double penultimoMes = _ventasMensuales[_ventasMensuales.length - 2];
     final double tendencia = ultimoMes - penultimoMes;
 
-    // Proyección con un poco de optimismo (+10%)
-    return ultimoMes + tendencia * 1.1;
+    // Proyección conservadora
+    return ultimoMes + (tendencia > 0 ? tendencia : 0);
   }
 
   /// Cambia la sucursal seleccionada y recarga los datos
@@ -247,7 +320,7 @@ class DashboardProvider extends ChangeNotifier {
       try {
         await Future.wait([
           _loadProductos(),
-          _loadVentasStats(),
+          _loadEstadisticas(),
         ]);
       } finally {
         _setLoading(false);
@@ -289,4 +362,30 @@ class DashboardItemInfo {
     required this.color,
     required this.bgColor,
   });
+}
+
+class VentaReciente {
+  final String fecha;
+  final String factura;
+  final String cliente;
+  final double monto;
+  final String estado;
+
+  VentaReciente({
+    required this.fecha,
+    required this.factura,
+    required this.cliente,
+    required this.monto,
+    required this.estado,
+  });
+
+  factory VentaReciente.fromJson(Map<String, dynamic> json) {
+    return VentaReciente(
+      fecha: json['fecha'] ?? '',
+      factura: json['factura'] ?? '',
+      cliente: json['cliente'] ?? '',
+      monto: (json['monto'] ?? 0).toDouble(),
+      estado: json['estado'] ?? 'Pendiente',
+    );
+  }
 }

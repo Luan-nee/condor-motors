@@ -1,6 +1,6 @@
-import 'package:condorsmotors/api/protected/movimientos.api.dart';
+import 'package:condorsmotors/api/protected/transferencias.api.dart';
 import 'package:condorsmotors/main.dart' show api;
-import 'package:condorsmotors/models/movimiento.model.dart';
+import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:flutter/material.dart';
 
 // Definición de la clase MovimientoStock para manejar los datos
@@ -26,7 +26,7 @@ class MovimientoStock {
       id: json['id'] ?? '',
       localOrigenId: json['local_origen_id'] ?? '',
       localDestinoId: json['local_destino_id'] ?? '',
-      estado: json['estado'] ?? 'PENDIENTE',
+      estado: json['estado'] ?? EstadoTransferencia.pedido.codigo,
       fechaCreacion: json['fecha_creacion'] != null
           ? DateTime.parse(json['fecha_creacion'])
           : DateTime.now(),
@@ -74,15 +74,15 @@ class NotificacionMovimiento extends StatefulWidget {
 }
 
 class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
-  late final MovimientosApi _movimientosApi;
+  late final TransferenciasInventarioApi _transferenciasApi;
   bool _isLoading = false;
-  List<MovimientoStock> _notificaciones = <MovimientoStock>[];
+  List<TransferenciaInventario> _notificaciones = <TransferenciaInventario>[];
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _movimientosApi = api.movimientos;
+    _transferenciasApi = api.transferencias;
     _cargarNotificaciones();
   }
 
@@ -90,30 +90,27 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
     if (!mounted) {
       return;
     }
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      final List<Movimiento> response = await _movimientosApi.getMovimientos(
-        estado: EstadosMovimiento.pendiente,
+      final List<TransferenciaInventario> response =
+          await _transferenciasApi.getTransferencias(
+        estado: EstadoTransferencia.pedido.codigo,
       );
 
       if (!mounted) {
         return;
       }
 
-      final List<MovimientoStock> movimientosList = <MovimientoStock>[];
-      for (Movimiento item in response) {
-        movimientosList.add(MovimientoStock.fromJson(item.toJson()));
-      }
-
       setState(() {
-        _notificaciones = movimientosList
-            .where((MovimientoStock m) =>
-                m.estado == EstadosMovimiento.pendiente ||
-                m.estado == EstadosMovimiento.preparado)
+        _notificaciones = response
+            .where((t) =>
+                t.estado == EstadoTransferencia.pedido ||
+                t.estado == EstadoTransferencia.enviado)
             .toList();
         _isLoading = false;
       });
@@ -121,14 +118,12 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
       if (!mounted) {
         return;
       }
+
       setState(() {
         _error = e.toString();
         _isLoading = false;
       });
 
-      if (!mounted) {
-        return;
-      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
@@ -143,15 +138,16 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
     }
   }
 
-  List<MovimientoStock> get _movimientosPendientes => _notificaciones
-      .where((MovimientoStock m) =>
-          m.estado == EstadosMovimiento.pendiente ||
-          m.estado == EstadosMovimiento.preparado)
+  List<TransferenciaInventario> get _transferenciasEnProceso => _notificaciones
+      .where((t) =>
+          t.estado == EstadoTransferencia.pedido ||
+          t.estado == EstadoTransferencia.enviado)
       .toList();
 
-  List<MovimientoStock> get _movimientosParaAprobar => _notificaciones
-      .where((MovimientoStock m) => m.estado == EstadosMovimiento.recibido)
-      .toList();
+  List<TransferenciaInventario> get _transferenciasParaAprobar =>
+      _notificaciones
+          .where((t) => t.estado == EstadoTransferencia.recibido)
+          .toList();
 
   @override
   Widget build(BuildContext context) {
@@ -202,20 +198,21 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
             child: Text('No hay notificaciones pendientes'),
           )
         else ...<PopupMenuEntry<String>>[
-          if (_movimientosPendientes.isNotEmpty) ...<PopupMenuEntry<String>>[
+          if (_transferenciasEnProceso.isNotEmpty) ...<PopupMenuEntry<String>>[
             const PopupMenuItem(
               enabled: false,
               child: Text(
-                'Pendientes',
+                'En Proceso',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
-            ..._movimientosPendientes.map((MovimientoStock m) => PopupMenuItem(
-                  child: _construirItemNotificacion(m),
-                  onTap: () => _mostrarDetallesMovimiento(context, m),
+            ..._transferenciasEnProceso.map((t) => PopupMenuItem(
+                  child: _construirItemNotificacion(t),
+                  onTap: () => _mostrarDetallesTransferencia(context, t),
                 )),
           ],
-          if (_movimientosParaAprobar.isNotEmpty) ...<PopupMenuEntry<String>>[
+          if (_transferenciasParaAprobar
+              .isNotEmpty) ...<PopupMenuEntry<String>>[
             const PopupMenuItem(
               enabled: false,
               child: Text(
@@ -223,9 +220,9 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
-            ..._movimientosParaAprobar.map((MovimientoStock m) => PopupMenuItem(
-                  child: _construirItemNotificacion(m, paraAprobar: true),
-                  onTap: () => _mostrarDetallesMovimiento(context, m),
+            ..._transferenciasParaAprobar.map((t) => PopupMenuItem(
+                  child: _construirItemNotificacion(t, paraAprobar: true),
+                  onTap: () => _mostrarDetallesTransferencia(context, t),
                 )),
           ],
         ],
@@ -244,7 +241,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
     );
   }
 
-  Widget _construirItemNotificacion(MovimientoStock movimiento,
+  Widget _construirItemNotificacion(TransferenciaInventario transferencia,
       {bool paraAprobar = false}) {
     final Color color =
         paraAprobar ? const Color(0xFF43A047) : const Color(0xFFD32F2F);
@@ -282,8 +279,8 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
               children: <Widget>[
                 Text(
                   paraAprobar
-                      ? 'Movimiento para aprobar'
-                      : movimiento.estado == EstadosMovimiento.pendiente
+                      ? 'Transferencia para aprobar'
+                      : transferencia.estado == EstadoTransferencia.pedido
                           ? 'Nueva solicitud de productos'
                           : 'Productos listos para envío',
                   style: const TextStyle(
@@ -293,16 +290,17 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Detalles: ${movimiento.detalles.length} productos',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF757575),
+                if (transferencia.productos != null)
+                  Text(
+                    'Detalles: ${transferencia.productos!.length} productos',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF757575),
+                    ),
                   ),
-                ),
                 Text(
-                  'De: Local #${movimiento.localOrigenId} → A: Local #${movimiento.localDestinoId}',
+                  'De: ${transferencia.nombreSucursalOrigen} → A: ${transferencia.nombreSucursalDestino}',
                   style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFF757575),
@@ -316,13 +314,13 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
     );
   }
 
-  void _mostrarDetallesMovimiento(
-      BuildContext context, MovimientoStock movimiento) {
+  void _mostrarDetallesTransferencia(
+      BuildContext context, TransferenciaInventario transferencia) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
         title: Text(
-          movimiento.estado == EstadosMovimiento.pendiente
+          transferencia.estado == EstadoTransferencia.pedido
               ? 'Nueva Solicitud de Productos'
               : 'Productos Listos para Envío',
         ),
@@ -330,13 +328,13 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text('Detalles: ${movimiento.detalles.length} productos'),
-            Text('Origen: Local #${movimiento.localOrigenId}'),
-            Text('Destino: Local #${movimiento.localDestinoId}'),
-            Text('Estado: ${movimiento.estado}'),
-            Text(
-              'Fecha: ${_formatearFecha(movimiento.fechaCreacion)}',
-            ),
+            if (transferencia.productos != null)
+              Text('Detalles: ${transferencia.productos!.length} productos'),
+            Text('Origen: ${transferencia.nombreSucursalOrigen}'),
+            Text('Destino: ${transferencia.nombreSucursalDestino}'),
+            Text('Estado: ${transferencia.estado.nombre}'),
+            if (transferencia.salidaOrigen != null)
+              Text('Fecha: ${_formatearFecha(transferencia.salidaOrigen!)}'),
           ],
         ),
         actions: <Widget>[
@@ -344,23 +342,20 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cerrar'),
           ),
-          if (movimiento.estado == EstadosMovimiento.pendiente)
+          if (transferencia.estado == EstadoTransferencia.pedido)
             ElevatedButton(
               onPressed: () async {
-                // Guardar una referencia al contexto del diálogo antes de la operación asíncrona
                 final BuildContext dialogContextCopy = dialogContext;
 
                 try {
-                  await _movimientosApi.updateMovimiento(
-                    movimiento.id,
-                    <String, dynamic>{'estado': EstadosMovimiento.preparado},
+                  await _transferenciasApi.enviarTransferencia(
+                    transferencia.id.toString(),
                   );
 
                   if (!mounted) {
                     return;
                   }
 
-                  // Usar la referencia guardada del contexto
                   if (dialogContextCopy.mounted) {
                     Navigator.of(dialogContextCopy).pop();
                   }
@@ -371,7 +366,6 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
                     return;
                   }
 
-                  // Usar la referencia guardada del contexto
                   if (dialogContextCopy.mounted) {
                     ScaffoldMessenger.of(dialogContextCopy).showSnackBar(
                       SnackBar(
@@ -382,7 +376,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
                   }
                 }
               },
-              child: const Text('Marcar como Preparado'),
+              child: const Text('Marcar Como Enviado'),
             ),
         ],
       ),

@@ -1,7 +1,7 @@
 // Importamos la variable global api
-import 'package:condorsmotors/models/movimiento.model.dart';
-import 'package:condorsmotors/providers/admin/movimiento.admin.provider.dart';
-import 'package:condorsmotors/screens/admin/widgets/movimiento/movimiento_detail_dialog.dart'; // Importamos el nuevo widget unificado
+import 'package:condorsmotors/models/transferencias.model.dart';
+import 'package:condorsmotors/providers/admin/transferencias.admin.provider.dart';
+import 'package:condorsmotors/screens/admin/widgets/movimiento/transferencia_detail_dialog.dart'; // Importamos el nuevo widget unificado
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
@@ -34,10 +34,10 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
       return;
     }
 
-    final MovimientoProvider movimientoProvider =
-        Provider.of<MovimientoProvider>(context, listen: false);
+    final TransferenciasProvider transferenciasProvider =
+        Provider.of<TransferenciasProvider>(context, listen: false);
 
-    await movimientoProvider.cargarMovimientos(
+    await transferenciasProvider.cargarTransferencias(
       sucursalId: _filtroSucursal,
       estado: _filtroEstado,
       fechaInicio: _fechaInicio,
@@ -46,10 +46,10 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
     );
 
     // Si hay error, mostrar snackbar
-    if (movimientoProvider.errorMensaje != null && mounted) {
+    if (transferenciasProvider.errorMensaje != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(movimientoProvider.errorMensaje!),
+          content: Text(transferenciasProvider.errorMensaje!),
           backgroundColor: Colors.red,
         ),
       );
@@ -58,8 +58,8 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<MovimientoProvider>(
-        builder: (context, movimientoProvider, child) {
+    return Consumer<TransferenciasProvider>(
+        builder: (context, transferenciasProvider, child) {
       return Scaffold(
         body: Padding(
           padding: const EdgeInsets.all(24),
@@ -128,7 +128,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                                 const DropdownMenuItem(
                                     value: 'Todos',
                                     child: Text('Todos los estados')),
-                                ...movimientoProvider
+                                ...transferenciasProvider
                                     .obtenerEstadosDetalle()
                                     .entries
                                     .map(
@@ -171,7 +171,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
               const SizedBox(height: 32),
 
               // Indicador de carga o error
-              if (movimientoProvider.cargando)
+              if (transferenciasProvider.cargando)
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(20),
@@ -180,7 +180,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                     ),
                   ),
                 )
-              else if (movimientoProvider.errorMensaje != null)
+              else if (transferenciasProvider.errorMensaje != null)
                 Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -189,7 +189,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                           color: Colors.red, size: 48),
                       const SizedBox(height: 16),
                       Text(
-                        movimientoProvider.errorMensaje!,
+                        transferenciasProvider.errorMensaje!,
                         style: const TextStyle(color: Colors.white),
                         textAlign: TextAlign.center,
                       ),
@@ -204,7 +204,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                     ],
                   ),
                 )
-              else if (movimientoProvider.movimientos.isEmpty)
+              else if (transferenciasProvider.transferencias.isEmpty)
                 Expanded(
                   child: Center(
                     child: Column(
@@ -353,147 +353,164 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                           ),
 
                           // Filas de movimientos
-                          ...movimientoProvider.movimientos.map((Movimiento
-                                  movimiento) =>
-                              InkWell(
-                                // Eliminamos el onTap para no abrir al hacer clic en cualquier parte de la fila
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    border: Border(
-                                      bottom: BorderSide(
-                                        color: Colors.white.withOpacity(0.1),
-                                      ),
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 12, horizontal: 20),
-                                  child: Row(
-                                    children: <Widget>[
-                                      // Fecha solicitada
-                                      Expanded(
-                                        flex: 15,
-                                        child: Row(
-                                          children: <Widget>[
-                                            Container(
-                                              width: 32,
-                                              height: 32,
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF2D2D2D),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: const Center(
-                                                child: FaIcon(
-                                                  FontAwesomeIcons.calendar,
-                                                  color: Color(0xFFE31E24),
-                                                  size: 14,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Text(
-                                              _formatFecha(
-                                                  movimiento.salidaOrigen),
-                                              style: const TextStyle(
-                                                  color: Colors.white),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // ID
-                                      Expanded(
-                                        flex: 15,
-                                        child: Row(
-                                          children: <Widget>[
-                                            Container(
-                                              width: 32,
-                                              height: 32,
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF2D2D2D),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: const Center(
-                                                child: FaIcon(
-                                                  FontAwesomeIcons.calendar,
-                                                  color: Color(0xFFE31E24),
-                                                  size: 14,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Text(
-                                              _formatFecha(
-                                                  movimiento.llegadaDestino),
-                                              style: const TextStyle(
-                                                  color: Colors.white),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Origen
-                                      Expanded(
-                                        flex: 20,
-                                        child: Text(
-                                          movimiento.nombreSucursalOrigen,
-                                          style: const TextStyle(
-                                              color: Colors.white),
-                                        ),
-                                      ),
-                                      // Destino
-                                      Expanded(
-                                        flex: 20,
-                                        child: Text(
-                                          movimiento.nombreSucursalDestino,
-                                          style: const TextStyle(
-                                              color: Colors.white),
-                                        ),
-                                      ),
-                                      // Estado
-                                      Expanded(
-                                        flex: 15,
-                                        child:
-                                            _buildEstadoCell(movimiento.estado),
-                                      ),
-                                      // Columna de acciones
-                                      SizedBox(
-                                        width: 60,
-                                        child: Center(
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF222222),
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                              border: Border.all(
-                                                color: const Color(0xFFE31E24)
-                                                    .withOpacity(0.2),
-                                              ),
-                                            ),
-                                            child: IconButton(
-                                              onPressed: () =>
-                                                  _mostrarDetalleMovimiento(
-                                                      movimiento),
-                                              icon: const FaIcon(
-                                                FontAwesomeIcons
-                                                    .magnifyingGlass,
-                                                color: Color(0xFFE31E24),
-                                                size: 14,
-                                              ),
-                                              tooltip: 'Ver detalles',
-                                              constraints: const BoxConstraints(
-                                                minWidth: 36,
-                                                minHeight: 36,
-                                              ),
-                                              padding: EdgeInsets.zero,
-                                              splashRadius: 18,
-                                            ),
+                          ...transferenciasProvider.transferencias.map(
+                              (TransferenciaInventario transferencia) =>
+                                  InkWell(
+                                    // Eliminamos el onTap para no abrir al hacer clic en cualquier parte de la fila
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color:
+                                                Colors.white.withOpacity(0.1),
                                           ),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                              )),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12, horizontal: 20),
+                                      child: Row(
+                                        children: <Widget>[
+                                          // Fecha solicitada
+                                          Expanded(
+                                            flex: 15,
+                                            child: Row(
+                                              children: <Widget>[
+                                                Container(
+                                                  width: 32,
+                                                  height: 32,
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        const Color(0xFF2D2D2D),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                  ),
+                                                  child: const Center(
+                                                    child: FaIcon(
+                                                      FontAwesomeIcons.calendar,
+                                                      color: Color(0xFFE31E24),
+                                                      size: 14,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Text(
+                                                  _formatFecha(transferencia
+                                                      .salidaOrigen),
+                                                  style: const TextStyle(
+                                                      color: Colors.white),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          // ID
+                                          Expanded(
+                                            flex: 15,
+                                            child: Row(
+                                              children: <Widget>[
+                                                Container(
+                                                  width: 32,
+                                                  height: 32,
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        const Color(0xFF2D2D2D),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                  ),
+                                                  child: const Center(
+                                                    child: FaIcon(
+                                                      FontAwesomeIcons.calendar,
+                                                      color: Color(0xFFE31E24),
+                                                      size: 14,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Text(
+                                                  _formatFecha(transferencia
+                                                      .llegadaDestino),
+                                                  style: const TextStyle(
+                                                      color: Colors.white),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          // Origen
+                                          Expanded(
+                                            flex: 20,
+                                            child: Text(
+                                              transferencia
+                                                      .nombreSucursalOrigen ??
+                                                  'N/A',
+                                              style: TextStyle(
+                                                color: transferencia
+                                                            .nombreSucursalOrigen !=
+                                                        null
+                                                    ? Colors.white
+                                                    : Colors.white
+                                                        .withOpacity(0.5),
+                                              ),
+                                            ),
+                                          ),
+                                          // Destino
+                                          Expanded(
+                                            flex: 20,
+                                            child: Text(
+                                              transferencia
+                                                  .nombreSucursalDestino,
+                                              style: const TextStyle(
+                                                  color: Colors.white),
+                                            ),
+                                          ),
+                                          // Estado
+                                          Expanded(
+                                            flex: 15,
+                                            child: _buildEstadoCell(
+                                                transferencia.estado.codigo),
+                                          ),
+                                          // Columna de acciones
+                                          SizedBox(
+                                            width: 60,
+                                            child: Center(
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      const Color(0xFF222222),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                  border: Border.all(
+                                                    color:
+                                                        const Color(0xFFE31E24)
+                                                            .withOpacity(0.2),
+                                                  ),
+                                                ),
+                                                child: IconButton(
+                                                  onPressed: () =>
+                                                      _mostrarDetalleMovimiento(
+                                                          transferencia),
+                                                  icon: const FaIcon(
+                                                    FontAwesomeIcons
+                                                        .magnifyingGlass,
+                                                    color: Color(0xFFE31E24),
+                                                    size: 14,
+                                                  ),
+                                                  tooltip: 'Ver detalles',
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                    minWidth: 36,
+                                                    minHeight: 36,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                  splashRadius: 18,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )),
                         ],
                       ),
                     ),
@@ -507,20 +524,20 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
   }
 
   // Función para mostrar el detalle de un movimiento
-  void _mostrarDetalleMovimiento(Movimiento movimiento) async {
+  void _mostrarDetalleMovimiento(TransferenciaInventario transferencia) async {
     // Verificar si estamos montados
     if (!mounted) {
       return;
     }
 
     debugPrint(
-        '🔍 Iniciando visualización de detalles para movimiento #${movimiento.id}');
+        '🔍 Iniciando visualización de detalles para transferencia #${transferencia.id}');
 
     // Usamos el nuevo widget que maneja internamente los estados
     await showDialog(
       context: context,
       builder: (BuildContext context) {
-        return MovimientoDetailDialog(movimiento: movimiento);
+        return TransferenciaDetailDialog(transferencia: transferencia);
       },
     );
 
@@ -540,28 +557,22 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
   }
 
   Widget _buildEstadoCell(String estado) {
-    final MovimientoProvider movimientoProvider =
-        Provider.of<MovimientoProvider>(context, listen: false);
+    final TransferenciasProvider transferenciasProvider =
+        Provider.of<TransferenciasProvider>(context, listen: false);
     final Map<String, dynamic> estiloEstado =
-        movimientoProvider.obtenerEstiloEstado(estado);
-
-    final Color backgroundColor = estiloEstado['backgroundColor'];
-    final Color textColor = estiloEstado['textColor'];
-    final IconData iconData = estiloEstado['iconData'];
-    final String tooltipText = estiloEstado['tooltipText'];
-    final String estadoDisplay = estiloEstado['estadoDisplay'];
+        transferenciasProvider.obtenerEstiloEstado(estado);
 
     return Container(
       padding: const EdgeInsets.only(left: 8, right: 8),
       child: Tooltip(
-        message: tooltipText,
+        message: estiloEstado['tooltipText'],
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: backgroundColor,
+            color: estiloEstado['backgroundColor'],
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: textColor.withOpacity(0.4),
+              color: (estiloEstado['textColor'] as Color).withOpacity(0.4),
             ),
           ),
           child: Row(
@@ -569,15 +580,15 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               FaIcon(
-                iconData,
-                color: textColor,
+                estiloEstado['iconData'],
+                color: estiloEstado['textColor'],
                 size: 12,
               ),
               const SizedBox(width: 8),
               Text(
-                estadoDisplay,
+                estiloEstado['estadoDisplay'],
                 style: TextStyle(
-                  color: textColor,
+                  color: estiloEstado['textColor'],
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),

@@ -132,320 +132,233 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
 
       return Scaffold(
         backgroundColor: const Color(0xFF121212),
-        appBar: AppBar(
-          title: const Text('Inventario'),
-          backgroundColor: const Color(0xFF1E1E1E),
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          shadowColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-          actions: <Widget>[
-            ElevatedButton.icon(
-              icon: const FaIcon(FontAwesomeIcons.arrowsRotate,
-                  size: 16, color: Colors.white),
-              label: const Text('Actualizar stock'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0075FF),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-              ),
-              onPressed: () {
-                if (stockProvider.mostrarVistaConsolidada) {
-                  stockProvider.cargarProductosTodasSucursales();
-                } else {
-                  stockProvider.cargarSucursales();
-                  if (stockProvider.selectedSucursalId.isNotEmpty) {
-                    stockProvider
-                        .cargarProductos(stockProvider.selectedSucursalId);
-                  }
-                }
-              },
-            ),
-            const SizedBox(width: 16),
-          ],
-        ),
         body: Row(
           children: <Widget>[
             // Panel principal (75% del ancho)
             Expanded(
               flex: 75,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    // Título y estadísticas
-                    Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  // Header con título y acciones
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.white.withOpacity(0.1),
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: <Widget>[
-                        // Título
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: <Widget>[
-                              Row(
-                                children: <Widget>[
-                                  const FaIcon(
-                                    FontAwesomeIcons.warehouse,
-                                    size: 18,
-                                    color: Color(0xFFE31E24),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    stockProvider.mostrarVistaConsolidada
-                                        ? 'Inventario Consolidado - Todas las Sucursales'
-                                        : (stockProvider
-                                                .selectedSucursalId.isEmpty
-                                            ? 'Inventario General'
-                                            : 'Inventario de ${stockProvider.selectedSucursalNombre}'),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                              const FaIcon(
+                                FontAwesomeIcons.warehouse,
+                                color: Colors.white,
+                                size: 20,
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(left: 28),
-                                child: Text(
-                                  stockProvider.mostrarVistaConsolidada
-                                      ? 'Productos con problemas de stock en todas las sucursales'
-                                      : (stockProvider
-                                              .selectedSucursalId.isEmpty
-                                          ? 'Seleccione una sucursal para ver su inventario'
-                                          : 'Gestión de stock y productos'),
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
-                                    fontSize: 14,
-                                  ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'INVENTARIO',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
+                              if (stockProvider.selectedSucursal !=
+                                  null) ...<Widget>[
+                                const Text(
+                                  ' / ',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    color: Colors.white54,
+                                  ),
+                                ),
+                                Flexible(
+                                  child: Text(
+                                    stockProvider.selectedSucursal!.nombre,
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      color: Colors.white.withOpacity(0.7),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
-
-                        // Barra de búsqueda (solo en vista individual)
-                        if (stockProvider.selectedSucursalId.isNotEmpty &&
-                            !stockProvider.mostrarVistaConsolidada)
-                          SizedBox(
-                            width: 300,
-                            child: TextField(
-                              controller: _searchController,
-                              decoration: InputDecoration(
-                                hintText: 'Buscar productos...',
-                                hintStyle: TextStyle(
-                                    color: Colors.white.withOpacity(0.4)),
-                                filled: true,
-                                fillColor: const Color(0xFF232323),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(),
-                              ),
-                              style: const TextStyle(color: Colors.white),
-                              onChanged: stockProvider.actualizarBusqueda,
-                            ),
-                          ),
-
-                        const SizedBox(width: 16),
                       ],
                     ),
+                  ),
 
-                    // Filtros rápidos para el estado del stock (solo en vista individual)
-                    if (stockProvider.selectedSucursalId.isNotEmpty &&
-                        stockProvider.productosFiltrados.isNotEmpty &&
-                        !stockProvider.mostrarVistaConsolidada) ...<Widget>[
-                      const SizedBox(height: 16),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: <Widget>[
-                            const Text(
-                              'Filtrar por: ',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            _buildFilterChip(
-                              'Disponibles',
-                              FontAwesomeIcons.check,
-                              Colors.green,
-                              stockProvider.filtroEstadoStock ==
-                                  stock_provider.StockStatus.disponible,
-                              () => stockProvider.filtrarPorEstadoStock(
-                                  stock_provider.StockStatus.disponible),
-                            ),
-                            const SizedBox(width: 8),
-                            _buildFilterChip(
-                              'Stock bajo',
-                              FontAwesomeIcons.triangleExclamation,
-                              const Color(0xFFE31E24),
-                              stockProvider.filtroEstadoStock ==
-                                  stock_provider.StockStatus.stockBajo,
-                              () => stockProvider.filtrarPorEstadoStock(
-                                  stock_provider.StockStatus.stockBajo),
-                            ),
-                            const SizedBox(width: 8),
-                            _buildFilterChip(
-                              'Agotados',
-                              FontAwesomeIcons.ban,
-                              Colors.red.shade800,
-                              stockProvider.filtroEstadoStock ==
-                                  stock_provider.StockStatus.agotado,
-                              () => stockProvider.filtrarPorEstadoStock(
-                                  stock_provider.StockStatus.agotado),
-                            ),
-                            const SizedBox(width: 16),
-                            if (stockProvider.filtroEstadoStock != null)
-                              IconButton(
-                                icon: const FaIcon(
-                                  FontAwesomeIcons.filterCircleXmark,
-                                  color: Colors.white70,
-                                  size: 16,
-                                ),
-                                onPressed: () =>
-                                    stockProvider.filtrarPorEstadoStock(null),
-                                tooltip: 'Limpiar filtros',
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-
-                    // Botones de acción rápida en vista consolidada
-                    if (stockProvider.mostrarVistaConsolidada &&
-                        stockProvider
-                            .productosBajoStock.isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 16),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: <Widget>[
-                            const Text(
-                              'Acciones rápidas: ',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            _buildActionButton(
-                              'Ver solo agotados',
-                              FontAwesomeIcons.ban,
-                              Colors.red.shade800,
-                              () => stockProvider.filtrarConsolidadoPorEstado(
-                                  stock_provider.StockStatus.agotado),
-                            ),
-                            const SizedBox(width: 8),
-                            _buildActionButton(
-                              'Ver solo stock bajo',
-                              FontAwesomeIcons.triangleExclamation,
-                              const Color(0xFFE31E24),
-                              () => stockProvider.filtrarConsolidadoPorEstado(
-                                  stock_provider.StockStatus.stockBajo),
-                            ),
-                            const SizedBox(width: 8),
-                            _buildActionButton(
-                              'Reiniciar filtros',
-                              FontAwesomeIcons.arrowsRotate,
-                              Colors.blue,
-                              stockProvider.reiniciarFiltrosConsolidados,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-
-                    // Resumen del inventario
-                    if (productosAMostrar.isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 16),
-                      InventarioResumen(
-                        productos: productosAMostrar,
-                        sucursalNombre: stockProvider.mostrarVistaConsolidada
-                            ? 'Todas las Sucursales'
-                            : stockProvider.selectedSucursalNombre,
-                      ),
-                    ],
-
-                    // Tabla de productos
-                    const SizedBox(height: 16),
-                    Expanded(
+                  // Contenido principal
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Expanded(
-                            child: stockProvider.mostrarVistaConsolidada
-                                ? TableProducts(
-                                    selectedSucursalId:
-                                        'todas', // Valor especial para indicar vista consolidada
-                                    productos: stockProvider.productosBajoStock,
-                                    isLoading: stockProvider.isLoadingProductos,
-                                    error: stockProvider.errorProductos,
-                                    onRetry: stockProvider.limpiarFiltros,
-                                    onVerDetalles: _verDetallesProducto,
-                                    onVerStockDetalles: _verStockDetalles,
-                                    // Datos adicionales para la vista consolidada
-                                    stockPorSucursal:
-                                        stockProvider.stockPorSucursal,
-                                    sucursales: stockProvider.sucursales,
-                                    esVistaGlobal: true,
-                                    filtrosActivos:
-                                        true, // La vista global siempre tiene filtros implícitos
-                                  )
-                                : TableProducts(
-                                    selectedSucursalId:
-                                        stockProvider.selectedSucursalId,
-                                    productos: stockProvider.productosFiltrados,
-                                    isLoading: stockProvider.isLoadingProductos,
-                                    error: stockProvider.errorProductos,
-                                    onRetry: stockProvider
-                                            .selectedSucursalId.isNotEmpty
-                                        ? stockProvider.limpiarFiltros
-                                        : null,
-                                    onEditProducto: _editarProducto,
-                                    onVerDetalles: _verDetallesProducto,
-                                    onVerStockDetalles: _verStockDetalles,
-                                    onSort: stockProvider.ordenarPor,
-                                    sortBy: stockProvider.sortBy,
-                                    sortOrder: stockProvider.order,
-                                    // Indicar si hay filtros aplicados en esta vista
-                                    filtrosActivos: stockProvider
-                                            .searchQuery.isNotEmpty ||
-                                        stockProvider.filtroEstadoStock != null,
+                          // Filtros rápidos para el estado del stock
+                          if (stockProvider.selectedSucursalId.isNotEmpty &&
+                              stockProvider.productosFiltrados.isNotEmpty &&
+                              !stockProvider
+                                  .mostrarVistaConsolidada) ...<Widget>[
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: <Widget>[
+                                  const Text(
+                                    'Filtrar por: ',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                    ),
                                   ),
-                          ),
-
-                          // Paginador (solo vista individual)
-                          if (!stockProvider.mostrarVistaConsolidada &&
-                              stockProvider.paginatedProductos != null &&
-                              stockProvider.paginatedProductos!.paginacion
-                                      .totalPages >
-                                  0)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 16.0),
-                              child: Center(
-                                child: Paginador(
-                                  paginacion: stockProvider
-                                      .paginatedProductos!.paginacion,
-                                  onPageChanged: stockProvider.cambiarPagina,
-                                  onPageSizeChanged:
-                                      stockProvider.cambiarTamanioPagina,
-                                  backgroundColor: const Color(0xFF2D2D2D),
-                                  textColor: Colors.white,
-                                  accentColor: const Color(0xFFE31E24),
-                                ),
+                                  const SizedBox(width: 8),
+                                  _buildFilterChip(
+                                    'Disponibles',
+                                    FontAwesomeIcons.check,
+                                    Colors.green,
+                                    stockProvider.filtroEstadoStock ==
+                                        stock_provider.StockStatus.disponible,
+                                    () => stockProvider.filtrarPorEstadoStock(
+                                        stock_provider.StockStatus.disponible),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildFilterChip(
+                                    'Stock bajo',
+                                    FontAwesomeIcons.triangleExclamation,
+                                    const Color(0xFFE31E24),
+                                    stockProvider.filtroEstadoStock ==
+                                        stock_provider.StockStatus.stockBajo,
+                                    () => stockProvider.filtrarPorEstadoStock(
+                                        stock_provider.StockStatus.stockBajo),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildFilterChip(
+                                    'Agotados',
+                                    FontAwesomeIcons.ban,
+                                    Colors.red.shade800,
+                                    stockProvider.filtroEstadoStock ==
+                                        stock_provider.StockStatus.agotado,
+                                    () => stockProvider.filtrarPorEstadoStock(
+                                        stock_provider.StockStatus.agotado),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  if (stockProvider.filtroEstadoStock != null)
+                                    IconButton(
+                                      icon: const FaIcon(
+                                        FontAwesomeIcons.filterCircleXmark,
+                                        color: Colors.white70,
+                                        size: 16,
+                                      ),
+                                      onPressed: () => stockProvider
+                                          .filtrarPorEstadoStock(null),
+                                      tooltip: 'Limpiar filtros',
+                                    ),
+                                ],
                               ),
                             ),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // Resumen del inventario
+                          if (productosAMostrar.isNotEmpty) ...<Widget>[
+                            InventarioResumen(
+                              productos: productosAMostrar,
+                              sucursalNombre:
+                                  stockProvider.mostrarVistaConsolidada
+                                      ? 'Todas las Sucursales'
+                                      : stockProvider.selectedSucursalNombre,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // Tabla de productos
+                          Expanded(
+                            child: Column(
+                              children: <Widget>[
+                                Expanded(
+                                  child: stockProvider.mostrarVistaConsolidada
+                                      ? TableProducts(
+                                          selectedSucursalId: 'todas',
+                                          productos:
+                                              stockProvider.productosBajoStock,
+                                          isLoading:
+                                              stockProvider.isLoadingProductos,
+                                          error: stockProvider.errorProductos,
+                                          onRetry: stockProvider.limpiarFiltros,
+                                          onVerDetalles: _verDetallesProducto,
+                                          onVerStockDetalles: _verStockDetalles,
+                                          stockPorSucursal:
+                                              stockProvider.stockPorSucursal,
+                                          sucursales: stockProvider.sucursales,
+                                          esVistaGlobal: true,
+                                          filtrosActivos: true,
+                                        )
+                                      : TableProducts(
+                                          selectedSucursalId:
+                                              stockProvider.selectedSucursalId,
+                                          productos:
+                                              stockProvider.productosFiltrados,
+                                          isLoading:
+                                              stockProvider.isLoadingProductos,
+                                          error: stockProvider.errorProductos,
+                                          onRetry: stockProvider
+                                                  .selectedSucursalId.isNotEmpty
+                                              ? stockProvider.limpiarFiltros
+                                              : null,
+                                          onEditProducto: _editarProducto,
+                                          onVerDetalles: _verDetallesProducto,
+                                          onVerStockDetalles: _verStockDetalles,
+                                          onSort: stockProvider.ordenarPor,
+                                          sortBy: stockProvider.sortBy,
+                                          sortOrder: stockProvider.order,
+                                          filtrosActivos: stockProvider
+                                                  .searchQuery.isNotEmpty ||
+                                              stockProvider.filtroEstadoStock !=
+                                                  null,
+                                        ),
+                                ),
+
+                                // Paginador
+                                if (!stockProvider.mostrarVistaConsolidada &&
+                                    stockProvider.paginatedProductos != null &&
+                                    stockProvider.paginatedProductos!.paginacion
+                                            .totalPages >
+                                        0)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 16.0),
+                                    child: Center(
+                                      child: Paginador(
+                                        paginacion: stockProvider
+                                            .paginatedProductos!.paginacion,
+                                        onPageChanged:
+                                            stockProvider.cambiarPagina,
+                                        onPageSizeChanged:
+                                            stockProvider.cambiarTamanioPagina,
+                                        backgroundColor:
+                                            const Color(0xFF2D2D2D),
+                                        textColor: Colors.white,
+                                        accentColor: const Color(0xFFE31E24),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 

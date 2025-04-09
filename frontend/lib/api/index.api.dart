@@ -16,7 +16,7 @@ class CondorMotorsApi {
   late final EmpleadosApi empleados;
   late final MarcasApi marcas;
   late final VentasApi ventas;
-  late final MovimientosApi movimientos;
+  late final TransferenciasInventarioApi transferencias;
   late final ProductosApi productos;
   late final StocksApi stocks;
   late final CategoriasApi categorias;
@@ -25,6 +25,7 @@ class CondorMotorsApi {
   late final ColoresApi colores;
   late final ClientesApi clientes;
   late final DocumentoApi documentos;
+  late final EstadisticasApi estadisticas;
 
   /// Inicializa todas las APIs con la URL base
   CondorMotorsApi({required String baseUrl}) {
@@ -43,7 +44,7 @@ class CondorMotorsApi {
       empleados = EmpleadosApi(_apiClient);
       marcas = MarcasApi(_apiClient);
       ventas = VentasApi(_apiClient);
-      movimientos = MovimientosApi(_apiClient);
+      transferencias = TransferenciasInventarioApi(_apiClient);
       productos = ProductosApi(_apiClient);
       stocks = StocksApi(_apiClient);
       categorias = CategoriasApi(_apiClient);
@@ -52,6 +53,7 @@ class CondorMotorsApi {
       colores = ColoresApi(apiClient: _apiClient);
       clientes = ClientesApi(_apiClient);
       documentos = DocumentoApi(_apiClient);
+      estadisticas = EstadisticasApi(_apiClient);
 
       debugPrint('APIs inicializadas correctamente');
     } catch (e) {

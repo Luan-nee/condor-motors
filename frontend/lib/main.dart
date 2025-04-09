@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/components/proforma_notification.dart';
 import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
+import 'package:condorsmotors/providers/colabs/index.colab.provider.dart';
 import 'package:condorsmotors/providers/computer/index.computer.provider.dart';
 import 'package:condorsmotors/providers/paginacion.provider.dart';
 import 'package:condorsmotors/routes/routes.dart' as routes;
@@ -23,12 +24,13 @@ final ProformaNotification proformaNotification = ProformaNotification();
 
 // Lista de servidores posibles para intentar conectarse
 final List<String> _serverUrls = <String>[
-  'http://192.168.1.66:3000/api', // IP del servidor en la red local
   'http://192.168.1.42:3000/api', // IP de tu PC en la red WiFi local
   'http://192.168.1.42:3000/api', // IP principal
   'http://localhost:3000/api', // Servidor local
   'http://127.0.0.1:3000/api', // Localhost alternativo
   'http://10.0.2.2:3000/api', // Emulador Android
+  'https://fseh2hb1d1h2ra5822cdvo.top/api', // En Produccion
+  'https://fseh2hb1d1h2ra5822cdvo.top', // En Produccion
 ];
 
 // Función para inicializar la API global
@@ -219,8 +221,8 @@ void main() async {
         ChangeNotifierProvider<EmpleadoProvider>(
           create: (_) => EmpleadoProvider(),
         ),
-        ChangeNotifierProvider<MovimientoProvider>(
-          create: (_) => MovimientoProvider(),
+        ChangeNotifierProvider<TransferenciasProvider>(
+          create: (_) => TransferenciasProvider(api.transferencias),
         ),
         ChangeNotifierProvider<ProductoProvider>(
           create: (_) => ProductoProvider(),
@@ -237,6 +239,10 @@ void main() async {
         // Providers para módulo de computadora
         ChangeNotifierProvider<ProformaComputerProvider>(
           create: (_) => ProformaComputerProvider(),
+        ),
+        // Provider para transferencias de colaboradores
+        ChangeNotifierProvider<TransferenciasColabProvider>(
+          create: (_) => TransferenciasColabProvider(),
         ),
         // Aquí puedes agregar más providers según sea necesario
       ],
@@ -297,8 +303,8 @@ class CondorMotorsApp extends StatelessWidget {
         ChangeNotifierProvider<EmpleadoProvider>(
           create: (_) => EmpleadoProvider(),
         ),
-        ChangeNotifierProvider<MovimientoProvider>(
-          create: (_) => MovimientoProvider(),
+        ChangeNotifierProvider<TransferenciasProvider>(
+          create: (_) => TransferenciasProvider(api.transferencias),
         ),
         ChangeNotifierProvider<ProductoProvider>(
           create: (_) => ProductoProvider(),
@@ -322,6 +328,10 @@ class CondorMotorsApp extends StatelessWidget {
         // Providers para módulo de computadora
         ChangeNotifierProvider<ProformaComputerProvider>(
           create: (_) => ProformaComputerProvider(),
+        ),
+        // Provider para transferencias de colaboradores
+        ChangeNotifierProvider<TransferenciasColabProvider>(
+          create: (_) => TransferenciasColabProvider(),
         ),
         // Aquí puedes agregar más providers según sea necesario
       ],

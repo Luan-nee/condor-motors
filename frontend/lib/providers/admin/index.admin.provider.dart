@@ -6,10 +6,10 @@ export 'categorias.admin.provider.dart';
 export 'dashboard.admin.provider.dart';
 export 'empleado.admin.provider.dart';
 export 'marcas.admin.provider.dart';
-export 'movimiento.admin.provider.dart';
 export 'producto.admin.provider.dart';
 export 'stock.admin.provider.dart';
 export 'sucursal.admin.provider.dart';
+export 'transferencias.admin.provider.dart';
 export 'ventas.admin.provider.dart';
 
 // TODO: Agregar exportaciones de otros providers cuando se creen

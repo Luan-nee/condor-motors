@@ -94,7 +94,9 @@ class ProformaNotification {
 
   /// Verifica si debemos limitar la frecuencia de notificaciones
   bool _deberiaLimitarNotificaciones() {
-    if (_lastNotificationTime == null) return false;
+    if (_lastNotificationTime == null) {
+      return false;
+    }
 
     final ahora = DateTime.now();
     final diferencia = ahora.difference(_lastNotificationTime!).inSeconds;

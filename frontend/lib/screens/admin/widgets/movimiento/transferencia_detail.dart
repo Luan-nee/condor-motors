@@ -1,5 +1,5 @@
-import 'package:condorsmotors/models/movimiento.model.dart';
-import 'package:condorsmotors/providers/admin/movimiento.admin.provider.dart';
+import 'package:condorsmotors/models/transferencias.model.dart';
+import 'package:condorsmotors/providers/admin/transferencias.admin.provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -8,28 +8,30 @@ import 'package:provider/provider.dart';
 
 /// Widget para mostrar el detalle de un movimiento de inventario
 /// Este widget maneja internamente los estados de carga, error y visualización
-class MovimientoDetailDialog extends StatefulWidget {
-  final Movimiento movimiento;
+class TransferenciaDetailDialog extends StatefulWidget {
+  final TransferenciaInventario transferencia;
 
-  const MovimientoDetailDialog({
+  const TransferenciaDetailDialog({
     super.key,
-    required this.movimiento,
+    required this.transferencia,
   });
 
   @override
-  State<MovimientoDetailDialog> createState() => _MovimientoDetailDialogState();
+  State<TransferenciaDetailDialog> createState() =>
+      _TransferenciaDetailDialogState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<Movimiento>('movimiento', movimiento));
+    properties.add(DiagnosticsProperty<TransferenciaInventario>(
+        'transferencia', transferencia));
   }
 }
 
-class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
+class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
   bool _isLoading = true;
   String? _errorMessage;
-  Movimiento? _detalleMovimiento;
+  TransferenciaInventario? _detalleTransferencia;
   int _retryCount = 0;
 
   @override
@@ -51,16 +53,16 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
 
     try {
       debugPrint(
-          '⏳ [MovimientoDetailDialog] Cargando detalles del movimiento #${widget.movimiento.id}');
+          '⏳ [TransferenciaDetailDialog] Cargando detalles de la transferencia #${widget.transferencia.id}');
 
       // Cargar detalles usando el provider
-      final MovimientoProvider movimientoProvider =
-          Provider.of<MovimientoProvider>(context, listen: false);
-      final String id = widget.movimiento.id.toString();
+      final TransferenciasProvider transferenciasProvider =
+          Provider.of<TransferenciasProvider>(context, listen: false);
+      final String id = widget.transferencia.id.toString();
 
       // Obtener detalle del movimiento usando el provider
-      final Movimiento detalleMovimiento =
-          await movimientoProvider.obtenerDetalleMovimiento(
+      final TransferenciaInventario detalleTransferencia =
+          await transferenciasProvider.obtenerDetalleTransferencia(
         id,
       );
 
@@ -69,16 +71,17 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       }
 
       setState(() {
-        _detalleMovimiento = detalleMovimiento;
+        _detalleTransferencia = detalleTransferencia;
         _isLoading = false;
       });
 
-      debugPrint('✅ [MovimientoDetailDialog] Detalles cargados correctamente');
       debugPrint(
-          '📦 [MovimientoDetailDialog] Productos: ${_detalleMovimiento?.productos?.length ?? 0}');
+          '✅ [TransferenciaDetailDialog] Detalles cargados correctamente');
+      debugPrint(
+          '📦 [TransferenciaDetailDialog] Productos: ${_detalleTransferencia?.productos?.length ?? 0}');
     } catch (e, stackTrace) {
-      debugPrint('❌ [MovimientoDetailDialog] Error al cargar detalles: $e');
-      debugPrint('📋 [MovimientoDetailDialog] StackTrace: $stackTrace');
+      debugPrint('❌ [TransferenciaDetailDialog] Error al cargar detalles: $e');
+      debugPrint('📋 [TransferenciaDetailDialog] StackTrace: $stackTrace');
 
       if (!mounted) {
         return;
@@ -86,7 +89,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
 
       // Si hay un error, usamos los datos que ya tenemos
       setState(() {
-        _detalleMovimiento = widget.movimiento;
+        _detalleTransferencia = widget.transferencia;
         _isLoading = false;
         _errorMessage = e.toString();
       });
@@ -135,7 +138,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
         ),
         const SizedBox(height: 24),
         Text(
-          'Cargando detalles de la transferencia #${widget.movimiento.id}',
+          'Cargando detalles de la transferencia #${widget.transferencia.id}',
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: Colors.white,
@@ -172,7 +175,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
         ),
         const SizedBox(height: 12),
         Text(
-          'No se pudieron cargar los detalles completos de la transferencia #${widget.movimiento.id}.',
+          'No se pudieron cargar los detalles completos de la transferencia #${widget.transferencia.id}.',
           textAlign: TextAlign.center,
           style: const TextStyle(color: Colors.white),
         ),
@@ -212,7 +215,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
               onPressed: () {
                 // Usar los datos básicos del movimiento sin productos detallados
                 setState(() {
-                  _detalleMovimiento = widget.movimiento;
+                  _detalleTransferencia = widget.transferencia;
                   _errorMessage = null;
                 });
               },
@@ -230,7 +233,8 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   // Widget para mostrar los detalles del movimiento
   Widget _buildDetailContent() {
     // Movimiento a mostrar (ya sea el detallado o el original)
-    final Movimiento movimiento = _detalleMovimiento ?? widget.movimiento;
+    final TransferenciaInventario transferencia =
+        _detalleTransferencia ?? widget.transferencia;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -267,18 +271,18 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
           ),
 
         // Información general
-        _buildGeneralInfo(movimiento),
+        _buildGeneralInfo(transferencia),
         const SizedBox(height: 16),
 
-        _buildSucursalesInfo(movimiento),
+        _buildSucursalesInfo(transferencia),
         const SizedBox(height: 24),
 
         // Productos
-        _buildProductosSection(movimiento),
+        _buildProductosSection(transferencia),
         const SizedBox(height: 24),
 
         // Observaciones
-        _buildObservacionesSection(movimiento),
+        _buildObservacionesSection(transferencia),
 
         const SizedBox(height: 24),
 
@@ -319,27 +323,27 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   }
 
   // Información general del movimiento
-  Widget _buildGeneralInfo(Movimiento movimiento) {
+  Widget _buildGeneralInfo(TransferenciaInventario transferencia) {
     return Row(
       children: <Widget>[
         Expanded(
           child: _buildInfoItem(
             'ID',
-            movimiento.id.toString(),
+            transferencia.id.toString(),
             FontAwesomeIcons.hashtag,
           ),
         ),
         Expanded(
           child: _buildInfoItem(
             'Fecha Creación',
-            _formatFecha(movimiento.salidaOrigen),
+            _formatFecha(transferencia.salidaOrigen),
             FontAwesomeIcons.calendar,
           ),
         ),
         Expanded(
           child: _buildInfoItem(
             'Estado',
-            movimiento.estado,
+            transferencia.estado.nombre,
             FontAwesomeIcons.circleInfo,
           ),
         ),
@@ -348,20 +352,20 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   }
 
   // Información de sucursales
-  Widget _buildSucursalesInfo(Movimiento movimiento) {
+  Widget _buildSucursalesInfo(TransferenciaInventario transferencia) {
     return Row(
       children: <Widget>[
         Expanded(
           child: _buildInfoItem(
             'Sucursal Origen',
-            movimiento.nombreSucursalOrigen,
+            transferencia.nombreSucursalOrigen ?? 'Sin información',
             FontAwesomeIcons.building,
           ),
         ),
         Expanded(
           child: _buildInfoItem(
             'Sucursal Destino',
-            movimiento.nombreSucursalDestino,
+            transferencia.nombreSucursalDestino,
             FontAwesomeIcons.building,
           ),
         ),
@@ -370,7 +374,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   }
 
   // Sección de productos
-  Widget _buildProductosSection(Movimiento movimiento) {
+  Widget _buildProductosSection(TransferenciaInventario transferencia) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -383,8 +387,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
           ),
         ),
         const SizedBox(height: 8),
-        if (movimiento.productos != null && movimiento.productos!.isNotEmpty)
-          _buildProductosList(movimiento)
+        if (transferencia.productos != null &&
+            transferencia.productos!.isNotEmpty)
+          _buildProductosList(transferencia)
         else
           const Text(
             'No hay productos disponibles para mostrar en esta transferencia',
@@ -395,10 +400,10 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   }
 
   // Lista de productos
-  Widget _buildProductosList(Movimiento movimiento) {
+  Widget _buildProductosList(TransferenciaInventario transferencia) {
     // Debug para verificar qué contiene productos
     debugPrint(
-        '📦 Productos en el movimiento: ${movimiento.productos?.length ?? 0}');
+        '📦 Productos en el movimiento: ${transferencia.productos?.length ?? 0}');
 
     return Container(
       decoration: BoxDecoration(
@@ -412,9 +417,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
         ),
         child: ListView.builder(
           shrinkWrap: true,
-          itemCount: movimiento.productos!.length,
+          itemCount: transferencia.productos!.length,
           itemBuilder: (BuildContext context, int index) {
-            final DetalleProducto producto = movimiento.productos![index];
+            final DetalleProducto producto = transferencia.productos![index];
             return ListTile(
               title: Text(
                 producto.nombre,
@@ -441,7 +446,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   }
 
   // Sección de observaciones
-  Widget _buildObservacionesSection(Movimiento movimiento) {
+  Widget _buildObservacionesSection(TransferenciaInventario transferencia) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -462,7 +467,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
-            movimiento.observaciones ?? 'Sin observaciones',
+            transferencia.observaciones ?? 'Sin observaciones',
             style: const TextStyle(color: Colors.white),
           ),
         ),

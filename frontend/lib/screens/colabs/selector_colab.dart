@@ -1,7 +1,7 @@
 import 'package:condorsmotors/main.dart' as app_main;
 import 'package:condorsmotors/providers/colabs/ventas.colab.provider.dart';
-import 'package:condorsmotors/screens/colabs/movimiento_colab.dart';
 import 'package:condorsmotors/screens/colabs/productos_colab.dart';
+import 'package:condorsmotors/screens/colabs/transferencias_colab.dart';
 import 'package:condorsmotors/screens/colabs/ventas_colab.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/foundation.dart';
@@ -185,7 +185,7 @@ class SelectorColabScreen extends StatelessWidget {
                       'Movimientos',
                       'Solicitar productos',
                       FontAwesomeIcons.truck,
-                      const MovimientosColabScreen(),
+                      const TransferenciasColabScreen(),
                       const Color(0xFFE31E24),
                       'Gestionar traslados entre sucursales',
                     ),

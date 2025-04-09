@@ -11,11 +11,11 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   http: ^1.3.0
-  dio: ^5.4.1  # Cliente HTTP moderno y potente
+  dio: ^5.4.1 # Cliente HTTP moderno y potente
   mobile_scanner: ^6.0.7
   shared_preferences: ^2.5.2
   logging: ^1.3.0
-  google_fonts: ^6.2.1  # Usamos Source Sans 3 como fuente principal
+  google_fonts: ^6.2.1 # Usamos Source Sans 3 como fuente principal
   local_auth: ^2.3.0
   flutter_secure_storage: ^9.2.4
   font_awesome_flutter: ^10.8.0
@@ -23,9 +23,9 @@ dependencies:
   intl: ^0.20.2
   msix: ^3.16.8
   dart_code_metrics: ^4.19.2
-  win_toast: ^0.3.0  # Notificaciones nativas en Windows 10/11
+  win_toast: ^0.3.0 # Notificaciones nativas en Windows 10/11
   provider: ^6.1.4
-  fl_chart: 0.36.4
+  fl_chart: ^0.66.2
   url_launcher: ^6.3.1
   pdf: ^3.11.3
   printing: ^5.14.2
@@ -81,7 +81,7 @@ msix_config:
 # 1. Para crear un APK de depuración (debug):
 #    flutter build apk --debug
 #    El APK se generará en build/app/outputs/flutter-apk/app-debug.apk
-# 
+#
 # 2. Para crear un APK de producción (release):
 #    flutter build apk --release
 #    El APK se generará en build/app/outputs/flutter-apk/app-release.apk
@@ -134,7 +134,7 @@ flutter:
         - asset: assets/fonts/source_sans_3/SourceSans3-SemiBoldItalic.ttf
           weight: 600
           style: italic
-    
+
     - family: Apercu
       fonts:
         - asset: assets/fonts/apercu_regular_pro.otf

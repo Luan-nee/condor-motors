@@ -1,5 +1,5 @@
-import 'package:condorsmotors/models/movimiento.model.dart';
-import 'package:condorsmotors/providers/admin/movimiento.admin.provider.dart';
+import 'package:condorsmotors/models/transferencias.model.dart';
+import 'package:condorsmotors/providers/admin/transferencias.admin.provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -8,28 +8,30 @@ import 'package:provider/provider.dart';
 
 /// Widget para mostrar el detalle de un movimiento de inventario
 /// Este widget maneja internamente los estados de carga, error y visualización
-class MovimientoDetailDialog extends StatefulWidget {
-  final Movimiento movimiento;
+class TransferenciaDetailDialog extends StatefulWidget {
+  final TransferenciaInventario transferencia;
 
-  const MovimientoDetailDialog({
+  const TransferenciaDetailDialog({
     super.key,
-    required this.movimiento,
+    required this.transferencia,
   });
 
   @override
-  State<MovimientoDetailDialog> createState() => _MovimientoDetailDialogState();
+  State<TransferenciaDetailDialog> createState() =>
+      _TransferenciaDetailDialogState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<Movimiento>('movimiento', movimiento));
+    properties.add(DiagnosticsProperty<TransferenciaInventario>(
+        'transferencia', transferencia));
   }
 }
 
-class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
+class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
   bool _isLoading = true;
   String? _errorMessage;
-  Movimiento? _detalleMovimiento;
+  TransferenciaInventario? _detalleTransferencia;
   int _retryCount = 0;
 
   @override
@@ -51,16 +53,16 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
 
     try {
       debugPrint(
-          '⏳ [MovimientoDetailDialog] Cargando detalles del movimiento #${widget.movimiento.id}');
+          '⏳ [TransferenciaDetailDialog] Cargando detalles de la transferencia #${widget.transferencia.id}');
 
       // Cargar detalles usando el provider
-      final MovimientoProvider movimientoProvider =
-          Provider.of<MovimientoProvider>(context, listen: false);
-      final String id = widget.movimiento.id.toString();
+      final TransferenciasProvider transferenciasProvider =
+          Provider.of<TransferenciasProvider>(context, listen: false);
+      final String id = widget.transferencia.id.toString();
 
       // Obtener detalle del movimiento
-      final Movimiento detalleMovimiento =
-          await movimientoProvider.obtenerDetalleMovimiento(
+      final TransferenciaInventario detalleTransferencia =
+          await transferenciasProvider.obtenerDetalleTransferencia(
         id,
       );
 
@@ -69,13 +71,13 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
       }
 
       setState(() {
-        _detalleMovimiento = detalleMovimiento;
+        _detalleTransferencia = detalleTransferencia;
         _isLoading = false;
       });
 
       debugPrint('✅ [MovimientoDetailDialog] Detalles cargados correctamente');
       debugPrint(
-          '📦 [MovimientoDetailDialog] Productos: ${_detalleMovimiento?.productos?.length ?? 0}');
+          '📦 [MovimientoDetailDialog] Productos: ${_detalleTransferencia?.productos?.length ?? 0}');
     } catch (e, stackTrace) {
       debugPrint('❌ [MovimientoDetailDialog] Error al cargar detalles: $e');
       debugPrint('📋 [MovimientoDetailDialog] StackTrace: $stackTrace');
@@ -86,7 +88,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
 
       // Si hay un error, usamos los datos que ya tenemos
       setState(() {
-        _detalleMovimiento = widget.movimiento;
+        _detalleTransferencia = widget.transferencia;
         _isLoading = false;
         _errorMessage = e.toString();
       });
@@ -161,7 +163,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
           ),
           const SizedBox(height: 32),
           Text(
-            'Cargando detalles de la transferencia #${widget.movimiento.id}',
+            'Cargando detalles de la transferencia #${widget.transferencia.id}',
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,
@@ -205,7 +207,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
             Container(
               constraints: const BoxConstraints(maxWidth: 600),
               child: Text(
-                'No se pudieron cargar los detalles completos de la transferencia #${widget.movimiento.id}.',
+                'No se pudieron cargar los detalles completos de la transferencia #${widget.transferencia.id}.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white, fontSize: 16),
               ),
@@ -254,7 +256,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                   onPressed: () {
                     // Usar los datos básicos del movimiento sin productos detallados
                     setState(() {
-                      _detalleMovimiento = widget.movimiento;
+                      _detalleTransferencia = widget.transferencia;
                       _errorMessage = null;
                     });
                   },
@@ -275,7 +277,8 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   Widget _buildDetailContent(
       BuildContext context, bool isWideScreen, bool isMediumScreen) {
     // Movimiento a mostrar (ya sea el detallado o el original)
-    final Movimiento movimiento = _detalleMovimiento ?? widget.movimiento;
+    final TransferenciaInventario transferencia =
+        _detalleTransferencia ?? widget.transferencia;
 
     return SingleChildScrollView(
       child: Column(
@@ -339,7 +342,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _buildGeneralInfoRow(movimiento),
+                        _buildGeneralInfoRow(transferencia),
                       ],
                     ),
                   ),
@@ -366,7 +369,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _buildSucursalesInfoRow(movimiento),
+                        _buildSucursalesInfoRow(transferencia),
                       ],
                     ),
                   ),
@@ -398,7 +401,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildGeneralInfoRow(movimiento),
+                      _buildGeneralInfoRow(transferencia),
                     ],
                   ),
                 ),
@@ -423,7 +426,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildSucursalesInfoRow(movimiento),
+                      _buildSucursalesInfoRow(transferencia),
                     ],
                   ),
                 ),
@@ -441,13 +444,13 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                 // Productos
                 Expanded(
                   flex: 3,
-                  child: _buildProductosSectionCard(movimiento),
+                  child: _buildProductosSectionCard(transferencia),
                 ),
                 const SizedBox(width: 24),
                 // Observaciones
                 Expanded(
                   flex: 2,
-                  child: _buildObservacionesSectionCard(movimiento),
+                  child: _buildObservacionesSectionCard(transferencia),
                 ),
               ],
             )
@@ -456,9 +459,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                _buildProductosSectionCard(movimiento),
+                _buildProductosSectionCard(transferencia),
                 const SizedBox(height: 16),
-                _buildObservacionesSectionCard(movimiento),
+                _buildObservacionesSectionCard(transferencia),
               ],
             ),
 
@@ -523,27 +526,27 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   }
 
   // Información general del movimiento
-  Widget _buildGeneralInfoRow(Movimiento movimiento) {
+  Widget _buildGeneralInfoRow(TransferenciaInventario transferencia) {
     return Row(
       children: <Widget>[
         Expanded(
           child: _buildInfoItem(
             'ID',
-            movimiento.id.toString(),
+            transferencia.id.toString(),
             FontAwesomeIcons.hashtag,
           ),
         ),
         Expanded(
           child: _buildInfoItem(
             'Fecha Creación',
-            _formatFecha(movimiento.salidaOrigen),
+            _formatFecha(transferencia.salidaOrigen),
             FontAwesomeIcons.calendar,
           ),
         ),
         Expanded(
           child: _buildInfoItem(
             'Estado',
-            movimiento.estado,
+            transferencia.estado.nombre,
             FontAwesomeIcons.circleInfo,
           ),
         ),
@@ -552,20 +555,20 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   }
 
   // Información de sucursales
-  Widget _buildSucursalesInfoRow(Movimiento movimiento) {
+  Widget _buildSucursalesInfoRow(TransferenciaInventario transferencia) {
     return Row(
       children: <Widget>[
         Expanded(
           child: _buildInfoItem(
             'Sucursal Origen',
-            movimiento.nombreSucursalOrigen,
+            transferencia.nombreSucursalOrigen,
             FontAwesomeIcons.building,
           ),
         ),
         Expanded(
           child: _buildInfoItem(
             'Sucursal Destino',
-            movimiento.nombreSucursalDestino,
+            transferencia.nombreSucursalDestino,
             FontAwesomeIcons.building,
           ),
         ),
@@ -574,7 +577,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   }
 
   // Sección de productos en tarjeta
-  Widget _buildProductosSectionCard(Movimiento movimiento) {
+  Widget _buildProductosSectionCard(TransferenciaInventario transferencia) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -601,8 +604,8 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                 ),
               ),
               const SizedBox(width: 16),
-              if (movimiento.productos != null &&
-                  movimiento.productos!.isNotEmpty)
+              if (transferencia.productos != null &&
+                  transferencia.productos!.isNotEmpty)
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -611,7 +614,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    '${movimiento.productos!.length} productos',
+                    '${transferencia.productos!.length} productos',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -622,8 +625,9 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
             ],
           ),
           const SizedBox(height: 16),
-          if (movimiento.productos != null && movimiento.productos!.isNotEmpty)
-            _buildProductosList(movimiento)
+          if (transferencia.productos != null &&
+              transferencia.productos!.isNotEmpty)
+            _buildProductosList(transferencia)
           else
             const Padding(
               padding: EdgeInsets.all(16),
@@ -641,7 +645,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   }
 
   // Sección de observaciones en tarjeta
-  Widget _buildObservacionesSectionCard(Movimiento movimiento) {
+  Widget _buildObservacionesSectionCard(TransferenciaInventario transferencia) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -678,49 +682,20 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              movimiento.observaciones ?? 'Sin observaciones',
+              transferencia.observaciones ?? 'Sin observaciones',
               style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
           ),
-          // Si hay solicitante, mostrarlo
-          if (movimiento.solicitante != null) ...<Widget>[
-            const SizedBox(height: 16),
-            Row(
-              children: <Widget>[
-                const FaIcon(
-                  FontAwesomeIcons.user,
-                  size: 16,
-                  color: Color(0xFFE31E24),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Solicitante:',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    movimiento.solicitante!,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );
   }
 
   // Lista de productos
-  Widget _buildProductosList(Movimiento movimiento) {
+  Widget _buildProductosList(TransferenciaInventario transferencia) {
     // Debug para verificar qué contiene productos
     debugPrint(
-        '📦 Productos en el movimiento: ${movimiento.productos?.length ?? 0}');
+        '📦 Productos en el movimiento: ${transferencia.productos?.length ?? 0}');
 
     return Container(
       decoration: BoxDecoration(
@@ -734,13 +709,13 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
         ),
         child: ListView.separated(
           shrinkWrap: true,
-          itemCount: movimiento.productos!.length,
+          itemCount: transferencia.productos!.length,
           separatorBuilder: (BuildContext context, int index) => const Divider(
             color: Colors.white10,
             height: 1,
           ),
           itemBuilder: (BuildContext context, int index) {
-            final DetalleProducto producto = movimiento.productos![index];
+            final DetalleProducto producto = transferencia.productos![index];
             return ListTile(
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -795,7 +770,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
   }
 
   // Widget para mostrar un elemento de información
-  Widget _buildInfoItem(String titulo, String valor, IconData icono) {
+  Widget _buildInfoItem(String titulo, String? valor, IconData icono) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -820,7 +795,7 @@ class _MovimientoDetailDialogState extends State<MovimientoDetailDialog> {
         Padding(
           padding: const EdgeInsets.only(left: 22),
           child: Text(
-            valor,
+            valor ?? 'N/A',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 15,

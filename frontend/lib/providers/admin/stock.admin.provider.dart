@@ -72,7 +72,9 @@ class StockProvider extends ChangeNotifier {
   Future<void> inicializar() async {
     // Establecer stock bajo como filtro predeterminado
     _filtroEstadoStock = StockStatus.stockBajo;
-    await cargarSucursales();
+    await Future.wait([
+      cargarSucursales(),
+    ]);
   }
 
   /// Obtiene el estado del stock como enumeración
@@ -139,19 +141,12 @@ class StockProvider extends ChangeNotifier {
 
   /// Cargar las sucursales disponibles
   Future<void> cargarSucursales() async {
-    if (!_isLoadingSucursales) {
-      _isLoadingSucursales = true;
-      notifyListeners();
-    }
+    _isLoadingSucursales = true;
+    notifyListeners();
 
     try {
-      final List<Sucursal> sucursales = await api.sucursales.getSucursales();
-      _sucursales = sucursales;
-
-      // Seleccionar automáticamente la primera sucursal si hay sucursales disponibles
-      if (sucursales.isNotEmpty && _selectedSucursalId.isEmpty) {
-        await seleccionarSucursal(sucursales.first);
-      }
+      _sucursales = await api.sucursales.getSucursales();
+      notifyListeners();
     } catch (e) {
       debugPrint('Error cargando sucursales: $e');
     } finally {
@@ -162,17 +157,15 @@ class StockProvider extends ChangeNotifier {
 
   /// Selecciona una sucursal y carga sus productos
   Future<void> seleccionarSucursal(Sucursal sucursal) async {
-    _selectedSucursalId = sucursal.id;
-    _selectedSucursalNombre = sucursal.nombre;
-    _selectedSucursal = sucursal;
-    _currentPage = 1; // Volver a la primera página al cambiar de sucursal
-    // Mantener el filtro actual o usar stock bajo como predeterminado
-    _filtroEstadoStock = _filtroEstadoStock ?? StockStatus.stockBajo;
-    _mostrarVistaConsolidada =
-        false; // Desactivar vista consolidada al cambiar de sucursal
-    notifyListeners();
+    if (_selectedSucursal?.id != sucursal.id) {
+      _selectedSucursal = sucursal;
+      _selectedSucursalId = sucursal.id.toString();
+      _selectedSucursalNombre = sucursal.nombre;
+      notifyListeners();
 
-    await cargarProductos(sucursal.id);
+      // Cargar productos de la sucursal seleccionada
+      await cargarProductos(_selectedSucursalId);
+    }
   }
 
   /// Método para cargar productos de la sucursal seleccionada (vista individual)
