@@ -21,7 +21,7 @@ import {
   vendedorPermisssions,
   computadoraPermissions
 } from '@db/config/seed.config'
-import { calcularPrecioYDescuento } from '@/core/lib/seed-utils'
+import { computePriceOffer } from '@/core/lib/seed-utils'
 
 const BATCH_SIZE = 500
 
@@ -328,61 +328,63 @@ const seedDatabase = async () => {
     ])
   )
 
-  const generateDetalles = (length: number, sucursalId: number) =>
-    getRandomUniqueElementsFromArray(productos, length).map((producto) => {
-      const detallesProducto = detallesProductosMap.get(
-        `${producto.id}:${sucursalId}`
-      )
+  const generateDetalles = (length: number, sucursalId: number) => {
+    let total = 0
 
-      if (detallesProducto === undefined) {
-        throw new Error('Product not found')
-      }
+    const detalles = getRandomUniqueElementsFromArray(productos, length).map(
+      (producto) => {
+        const detallesProducto = detallesProductosMap.get(
+          `${producto.id}:${sucursalId}`
+        )
 
-      const cantidad = faker.number.int({ min: 1, max: 12 })
+        if (detallesProducto === undefined) {
+          throw new Error('Product not found')
+        }
 
-      const {
-        precioUnitario,
-        precioOriginal,
-        cantidadGratis,
-        descuento,
-        cantidadPagada
-      } = calcularPrecioYDescuento(
-        {
+        const cantidad = faker.number.int({ min: 1, max: 12 })
+
+        const { free, price } = computePriceOffer({
+          cantidad,
           cantidadMinimaDescuento: producto.cantidadMinimaDescuento,
           cantidadGratisDescuento: producto.cantidadGratisDescuento,
           porcentajeDescuento: producto.porcentajeDescuento,
           precioVenta: detallesProducto.precioVenta,
           precioOferta: detallesProducto.precioOferta,
-          liquidacion: faker.datatype.boolean()
-        },
-        cantidad
-      )
+          liquidacion: producto.liquidacion
+        })
 
-      const cantidadTotal = cantidadPagada + cantidadGratis
-      const subtotal = productWithTwoDecimals(precioUnitario, cantidadPagada)
+        const cantidadTotal = cantidad + free
+        const subtotal = productWithTwoDecimals(price, cantidad)
+        total += subtotal
 
-      return {
-        productoId: detallesProducto.productoId,
-        nombre: producto.nombre,
-        cantidadGratis,
-        descuento,
-        cantidadPagada,
-        cantidadTotal,
-        precioUnitario,
-        precioOriginal,
-        subtotal
+        return {
+          productoId: detallesProducto.productoId,
+          nombre: producto.nombre,
+          cantidadGratis: free,
+          descuento: producto.descuento,
+          cantidadPagada: cantidad,
+          cantidadTotal,
+          precioUnitario: price,
+          precioOriginal: parseFloat(detallesProducto.precioVenta),
+          subtotal
+        }
       }
-    })
+    )
+
+    return {
+      detalles,
+      total
+    }
+  }
 
   const proformasVentaValues = Array.from({
     length: seedConfig.proformasVentaCount
   }).map(() => {
     const empleado = getRandomValueFromArray(empleados)
-    const detalles = generateDetalles(
+    const { detalles, total } = generateDetalles(
       getRandomNumber(2, 12),
       empleado.sucursalId
     )
-    const total = detalles.reduce((prev, current) => current.subtotal + prev, 0)
 
     return {
       nombre: faker.lorem.words({ min: 3, max: 6 }),
@@ -429,13 +431,14 @@ const seedDatabase = async () => {
   const clientesValues = Array.from({ length: seedConfig.clientesCount }).map(
     () => {
       const tipoDocumento = getRandomValueFromArray(tiposDocumentoCliente)
-      const personaNatural = tipoDocumento.codigo === tiposDocClienteCodes.dni
+      const isPersonaJuridica =
+        tipoDocumento.codigo === tiposDocClienteCodes.ruc
       const dni = faker.number.int({ min: 11111111, max: 99999999 }).toString()
-      const numeroDocumento = personaNatural
-        ? dni
-        : getRandomValueFromArray(['10', '20']) + dni + getRandomNumber(1, 9)
+      const numeroDocumento = isPersonaJuridica
+        ? getRandomValueFromArray(['10', '20']) + dni + getRandomNumber(1, 9)
+        : dni
 
-      const denominacion = personaNatural
+      const denominacion = isPersonaJuridica
         ? faker.person.fullName()
         : faker.company.name()
 
