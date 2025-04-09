@@ -122,7 +122,9 @@ export const detallesProductoTable = pgTable(
       .references(() => productosTable.id),
     sucursalId: integer('sucursal_id')
       .notNull()
-      .references(() => sucursalesTable.id),
+      .references(() => sucursalesTable.id, {
+        onDelete: 'cascade'
+      }),
     ...timestampsColumns
   },
   (t) => [
@@ -166,7 +168,9 @@ export const empleadosTable = pgTable('empleados', {
   }),
   sucursalId: integer('sucursal_id')
     .notNull()
-    .references(() => sucursalesTable.id),
+    .references(() => sucursalesTable.id, {
+      onDelete: 'cascade'
+    }),
   ...timestampsColumns
 })
 
@@ -203,7 +207,9 @@ export const entradasInventariosTable = pgTable('entradas_inventarios', {
     .references(() => productosTable.id),
   sucursalId: integer('sucursal_id')
     .notNull()
-    .references(() => sucursalesTable.id),
+    .references(() => sucursalesTable.id, {
+      onDelete: 'cascade'
+    }),
   ...timestampsColumns
 })
 
@@ -224,11 +230,16 @@ export const transferenciasInventariosTable = pgTable(
       .notNull()
       .references(() => estadosTransferenciasInventarios.id),
     sucursalOrigenId: integer('sucursal_origen_id').references(
-      () => sucursalesTable.id
+      () => sucursalesTable.id,
+      {
+        onDelete: 'cascade'
+      }
     ),
     sucursalDestinoId: integer('sucursal_destino_id')
       .notNull()
-      .references(() => sucursalesTable.id),
+      .references(() => sucursalesTable.id, {
+        onDelete: 'cascade'
+      }),
     salidaOrigen: timestamp('salida_origen', {
       mode: 'date',
       withTimezone: false
@@ -352,7 +363,9 @@ export const ventasTable = pgTable(
       .references(() => empleadosTable.id),
     sucursalId: integer('sucursal_id')
       .notNull()
-      .references(() => sucursalesTable.id),
+      .references(() => sucursalesTable.id, {
+        onDelete: 'cascade'
+      }),
     fechaEmision: date('fecha_emision', {
       mode: 'string'
     }).notNull(),
@@ -456,7 +469,9 @@ export const proformasVentaTable = pgTable('proformas_venta', {
     .references(() => empleadosTable.id),
   sucursalId: integer('sucursal_id')
     .notNull()
-    .references(() => sucursalesTable.id),
+    .references(() => sucursalesTable.id, {
+      onDelete: 'cascade'
+    }),
   ...timestampsColumns
 })
 
@@ -480,7 +495,9 @@ export const reservasProductosTable = pgTable('reservas_productos', {
   clienteId: integer('cliente_id')
     .notNull()
     .references(() => clientesTable.id),
-  sucursalId: integer('sucursal_id').references(() => sucursalesTable.id),
+  sucursalId: integer('sucursal_id').references(() => sucursalesTable.id, {
+    onDelete: 'cascade'
+  }),
   ...timestampsColumns
 })
 
@@ -541,7 +558,9 @@ export const notificacionesTable = pgTable('notificaciones', {
   leida: boolean('leida').notNull().default(false),
   sucursalId: integer('sucursal_id')
     .notNull()
-    .references(() => sucursalesTable.id),
+    .references(() => sucursalesTable.id, {
+      onDelete: 'cascade'
+    }),
   ...timestampsColumns
 })
 

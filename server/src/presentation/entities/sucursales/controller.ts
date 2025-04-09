@@ -140,7 +140,9 @@ export class SucursalesController {
       return
     }
 
-    const deleteSucursal = new DeleteSucursal()
+    const { authPayload } = req
+
+    const deleteSucursal = new DeleteSucursal(authPayload)
 
     deleteSucursal
       .execute(numericIdDto)
