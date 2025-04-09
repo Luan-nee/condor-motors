@@ -35,7 +35,8 @@ export class GetTransferenciasInventariosById {
   private readonly selectFieldsItems = {
     id: itemsTransferenciaInventarioTable.id,
     cantidad: itemsTransferenciaInventarioTable.cantidad,
-    nombre: productosTable.nombre
+    nombre: productosTable.nombre,
+    productoId: productosTable.id
   }
 
   private async getTransferenciaInventario(numericIdDto: NumericIdDto) {
