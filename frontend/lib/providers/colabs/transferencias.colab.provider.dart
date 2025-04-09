@@ -90,16 +90,10 @@ class TransferenciasColabProvider extends ChangeNotifier {
 
   // Cargar transferencias desde la API con datos completos de productos
   Future<void> cargarTransferencias() async {
-    if (_sucursalId == null) {
-      _setError(
-          'No se puede cargar transferencias: ID de sucursal no disponible');
-      return;
-    }
-
     _setLoading(true);
 
     try {
-      debugPrint('Cargando transferencias para sucursal ID: $_sucursalId');
+      debugPrint('Cargando todas las transferencias');
 
       String? estadoFiltro;
       if (_selectedFilter != 'Todos') {
@@ -112,8 +106,7 @@ class TransferenciasColabProvider extends ChangeNotifier {
       }
 
       final List<TransferenciaInventario> transferenciasData =
-          await _transferenciasApi.getTransferencias(
-        sucursalId: _sucursalId,
+          await _transferenciasApi.getAllTransferencias(
         estado: estadoFiltro,
         forceRefresh: true,
       );
@@ -267,25 +260,59 @@ class TransferenciasColabProvider extends ChangeNotifier {
     }
   }
 
+  // Enviar una transferencia
+  Future<void> enviarTransferencia(
+      TransferenciaInventario transferencia) async {
+    _setLoading(true);
+
+    try {
+      await _transferenciasApi.enviarTransferencia(
+        transferencia.id.toString(),
+      );
+
+      await cargarTransferencias();
+    } catch (e) {
+      _setError('Error al enviar transferencia: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   // Cambiar filtro seleccionado
   Future<void> cambiarFiltro(String filtro) async {
     _selectedFilter = filtro;
     await cargarTransferencias();
   }
 
-  // Obtener transferencias filtradas según el filtro seleccionado
+  // Filtrar transferencias por sucursal actual
   List<TransferenciaInventario> getTransferenciasFiltradas() {
-    if (_selectedFilter == 'Todos') {
+    if (_selectedFilter == 'Todos' && _sucursalId == null) {
       return _transferencias;
     }
 
-    final EstadoTransferencia estadoFiltro =
-        EstadoTransferencia.values.firstWhere(
-      (e) => e.nombre == _selectedFilter,
-      orElse: () => EstadoTransferencia.pedido,
-    );
+    return _transferencias.where((t) {
+      bool cumpleFiltroEstado = true;
+      bool cumpleFiltroPorSucursal = true;
 
-    return _transferencias.where((t) => t.estado == estadoFiltro).toList();
+      // Aplicar filtro por estado si está seleccionado
+      if (_selectedFilter != 'Todos') {
+        final EstadoTransferencia estadoFiltro =
+            EstadoTransferencia.values.firstWhere(
+          (e) => e.nombre == _selectedFilter,
+          orElse: () => EstadoTransferencia.pedido,
+        );
+        cumpleFiltroEstado = t.estado == estadoFiltro;
+      }
+
+      // Aplicar filtro por sucursal si hay una sucursal seleccionada
+      if (_sucursalId != null) {
+        final int sucursalIdInt = int.parse(_sucursalId!);
+        cumpleFiltroPorSucursal = t.sucursalDestinoId == sucursalIdInt ||
+            (t.sucursalOrigenId != null && t.sucursalOrigenId == sucursalIdInt);
+      }
+
+      return cumpleFiltroEstado && cumpleFiltroPorSucursal;
+    }).toList();
   }
 
   // Método mejorado para obtener productos con filtros
@@ -445,6 +472,58 @@ class TransferenciasColabProvider extends ChangeNotifier {
     } catch (e) {
       _setError('Error al buscar productos: $e');
       return [];
+    }
+  }
+
+  // Obtener comparación de stocks entre sucursales
+  Future<List<Map<String, dynamic>>> obtenerComparacionStocks(
+    TransferenciaInventario transferencia,
+  ) async {
+    if (transferencia.productos == null ||
+        transferencia.productos!.isEmpty ||
+        _sucursalId == null) {
+      return [];
+    }
+
+    try {
+      final List<Map<String, dynamic>> comparaciones = [];
+
+      for (final producto in transferencia.productos!) {
+        // Obtener stock actual en nuestra sucursal
+        final stockActual = await _productosApi.getProducto(
+          productoId: producto.id,
+          sucursalId: _sucursalId!,
+          useCache: false,
+        );
+
+        comparaciones.add({
+          'producto': producto,
+          'stockActual': stockActual.stock,
+          'cantidadSolicitada': producto.cantidad,
+        });
+      }
+
+      return comparaciones;
+    } catch (e) {
+      _setError('Error al obtener comparación de stocks: $e');
+      return [];
+    }
+  }
+
+  // Obtener comparación de transferencia
+  Future<ComparacionTransferencia> obtenerComparacionTransferencia(
+    String id,
+    int sucursalOrigenId,
+  ) async {
+    try {
+      return await _transferenciasApi.compararTransferencia(
+        id: id,
+        sucursalOrigenId: sucursalOrigenId,
+        useCache: false,
+      );
+    } catch (e) {
+      _setError('Error al obtener comparación de transferencia: $e');
+      rethrow;
     }
   }
 

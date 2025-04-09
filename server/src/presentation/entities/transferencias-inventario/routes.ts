@@ -15,6 +15,8 @@ export class TransferenciasInventarioRoutes {
 
     router.post('/:id/cancelar', transferenciaInventarioController.cancelar)
 
+    router.post('/:id/comparar', transferenciaInventarioController.comparar)
+
     router.get('/:id', transferenciaInventarioController.getById)
 
     router.get('/', transferenciaInventarioController.getAll)

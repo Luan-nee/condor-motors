@@ -15,11 +15,6 @@ class MovimientosAdminScreen extends StatefulWidget {
 }
 
 class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
-  String _filtroEstado = 'Todos';
-  String? _filtroSucursal;
-  DateTime? _fechaInicio;
-  DateTime? _fechaFin;
-
   @override
   void initState() {
     super.initState();
@@ -37,19 +32,21 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
     final TransferenciasProvider transferenciasProvider =
         Provider.of<TransferenciasProvider>(context, listen: false);
 
+    // Actualizamos los filtros en el provider
+    transferenciasProvider.actualizarFiltros(
+      fechaInicio: transferenciasProvider.fechaInicio,
+      fechaFin: transferenciasProvider.fechaFin,
+    );
+
     await transferenciasProvider.cargarTransferencias(
-      sucursalId: _filtroSucursal,
-      estado: _filtroEstado,
-      fechaInicio: _fechaInicio,
-      fechaFin: _fechaFin,
       forceRefresh: forceRefresh,
     );
 
     // Si hay error, mostrar snackbar
-    if (transferenciasProvider.errorMensaje != null && mounted) {
+    if (transferenciasProvider.errorMessage != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(transferenciasProvider.errorMensaje!),
+          content: Text(transferenciasProvider.errorMessage!),
           backgroundColor: Colors.red,
         ),
       );
@@ -120,7 +117,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                             ),
                             const SizedBox(width: 8),
                             DropdownButton<String>(
-                              value: _filtroEstado,
+                              value: transferenciasProvider.selectedFilter,
                               dropdownColor: const Color(0xFF2D2D2D),
                               style: const TextStyle(color: Colors.white),
                               underline: const SizedBox(),
@@ -128,20 +125,16 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                                 const DropdownMenuItem(
                                     value: 'Todos',
                                     child: Text('Todos los estados')),
-                                ...transferenciasProvider
-                                    .obtenerEstadosDetalle()
-                                    .entries
+                                ...transferenciasProvider.filters
+                                    .where((filter) => filter != 'Todos')
                                     .map(
-                                      (MapEntry<String, String> e) =>
-                                          DropdownMenuItem(
-                                              value: e.key,
-                                              child: Text(e.value)),
+                                      (String filter) => DropdownMenuItem(
+                                          value: filter, child: Text(filter)),
                                     ),
                               ],
                               onChanged: (String? value) {
                                 if (value != null) {
-                                  setState(() => _filtroEstado = value);
-                                  _cargarMovimientos(forceRefresh: true);
+                                  transferenciasProvider.cambiarFiltro(value);
                                 }
                               },
                             ),
@@ -171,7 +164,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
               const SizedBox(height: 32),
 
               // Indicador de carga o error
-              if (transferenciasProvider.cargando)
+              if (transferenciasProvider.isLoading)
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(20),
@@ -180,7 +173,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                     ),
                   ),
                 )
-              else if (transferenciasProvider.errorMensaje != null)
+              else if (transferenciasProvider.errorMessage != null)
                 Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -189,7 +182,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                           color: Colors.red, size: 48),
                       const SizedBox(height: 16),
                       Text(
-                        transferenciasProvider.errorMensaje!,
+                        transferenciasProvider.errorMessage!,
                         style: const TextStyle(color: Colors.white),
                         textAlign: TextAlign.center,
                       ),
@@ -525,7 +518,6 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
 
   // Función para mostrar el detalle de un movimiento
   void _mostrarDetalleMovimiento(TransferenciaInventario transferencia) async {
-    // Verificar si estamos montados
     if (!mounted) {
       return;
     }
@@ -533,7 +525,6 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
     debugPrint(
         '🔍 Iniciando visualización de detalles para transferencia #${transferencia.id}');
 
-    // Usamos el nuevo widget que maneja internamente los estados
     await showDialog(
       context: context,
       builder: (BuildContext context) {

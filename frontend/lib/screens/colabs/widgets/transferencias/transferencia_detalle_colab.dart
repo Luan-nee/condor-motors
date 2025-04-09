@@ -199,11 +199,456 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
                   ],
                 ),
               ),
+              if (transferencia.estado == EstadoTransferencia.pedido)
+                ElevatedButton.icon(
+                  onPressed: () => _procesarEnvio(transferencia),
+                  icon: const FaIcon(
+                    FontAwesomeIcons.paperPlane,
+                    size: 16,
+                  ),
+                  label: const Text('Enviar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE31E24),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _procesarEnvio(TransferenciaInventario transferencia) async {
+    final provider = context.read<TransferenciasColabProvider>();
+
+    // Mostrar diálogo de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+        ),
+      ),
+    );
+
+    try {
+      // Obtener datos de comparación usando el nuevo endpoint
+      if (provider.sucursalId == null) {
+        throw Exception('No se pudo obtener el ID de la sucursal del usuario');
+      }
+
+      // Usar el sucursalId del usuario autenticado como origen
+      final sucursalOrigenId = int.parse(provider.sucursalId!);
+
+      final comparacion = await provider.obtenerComparacionTransferencia(
+        transferencia.id.toString(),
+        sucursalOrigenId,
+      );
+
+      // Cerrar diálogo de carga
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Mostrar diálogo de comparación
+      if (mounted) {
+        final bool? confirmarEnvio = await showDialog<bool>(
+          context: context,
+          builder: (context) => Dialog(
+            backgroundColor: const Color(0xFF2D2D2D),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Verificación de Stock',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        icon: const FaIcon(
+                          FontAwesomeIcons.xmark,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Información de sucursales
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Origen',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                comparacion.sucursalOrigen.nombre,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const FaIcon(
+                          FontAwesomeIcons.arrowRight,
+                          color: Color(0xFFE31E24),
+                          size: 16,
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text(
+                                'Destino',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                comparacion.sucursalDestino.nombre,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (!comparacion.todosProductosDisponibles)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE31E24).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const FaIcon(
+                            FontAwesomeIcons.triangleExclamation,
+                            color: Color(0xFFE31E24),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Hay productos con stock insuficiente. Revise la lista antes de continuar.',
+                              style: TextStyle(
+                                color: Color(0xFFE31E24),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (comparacion.productosConStockBajo.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const FaIcon(
+                            FontAwesomeIcons.exclamation,
+                            color: Colors.orange,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Hay ${comparacion.productosConStockBajo.length} productos que quedarán con stock bajo.',
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  const Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          'Producto',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Stock Actual',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Stock Final',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Solicitado',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Divider(color: Colors.grey),
+                  const SizedBox(height: 8),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 400),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: comparacion.productos.map((producto) {
+                          final bool stockSuficiente = producto.stockDisponible;
+                          final bool stockBajo = producto.stockBajoEnOrigen;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        producto.nombre,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (producto.stockMinimo != null)
+                                        Text(
+                                          'Mínimo: ${producto.stockMinimo}',
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: stockSuficiente
+                                          ? const Color(0xFF43A047)
+                                              .withOpacity(0.1)
+                                          : const Color(0xFFE31E24)
+                                              .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '${producto.stockOrigenActual}',
+                                      style: TextStyle(
+                                        color: stockSuficiente
+                                            ? const Color(0xFF43A047)
+                                            : const Color(0xFFE31E24),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: stockBajo
+                                          ? Colors.orange.withOpacity(0.1)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '${producto.stockOrigenResultante}',
+                                      style: TextStyle(
+                                        color: stockBajo
+                                            ? Colors.orange
+                                            : Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    '${producto.cantidadSolicitada}',
+                                    style: const TextStyle(
+                                      color: Color(0xFF2196F3),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text(
+                          'Cancelar',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: !comparacion.todosProductosDisponibles
+                            ? null
+                            : () => Navigator.of(context).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE31E24),
+                          disabledBackgroundColor: Colors.grey,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('Confirmar Envío'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        // Si el usuario confirmó, proceder con el envío
+        if (confirmarEnvio == true) {
+          await _enviarTransferencia(transferencia);
+        }
+      }
+    } catch (e) {
+      // Cerrar diálogo de carga si hay error
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Mostrar error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al verificar stocks: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _enviarTransferencia(
+      TransferenciaInventario transferencia) async {
+    try {
+      await context
+          .read<TransferenciasColabProvider>()
+          .enviarTransferencia(transferencia);
+
+      // Mostrar mensaje de éxito
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Transferencia enviada correctamente'),
+            backgroundColor: Color(0xFF43A047),
+          ),
+        );
+      }
+    } catch (e) {
+      // Mostrar mensaje de error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al enviar transferencia: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildInfoCard(TransferenciaInventario transferencia, bool isMobile) {

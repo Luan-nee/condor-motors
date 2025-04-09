@@ -321,6 +321,93 @@ class TransferenciasInventarioApi {
     }
   }
 
+  /// Compara el stock de una transferencia entre sucursales
+  Future<ComparacionTransferencia> compararTransferencia({
+    required String id,
+    required int sucursalOrigenId,
+    bool useCache = true,
+  }) async {
+    try {
+      final String cacheKey =
+          '${_prefixMovimiento}comparacion_${id}_$sucursalOrigenId';
+
+      // Verificar caché
+      if (useCache) {
+        final ComparacionTransferencia? cached = _cache.get(cacheKey);
+        if (cached != null) {
+          debugPrint('Comparación obtenida desde caché: $cacheKey');
+          return cached;
+        }
+      }
+
+      // Realizar petición
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
+        endpoint: '$_endpoint/$id/comparar',
+        method: 'POST',
+        body: <String, dynamic>{
+          'sucursalOrigenId': sucursalOrigenId,
+        },
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw ApiException(
+          message: 'Tiempo de espera agotado al comparar transferencia',
+          statusCode: 408,
+        ),
+      );
+
+      // Procesar respuesta
+      final ComparacionTransferencia comparacion =
+          _processComparacionResponse(response);
+
+      // Guardar en caché si es necesario
+      if (useCache) {
+        _cache.set(cacheKey, comparacion);
+      }
+
+      return comparacion;
+    } catch (e) {
+      debugPrint('Error al comparar transferencia $id: $e');
+      rethrow;
+    }
+  }
+
+  /// Obtiene todas las transferencias sin filtrar por sucursal
+  Future<List<TransferenciaInventario>> getAllTransferencias({
+    String? estado,
+    bool forceRefresh = false,
+  }) async {
+    try {
+      // Preparar parámetros de consulta
+      final Map<String, String> queryParams = <String, String>{
+        if (estado != null) 'estado': estado,
+      };
+
+      // Realizar petición
+      final Map<String, dynamic> response = await _api
+          .authenticatedRequest(
+            endpoint: _endpoint,
+            method: 'GET',
+            queryParams: queryParams,
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => throw ApiException(
+              message: 'Tiempo de espera agotado al obtener transferencias',
+              statusCode: 408,
+            ),
+          );
+
+      // Procesar respuesta
+      final List<TransferenciaInventario> transferencias =
+          _processTransferenciasResponse(response);
+
+      return transferencias;
+    } catch (e) {
+      debugPrint('Error al obtener todas las transferencias: $e');
+      rethrow;
+    }
+  }
+
   // Métodos privados de ayuda
   String _generateCacheKey({
     String? sucursalId,
@@ -401,5 +488,18 @@ class TransferenciasInventarioApi {
     }
 
     return TransferenciaInventario.fromJson(data);
+  }
+
+  ComparacionTransferencia _processComparacionResponse(
+      Map<String, dynamic> response) {
+    Map<String, dynamic> data;
+
+    if (response.containsKey('data')) {
+      data = Map<String, dynamic>.from(response['data']);
+    } else {
+      data = Map<String, dynamic>.from(response);
+    }
+
+    return ComparacionTransferencia.fromJson(data);
   }
 }

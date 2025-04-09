@@ -1,3 +1,4 @@
+import 'package:condorsmotors/models/sucursal.model.dart' as sucursal_model;
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/providers/admin/transferencias.admin.provider.dart';
 import 'package:flutter/foundation.dart';
@@ -33,11 +34,12 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
   String? _errorMessage;
   TransferenciaInventario? _detalleTransferencia;
   int _retryCount = 0;
+  ComparacionTransferencia? _comparacionTransferencia;
+  sucursal_model.Sucursal? _sucursalSeleccionada;
 
   @override
   void initState() {
     super.initState();
-    // Cargar detalles al inicializar el widget
     _cargarDetalles();
   }
 
@@ -55,15 +57,13 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
       debugPrint(
           '⏳ [TransferenciaDetailDialog] Cargando detalles de la transferencia #${widget.transferencia.id}');
 
-      // Cargar detalles usando el provider
       final TransferenciasProvider transferenciasProvider =
           Provider.of<TransferenciasProvider>(context, listen: false);
-      final String id = widget.transferencia.id.toString();
 
-      // Obtener detalle del movimiento
+      // Obtener detalle de la transferencia
       final TransferenciaInventario detalleTransferencia =
           await transferenciasProvider.obtenerDetalleTransferencia(
-        id,
+        widget.transferencia.id.toString(),
       );
 
       if (!mounted) {
@@ -75,22 +75,69 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
         _isLoading = false;
       });
 
-      debugPrint('✅ [MovimientoDetailDialog] Detalles cargados correctamente');
       debugPrint(
-          '📦 [MovimientoDetailDialog] Productos: ${_detalleTransferencia?.productos?.length ?? 0}');
+          '✅ [TransferenciaDetailDialog] Detalles cargados correctamente');
+      debugPrint(
+          '📦 [TransferenciaDetailDialog] Productos: ${_detalleTransferencia?.productos?.length ?? 0}');
     } catch (e, stackTrace) {
-      debugPrint('❌ [MovimientoDetailDialog] Error al cargar detalles: $e');
-      debugPrint('📋 [MovimientoDetailDialog] StackTrace: $stackTrace');
+      debugPrint('❌ [TransferenciaDetailDialog] Error al cargar detalles: $e');
+      debugPrint('📋 [TransferenciaDetailDialog] StackTrace: $stackTrace');
 
       if (!mounted) {
         return;
       }
 
-      // Si hay un error, usamos los datos que ya tenemos
       setState(() {
         _detalleTransferencia = widget.transferencia;
         _isLoading = false;
         _errorMessage = e.toString();
+      });
+    }
+  }
+
+  Future<void> _cargarComparacion(int sucursalId) async {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final TransferenciasProvider transferenciasProvider =
+          Provider.of<TransferenciasProvider>(context, listen: false);
+
+      final comparacion =
+          await transferenciasProvider.obtenerComparacionTransferencia(
+        widget.transferencia.id.toString(),
+        sucursalId,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _comparacionTransferencia = comparacion;
+        _isLoading = false;
+      });
+
+      debugPrint(
+          '✅ [TransferenciaDetailDialog] Comparación cargada correctamente');
+    } catch (e) {
+      debugPrint(
+          '❌ [TransferenciaDetailDialog] Error al cargar comparación: $e');
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _comparacionTransferencia = null;
+        _isLoading = false;
+        _errorMessage = 'Error al cargar comparación: $e';
       });
     }
   }
@@ -317,11 +364,9 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
 
           // Layout adaptativo para información general y sucursales
           if (isWideScreen)
-            // En pantallas anchas, mostrar todo en una fila
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                // Información general
                 Expanded(
                   flex: 3,
                   child: Container(
@@ -348,7 +393,6 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
                   ),
                 ),
                 const SizedBox(width: 24),
-                // Información de sucursales
                 Expanded(
                   flex: 3,
                   child: Container(
@@ -377,11 +421,9 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
               ],
             )
           else
-            // En pantallas medianas y pequeñas, apilar en columnas
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                // Información general
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -406,7 +448,6 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Información de sucursales
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -435,19 +476,29 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
 
           const SizedBox(height: 24),
 
+          // Selector de sucursal para comparación
+          _buildSucursalSelector(),
+
+          const SizedBox(height: 24),
+
           // Productos y Observaciones
           if (isWideScreen)
-            // En pantallas anchas, mostrar productos y observaciones en una fila
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                // Productos
                 Expanded(
                   flex: 3,
-                  child: _buildProductosSectionCard(transferencia),
+                  child: Column(
+                    children: [
+                      _buildProductosSectionCard(transferencia),
+                      if (_comparacionTransferencia != null) ...[
+                        const SizedBox(height: 16),
+                        _buildComparacionSectionCard(),
+                      ],
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 24),
-                // Observaciones
                 Expanded(
                   flex: 2,
                   child: _buildObservacionesSectionCard(transferencia),
@@ -455,11 +506,14 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
               ],
             )
           else
-            // En pantallas medianas y pequeñas, apilar en columnas
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 _buildProductosSectionCard(transferencia),
+                if (_comparacionTransferencia != null) ...[
+                  const SizedBox(height: 16),
+                  _buildComparacionSectionCard(),
+                ],
                 const SizedBox(height: 16),
                 _buildObservacionesSectionCard(transferencia),
               ],
@@ -467,7 +521,6 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
 
           const SizedBox(height: 24),
 
-          // Botón para cerrar
           Center(
             child: ElevatedButton.icon(
               onPressed: () => Navigator.of(context).pop(),
@@ -817,5 +870,178 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
     } catch (e) {
       return 'Fecha inválida';
     }
+  }
+
+  // Nuevo widget para mostrar la comparación de stocks
+  Widget _buildComparacionSectionCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF222222),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: const <Widget>[
+              FaIcon(
+                FontAwesomeIcons.scaleBalanced,
+                size: 16,
+                color: Color(0xFFE31E24),
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Comparación de Stock',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_comparacionTransferencia?.productos != null)
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF2D2D2D),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _comparacionTransferencia!.productos.length,
+                separatorBuilder: (context, index) => const Divider(
+                  color: Colors.white10,
+                  height: 1,
+                ),
+                itemBuilder: (context, index) {
+                  final producto = _comparacionTransferencia!.productos[index];
+                  return ListTile(
+                    title: Text(
+                      producto.nombre,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Stock Origen: ${producto.stockOrigenActual} → ${producto.stockOrigenResultante}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                        ),
+                        Text(
+                          'Stock Destino: ${producto.stockDestinoActual} → ${producto.stockDestinoActual + producto.cantidadSolicitada}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE31E24).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFFE31E24).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        'Cant: ${producto.cantidadSolicitada}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            )
+          else
+            const Center(
+              child: Text(
+                'No hay datos de comparación disponibles',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Widget para seleccionar sucursal
+  Widget _buildSucursalSelector() {
+    final TransferenciasProvider transferenciasProvider =
+        Provider.of<TransferenciasProvider>(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF222222),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Seleccionar Sucursal para Comparación',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<sucursal_model.Sucursal>(
+            value: _sucursalSeleccionada,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color(0xFF2D2D2D),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: Colors.white.withOpacity(0.1),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: Colors.white.withOpacity(0.1),
+                ),
+              ),
+            ),
+            dropdownColor: const Color(0xFF2D2D2D),
+            style: const TextStyle(color: Colors.white),
+            items: [
+              for (var sucursal in transferenciasProvider.sucursales)
+                DropdownMenuItem<sucursal_model.Sucursal>(
+                  value: sucursal,
+                  child: Text(sucursal.nombre),
+                ),
+            ],
+            onChanged: (sucursal_model.Sucursal? sucursal) {
+              if (sucursal != null) {
+                setState(() {
+                  _sucursalSeleccionada = sucursal;
+                });
+                _cargarComparacion(int.parse(sucursal.id));
+              }
+            },
+            hint: const Text(
+              'Seleccione una sucursal',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

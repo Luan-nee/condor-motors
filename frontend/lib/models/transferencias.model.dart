@@ -396,3 +396,120 @@ extension StringExtension on String {
     return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
   }
 }
+
+/// Representa la comparación de stock para un producto en una transferencia
+class ComparacionProducto {
+  final int productoId;
+  final String nombre;
+  final int stockOrigenActual;
+  final int stockOrigenResultante;
+  final int stockDestinoActual;
+  final int? stockMinimo;
+  final int cantidadSolicitada;
+  final bool stockDisponible;
+  final bool stockBajoEnOrigen;
+
+  const ComparacionProducto({
+    required this.productoId,
+    required this.nombre,
+    required this.stockOrigenActual,
+    required this.stockOrigenResultante,
+    required this.stockDestinoActual,
+    this.stockMinimo,
+    required this.cantidadSolicitada,
+    required this.stockDisponible,
+    required this.stockBajoEnOrigen,
+  });
+
+  factory ComparacionProducto.fromJson(Map<String, dynamic> json) {
+    return ComparacionProducto(
+      productoId: json['productoId'] as int,
+      nombre: json['nombre'] as String,
+      stockOrigenActual: json['stockOrigenActual'] as int,
+      stockOrigenResultante: json['stockOrigenResultante'] as int,
+      stockDestinoActual: json['stockDestinoActual'] as int,
+      stockMinimo: json['stockMinimo'] as int?,
+      cantidadSolicitada: json['cantidadSolicitada'] as int,
+      stockDisponible: json['stockDisponible'] as bool,
+      stockBajoEnOrigen: json['stockBajoEnOrigen'] as bool,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'productoId': productoId,
+      'nombre': nombre,
+      'stockOrigenActual': stockOrigenActual,
+      'stockOrigenResultante': stockOrigenResultante,
+      'stockDestinoActual': stockDestinoActual,
+      if (stockMinimo != null) 'stockMinimo': stockMinimo,
+      'cantidadSolicitada': cantidadSolicitada,
+      'stockDisponible': stockDisponible,
+      'stockBajoEnOrigen': stockBajoEnOrigen,
+    };
+  }
+}
+
+/// Representa la comparación completa de una transferencia
+class ComparacionTransferencia {
+  final Sucursal sucursalOrigen;
+  final Sucursal sucursalDestino;
+  final List<ComparacionProducto> productos;
+
+  const ComparacionTransferencia({
+    required this.sucursalOrigen,
+    required this.sucursalDestino,
+    required this.productos,
+  });
+
+  factory ComparacionTransferencia.fromJson(Map<String, dynamic> json) {
+    return ComparacionTransferencia(
+      sucursalOrigen: Sucursal.fromJson(json['sucursalOrigen']),
+      sucursalDestino: Sucursal.fromJson(json['sucursalDestino']),
+      productos: (json['productos'] as List)
+          .map((p) => ComparacionProducto.fromJson(p))
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'sucursalOrigen': sucursalOrigen.toJson(),
+      'sucursalDestino': sucursalDestino.toJson(),
+      'productos': productos.map((p) => p.toJson()).toList(),
+    };
+  }
+
+  /// Verifica si todos los productos tienen stock disponible
+  bool get todosProductosDisponibles =>
+      productos.every((p) => p.stockDisponible);
+
+  /// Obtiene la lista de productos que quedarán con stock bajo
+  List<ComparacionProducto> get productosConStockBajo =>
+      productos.where((p) => p.stockBajoEnOrigen).toList();
+}
+
+/// Representa una sucursal en la comparación
+class Sucursal {
+  final int id;
+  final String nombre;
+
+  const Sucursal({
+    required this.id,
+    required this.nombre,
+  });
+
+  factory Sucursal.fromJson(Map<String, dynamic> json) {
+    return Sucursal(
+      id: json['id'] as int,
+      nombre: json['nombre'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nombre': nombre,
+    };
+  }
+}

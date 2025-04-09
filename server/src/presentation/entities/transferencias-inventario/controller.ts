@@ -18,6 +18,8 @@ import { DoubleNumericIdDto } from '@/domain/dtos/query-params/double-numeric.-i
 import { UpdateItemTransferenciaInv } from '@/domain/use-cases/entities/transferencias-inventario/update-item-transferencia-inventario.use-case'
 import { UpdateItemTransferenciaInvDto } from '@/domain/dtos/entities/transferencias-inventario/update-item-transferencia-inventario.dto'
 import { RemoveItemTransferenciaInv } from '@/domain/use-cases/entities/transferencias-inventario/remove-item-transferencia-inventario.use-case'
+import { CompararTransferenciaInventario } from '@/domain/use-cases/entities/transferencias-inventario/comparar-transferencia-inventario.use-case'
+import { CompararTransferenciaInvDtoValidator } from '@/domain/dtos/entities/transferencias-inventario/comparar-transferencia-inventario.dto'
 
 export class TransferenciasInventarioController {
   create = (req: Request, res: Response) => {
@@ -309,6 +311,41 @@ export class TransferenciasInventarioController {
       .execute(numericIdDto)
       .then((transferenciaInv) => {
         CustomResponse.success({ res, data: transferenciaInv })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
+
+  comparar = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [paramErrors, numericIdDto] = NumericIdDto.create(req.params)
+    if (paramErrors !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error: paramErrors })
+      return
+    }
+
+    const [error, compararTransferenciaInvDto] =
+      CompararTransferenciaInvDtoValidator.create(req.body)
+    if (error !== undefined || compararTransferenciaInvDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload } = req
+
+    const compararTransferenciaInv = new CompararTransferenciaInventario(
+      authPayload
+    )
+
+    compararTransferenciaInv
+      .execute(numericIdDto, compararTransferenciaInvDto)
+      .then((comparacion) => {
+        CustomResponse.success({ res, data: comparacion })
       })
       .catch((error: unknown) => {
         handleError(error, res)
