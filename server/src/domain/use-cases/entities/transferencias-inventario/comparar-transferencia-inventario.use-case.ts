@@ -15,6 +15,23 @@ import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import type { SucursalIdType } from '@/types/schemas'
 import { and, eq, inArray } from 'drizzle-orm'
 
+interface ProductoComparacion {
+  productoId: number
+  nombre: string
+  cantidadSolicitada: number
+  origen: {
+    stockActual: number
+    stockDespues: number
+    stockMinimo: number | null
+    stockBajoDespues: boolean
+  } | null
+  destino: {
+    stockActual: number
+    stockDespues: number
+  }
+  procesable: boolean
+}
+
 interface CompararTransferenciaResponse {
   sucursalOrigen: {
     id: number
@@ -24,17 +41,19 @@ interface CompararTransferenciaResponse {
     id: number
     nombre: string
   }
-  productos: Array<{
-    productoId: number
+  productos: ProductoComparacion[]
+  procesable: boolean
+}
+
+interface SucursalesTransferenciaInv {
+  sucursalOrigen: {
+    id: number
     nombre: string
-    stockOrigenActual: number
-    stockOrigenResultante: number
-    stockDestinoActual: number
-    stockMinimo: number | null
-    cantidadSolicitada: number
-    stockDisponible: boolean
-    stockBajoEnOrigen: boolean
-  }>
+  }
+  sucursalDestino: {
+    id: number
+    nombre: string
+  }
 }
 
 export class CompararTransferenciaInventario {
@@ -49,53 +68,22 @@ export class CompararTransferenciaInventario {
 
   private async compararTransferenciaInv(
     numericIdDto: NumericIdDto,
-    compararTransferenciaInvDto: CompararTransferenciaInvDto
+    sucursalesTransferenciaInv: SucursalesTransferenciaInv
   ): Promise<CompararTransferenciaResponse> {
-    const transferencias = await db
-      .select({
-        id: transferenciasInventariosTable.id,
-        sucursalDestinoId: transferenciasInventariosTable.sucursalDestinoId
-      })
-      .from(transferenciasInventariosTable)
-      .where(eq(transferenciasInventariosTable.id, numericIdDto.id))
-
-    if (transferencias.length === 0) {
-      throw CustomError.badRequest('La transferencia no existe')
-    }
-
-    const sucursalesOrigen = await db
-      .select({
-        id: sucursalesTable.id,
-        nombre: sucursalesTable.nombre
-      })
-      .from(sucursalesTable)
-      .where(
-        eq(sucursalesTable.id, compararTransferenciaInvDto.sucursalOrigenId)
-      )
-
-    if (sucursalesOrigen.length === 0) {
-      throw CustomError.badRequest('La sucursal origen no existe')
-    }
-
-    const sucursalesDestino = await db
-      .select({
-        id: sucursalesTable.id,
-        nombre: sucursalesTable.nombre
-      })
-      .from(sucursalesTable)
-      .where(eq(sucursalesTable.id, transferencias[0].sucursalDestinoId))
-
-    if (sucursalesDestino.length === 0) {
-      throw CustomError.badRequest('La sucursal destino no existe')
-    }
+    const { sucursalOrigen, sucursalDestino } = sucursalesTransferenciaInv
 
     const itemsTransferencia = await db
       .select({
         id: itemsTransferenciaInventarioTable.id,
         productoId: itemsTransferenciaInventarioTable.productoId,
-        cantidad: itemsTransferenciaInventarioTable.cantidad
+        cantidad: itemsTransferenciaInventarioTable.cantidad,
+        nombreProducto: productosTable.nombre
       })
       .from(itemsTransferenciaInventarioTable)
+      .innerJoin(
+        productosTable,
+        eq(itemsTransferenciaInventarioTable.productoId, productosTable.id)
+      )
       .where(
         eq(
           itemsTransferenciaInventarioTable.transferenciaInventarioId,
@@ -109,49 +97,37 @@ export class CompararTransferenciaInventario {
       )
     }
 
+    const sucursalesIds = [sucursalOrigen.id, sucursalDestino.id]
     const productoIds = itemsTransferencia.map((item) => item.productoId)
 
-    // Obtener productos en sucursal origen
-    const productosOrigen = await db
+    const productos = await db
       .select({
-        id: detallesProductoTable.id,
+        productoId: productosTable.id,
         nombre: productosTable.nombre,
+        stockMinimo: productosTable.stockMinimo,
+        id: detallesProductoTable.id,
         stock: detallesProductoTable.stock,
-        productoId: detallesProductoTable.productoId,
-        stockMinimo: productosTable.stockMinimo
+        sucursalId: detallesProductoTable.sucursalId
       })
-      .from(detallesProductoTable)
-      .innerJoin(
-        productosTable,
+      .from(productosTable)
+      .leftJoin(
+        detallesProductoTable,
         eq(productosTable.id, detallesProductoTable.productoId)
       )
       .where(
         and(
-          eq(
-            detallesProductoTable.sucursalId,
-            compararTransferenciaInvDto.sucursalOrigenId
-          ),
-          inArray(detallesProductoTable.productoId, productoIds)
+          inArray(productosTable.id, productoIds),
+          inArray(detallesProductoTable.sucursalId, sucursalesIds)
         )
       )
 
-    // Obtener productos en sucursal destino
-    const productosDestino = await db
-      .select({
-        id: detallesProductoTable.id,
-        stock: detallesProductoTable.stock,
-        productoId: detallesProductoTable.productoId
-      })
-      .from(detallesProductoTable)
-      .where(
-        and(
-          eq(
-            detallesProductoTable.sucursalId,
-            transferencias[0].sucursalDestinoId
-          ),
-          inArray(detallesProductoTable.productoId, productoIds)
-        )
-      )
+    const productosOrigen = productos.filter(
+      (p) => p.sucursalId === sucursalOrigen.id
+    )
+
+    const productosDestino = productos.filter(
+      (p) => p.sucursalId === sucursalDestino.id
+    )
 
     const productosOrigenMap = new Map(
       productosOrigen.map((p) => [p.productoId, p])
@@ -159,44 +135,69 @@ export class CompararTransferenciaInventario {
     const productosDestinoMap = new Map(
       productosDestino.map((p) => [p.productoId, p])
     )
-    const comparacionesProductos = []
+
+    const comparacionesProductos: ProductoComparacion[] = []
+    let validTransference = true
 
     for (const itemTransferencia of itemsTransferencia) {
       const productoOrigen = productosOrigenMap.get(
         itemTransferencia.productoId
       )
+
       const productoDestino = productosDestinoMap.get(
         itemTransferencia.productoId
       )
 
-      if (productoOrigen === undefined) {
-        throw CustomError.badRequest(
-          `El producto con id ${itemTransferencia.productoId} no existe en la sucursal de origen especificada`
-        )
+      const stockDestino = productoDestino?.stock ?? 0
+
+      if (productoOrigen?.stock == null) {
+        comparacionesProductos.push({
+          productoId: itemTransferencia.productoId,
+          nombre: itemTransferencia.nombreProducto,
+          cantidadSolicitada: itemTransferencia.cantidad,
+          procesable: false,
+          origen: null,
+          destino: {
+            stockActual: stockDestino,
+            stockDespues: stockDestino + itemTransferencia.cantidad
+          }
+        })
+        validTransference = false
+
+        continue
       }
 
-      const stockOrigenResultante =
+      const stockOrigenDespues =
         productoOrigen.stock - itemTransferencia.cantidad
-      const stockBajoEnOrigen =
-        productoOrigen.stockMinimo != null &&
-        stockOrigenResultante < productoOrigen.stockMinimo
+
+      const procesable = stockOrigenDespues >= 0
+
+      const origen = {
+        stockActual: productoOrigen.stock,
+        stockDespues: productoOrigen.stock - itemTransferencia.cantidad,
+        stockMinimo: productoOrigen.stockMinimo,
+        stockBajoDespues:
+          productoOrigen.stockMinimo != null &&
+          stockOrigenDespues < productoOrigen.stockMinimo
+      }
 
       comparacionesProductos.push({
-        productoId: productoOrigen.productoId,
-        nombre: productoOrigen.nombre,
-        stockOrigenActual: productoOrigen.stock,
-        stockOrigenResultante,
-        stockDestinoActual: productoDestino?.stock ?? 0,
-        stockMinimo: productoOrigen.stockMinimo,
+        productoId: itemTransferencia.productoId,
+        nombre: itemTransferencia.nombreProducto,
         cantidadSolicitada: itemTransferencia.cantidad,
-        stockDisponible: productoOrigen.stock >= itemTransferencia.cantidad,
-        stockBajoEnOrigen
+        origen,
+        destino: {
+          stockActual: stockDestino,
+          stockDespues: stockDestino + itemTransferencia.cantidad
+        },
+        procesable
       })
     }
 
     return {
-      sucursalOrigen: sucursalesOrigen[0],
-      sucursalDestino: sucursalesDestino[0],
+      sucursalOrigen,
+      sucursalDestino,
+      procesable: validTransference,
       productos: comparacionesProductos
     }
   }
@@ -208,7 +209,10 @@ export class CompararTransferenciaInventario {
     hasPermissionAny: boolean
   ) {
     const sucursales = await db
-      .select({ id: sucursalesTable.id })
+      .select({
+        id: sucursalesTable.id,
+        nombre: sucursalesTable.nombre
+      })
       .from(sucursalesTable)
       .where(
         eq(sucursalesTable.id, compararTransferenciaInvDto.sucursalOrigenId)
@@ -220,11 +224,16 @@ export class CompararTransferenciaInventario {
       )
     }
 
+    const [sucursalOrigen] = sucursales
+
     const transferenciasInventario = await db
       .select({
         id: transferenciasInventariosTable.id,
         modificable: transferenciasInventariosTable.modificable,
-        sucursalDestinoId: transferenciasInventariosTable.sucursalDestinoId,
+        sucursalDestino: {
+          id: sucursalesTable.id,
+          nombre: sucursalesTable.nombre
+        },
         codigoEstado: estadosTransferenciasInventarios.codigo
       })
       .from(transferenciasInventariosTable)
@@ -235,6 +244,10 @@ export class CompararTransferenciaInventario {
           estadosTransferenciasInventarios.id
         )
       )
+      .innerJoin(
+        sucursalesTable,
+        eq(transferenciasInventariosTable.sucursalDestinoId, sucursalesTable.id)
+      )
       .where(eq(transferenciasInventariosTable.id, numericIdDto.id))
 
     if (transferenciasInventario.length < 1) {
@@ -244,6 +257,7 @@ export class CompararTransferenciaInventario {
     }
 
     const [transferenciaInventario] = transferenciasInventario
+    const { sucursalDestino } = transferenciaInventario
 
     if (
       transferenciaInventario.codigoEstado !==
@@ -254,10 +268,7 @@ export class CompararTransferenciaInventario {
       )
     }
 
-    if (
-      transferenciaInventario.sucursalDestinoId ===
-      compararTransferenciaInvDto.sucursalOrigenId
-    ) {
+    if (sucursalDestino.id === compararTransferenciaInvDto.sucursalOrigenId) {
       throw CustomError.badRequest(
         'La sucursal de origen y de destino no puede ser la misma'
       )
@@ -268,6 +279,11 @@ export class CompararTransferenciaInventario {
       !hasPermissionAny
     ) {
       throw CustomError.forbidden()
+    }
+
+    return {
+      sucursalOrigen,
+      sucursalDestino
     }
   }
 
@@ -302,7 +318,7 @@ export class CompararTransferenciaInventario {
   ) {
     const { hasPermissionAny, sucursalId } = await this.validatePermissions()
 
-    await this.validateRelated(
+    const sucursalesTransferenciaInv = await this.validateRelated(
       numericIdDto,
       compararTransferenciaInvDto,
       sucursalId,
@@ -311,7 +327,7 @@ export class CompararTransferenciaInventario {
 
     const result = await this.compararTransferenciaInv(
       numericIdDto,
-      compararTransferenciaInvDto
+      sucursalesTransferenciaInv
     )
 
     return result
