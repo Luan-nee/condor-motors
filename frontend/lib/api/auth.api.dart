@@ -270,23 +270,26 @@ class TokenService {
   /// Elimina los tokens del almacenamiento
   Future<void> clearTokens() async {
     try {
-      debugPrint('TokenService: Eliminando tokens');
-
-      // Limpiar memoria
-      _accessToken = null;
-      _refreshToken = null;
-      _expiryTime = null;
-
-      // Limpiar SharedPreferences
+      debugPrint('Limpiando tokens y datos de usuario...');
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_accessTokenKey);
-      await prefs.remove(_refreshTokenKey);
-      await prefs.remove(_expiryTimeKey);
-
-      debugPrint('TokenService: Tokens eliminados correctamente');
+      await Future.wait([
+        // Limpiar tokens
+        prefs.remove(_accessTokenKey),
+        prefs.remove(_refreshTokenKey),
+        prefs.remove(_expiryTimeKey),
+        // Limpiar datos de sesión
+        prefs.remove(_lastUsernameKey),
+        prefs.remove(_lastPasswordKey),
+        prefs.setBool('stay_logged_in', false),
+        // Limpiar datos adicionales
+        prefs.remove('last_sucursal'),
+        prefs.remove('user_data'),
+        prefs.remove('server_url'),
+      ]);
+      debugPrint('Tokens y datos de usuario limpiados correctamente');
     } catch (e) {
-      debugPrint('TokenService: ERROR al eliminar tokens: $e');
-      // No propagar el error, para asegurarnos de que por lo menos en memoria se eliminan
+      debugPrint('Error al limpiar tokens y datos: $e');
+      rethrow;
     }
   }
 
@@ -827,29 +830,55 @@ class AuthApi {
   /// Limpia los tokens y datos de usuario almacenados
   Future<void> clearTokens() async {
     debugPrint('Limpiando tokens y datos de usuario...');
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await Future.wait([
-      prefs.remove(_accessTokenKey),
-      prefs.remove(_refreshTokenKey),
-      prefs.remove(_userDataKey),
-      prefs.remove('remember_me'),
-      prefs.remove('username'),
-      prefs.remove('password'),
-      prefs.remove('username_auto'),
-      prefs.remove('password_auto'),
-      prefs.setBool('stay_logged_in', false),
-    ]);
-    debugPrint('Tokens y datos de usuario limpiados correctamente');
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await Future.wait([
+        // Limpiar tokens
+        prefs.remove(_accessTokenKey),
+        prefs.remove(_refreshTokenKey),
+        prefs.remove(_userDataKey),
+        // Limpiar datos de sesión
+        prefs.remove('remember_me'),
+        prefs.remove('username'),
+        prefs.remove('password'),
+        prefs.remove('username_auto'),
+        prefs.remove('password_auto'),
+        prefs.setBool('stay_logged_in', false),
+        // Limpiar datos adicionales
+        prefs.remove('last_sucursal'),
+        prefs.remove('user_data'),
+        prefs.remove('server_url'),
+      ]);
+      debugPrint('Tokens y datos de usuario limpiados correctamente');
+    } catch (e) {
+      debugPrint('Error al limpiar tokens y datos: $e');
+      rethrow;
+    }
   }
 
   /// Verifica si el token actual es válido con el backend
   Future<bool> verificarToken() async {
     try {
-      await _api.request(
+      final Map<String, dynamic> response = await _api.request(
         endpoint: '/auth/testsession',
         method: 'POST',
         requiresAuth: true,
       );
+
+      if (response['status'] != 'success' ||
+          response['data'] == null ||
+          response['data'] is! Map<String, dynamic>) {
+        debugPrint('Token inválido: respuesta con formato incorrecto');
+        await clearTokens();
+        return false;
+      }
+
+      // Actualizar datos del usuario en SharedPreferences
+      final Map<String, dynamic> userData =
+          response['data'] as Map<String, dynamic>;
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_userDataKey, json.encode(userData));
+
       return true;
     } catch (e) {
       debugPrint('Error verificando token: $e');
@@ -860,7 +889,7 @@ class AuthApi {
           .toLowerCase()
           .contains('invalid or missing authorization token')) {
         debugPrint('Token inválido o faltante, usuario deslogueado');
-        await clearTokens(); // Limpiar tokens por seguridad
+        await clearTokens();
         return false;
       }
 
@@ -887,7 +916,8 @@ class AuthApi {
         },
       );
 
-      if (response['data'] == null ||
+      if (response['status'] != 'success' ||
+          response['data'] == null ||
           response['data'] is! Map<String, dynamic>) {
         throw ApiException(
           statusCode: 500,
@@ -901,29 +931,11 @@ class AuthApi {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString(_userDataKey, json.encode(userData));
 
-      // Obtener token de la respuesta - el backend lo envía en authorization header
-      final String? token =
-          response['authorization']?.toString().replaceAll('Bearer ', '');
-
-      if (token == null || token.isEmpty) {
-        debugPrint('Respuesta completa del servidor: $response');
-        throw ApiException(
-          statusCode: 401,
-          message: 'Error: No se pudo obtener el token de autenticación',
-          errorCode: ApiException.errorUnauthorized,
-        );
-      }
-
-      // Guardar refresh token si existe
-      final String? refreshToken = response['cookie']?.toString();
-      if (refreshToken != null && refreshToken.isNotEmpty) {
-        await prefs.setString(_refreshTokenKey, refreshToken);
-        debugPrint('Refresh token guardado');
-      }
-
-      debugPrint(
-          'Login exitoso - Token guardado: ${token.substring(0, 10)}...');
-      return UsuarioAutenticado.fromJson(userData, token);
+      // Crear instancia de UsuarioAutenticado con los datos recibidos
+      final UsuarioAutenticado usuarioAutenticado =
+          UsuarioAutenticado.fromJson(userData);
+      debugPrint('Login exitoso para usuario: ${usuarioAutenticado.usuario}');
+      return usuarioAutenticado;
     } catch (e) {
       debugPrint('Error durante login: $e');
       rethrow;
@@ -933,16 +945,32 @@ class AuthApi {
   /// Cierra la sesión del usuario
   Future<void> logout() async {
     try {
-      await _api.request(
-        endpoint: '/auth/logout',
-        method: 'POST',
-        requiresAuth: true,
-      );
+      debugPrint('Iniciando proceso de logout...');
+
+      // Intentar hacer logout en el servidor
+      try {
+        await _api.request(
+          endpoint: '/auth/logout',
+          method: 'POST',
+          requiresAuth: true,
+        );
+      } catch (serverError) {
+        // Si hay error en el servidor, loggearlo pero continuar con la limpieza local
+        debugPrint('Error en servidor durante logout: $serverError');
+      }
+
+      // Limpiar todos los datos locales
       await clearTokens();
+
+      debugPrint('Logout completado exitosamente');
     } catch (e) {
-      debugPrint('Error durante logout: $e');
-      // Limpiar tokens incluso si hay error en el backend
-      await clearTokens();
+      debugPrint('Error durante proceso de logout: $e');
+      // Intentar limpiar tokens incluso si hay error
+      try {
+        await clearTokens();
+      } catch (cleanupError) {
+        debugPrint('Error adicional durante limpieza de tokens: $cleanupError');
+      }
       rethrow;
     }
   }
@@ -998,11 +1026,11 @@ class UsuarioAutenticado {
   final String rolCuentaEmpleadoId;
   final String rolCuentaEmpleadoCodigo;
   final String empleadoId;
+  final Map<String, dynamic> empleado;
   final DateTime fechaCreacion;
   final DateTime fechaActualizacion;
   final String sucursal;
   final int sucursalId;
-  final String token;
 
   UsuarioAutenticado({
     required this.id,
@@ -1010,11 +1038,11 @@ class UsuarioAutenticado {
     required this.rolCuentaEmpleadoId,
     required this.rolCuentaEmpleadoCodigo,
     required this.empleadoId,
+    required this.empleado,
     required this.fechaCreacion,
     required this.fechaActualizacion,
     required this.sucursal,
     required this.sucursalId,
-    required this.token,
   });
 
   // Convertir a Map para almacenamiento o navegación
@@ -1028,14 +1056,14 @@ class UsuarioAutenticado {
       },
       'rolId': rolCuentaEmpleadoId,
       'empleadoId': empleadoId,
+      'empleado': empleado,
       'sucursal': sucursal,
       'sucursalId': sucursalId.toString(),
-      'token': token,
     };
   }
 
   // Crear desde respuesta JSON
-  factory UsuarioAutenticado.fromJson(Map<String, dynamic> json, String token) {
+  factory UsuarioAutenticado.fromJson(Map<String, dynamic> json) {
     debugPrint('Procesando datos de usuario: ${json.toString()}');
 
     // Extraer sucursalId con manejo seguro de tipos
@@ -1056,6 +1084,11 @@ class UsuarioAutenticado {
       debugPrint('ERROR al procesar sucursalId: $e');
     }
 
+    // Procesar datos del empleado
+    final Map<String, dynamic> empleadoData =
+        json['empleado'] as Map<String, dynamic>? ??
+            <String, dynamic>{'activo': true, 'nombres': '', 'apellidos': ''};
+
     return UsuarioAutenticado(
       id: json['id']?.toString() ?? '',
       usuario: json['usuario'] ?? '',
@@ -1063,6 +1096,7 @@ class UsuarioAutenticado {
       rolCuentaEmpleadoCodigo:
           json['rolCuentaEmpleadoCodigo']?.toString().toLowerCase() ?? '',
       empleadoId: json['empleadoId']?.toString() ?? '',
+      empleado: empleadoData,
       fechaCreacion: json['fechaCreacion'] != null
           ? DateTime.parse(json['fechaCreacion'])
           : DateTime.now(),
@@ -1071,13 +1105,12 @@ class UsuarioAutenticado {
           : DateTime.now(),
       sucursal: json['sucursal'] ?? '',
       sucursalId: sucursalId,
-      token: token,
     );
   }
 
   @override
   String toString() {
-    return 'UsuarioAutenticado{id: $id, usuario: $usuario, rol: $rolCuentaEmpleadoCodigo, sucursal: $sucursal, sucursalId: $sucursalId}';
+    return 'UsuarioAutenticado{id: $id, usuario: $usuario, rol: $rolCuentaEmpleadoCodigo, empleado: ${empleado['nombres']} ${empleado['apellidos']}, sucursal: $sucursal, sucursalId: $sucursalId}';
   }
 }
 

@@ -26,13 +26,28 @@ final ProformaNotification proformaNotification = ProformaNotification();
 // Lista de servidores posibles para intentar conectarse
 final List<String> _serverUrls = <String>[
   'http://192.168.1.42:3000/api', // IP de tu PC en la red WiFi local
-  'http://192.168.1.42:3000/api', // IP principal
   'http://localhost:3000/api', // Servidor local
   'http://127.0.0.1:3000/api', // Localhost alternativo
   'http://10.0.2.2:3000/api', // Emulador Android
-  'https://fseh2hb1d1h2ra5822cdvo.top/api', // En Produccion
-  'https://fseh2hb1d1h2ra5822cdvo.top', // En Produccion
+  'https://fseh2hb1d1h2ra5822cdvo.top/api', // En Producción
 ];
+
+// Función para construir URL completa del servidor
+String buildServerUrl(String host, {int? port}) {
+  if (host.startsWith('http://') || host.startsWith('https://')) {
+    final Uri uri = Uri.parse(host);
+    // Si ya tiene puerto y path, retornar como está
+    if (uri.hasPort && uri.path.isNotEmpty) return host;
+    // Si ya tiene puerto pero no path
+    if (uri.hasPort) return '${host.trimRight()}/api';
+    // Si no tiene puerto pero es HTTPS o tiene path
+    if (uri.scheme == 'https' || uri.path.isNotEmpty) return host;
+    // Si es HTTP y no tiene puerto ni path
+    return '${host.trimRight()}:${port ?? 3000}/api';
+  }
+  // Si es solo un host sin protocolo
+  return 'http://$host:${port ?? 3000}/api';
+}
 
 // Función para inicializar la API global
 void initializeApi(CondorMotorsApi instance) {
@@ -50,9 +65,10 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 Future<bool> _checkServerConnectivity(String url) async {
   try {
     debugPrint('Comprobando conectividad con: $url');
-    final Uri uri = Uri.parse(url.replaceAll('/api', ''));
-    final Socket socket =
-        await Socket.connect(uri.host, uri.port, timeout: Duration(seconds: 3));
+    final Uri uri = Uri.parse(url);
+    final Socket socket = await Socket.connect(
+        uri.host, uri.hasPort ? uri.port : (uri.scheme == 'https' ? 443 : 3000),
+        timeout: const Duration(seconds: 3));
     socket.destroy();
     debugPrint('Conexión exitosa con: $url');
     return true;
@@ -63,15 +79,24 @@ Future<bool> _checkServerConnectivity(String url) async {
 }
 
 // Guardar la URL del servidor en preferencias
-Future<void> _saveServerUrl(String url) async {
+Future<void> _saveServerUrl(String url, {int? port}) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.setString('server_url', url);
+  final String fullUrl = buildServerUrl(url, port: port);
+  await prefs.setString('server_url', fullUrl);
+  if (port != null) {
+    await prefs.setInt('server_port', port);
+  }
 }
 
-// Obtener la última URL del servidor usada
-Future<String?> _getLastServerUrl() async {
+// Obtener la última URL y puerto del servidor usados
+Future<Map<String, dynamic>> _getLastServerConfig() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getString('server_url');
+  final String? url = prefs.getString('server_url');
+  final int? port = prefs.getInt('server_port');
+  return {
+    'url': url,
+    'port': port,
+  };
 }
 
 void main() async {
@@ -96,10 +121,10 @@ void main() async {
   // Inicializar API
   debugPrint('Inicializando API...');
 
-  // Obtener la última URL usada
-  final String? lastUrl = await _getLastServerUrl();
-  if (lastUrl != null) {
-    _serverUrls.insert(0, lastUrl); // Priorizar la última URL usada
+  // Obtener la última configuración usada
+  final Map<String, dynamic> lastConfig = await _getLastServerConfig();
+  if (lastConfig['url'] != null) {
+    _serverUrls.insert(0, lastConfig['url'] as String);
   }
 
   // Verificar conectividad con los servidores en orden
@@ -117,7 +142,7 @@ void main() async {
 
   // Guardar la URL seleccionada para futuras sesiones
   if (workingUrl != null) {
-    await _saveServerUrl(workingUrl);
+    await _saveServerUrl(workingUrl, port: lastConfig['port']);
   }
 
   // Inicializar la API global

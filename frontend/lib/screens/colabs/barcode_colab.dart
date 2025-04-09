@@ -104,6 +104,13 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
+  // Nuevas variables para control de múltiples escaneos
+  final Set<String> _scannedCodes = <String>{};
+  final List<Map<String, dynamic>> _foundProducts = <Map<String, dynamic>>[];
+  DateTime? _lastScanTime;
+  static const Duration _scanCooldown = Duration(milliseconds: 1500);
+  bool _isProcessingMultiple = false;
+
   @override
   void initState() {
     super.initState();
@@ -131,15 +138,364 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
 
   void _onDetect(BarcodeCapture capture) {
     final List<Barcode> barcodes = capture.barcodes;
+    final DateTime now = DateTime.now();
 
-    for (final Barcode barcode in barcodes) {
-      if (barcode.rawValue == _lastScannedCode) {
-        return; // Evitar escaneos duplicados
-      }
-
-      _lastScannedCode = barcode.rawValue;
-      _searchProduct(barcode.rawValue ?? '');
+    // Verificar el cooldown entre escaneos
+    if (_lastScanTime != null &&
+        now.difference(_lastScanTime!) < _scanCooldown) {
+      return;
     }
+    _lastScanTime = now;
+
+    // Si hay múltiples códigos
+    if (barcodes.length > 1) {
+      _handleMultipleBarcodes(barcodes);
+      return;
+    }
+
+    // Si es un solo código
+    for (final Barcode barcode in barcodes) {
+      final String? code = barcode.rawValue;
+      if (code == null || code == _lastScannedCode) continue;
+
+      _lastScannedCode = code;
+      _searchProduct(code);
+    }
+  }
+
+  void _handleMultipleBarcodes(List<Barcode> barcodes) {
+    if (_isProcessingMultiple) return;
+    _isProcessingMultiple = true;
+
+    // Filtrar códigos únicos y válidos
+    final Set<String> uniqueCodes = barcodes
+        .where((b) => b.rawValue != null && !_scannedCodes.contains(b.rawValue))
+        .map((b) => b.rawValue!)
+        .toSet();
+
+    if (uniqueCodes.isEmpty) {
+      _isProcessingMultiple = false;
+      return;
+    }
+
+    // Mostrar diálogo de confirmación
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.85,
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Encabezado
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.qr_code_scanner,
+                      color: Colors.amber,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Múltiples Códigos Detectados',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Contenido
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.amber.withOpacity(0.3),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          color: Colors.amber,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Se detectaron ${uniqueCodes.length} códigos diferentes',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '¿Desea procesar todos los códigos encontrados?',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Botones
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _isProcessingMultiple = false;
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                    ),
+                    child: const Text('Cancelar'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4CAF50),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _processMultipleCodes(uniqueCodes.toList());
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.check_circle_outline, size: 18),
+                        SizedBox(width: 8),
+                        Text('Procesar Todos'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _processMultipleCodes(List<String> codes) async {
+    setState(() => _isLoading = true);
+    _foundProducts.clear();
+
+    for (final String code in codes) {
+      if (_scannedCodes.contains(code)) continue;
+
+      final Map<String, dynamic> producto = widget.productos.firstWhere(
+        (Map<String, dynamic> p) => p['codigo'] == code,
+        orElse: () => <String, dynamic>{},
+      );
+
+      if (producto.isNotEmpty) {
+        _foundProducts.add(producto);
+        _scannedCodes.add(code);
+      }
+    }
+
+    setState(() => _isLoading = false);
+
+    if (_foundProducts.isEmpty) {
+      _showNoProductsFoundDialog(codes);
+      return;
+    }
+
+    _showMultipleProductsDialog(_foundProducts);
+    _isProcessingMultiple = false;
+  }
+
+  void _showNoProductsFoundDialog(List<String> codes) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red),
+            SizedBox(width: 8),
+            Text(
+              'Productos No Encontrados',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'No se encontraron productos con los siguientes códigos:',
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 8),
+            ...codes.map((code) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Text(
+                    '• $code',
+                    style: const TextStyle(color: Colors.white54),
+                  ),
+                )),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMultipleProductsDialog(List<Map<String, dynamic>> products) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: Row(
+          children: [
+            const Icon(Icons.shopping_cart, color: Color(0xFF4CAF50)),
+            const SizedBox(width: 8),
+            Text(
+              'Productos Encontrados (${products.length})',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: products.length,
+            itemBuilder: (context, index) {
+              final producto = products[index];
+              final bool tieneStock = producto['stock'] > 0;
+
+              return ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D2D2D),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    FontAwesomeIcons.box,
+                    color: tieneStock ? const Color(0xFF4CAF50) : Colors.red,
+                  ),
+                ),
+                title: Text(
+                  producto['nombre'],
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'SKU: ${producto['codigo']}',
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                    Text(
+                      'Stock: ${producto['stock']}',
+                      style: TextStyle(
+                        color:
+                            tieneStock ? const Color(0xFF4CAF50) : Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+                trailing: Text(
+                  'S/ ${producto['precio'].toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                enabled: tieneStock,
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4CAF50),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              // Agregar solo los productos con stock
+              for (final producto in products) {
+                if (producto['stock'] > 0) {
+                  widget.onProductoSeleccionado(producto);
+                }
+              }
+              Navigator.pop(context); // Cerrar pantalla de escaneo
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.add_shopping_cart, size: 18),
+                SizedBox(width: 8),
+                Text('Agregar Todos'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _searchProduct(String code) {

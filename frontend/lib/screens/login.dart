@@ -253,20 +253,24 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  Future<void> _saveServerIp(String serverIp) async {
+  Future<void> _saveServerIp(String serverIp, {int? port}) async {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-      // Construir la URL completa
-      String fullUrl;
-      if (serverIp.startsWith('http://') || serverIp.startsWith('https://')) {
-        fullUrl = serverIp;
-      } else {
-        fullUrl = 'http://$serverIp:3000/api';
+      // Construir la URL completa usando la función del main.dart
+      String fullUrl = serverIp;
+      if (!serverIp.startsWith('http://') && !serverIp.startsWith('https://')) {
+        fullUrl = 'http://$serverIp${port != null ? ':$port' : ':3000'}/api';
+      } else if (!serverIp.contains(':') && !serverIp.startsWith('https://')) {
+        // Si es http pero no tiene puerto
+        fullUrl = '$serverIp${port != null ? ':$port' : ':3000'}/api';
       }
 
-      // Guardar la URL completa
+      // Guardar la URL completa y el puerto
       await prefs.setString('server_url', fullUrl);
+      if (port != null) {
+        await prefs.setInt('server_port', port);
+      }
 
       setState(() {
         _serverIp = serverIp;
@@ -285,14 +289,16 @@ class _LoginScreenState extends State<LoginScreen>
   void _showServerConfigDialog() {
     final TextEditingController ipController =
         TextEditingController(text: _serverIp);
+    final TextEditingController portController =
+        TextEditingController(text: '3000');
 
-    // Lista de servidores disponibles desde main.dart
-    final List<String> serverUrls = <String>[
-      'http://192.168.1.42:3000/api',
-      'http://localhost:3000/api',
-      'http://127.0.0.1:3000/api',
-      'http://10.0.2.2:3000/api',
-      'https://fseh2hb1d1h2ra5822cdvo.top/api',
+    // Lista de servidores disponibles
+    final List<Map<String, dynamic>> serverConfigs = <Map<String, dynamic>>[
+      {'url': 'http://192.168.1.42', 'port': 3000},
+      {'url': 'http://localhost', 'port': 3000},
+      {'url': 'http://127.0.0.1', 'port': 3000},
+      {'url': 'http://10.0.2.2', 'port': 3000},
+      {'url': 'https://fseh2hb1d1h2ra5822cdvo.top/api', 'port': null},
     ];
 
     showDialog(
@@ -309,8 +315,13 @@ class _LoginScreenState extends State<LoginScreen>
                 style: TextStyle(color: Colors.grey[700]),
               ),
               const SizedBox(height: 8),
-              ...serverUrls.map((String url) => ListTile(
-                    title: Text(url, style: const TextStyle(fontSize: 14)),
+              ...serverConfigs.map((Map<String, dynamic> config) => ListTile(
+                    title: Text(
+                      config['port'] != null
+                          ? '${config['url']}:${config['port']}'
+                          : config['url'] as String,
+                      style: const TextStyle(fontSize: 14),
+                    ),
                     onTap: () async {
                       Navigator.pop(dialogContext);
                       setState(() {
@@ -318,15 +329,12 @@ class _LoginScreenState extends State<LoginScreen>
                       });
 
                       try {
-                        // Extraer solo la IP/host del URL
-                        final Uri uri = Uri.parse(url);
-                        final String serverIp = uri.host;
+                        await _saveServerIp(
+                          config['url'] as String,
+                          port: config['port'] as int?,
+                        );
 
-                        await _saveServerIp(serverIp);
-
-                        if (!mounted) {
-                          return;
-                        }
+                        if (!mounted) return;
 
                         setState(() {
                           _isLoading = false;
@@ -334,14 +342,13 @@ class _LoginScreenState extends State<LoginScreen>
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Servidor actualizado a: $url'),
+                            content: Text(
+                                'Servidor actualizado a: ${config['url']}${config['port'] != null ? ':${config['port']}' : ''}'),
                             backgroundColor: Colors.green,
                           ),
                         );
                       } catch (e) {
-                        if (!mounted) {
-                          return;
-                        }
+                        if (!mounted) return;
 
                         setState(() {
                           _isLoading = false;
@@ -362,23 +369,46 @@ class _LoginScreenState extends State<LoginScreen>
                 style: TextStyle(color: Colors.grey[700]),
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: ipController,
-                decoration: InputDecoration(
-                  labelText: 'Dirección del Servidor',
-                  hintText: 'Ej: localhost o 192.168.1.66',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 7,
+                    child: TextFormField(
+                      controller: ipController,
+                      decoration: InputDecoration(
+                        labelText: 'Dirección del Servidor',
+                        hintText: 'Ej: localhost o 192.168.1.66',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      keyboardType: TextInputType.text,
+                    ),
                   ),
-                ),
-                keyboardType: TextInputType.text,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 3,
+                    child: TextFormField(
+                      controller: portController,
+                      decoration: InputDecoration(
+                        labelText: 'Puerto',
+                        hintText: '3000',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               Text(
                 '• Para desarrollo local (PC): localhost o 127.0.0.1\n'
                 '• Para emuladores Android: 10.0.2.2\n'
-                '• Para dispositivos físicos: IP de tu PC en la red WiFi (ej: 192.168.1.66)\n'
-                '• Si estás fuera de la red local: IP pública + configurar port forwarding',
+                '• Para dispositivos físicos: IP de tu PC en la red WiFi\n'
+                '• Puerto por defecto: 3000\n'
+                '• Para dominios HTTPS no es necesario el puerto',
                 style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],
@@ -392,6 +422,8 @@ class _LoginScreenState extends State<LoginScreen>
           ElevatedButton(
             onPressed: () async {
               final String newIp = ipController.text.trim();
+              final String portText = portController.text.trim();
+
               if (newIp.isNotEmpty) {
                 Navigator.pop(dialogContext);
                 setState(() {
@@ -399,11 +431,14 @@ class _LoginScreenState extends State<LoginScreen>
                 });
 
                 try {
-                  await _saveServerIp(newIp);
-
-                  if (!mounted) {
-                    return;
+                  int? port;
+                  if (portText.isNotEmpty && !newIp.startsWith('https://')) {
+                    port = int.tryParse(portText);
                   }
+
+                  await _saveServerIp(newIp, port: port);
+
+                  if (!mounted) return;
 
                   setState(() {
                     _isLoading = false;
@@ -411,14 +446,13 @@ class _LoginScreenState extends State<LoginScreen>
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Servidor actualizado a: $newIp'),
+                      content: Text(
+                          'Servidor actualizado a: $newIp${port != null ? ':$port' : ''}'),
                       backgroundColor: Colors.green,
                     ),
                   );
                 } catch (e) {
-                  if (!mounted) {
-                    return;
-                  }
+                  if (!mounted) return;
 
                   setState(() {
                     _isLoading = false;
@@ -923,9 +957,7 @@ class _LoginScreenState extends State<LoginScreen>
                         Center(
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
-                            width: _isLoading
-                                ? 50
-                                : 320, // Ancho fijo en lugar de infinity
+                            width: _isLoading ? 50 : 320,
                             height: 50,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
@@ -936,8 +968,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   horizontal: _isLoading ? 0 : 24,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                      _isLoading ? 25 : 12),
+                                  borderRadius: BorderRadius.circular(25),
                                 ),
                                 elevation: 2,
                               ),
@@ -947,16 +978,20 @@ class _LoginScreenState extends State<LoginScreen>
                                 duration: const Duration(milliseconds: 200),
                                 transitionBuilder: (Widget child,
                                     Animation<double> animation) {
-                                  return ScaleTransition(
-                                    scale: animation,
-                                    child: child,
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: ScaleTransition(
+                                      scale: animation,
+                                      child: child,
+                                    ),
                                   );
                                 },
                                 child: _isLoading
-                                    ? const SizedBox(
-                                        height: 24,
+                                    ? Container(
                                         width: 24,
-                                        child: CircularProgressIndicator(
+                                        height: 24,
+                                        padding: const EdgeInsets.all(2),
+                                        child: const CircularProgressIndicator(
                                           strokeWidth: 2.5,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
@@ -964,20 +999,25 @@ class _LoginScreenState extends State<LoginScreen>
                                           ),
                                         ),
                                       )
-                                    : const Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.login, size: 20),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            'Iniciar Sesión',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
+                                    : Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12),
+                                        child: const Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.login, size: 20),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'Iniciar Sesión',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                               ),
                             ),

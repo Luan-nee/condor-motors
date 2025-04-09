@@ -45,6 +45,15 @@ Route<dynamic> generateRoute(
   if (!isAuthenticated && effectiveRoute != login) {
     debugPrint(
         'Redirigiendo a login: Usuario no autenticado intentando acceder a $effectiveRoute');
+
+    // Limpiar la navegación y forzar el login
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.of(navigatorKey.currentContext!).pushNamedAndRemoveUntil(
+        login,
+        (Route<dynamic> route) => false,
+      );
+    });
+
     return MaterialPageRoute(builder: (_) => const LoginScreen());
   }
 
@@ -67,32 +76,17 @@ Route<dynamic> generateRoute(
     if (!role_utils.hasAccess(rolCodigo, effectiveRoute)) {
       debugPrint(
           'Acceso denegado: Rol $rolCodigo no puede acceder a $effectiveRoute');
+
+      // Redirigir al login en caso de acceso denegado
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(navigatorKey.currentContext!).pushNamedAndRemoveUntil(
+          login,
+          (Route<dynamic> route) => false,
+        );
+      });
+
       return MaterialPageRoute(
-        builder: (_) => Scaffold(
-          appBar: AppBar(
-            title: const Text('Acceso denegado'),
-          ),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                const Icon(Icons.lock, size: 64, color: Colors.red),
-                const SizedBox(height: 16),
-                Text(
-                    'No tienes permiso para acceder a esta ruta: $effectiveRoute'),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(navigatorKey.currentContext!)
-                        .pushReplacementNamed(
-                            role_utils.getInitialRoute(rolCodigo));
-                  },
-                  child: const Text('Volver a la pantalla principal'),
-                ),
-              ],
-            ),
-          ),
-        ),
+        builder: (_) => const LoginScreen(),
       );
     }
   }
