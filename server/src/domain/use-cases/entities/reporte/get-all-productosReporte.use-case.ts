@@ -127,9 +127,8 @@ export class GetProductosReporte {
   private async getProductosSucursales(idSucursal: number) {
     const datos = await db
       .select({
-        id: detallesProductoTable.id,
         nombre: productosTable.nombre,
-        precioCompra: detallesProductoTable.precioCompra,
+        precioVenta: detallesProductoTable.precioVenta,
         stock: detallesProductoTable.stock
       })
       .from(detallesProductoTable)
@@ -164,7 +163,7 @@ export class GetProductosReporte {
       key,
       width: 20 + key.length
     }))
-
+    hoja.addRow([])
     datos.forEach((row: any) => {
       hoja.addRow(row)
     })
