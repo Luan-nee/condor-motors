@@ -930,13 +930,13 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Stock Origen: ${producto.stockOrigenActual} → ${producto.stockOrigenResultante}',
+                          'Stock Origen: ${producto.origen?.stockActual ?? 0} → ${producto.origen?.stockDespues ?? 0}',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.7),
                           ),
                         ),
                         Text(
-                          'Stock Destino: ${producto.stockDestinoActual} → ${producto.stockDestinoActual + producto.cantidadSolicitada}',
+                          'Stock Destino: ${producto.destino.stockActual} → ${producto.destino.stockDespues}',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.7),
                           ),

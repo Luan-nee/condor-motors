@@ -26,39 +26,57 @@ class DetalleProducto {
   final String nombre;
   final String? codigo;
   final int cantidad;
+  final int? stockOrigenActual;
+  final int? stockOrigenResultante;
+  final int? stockDestinoActual;
+  final int? stockMinimo;
+  final int? cantidadSolicitada;
+  final bool? stockDisponible;
+  final bool? stockBajoEnOrigen;
   final Producto? producto;
 
-  const DetalleProducto({
+  DetalleProducto({
     required this.id,
     required this.nombre,
     this.codigo,
     required this.cantidad,
+    this.stockOrigenActual,
+    this.stockOrigenResultante,
+    this.stockDestinoActual,
+    this.stockMinimo,
+    this.cantidadSolicitada,
+    this.stockDisponible,
+    this.stockBajoEnOrigen,
     this.producto,
   });
 
   /// Crea una instancia desde un mapa JSON (formato estándar)
   factory DetalleProducto.fromJson(Map<String, dynamic> json) {
     return DetalleProducto(
-      id: _parseId(json['id']),
-      nombre: json['nombre']?.toString() ?? 'Sin nombre',
-      codigo: json['codigo']?.toString(),
-      cantidad: _parseCantidad(json['cantidad']),
-      producto: json['producto'] != null
-          ? Producto.fromJson(json['producto'] as Map<String, dynamic>)
-          : null,
+      id: json['productoId'] ?? json['id'],
+      nombre: json['nombre'],
+      codigo: json['codigo'],
+      cantidad: json['cantidadSolicitada'] ?? json['cantidad'],
+      stockOrigenActual: json['stockOrigenActual'],
+      stockOrigenResultante: json['stockOrigenResultante'],
+      stockDestinoActual: json['stockDestinoActual'],
+      stockMinimo: json['stockMinimo'],
+      cantidadSolicitada: json['cantidadSolicitada'],
+      stockDisponible: json['stockDisponible'],
+      stockBajoEnOrigen: json['stockBajoEnOrigen'],
+      producto:
+          json['producto'] != null ? Producto.fromJson(json['producto']) : null,
     );
   }
 
   /// Crea una instancia desde un mapa JSON del formato itemsVenta
   factory DetalleProducto.fromItemVenta(Map<String, dynamic> json) {
+    debugPrint('Mapeando DetalleProducto desde itemVenta: ${json.toString()}');
     return DetalleProducto(
-      id: _parseId(json['productoId'] ?? json['producto_id']),
-      nombre: _parseNombre(json),
-      codigo: _parseCodigo(json),
-      cantidad: _parseCantidad(json['cantidad']),
-      producto: json['producto'] != null
-          ? Producto.fromJson(json['producto'] as Map<String, dynamic>)
-          : null,
+      id: json['id'] ?? 0,
+      nombre: json['nombreProducto'] ?? 'Sin nombre',
+      codigo: json['codigoProducto'],
+      cantidad: json['cantidad'] ?? 0,
     );
   }
 
@@ -96,51 +114,54 @@ class DetalleProducto {
 
   /// Convierte la instancia a un mapa JSON completo
   Map<String, dynamic> toJson() {
-    return <String, dynamic>{
+    return {
       'id': id,
       'nombre': nombre,
       if (codigo != null) 'codigo': codigo,
       'cantidad': cantidad,
+      if (stockOrigenActual != null) 'stockOrigenActual': stockOrigenActual,
+      if (stockOrigenResultante != null)
+        'stockOrigenResultante': stockOrigenResultante,
+      if (stockDestinoActual != null) 'stockDestinoActual': stockDestinoActual,
+      if (stockMinimo != null) 'stockMinimo': stockMinimo,
+      if (cantidadSolicitada != null) 'cantidadSolicitada': cantidadSolicitada,
+      if (stockDisponible != null) 'stockDisponible': stockDisponible,
+      if (stockBajoEnOrigen != null) 'stockBajoEnOrigen': stockBajoEnOrigen,
       if (producto != null) 'producto': producto!.toJson(),
     };
   }
 
   // Métodos de ayuda para el parsing
-  static int _parseId(value) {
-    if (value == null) {
-      return 0;
-    }
-    try {
-      return value is int ? value : int.parse(value.toString());
-    } catch (e) {
-      debugPrint('Error al parsear ID: $e');
-      return 0;
-    }
-  }
 
-  static int _parseCantidad(value) {
-    if (value == null) {
-      return 0;
-    }
-    try {
-      return value is int ? value : int.parse(value.toString());
-    } catch (e) {
-      debugPrint('Error al parsear cantidad: $e');
-      return 0;
-    }
-  }
-
-  static String _parseNombre(Map<String, dynamic> json) {
-    return json['nombreProducto']?.toString() ??
-        json['nombre']?.toString() ??
-        json['producto_nombre']?.toString() ??
-        'Sin nombre';
-  }
-
-  static String? _parseCodigo(Map<String, dynamic> json) {
-    return json['codigo']?.toString() ??
-        json['codigoProducto']?.toString() ??
-        json['producto_codigo']?.toString();
+  DetalleProducto copyWith({
+    int? id,
+    String? nombre,
+    String? codigo,
+    int? cantidad,
+    int? stockOrigenActual,
+    int? stockOrigenResultante,
+    int? stockDestinoActual,
+    int? stockMinimo,
+    int? cantidadSolicitada,
+    bool? stockDisponible,
+    bool? stockBajoEnOrigen,
+    Producto? producto,
+  }) {
+    return DetalleProducto(
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      codigo: codigo ?? this.codigo,
+      cantidad: cantidad ?? this.cantidad,
+      stockOrigenActual: stockOrigenActual ?? this.stockOrigenActual,
+      stockOrigenResultante:
+          stockOrigenResultante ?? this.stockOrigenResultante,
+      stockDestinoActual: stockDestinoActual ?? this.stockDestinoActual,
+      stockMinimo: stockMinimo ?? this.stockMinimo,
+      cantidadSolicitada: cantidadSolicitada ?? this.cantidadSolicitada,
+      stockDisponible: stockDisponible ?? this.stockDisponible,
+      stockBajoEnOrigen: stockBajoEnOrigen ?? this.stockBajoEnOrigen,
+      producto: producto ?? this.producto,
+    );
   }
 
   @override
@@ -207,20 +228,61 @@ class TransferenciaInventario {
 
   /// Crea una instancia desde un mapa JSON
   factory TransferenciaInventario.fromJson(Map<String, dynamic> json) {
+    debugPrint('Mapeando TransferenciaInventario desde JSON:');
+    debugPrint(json.toString());
+
+    // Si los datos vienen dentro de data, usar ese objeto
+    final data = json['data'] ?? json;
+
+    // Mapear estado
+    final estado = EstadoTransferencia.values.firstWhere(
+      (e) => e.codigo == data['estado']['codigo'],
+      orElse: () => EstadoTransferencia.pedido,
+    );
+
+    // Mapear sucursales
+    final Map<String, dynamic>? sucursalOrigen = data['sucursalOrigen'];
+    final Map<String, dynamic>? sucursalDestino = data['sucursalDestino'];
+
+    // Mapear productos desde items, itemsVenta o productos
+    List<DetalleProducto>? productos;
+    if (data['items'] != null) {
+      productos = (data['items'] as List)
+          .map((item) => DetalleProducto(
+                id: item['id'],
+                nombre: item['nombre'],
+                cantidad: item['cantidad'],
+              ))
+          .toList();
+      debugPrint('Productos mapeados desde items: ${productos.length}');
+    } else if (data['itemsVenta'] != null) {
+      productos = (data['itemsVenta'] as List)
+          .map((item) => DetalleProducto.fromItemVenta(item))
+          .toList();
+      debugPrint('Productos mapeados desde itemsVenta: ${productos.length}');
+    } else if (data['productos'] != null) {
+      productos = (data['productos'] as List)
+          .map((p) => DetalleProducto.fromJson(p))
+          .toList();
+      debugPrint('Productos mapeados desde productos: ${productos.length}');
+    }
+
     return TransferenciaInventario(
-      id: _parseId(json['id']),
-      estado: _parseEstado(json['estado']),
-      nombreSucursalOrigen: _parseSucursal(json['sucursalOrigen']),
-      nombreSucursalDestino: _parseSucursal(json['sucursalDestino']) ?? 'N/A',
-      sucursalDestinoId: _parseSucursalId(json['sucursalDestino']) ??
-          _parseId(json['sucursalDestinoId'] ?? json['sucursal_destino_id']),
-      sucursalOrigenId: _parseSucursalId(json['sucursalOrigen']) ??
-          _parseId(json['sucursalOrigenId'] ?? json['sucursal_origen_id']),
-      modificable: json['modificable'] == true,
-      salidaOrigen: _parseFecha(json['salidaOrigen']),
-      llegadaDestino: _parseFecha(json['llegadaDestino']),
-      productos: _parseProductos(json),
-      observaciones: json['observaciones']?.toString(),
+      id: data['id'],
+      estado: estado,
+      sucursalOrigenId: sucursalOrigen?['id'],
+      nombreSucursalOrigen: sucursalOrigen?['nombre'],
+      sucursalDestinoId: sucursalDestino?['id'] ?? 0,
+      nombreSucursalDestino: sucursalDestino?['nombre'] ?? 'Sin destino',
+      productos: productos,
+      observaciones: data['observaciones'],
+      modificable: data['modificable'] ?? true,
+      salidaOrigen: data['salidaOrigen'] != null
+          ? DateTime.parse(data['salidaOrigen'])
+          : null,
+      llegadaDestino: data['llegadaDestino'] != null
+          ? DateTime.parse(data['llegadaDestino'])
+          : null,
     );
   }
 
@@ -229,26 +291,47 @@ class TransferenciaInventario {
     return <String, dynamic>{
       'sucursalDestinoId': sucursalDestinoId,
       if (sucursalOrigenId != null) 'sucursalOrigenId': sucursalOrigenId,
-      'items': productos?.map((p) => p.toApiJson()).toList() ?? [],
+      'items': productos
+              ?.map((p) => {
+                    'id': p.id,
+                    'cantidad': p.cantidad,
+                    'nombre': p.nombre,
+                  })
+              .toList() ??
+          [],
       if (observaciones != null) 'observaciones': observaciones,
     };
   }
 
   /// Convierte la instancia a un mapa JSON completo
   Map<String, dynamic> toJson() {
-    return <String, dynamic>{
+    return {
       'id': id,
-      'estado': estado.codigo,
-      'nombreSucursalOrigen': nombreSucursalOrigen,
-      'nombreSucursalDestino': nombreSucursalDestino,
-      'sucursalDestinoId': sucursalDestinoId,
-      if (sucursalOrigenId != null) 'sucursalOrigenId': sucursalOrigenId,
+      'estado': {
+        'nombre': estado.nombre,
+        'codigo': estado.codigo,
+      },
+      'sucursalOrigen': sucursalOrigenId != null
+          ? {
+              'id': sucursalOrigenId,
+              'nombre': nombreSucursalOrigen,
+            }
+          : null,
+      'sucursalDestino': {
+        'id': sucursalDestinoId,
+        'nombre': nombreSucursalDestino,
+      },
+      'items': productos
+          ?.map((p) => {
+                'id': p.id,
+                'cantidad': p.cantidad,
+                'nombre': p.nombre,
+              })
+          .toList(),
+      'observaciones': observaciones,
       'modificable': modificable,
       'salidaOrigen': salidaOrigen?.toIso8601String(),
       'llegadaDestino': llegadaDestino?.toIso8601String(),
-      if (productos != null)
-        'productos': productos!.map((p) => p.toJson()).toList(),
-      if (observaciones != null) 'observaciones': observaciones,
     };
   }
 
@@ -282,109 +365,6 @@ class TransferenciaInventario {
     );
   }
 
-  // Métodos de ayuda para el parsing
-  static int _parseId(value) {
-    if (value == null) {
-      return 0;
-    }
-    try {
-      return value is int ? value : int.parse(value.toString());
-    } catch (e) {
-      debugPrint('Error al parsear ID: $e');
-      return 0;
-    }
-  }
-
-  static DateTime? _parseFecha(value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return DateTime.parse(value.toString());
-    } catch (e) {
-      debugPrint('Error al parsear fecha: $e');
-      return null;
-    }
-  }
-
-  static List<DetalleProducto>? _parseProductos(Map<String, dynamic> json) {
-    List<DetalleProducto> productos = [];
-
-    // Intentar parsear productos en formato estándar
-    if (json['productos'] is List) {
-      try {
-        productos = (json['productos'] as List)
-            .map((item) =>
-                DetalleProducto.fromJson(item as Map<String, dynamic>))
-            .toList();
-      } catch (e) {
-        debugPrint('Error al parsear productos: $e');
-      }
-    }
-    // Intentar parsear productos en formato itemsVenta
-    else if (json['itemsVenta'] is List) {
-      try {
-        productos = (json['itemsVenta'] as List)
-            .map((item) =>
-                DetalleProducto.fromItemVenta(item as Map<String, dynamic>))
-            .toList();
-      } catch (e) {
-        debugPrint('Error al parsear itemsVenta: $e');
-      }
-    }
-
-    return productos.isEmpty ? null : productos;
-  }
-
-  static EstadoTransferencia _parseEstado(dynamic estado) {
-    if (estado == null) {
-      return EstadoTransferencia.pedido;
-    }
-
-    try {
-      if (estado is Map) {
-        return EstadoTransferencia.fromString(
-            estado['codigo']?.toString() ?? 'pedido');
-      }
-      return EstadoTransferencia.fromString(estado.toString());
-    } catch (e) {
-      debugPrint('Error al parsear estado: $e');
-      return EstadoTransferencia.pedido;
-    }
-  }
-
-  static String? _parseSucursal(dynamic sucursal) {
-    if (sucursal == null) {
-      return null;
-    }
-
-    try {
-      if (sucursal is Map) {
-        return sucursal['nombre']?.toString();
-      }
-      return sucursal.toString();
-    } catch (e) {
-      debugPrint('Error al parsear nombre de sucursal: $e');
-      return null;
-    }
-  }
-
-  static int? _parseSucursalId(dynamic sucursal) {
-    if (sucursal == null) {
-      return null;
-    }
-
-    try {
-      if (sucursal is Map) {
-        return _parseId(sucursal['id']);
-      }
-      return null;
-    } catch (e) {
-      debugPrint('Error al parsear ID de sucursal: $e');
-      return null;
-    }
-  }
-
   @override
   String toString() =>
       'TransferenciaInventario{id: $id, estado: ${estado.nombre}, origen: $nombreSucursalOrigen, destino: $nombreSucursalDestino}';
@@ -397,41 +377,67 @@ extension StringExtension on String {
   }
 }
 
+/// Representa el estado del stock en origen o destino
+class EstadoStock {
+  final int stockActual;
+  final int stockDespues;
+  final int? stockMinimo;
+  final bool? stockBajoDespues;
+
+  const EstadoStock({
+    required this.stockActual,
+    required this.stockDespues,
+    this.stockMinimo,
+    this.stockBajoDespues,
+  });
+
+  factory EstadoStock.fromJson(Map<String, dynamic>? json) {
+    if (json == null) return EstadoStock(stockActual: 0, stockDespues: 0);
+
+    return EstadoStock(
+      stockActual: json['stockActual'] as int,
+      stockDespues: json['stockDespues'] as int,
+      stockMinimo: json['stockMinimo'] as int?,
+      stockBajoDespues: json['stockBajoDespues'] as bool?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'stockActual': stockActual,
+      'stockDespues': stockDespues,
+      if (stockMinimo != null) 'stockMinimo': stockMinimo,
+      if (stockBajoDespues != null) 'stockBajoDespues': stockBajoDespues,
+    };
+  }
+}
+
 /// Representa la comparación de stock para un producto en una transferencia
 class ComparacionProducto {
   final int productoId;
   final String nombre;
-  final int stockOrigenActual;
-  final int stockOrigenResultante;
-  final int stockDestinoActual;
-  final int? stockMinimo;
   final int cantidadSolicitada;
-  final bool stockDisponible;
-  final bool stockBajoEnOrigen;
+  final EstadoStock? origen;
+  final EstadoStock destino;
+  final bool procesable;
 
   const ComparacionProducto({
     required this.productoId,
     required this.nombre,
-    required this.stockOrigenActual,
-    required this.stockOrigenResultante,
-    required this.stockDestinoActual,
-    this.stockMinimo,
     required this.cantidadSolicitada,
-    required this.stockDisponible,
-    required this.stockBajoEnOrigen,
+    this.origen,
+    required this.destino,
+    required this.procesable,
   });
 
   factory ComparacionProducto.fromJson(Map<String, dynamic> json) {
     return ComparacionProducto(
       productoId: json['productoId'] as int,
       nombre: json['nombre'] as String,
-      stockOrigenActual: json['stockOrigenActual'] as int,
-      stockOrigenResultante: json['stockOrigenResultante'] as int,
-      stockDestinoActual: json['stockDestinoActual'] as int,
-      stockMinimo: json['stockMinimo'] as int?,
       cantidadSolicitada: json['cantidadSolicitada'] as int,
-      stockDisponible: json['stockDisponible'] as bool,
-      stockBajoEnOrigen: json['stockBajoEnOrigen'] as bool,
+      origen: EstadoStock.fromJson(json['origen'] as Map<String, dynamic>?),
+      destino: EstadoStock.fromJson(json['destino'] as Map<String, dynamic>),
+      procesable: json['procesable'] as bool? ?? false,
     );
   }
 
@@ -439,35 +445,44 @@ class ComparacionProducto {
     return {
       'productoId': productoId,
       'nombre': nombre,
-      'stockOrigenActual': stockOrigenActual,
-      'stockOrigenResultante': stockOrigenResultante,
-      'stockDestinoActual': stockDestinoActual,
-      if (stockMinimo != null) 'stockMinimo': stockMinimo,
       'cantidadSolicitada': cantidadSolicitada,
-      'stockDisponible': stockDisponible,
-      'stockBajoEnOrigen': stockBajoEnOrigen,
+      'origen': origen?.toJson(),
+      'destino': destino.toJson(),
+      'procesable': procesable,
     };
   }
+
+  /// Verifica si el producto quedará con stock bajo después de la transferencia
+  bool get quedaConStockBajo => origen?.stockBajoDespues ?? false;
+
+  /// Verifica si hay suficiente stock para procesar la transferencia
+  bool get hayStockSuficiente =>
+      origen?.stockActual != null && origen!.stockActual >= cantidadSolicitada;
 }
 
 /// Representa la comparación completa de una transferencia
 class ComparacionTransferencia {
   final Sucursal sucursalOrigen;
   final Sucursal sucursalDestino;
+  final bool procesable;
   final List<ComparacionProducto> productos;
 
   const ComparacionTransferencia({
     required this.sucursalOrigen,
     required this.sucursalDestino,
+    required this.procesable,
     required this.productos,
   });
 
   factory ComparacionTransferencia.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] ?? json;
+
     return ComparacionTransferencia(
-      sucursalOrigen: Sucursal.fromJson(json['sucursalOrigen']),
-      sucursalDestino: Sucursal.fromJson(json['sucursalDestino']),
-      productos: (json['productos'] as List)
-          .map((p) => ComparacionProducto.fromJson(p))
+      sucursalOrigen: Sucursal.fromJson(data['sucursalOrigen']),
+      sucursalDestino: Sucursal.fromJson(data['sucursalDestino']),
+      procesable: data['procesable'] as bool? ?? false,
+      productos: (data['productos'] as List)
+          .map((p) => ComparacionProducto.fromJson(p as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -476,17 +491,21 @@ class ComparacionTransferencia {
     return {
       'sucursalOrigen': sucursalOrigen.toJson(),
       'sucursalDestino': sucursalDestino.toJson(),
+      'procesable': procesable,
       'productos': productos.map((p) => p.toJson()).toList(),
     };
   }
 
-  /// Verifica si todos los productos tienen stock disponible
-  bool get todosProductosDisponibles =>
-      productos.every((p) => p.stockDisponible);
-
   /// Obtiene la lista de productos que quedarán con stock bajo
   List<ComparacionProducto> get productosConStockBajo =>
-      productos.where((p) => p.stockBajoEnOrigen).toList();
+      productos.where((p) => p.quedaConStockBajo).toList();
+
+  /// Verifica si todos los productos son procesables
+  bool get todosProductosProcesables => productos.every((p) => p.procesable);
+
+  /// Verifica si todos los productos tienen stock suficiente
+  bool get todosProductosConStock =>
+      productos.every((p) => p.hayStockSuficiente);
 }
 
 /// Representa una sucursal en la comparación

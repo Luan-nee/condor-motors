@@ -184,11 +184,17 @@ class TransferenciasInventarioApi {
   }
 
   /// Envía una transferencia de inventario
-  Future<TransferenciaInventario> enviarTransferencia(String id) async {
+  Future<TransferenciaInventario> enviarTransferencia(
+    String id, {
+    required int sucursalOrigenId,
+  }) async {
     try {
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/$id/enviar',
         method: 'POST',
+        body: <String, dynamic>{
+          'sucursalOrigenId': sucursalOrigenId,
+        },
       );
 
       // Invalidar caché

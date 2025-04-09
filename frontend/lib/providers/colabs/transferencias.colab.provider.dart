@@ -89,37 +89,29 @@ class TransferenciasColabProvider extends ChangeNotifier {
   }
 
   // Cargar transferencias desde la API con datos completos de productos
-  Future<void> cargarTransferencias() async {
+  Future<void> cargarTransferencias({bool forceRefresh = false}) async {
     _setLoading(true);
 
     try {
       debugPrint('Cargando todas las transferencias');
 
-      String? estadoFiltro;
-      if (_selectedFilter != 'Todos') {
-        estadoFiltro = EstadoTransferencia.values
-            .firstWhere(
-              (e) => e.nombre == _selectedFilter,
-              orElse: () => EstadoTransferencia.pedido,
-            )
-            .codigo;
-      }
-
       final List<TransferenciaInventario> transferenciasData =
           await _transferenciasApi.getAllTransferencias(
-        estado: estadoFiltro,
-        forceRefresh: true,
+        forceRefresh: forceRefresh,
       );
 
-      // Cargar datos completos de productos para cada transferencia
-      _transferencias = await Future.wait(
-        transferenciasData.map((t) => t.cargarDatosProductos(_productosApi)),
-      );
-
+      _transferencias = transferenciasData;
       _errorMessage = null;
       notifyListeners();
 
       debugPrint('Transferencias cargadas: ${_transferencias.length}');
+      // Debug de los datos recibidos
+      for (var t in _transferencias) {
+        debugPrint('Transferencia #${t.id}:');
+        debugPrint('- Estado: ${t.estado.nombre}');
+        debugPrint('- Destino: ${t.nombreSucursalDestino}');
+        debugPrint('- Origen: ${t.nombreSucursalOrigen}');
+      }
     } catch (e) {
       _setError('Error al cargar transferencias: $e');
     } finally {
@@ -127,7 +119,60 @@ class TransferenciasColabProvider extends ChangeNotifier {
     }
   }
 
-  // Crear nueva transferencia con productos completos
+  // Obtener detalle de una transferencia con productos completos
+  Future<TransferenciaInventario> obtenerDetalleTransferencia(String id) async {
+    try {
+      debugPrint('Obteniendo detalle de transferencia #$id');
+
+      final TransferenciaInventario transferencia =
+          await _transferenciasApi.getTransferencia(id);
+
+      debugPrint('Detalle de transferencia cargado:');
+      debugPrint('- ID: ${transferencia.id}');
+      debugPrint('- Estado: ${transferencia.estado.nombre}');
+      debugPrint('- Productos: ${transferencia.productos?.length ?? 0}');
+
+      return transferencia;
+    } catch (e) {
+      _setError('Error al obtener detalle de transferencia: $e');
+      rethrow;
+    }
+  }
+
+  // Obtener comparación de una transferencia
+  Future<ComparacionTransferencia> obtenerComparacionTransferencia(
+      String id) async {
+    if (_sucursalId == null) {
+      throw Exception('No se ha establecido la sucursal de origen');
+    }
+
+    try {
+      debugPrint('Obteniendo comparación de transferencia #$id');
+
+      final ComparacionTransferencia comparacion =
+          await _transferenciasApi.compararTransferencia(
+        id: id,
+        sucursalOrigenId: int.parse(_sucursalId!),
+        useCache: false,
+      );
+
+      debugPrint('Comparación de transferencia cargada:');
+      debugPrint('- Sucursal Origen: ${comparacion.sucursalOrigen.nombre}');
+      debugPrint('- Sucursal Destino: ${comparacion.sucursalDestino.nombre}');
+      debugPrint('- Productos: ${comparacion.productos.length}');
+      debugPrint(
+          '- Productos con stock bajo: ${comparacion.productosConStockBajo.length}');
+      debugPrint(
+          '- Todos los productos procesables: ${comparacion.todosProductosProcesables}');
+
+      return comparacion;
+    } catch (e) {
+      _setError('Error al obtener comparación de transferencia: $e');
+      rethrow;
+    }
+  }
+
+  // Crear nueva transferencia sin cargar productos completos
   Future<bool> crearTransferencia(
     int sucursalDestinoId,
     List<DetalleProducto> productos,
@@ -141,16 +186,10 @@ class TransferenciasColabProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      // Cargar datos completos de los productos antes de crear la transferencia
-      final List<DetalleProducto> productosCompletos = await Future.wait(
-        productos
-            .map((p) => p.cargarDatosProducto(_productosApi, _sucursalId!)),
-      );
-
       final TransferenciaInventario nuevaTransferencia =
           await _transferenciasApi.createTransferencia(
         sucursalDestinoId: sucursalDestinoId,
-        items: productosCompletos
+        items: productos
             .map((p) => <String, dynamic>{
                   'productoId': p.id,
                   'cantidad': p.cantidad,
@@ -158,11 +197,7 @@ class TransferenciasColabProvider extends ChangeNotifier {
             .toList(),
       );
 
-      // Cargar datos completos de la nueva transferencia
-      final TransferenciaInventario transferenciaCompleta =
-          await nuevaTransferencia.cargarDatosProductos(_productosApi);
-
-      _transferencias.insert(0, transferenciaCompleta);
+      _transferencias.insert(0, nuevaTransferencia);
       _limpiarTransferenciaEnProceso();
       notifyListeners();
 
@@ -175,23 +210,15 @@ class TransferenciasColabProvider extends ChangeNotifier {
     }
   }
 
-  // Agregar producto a la transferencia en proceso con datos completos
-  Future<void> agregarProducto(DetalleProducto producto) async {
+  // Agregar producto a la transferencia en proceso
+  void agregarProducto(DetalleProducto producto) {
     if (_productosSeleccionados.any((p) => p.id == producto.id)) {
       _setError('El producto ya está en la lista');
       return;
     }
 
-    try {
-      // Cargar datos completos del producto
-      final DetalleProducto productoCompleto =
-          await producto.cargarDatosProducto(_productosApi, _sucursalId!);
-
-      _productosSeleccionados.add(productoCompleto);
-      notifyListeners();
-    } catch (e) {
-      _setError('Error al cargar datos del producto: $e');
-    }
+    _productosSeleccionados.add(producto);
+    notifyListeners();
   }
 
   // Obtener cantidad total de productos seleccionados
@@ -232,17 +259,6 @@ class TransferenciasColabProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Obtener detalle de una transferencia con productos completos
-  Future<TransferenciaInventario> obtenerDetalleTransferencia(String id) async {
-    try {
-      final TransferenciaInventario transferencia =
-          await _transferenciasApi.getTransferencia(id);
-      return transferencia.cargarDatosProductos(_productosApi);
-    } catch (e) {
-      throw Exception('Error al obtener detalle de transferencia: $e');
-    }
-  }
-
   // Validar recepción de una transferencia
   Future<void> validarRecepcion(TransferenciaInventario transferencia) async {
     _setLoading(true);
@@ -266,8 +282,15 @@ class TransferenciasColabProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
+      if (_sucursalId == null) {
+        throw Exception('No se pudo obtener el ID de la sucursal del usuario');
+      }
+
+      final int sucursalOrigenId = int.parse(_sucursalId!);
+
       await _transferenciasApi.enviarTransferencia(
         transferencia.id.toString(),
+        sucursalOrigenId: sucursalOrigenId,
       );
 
       await cargarTransferencias();
@@ -286,13 +309,19 @@ class TransferenciasColabProvider extends ChangeNotifier {
 
   // Filtrar transferencias por sucursal actual
   List<TransferenciaInventario> getTransferenciasFiltradas() {
-    if (_selectedFilter == 'Todos' && _sucursalId == null) {
+    debugPrint('Filtrando transferencias...');
+    debugPrint('Total transferencias: ${_transferencias.length}');
+    debugPrint('Filtro seleccionado: $_selectedFilter');
+    debugPrint('ID Sucursal: $_sucursalId');
+
+    // Si no hay filtro de estado y no estamos en modo de filtrado por sucursal, mostrar todas
+    if (_selectedFilter == 'Todos') {
+      debugPrint('Retornando todas las transferencias sin filtrar');
       return _transferencias;
     }
 
     return _transferencias.where((t) {
       bool cumpleFiltroEstado = true;
-      bool cumpleFiltroPorSucursal = true;
 
       // Aplicar filtro por estado si está seleccionado
       if (_selectedFilter != 'Todos') {
@@ -304,14 +333,10 @@ class TransferenciasColabProvider extends ChangeNotifier {
         cumpleFiltroEstado = t.estado == estadoFiltro;
       }
 
-      // Aplicar filtro por sucursal si hay una sucursal seleccionada
-      if (_sucursalId != null) {
-        final int sucursalIdInt = int.parse(_sucursalId!);
-        cumpleFiltroPorSucursal = t.sucursalDestinoId == sucursalIdInt ||
-            (t.sucursalOrigenId != null && t.sucursalOrigenId == sucursalIdInt);
-      }
-
-      return cumpleFiltroEstado && cumpleFiltroPorSucursal;
+      final bool cumple = cumpleFiltroEstado;
+      debugPrint(
+          'Transferencia #${t.id}: ${cumple ? 'Incluida' : 'Excluida'} (Estado: ${t.estado.nombre})');
+      return cumple;
     }).toList();
   }
 
@@ -507,23 +532,6 @@ class TransferenciasColabProvider extends ChangeNotifier {
     } catch (e) {
       _setError('Error al obtener comparación de stocks: $e');
       return [];
-    }
-  }
-
-  // Obtener comparación de transferencia
-  Future<ComparacionTransferencia> obtenerComparacionTransferencia(
-    String id,
-    int sucursalOrigenId,
-  ) async {
-    try {
-      return await _transferenciasApi.compararTransferencia(
-        id: id,
-        sucursalOrigenId: sucursalOrigenId,
-        useCache: false,
-      );
-    } catch (e) {
-      _setError('Error al obtener comparación de transferencia: $e');
-      rethrow;
     }
   }
 

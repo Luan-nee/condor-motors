@@ -348,8 +348,14 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
                 final BuildContext dialogContextCopy = dialogContext;
 
                 try {
+                  if (transferencia.sucursalOrigenId == null) {
+                    throw Exception(
+                        'No se ha establecido la sucursal de origen');
+                  }
+
                   await _transferenciasApi.enviarTransferencia(
                     transferencia.id.toString(),
+                    sucursalOrigenId: transferencia.sucursalOrigenId!,
                   );
 
                   if (!mounted) {
