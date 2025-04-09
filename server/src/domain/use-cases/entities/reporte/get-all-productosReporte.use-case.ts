@@ -15,15 +15,12 @@ interface ProductoPlano {
   id: number
   nombre: string
   descripcion: string | null
-  descuento: number | null
   color: string
-  marca: number
+  marca: number | string
   detallesproducto: {
     stock: number | null
     liquidacion: boolean | null
     sucursal: string | null
-    precioCompra: number | string | null
-    precioVenta: number | string | null
   }
 }
 
@@ -31,35 +28,21 @@ interface FilaReporte {
   id: number
   nombre: string
   descripcion: string | null
-  descuento: number | null
   color: string
-  marca: number
-  precioCompra: number | string | null
-  precioVenta: number | string | null
+  marca: number | string
   [sucursalNombre: string]: string | number | null | undefined
   Total?: number
 }
 
 export class GetProductosReporte {
   private crearFilaProducto(row: ProductoPlano): FilaReporte {
-    const {
-      id,
-      nombre,
-      descripcion,
-      descuento,
-      color,
-      marca,
-      detallesproducto: { precioCompra, precioVenta }
-    } = row
+    const { id, nombre, descripcion, color, marca } = row
     return {
       id,
       nombre,
       descripcion,
-      descuento,
       color,
-      marca,
-      precioCompra,
-      precioVenta
+      marca
     }
   }
 
@@ -94,15 +77,9 @@ export class GetProductosReporte {
     for (const fila of reporteMap.values()) {
       const total = Object.entries(fila).reduce((acc, [key, value]) => {
         if (
-          ![
-            'id',
-            'nombre',
-            'descripcion',
-            'descuento',
-            'color',
-            'marca',
-            'Total'
-          ].includes(key) &&
+          !['id', 'nombre', 'descripcion', 'color', 'marca', 'Total'].includes(
+            key
+          ) &&
           typeof value === 'number'
         ) {
           return acc + value
@@ -121,15 +98,12 @@ export class GetProductosReporte {
         id: productosTable.id,
         nombre: productosTable.nombre,
         descripcion: productosTable.descripcion,
-        descuento: productosTable.porcentajeDescuento,
         color: coloresTable.nombre,
-        marca: marcasTable.id,
+        marca: marcasTable.nombre,
         detallesproducto: {
           stock: detallesProductoTable.stock,
           liquidacion: detallesProductoTable.liquidacion,
-          sucursal: sucursalesTable.nombre,
-          precioCompra: detallesProductoTable.precioCompra,
-          precioVenta: detallesProductoTable.precioVenta
+          sucursal: sucursalesTable.nombre
         }
       })
       .from(productosTable)
@@ -149,35 +123,47 @@ export class GetProductosReporte {
 
     return this.pivotarProductosPorSucursal(datos)
   }
+
+  private crearHoja(
+    tablaPrincipal: Workbook,
+    titulo: string,
+    datos: any[]
+  ): void {
+    if (datos.length === 0) return
+    const hoja = tablaPrincipal.addWorksheet(titulo)
+    const cabecera = Object.keys(datos[0])
+    hoja.columns = cabecera.map((key) => ({
+      header: key.charAt(0).toUpperCase() + key.slice(1),
+      key,
+      width: 20 + key.length
+    }))
+
+    datos.forEach((row: any) => {
+      hoja.addRow(row)
+    })
+
+    const filaCabecera = hoja.getRow(1)
+    filaCabecera.eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFFCC00' }
+      }
+      cell.font = { bold: true }
+    })
+    filaCabecera.commit()
+  }
+
   private async createExcelFile() {
     const valores = await this.getProductos()
     if (valores.length === 0) {
       CustomError.serviceUnavailable('No existen productos por ahora')
     }
-    const cabecera = Object.keys(valores[0])
 
     const workbook = new Workbook()
-    const worksheet = workbook.addWorksheet('Datos')
+    // const worksheet = workbook.addWorksheet('Datos')
 
-    worksheet.columns = cabecera.map((key) => ({
-      header: key.charAt(0).toUpperCase() + key.slice(1),
-      key,
-      width: 20,
-      style: {
-        font: { bold: true },
-        color: {
-          fill: {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFFFCC00' }
-          }
-        }
-      }
-    }))
-
-    valores.forEach((row) => {
-      worksheet.addRow(row)
-    })
+    this.crearHoja(workbook, 'Principal', valores)
 
     await workbook.xlsx.writeFile('storage/private/reportes/archivo.xlsx')
     return { archivo: 'archivo.xlsx' }
