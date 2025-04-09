@@ -1,16 +1,24 @@
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
-import { cuentasEmpleadosTable, rolesTable } from '@/db/schema'
+import {
+  cuentasEmpleadosTable,
+  empleadosTable,
+  rolesTable,
+  sucursalesTable
+} from '@/db/schema'
 import { eq } from 'drizzle-orm'
 
 export class TestSession {
   private readonly selectFields = {
     id: cuentasEmpleadosTable.id,
     usuario: cuentasEmpleadosTable.usuario,
-    rol: {
-      codigo: rolesTable.codigo,
-      nombre: rolesTable.nombre
-    }
+    rolCuentaEmpleadoId: cuentasEmpleadosTable.rolId,
+    rolCuentaEmpleadoCodigo: rolesTable.codigo,
+    empleadoId: cuentasEmpleadosTable.empleadoId,
+    fechaCreacion: cuentasEmpleadosTable.fechaCreacion,
+    fechaActualizacion: cuentasEmpleadosTable.fechaActualizacion,
+    sucursal: sucursalesTable.nombre,
+    sucursalId: sucursalesTable.id
   }
 
   constructor(private readonly authPayload: AuthPayload) {}
@@ -19,7 +27,15 @@ export class TestSession {
     const users = await db
       .select(this.selectFields)
       .from(cuentasEmpleadosTable)
-      .innerJoin(rolesTable, eq(cuentasEmpleadosTable.rolId, rolesTable.id))
+      .innerJoin(rolesTable, eq(rolesTable.id, cuentasEmpleadosTable.rolId))
+      .innerJoin(
+        empleadosTable,
+        eq(empleadosTable.id, cuentasEmpleadosTable.empleadoId)
+      )
+      .innerJoin(
+        sucursalesTable,
+        eq(sucursalesTable.id, empleadosTable.sucursalId)
+      )
       .where(eq(cuentasEmpleadosTable.id, this.authPayload.id))
 
     if (users.length < 1) {
