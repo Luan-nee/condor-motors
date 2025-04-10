@@ -8,6 +8,8 @@ Este endpoint permite crear un nuevo producto en el sistema.
 
 `[POST] {{base_url}}/api/{{idSucursal}}/productos`
 
+#### Descripción de la url:
+
 `idSucursal`: representa la id de la sucursal con un valor de tipo `INT`
 
 ## Headers
