@@ -1,6 +1,6 @@
-# TAREAS PENDIENTES
+# TAREAS DENTRO DE [crear.md](./soloSucursal/productos/crear.md).
 
-- [ ] Revisar la tabla de propiedades en la documentación del siguiente archivo: [docs/solo sucursal/productos/crear.md](./soloSucursal/productos/crear.md).
-- [ ] Escribir pruebas unitarias para el módulo de sucursales.
-- [ ] Documentar el proceso de despliegue.
-- [x] Configurar base de datos PostgreSQL.
+- [ ] Revisar la tabla de propiedades **_Campos del Cuerpo de la Solicitud_**.
+- [ ] Agregar los permisos dentro de la documentación.
+- [ ] Definir la **_respuesta exitosa_**.
+- [ ] Revisar y explicar los errores más comunes del endpoint
