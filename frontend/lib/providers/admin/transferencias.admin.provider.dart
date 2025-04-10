@@ -40,6 +40,25 @@ class TransferenciasProvider extends ChangeNotifier {
   String get ordenarPor => _ordenarPor;
   String get orden => _orden;
 
+  /// Recarga todos los datos forzando actualización desde el servidor
+  Future<void> recargarDatos() async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      debugPrint('Forzando recarga de datos de transferencias desde la API...');
+      await cargarSucursales();
+      await cargarTransferencias(forceRefresh: true);
+      debugPrint(
+          'Datos de transferencias recargados exitosamente desde la API');
+    } catch (e) {
+      debugPrint('Error al recargar datos de transferencias: $e');
+      _setError('Error al recargar datos: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   // Lista de filtros disponibles
   final List<String> filters = [
     'Todos',

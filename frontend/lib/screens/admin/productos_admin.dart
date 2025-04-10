@@ -424,6 +424,66 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
             children: <Widget>[
               if (productoProvider.sucursalSeleccionada != null) ...<Widget>[
                 ElevatedButton.icon(
+                  icon: productoProvider.isLoadingProductos
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const FaIcon(
+                          FontAwesomeIcons.arrowsRotate,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                  label: Text(
+                    productoProvider.isLoadingProductos
+                        ? 'Recargando...'
+                        : 'Recargar',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2D2D2D),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  onPressed: productoProvider.isLoadingProductos
+                      ? null
+                      : () async {
+                          await productoProvider.recargarDatos();
+                          if (mounted) {
+                            setState(() {
+                              _productosKey.value =
+                                  'productos_${productoProvider.sucursalSeleccionada?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
+                            });
+
+                            // Mostrar mensaje de éxito o error
+                            if (productoProvider.errorMessage != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(productoProvider.errorMessage!),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                      Text('Datos recargados exitosamente'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
                   icon: const FaIcon(
                     FontAwesomeIcons.fileExport,
                     size: 16,

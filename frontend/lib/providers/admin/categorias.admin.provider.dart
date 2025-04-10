@@ -23,6 +23,23 @@ class CategoriasProvider extends ChangeNotifier {
   CategoriasProvider({CategoriasApi? categoriasApi})
       : _categoriasApi = categoriasApi ?? api.categorias;
 
+  /// Recarga todos los datos forzando actualización desde el servidor
+  Future<void> recargarDatos() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      debugPrint('Forzando recarga de datos de categorías desde la API...');
+      await cargarCategorias(useCache: false);
+      debugPrint('Datos de categorías recargados exitosamente desde la API');
+    } catch (e) {
+      debugPrint('Error al recargar datos de categorías: $e');
+      _setError('Error al recargar datos: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Carga la lista de categorías desde la API
   Future<void> cargarCategorias({bool useCache = true}) async {
     _setLoading(true);

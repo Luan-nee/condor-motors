@@ -58,6 +58,35 @@ class ProductoProvider extends ChangeNotifier {
     cargarCategorias();
   }
 
+  /// Recarga todos los datos forzando actualización desde el servidor
+  Future<void> recargarDatos() async {
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Forzar recarga de sucursales
+      await cargarSucursales();
+
+      // Forzar recarga de categorías
+      await cargarCategorias();
+
+      if (_sucursalSeleccionada != null) {
+        // Invalidar caché en el repositorio
+        _productoRepository
+            .invalidateCache(_sucursalSeleccionada!.id.toString());
+
+        // Recargar productos forzando actualización desde servidor
+        await cargarProductos();
+      }
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error al recargar datos: $e');
+      _errorMessage = 'Error al recargar datos: $e';
+      notifyListeners();
+    }
+  }
+
   /// Filtra los productos basados en la búsqueda y categoría seleccionada
   void _filtrarProductos() {
     if (_paginatedProductos == null) {

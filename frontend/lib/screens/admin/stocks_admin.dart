@@ -194,6 +194,70 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                             ],
                           ),
                         ),
+                        // Botón de recarga
+                        if (stockProvider.selectedSucursal != null)
+                          Row(
+                            children: <Widget>[
+                              ElevatedButton.icon(
+                                icon: stockProvider.isLoadingProductos
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const FaIcon(
+                                        FontAwesomeIcons.arrowsRotate,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                label: Text(
+                                  stockProvider.isLoadingProductos
+                                      ? 'Recargando...'
+                                      : 'Recargar',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF2D2D2D),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                onPressed: stockProvider.isLoadingProductos
+                                    ? null
+                                    : () async {
+                                        await stockProvider.recargarDatos();
+                                        if (mounted) {
+                                          // Mostrar mensaje de éxito o error
+                                          if (stockProvider.errorProductos !=
+                                              null) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(stockProvider
+                                                    .errorProductos!),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    'Datos recargados exitosamente'),
+                                                backgroundColor: Colors.green,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                   ),

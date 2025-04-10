@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/components/proforma_notification.dart';
 import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
+import 'package:condorsmotors/providers/auth.provider.dart';
 import 'package:condorsmotors/providers/colabs/index.colab.provider.dart';
 import 'package:condorsmotors/providers/computer/index.computer.provider.dart';
 import 'package:condorsmotors/providers/login.provider.dart';
@@ -37,11 +38,17 @@ String buildServerUrl(String host, {int? port}) {
   if (host.startsWith('http://') || host.startsWith('https://')) {
     final Uri uri = Uri.parse(host);
     // Si ya tiene puerto y path, retornar como está
-    if (uri.hasPort && uri.path.isNotEmpty) return host;
+    if (uri.hasPort && uri.path.isNotEmpty) {
+      return host;
+    }
     // Si ya tiene puerto pero no path
-    if (uri.hasPort) return '${host.trimRight()}/api';
+    if (uri.hasPort) {
+      return '${host.trimRight()}/api';
+    }
     // Si no tiene puerto pero es HTTPS o tiene path
-    if (uri.scheme == 'https' || uri.path.isNotEmpty) return host;
+    if (uri.scheme == 'https' || uri.path.isNotEmpty) {
+      return host;
+    }
     // Si es HTTP y no tiene puerto ni path
     return '${host.trimRight()}:${port ?? 3000}/api';
   }
@@ -203,6 +210,9 @@ void main() async {
       providers: [
         ChangeNotifierProvider(
           create: (_) => LoginProvider(api: api),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(api.auth),
         ),
         ChangeNotifierProvider(create: (_) => VentasComputerProvider()),
         // Provider para paginación global

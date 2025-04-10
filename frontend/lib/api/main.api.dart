@@ -9,19 +9,38 @@ class ApiException implements Exception {
   final String message;
   final String? errorCode;
   final dynamic data;
+  final String? redirect;
 
+  // Códigos de error alineados con el servidor
   static const String errorUnauthorized = 'unauthorized';
   static const String errorNotFound = 'not_found';
   static const String errorBadRequest = 'bad_request';
   static const String errorServer = 'server_error';
   static const String errorNetwork = 'network_error';
   static const String errorUnknown = 'unknown_error';
+  static const String errorConnectionFailed = 'connection_failed';
+  static const String errorConflict = 'conflict';
+  static const String errorUnprocessable = 'unprocessable_entity';
+  static const String errorTooManyRequests = 'too_many_requests';
+  static const String errorNotImplemented = 'not_implemented';
+  static const String errorBadGateway = 'bad_gateway';
+  static const String errorServiceUnavailable = 'service_unavailable';
+
+  // Estados de respuesta del servidor
+  static const String statusSuccess = 'success';
+  static const String statusFail = 'fail';
+  static const String statusError = 'error';
+
+  // Mensajes de error específicos del servidor
+  static const String invalidTokenMessage =
+      'Invalid or missing authorization token';
 
   ApiException({
     required this.statusCode,
     required this.message,
     this.errorCode,
     this.data,
+    this.redirect,
   });
 
   factory ApiException.fromDioError(DioException error) {
@@ -29,6 +48,16 @@ class ApiException implements Exception {
     int errorStatusCode = error.response?.statusCode ?? 0;
     late String errorCodeValue;
     final dynamic errorData = error.response?.data;
+    String? redirectUrl;
+
+    // Extraer mensaje y redirección si existe en la respuesta
+    if (errorData != null && errorData is Map<String, dynamic>) {
+      final String? serverMessage = errorData['error']?.toString();
+      if (serverMessage != null && serverMessage.isNotEmpty) {
+        errorMessage = serverMessage;
+      }
+      redirectUrl = errorData['redirect']?.toString();
+    }
 
     switch (error.type) {
       case DioExceptionType.badResponse:
@@ -37,42 +66,116 @@ class ApiException implements Exception {
             errorCodeValue = errorBadRequest;
             errorMessage =
                 _extractErrorMessage(errorData) ?? 'Solicitud inválida';
+            Logger.error('Error 400 - Bad Request: $errorMessage');
             break;
           case 401:
+            errorCodeValue = errorUnauthorized;
+            errorMessage = _extractErrorMessage(errorData) ?? 'No autorizado';
+
+            // Verificar si es específicamente un error de token inválido
+            if (errorMessage.toLowerCase() ==
+                invalidTokenMessage.toLowerCase()) {
+              Logger.error(
+                  'Error de Autenticación: Token inválido o faltante - Se requiere iniciar sesión');
+              errorMessage =
+                  'Token inválido o faltante - Se requiere iniciar sesión';
+            } else {
+              Logger.error('Error 401 - Unauthorized: $errorMessage');
+            }
+            break;
           case 403:
             errorCodeValue = errorUnauthorized;
-            errorMessage = 'No autorizado';
+            errorMessage = _extractErrorMessage(errorData) ?? 'Acceso denegado';
+            Logger.error('Error 403 - Forbidden: $errorMessage');
             break;
           case 404:
             errorCodeValue = errorNotFound;
-            errorMessage = 'Recurso no encontrado';
+            errorMessage =
+                _extractErrorMessage(errorData) ?? 'Recurso no encontrado';
+            Logger.error('Error 404 - Not Found: $errorMessage');
+            break;
+          case 409:
+            errorCodeValue = errorConflict;
+            errorMessage = _extractErrorMessage(errorData) ??
+                'Conflicto con el estado actual';
+            Logger.error('Error 409 - Conflict: $errorMessage');
+            break;
+          case 422:
+            errorCodeValue = errorUnprocessable;
+            errorMessage =
+                _extractErrorMessage(errorData) ?? 'Entidad no procesable';
+            Logger.error('Error 422 - Unprocessable Entity: $errorMessage');
+            break;
+          case 429:
+            errorCodeValue = errorTooManyRequests;
+            errorMessage =
+                _extractErrorMessage(errorData) ?? 'Demasiadas solicitudes';
+            Logger.error('Error 429 - Too Many Requests: $errorMessage');
             break;
           case 500:
-          case 502:
-          case 503:
             errorCodeValue = errorServer;
-            errorMessage = 'Error del servidor';
+            errorMessage =
+                _extractErrorMessage(errorData) ?? 'Error interno del servidor';
+            Logger.error('Error 500 - Internal Server Error: $errorMessage');
+            break;
+          case 501:
+            errorCodeValue = errorNotImplemented;
+            errorMessage = _extractErrorMessage(errorData) ?? 'No implementado';
+            Logger.error('Error 501 - Not Implemented: $errorMessage');
+            break;
+          case 502:
+            errorCodeValue = errorBadGateway;
+            errorMessage =
+                _extractErrorMessage(errorData) ?? 'Error de puerta de enlace';
+            Logger.error('Error 502 - Bad Gateway: $errorMessage');
+            break;
+          case 503:
+            errorCodeValue = errorServiceUnavailable;
+            errorMessage =
+                _extractErrorMessage(errorData) ?? 'Servicio no disponible';
+            Logger.error('Error 503 - Service Unavailable: $errorMessage');
             break;
           default:
             errorCodeValue = errorUnknown;
+            errorMessage = _extractErrorMessage(errorData) ??
+                'Error de respuesta desconocido';
+            errorStatusCode = -1;
+            Logger.error('Error Desconocido [$errorStatusCode]: $errorMessage');
         }
         break;
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        errorStatusCode = -1;
+        errorStatusCode = -2;
         errorCodeValue = errorNetwork;
-        errorMessage = 'Tiempo de espera agotado';
+        errorMessage = 'Tiempo de espera agotado en la conexión';
+        Logger.error('Error de Red [-2]: $errorMessage');
         break;
       case DioExceptionType.cancel:
         errorStatusCode = -2;
         errorCodeValue = errorNetwork;
         errorMessage = 'Solicitud cancelada';
+        Logger.warn('Solicitud Cancelada [-2]: $errorMessage');
+        break;
+      case DioExceptionType.connectionError:
+        errorStatusCode = -3;
+        errorCodeValue = errorConnectionFailed;
+        errorMessage = 'Error de conexión: No se pudo conectar al servidor';
+        Logger.error('Error de Conexión [-3]: $errorMessage');
         break;
       default:
-        errorStatusCode = -3;
+        errorStatusCode = -4;
         errorCodeValue = errorUnknown;
-        errorMessage = 'Error desconocido';
+        errorMessage = 'Error desconocido en la solicitud';
+        Logger.error('Error Desconocido [-4]: $errorMessage');
+    }
+
+    // Log de datos adicionales si existen
+    if (errorData != null) {
+      Logger.debug('Datos adicionales del error: $errorData');
+    }
+    if (redirectUrl != null) {
+      Logger.info('URL de redirección: $redirectUrl');
     }
 
     return ApiException(
@@ -80,6 +183,7 @@ class ApiException implements Exception {
       message: errorMessage,
       errorCode: errorCodeValue,
       data: errorData,
+      redirect: redirectUrl,
     );
   }
 
@@ -87,9 +191,20 @@ class ApiException implements Exception {
     if (data == null) {
       return null;
     }
+
     if (data is Map<String, dynamic>) {
-      return data['error'] ?? data['message'] ?? data['msg'];
+      // Intentar obtener el mensaje de error en el formato del servidor
+      final String? error = data['error']?.toString();
+      final String? message = data['message']?.toString();
+
+      // Si el error es específicamente de token inválido, retornarlo tal cual
+      if (error == invalidTokenMessage) {
+        return error;
+      }
+
+      return error ?? message ?? data['msg']?.toString();
     }
+
     if (data is String) {
       return data;
     }
@@ -97,15 +212,29 @@ class ApiException implements Exception {
   }
 
   @override
-  String toString() => 'ApiException: $statusCode - $message';
+  String toString() {
+    if (message.toLowerCase() == invalidTokenMessage.toLowerCase()) {
+      return 'ApiException: [$statusCode] ${errorCode ?? 'unauthorized'} - Token inválido o faltante';
+    }
+    return 'ApiException: [$statusCode] ${errorCode ?? 'unknown'} - $message';
+  }
 }
 
 class ApiClient {
-  final String baseUrl;
+  String baseUrl;
   late final Dio _dio;
   bool _isRefreshingToken = false;
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
+
+  // Headers por defecto
+  final Map<String, String> _defaultHeaders = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+
+  // Cache y estado
+  final Map<String, dynamic> _cache = {};
 
   ApiClient({
     required this.baseUrl,
@@ -120,6 +249,7 @@ class ApiClient {
       receiveTimeout: const Duration(seconds: 15),
       sendTimeout: const Duration(seconds: 15),
       validateStatus: (int? status) => status != null && status < 500,
+      headers: Map<String, String>.from(_defaultHeaders),
     ));
 
     // Interceptor para logs
@@ -358,5 +488,32 @@ class ApiClient {
       queryParams: queryParams,
       requiresAuth: true,
     );
+  }
+
+  /// Limpia el estado del cliente API
+  Future<void> clearState() async {
+    try {
+      Logger.info('Limpiando estado del cliente API...');
+
+      // Limpiar caché y headers
+      _cache.clear();
+      _defaultHeaders
+        ..clear()
+        ..addAll({
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        });
+
+      // Cerrar el cliente Dio actual si existe
+      _dio.close(force: true);
+
+      // Reinicializar el cliente con la configuración base
+      _initializeDio();
+
+      Logger.info('Estado del cliente API limpiado correctamente');
+    } catch (e) {
+      Logger.error('Error al limpiar estado del cliente API: $e');
+      // No relanzar el error ya que no es crítico
+    }
   }
 }

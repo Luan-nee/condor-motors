@@ -1,5 +1,5 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
+import 'package:condorsmotors/providers/auth.provider.dart';
 import 'package:condorsmotors/screens/admin/categorias_admin.dart';
 import 'package:condorsmotors/screens/admin/colaboradores_admin.dart';
 import 'package:condorsmotors/screens/admin/dashboard_admin.dart';
@@ -14,7 +14,6 @@ import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SlidesAdminScreen extends StatefulWidget {
   const SlidesAdminScreen({super.key});
@@ -366,60 +365,36 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
   // Método para manejar el cierre de sesión
   Future<void> _handleLogout(BuildContext context) async {
     try {
-      debugPrint('Iniciando proceso de cierre de sesión...');
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.logout();
 
-      // 1. Limpiar datos de la API y tokens
-      await api.auth.logout();
-      await api.auth.clearTokens();
+      if (!context.mounted) {
+        return;
+      }
 
-      // 2. Limpiar todas las preferencias de autenticación
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await Future.wait([
-        prefs.setBool('stay_logged_in', false),
-        prefs.remove('username_auto'),
-        prefs.remove('password_auto'),
-        prefs.remove('remember_me'),
-        prefs.remove('username'),
-        prefs.remove('password'),
-      ]);
-
-      debugPrint('Sesión cerrada exitosamente');
-
-      // 3. Navegar al login y limpiar el stack de navegación
-      if (!context.mounted) return;
-
+      // Navegar al login y limpiar el stack de navegación
       await Navigator.of(context).pushNamedAndRemoveUntil(
         role_utils.login,
         (Route<dynamic> route) => false,
       );
     } catch (e) {
-      debugPrint('Error durante el cierre de sesión: $e');
+      if (!context.mounted) {
+        return;
+      }
 
-      // Mostrar error si ocurre algún problema
-      if (!context.mounted) return;
-
+      // Mostrar error pero igual intentar navegar al login
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cerrar sesión: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
-          action: SnackBarAction(
-            label: 'Reintentar',
-            textColor: Colors.white,
-            onPressed: () => _handleLogout(context),
-          ),
+        const SnackBar(
+          content: Text('Hubo un error, pero la sesión ha sido cerrada'),
+          backgroundColor: Colors.orange,
         ),
       );
 
-      // Intentar forzar la navegación al login en caso de error
-      try {
-        await Navigator.of(context).pushNamedAndRemoveUntil(
-          role_utils.login,
-          (Route<dynamic> route) => false,
-        );
-      } catch (navError) {
-        debugPrint('Error al navegar al login: $navError');
-      }
+      // Forzar navegación al login independientemente del error
+      await Navigator.of(context).pushNamedAndRemoveUntil(
+        role_utils.login,
+        (Route<dynamic> route) => false,
+      );
     }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/providers/auth.provider.dart';
 import 'package:condorsmotors/providers/computer/dash.computer.provider.dart';
 import 'package:condorsmotors/screens/computer/dashboard_computer.dart';
 import 'package:condorsmotors/screens/computer/proforma_computer.dart';
@@ -7,7 +8,6 @@ import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SlidesComputerScreen extends StatefulWidget {
   const SlidesComputerScreen({super.key});
@@ -161,6 +161,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => DashboardComputerProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider(api.auth)),
       ],
       child: Scaffold(
         body: Row(
@@ -427,60 +428,28 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
   // Método para manejar el cierre de sesión
   Future<void> _handleLogout(BuildContext context) async {
     try {
-      debugPrint('Iniciando proceso de cierre de sesión...');
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.logout();
 
-      // 1. Obtener SharedPreferences primero para asegurar que podemos limpiar los datos
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      if (!context.mounted) {
+        return;
+      }
 
-      // 2. Intentar hacer logout en la API, pero no esperar por ello
-      api.auth.logout().catchError((dynamic error) {
-        debugPrint('Error en logout de API (ignorando): $error');
-      });
-
-      // 3. Limpiar tokens y datos de autenticación
-      await Future.wait([
-        api.auth.clearTokens(),
-        // Limpiar todas las preferencias de autenticación
-        prefs.setBool('stay_logged_in', false),
-        prefs.remove('username_auto'),
-        prefs.remove('password_auto'),
-        prefs.remove('remember_me'),
-        prefs.remove('username'),
-        prefs.remove('password'),
-        // Agregar cualquier otra preferencia que necesite ser limpiada
-        prefs.remove('last_sucursal'),
-        prefs.remove('user_data'),
-      ]);
-
-      debugPrint('Sesión cerrada exitosamente');
-
-      // 4. Navegar al login y limpiar el stack de navegación
-      if (!context.mounted) return;
-
+      // Navegar al login y limpiar el stack de navegación
       await Navigator.of(context).pushNamedAndRemoveUntil(
         role_utils.login,
         (Route<dynamic> route) => false,
       );
     } catch (e) {
-      debugPrint('Error durante el cierre de sesión: $e');
-
-      // Intentar forzar la limpieza de datos críticos incluso si hubo error
-      try {
-        final SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.clear(); // Limpiar todas las preferencias
-        await api.auth.clearTokens();
-      } catch (cleanupError) {
-        debugPrint('Error en limpieza de emergencia: $cleanupError');
+      if (!context.mounted) {
+        return;
       }
-
-      if (!context.mounted) return;
 
       // Mostrar error pero igual intentar navegar al login
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Hubo un error, pero la sesión ha sido cerrada'),
           backgroundColor: Colors.orange,
-          duration: Duration(seconds: 4),
         ),
       );
 

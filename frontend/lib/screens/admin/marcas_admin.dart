@@ -236,44 +236,56 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                     ),
                     Row(
                       children: <Widget>[
-                        if (isLoading)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 16),
-                            child: Row(
-                              children: <Widget>[
-                                const SizedBox(
+                        ElevatedButton.icon(
+                          icon: isLoading
+                              ? const SizedBox(
                                   width: 16,
                                   height: 16,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2,
                                     color: Colors.white,
+                                    strokeWidth: 2,
                                   ),
+                                )
+                              : const FaIcon(
+                                  FontAwesomeIcons.arrowsRotate,
+                                  size: 16,
+                                  color: Colors.white,
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Cargando...',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
-                                  ),
-                                ),
-                              ],
-                            ),
+                          label: Text(
+                            isLoading ? 'Recargando...' : 'Recargar',
+                            style: const TextStyle(color: Colors.white),
                           ),
-                        ElevatedButton.icon(
-                          icon: const FaIcon(FontAwesomeIcons.arrowsRotate,
-                              size: 16, color: Colors.white),
-                          label: const Text('Actualizar datos'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0075FF),
+                            backgroundColor: const Color(0xFF2D2D2D),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 16,
+                              horizontal: 16,
+                              vertical: 12,
                             ),
                           ),
                           onPressed: isLoading
                               ? null
-                              : () => marcasProvider.cargarMarcas(),
+                              : () async {
+                                  await marcasProvider.recargarDatos();
+                                  if (mounted &&
+                                      marcasProvider.errorMessage.isNotEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content:
+                                            Text(marcasProvider.errorMessage),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  } else if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            'Datos recargados exitosamente'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+                                },
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton.icon(

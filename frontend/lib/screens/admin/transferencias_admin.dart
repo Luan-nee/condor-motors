@@ -143,18 +143,58 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                       ),
                       // Botón de refrescar
                       ElevatedButton.icon(
-                        icon: const FaIcon(FontAwesomeIcons.arrowsRotate,
-                            size: 16, color: Colors.white),
-                        label: const Text('Actualizar'),
+                        icon: transferenciasProvider.isLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const FaIcon(
+                                FontAwesomeIcons.arrowsRotate,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                        label: Text(
+                          transferenciasProvider.isLoading
+                              ? 'Recargando...'
+                              : 'Recargar',
+                          style: const TextStyle(color: Colors.white),
+                        ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0075FF),
+                          backgroundColor: const Color(0xFF2D2D2D),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
+                            horizontal: 16,
+                            vertical: 12,
                           ),
                         ),
-                        onPressed: () => _cargarMovimientos(forceRefresh: true),
+                        onPressed: transferenciasProvider.isLoading
+                            ? null
+                            : () async {
+                                await transferenciasProvider.recargarDatos();
+                                if (mounted &&
+                                    transferenciasProvider.errorMessage !=
+                                        null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          transferenciasProvider.errorMessage!),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                } else if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('Datos recargados exitosamente'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                              },
                       ),
                       const SizedBox(width: 16),
                     ],

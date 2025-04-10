@@ -269,23 +269,49 @@ class TokenService {
 
   /// Elimina los tokens del almacenamiento
   Future<void> clearTokens() async {
+    debugPrint('Limpiando tokens y datos de usuario...');
     try {
-      debugPrint('Limpiando tokens y datos de usuario...');
       final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      // Obtener todas las claves almacenadas
+      final Set<String> keys = prefs.getKeys();
+
+      // Lista de claves específicas que queremos conservar (como configuraciones de app)
+      final Set<String> keysToKeep = {
+        'theme_mode',
+        'language',
+        // Agregar otras configuraciones de app que no deban borrarse
+      };
+
+      // Crear lista de futures para borrar todo excepto las claves a conservar
+      final List<Future<bool>> deleteFutures = keys
+          .where((key) => !keysToKeep.contains(key))
+          .map((key) => prefs.remove(key))
+          .toList();
+
+      // Ejecutar todas las operaciones de borrado
       await Future.wait([
-        // Limpiar tokens
+        ...deleteFutures,
+        // Asegurar que estas claves específicas se borren
         prefs.remove(_accessTokenKey),
         prefs.remove(_refreshTokenKey),
-        prefs.remove(_expiryTimeKey),
-        // Limpiar datos de sesión
-        prefs.remove(_lastUsernameKey),
-        prefs.remove(_lastPasswordKey),
-        prefs.setBool('stay_logged_in', false),
-        // Limpiar datos adicionales
+        prefs.remove('remember_me'),
+        prefs.remove('username'),
+        prefs.remove('password'),
+        prefs.remove('username_auto'),
+        prefs.remove('password_auto'),
         prefs.remove('last_sucursal'),
         prefs.remove('user_data'),
-        prefs.remove('server_url'),
+        prefs.setBool('stay_logged_in', false),
+        // Limpiar datos de sucursal actual
+        prefs.remove('current_sucursal_id'),
+        prefs.remove('current_sucursal_data'),
+        // Limpiar cualquier caché de datos
+        prefs.remove('ventas_cache'),
+        prefs.remove('productos_cache'),
+        prefs.remove('proformas_cache'),
       ]);
+
       debugPrint('Tokens y datos de usuario limpiados correctamente');
     } catch (e) {
       debugPrint('Error al limpiar tokens y datos: $e');
@@ -798,11 +824,159 @@ class TokenService {
 /// Clase para gestionar la autenticación y tokens
 class AuthApi {
   final ApiClient _api;
-  static const String _accessTokenKey = 'access_token';
-  static const String _refreshTokenKey = 'refresh_token';
-  static const String _userDataKey = 'user_data';
+
+  // Claves de almacenamiento
+  static const Map<String, String> _keys = {
+    'token': 'access_token',
+    'refresh': 'refresh_token',
+    'userData': 'user_data',
+    'sucursal': 'current_sucursal',
+    'sucursalId': 'current_sucursal_id',
+    'remember': 'remember_me',
+    'username': 'username',
+    'password': 'password',
+    'usernameAuto': 'username_auto',
+    'passwordAuto': 'password_auto',
+    'stayLogged': 'stay_logged_in',
+    'ventasCache': 'ventas_cache',
+    'productosCache': 'productos_cache',
+    'proformasCache': 'proformas_cache',
+    'dashboardCache': 'dashboard_cache',
+  };
+
+  // Getter para obtener una clave de forma segura
+  static String _getKey(String key) => _keys[key] ?? key;
 
   AuthApi(this._api);
+
+  /// Obtiene los datos del usuario almacenados localmente
+  Future<Map<String, dynamic>?> getUserData() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? userData = prefs.getString(_getKey('userData'));
+      if (userData == null) {
+        return null;
+      }
+      return json.decode(userData) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Error obteniendo datos del usuario: $e');
+      return null;
+    }
+  }
+
+  /// Guarda los datos del usuario localmente
+  Future<void> saveUserData(Map<String, dynamic> userData) async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_getKey('userData'), json.encode(userData));
+      debugPrint('Datos del usuario guardados correctamente');
+    } catch (e) {
+      debugPrint('Error al guardar datos del usuario: $e');
+      rethrow;
+    }
+  }
+
+  /// Limpia los tokens y datos de usuario almacenados
+  Future<void> clearTokens() async {
+    debugPrint('Limpiando tokens y datos de usuario...');
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      // Obtener todas las claves almacenadas
+      final Set<String> keys = prefs.getKeys();
+
+      // Lista de claves específicas que queremos conservar
+      final Set<String> keysToKeep = {
+        'theme_mode',
+        'language',
+        'server_url', // Mantener la configuración del servidor
+      };
+
+      // Crear lista de futures para borrar todo excepto las claves a conservar
+      final List<Future<bool>> deleteFutures = keys
+          .where((key) => !keysToKeep.contains(key))
+          .map((key) => prefs.remove(key))
+          .toList();
+
+      // Ejecutar todas las operaciones de borrado
+      await Future.wait([
+        ...deleteFutures,
+        // Asegurar que estas claves críticas se borren
+        prefs.remove(_getKey('token')),
+        prefs.remove(_getKey('refresh')),
+        prefs.remove(_getKey('userData')),
+        prefs.remove(_getKey('sucursal')),
+        prefs.remove(_getKey('sucursalId')),
+        // Limpiar datos de sesión
+        prefs.remove(_getKey('remember')),
+        prefs.remove(_getKey('username')),
+        prefs.remove(_getKey('password')),
+        prefs.remove(_getKey('usernameAuto')),
+        prefs.remove(_getKey('passwordAuto')),
+        prefs.setBool(_getKey('stayLogged'), false),
+        // Limpiar caches específicos
+        prefs.remove(_getKey('ventasCache')),
+        prefs.remove(_getKey('productosCache')),
+        prefs.remove(_getKey('proformasCache')),
+        prefs.remove(_getKey('dashboardCache')),
+      ]);
+
+      debugPrint('Tokens y datos de usuario limpiados correctamente');
+    } catch (e) {
+      debugPrint('Error al limpiar tokens y datos: $e');
+      rethrow;
+    }
+  }
+
+  /// Cierra la sesión del usuario
+  Future<void> logout() async {
+    try {
+      debugPrint('Iniciando proceso de logout en el servidor...');
+
+      // Intentar hacer logout en el servidor
+      final Map<String, dynamic> response = await _api.request(
+        endpoint: '/auth/logout',
+        method: 'POST',
+        requiresAuth: true,
+        queryParams: {
+          'x-no-retry-on-401': 'true' // Evitar reintentos si el token ya expiró
+        },
+      );
+
+      // Verificar la respuesta del servidor
+      if (response['status'] == 'success') {
+        debugPrint(
+            'Servidor: ${response['message'] ?? 'Sesión terminada exitosamente'}');
+      }
+
+      // Limpiar todos los datos locales independientemente de la respuesta del servidor
+      await clearTokens();
+
+      // Reiniciar el estado del cliente API sin propagar errores
+      try {
+        await _api.clearState();
+      } catch (stateError) {
+        debugPrint(
+            'Error no crítico al limpiar estado del cliente API: $stateError');
+      }
+
+      debugPrint('Logout completado exitosamente');
+    } catch (e) {
+      debugPrint('Error durante proceso de logout: $e');
+      // Intentar limpiar datos locales incluso si falla la comunicación con el servidor
+      try {
+        await clearTokens();
+        try {
+          await _api.clearState();
+        } catch (stateError) {
+          debugPrint(
+              'Error no crítico al limpiar estado del cliente API: $stateError');
+        }
+      } catch (cleanupError) {
+        debugPrint('Error adicional durante limpieza: $cleanupError');
+      }
+    }
+  }
 
   /// Verifica si hay un token válido almacenado
   Future<bool> isAuthenticated() async {
@@ -823,37 +997,8 @@ class AuthApi {
   /// Verifica si hay un token almacenado y es válido
   Future<bool> _hasValidToken() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? token = prefs.getString(_accessTokenKey);
+    final String? token = prefs.getString(_getKey('token'));
     return token != null && token.isNotEmpty;
-  }
-
-  /// Limpia los tokens y datos de usuario almacenados
-  Future<void> clearTokens() async {
-    debugPrint('Limpiando tokens y datos de usuario...');
-    try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await Future.wait([
-        // Limpiar tokens
-        prefs.remove(_accessTokenKey),
-        prefs.remove(_refreshTokenKey),
-        prefs.remove(_userDataKey),
-        // Limpiar datos de sesión
-        prefs.remove('remember_me'),
-        prefs.remove('username'),
-        prefs.remove('password'),
-        prefs.remove('username_auto'),
-        prefs.remove('password_auto'),
-        prefs.setBool('stay_logged_in', false),
-        // Limpiar datos adicionales
-        prefs.remove('last_sucursal'),
-        prefs.remove('user_data'),
-        prefs.remove('server_url'),
-      ]);
-      debugPrint('Tokens y datos de usuario limpiados correctamente');
-    } catch (e) {
-      debugPrint('Error al limpiar tokens y datos: $e');
-      rethrow;
-    }
   }
 
   /// Verifica si el token actual es válido con el backend
@@ -877,7 +1022,7 @@ class AuthApi {
       final Map<String, dynamic> userData =
           response['data'] as Map<String, dynamic>;
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_userDataKey, json.encode(userData));
+      await prefs.setString(_getKey('userData'), json.encode(userData));
 
       return true;
     } catch (e) {
@@ -888,14 +1033,16 @@ class AuthApi {
           .toString()
           .toLowerCase()
           .contains('invalid or missing authorization token')) {
-        debugPrint('Token inválido o faltante, usuario deslogueado');
+        debugPrint(
+            'Estado de sesión: Usuario no logueado o token inválido - Se requiere iniciar sesión');
         await clearTokens();
         return false;
       }
 
       // Para otros tipos de errores, verificar si es un error de autorización
       if (e is ApiException && (e.statusCode == 401 || e.statusCode == 403)) {
-        debugPrint('Error de autorización, limpiando tokens');
+        debugPrint(
+            'Error de autorización: Usuario no autorizado - Se requiere iniciar sesión');
         await clearTokens();
         return false;
       }
@@ -929,7 +1076,7 @@ class AuthApi {
       final Map<String, dynamic> userData =
           response['data'] as Map<String, dynamic>;
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_userDataKey, json.encode(userData));
+      await prefs.setString(_getKey('userData'), json.encode(userData));
 
       // Crear instancia de UsuarioAutenticado con los datos recibidos
       final UsuarioAutenticado usuarioAutenticado =
@@ -938,39 +1085,6 @@ class AuthApi {
       return usuarioAutenticado;
     } catch (e) {
       debugPrint('Error durante login: $e');
-      rethrow;
-    }
-  }
-
-  /// Cierra la sesión del usuario
-  Future<void> logout() async {
-    try {
-      debugPrint('Iniciando proceso de logout...');
-
-      // Intentar hacer logout en el servidor
-      try {
-        await _api.request(
-          endpoint: '/auth/logout',
-          method: 'POST',
-          requiresAuth: true,
-        );
-      } catch (serverError) {
-        // Si hay error en el servidor, loggearlo pero continuar con la limpieza local
-        debugPrint('Error en servidor durante logout: $serverError');
-      }
-
-      // Limpiar todos los datos locales
-      await clearTokens();
-
-      debugPrint('Logout completado exitosamente');
-    } catch (e) {
-      debugPrint('Error durante proceso de logout: $e');
-      // Intentar limpiar tokens incluso si hay error
-      try {
-        await clearTokens();
-      } catch (cleanupError) {
-        debugPrint('Error adicional durante limpieza de tokens: $cleanupError');
-      }
       rethrow;
     }
   }
@@ -996,25 +1110,10 @@ class AuthApi {
 
       // Guardar nuevo token
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_accessTokenKey, newToken);
+      await prefs.setString(_getKey('token'), newToken);
     } catch (e) {
       debugPrint('Error durante refresh token: $e');
       rethrow;
-    }
-  }
-
-  /// Obtiene los datos del usuario almacenados localmente
-  Future<Map<String, dynamic>?> getUserData() async {
-    try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? userData = prefs.getString(_userDataKey);
-      if (userData == null) {
-        return null;
-      }
-      return json.decode(userData) as Map<String, dynamic>;
-    } catch (e) {
-      debugPrint('Error obteniendo datos del usuario: $e');
-      return null;
     }
   }
 }

@@ -392,7 +392,9 @@ class EstadoStock {
   });
 
   factory EstadoStock.fromJson(Map<String, dynamic>? json) {
-    if (json == null) return EstadoStock(stockActual: 0, stockDespues: 0);
+    if (json == null) {
+      return EstadoStock(stockActual: 0, stockDespues: 0);
+    }
 
     return EstadoStock(
       stockActual: json['stockActual'] as int,

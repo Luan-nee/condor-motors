@@ -1,4 +1,4 @@
-import 'package:condorsmotors/main.dart' as app_main;
+import 'package:condorsmotors/providers/auth.provider.dart';
 import 'package:condorsmotors/providers/colabs/ventas.colab.provider.dart';
 import 'package:condorsmotors/screens/colabs/productos_colab.dart';
 import 'package:condorsmotors/screens/colabs/transferencias_colab.dart';
@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SelectorColabScreen extends StatelessWidget {
   final Map<String, dynamic>? empleadoData;
@@ -227,60 +226,46 @@ class SelectorColabScreen extends StatelessWidget {
   // Método para realizar el cierre de sesión
   Future<void> _logout(BuildContext context) async {
     try {
-      debugPrint('Iniciando proceso de cierre de sesión...');
+      debugPrint('Iniciando proceso de logout en selector_colab.dart');
 
-      // 1. Limpiar datos de la API y tokens
-      await app_main.api.auth.logout();
-      await app_main.api.auth.clearTokens();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      debugPrint('AuthProvider obtenido correctamente');
 
-      // 2. Limpiar todas las preferencias de autenticación
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await Future.wait([
-        prefs.setBool('stay_logged_in', false),
-        prefs.remove('username_auto'),
-        prefs.remove('password_auto'),
-        prefs.remove('remember_me'),
-        prefs.remove('username'),
-        prefs.remove('password'),
-      ]);
+      // Cerrar el diálogo antes de proceder con el logout
+      Navigator.of(context).pop();
 
-      debugPrint('Sesión cerrada exitosamente');
+      debugPrint('Llamando a authProvider.logout()');
+      await authProvider.logout();
+      debugPrint('Logout completado exitosamente');
 
-      // 3. Navegar al login y limpiar el stack de navegación
       if (!context.mounted) return;
 
+      // Navegar al login y limpiar el stack de navegación
+      debugPrint('Navegando a la pantalla de login');
       await Navigator.of(context).pushNamedAndRemoveUntil(
         role_utils.login,
         (Route<dynamic> route) => false,
       );
     } catch (e) {
-      debugPrint('Error durante el cierre de sesión: $e');
+      debugPrint('Error durante el logout: $e');
 
-      // Mostrar error si ocurre algún problema
       if (!context.mounted) return;
 
+      // Mostrar error pero igual intentar navegar al login
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cerrar sesión: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
-          action: SnackBarAction(
-            label: 'Reintentar',
-            textColor: Colors.white,
-            onPressed: () => _logout(context),
-          ),
+        const SnackBar(
+          content: Text('Hubo un error, pero la sesión ha sido cerrada'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 4),
         ),
       );
 
-      // Intentar forzar la navegación al login en caso de error
-      try {
-        await Navigator.of(context).pushNamedAndRemoveUntil(
-          role_utils.login,
-          (Route<dynamic> route) => false,
-        );
-      } catch (navError) {
-        debugPrint('Error al navegar al login: $navError');
-      }
+      // Forzar navegación al login independientemente del error
+      debugPrint('Forzando navegación a login después del error');
+      await Navigator.of(context).pushNamedAndRemoveUntil(
+        role_utils.login,
+        (Route<dynamic> route) => false,
+      );
     }
   }
 

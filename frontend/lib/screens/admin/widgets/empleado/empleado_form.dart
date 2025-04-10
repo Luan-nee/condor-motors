@@ -78,8 +78,11 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     _inicializarFormulario();
 
     // Si hay un empleado existente, obtener su información de cuenta
+    // usando addPostFrameCallback para evitar setState durante el build
     if (widget.empleado != null) {
-      _cargarInformacionCuenta();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _cargarInformacionCuenta();
+      });
     }
   }
 
@@ -155,7 +158,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   }
 
   Future<void> _cargarInformacionCuenta() async {
-    if (widget.empleado == null) {
+    if (widget.empleado == null || !mounted) {
       return;
     }
 
@@ -172,27 +175,24 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       final Map<String, dynamic> resultado =
           await empleadoProvider.obtenerInfoCuentaEmpleado(widget.empleado!);
 
-      if (mounted) {
-        setState(() {
-          _usuarioActual = resultado['usuarioActual'] as String?;
-          _rolCuentaActual = resultado['rolCuentaActual'] as String?;
-          _cuentaNoEncontrada = resultado['cuentaNoEncontrada'] as bool;
-          _errorCargaInfo = resultado['errorCargaInfo'] as String?;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _usuarioActual = resultado['usuarioActual'] as String?;
+        _rolCuentaActual = resultado['rolCuentaActual'] as String?;
+        _cuentaNoEncontrada = resultado['cuentaNoEncontrada'] as bool;
+        _errorCargaInfo = resultado['errorCargaInfo'] as String?;
+        _isLoading = false;
+      });
     } catch (e) {
-      // Para errores en el flujo principal
+      if (!mounted) return;
+
+      setState(() {
+        _errorCargaInfo =
+            'Error al cargar información: ${e.toString().replaceAll('Exception: ', '')}';
+        _isLoading = false;
+      });
       debugPrint('Error general al cargar información de cuenta: $e');
-      if (mounted) {
-        setState(() {
-          _errorCargaInfo =
-              'Error al cargar información: ${e.toString().replaceAll('Exception: ', '')}';
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
     }
   }
 
@@ -955,39 +955,79 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     );
   }
 
-  void _guardar() {
+  void _guardar() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    // Formatear horarios en formato hh:mm:ss
-    final String horaInicio =
-        '${_horaInicioHoraController.text.padLeft(2, '0')}:${_horaInicioMinutoController.text.padLeft(2, '0')}:00';
-    final String horaFin =
-        '${_horaFinHoraController.text.padLeft(2, '0')}:${_horaFinMinutoController.text.padLeft(2, '0')}:00';
+    setState(() => _isLoading = true);
 
-    // Construir datos del empleado
-    final Map<String, Object?> empleadoData = <String, Object?>{
-      'nombre': _nombreController.text,
-      'apellidos': _apellidosController.text,
-      'dni': _dniController.text,
-      'sueldo': _sueldoController.text.isNotEmpty
-          ? double.parse(_sueldoController.text)
-          : null,
-      'sucursalId': _selectedSucursalId,
-      'rol': _selectedRol,
-      'horaInicioJornada': horaInicio,
-      'horaFinJornada': horaFin,
-      'celular':
-          _celularController.text.isNotEmpty ? _celularController.text : null,
-      'activo': _isEmpleadoActivo, // Añadir estado activo/inactivo
-    };
+    try {
+      // Formatear horarios en formato hh:mm:ss
+      final String horaInicio =
+          '${_horaInicioHoraController.text.padLeft(2, '0')}:${_horaInicioMinutoController.text.padLeft(2, '0')}:00';
+      final String horaFin =
+          '${_horaFinHoraController.text.padLeft(2, '0')}:${_horaFinMinutoController.text.padLeft(2, '0')}:00';
 
-    // Remover valores nulos
-    empleadoData.removeWhere((String key, Object? value) =>
-        value == null || (value is String && value.isEmpty));
+      // Construir datos del empleado
+      final Map<String, Object?> empleadoData = <String, Object?>{
+        'nombre': _nombreController.text,
+        'apellidos': _apellidosController.text,
+        'dni': _dniController.text,
+        'sueldo': _sueldoController.text.isNotEmpty
+            ? double.parse(_sueldoController.text)
+            : null,
+        'sucursalId': _selectedSucursalId,
+        'rol': _selectedRol,
+        'horaInicioJornada': horaInicio,
+        'horaFinJornada': horaFin,
+        'celular':
+            _celularController.text.isNotEmpty ? _celularController.text : null,
+        'activo': _isEmpleadoActivo,
+      };
 
-    widget.onSave(empleadoData);
+      // Remover valores nulos
+      empleadoData.removeWhere((String key, Object? value) =>
+          value == null || (value is String && value.isEmpty));
+
+      // Guardar empleado
+      await widget.onSave(empleadoData);
+
+      // Recargar datos usando el provider
+      if (mounted) {
+        final empleadoProvider =
+            Provider.of<EmpleadoProvider>(context, listen: false);
+        await empleadoProvider.recargarDatos();
+
+        // Mostrar mensaje de éxito
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                widget.empleado == null
+                    ? 'Colaborador creado correctamente'
+                    : 'Colaborador actualizado correctamente',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Future<void> _gestionarCuenta(BuildContext context) async {

@@ -77,6 +77,34 @@ class StockProvider extends ChangeNotifier {
     ]);
   }
 
+  /// Recarga todos los datos forzando actualización desde el servidor
+  Future<void> recargarDatos() async {
+    _errorProductos = null;
+    notifyListeners();
+
+    try {
+      // Forzar recarga de sucursales
+      await cargarSucursales();
+
+      // Si estamos en vista consolidada, recargar todos los productos
+      if (_mostrarVistaConsolidada) {
+        await cargarProductosTodasSucursales();
+      }
+      // Si hay una sucursal seleccionada, recargar sus productos
+      else if (_selectedSucursalId.isNotEmpty) {
+        // Invalidar caché antes de recargar
+        api.productos.invalidateCache(_selectedSucursalId);
+        await cargarProductos(_selectedSucursalId);
+      }
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error al recargar datos de stock: $e');
+      _errorProductos = 'Error al recargar datos: $e';
+      notifyListeners();
+    }
+  }
+
   /// Obtiene el estado del stock como enumeración
   StockStatus getStockStatus(int stockActual, int stockMinimo) {
     if (stockActual <= 0) {

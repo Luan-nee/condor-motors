@@ -19,15 +19,34 @@ class MarcasProvider extends ChangeNotifier {
   List<Marca> get marcas => _marcas;
   Map<int, int> get productosPorMarca => _productosPorMarca;
 
+  /// Recarga todos los datos forzando actualización desde el servidor
+  Future<void> recargarDatos() async {
+    _setLoading(true);
+    clearError();
+
+    try {
+      debugPrint('Forzando recarga de datos de marcas desde la API...');
+      // Forzar recarga desde la API ignorando caché
+      await cargarMarcas(forceRefresh: true);
+      debugPrint('Datos de marcas recargados exitosamente desde la API');
+    } catch (e) {
+      debugPrint('Error al recargar datos de marcas: $e');
+      _setError('Error al recargar datos: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Carga la lista de marcas desde la API
-  Future<void> cargarMarcas() async {
+  Future<void> cargarMarcas({bool forceRefresh = false}) async {
     _setLoading(true);
     clearError();
 
     try {
       debugPrint('Cargando marcas desde la API...');
       // Obtenemos las marcas directamente como objetos Marca
-      final List<Marca> marcasObtenidas = await api.marcas.getMarcas();
+      final List<Marca> marcasObtenidas =
+          await api.marcas.getMarcas(forceRefresh: forceRefresh);
 
       // Crear mapa de totalProductos usando el valor real que viene en el modelo
       final Map<int, int> tempProductosPorMarca = <int, int>{};

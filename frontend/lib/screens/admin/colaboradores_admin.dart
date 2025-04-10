@@ -23,12 +23,31 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
     super.initState();
     // Inicialización y primera carga de datos
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       _empleadoProvider = Provider.of<EmpleadoProvider>(context, listen: false);
       _empleadoProvider.cargarDatos();
     });
   }
 
+  void _mostrarMensaje(String mensaje, bool esError) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensaje),
+        backgroundColor: esError ? Colors.red : Colors.green,
+      ),
+    );
+  }
+
   Future<void> _eliminarEmpleado(Empleado empleado) async {
+    if (!mounted) {
+      return;
+    }
+
     final bool? confirmacion = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) => AlertDialog(
@@ -61,23 +80,22 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       ),
     );
 
-    if (confirmacion != true) {
+    if (confirmacion != true || !mounted) {
       return;
     }
 
     final bool exito = await _empleadoProvider.eliminarEmpleado(empleado);
 
     if (exito && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Colaborador eliminado correctamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      _mostrarMensaje('Colaborador eliminado correctamente', false);
     }
   }
 
   void _mostrarFormularioEmpleado([Empleado? empleado]) {
+    if (!mounted) {
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) => EmpleadoForm(
@@ -93,23 +111,33 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
 
   Future<void> _guardarEmpleado(
       Empleado? empleadoExistente, Map<String, dynamic> empleadoData) async {
+    if (!mounted) {
+      return;
+    }
+
     final bool exito = await _empleadoProvider.guardarEmpleado(
         empleadoExistente, empleadoData);
 
-    if (exito && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(empleadoExistente == null
-              ? 'Colaborador creado correctamente'
-              : 'Colaborador actualizado correctamente'),
-          backgroundColor: Colors.green,
-        ),
+    if (!mounted) {
+      return;
+    }
+
+    if (exito) {
+      _mostrarMensaje(
+        empleadoExistente == null
+            ? 'Colaborador creado correctamente'
+            : 'Colaborador actualizado correctamente',
+        false,
       );
       Navigator.pop(context);
     }
   }
 
   void _mostrarDetallesEmpleado(Empleado empleado) {
+    if (!mounted) {
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) => EmpleadoDetallesDialog(
@@ -183,22 +211,40 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const FaIcon(FontAwesomeIcons.arrowsRotate,
-                                  size: 16, color: Colors.white),
-                          label: Text(isLoading
-                              ? 'Actualizando...'
-                              : 'Actualizar Datos'),
+                              : const FaIcon(
+                                  FontAwesomeIcons.arrowsRotate,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                          label: Text(
+                            isLoading ? 'Recargando...' : 'Recargar',
+                            style: const TextStyle(color: Colors.white),
+                          ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0075FF),
+                            backgroundColor: const Color(0xFF2D2D2D),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 16,
+                              horizontal: 16,
+                              vertical: 12,
                             ),
                           ),
                           onPressed: isLoading
                               ? null
-                              : () => empleadoProvider.cargarDatos(),
+                              : () async {
+                                  await empleadoProvider.recargarDatos();
+                                  if (!mounted) {
+                                    return;
+                                  }
+
+                                  if (empleadoProvider
+                                      .errorMessage.isNotEmpty) {
+                                    _mostrarMensaje(
+                                        empleadoProvider.errorMessage, true);
+                                  } else {
+                                    _mostrarMensaje(
+                                        'Datos recargados exitosamente', false);
+                                  }
+                                },
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton.icon(
@@ -258,7 +304,6 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                   child: EmpleadosTable(
                     empleados: empleados,
                     nombresSucursales: nombresSucursales,
-                    obtenerRolDeEmpleado: empleadoProvider.obtenerRolDeEmpleado,
                     onEdit: _mostrarFormularioEmpleado,
                     onDelete: _eliminarEmpleado,
                     onViewDetails: _mostrarDetallesEmpleado,

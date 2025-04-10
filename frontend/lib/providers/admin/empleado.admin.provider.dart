@@ -47,6 +47,23 @@ class EmpleadoProvider extends ChangeNotifier {
   List<String> get roles => _roles;
   List<Map<String, dynamic>> get rolesCuentas => _rolesCuentas;
 
+  /// Recarga todos los datos forzando actualización desde el servidor
+  Future<void> recargarDatos() async {
+    _setLoading(true);
+    clearError();
+
+    try {
+      debugPrint('Forzando recarga de datos de colaboradores desde la API...');
+      await cargarDatos();
+      debugPrint('Datos de colaboradores recargados exitosamente desde la API');
+    } catch (e) {
+      debugPrint('Error al recargar datos de colaboradores: $e');
+      _setError('Error al recargar datos: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Carga los datos de empleados y sucursales
   Future<void> cargarDatos() async {
     _setLoading(true);

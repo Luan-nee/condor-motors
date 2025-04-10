@@ -9,7 +9,6 @@ import 'package:provider/provider.dart';
 class EmpleadoListItem extends StatefulWidget {
   final Empleado empleado;
   final Map<String, String> nombresSucursales;
-  final String Function(Empleado) obtenerRolDeEmpleado;
   final Function(Empleado) onEdit;
   final Function(Empleado) onDelete;
   final Function(Empleado) onViewDetails;
@@ -18,7 +17,6 @@ class EmpleadoListItem extends StatefulWidget {
     super.key,
     required this.empleado,
     required this.nombresSucursales,
-    required this.obtenerRolDeEmpleado,
     required this.onEdit,
     required this.onDelete,
     required this.onViewDetails,
@@ -34,8 +32,6 @@ class EmpleadoListItem extends StatefulWidget {
       ..add(DiagnosticsProperty<Empleado>('empleado', empleado))
       ..add(DiagnosticsProperty<Map<String, String>>(
           'nombresSucursales', nombresSucursales))
-      ..add(ObjectFlagProperty<String Function(Empleado p1)>.has(
-          'obtenerRolDeEmpleado', obtenerRolDeEmpleado))
       ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onEdit', onEdit))
       ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onDelete', onDelete))
       ..add(ObjectFlagProperty<Function(Empleado p1)>.has(
@@ -54,6 +50,8 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
       _empleadoProvider = Provider.of<EmpleadoProvider>(context, listen: false);
 
       // Solo cargar la información de usuario si no viene en la respuesta de la API
@@ -65,6 +63,8 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
   }
 
   Future<void> _cargarUsuarioEmpleado() async {
+    if (!mounted) return;
+
     try {
       setState(() => _isLoading = true);
 
@@ -72,8 +72,31 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
       final Map<String, dynamic> infoCuenta =
           await _empleadoProvider.obtenerInfoCuentaEmpleado(widget.empleado);
 
+      // Si hay un error de autenticación o datos desactualizados, recargar todo
+      if (infoCuenta['errorCargaInfo']
+                  ?.toString()
+                  .toLowerCase()
+                  .contains('401') ==
+              true ||
+          infoCuenta['errorCargaInfo']
+                  ?.toString()
+                  .toLowerCase()
+                  .contains('sesión expirada') ==
+              true) {
+        if (mounted) {
+          await _empleadoProvider.recargarDatos();
+          // Intentar obtener la información de nuevo después de recargar
+          final Map<String, dynamic> infoActualizada = await _empleadoProvider
+              .obtenerInfoCuentaEmpleado(widget.empleado);
+          if (mounted && infoActualizada['usuarioActual'] != null) {
+            setState(() => _usuarioEmpleado = infoActualizada['usuarioActual']);
+          }
+        }
+        return;
+      }
+
       // Actualizar el estado con el usuario obtenido
-      if (infoCuenta['usuarioActual'] != null) {
+      if (mounted && infoCuenta['usuarioActual'] != null) {
         setState(() => _usuarioEmpleado = infoCuenta['usuarioActual']);
       }
     } catch (e) {
@@ -81,13 +104,14 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
       if (e.toString().contains('401') ||
           e.toString().contains('Sesión expirada') ||
           e.toString().contains('No autorizado')) {
-        // No mostrar error en la UI para este componente
         debugPrint('Error de autenticación al cargar usuario: $e');
+        if (mounted) {
+          await _empleadoProvider.recargarDatos();
+        }
       } else {
         // Otros errores
         debugPrint('Error al cargar usuario del empleado: $e');
       }
-      // No hacer nada más, simplemente no se mostrará el usuario
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -97,8 +121,11 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
 
   @override
   Widget build(BuildContext context) {
-    // Obtener rol del empleado
-    final String rol = widget.obtenerRolDeEmpleado(widget.empleado);
+    // Obtener el provider para escuchar cambios
+    final empleadoProvider = Provider.of<EmpleadoProvider>(context);
+
+    // Obtener rol del empleado usando el provider
+    final String rol = empleadoProvider.obtenerRolDeEmpleado(widget.empleado);
 
     // Determinar si el empleado está activo o inactivo
     final bool esInactivo = !widget.empleado.activo;
