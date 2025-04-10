@@ -83,7 +83,12 @@ export class SucursalesController {
     getSucursales
       .execute(queriesDto)
       .then((sucursales) => {
-        CustomResponse.success({ res, data: sucursales })
+        CustomResponse.success({
+          res,
+          data: sucursales.results,
+          pagination: sucursales.pagination,
+          metadata: sucursales.metadata
+        })
       })
       .catch((error: unknown) => {
         handleError(error, res)

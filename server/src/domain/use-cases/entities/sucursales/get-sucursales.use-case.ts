@@ -28,11 +28,11 @@ export class GetSucursales {
   private readonly validSortBy = {
     fechaCreacion: sucursalesTable.fechaCreacion,
     nombre: sucursalesTable.nombre,
-    direccion: sucursalesTable.direccion,
     sucursalCentral: sucursalesTable.sucursalCentral,
     serieFacturaSucursal: sucursalesTable.serieFactura,
     serieBoletaSucursal: sucursalesTable.serieBoleta,
-    codigoEstablecimiento: sucursalesTable.codigoEstablecimiento
+    codigoEstablecimiento: sucursalesTable.codigoEstablecimiento,
+    totalEmpleados: count(empleadosTable.id)
   } as const
 
   constructor(authPayload: AuthPayload) {
@@ -88,6 +88,41 @@ export class GetSucursales {
     return sucursales
   }
 
+  private getMetadata() {
+    return {
+      sortByOptions: Object.keys(this.validSortBy)
+    }
+  }
+
+  private async getPagination(queriesDto: QueriesDto) {
+    const whereCondition =
+      queriesDto.search.length > 0
+        ? or(
+            ilike(sucursalesTable.nombre, `%${queriesDto.search}%`),
+            ilike(sucursalesTable.direccion, `%${queriesDto.search}%`)
+          )
+        : undefined
+
+    const results = await db
+      .select({ count: count(sucursalesTable.id) })
+      .from(sucursalesTable)
+      .where(whereCondition)
+
+    const [totalItems] = results
+
+    const totalPages = Math.ceil(totalItems.count / queriesDto.page_size)
+    const hasNext = queriesDto.page < totalPages && queriesDto.page >= 1
+    const hasPrev = queriesDto.page > 1 && queriesDto.page <= totalPages
+
+    return {
+      totalItems: totalItems.count,
+      totalPages,
+      currentPage: queriesDto.page,
+      hasNext,
+      hasPrev
+    }
+  }
+
   private async validatePermissions() {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
@@ -112,8 +147,20 @@ export class GetSucursales {
   async execute(queriesDto: QueriesDto) {
     await this.validatePermissions()
 
-    const sucursales = await this.getSucursales(queriesDto)
+    const metadata = this.getMetadata()
+    const pagination = await this.getPagination(queriesDto)
 
-    return sucursales
+    const isValidPage =
+      (pagination.currentPage <= pagination.totalPages ||
+        pagination.currentPage >= 1) &&
+      pagination.totalItems > 0
+
+    const results = isValidPage ? await this.getSucursales(queriesDto) : []
+
+    return {
+      results,
+      pagination,
+      metadata
+    }
   }
 }
