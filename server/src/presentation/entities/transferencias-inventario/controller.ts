@@ -3,7 +3,7 @@ import { CustomResponse } from '@/core/responses/custom.response'
 import { CreateTransferenciaInvDto } from '@/domain/dtos/entities/transferencias-inventario/create-transferencia-inventario.dto'
 import { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import { CreateTransferenciaInv } from '@/domain/use-cases/entities/transferencias-inventario/create-transferenciaInventario.use-case'
-import { GetTransferenciasInventarios } from '@/domain/use-cases/entities/transferencias-inventario/getAll-transferenciaInventario.use-case'
+import { GetTransferenciasInventarios } from '@/domain/use-cases/entities/transferencias-inventario/get-transferencias-inventarios.use-case'
 import { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { GetTransferenciasInventariosById } from '@/domain/use-cases/entities/transferencias-inventario/get-transferenciaInventario-by-id.use-case'
 import type { Request, Response } from 'express'
@@ -181,8 +181,13 @@ export class TransferenciasInventarioController {
 
     getTransferenciasInventarios
       .execute(queriesDto)
-      .then((transInventario) => {
-        CustomResponse.success({ res, data: transInventario })
+      .then((transferenciasInvs) => {
+        CustomResponse.success({
+          res,
+          data: transferenciasInvs.results,
+          metadata: transferenciasInvs.metadata,
+          pagination: transferenciasInvs.pagination
+        })
       })
       .catch((error: unknown) => {
         handleError(error, res)
