@@ -1,6 +1,8 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/api/protected/paginacion.api.dart';
 import 'package:condorsmotors/models/categoria.model.dart';
+import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/utils/logger.dart';
 
 class CategoriasApi {
@@ -10,6 +12,84 @@ class CategoriasApi {
   final FastCache _cache = FastCache();
 
   CategoriasApi(this._api);
+
+  /// Obtiene todas las categorías
+  ///
+  /// Ordenadas alfabéticamente por nombre
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  /// [page] Número de página para paginación (opcional)
+  /// [pageSize] Número de elementos por página (opcional)
+  ///
+  /// La respuesta incluye el campo `totalProductos` que indica la cantidad de
+  /// productos asociados a cada categoría.
+  Future<PaginatedResponse<dynamic>> getCategoriasPaginadas({
+    bool useCache = true,
+    int? page,
+    int? pageSize,
+  }) async {
+    try {
+      // Crear objeto FiltroParams para manejar los parámetros
+      final FiltroParams filtroParams = FiltroParams(
+        page: page ?? 1,
+        pageSize: pageSize ?? 20,
+        sortBy: 'nombre',
+      );
+
+      // Generar clave de caché
+      final String cacheKey = PaginacionUtils.generateCacheKey(
+        'categorias_paginadas',
+        filtroParams.toMap(),
+      );
+
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final PaginatedResponse<dynamic>? cachedData =
+            _cache.get<PaginatedResponse<dynamic>>(cacheKey);
+        if (cachedData != null) {
+          logCache('Categorías paginadas obtenidas desde caché');
+          return cachedData;
+        }
+      }
+
+      Logger.debug('Obteniendo categorías paginadas');
+      PaginacionUtils.logPaginacion('Categorías', filtroParams.toMap());
+
+      final Map<String, String> queryParams = filtroParams.buildQueryParams();
+
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
+        endpoint: _endpoint,
+        method: 'GET',
+        queryParams: queryParams,
+      );
+
+      Logger.debug('Respuesta recibida, status: ${response['status']}');
+
+      // Procesar respuesta usando la utilidad
+      final PaginatedResponse<dynamic> result =
+          PaginacionUtils.parsePaginatedResponse(
+        response,
+        (item) => item, // Mantenemos como dynamic para compatibilidad
+      );
+
+      // Guardar en caché si useCache es true
+      if (useCache) {
+        _cache.set(cacheKey, result);
+        logCache('Categorías paginadas guardadas en caché');
+      }
+
+      return result;
+    } catch (e) {
+      Logger.error('Error al obtener categorías paginadas: $e');
+      // Capturar más detalles sobre el error
+      if (e is ApiException) {
+        Logger.error('Código de error: ${e.statusCode}, Mensaje: ${e.message}');
+        if (e.data != null) {
+          Logger.error('Datos adicionales del error: ${e.data}');
+        }
+      }
+      rethrow;
+    }
+  }
 
   /// Obtiene todas las categorías
   ///
@@ -86,6 +166,52 @@ class CategoriasApi {
           Logger.error('Datos adicionales del error: ${e.data}');
         }
       }
+      rethrow;
+    }
+  }
+
+  /// Obtiene todas las categorías como objetos [Categoria]
+  ///
+  /// Ordenadas alfabéticamente por nombre
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  /// [page] Número de página para paginación (opcional)
+  /// [pageSize] Número de elementos por página (opcional)
+  ///
+  /// Si se proporcionan page y pageSize, devuelve un resultado paginado,
+  /// de lo contrario devuelve una lista simple.
+  Future<PaginatedResponse<Categoria>> getCategoriasObjetosPaginados({
+    bool useCache = true,
+    int? page,
+    int? pageSize,
+  }) async {
+    try {
+      if (page != null || pageSize != null) {
+        // Obtener categorías paginadas
+        final PaginatedResponse<dynamic> response =
+            await getCategoriasPaginadas(
+          useCache: useCache,
+          page: page,
+          pageSize: pageSize,
+        );
+
+        // Convertir a objetos Categoria
+        return response.map((data) => Categoria.fromJson(data));
+      } else {
+        // Si no se proporciona paginación, obtener todas y convertir a una respuesta paginada
+        final List<Categoria> categorias =
+            await getCategoriasObjetos(useCache: useCache);
+
+        return PaginatedResponse<Categoria>(
+          items: categorias,
+          paginacion: Paginacion.fromParams(
+            totalItems: categorias.length,
+            pageSize: categorias.length,
+            currentPage: 1,
+          ),
+        );
+      }
+    } catch (e) {
+      Logger.error('ERROR al obtener categorías como objetos paginados: $e');
       rethrow;
     }
   }
@@ -336,9 +462,34 @@ class CategoriasApi {
     }
   }
 
+  /// Busca categorías por nombre
+  ///
+  /// [nombre] Término de búsqueda
+  /// [useCache] Indica si se debe usar el caché (default: true)
+  Future<List<Categoria>> buscarCategoriasPorNombre(
+    String nombre, {
+    bool useCache = true,
+  }) async {
+    try {
+      // Obtener todas las categorías
+      final List<Categoria> categorias =
+          await getCategoriasObjetos(useCache: useCache);
+
+      // Filtrar por nombre
+      final String nombreLower = nombre.toLowerCase();
+      return categorias
+          .where((c) => c.nombre.toLowerCase().contains(nombreLower))
+          .toList();
+    } catch (e) {
+      Logger.error('ERROR al buscar categorías por nombre: $e');
+      rethrow;
+    }
+  }
+
   /// Invalidar caché de categorías
   void _invalidateCache() {
     _cache.invalidate('categorias_all');
+    _cache.invalidateByPattern('categorias_paginadas');
     logCache('Caché de categorías invalidada');
   }
 

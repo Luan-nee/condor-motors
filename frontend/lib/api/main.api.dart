@@ -222,7 +222,7 @@ class ApiException implements Exception {
 
 class ApiClient {
   String baseUrl;
-  late final Dio _dio;
+  late Dio _dio;
   bool _isRefreshingToken = false;
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
@@ -243,21 +243,57 @@ class ApiClient {
   }
 
   void _initializeDio() {
-    _dio = Dio(BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
-      sendTimeout: const Duration(seconds: 15),
-      validateStatus: (int? status) => status != null && status < 500,
-      headers: Map<String, String>.from(_defaultHeaders),
-    ));
+    _dio = Dio()
+      ..options = BaseOptions(
+        baseUrl: baseUrl,
+        headers: Map<String, String>.from(_defaultHeaders),
+        validateStatus: (status) => status != null && status < 500,
+        followRedirects: true,
+        receiveTimeout: const Duration(seconds: 30),
+        sendTimeout: const Duration(seconds: 30),
+        connectTimeout: const Duration(seconds: 30),
+      )
+      ..interceptors.addAll([
+        LogInterceptor(
+          requestBody: true,
+          responseBody: true,
+          responseHeader: false,
+          requestHeader: false,
+          logPrint: (obj) {
+            // Filtrar información irrelevante
+            if (obj is String) {
+              // Ignorar logs de configuración de Dio
+              if (obj.contains('method:') ||
+                  obj.contains('responseType:') ||
+                  obj.contains('followRedirects:') ||
+                  obj.contains('persistentConnection:') ||
+                  obj.contains('connectTimeout:') ||
+                  obj.contains('sendTimeout:') ||
+                  obj.contains('receiveTimeout:') ||
+                  obj.contains('receiveDataWhenStatusError:') ||
+                  obj.contains('date:') ||
+                  obj.contains('vary:') ||
+                  obj.contains('content-length:') ||
+                  obj.contains('etag:')) {
+                return;
+              }
 
-    // Interceptor para logs
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: _onRequest,
-      onResponse: _onResponse,
-      onError: _onError,
-    ));
+              // Solo mostrar el body de la petición/respuesta
+              if (obj.startsWith('{') ||
+                  obj.startsWith('[') ||
+                  obj.contains('Request Body:') ||
+                  obj.contains('Response:')) {
+                Logger.debug(obj.toString());
+              }
+            }
+          },
+        ),
+        QueuedInterceptorsWrapper(
+          onRequest: _onRequest,
+          onResponse: _onResponse,
+          onError: _onError,
+        ),
+      ]);
 
     // Interceptor para tokens
     _dio.interceptors.add(InterceptorsWrapper(
@@ -290,7 +326,7 @@ class ApiClient {
 
     logHttp(method, endpoint, statusCode);
 
-    if (response.data != null) {
+    if (response.data != null && response.data.toString() != '{}') {
       final String dataPreview = response.data.toString();
       final String truncated = dataPreview.length > 500
           ? '${dataPreview.substring(0, 500)}...'
@@ -495,8 +531,10 @@ class ApiClient {
     try {
       Logger.info('Limpiando estado del cliente API...');
 
-      // Limpiar caché y headers
+      // Limpiar caché
       _cache.clear();
+
+      // Restaurar headers por defecto
       _defaultHeaders
         ..clear()
         ..addAll({
@@ -504,11 +542,20 @@ class ApiClient {
           'Accept': 'application/json',
         });
 
-      // Cerrar el cliente Dio actual si existe
-      _dio.close(force: true);
+      try {
+        // Cerrar el cliente Dio actual y sus conexiones
+        _dio.close(force: true);
 
-      // Reinicializar el cliente con la configuración base
-      _initializeDio();
+        // Esperar un momento para asegurar que todas las conexiones se cierren
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        // Reinicializar Dio con la configuración limpia
+        _initializeDio();
+      } catch (dioError) {
+        Logger.debug('Error no crítico al reiniciar cliente Dio: $dioError');
+        // Intentar reinicializar Dio incluso si hubo error al cerrar
+        _initializeDio();
+      }
 
       Logger.info('Estado del cliente API limpiado correctamente');
     } catch (e) {

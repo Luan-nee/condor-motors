@@ -56,7 +56,11 @@ export class CategoriasController {
     getCategorias
       .execute(queriesDto)
       .then((categorias) => {
-        CustomResponse.success({ res, data: categorias })
+        CustomResponse.success({
+          res,
+          data: categorias.results,
+          metadata: categorias.metadata
+        })
       })
       .catch((error: unknown) => {
         handleError(error, res)

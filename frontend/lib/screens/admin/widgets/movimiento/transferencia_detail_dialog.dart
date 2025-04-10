@@ -1,6 +1,7 @@
 import 'package:condorsmotors/models/sucursal.model.dart' as sucursal_model;
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/providers/admin/transferencias.admin.provider.dart';
+import 'package:condorsmotors/screens/admin/widgets/movimiento/transferencia_comparar_admin.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -34,7 +35,6 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
   String? _errorMessage;
   TransferenciaInventario? _detalleTransferencia;
   int _retryCount = 0;
-  ComparacionTransferencia? _comparacionTransferencia;
   sucursal_model.Sucursal? _sucursalSeleccionada;
 
   @override
@@ -120,12 +120,56 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
       }
 
       setState(() {
-        _comparacionTransferencia = comparacion;
         _isLoading = false;
       });
 
-      debugPrint(
-          '✅ [TransferenciaDetailDialog] Comparación cargada correctamente');
+      if (mounted) {
+        final bool? resultado = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return TransferenciaCompararAdmin(
+              comparacion: comparacion,
+              onCancel: () {
+                Navigator.of(context).pop(false);
+              },
+              onConfirm: () async {
+                try {
+                  await transferenciasProvider.completarEnvioTransferencia(
+                    widget.transferencia.id.toString(),
+                    sucursalId,
+                  );
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Transferencia enviada exitosamente'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    Navigator.of(context).pop(true);
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error al enviar: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    Navigator.of(context).pop(false);
+                  }
+                }
+              },
+            );
+          },
+        );
+
+        // Si la transferencia se envió exitosamente, cerramos el diálogo de detalles
+        if (resultado == true && mounted) {
+          Navigator.of(context).pop();
+        }
+      }
     } catch (e) {
       debugPrint(
           '❌ [TransferenciaDetailDialog] Error al cargar comparación: $e');
@@ -135,7 +179,6 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
       }
 
       setState(() {
-        _comparacionTransferencia = null;
         _isLoading = false;
         _errorMessage = 'Error al cargar comparación: $e';
       });
@@ -323,218 +366,138 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
   // Widget para mostrar los detalles del movimiento
   Widget _buildDetailContent(
       BuildContext context, bool isWideScreen, bool isMediumScreen) {
-    // Movimiento a mostrar (ya sea el detallado o el original)
     final TransferenciaInventario transferencia =
         _detalleTransferencia ?? widget.transferencia;
 
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _buildHeader(context),
-          const Divider(color: Colors.white24),
-          const SizedBox(height: 16),
-
-          // Mensaje de error si hubo problemas cargando detalles pero seguimos adelante
-          if (_errorMessage != null)
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withOpacity(0.5)),
-              ),
-              child: Row(
-                children: <Widget>[
-                  const Icon(Icons.warning_amber_rounded,
-                      color: Colors.orange, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Mostrando información parcial. Algunos detalles podrían no estar disponibles.',
-                      style: TextStyle(
-                          color: Colors.orange.shade200, fontSize: 14),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // Layout adaptativo para información general y sucursales
-          if (isWideScreen)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  flex: 3,
-                  child: Container(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _buildHeader(context),
+        const Divider(color: Colors.white24),
+        Flexible(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Información General y Sucursales en una sola fila
+                  Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: const Color(0xFF222222),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        const Text(
-                          'Información General',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildInfoItem(
+                                    'ID',
+                                    '#${transferencia.id}',
+                                    FontAwesomeIcons.hashtag,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildInfoItem(
+                                    'Estado',
+                                    transferencia.estado.nombre,
+                                    FontAwesomeIcons.circleInfo,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildInfoItem(
+                                    'Origen',
+                                    transferencia.nombreSucursalOrigen,
+                                    FontAwesomeIcons.store,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildInfoItem(
+                                    'Destino',
+                                    transferencia.nombreSucursalDestino,
+                                    FontAwesomeIcons.locationDot,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildInfoItem(
+                                    'Fecha Solicitada',
+                                    _formatFecha(transferencia.salidaOrigen),
+                                    FontAwesomeIcons.calendar,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildInfoItem(
+                                    'Fecha Recibida',
+                                    _formatFecha(transferencia.llegadaDestino),
+                                    FontAwesomeIcons.calendarCheck,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 16),
-                        _buildGeneralInfoRow(transferencia),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  flex: 3,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF222222),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        const Text(
-                          'Sucursales',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildSucursalesInfoRow(transferencia),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            )
-          else
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF222222),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      const Text(
-                        'Información General',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildGeneralInfoRow(transferencia),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF222222),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      const Text(
-                        'Sucursales',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildSucursalesInfoRow(transferencia),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-          const SizedBox(height: 24),
-
-          // Selector de sucursal para comparación
-          _buildSucursalSelector(),
-
-          const SizedBox(height: 24),
-
-          // Productos y Observaciones
-          if (isWideScreen)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    children: [
-                      _buildProductosSectionCard(transferencia),
-                      if (_comparacionTransferencia != null) ...[
-                        const SizedBox(height: 16),
-                        _buildComparacionSectionCard(),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  flex: 2,
-                  child: _buildObservacionesSectionCard(transferencia),
-                ),
-              ],
-            )
-          else
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _buildProductosSectionCard(transferencia),
-                if (_comparacionTransferencia != null) ...[
                   const SizedBox(height: 16),
-                  _buildComparacionSectionCard(),
+
+                  // Selector de Sucursal para Comparación
+                  _buildSucursalSelector(),
+                  const SizedBox(height: 16),
+
+                  // Lista de Productos
+                  _buildProductosSectionCard(transferencia),
                 ],
-                const SizedBox(height: 16),
-                _buildObservacionesSectionCard(transferencia),
-              ],
-            ),
-
-          const SizedBox(height: 24),
-
-          Center(
-            child: ElevatedButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.close),
-              label: const Text('Cerrar'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31E24),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            border: Border(
+              top: BorderSide(color: Colors.white24),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                ),
+                child: const Text('Cancelar'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.check),
+                label: const Text('Aceptar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE31E24),
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -579,281 +542,35 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
   }
 
   // Información general del movimiento
-  Widget _buildGeneralInfoRow(TransferenciaInventario transferencia) {
+  Widget _buildInfoItem(String label, String? value, IconData icon) {
     return Row(
-      children: <Widget>[
-        Expanded(
-          child: _buildInfoItem(
-            'ID',
-            transferencia.id.toString(),
-            FontAwesomeIcons.hashtag,
-          ),
+      children: [
+        FaIcon(
+          icon,
+          size: 14,
+          color: const Color(0xFFE31E24),
         ),
+        const SizedBox(width: 8),
         Expanded(
-          child: _buildInfoItem(
-            'Fecha Creación',
-            _formatFecha(transferencia.salidaOrigen),
-            FontAwesomeIcons.calendar,
-          ),
-        ),
-        Expanded(
-          child: _buildInfoItem(
-            'Estado',
-            transferencia.estado.nombre,
-            FontAwesomeIcons.circleInfo,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Información de sucursales
-  Widget _buildSucursalesInfoRow(TransferenciaInventario transferencia) {
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: _buildInfoItem(
-            'Sucursal Origen',
-            transferencia.nombreSucursalOrigen,
-            FontAwesomeIcons.building,
-          ),
-        ),
-        Expanded(
-          child: _buildInfoItem(
-            'Sucursal Destino',
-            transferencia.nombreSucursalDestino,
-            FontAwesomeIcons.building,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Sección de productos en tarjeta
-  Widget _buildProductosSectionCard(TransferenciaInventario transferencia) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF222222),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              const FaIcon(
-                FontAwesomeIcons.box,
-                size: 16,
-                color: Color(0xFFE31E24),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Productos',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 16),
-              if (transferencia.productos != null &&
-                  transferencia.productos!.isNotEmpty)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE31E24).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    '${transferencia.productos!.length} productos',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (transferencia.productos != null &&
-              transferencia.productos!.isNotEmpty)
-            _buildProductosList(transferencia)
-          else
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(
-                child: Text(
-                  'No hay productos disponibles para mostrar en esta transferencia',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // Sección de observaciones en tarjeta
-  Widget _buildObservacionesSectionCard(TransferenciaInventario transferencia) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF222222),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: const <Widget>[
-              FaIcon(
-                FontAwesomeIcons.fileLines,
-                size: 16,
-                color: Color(0xFFE31E24),
-              ),
-              SizedBox(width: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                'Observaciones',
+                label,
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 12,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2D2D2D),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              transferencia.observaciones ?? 'Sin observaciones',
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Lista de productos
-  Widget _buildProductosList(TransferenciaInventario transferencia) {
-    // Debug para verificar qué contiene productos
-    debugPrint(
-        '📦 Productos en el movimiento: ${transferencia.productos?.length ?? 0}');
-
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      // Usamos ConstrainedBox para evitar problemas de altura con ListView
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxHeight: 350, // Altura máxima ajustada
-        ),
-        child: ListView.separated(
-          shrinkWrap: true,
-          itemCount: transferencia.productos!.length,
-          separatorBuilder: (BuildContext context, int index) => const Divider(
-            color: Colors.white10,
-            height: 1,
-          ),
-          itemBuilder: (BuildContext context, int index) {
-            final DetalleProducto producto = transferencia.productos![index];
-            return ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF333333),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const FaIcon(
-                  FontAwesomeIcons.boxOpen,
-                  color: Color(0xFFE31E24),
-                  size: 16,
-                ),
-              ),
-              title: Text(
-                producto.nombre,
+              Text(
+                value ?? 'N/A',
                 style: const TextStyle(
                   color: Colors.white,
+                  fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              subtitle: producto.codigo != null
-                  ? Text(
-                      'Código: ${producto.codigo}',
-                      style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                    )
-                  : null,
-              trailing: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE31E24).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFE31E24).withOpacity(0.3),
-                  ),
-                ),
-                child: Text(
-                  'Cantidad: ${producto.cantidad}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  // Widget para mostrar un elemento de información
-  Widget _buildInfoItem(String titulo, String? valor, IconData icono) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            FaIcon(
-              icono,
-              size: 14,
-              color: const Color(0xFFE31E24),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              titulo,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Padding(
-          padding: const EdgeInsets.only(left: 22),
-          child: Text(
-            valor ?? 'N/A',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-            ),
+            ],
           ),
         ),
       ],
@@ -872,116 +589,51 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
     }
   }
 
-  // Nuevo widget para mostrar la comparación de stocks
-  Widget _buildComparacionSectionCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF222222),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: const <Widget>[
-              FaIcon(
-                FontAwesomeIcons.scaleBalanced,
-                size: 16,
-                color: Color(0xFFE31E24),
-              ),
-              SizedBox(width: 12),
-              Text(
-                'Comparación de Stock',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (_comparacionTransferencia?.productos != null)
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF2D2D2D),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _comparacionTransferencia!.productos.length,
-                separatorBuilder: (context, index) => const Divider(
-                  color: Colors.white10,
-                  height: 1,
-                ),
-                itemBuilder: (context, index) {
-                  final producto = _comparacionTransferencia!.productos[index];
-                  return ListTile(
-                    title: Text(
-                      producto.nombre,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Stock Origen: ${producto.origen?.stockActual ?? 0} → ${producto.origen?.stockDespues ?? 0}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                          ),
-                        ),
-                        Text(
-                          'Stock Destino: ${producto.destino.stockActual} → ${producto.destino.stockDespues}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
-                    ),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFFE31E24).withOpacity(0.3),
-                        ),
-                      ),
-                      child: Text(
-                        'Cant: ${producto.cantidadSolicitada}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            )
-          else
-            const Center(
-              child: Text(
-                'No hay datos de comparación disponibles',
-                style: TextStyle(color: Colors.white70),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // Widget para seleccionar sucursal
+  // Simplificar el selector de sucursal
   Widget _buildSucursalSelector() {
     final TransferenciasProvider transferenciasProvider =
         Provider.of<TransferenciasProvider>(context);
 
+    // Obtener el estado actual y su estilo
+    final String estadoCodigo = widget.transferencia.estado.codigo;
+    final estiloEstado =
+        transferenciasProvider.obtenerEstiloEstado(estadoCodigo);
+    final bool puedeComparar =
+        transferenciasProvider.puedeCompararTransferencia(estadoCodigo);
+
+    // Si no se puede comparar, mostrar mensaje informativo
+    if (!puedeComparar) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: estiloEstado['backgroundColor'] as Color,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: (estiloEstado['textColor'] as Color).withOpacity(0.2),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              estiloEstado['iconData'] as IconData,
+              color: estiloEstado['textColor'] as Color,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                transferenciasProvider.obtenerMensajeComparacion(estadoCodigo),
+                style: TextStyle(
+                  color: estiloEstado['textColor'] as Color,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Si está en PEDIDO, mostramos el selector con mensaje informativo
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -991,15 +643,63 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Seleccionar Sucursal para Comparación',
+          Row(
+            children: [
+              const FaIcon(
+                FontAwesomeIcons.scaleBalanced,
+                size: 16,
+                color: Color(0xFFE31E24),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Comparar Stock',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              // Mostrar el estado actual como badge
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: estiloEstado['backgroundColor'] as Color,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      estiloEstado['iconData'] as IconData,
+                      color: estiloEstado['textColor'] as Color,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      estiloEstado['estadoDisplay'] as String,
+                      style: TextStyle(
+                        color: estiloEstado['textColor'] as Color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Mensaje informativo
+          Text(
+            transferenciasProvider.obtenerMensajeComparacion(estadoCodigo),
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 13,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           DropdownButtonFormField<sucursal_model.Sucursal>(
             value: _sucursalSeleccionada,
             decoration: InputDecoration(
@@ -1017,29 +717,185 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
                   color: Colors.white.withOpacity(0.1),
                 ),
               ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             dropdownColor: const Color(0xFF2D2D2D),
             style: const TextStyle(color: Colors.white),
             items: [
               for (var sucursal in transferenciasProvider.sucursales)
-                DropdownMenuItem<sucursal_model.Sucursal>(
-                  value: sucursal,
-                  child: Text(sucursal.nombre),
-                ),
+                if (sucursal.id !=
+                    widget.transferencia.sucursalDestinoId.toString())
+                  DropdownMenuItem<sucursal_model.Sucursal>(
+                    value: sucursal,
+                    child: Row(
+                      children: [
+                        Text(sucursal.nombre),
+                        if (sucursal.id ==
+                            widget.transferencia.sucursalOrigenId?.toString())
+                          Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE31E24).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFE31E24).withOpacity(0.3),
+                              ),
+                            ),
+                            child: const Text(
+                              'Origen',
+                              style: TextStyle(
+                                color: Color(0xFFE31E24),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
             ],
-            onChanged: (sucursal_model.Sucursal? sucursal) {
+            onChanged: (sucursal_model.Sucursal? sucursal) async {
               if (sucursal != null) {
-                setState(() {
-                  _sucursalSeleccionada = sucursal;
-                });
-                _cargarComparacion(int.parse(sucursal.id));
+                try {
+                  setState(() {
+                    _sucursalSeleccionada = sucursal;
+                    _isLoading = true;
+                  });
+
+                  await _cargarComparacion(int.parse(sucursal.id));
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                } finally {
+                  if (mounted) {
+                    setState(() {
+                      _isLoading = false;
+                    });
+                  }
+                }
               }
             },
             hint: const Text(
-              'Seleccione una sucursal',
+              'Seleccione una sucursal para comparar',
               style: TextStyle(color: Colors.white70),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // Simplificar el widget de productos
+  Widget _buildProductosSectionCard(TransferenciaInventario transferencia) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF222222),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: [
+              const FaIcon(
+                FontAwesomeIcons.boxesStacked,
+                size: 16,
+                color: Color(0xFFE31E24),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Productos (${transferencia.productos?.length ?? 0})',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          if (transferencia.productos != null &&
+              transferencia.productos!.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 300),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: transferencia.productos!.length,
+                separatorBuilder: (context, index) =>
+                    const Divider(color: Colors.white24, height: 1),
+                itemBuilder: (context, index) {
+                  final producto = transferencia.productos![index];
+                  return ListTile(
+                    dense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    title: Text(
+                      producto.nombre,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: producto.codigo != null
+                        ? Text(
+                            'Código: ${producto.codigo}',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 12,
+                            ),
+                          )
+                        : null,
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE31E24).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFFE31E24).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        'Cantidad: ${producto.cantidad}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ] else
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(
+                child: Text(
+                  'No hay productos disponibles',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+            ),
         ],
       ),
     );

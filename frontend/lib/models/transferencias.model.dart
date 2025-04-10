@@ -234,13 +234,19 @@ class TransferenciaInventario {
     // Si los datos vienen dentro de data, usar ese objeto
     final data = json['data'] ?? json;
 
-    // Mapear estado
-    final estado = EstadoTransferencia.values.firstWhere(
-      (e) => e.codigo == data['estado']['codigo'],
-      orElse: () => EstadoTransferencia.pedido,
-    );
+    // Mapear estado - ahora con manejo de caso nulo
+    EstadoTransferencia estado;
+    if (data['estado'] != null) {
+      estado = EstadoTransferencia.values.firstWhere(
+        (e) => e.codigo == data['estado']['codigo'],
+        orElse: () => EstadoTransferencia.pedido,
+      );
+    } else {
+      // Si no hay estado, asumimos que está enviado (caso del endpoint /enviar)
+      estado = EstadoTransferencia.enviado;
+    }
 
-    // Mapear sucursales
+    // Mapear sucursales con manejo de nulos
     final Map<String, dynamic>? sucursalOrigen = data['sucursalOrigen'];
     final Map<String, dynamic>? sucursalDestino = data['sucursalDestino'];
 
@@ -270,13 +276,14 @@ class TransferenciaInventario {
     return TransferenciaInventario(
       id: data['id'],
       estado: estado,
-      sucursalOrigenId: sucursalOrigen?['id'],
-      nombreSucursalOrigen: sucursalOrigen?['nombre'],
-      sucursalDestinoId: sucursalDestino?['id'] ?? 0,
-      nombreSucursalDestino: sucursalDestino?['nombre'] ?? 'Sin destino',
+      sucursalOrigenId: data['sucursalOrigenId'] ?? sucursalOrigen?['id'],
+      nombreSucursalOrigen: sucursalOrigen?['nombre'] ?? 'Pendiente',
+      sucursalDestinoId:
+          data['sucursalDestinoId'] ?? sucursalDestino?['id'] ?? 0,
+      nombreSucursalDestino: sucursalDestino?['nombre'] ?? 'Pendiente',
       productos: productos,
       observaciones: data['observaciones'],
-      modificable: data['modificable'] ?? true,
+      modificable: data['modificable'] ?? false,
       salidaOrigen: data['salidaOrigen'] != null
           ? DateTime.parse(data['salidaOrigen'])
           : null,

@@ -54,7 +54,7 @@ class _ProductosTableState extends State<ProductosTable>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _agruparProductos();
   }
 
@@ -233,31 +233,6 @@ class _ProductosTableState extends State<ProductosTable>
                 ],
               ),
             ),
-            Tab(
-              icon: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  FaIcon(FontAwesomeIcons.ban,
-                      size: 16, color: Colors.red.shade800),
-                  const SizedBox(width: 8),
-                  const Text('inhabilitados'),
-                  const SizedBox(width: 4),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2D2D2D),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${_productosAgrupados['inhabilitados']?.length ?? 0}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
         Expanded(
@@ -275,10 +250,6 @@ class _ProductosTableState extends State<ProductosTable>
               // Productos agotados
               _buildProductosTabla(
                   _productosAgrupados['agotados'] ?? <Producto>[]),
-
-              // Productos inhalitados
-              _buildProductosTabla(
-                  _productosAgrupados['inhabilitados'] ?? <Producto>[]),
             ],
           ),
         ),
