@@ -14,7 +14,7 @@ export class GetCategorias {
 
   private readonly validSortBy = {
     nombre: categoriasTable.nombre,
-    id: categoriasTable.id
+    totalProductos: count(productosTable.id)
   } as const
 
   private isValidSortBy(
@@ -24,14 +24,11 @@ export class GetCategorias {
   }
 
   private getSortByColumn(sortBy: string) {
-    if (
-      Object.keys(this.validSortBy).includes(sortBy) &&
-      this.isValidSortBy(sortBy)
-    ) {
+    if (this.isValidSortBy(sortBy)) {
       return this.validSortBy[sortBy]
     }
 
-    return this.validSortBy.id
+    return categoriasTable.nombre
   }
 
   private async getCategorias(queriesDto: QueriesDto) {
@@ -61,8 +58,20 @@ export class GetCategorias {
     return categorias
   }
 
+  private getMetadata() {
+    return {
+      sortByOptions: Object.keys(this.validSortBy)
+    }
+  }
+
   async execute(queriesDto: QueriesDto) {
     const categorias = await this.getCategorias(queriesDto)
-    return categorias
+
+    const metadata = this.getMetadata()
+
+    return {
+      results: categorias,
+      metadata
+    }
   }
 }
