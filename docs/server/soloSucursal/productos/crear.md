@@ -1,4 +1,4 @@
-# Endpoint: Crear un Producto
+# Endpoint: Crear un Producto `[POST]`
 
 ## Descripción
 

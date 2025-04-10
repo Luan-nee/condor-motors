@@ -1,4 +1,4 @@
-# Agregar Producto
+# Endpoint: Agregar Producto `[POST]`
 
 Este endpoint permite habilitar un producto dentro de una sucursal.
 
@@ -20,12 +20,12 @@ Este endpoint permite habilitar un producto dentro de una sucursal.
 
 ## Cuerpo de la Solicitud (JSON) _Ejemplo_
 
-```json
+```jsonc
 {
   "precioCompra": 300.32,
   "precioVenta": 1023.99,
   "precioOferta": 999.99,
-  "stock": 777
+  "stock": 777,
 }
 ```
 
