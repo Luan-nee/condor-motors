@@ -50,7 +50,7 @@ class CondorMotorsApi {
       categorias = CategoriasApi(_apiClient);
       cuentasEmpleados = CuentasEmpleadosApi(_apiClient);
       proformas = ProformaVentaApi(_apiClient);
-      colores = ColoresApi(apiClient: _apiClient);
+      colores = ColoresApi(_apiClient);
       clientes = ClientesApi(_apiClient);
       documentos = DocumentoApi(_apiClient);
       estadisticas = EstadisticasApi(_apiClient);

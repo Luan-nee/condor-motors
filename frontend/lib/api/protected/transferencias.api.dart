@@ -1,5 +1,6 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:flutter/foundation.dart';
 
@@ -30,7 +31,7 @@ class TransferenciasInventarioApi {
   }
 
   /// Obtiene todas las transferencias de inventario
-  Future<List<TransferenciaInventario>> getTransferencias({
+  Future<PaginatedResponse<TransferenciaInventario>> getTransferencias({
     String? sucursalId,
     String? estado,
     DateTime? fechaInicio,
@@ -57,7 +58,8 @@ class TransferenciasInventarioApi {
 
       // Verificar caché
       if (!forceRefresh && useCache) {
-        final List<TransferenciaInventario>? cached = _cache.get(cacheKey);
+        final PaginatedResponse<TransferenciaInventario>? cached =
+            _cache.get(cacheKey);
         if (cached != null) {
           debugPrint('Datos obtenidos desde caché: $cacheKey');
           return cached;
@@ -91,16 +93,19 @@ class TransferenciasInventarioApi {
             ),
           );
 
-      // Procesar respuesta
-      final List<TransferenciaInventario> transferencias =
-          _processTransferenciasResponse(response);
+      // Procesar respuesta usando PaginatedResponse
+      final PaginatedResponse<TransferenciaInventario> paginatedResponse =
+          PaginatedResponse.fromApiResponse(
+        response,
+        (Map<String, dynamic> json) => TransferenciaInventario.fromJson(json),
+      );
 
       // Guardar en caché si es necesario
       if (useCache) {
-        _cache.set(cacheKey, transferencias);
+        _cache.set(cacheKey, paginatedResponse);
       }
 
-      return transferencias;
+      return paginatedResponse;
     } catch (e) {
       debugPrint('Error al obtener transferencias: $e');
       rethrow;
@@ -199,6 +204,18 @@ class TransferenciasInventarioApi {
 
       // Invalidar caché
       _invalidateRelatedCache(id);
+
+      // Si la respuesta es parcial, construimos un objeto TransferenciaInventario con los datos mínimos
+      final data = response['data'];
+      if (data != null && !data.containsKey('estado')) {
+        return TransferenciaInventario(
+          id: int.parse(id),
+          estado: EstadoTransferencia.enviado,
+          sucursalDestinoId: data['sucursalDestinoId'],
+          nombreSucursalDestino: 'Pendiente de actualizar',
+          modificable: false,
+        );
+      }
 
       return TransferenciaInventario.fromJson(response['data']);
     } catch (e) {
@@ -378,14 +395,22 @@ class TransferenciasInventarioApi {
   }
 
   /// Obtiene todas las transferencias sin filtrar por sucursal
-  Future<List<TransferenciaInventario>> getAllTransferencias({
+  Future<PaginatedResponse<TransferenciaInventario>> getAllTransferencias({
     String? estado,
     bool forceRefresh = false,
+    int? page,
+    int? pageSize,
+    String? sortBy,
+    String? order,
   }) async {
     try {
       // Preparar parámetros de consulta
       final Map<String, String> queryParams = <String, String>{
         if (estado != null) 'estado': estado,
+        if (page != null) 'page': page.toString(),
+        if (pageSize != null) 'page_size': pageSize.toString(),
+        if (sortBy != null) 'sort_by': sortBy,
+        if (order != null) 'order': order,
       };
 
       // Realizar petición
@@ -403,11 +428,11 @@ class TransferenciasInventarioApi {
             ),
           );
 
-      // Procesar respuesta
-      final List<TransferenciaInventario> transferencias =
-          _processTransferenciasResponse(response);
-
-      return transferencias;
+      // Procesar respuesta usando PaginatedResponse
+      return PaginatedResponse.fromApiResponse(
+        response,
+        (Map<String, dynamic> json) => TransferenciaInventario.fromJson(json),
+      );
     } catch (e) {
       debugPrint('Error al obtener todas las transferencias: $e');
       rethrow;
@@ -460,23 +485,6 @@ class TransferenciasInventarioApi {
       ..invalidate('$_prefixMovimiento$id')
       ..invalidateByPattern(_prefixListaMovimientos);
     debugPrint('Caché invalidado para transferencia $id');
-  }
-
-  List<TransferenciaInventario> _processTransferenciasResponse(
-      Map<String, dynamic> response) {
-    final List<dynamic> rawData = response['data'] ?? <dynamic>[];
-    final List<TransferenciaInventario> transferencias =
-        <TransferenciaInventario>[];
-
-    for (final dynamic item in rawData) {
-      try {
-        transferencias.add(TransferenciaInventario.fromJson(item));
-      } catch (e) {
-        debugPrint('Error al procesar transferencia: $e');
-      }
-    }
-
-    return transferencias;
   }
 
   TransferenciaInventario _processTransferenciaResponse(

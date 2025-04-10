@@ -1,5 +1,6 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/api/protected/paginacion.api.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/utils/logger.dart';
@@ -48,19 +49,26 @@ class ProductosApi {
         invalidateCache(sucursalId);
       }
 
-      // Generar clave única para este conjunto de parámetros
-      final String cacheKey = _generateCacheKey(
-        'productos_$sucursalId',
+      // Crear objeto FiltroParams para manejar los parámetros de manera más estructurada
+      final FiltroParams filtroParams = FiltroParams(
         search: search,
-        page: page,
-        pageSize: pageSize,
+        page: page ?? 1,
+        pageSize: pageSize ?? 20,
         sortBy: sortBy,
         order: order,
         filter: filter,
         filterValue: filterValue,
         filterType: filterType,
-        stockBajo: stockBajo,
-        liquidacion: liquidacion,
+        extraParams: <String, String>{
+          if (stockBajo != null) 'stockBajo': stockBajo.toString(),
+          if (liquidacion != null) 'liquidacion': liquidacion.toString(),
+        },
+      );
+
+      // Generar clave de caché usando la utilidad
+      final String cacheKey = PaginacionUtils.generateCacheKey(
+        'productos_$sucursalId',
+        filtroParams.toMap(),
       );
 
       // Intentar obtener desde caché si useCache es true
@@ -74,53 +82,11 @@ class ProductosApi {
       }
 
       // Si no hay caché o useCache es false, obtener desde la API
-      Logger.debug(
-          'Obteniendo productos para sucursal $sucursalId con parámetros: '
-          '{ search: $search, page: $page, pageSize: $pageSize, sortBy: $sortBy, order: $order, filter: $filter, stockBajo: $stockBajo, liquidacion: $liquidacion }');
+      PaginacionUtils.logPaginacion(
+          'Productos de sucursal $sucursalId', filtroParams.toMap());
 
-      final Map<String, String> queryParams = <String, String>{};
-
-      if (search != null && search.isNotEmpty) {
-        queryParams['search'] = search;
-      }
-
-      if (page != null) {
-        queryParams['page'] = page.toString();
-      }
-
-      if (pageSize != null) {
-        queryParams['page_size'] = pageSize.toString();
-      }
-
-      if (sortBy != null && sortBy.isNotEmpty) {
-        queryParams['sort_by'] = sortBy;
-      }
-
-      if (order != null && order.isNotEmpty) {
-        queryParams['order'] = order;
-      }
-
-      if (filter != null && filter.isNotEmpty) {
-        queryParams['filter'] = filter;
-      }
-
-      if (filterValue != null) {
-        queryParams['filter_value'] = filterValue;
-      }
-
-      if (filterType != null && filterType.isNotEmpty) {
-        queryParams['filter_type'] = filterType;
-      }
-
-      // Añadir parámetro stockBajo si está definido
-      if (stockBajo != null) {
-        queryParams['stockBajo'] = stockBajo.toString();
-      }
-
-      // Añadir parámetro liquidacion si está definido
-      if (liquidacion != null) {
-        queryParams['liquidacion'] = liquidacion.toString();
-      }
+      // Construir query params usando la utilidad
+      final Map<String, String> queryParams = filtroParams.buildQueryParams();
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos',
@@ -128,29 +94,11 @@ class ProductosApi {
         queryParams: queryParams,
       );
 
-      // Extraer los datos de productos
-      final List<dynamic> rawData = response['data'] ?? <dynamic>[];
-      final List<Producto> productos =
-          rawData.map((item) => Producto.fromJson(item)).toList();
-
-      // Extraer información de paginación
-      Map<String, dynamic> paginacionData = <String, dynamic>{};
-      if (response.containsKey('pagination') &&
-          response['pagination'] != null) {
-        paginacionData = response['pagination'] as Map<String, dynamic>;
-      }
-
-      // Extraer metadata si está disponible
-      Map<String, dynamic>? metadata;
-      if (response.containsKey('metadata') && response['metadata'] != null) {
-        metadata = response['metadata'] as Map<String, dynamic>;
-      }
-
-      // Crear la respuesta paginada
-      final PaginatedResponse<Producto> result = PaginatedResponse<Producto>(
-        items: productos,
-        paginacion: Paginacion.fromJson(paginacionData),
-        metadata: metadata,
+      // Procesar respuesta usando la utilidad
+      final PaginatedResponse<Producto> result =
+          PaginacionUtils.parsePaginatedResponse(
+        response,
+        (item) => Producto.fromJson(item),
       );
 
       // Guardar en caché si useCache es true
@@ -219,24 +167,10 @@ class ProductosApi {
       useCache: useCache,
     );
 
-    // Filtramos solo los productos agotados (stock = 0)
-    final List<Producto> productosAgotados =
-        response.items.where((Producto p) => p.stock <= 0).toList();
-
-    // Mantenemos la misma información de paginación pero ajustamos totalItems
-    final Paginacion paginacionAjustada = Paginacion(
-      currentPage: response.paginacion.currentPage,
-      totalPages: response.paginacion.totalPages,
-      totalItems: productosAgotados.length,
-      hasNext: response.paginacion.hasNext,
-      hasPrev: response.paginacion.hasPrev,
-    );
-
-    // Devolvemos una nueva respuesta paginada con solo los productos agotados
-    return PaginatedResponse<Producto>(
-      items: productosAgotados,
-      paginacion: paginacionAjustada,
-      metadata: response.metadata,
+    // Usar la nueva funcionalidad de filtrado de PaginatedResponse
+    return response.where(
+      (Producto p) => p.stock <= 0,
+      pageSize: pageSize ?? 20,
     );
   }
 
@@ -266,24 +200,10 @@ class ProductosApi {
       useCache: useCache,
     );
 
-    // Filtramos solo los productos agotados (stock = 0)
-    final List<Producto> productosAgotados =
-        response.items.where((Producto p) => p.stock > 0).toList();
-
-    // Mantenemos la misma información de paginación pero ajustamos totalItems
-    final Paginacion paginacionAjustada = Paginacion(
-      currentPage: response.paginacion.currentPage,
-      totalPages: response.paginacion.totalPages,
-      totalItems: productosAgotados.length,
-      hasNext: response.paginacion.hasNext,
-      hasPrev: response.paginacion.hasPrev,
-    );
-
-    // Devolvemos una nueva respuesta paginada con solo los productos agotados
-    return PaginatedResponse<Producto>(
-      items: productosAgotados,
-      paginacion: paginacionAjustada,
-      metadata: response.metadata,
+    // Usar la nueva funcionalidad de filtrado de PaginatedResponse
+    return response.where(
+      (Producto p) => p.stock > 0,
+      pageSize: pageSize ?? 20,
     );
   }
 
@@ -750,7 +670,7 @@ class ProductosApi {
     }
   }
 
-  // Método helper para generar claves de caché consistentes
+  // Método helper para generar claves de caché consistentes - OBSOLETA: usar PaginacionUtils
   String _generateCacheKey(
     String base, {
     String? search,
@@ -764,6 +684,8 @@ class ProductosApi {
     bool? stockBajo,
     bool? liquidacion,
   }) {
+    // TODO: Este método está obsoleto y será eliminado en futuras versiones
+    // Usar PaginacionUtils.generateCacheKey en su lugar
     final List<String> components = <String>[base];
 
     if (search != null && search.isNotEmpty) {

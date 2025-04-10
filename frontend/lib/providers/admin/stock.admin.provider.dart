@@ -526,32 +526,80 @@ class StockProvider extends ChangeNotifier {
     cargarProductosTodasSucursales(); // Volver a cargar todos los productos
   }
 
-  /// Limpiar todos los filtros aplicados
-  void limpiarFiltros() {
-    _searchQuery = '';
-    _filtroEstadoStock = null;
-    _currentPage = 1;
+  /// Actualizar término de búsqueda
+  void actualizarBusqueda(String value) async {
+    _searchQuery = value;
+    _isLoadingProductos = true;
     notifyListeners();
 
-    // Recargar productos sin filtros
-    if (_mostrarVistaConsolidada) {
-      cargarProductosTodasSucursales();
-    } else if (_selectedSucursalId.isNotEmpty) {
-      cargarProductos(_selectedSucursalId);
+    try {
+      if (value.isEmpty) {
+        // Si la búsqueda está vacía, cargar productos normales
+        await cargarProductos(_selectedSucursalId);
+      } else if (value.length >= 3) {
+        // Si tenemos 3 o más caracteres, realizar búsqueda
+        final PaginatedResponse<Producto> resultados =
+            await api.productos.buscarProductosPorNombre(
+          sucursalId: _selectedSucursalId,
+          nombre: value,
+          page: _currentPage,
+          pageSize: _pageSize,
+          useCache: false, // No usar caché para búsquedas
+        );
+
+        _paginatedProductos = resultados;
+        _productosFiltrados = resultados.items;
+
+        // Si hay un filtro de estado activo, aplicarlo a los resultados
+        if (_filtroEstadoStock != null) {
+          _productosFiltrados = _productosFiltrados.where((Producto p) {
+            final StockStatus status =
+                getStockStatus(p.stock, p.stockMinimo ?? 0);
+            return status == _filtroEstadoStock;
+          }).toList();
+        }
+
+        // Reorganizar por prioridad si es necesario
+        _productosFiltrados =
+            stock_utils.StockUtils.reorganizarProductosPorPrioridad(
+          _productosFiltrados,
+          stockPorSucursal: _stockPorSucursal,
+          sucursales: _sucursales,
+        );
+      }
+    } catch (e) {
+      _errorProductos = 'Error al buscar productos: $e';
+      debugPrint(_errorProductos);
+    } finally {
+      _isLoadingProductos = false;
+      notifyListeners();
     }
   }
 
-  /// Actualizar término de búsqueda
-  void actualizarBusqueda(String value) {
-    _searchQuery = value;
-
-    // Si la búsqueda es mayor a 3 caracteres o está vacía, hacer solicitud al servidor
-    if (value.length >= 3 || value.isEmpty) {
-      _currentPage = 1; // Reiniciar a la primera página
-      cargarProductos(_selectedSucursalId);
-    }
-
+  /// Limpiar todos los filtros aplicados
+  void limpiarFiltros() async {
+    _searchQuery = '';
+    _filtroEstadoStock = null;
+    _currentPage = 1;
+    _isLoadingProductos = true;
     notifyListeners();
+
+    try {
+      // Recargar productos sin filtros
+      if (_mostrarVistaConsolidada) {
+        await cargarProductosTodasSucursales();
+      } else if (_selectedSucursalId.isNotEmpty) {
+        // Forzar recarga desde el servidor
+        api.productos.invalidateCache(_selectedSucursalId);
+        await cargarProductos(_selectedSucursalId);
+      }
+    } catch (e) {
+      _errorProductos = 'Error al limpiar filtros: $e';
+      debugPrint(_errorProductos);
+    } finally {
+      _isLoadingProductos = false;
+      notifyListeners();
+    }
   }
 
   /// Agrupa los productos por su estado de stock (agotado, stock bajo, disponible)

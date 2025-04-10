@@ -283,6 +283,9 @@ class CondorMotorsApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Condor Motors',
       theme: AppTheme.theme,
+      // Forzar el uso de Material 3 para mejor soporte de temas
+      themeMode: ThemeMode.dark,
+      darkTheme: AppTheme.theme,
       onGenerateRoute: (RouteSettings settings) {
         return routes.generateRoute(
           settings,

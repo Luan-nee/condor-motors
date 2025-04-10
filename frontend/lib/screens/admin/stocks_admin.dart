@@ -5,6 +5,7 @@ import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalle_sucursal.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalles_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_list.dart';
+
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -28,7 +29,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   @override
   void initState() {
     super.initState();
-    // No inicializamos aquí, lo haremos en didChangeDependencies
+    _isInitialized = false;
   }
 
   @override
@@ -40,6 +41,17 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       // Inicializar de manera asíncrona
       Future<void>.microtask(() async {
         await _stockProvider.inicializar();
+        // Después de inicializar, seleccionar la primera sucursal
+        if (_stockProvider.sucursales.isNotEmpty &&
+            _stockProvider.selectedSucursalId.isEmpty) {
+          // Intentar encontrar la sucursal principal primero
+          final sucursalPrincipal = _stockProvider.sucursales.firstWhere(
+            (sucursal) => sucursal.nombre.toLowerCase().contains('principal'),
+            orElse: () => _stockProvider
+                .sucursales.first, // Si no hay principal, usar la primera
+          );
+          _stockProvider.seleccionarSucursal(sucursalPrincipal);
+        }
       });
       _isInitialized = true;
     }
@@ -269,9 +281,243 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
+                          // Barra de búsqueda mejorada
+                          if (stockProvider.selectedSucursalId.isNotEmpty &&
+                              !stockProvider
+                                  .mostrarVistaConsolidada) ...<Widget>[
+                            Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: Container(
+                                      height: 46,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1A1A1A),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: stockProvider
+                                                  .searchQuery.isNotEmpty
+                                              ? const Color(0xFFE31E24)
+                                              : const Color(0xFF2D2D2D),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: <Widget>[
+                                          Container(
+                                            width: 40,
+                                            height: 46,
+                                            decoration: BoxDecoration(
+                                              color: stockProvider
+                                                      .searchQuery.isNotEmpty
+                                                  ? const Color(0xFFE31E24)
+                                                      .withOpacity(0.1)
+                                                  : const Color(0xFF2D2D2D),
+                                              borderRadius:
+                                                  const BorderRadius.only(
+                                                topLeft: Radius.circular(6),
+                                                bottomLeft: Radius.circular(6),
+                                              ),
+                                            ),
+                                            child: Center(
+                                              child: AnimatedSwitcher(
+                                                duration: const Duration(
+                                                    milliseconds: 200),
+                                                child: stockProvider
+                                                        .isLoadingProductos
+                                                    ? const SizedBox(
+                                                        width: 16,
+                                                        height: 16,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          valueColor:
+                                                              AlwaysStoppedAnimation<
+                                                                  Color>(
+                                                            Color(0xFFE31E24),
+                                                          ),
+                                                        ),
+                                                      )
+                                                    : const FaIcon(
+                                                        FontAwesomeIcons
+                                                            .magnifyingGlass,
+                                                        color: Colors.white54,
+                                                        size: 14,
+                                                      ),
+                                              ),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: TextFormField(
+                                              controller: _searchController,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                              ),
+                                              decoration: InputDecoration(
+                                                hintText:
+                                                    'Buscar por nombre, SKU, categoría o marca...',
+                                                hintStyle: TextStyle(
+                                                  color: Colors.white
+                                                      .withOpacity(0.3),
+                                                  fontSize: 14,
+                                                ),
+                                                border: InputBorder.none,
+                                                isDense: true,
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 14,
+                                                ),
+                                              ),
+                                              onChanged: (String value) {
+                                                stockProvider
+                                                    .actualizarBusqueda(value);
+                                              },
+                                              onFieldSubmitted: (String value) {
+                                                if (value.length >= 3) {
+                                                  stockProvider
+                                                      .actualizarBusqueda(
+                                                          value);
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                          if (_searchController.text.isNotEmpty)
+                                            Container(
+                                              width: 40,
+                                              height: 46,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF2D2D2D),
+                                                borderRadius:
+                                                    const BorderRadius.only(
+                                                  topRight: Radius.circular(6),
+                                                  bottomRight:
+                                                      Radius.circular(6),
+                                                ),
+                                              ),
+                                              child: IconButton(
+                                                icon: const Icon(
+                                                  Icons.close,
+                                                  color: Colors.white54,
+                                                  size: 16,
+                                                ),
+                                                onPressed: () {
+                                                  _searchController.clear();
+                                                  stockProvider
+                                                      .actualizarBusqueda('');
+                                                },
+                                                tooltip: 'Limpiar búsqueda',
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // Contador de resultados
+                                  if (stockProvider.searchQuery.isNotEmpty &&
+                                      stockProvider.paginatedProductos !=
+                                          null) ...[
+                                    const SizedBox(width: 12),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF2D2D2D),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: const Color(0xFFE31E24)
+                                              .withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            '${stockProvider.paginatedProductos!.totalItems}',
+                                            style: const TextStyle(
+                                              color: Color(0xFFE31E24),
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'resultados',
+                                            style: TextStyle(
+                                              color:
+                                                  Colors.white.withOpacity(0.7),
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                  if (stockProvider.searchQuery.isNotEmpty ||
+                                      stockProvider.filtroEstadoStock !=
+                                          null) ...[
+                                    const SizedBox(width: 8),
+                                    TextButton.icon(
+                                      icon: const FaIcon(
+                                        FontAwesomeIcons.filterCircleXmark,
+                                        size: 14,
+                                      ),
+                                      label: const Text('Limpiar'),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.white70,
+                                        backgroundColor:
+                                            const Color(0xFF2D2D2D),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        stockProvider.limpiarFiltros();
+                                      },
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            // Mostrar mensaje de ayuda
+                            if (stockProvider.searchQuery.isNotEmpty &&
+                                stockProvider.searchQuery.length < 3)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8, left: 4),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.info_outline,
+                                      color: Colors.amber,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Ingresa al menos 3 caracteres para buscar',
+                                      style: TextStyle(
+                                        color: Colors.amber.withOpacity(0.8),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            const SizedBox(height: 16),
+                          ],
+
                           // Filtros rápidos para el estado del stock
                           if (stockProvider.selectedSucursalId.isNotEmpty &&
-                              stockProvider.productosFiltrados.isNotEmpty &&
                               !stockProvider
                                   .mostrarVistaConsolidada) ...<Widget>[
                             SingleChildScrollView(
@@ -474,7 +720,18 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? color : Colors.white.withOpacity(0.3),
+            width:
+                selected ? 2 : 1, // Borde más grueso cuando está seleccionado
           ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

@@ -8,172 +8,212 @@ const String kFontFamily = 'SourceSans3';
 abstract class AppTheme {
   // Constructor privado para evitar instanciación
   AppTheme._();
-  
+
   // Colores principales
   static const Color primaryColor = Color(0xFFE31E24);
   static const Color backgroundColor = Color(0xFF121212);
   static const Color cardColor = Color(0xFF1E1E1E);
   static const Color scaffoldBackgroundColor = Color(0xFF121212);
   static const Color appBarColor = Color(0xFF1E1E1E);
-  
+
   // Radios de borde comunes
   static const double smallRadius = 8.0;
   static const double mediumRadius = 12.0;
   static const double largeRadius = 16.0;
-  
+
   // Espaciado común
   static const double spacing = 8.0;
   static const double spacingMedium = 16.0;
   static const double spacingLarge = 24.0;
-  
+
+  /// Estilo de texto base que hereda la fuente principal
+  static const TextStyle _baseTextStyle = TextStyle(
+    fontFamily: kFontFamily,
+    color: Colors.white,
+  );
+
   /// Retorna el tema principal de la aplicación
   static ThemeData get theme => ThemeData(
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: primaryColor,
-      brightness: Brightness.dark,
-    ),
-    fontFamily: kFontFamily,
-    useMaterial3: true,
-    scaffoldBackgroundColor: scaffoldBackgroundColor,
-    
-    // Configuración de AppBar
-    appBarTheme: const AppBarTheme(
-      backgroundColor: appBarColor,
-      foregroundColor: Colors.white,
-      elevation: 0,
-      titleTextStyle: TextStyle(
-        fontFamily: kFontFamily,
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-    ),
-    
-    // Configuración de diálogos
-    dialogTheme: DialogTheme(
-      backgroundColor: cardColor,
-      elevation: 5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(mediumRadius),
-      ),
-      titleTextStyle: const TextStyle(
-        fontFamily: kFontFamily,
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-      contentTextStyle: const TextStyle(
-        fontFamily: kFontFamily,
-        fontSize: 14,
-        color: Colors.white70,
-      ),
-    ),
-    
-    // Configuración de botones
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(smallRadius),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: primaryColor,
+          brightness: Brightness.dark,
         ),
-        textStyle: const TextStyle(
-          fontFamily: kFontFamily,
-          fontWeight: FontWeight.bold,
-          fontSize: 16,
+        fontFamily: kFontFamily,
+        useMaterial3: true,
+        scaffoldBackgroundColor: scaffoldBackgroundColor,
+
+        // Configuración de AppBar
+        appBarTheme: AppBarTheme(
+          backgroundColor: appBarColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          titleTextStyle: _baseTextStyle.copyWith(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          toolbarTextStyle: _baseTextStyle,
         ),
-      ),
-    ),
-    
-    // Configuración de texto
-    textTheme: const TextTheme(
-      titleLarge: TextStyle(
-        fontFamily: kFontFamily,
-        fontSize: 22,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-      titleMedium: TextStyle(
-        fontFamily: kFontFamily,
-        fontSize: 18,
-        fontWeight: FontWeight.w500,
-        color: Colors.white,
-      ),
-      bodyLarge: TextStyle(
-        fontFamily: kFontFamily,
-        fontSize: 16,
-        color: Colors.white70,
-      ),
-      bodyMedium: TextStyle(
-        fontFamily: kFontFamily,
-        fontSize: 14,
-        color: Colors.white70,
-      ),
-      labelLarge: TextStyle(
-        fontFamily: kFontFamily,
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: Colors.white,
-      ),
-    ),
-    
-    // Configuración de tarjetas
-    cardTheme: CardTheme(
-      color: cardColor,
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(mediumRadius),
-      ),
-    ),
-    
-    // Configuración de campos de texto
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: cardColor,
-      contentPadding: const EdgeInsets.symmetric(horizontal: spacingMedium, vertical: spacingMedium),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(smallRadius),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(smallRadius),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(smallRadius),
-        borderSide: const BorderSide(color: primaryColor),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(smallRadius),
-        borderSide: const BorderSide(color: Colors.red),
-      ),
-      labelStyle: TextStyle(
-        color: Colors.white.withOpacity(0.7),
-      ),
-      hintStyle: TextStyle(
-        color: Colors.white.withOpacity(0.5),
-      ),
-    ),
-  );
+
+        // Configuración de diálogos
+        dialogTheme: DialogTheme(
+          backgroundColor: cardColor,
+          elevation: 5,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(mediumRadius),
+          ),
+          titleTextStyle: _baseTextStyle.copyWith(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          contentTextStyle: _baseTextStyle.copyWith(
+            fontSize: 14,
+            color: Colors.white70,
+          ),
+        ),
+
+        // Configuración de botones
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: primaryColor,
+            foregroundColor: Colors.white,
+            elevation: 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(smallRadius),
+            ),
+            textStyle: _baseTextStyle.copyWith(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+
+        // Configuración de texto por defecto
+        textTheme: TextTheme(
+          // Títulos
+          displayLarge: _baseTextStyle.copyWith(
+              fontSize: 32, fontWeight: FontWeight.bold),
+          displayMedium: _baseTextStyle.copyWith(
+              fontSize: 28, fontWeight: FontWeight.bold),
+          displaySmall: _baseTextStyle.copyWith(
+              fontSize: 24, fontWeight: FontWeight.bold),
+
+          // Encabezados
+          headlineLarge: _baseTextStyle.copyWith(
+              fontSize: 22, fontWeight: FontWeight.w600),
+          headlineMedium: _baseTextStyle.copyWith(
+              fontSize: 20, fontWeight: FontWeight.w600),
+          headlineSmall: _baseTextStyle.copyWith(
+              fontSize: 18, fontWeight: FontWeight.w600),
+
+          // Títulos
+          titleLarge: _baseTextStyle.copyWith(
+              fontSize: 22, fontWeight: FontWeight.bold),
+          titleMedium: _baseTextStyle.copyWith(
+              fontSize: 18, fontWeight: FontWeight.w500),
+          titleSmall: _baseTextStyle.copyWith(
+              fontSize: 16, fontWeight: FontWeight.w500),
+
+          // Cuerpo de texto
+          bodyLarge:
+              _baseTextStyle.copyWith(fontSize: 16, color: Colors.white70),
+          bodyMedium:
+              _baseTextStyle.copyWith(fontSize: 14, color: Colors.white70),
+          bodySmall:
+              _baseTextStyle.copyWith(fontSize: 12, color: Colors.white70),
+
+          // Etiquetas
+          labelLarge: _baseTextStyle.copyWith(
+              fontSize: 16, fontWeight: FontWeight.w500),
+          labelMedium: _baseTextStyle.copyWith(
+              fontSize: 14, fontWeight: FontWeight.w500),
+          labelSmall: _baseTextStyle.copyWith(
+              fontSize: 12, fontWeight: FontWeight.w500),
+        ),
+
+        // Configuración de tarjetas
+        cardTheme: CardTheme(
+          color: cardColor,
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(mediumRadius),
+          ),
+        ),
+
+        // Configuración de campos de texto
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: cardColor,
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: spacingMedium, vertical: spacingMedium),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(smallRadius),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(smallRadius),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(smallRadius),
+            borderSide: const BorderSide(color: primaryColor),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(smallRadius),
+            borderSide: const BorderSide(color: Colors.red),
+          ),
+          labelStyle: _baseTextStyle.copyWith(
+            color: Colors.white.withOpacity(0.7),
+          ),
+          hintStyle: _baseTextStyle.copyWith(
+            color: Colors.white.withOpacity(0.5),
+          ),
+        ),
+
+        // Configuración de Snackbar
+        snackBarTheme: SnackBarThemeData(
+          backgroundColor: cardColor,
+          contentTextStyle: _baseTextStyle,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(smallRadius),
+          ),
+        ),
+
+        // Configuración de Tooltip
+        tooltipTheme: TooltipThemeData(
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(smallRadius),
+          ),
+          textStyle: _baseTextStyle.copyWith(fontSize: 12),
+        ),
+
+        // Configuración de PopupMenu
+        popupMenuTheme: PopupMenuThemeData(
+          color: cardColor,
+          textStyle: _baseTextStyle,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(smallRadius),
+          ),
+        ),
+      );
 
   /// Retorna un conjunto de sombras para usar en la aplicación
   static List<BoxShadow> get commonShadows => <BoxShadow>[
-    BoxShadow(
-      color: Colors.black.withOpacity(0.2),
-      spreadRadius: 1,
-      blurRadius: 5,
-      offset: const Offset(0, 2),
-    ),
-  ];
-  
+        BoxShadow(
+          color: Colors.black.withOpacity(0.2),
+          spreadRadius: 1,
+          blurRadius: 5,
+          offset: const Offset(0, 2),
+        ),
+      ];
+
   /// Aplica un gradiente de color primario a rojo
   static LinearGradient get primaryGradient => const LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: <Color>[
-      primaryColor,
-      Color(0xFFC41015),
-    ],
-  );
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: <Color>[
+          primaryColor,
+          Color(0xFFC41015),
+        ],
+      );
 }

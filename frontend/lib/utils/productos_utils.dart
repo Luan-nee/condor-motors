@@ -289,20 +289,14 @@ class ProductosUtils {
       'disponibles': <Producto>[],
       'stockBajo': <Producto>[],
       'agotados': <Producto>[],
-      'inhabilitados': <Producto>[],
     };
 
     for (final Producto producto in productos) {
-      if (producto.stock <= 0 && (producto.detalleProductoId != null)) {
+      if (producto.stock <= 0) {
         resultado['agotados']!.add(producto);
-      }
-      if (producto.tieneStockBajo() && (producto.detalleProductoId != null)) {
+      } else if (producto.tieneStockBajo()) {
         resultado['stockBajo']!.add(producto);
-      }
-      if (producto.detalleProductoId == null) {
-        resultado['inhabilitados']!.add(producto);
-      }
-      if (producto.detalleProductoId != null && producto.stock > 0) {
+      } else {
         resultado['disponibles']!.add(producto);
       }
     }

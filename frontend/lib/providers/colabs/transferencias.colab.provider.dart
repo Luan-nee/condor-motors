@@ -95,12 +95,15 @@ class TransferenciasColabProvider extends ChangeNotifier {
     try {
       debugPrint('Cargando todas las transferencias');
 
-      final List<TransferenciaInventario> transferenciasData =
-          await _transferenciasApi.getAllTransferencias(
+      final paginatedResponse = await _transferenciasApi.getAllTransferencias(
         forceRefresh: forceRefresh,
+        pageSize:
+            100, // Ajustamos el tamaño de página para obtener más resultados
+        sortBy: _ordenarPor,
+        order: _orden,
       );
 
-      _transferencias = transferenciasData;
+      _transferencias = paginatedResponse.items;
       _errorMessage = null;
       notifyListeners();
 

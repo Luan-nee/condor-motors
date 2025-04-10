@@ -1,3 +1,5 @@
+import 'dart:math' as Math;
+
 class Paginacion {
   final int totalItems;
   final int totalPages;
@@ -39,6 +41,33 @@ class Paginacion {
     );
   }
 
+  /// Crea una Paginación vacía para inicialización
+  factory Paginacion.empty() {
+    return Paginacion(
+      totalItems: 0,
+      totalPages: 1,
+      currentPage: 1,
+      hasNext: false,
+      hasPrev: false,
+    );
+  }
+
+  /// Crea una paginación a partir de parámetros básicos, calculando automáticamente hasNext y hasPrev
+  factory Paginacion.fromParams({
+    required int totalItems,
+    required int pageSize,
+    required int currentPage,
+  }) {
+    final int totalPages = (totalItems / pageSize).ceil();
+    return Paginacion(
+      totalItems: totalItems,
+      totalPages: totalPages > 0 ? totalPages : 1,
+      currentPage: currentPage,
+      hasNext: currentPage < totalPages,
+      hasPrev: currentPage > 1,
+    );
+  }
+
   // Método para verificar si hay más páginas
   bool get hasNextPage => hasNext;
 
@@ -50,6 +79,41 @@ class Paginacion {
 
   // Método para obtener el número de la página anterior
   int? get prevPage => hasPrev ? currentPage - 1 : null;
+
+  /// Verifica si esta es la primera página
+  bool get isFirstPage => currentPage == 1;
+
+  /// Verifica si esta es la última página
+  bool get isLastPage => currentPage == totalPages;
+
+  /// Calcula el índice del primer elemento de la página actual
+  int getFirstItemIndex(int pageSize) => (currentPage - 1) * pageSize;
+
+  /// Calcula el índice del último elemento de la página actual
+  int getLastItemIndex(int pageSize) {
+    final int lastIndex = currentPage * pageSize - 1;
+    return lastIndex < totalItems ? lastIndex : totalItems - 1;
+  }
+
+  /// Obtiene el número de elementos en la página actual
+  int getItemCount(int pageSize) {
+    if (isLastPage) {
+      return totalItems - getFirstItemIndex(pageSize);
+    }
+    return pageSize;
+  }
+
+  /// Obtiene la información de resumen para mostrar en UI
+  /// Ejemplo: "Mostrando 1-10 de 100 elementos"
+  String getResumen(int pageSize) {
+    if (totalItems == 0) {
+      return "No hay elementos para mostrar";
+    }
+
+    final int inicio = getFirstItemIndex(pageSize) + 1;
+    final int fin = Math.min(getLastItemIndex(pageSize) + 1, totalItems);
+    return "Mostrando $inicio-$fin de $totalItems elementos";
+  }
 
   // Método para generar un rango de páginas visible (útil para UI)
   List<int> getVisiblePages({int maxVisiblePages = 5}) {
@@ -85,6 +149,12 @@ class Paginacion {
     };
   }
 
+  /// Obtiene un resumen detallado de la paginación (útil para depuración)
+  @override
+  String toString() {
+    return 'Paginacion(page: $currentPage, total: $totalPages, items: $totalItems)';
+  }
+
   /// Crea una copia de esta paginación con modificaciones
   Paginacion copyWith({
     int? totalItems,
@@ -103,6 +173,10 @@ class Paginacion {
   }
 }
 
+/// Representa una colección de elementos con paginación y metadatos opcionales.
+///
+/// Proporciona funcionalidades para manejar fácilmente resultados paginados de la API,
+/// incluyendo opciones de ordenación y filtrado a través de los metadatos.
 class PaginatedResponse<T> {
   final List<T> items;
   final Paginacion paginacion;
@@ -134,6 +208,36 @@ class PaginatedResponse<T> {
     );
   }
 
+  /// Crea una respuesta paginada vacía
+  factory PaginatedResponse.empty() {
+    return PaginatedResponse<T>(
+      items: <T>[],
+      paginacion: Paginacion.empty(),
+      metadata: null,
+    );
+  }
+
+  /// Verifica si la respuesta está vacía (sin elementos)
+  bool get isEmpty => items.isEmpty;
+
+  /// Verifica si hay elementos en la respuesta
+  bool get isNotEmpty => items.isNotEmpty;
+
+  /// Obtiene el total de elementos en todas las páginas
+  int get totalItems => paginacion.totalItems;
+
+  /// Obtiene el número total de páginas
+  int get totalPages => paginacion.totalPages;
+
+  /// Obtiene la página actual
+  int get currentPage => paginacion.currentPage;
+
+  /// Verifica si hay una página siguiente
+  bool get hasNextPage => paginacion.hasNext;
+
+  /// Verifica si hay una página anterior
+  bool get hasPrevPage => paginacion.hasPrev;
+
   /// Obtiene opciones de ordenación desde los metadatos si existen
   List<String> get sortByOptions {
     if (metadata != null && metadata!.containsKey('sortByOptions')) {
@@ -154,6 +258,68 @@ class PaginatedResponse<T> {
       }
     }
     return [];
+  }
+
+  /// Obtiene el valor de cualquier metadato por su clave
+  dynamic getMetadata(String key) {
+    if (metadata != null && metadata!.containsKey(key)) {
+      return metadata![key];
+    }
+    return null;
+  }
+
+  /// Crea una copia de esta respuesta con elementos modificados
+  PaginatedResponse<T> copyWithItems(List<T> newItems) {
+    return PaginatedResponse<T>(
+      items: newItems,
+      paginacion: paginacion,
+      metadata: metadata,
+    );
+  }
+
+  /// Crea una copia de esta respuesta con paginación modificada
+  PaginatedResponse<T> copyWithPaginacion(Paginacion newPaginacion) {
+    return PaginatedResponse<T>(
+      items: items,
+      paginacion: newPaginacion,
+      metadata: metadata,
+    );
+  }
+
+  /// Crea una copia de esta respuesta con metadatos modificados
+  PaginatedResponse<T> copyWithMetadata(Map<String, dynamic> newMetadata) {
+    return PaginatedResponse<T>(
+      items: items,
+      paginacion: paginacion,
+      metadata: newMetadata,
+    );
+  }
+
+  /// Aplica una función a cada elemento y devuelve una nueva respuesta con los resultados
+  PaginatedResponse<R> map<R>(R Function(T) mapper) {
+    return PaginatedResponse<R>(
+      items: items.map(mapper).toList(),
+      paginacion: paginacion,
+      metadata: metadata,
+    );
+  }
+
+  /// Aplica un filtro a los elementos y actualiza la paginación
+  PaginatedResponse<T> where(bool Function(T) filtro, {int? pageSize}) {
+    final filteredItems = items.where(filtro).toList();
+    final newPageSize = pageSize ?? filteredItems.length;
+
+    final newPaginacion = Paginacion.fromParams(
+      totalItems: filteredItems.length,
+      pageSize: newPageSize,
+      currentPage: 1, // Reset a primera página al filtrar
+    );
+
+    return PaginatedResponse<T>(
+      items: filteredItems,
+      paginacion: newPaginacion,
+      metadata: metadata,
+    );
   }
 }
 
@@ -199,6 +365,25 @@ class ResultadoPaginado<T> {
         hasPrev: hasPrevPage,
       ),
       metadata: metadata,
+    );
+  }
+
+  /// Crea una copia de este resultado con algunos campos modificados
+  ResultadoPaginado<T> copyWith({
+    List<T>? items,
+    int? total,
+    int? page,
+    int? totalPages,
+    int? pageSize,
+    Map<String, dynamic>? metadata,
+  }) {
+    return ResultadoPaginado<T>(
+      items: items ?? this.items,
+      total: total ?? this.total,
+      page: page ?? this.page,
+      totalPages: totalPages ?? this.totalPages,
+      pageSize: pageSize ?? this.pageSize,
+      metadata: metadata ?? this.metadata,
     );
   }
 }

@@ -238,7 +238,9 @@ class SelectorColabScreen extends StatelessWidget {
       await authProvider.logout();
       debugPrint('Logout completado exitosamente');
 
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        return;
+      }
 
       // Navegar al login y limpiar el stack de navegación
       debugPrint('Navegando a la pantalla de login');
@@ -249,7 +251,9 @@ class SelectorColabScreen extends StatelessWidget {
     } catch (e) {
       debugPrint('Error durante el logout: $e');
 
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        return;
+      }
 
       // Mostrar error pero igual intentar navegar al login
       ScaffoldMessenger.of(context).showSnackBar(

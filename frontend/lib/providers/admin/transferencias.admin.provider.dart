@@ -3,12 +3,14 @@ import 'package:condorsmotors/api/protected/transferencias.api.dart';
 import 'package:condorsmotors/main.dart';
 import 'package:condorsmotors/models/sucursal.model.dart' as sucursal_model;
 import 'package:condorsmotors/models/transferencias.model.dart';
+import 'package:condorsmotors/providers/paginacion.provider.dart';
 import 'package:flutter/material.dart';
 
 /// Provider para gestionar las transferencias de inventario desde la vista de administración
 class TransferenciasProvider extends ChangeNotifier {
   final TransferenciasInventarioApi _transferenciasApi;
   final SucursalesApi _sucursalesApi = api.sucursales;
+  final PaginacionProvider paginacionProvider = PaginacionProvider();
 
   List<TransferenciaInventario> _transferencias = [];
   List<sucursal_model.Sucursal> _sucursales = [];
@@ -109,18 +111,20 @@ class TransferenciasProvider extends ChangeNotifier {
             .codigo;
       }
 
-      final List<TransferenciaInventario> transferenciasData =
-          await _transferenciasApi.getTransferencias(
+      final paginatedResponse = await _transferenciasApi.getTransferencias(
         sucursalId: sucursalId,
         estado: estadoFiltro,
         fechaInicio: _fechaInicio,
         fechaFin: _fechaFin,
-        sortBy: _ordenarPor,
-        order: _orden,
+        sortBy: paginacionProvider.ordenarPor,
+        order: paginacionProvider.orden,
+        page: paginacionProvider.paginacion.currentPage,
+        pageSize: paginacionProvider.itemsPerPage,
         forceRefresh: forceRefresh,
       );
 
-      _transferencias = transferenciasData;
+      _transferencias = paginatedResponse.items;
+      paginacionProvider.actualizarDesdeResponse(paginatedResponse);
       _errorMessage = null;
     } catch (e) {
       _setError('Error al cargar transferencias: $e');
@@ -147,12 +151,40 @@ class TransferenciasProvider extends ChangeNotifier {
     }
   }
 
+  /// Verifica si una transferencia puede ser comparada basado en su estado
+  bool puedeCompararTransferencia(String estadoCodigo) {
+    return estadoCodigo.toUpperCase() == 'PEDIDO';
+  }
+
+  /// Obtiene el mensaje de estado para la comparación de transferencias
+  String obtenerMensajeComparacion(String estadoCodigo) {
+    switch (estadoCodigo.toUpperCase()) {
+      case 'PEDIDO':
+        return 'Seleccione una sucursal para comparar el stock disponible antes de enviar.';
+      case 'RECIBIDO':
+        return 'Transferencia completada. Los stocks mostrados reflejan el estado final.';
+      case 'ENVIADO':
+        return 'Transferencia en tránsito. La comparación de stock no está disponible.';
+      default:
+        return 'No es posible realizar la comparación en el estado actual.';
+    }
+  }
+
   /// Obtiene comparación de stocks entre sucursales
   Future<ComparacionTransferencia> obtenerComparacionTransferencia(
     String id,
     int sucursalOrigenId,
   ) async {
     try {
+      // Primero obtenemos la transferencia para verificar su estado
+      final transferencia =
+          await obtenerDetalleTransferencia(id, useCache: true);
+
+      if (!puedeCompararTransferencia(transferencia.estado.codigo)) {
+        throw Exception(
+            'No se puede comparar una transferencia en estado ${transferencia.estado.nombre}');
+      }
+
       return await _transferenciasApi.compararTransferencia(
         id: id,
         sucursalOrigenId: sucursalOrigenId,
@@ -262,6 +294,78 @@ class TransferenciasProvider extends ChangeNotifier {
       'tooltipText': tooltipText,
       'estadoDisplay': estadoEnum.nombre,
     };
+  }
+
+  /// Cambia la página actual y recarga los datos
+  Future<void> cambiarPagina(int nuevaPagina) async {
+    paginacionProvider.cambiarPagina(nuevaPagina);
+    await cargarTransferencias();
+  }
+
+  /// Cambia el tamaño de página y recarga los datos
+  Future<void> cambiarTamanoPagina(int nuevoTamano) async {
+    paginacionProvider.cambiarItemsPorPagina(nuevoTamano);
+    await cargarTransferencias();
+  }
+
+  /// Cambia el orden de los resultados y recarga los datos
+  Future<void> cambiarOrden(String nuevoOrden) async {
+    paginacionProvider.cambiarOrden(nuevoOrden);
+    await cargarTransferencias();
+  }
+
+  /// Cambia el campo de ordenación y recarga los datos
+  Future<void> cambiarOrdenarPor(String? nuevoOrdenarPor) async {
+    paginacionProvider.cambiarOrdenarPor(nuevoOrdenarPor);
+    await cargarTransferencias();
+  }
+
+  /// Completa el envío de una transferencia después de la comparación
+  Future<void> completarEnvioTransferencia(
+    String id,
+    int sucursalOrigenId,
+  ) async {
+    try {
+      _setLoading(true);
+
+      // Primero verificamos que la transferencia esté en estado PEDIDO
+      final transferencia =
+          await obtenerDetalleTransferencia(id, useCache: true);
+      if (!puedeCompararTransferencia(transferencia.estado.codigo)) {
+        throw Exception(
+            'No se puede completar el envío de una transferencia en estado ${transferencia.estado.nombre}');
+      }
+
+      // Obtenemos la comparación para validar que todo esté correcto
+      final comparacion = await _transferenciasApi.compararTransferencia(
+        id: id,
+        sucursalOrigenId: sucursalOrigenId,
+        useCache: false,
+      );
+
+      // Validamos que todos los productos sean procesables
+      if (!comparacion.todosProductosProcesables) {
+        throw Exception(
+            'No se puede completar el envío porque hay productos sin stock suficiente');
+      }
+
+      // Realizamos el envío
+      await _transferenciasApi.enviarTransferencia(
+        transferencia.id.toString(),
+        sucursalOrigenId: sucursalOrigenId,
+      );
+
+      // Recargamos los datos
+      await cargarTransferencias(forceRefresh: true);
+
+      debugPrint('✅ Transferencia #$id enviada exitosamente');
+    } catch (e) {
+      debugPrint('❌ Error al completar envío de transferencia: $e');
+      _setError('Error al completar envío: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   // Helpers para manejar estados

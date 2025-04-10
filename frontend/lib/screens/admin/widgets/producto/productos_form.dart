@@ -662,56 +662,6 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           },
         ),
         const SizedBox(height: 16),
-        // Añadir campo de precio de liquidación
-        Row(
-          children: [
-            // Switch para activar/desactivar liquidación
-            Switch(
-              value: _liquidacionActiva,
-              onChanged: (value) {
-                setState(() {
-                  _liquidacionActiva = value;
-                });
-              },
-              activeColor: const Color(0xFFE31E24),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Producto en liquidación',
-              style: TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-        if (_liquidacionActiva) ...[
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _precioOfertaController,
-            decoration:
-                _getInputDecoration('Precio de liquidación', prefixText: 'S/ '),
-            style: const TextStyle(color: Colors.white),
-            keyboardType: TextInputType.number,
-            validator: _liquidacionActiva
-                ? (String? value) {
-                    if (value?.isEmpty ?? true) {
-                      return 'El precio de liquidación es requerido';
-                    }
-                    final double oferta = double.tryParse(value!) ?? 0;
-                    final double venta =
-                        double.tryParse(_precioVentaController.text) ?? 0;
-                    final double compra =
-                        double.tryParse(_precioCompraController.text) ?? 0;
-                    if (oferta >= venta) {
-                      return 'El precio debe ser menor al precio de venta';
-                    }
-                    if (oferta < compra) {
-                      return 'El precio no puede ser menor al de compra';
-                    }
-                    return null;
-                  }
-                : null,
-          ),
-        ],
-        const SizedBox(height: 16),
         TextFormField(
           controller: _stockController,
           decoration: _getInputDecoration(
@@ -2245,25 +2195,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         // No enviar colorId si no tenemos un ID válido
       }
 
-      // Añadir mensajes de depuración para rastrear los datos
-      debugPrint('ProductosForm: Datos preparados para guardar:');
-      debugPrint(
-          'ProductosForm: Sucursal seleccionada: ${_sucursalSeleccionada?.id}');
-      debugPrint('ProductosForm: Producto ID: ${widget.producto?.id}');
-      debugPrint('ProductosForm: Es nuevo producto: $esNuevoProducto');
-
-      // Mostrar datos completos para depuración
-      debugPrint('ProductosForm: === DATOS COMPLETOS DEL PRODUCTO ===');
-      productoData.forEach((String key, value) {
-        final String tipo = value?.runtimeType.toString() ?? 'null';
-        debugPrint('ProductosForm:   - $key: $value (Tipo: $tipo)');
-      });
-      debugPrint('ProductosForm: === FIN DATOS PRODUCTO ===');
-
       // Obtener el provider
       final ProductoProvider productoProvider =
           Provider.of<ProductoProvider>(context, listen: false);
-      _sucursalSeleccionada!.id.toString();
 
       // Mostrar indicador de carga
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2281,7 +2215,12 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               productoData, esNuevoProducto);
 
           if (resultado) {
-            // Mostrar mensaje de éxito si todavía estamos montados
+            // Esperar a que los datos se recarguen completamente
+            await productoProvider.cargarProductos();
+
+            // Forzar una actualización del provider
+            productoProvider.notifyListeners();
+
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -2289,12 +2228,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   backgroundColor: Colors.green,
                 ),
               );
-            }
 
-            // Si aún tenemos el onSave callback del widget padre, llamarlo para compatibilidad
-            widget.onSave(productoData);
-            debugPrint(
-                'ProductosForm: Callback onSave ejecutado para compatibilidad');
+              // Cerrar el diálogo y notificar a la vista padre que debe actualizarse
+              Navigator.pop(context, true);
+            }
           } else if (mounted && productoProvider.errorMessage != null) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -2306,7 +2243,6 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         } catch (e) {
           debugPrint('ProductosForm: ERROR al guardar producto: $e');
 
-          // Mostrar mensaje de error si todavía estamos montados
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -2318,11 +2254,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         }
       }
 
-      // Iniciar el proceso de guardado sin esperar (no bloqueamos la UI)
+      // Iniciar el proceso de guardado
       saveProducto();
-
-      // Cerrar el diálogo
-      Navigator.pop(context);
     }
   }
 

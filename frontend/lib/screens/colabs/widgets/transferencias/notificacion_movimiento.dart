@@ -97,9 +97,10 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
     });
 
     try {
-      final List<TransferenciaInventario> response =
-          await _transferenciasApi.getTransferencias(
+      final paginatedResponse = await _transferenciasApi.getTransferencias(
         estado: EstadoTransferencia.pedido.codigo,
+        pageSize:
+            50, // Ajustamos el tamaño de página para obtener más resultados
       );
 
       if (!mounted) {
@@ -107,7 +108,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
       }
 
       setState(() {
-        _notificaciones = response
+        _notificaciones = paginatedResponse.items
             .where((t) =>
                 t.estado == EstadoTransferencia.pedido ||
                 t.estado == EstadoTransferencia.enviado)

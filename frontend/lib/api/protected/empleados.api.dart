@@ -203,7 +203,8 @@ class EmpleadosApi {
             _formatTimeString(formattedData['horaFinJornada']);
       }
 
-      Logger.debug('Creando nuevo empleado: ${formattedData['nombre']} ${formattedData['apellidos']}');
+      Logger.debug(
+          'Creando nuevo empleado: ${formattedData['nombre']} ${formattedData['apellidos']}');
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/empleados',
         method: 'POST',
@@ -705,7 +706,8 @@ class EmpleadosApi {
               (e.message.toLowerCase().contains('not found') ||
                   e.message.toLowerCase().contains('no encontrado') ||
                   e.message.toLowerCase().contains('no existe')))) {
-        Logger.warn('El empleado $empleadoId no tiene cuenta asociada (${e.statusCode})');
+        Logger.warn(
+            'El empleado $empleadoId no tiene cuenta asociada (${e.statusCode})');
         // En lugar de devolver null, lanzamos una excepción específica para este caso
         throw ApiException(
           statusCode: 404, // Usar 404 para representar "no encontrado"
