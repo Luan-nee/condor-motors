@@ -18,7 +18,7 @@ Este endpoint obtienen los datos de un producto en una sucursal especificada.
 | `Content-Type`  | String | Sí        | Debe ser `application/json`. |
 | `Authorization` | String | Sí        | Token de autenticación JWT.  |
 
-## Respuesta Exitosa
+## Respuesta Exitosa _ejemplo_
 
 ```jsonc
 {
