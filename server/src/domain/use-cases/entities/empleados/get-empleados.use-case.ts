@@ -5,6 +5,7 @@ import { db } from '@/db/connection'
 import {
   cuentasEmpleadosTable,
   empleadosTable,
+  rolesTable,
   sucursalesTable
 } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
@@ -39,7 +40,12 @@ export class GetEmpleados {
       sucursalCentral: sucursalesTable.sucursalCentral
     },
     cuentaEmpleado: {
-      id: cuentasEmpleadosTable.id
+      id: cuentasEmpleadosTable.id,
+      usuario: cuentasEmpleadosTable.usuario
+    },
+    rol: {
+      codigo: rolesTable.codigo,
+      nombre: rolesTable.nombre
     }
   }
 
@@ -87,6 +93,7 @@ export class GetEmpleados {
         cuentasEmpleadosTable,
         eq(empleadosTable.id, cuentasEmpleadosTable.empleadoId)
       )
+      .leftJoin(rolesTable, eq(cuentasEmpleadosTable.rolId, rolesTable.id))
       .where(and(eq(sucursalesTable.id, sucursalId), whereCondition))
       .orderBy(order)
       .limit(queriesDto.page_size)
@@ -105,6 +112,7 @@ export class GetEmpleados {
         cuentasEmpleadosTable,
         eq(empleadosTable.id, cuentasEmpleadosTable.empleadoId)
       )
+      .leftJoin(rolesTable, eq(cuentasEmpleadosTable.rolId, rolesTable.id))
       .where(whereCondition)
       .orderBy(order)
       .limit(queriesDto.page_size)
