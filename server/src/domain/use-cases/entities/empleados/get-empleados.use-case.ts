@@ -10,13 +10,7 @@ import {
 } from '@/db/schema'
 import type { QueriesDto } from '@/domain/dtos/query-params/queries.dto'
 import type { SucursalIdType } from '@/types/schemas'
-import { ilike, or, type SQL, asc, desc, and, eq } from 'drizzle-orm'
-
-interface GetEmpleadoArgs {
-  queriesDto: QueriesDto
-  order: SQL
-  whereCondition: SQL | undefined
-}
+import { ilike, or, asc, desc, and, eq, count } from 'drizzle-orm'
 
 export class GetEmpleados {
   private readonly authPayload: AuthPayload
@@ -52,7 +46,11 @@ export class GetEmpleados {
   private readonly validSortBy = {
     fechaCreacion: empleadosTable.fechaCreacion,
     nombre: empleadosTable.nombre,
-    dni: empleadosTable.dni
+    apellidos: empleadosTable.apellidos,
+    dni: empleadosTable.dni,
+    sueldo: empleadosTable.sueldo,
+    fechaContratacion: empleadosTable.fechaContratacion,
+    rol: rolesTable.nombre
   } as const
 
   constructor(authPayload: AuthPayload) {
@@ -76,32 +74,32 @@ export class GetEmpleados {
     return this.validSortBy.fechaCreacion
   }
 
-  private async getRelated({
-    queriesDto,
-    order,
-    whereCondition,
-    sucursalId
-  }: GetEmpleadoArgs & { sucursalId: SucursalIdType }) {
-    return await db
-      .select(this.selectFields)
-      .from(empleadosTable)
-      .innerJoin(
-        sucursalesTable,
-        eq(empleadosTable.sucursalId, sucursalesTable.id)
-      )
-      .leftJoin(
-        cuentasEmpleadosTable,
-        eq(empleadosTable.id, cuentasEmpleadosTable.empleadoId)
-      )
-      .leftJoin(rolesTable, eq(cuentasEmpleadosTable.rolId, rolesTable.id))
-      .where(and(eq(sucursalesTable.id, sucursalId), whereCondition))
-      .orderBy(order)
-      .limit(queriesDto.page_size)
-      .offset(queriesDto.page_size * (queriesDto.page - 1))
-  }
+  private async getEmpleados(
+    queriesDto: QueriesDto,
+    hasPermissionAny: boolean,
+    sucursalId: SucursalIdType
+  ) {
+    const sortByColumn = this.getSortByColumn(queriesDto.sort_by)
+    const order =
+      queriesDto.order === orderValues.asc
+        ? asc(sortByColumn)
+        : desc(sortByColumn)
 
-  private async getAny({ queriesDto, order, whereCondition }: GetEmpleadoArgs) {
-    return await db
+    const searchCondition =
+      queriesDto.search.length > 0
+        ? or(
+            ilike(empleadosTable.dni, `%${queriesDto.search}%`),
+            ilike(empleadosTable.nombre, `%${queriesDto.search}%`),
+            ilike(empleadosTable.apellidos, `%${queriesDto.search}%`)
+          )
+        : undefined
+
+    const whereCondition = and(
+      hasPermissionAny ? undefined : eq(sucursalesTable.id, sucursalId),
+      searchCondition
+    )
+
+    const empleados = await db
       .select(this.selectFields)
       .from(empleadosTable)
       .innerJoin(
@@ -117,37 +115,6 @@ export class GetEmpleados {
       .orderBy(order)
       .limit(queriesDto.page_size)
       .offset(queriesDto.page_size * (queriesDto.page - 1))
-  }
-
-  private async getEmpleados(
-    queriesDto: QueriesDto,
-    hasPermissionAny: boolean,
-    sucursalId: SucursalIdType
-  ) {
-    const sortByColumn = this.getSortByColumn(queriesDto.sort_by)
-    const order =
-      queriesDto.order === orderValues.asc
-        ? asc(sortByColumn)
-        : desc(sortByColumn)
-
-    const whereCondition =
-      queriesDto.search.length > 0
-        ? or(
-            ilike(empleadosTable.dni, `%${queriesDto.search}%`),
-            ilike(empleadosTable.nombre, `%${queriesDto.search}%`),
-            ilike(empleadosTable.apellidos, `%${queriesDto.search}%`)
-          )
-        : undefined
-
-    const args = {
-      queriesDto,
-      order,
-      whereCondition
-    }
-
-    const empleados = hasPermissionAny
-      ? await this.getAny(args)
-      : await this.getRelated({ ...args, sucursalId })
 
     if (empleados.length < 1) {
       return []
@@ -156,39 +123,99 @@ export class GetEmpleados {
     return empleados
   }
 
+  private getMetadata() {
+    return {
+      sortByOptions: Object.keys(this.validSortBy)
+    }
+  }
+
+  private async getPagination(
+    queriesDto: QueriesDto,
+    hasPermissionAny: boolean,
+    sucursalId: SucursalIdType
+  ) {
+    const searchCondition =
+      queriesDto.search.length > 0
+        ? or(
+            ilike(empleadosTable.dni, `%${queriesDto.search}%`),
+            ilike(empleadosTable.nombre, `%${queriesDto.search}%`),
+            ilike(empleadosTable.apellidos, `%${queriesDto.search}%`)
+          )
+        : undefined
+
+    const whereCondition = and(
+      hasPermissionAny ? undefined : eq(sucursalesTable.id, sucursalId),
+      searchCondition
+    )
+
+    const results = await db
+      .select({ count: count(empleadosTable.id) })
+      .from(empleadosTable)
+      .where(whereCondition)
+
+    const [totalItems] = results
+
+    const totalPages = Math.ceil(totalItems.count / queriesDto.page_size)
+    const hasNext = queriesDto.page < totalPages && queriesDto.page >= 1
+    const hasPrev = queriesDto.page > 1 && queriesDto.page <= totalPages
+
+    return {
+      totalItems: totalItems.count,
+      totalPages,
+      currentPage: queriesDto.page,
+      hasNext,
+      hasPrev
+    }
+  }
+
   private async validatePermissions() {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
       [this.permissionAny, this.permissionRelated]
     )
 
-    const hasPermissionAny = validPermissions.some(
-      (permission) => permission.codigoPermiso === this.permissionAny
-    )
+    let hasPermissionAny = false
+    let hasPermissionRelated = false
 
-    if (
-      !hasPermissionAny &&
-      !validPermissions.some(
-        (permission) => permission.codigoPermiso === this.permissionRelated
-      )
-    ) {
-      throw CustomError.forbidden()
+    for (const permission of validPermissions) {
+      if (permission.codigoPermiso === this.permissionAny) {
+        hasPermissionAny = true
+      }
+      if (permission.codigoPermiso === this.permissionRelated) {
+        hasPermissionRelated = true
+      }
+
+      if (hasPermissionAny || hasPermissionRelated) {
+        return { hasPermissionAny, sucursalId: permission.sucursalId }
+      }
     }
 
-    const [permission] = validPermissions
-
-    return { hasPermissionAny, sucursalId: permission.sucursalId }
+    throw CustomError.forbidden()
   }
 
   async execute(queriesDto: QueriesDto) {
     const { hasPermissionAny, sucursalId } = await this.validatePermissions()
 
-    const empleados = await this.getEmpleados(
+    const metadata = this.getMetadata()
+    const pagination = await this.getPagination(
       queriesDto,
       hasPermissionAny,
       sucursalId
     )
 
-    return empleados
+    const isValidPage =
+      (pagination.currentPage <= pagination.totalPages ||
+        pagination.currentPage >= 1) &&
+      pagination.totalItems > 0
+
+    const results = isValidPage
+      ? await this.getEmpleados(queriesDto, hasPermissionAny, sucursalId)
+      : []
+
+    return {
+      results,
+      pagination,
+      metadata
+    }
   }
 }
