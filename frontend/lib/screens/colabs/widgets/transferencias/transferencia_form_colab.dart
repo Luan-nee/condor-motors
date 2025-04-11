@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'package:condorsmotors/api/protected/productos.api.dart';
-import 'package:condorsmotors/main.dart';
+
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/providers/paginacion.provider.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -37,7 +37,7 @@ class TransferenciaFormColab extends StatefulWidget {
 class _TransferenciaFormColabState extends State<TransferenciaFormColab> {
   final List<DetalleProducto> _productosSeleccionados = [];
   bool _isLoading = false;
-  final ProductosApi _productosApi = api.productos;
+  final ProductoRepository _productoRepository = ProductoRepository.instance;
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -303,7 +303,7 @@ class _TransferenciaFormColabState extends State<TransferenciaFormColab> {
         context: context,
         builder: (BuildContext context) => _ProductSelectionDialog(
           sucursalId: widget.sucursalId,
-          productosApi: _productosApi,
+          productoRepository: _productoRepository,
           productosSeleccionados: _productosSeleccionados,
         ),
       );
@@ -360,12 +360,12 @@ class _TransferenciaFormColabState extends State<TransferenciaFormColab> {
 
 class _ProductSelectionDialog extends StatefulWidget {
   final String sucursalId;
-  final ProductosApi productosApi;
+  final ProductoRepository productoRepository;
   final List<DetalleProducto> productosSeleccionados;
 
   const _ProductSelectionDialog({
     required this.sucursalId,
-    required this.productosApi,
+    required this.productoRepository,
     required this.productosSeleccionados,
   });
 
@@ -377,7 +377,8 @@ class _ProductSelectionDialog extends StatefulWidget {
     super.debugFillProperties(properties);
     properties.add(StringProperty('sucursalId', sucursalId));
     properties
-      ..add(DiagnosticsProperty<ProductosApi>('productosApi', productosApi))
+      ..add(DiagnosticsProperty<ProductoRepository>(
+          'productoRepository', productoRepository))
       ..add(IterableProperty<DetalleProducto>(
           'productosSeleccionados', productosSeleccionados));
   }
@@ -408,7 +409,7 @@ class _ProductSelectionDialogState extends State<_ProductSelectionDialog> {
     super.initState();
     _selectedProducts.addAll(widget.productosSeleccionados);
 
-    // Inicializar configuración de paginación
+    // Inicializar configuración de paginación con cascade notation
     _paginacionProvider
       ..cambiarItemsPorPagina(10)
       ..cambiarOrdenarPor(_ordenarPor)
@@ -1170,16 +1171,16 @@ class _ProductSelectionDialogState extends State<_ProductSelectionDialog> {
 
       // Cargar productos con stock bajo
       final responseStockBajo =
-          await widget.productosApi.getProductosConStockBajo(
+          await widget.productoRepository.getProductosConStockBajo(
         sucursalId: widget.sucursalId,
-        page: 1,
         pageSize: 100,
         sortBy: 'stock',
         useCache: false,
       );
 
       // Cargar productos normales con filtros
-      final responseNormales = await widget.productosApi.getProductosPorFiltros(
+      final responseNormales =
+          await widget.productoRepository.getProductosPorFiltros(
         sucursalId: widget.sucursalId,
         categoria: _filtroCategoria != 'Todos' ? _filtroCategoria : null,
         page: _paginacionProvider.paginacion.currentPage,

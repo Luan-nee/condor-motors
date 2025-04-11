@@ -1,6 +1,6 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart';
+import 'package:condorsmotors/repositories/proforma.repository.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_conversion_utils.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
@@ -65,6 +65,8 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
   late TextEditingController _searchController;
   List<Proforma> _filteredProformas = [];
   bool _procesandoConversion = false;
+  // Instancia del repositorio para acceder a las proformas
+  final ProformaRepository _proformaRepository = ProformaRepository.instance;
 
   @override
   void initState() {
@@ -108,8 +110,10 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
         return;
       }
 
-      // Invalidar caché de proformas y recargar
-      api.proformas.invalidateCache(sucursalId.toString());
+      // Invalidar caché de proformas usando el repositorio directamente
+      if (mounted) {
+        _proformaRepository.invalidateCache(sucursalId.toString());
+      }
 
       // Si hay un método de recarga, utilizarlo
       if (widget.onRefresh != null && mounted) {
@@ -178,10 +182,11 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
     // Mostrar diálogo para confirmar y elegir tipo de documento
     showDialog(
       context: context,
-      builder: (BuildContext context) => ProformaSaleDialog(
+      builder: (BuildContext dialogContext) => ProformaSaleDialog(
         proforma: proforma,
         onConfirm: (Map<String, dynamic> ventaData) async {
-          Navigator.of(context).pop(); // Cerrar diálogo de confirmación
+          Navigator.of(dialogContext)
+              .pop(); // Cerrar diálogo de confirmación usando el contexto del diálogo
 
           // Verificar si el widget sigue montado después de cerrar el diálogo
           if (!mounted) {
@@ -209,54 +214,67 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
             setState(() {
               _procesandoConversion = false;
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('No se pudo obtener el ID de sucursal'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content:
+                      Text('No se pudo determinar la sucursal del usuario'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
             return;
           }
 
-          // Invalidar caché antes de la conversión
-          api.proformas.invalidateCache(sucursalId.toString());
+          // Invalidar caché antes de la conversión usando el repositorio
+          _proformaRepository.invalidateCache(sucursalId.toString());
 
-          // Convertir proforma usando el método directo
-          final bool exito =
-              await ProformaConversionManager.convertirProformaAVenta(
-            context: context,
-            sucursalId: sucursalId.toString(),
-            proformaId: proforma.id,
-            tipoDocumento: tipoDocumento,
-            onSuccess: () {
-              // Verificar si el widget sigue montado antes de actualizar el estado
-              if (!mounted) {
-                return;
-              }
+          // Verificar si el widget sigue montado para pasar el contexto adecuado
+          bool exitoConversion = false;
 
-              // Actualizar estado
-              setState(() {
-                _procesandoConversion = false;
-              });
+          if (mounted) {
+            // Si está montado, usamos el contexto actual
+            exitoConversion =
+                await ProformaConversionManager.convertirProformaAVenta(
+              context: context,
+              sucursalId: sucursalId.toString(),
+              proformaId: proforma.id,
+              tipoDocumento: tipoDocumento,
+              onSuccess: () {
+                // Verificar si el widget sigue montado antes de actualizar el estado
+                if (!mounted) {
+                  return;
+                }
 
-              // Llamar al callback externo si existe
-              if (widget.onConvertToSale != null) {
-                widget.onConvertToSale!(proforma);
-              }
+                // Actualizar estado
+                setState(() {
+                  _procesandoConversion = false;
+                });
 
-              // Recargar datos si hay un método de recarga disponible
-              if (widget.onRefresh != null) {
-                widget.onRefresh!();
-              }
-            },
-          );
+                // Llamar al callback externo si existe
+                if (widget.onConvertToSale != null) {
+                  widget.onConvertToSale!(proforma);
+                }
+
+                // Recargar datos si hay un método de recarga disponible
+                if (widget.onRefresh != null) {
+                  widget.onRefresh!();
+                }
+              },
+            );
+          } else {
+            // Si ya no está montado, no podemos proceder adecuadamente
+            debugPrint(
+                'Widget desmontado durante la conversión, cancelando operación');
+            return;
+          }
 
           // Verificar si el widget sigue montado antes de actualizar el estado
           if (!mounted) {
             return;
           }
 
-          if (!exito) {
+          if (!exitoConversion) {
             // El error ya fue mostrado en el gestor
             setState(() {
               _procesandoConversion = false;
@@ -268,7 +286,7 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
             _recargarDatosProformas();
           }
         },
-        onCancel: () => Navigator.of(context).pop(),
+        onCancel: () => Navigator.of(dialogContext).pop(),
       ),
     );
   }

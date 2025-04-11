@@ -1490,10 +1490,10 @@ class CuentasEmpleadosApi {
 
       // Preparar datos para la petición
       final Map<String, dynamic> body = <String, dynamic>{
-        'empleadoId': empleadoId,
         'usuario': usuario,
         'clave': clave,
         'rolCuentaEmpleadoId': rolCuentaEmpleadoId,
+        'empleadoId': empleadoId,
       };
 
       // Hacer la petición al endpoint adecuado

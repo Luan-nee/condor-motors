@@ -1,7 +1,10 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/marca.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/repositories/categoria.repository.dart';
+import 'package:condorsmotors/repositories/marcas.repository.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
+import 'package:condorsmotors/repositories/sucursal.repository.dart';
 import 'package:flutter/material.dart';
 
 /// Clase para representar el stock de un producto en una sucursal
@@ -22,10 +25,11 @@ class ProductosUtils {
   /// Obtiene la lista de categorías desde la API
   static Future<List<String>> obtenerCategorias() async {
     try {
-      final List categorias = await api.categorias.getCategorias();
+      final categoriaRepository = CategoriaRepository.instance;
+      final categorias = await categoriaRepository.getCategorias();
       // Extraer nombres de categorías
       final List<String> listaCategorias = categorias
-          .map<String>((cat) => cat['nombre'] as String)
+          .map<String>((cat) => cat.nombre)
           .where((String nombre) => nombre.isNotEmpty)
           .toList()
         ..sort();
@@ -48,7 +52,8 @@ class ProductosUtils {
   /// Obtiene la lista de marcas desde la API
   static Future<List<String>> obtenerMarcas() async {
     try {
-      final List<Marca> marcas = await api.marcas.getMarcas();
+      final marcaRepository = MarcaRepository.instance;
+      final List<Marca> marcas = await marcaRepository.getMarcas();
 
       // Extraer nombres de marcas usando la notación de punto
       final List<String> listaMarcas = marcas
@@ -208,19 +213,26 @@ class ProductosUtils {
     final List<ProductoEnSucursal> resultados = <ProductoEnSucursal>[];
 
     try {
+      final sucursalRepository = SucursalRepository.instance;
+      final productoRepository = ProductoRepository.instance;
+
       // Obtener todas las sucursales si no se proporcionaron
       final List<Sucursal> listaSucursales = sucursales.isNotEmpty
           ? sucursales
-          : await api.sucursales.getSucursales();
+          : await sucursalRepository.getSucursales();
 
       // Consultar en paralelo para mayor eficiencia
       final List<Future<ProductoEnSucursal>> futures =
           listaSucursales.map((Sucursal sucursal) async {
         try {
-          final Producto producto = await api.productos.getProducto(
-            sucursalId: sucursal.id,
+          final Producto? producto = await productoRepository.getProducto(
+            sucursalId: sucursal.id.toString(),
             productoId: productoId,
           );
+
+          if (producto == null) {
+            throw Exception('Producto no encontrado');
+          }
 
           return ProductoEnSucursal(
             sucursal: sucursal,

@@ -1,4 +1,3 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/categoria.model.dart';
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/marca.model.dart';
@@ -13,6 +12,10 @@ import 'package:flutter/material.dart';
 /// Provider para gestionar productos
 class ProductoProvider extends ChangeNotifier {
   final ProductoRepository _productoRepository = ProductoRepository.instance;
+  final CategoriaRepository _categoriaRepository = CategoriaRepository.instance;
+  final MarcaRepository _marcaRepository = MarcaRepository.instance;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
+  final ColorRepository _colorRepository = ColorRepository.instance;
 
   // Datos de productos
   PaginatedResponse<Producto>? _paginatedProductos;
@@ -137,14 +140,9 @@ class ProductoProvider extends ChangeNotifier {
 
       // Obtener las categorías como objetos para tener acceso a los IDs
       final List<Categoria> categoriasList =
-          await api.categorias.getCategoriasObjetos(useCache: false);
+          await _categoriaRepository.getCategorias(useCache: false);
 
       // Extraer nombres para la lista desplegable
-      List<String> categoriaNames = categoriasList
-          .map<String>((Categoria cat) => cat.nombre)
-          .where((String nombre) => nombre.isNotEmpty)
-          .toList();
-      categoriaNames.sort(); // Mantener orden alfabético
 
       // Crear un mapa para fácil acceso a los IDs por nombre
       _categoriasMap = <String, Map<String, Object>>{
@@ -176,7 +174,7 @@ class ProductoProvider extends ChangeNotifier {
 
     try {
       final List<Sucursal> sucursalesList =
-          await api.sucursales.getSucursales();
+          await _sucursalRepository.getSucursales();
 
       _sucursales = sucursalesList;
       _isLoadingSucursales = false;
@@ -433,11 +431,8 @@ class ProductoProvider extends ChangeNotifier {
 
     try {
       // Obtenemos las marcas como objetos tipados
-      final ResultadoPaginado<Marca> marcasResult =
-          await api.marcas.getMarcasPaginadas(useCache: false);
-
-      // Extraemos la lista de marcas del resultado paginado
-      final List<Marca> marcasList = marcasResult.items;
+      final List<Marca> marcasList =
+          await _marcaRepository.getMarcas(forceRefresh: true);
 
       // Crear un mapa para fácil acceso a los IDs por nombre
       _marcasMap = <String, Map<String, Object>>{
@@ -462,7 +457,7 @@ class ProductoProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _colores = await api.colores.getColores();
+      _colores = await _colorRepository.getColores(useCache: false);
       _isLoadingColores = false;
       notifyListeners();
     } catch (e) {

@@ -1,16 +1,19 @@
 import 'dart:io';
 import 'dart:typed_data';
-
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Provider para gestionar ventas y sucursales
 class VentasComputerProvider extends ChangeNotifier {
+  // Repositorios
+  final VentaRepository _ventaRepository = VentaRepository.instance;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
+
   // Estado para sucursales
   String _errorMessage = '';
   List<Sucursal> _sucursales = [];
@@ -210,11 +213,6 @@ class VentasComputerProvider extends ChangeNotifier {
     }
   }
 
-  // --- Métodos Helper Eliminados ---
-  // La lógica de calcularTotalVenta, obtenerNumeroDocumento, tienePdfDisponible,
-  // y obtenerUrlPdf debe residir en el modelo Venta o ser accedida directamente
-  // desde sus propiedades.
-
   /// Obtiene el color según el estado de una venta (se mantiene por ser UI-related)
   Color getEstadoColor(String estado) {
     switch (estado.toUpperCase()) {
@@ -291,8 +289,8 @@ class VentasComputerProvider extends ChangeNotifier {
         throw Exception(errorMsg);
       }
 
-      // Llamar a la API para declarar la venta
-      final result = await api.ventas.declararVenta(
+      // Llamar al repositorio para declarar la venta
+      final result = await _ventaRepository.declararVenta(
         ventaId,
         sucursalId: _sucursalSeleccionada!.id,
         enviarCliente: enviarCliente,
@@ -388,8 +386,8 @@ class VentasComputerProvider extends ChangeNotifier {
     try {
       debugPrint('🔄 Inicializando VentasComputerProvider...');
 
-      // Obtener datos del usuario autenticado
-      final userData = await api.auth.getUserData();
+      // Obtener datos del usuario autenticado usando el repositorio
+      final userData = await _ventaRepository.getUserData();
       if (userData == null) {
         throw Exception('No se encontraron datos del usuario autenticado');
       }
@@ -451,8 +449,8 @@ class VentasComputerProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('Cargando sucursales desde la API...');
-      final data = await api.sucursales.getSucursales();
+      debugPrint('Cargando sucursales desde el repositorio...');
+      final data = await _sucursalRepository.getSucursales();
 
       debugPrint('Datos recibidos tipo: ${data.runtimeType}');
       debugPrint('Longitud de la lista: ${data.length}');
@@ -508,9 +506,9 @@ class VentasComputerProvider extends ChangeNotifier {
       String sucursalIdStr = sucursalId.toString();
       debugPrint('🔍 Estableciendo sucursal por ID: $sucursalIdStr');
 
-      // Intentar obtener datos completos de la sucursal
+      // Intentar obtener datos completos de la sucursal usando el repositorio
       try {
-        final sucursalCompleta = await api.sucursales.getSucursalData(
+        final sucursalCompleta = await _sucursalRepository.getSucursalData(
           sucursalIdStr,
           useCache: false,
           forceRefresh: true,
@@ -529,18 +527,9 @@ class VentasComputerProvider extends ChangeNotifier {
       } catch (e) {
         debugPrint('⚠️ No se pudieron obtener datos completos de sucursal: $e');
 
-        // Crear una sucursal provisional con datos mínimos
-        final DateTime ahora = DateTime.now();
-        final Sucursal sucursalProvisional = Sucursal(
-          id: sucursalIdStr,
-          nombre: 'Sucursal $sucursalIdStr',
-          direccion: '',
-          sucursalCentral: false,
-          serieFactura: '',
-          serieBoleta: '',
-          fechaCreacion: ahora,
-          fechaActualizacion: ahora,
-        );
+        // Crear una sucursal provisional con datos mínimos utilizando el repositorio
+        final sucursalProvisional =
+            _sucursalRepository.createProvisionalSucursal(sucursalIdStr);
 
         _sucursalSeleccionada = sucursalProvisional;
         _sucursales = [sucursalProvisional];
@@ -601,8 +590,8 @@ class VentasComputerProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Llamar a la API para obtener las ventas
-      final response = await api.ventas.getVentas(
+      // Llamar al repositorio para obtener las ventas
+      final response = await _ventaRepository.getVentas(
         sucursalId: _sucursalSeleccionada!.id,
         page: _paginacion.currentPage,
         pageSize: _itemsPerPage,
@@ -725,7 +714,7 @@ class VentasComputerProvider extends ChangeNotifier {
       debugPrint(
           'Cargando detalle de venta: $id para sucursal: ${_sucursalSeleccionada!.id}');
 
-      final Venta? venta = await api.ventas.getVenta(
+      final Venta? venta = await _ventaRepository.getVenta(
         id,
         sucursalId: _sucursalSeleccionada!.id,
         forceRefresh: true, // Forzar recarga para obtener datos actualizados

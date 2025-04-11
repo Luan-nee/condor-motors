@@ -1,5 +1,4 @@
 import 'package:condorsmotors/api/index.api.dart';
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';

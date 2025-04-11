@@ -1,11 +1,22 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/repositories/empleado.repository.dart';
+import 'package:condorsmotors/repositories/estadistica.repository.dart';
+// Importar los repositorios necesarios
+import 'package:condorsmotors/repositories/producto.repository.dart';
+import 'package:condorsmotors/repositories/sucursal.repository.dart';
 import 'package:flutter/material.dart';
 
 /// Provider para el dashboard de administración
 class DashboardProvider extends ChangeNotifier {
+  // Instancias de repositorios
+  final ProductoRepository _productoRepository = ProductoRepository.instance;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
+  final EmpleadoRepository _empleadoRepository = EmpleadoRepository.instance;
+  final EstadisticaRepository _estadisticaRepository =
+      EstadisticaRepository.instance;
+
   // Estado
   bool _isLoading = true;
   String _sucursalSeleccionadaId = '';
@@ -65,9 +76,9 @@ class DashboardProvider extends ChangeNotifier {
   /// Carga todos los datos del dashboard
   Future<void> _loadData() async {
     try {
-      // Cargar sucursales primero
+      // Cargar sucursales primero usando el repositorio
       final List<Sucursal> sucursalesResponse =
-          await api.sucursales.getSucursales();
+          await _sucursalRepository.getSucursales();
 
       final List<Sucursal> sucursalesList = [];
       final List<Sucursal> centralesList = [];
@@ -116,9 +127,9 @@ class DashboardProvider extends ChangeNotifier {
         productosBySucursal[sucursal.id.toString()] = [];
       }
 
-      // Cargar productos para la sucursal seleccionada primero
+      // Cargar productos para la sucursal seleccionada primero usando el repositorio
       final PaginatedResponse<dynamic> paginatedProductos =
-          await api.productos.getProductos(
+          await _productoRepository.getProductos(
         sucursalId: _sucursalSeleccionadaId,
         pageSize: 100, // Aumentar límite para tener más datos precisos
       );
@@ -163,7 +174,7 @@ class DashboardProvider extends ChangeNotifier {
       Sucursal sucursal, Map<String, List<dynamic>> productosBySucursal) async {
     try {
       final PaginatedResponse<dynamic> sucProducts =
-          await api.productos.getProductos(
+          await _productoRepository.getProductos(
         sucursalId: sucursal.id.toString(),
         pageSize: 100,
       );
@@ -178,7 +189,7 @@ class DashboardProvider extends ChangeNotifier {
   Future<void> _loadEmpleados() async {
     try {
       final EmpleadosPaginados empleadosPaginados =
-          await api.empleados.getEmpleados();
+          await _empleadoRepository.getEmpleados();
       _totalEmpleados = empleadosPaginados.empleados.length;
       notifyListeners();
     } catch (e) {
@@ -194,7 +205,7 @@ class DashboardProvider extends ChangeNotifier {
       for (final sucursal in _sucursales) {
         try {
           final stockBajoResponse =
-              await api.productos.getProductosConStockBajo(
+              await _productoRepository.getProductosConStockBajo(
             sucursalId: sucursal.id.toString(),
             pageSize: 100,
             useCache: false,
@@ -216,10 +227,8 @@ class DashboardProvider extends ChangeNotifier {
         }
       }
 
-      final resumen = await api.estadisticas.getResumenEstadisticas(
-        useCache: false,
-        forceRefresh: true,
-      );
+      // Usar el nuevo repositorio de estadísticas
+      final resumen = await _estadisticaRepository.getResumenEstadisticas();
 
       if (resumen['status'] == 'success' && resumen['data'] != null) {
         final data = resumen['data'] as Map<String, dynamic>;

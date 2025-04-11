@@ -1,6 +1,7 @@
-import 'package:condorsmotors/main.dart' show api; // Importamos el API global
+// Importamos el API global
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/providers/admin/stock.admin.provider.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -41,6 +42,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   late TextEditingController _stockController;
   bool _mostrarAdvertencia = false;
   late StockProvider _stockProvider;
+
+  // Instancias de repositorios
+  final ProductoRepository _productoRepository = ProductoRepository.instance;
 
   // Variables para controlar la aparición de botones rápidos
   int _contadorClicsAumentar = 0;
@@ -108,8 +112,8 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
     });
 
     try {
-      // Usar la API real para agregar stock
-      await api.productos.agregarStock(
+      // Usar el repositorio en lugar de la API directamente
+      await _productoRepository.agregarStock(
         sucursalId: widget.sucursalId,
         productoId: widget.producto.id,
         cantidad: cantidadAAgregar,
@@ -185,8 +189,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
     });
 
     try {
-      // Usar la API para establecer liquidación
-      final Producto productoActualizado = await api.productos.setLiquidacion(
+      // Usar el repositorio en lugar de la API directamente
+      final Producto? productoActualizado =
+          await _productoRepository.setLiquidacion(
         sucursalId: widget.sucursalId,
         productoId: widget.producto.id,
         enLiquidacion: _enLiquidacion,
@@ -195,7 +200,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
             : null,
       );
 
-      if (!mounted) {
+      if (!mounted || productoActualizado == null) {
         return;
       }
 

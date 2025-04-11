@@ -1,7 +1,9 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/providers/admin/stock.admin.provider.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
+// Importar los repositorios necesarios
+import 'package:condorsmotors/repositories/stock.repository.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalles_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +32,10 @@ class StockDetalleSucursalDialog extends StatefulWidget {
 
 class _StockDetalleSucursalDialogState
     extends State<StockDetalleSucursalDialog> {
+  // Instancias de repositorios
+  final StockRepository _stockRepository = StockRepository.instance;
+  final ProductoRepository _productoRepository = ProductoRepository.instance;
+
   bool _isLoading = true;
   String? _error;
   List<Sucursal> _sucursales = <Sucursal>[];
@@ -59,8 +65,8 @@ class _StockDetalleSucursalDialogState
     });
 
     try {
-      // Cargar las sucursales
-      final List<Sucursal> sucursales = await api.sucursales.getSucursales();
+      // Cargar las sucursales usando el repositorio
+      final List<Sucursal> sucursales = await _stockRepository.getSucursales();
 
       // Para cada sucursal, cargar el stock del producto
       final Map<String, int> stockMap = <String, int>{};
@@ -100,15 +106,20 @@ class _StockDetalleSucursalDialogState
   Future<void> _cargarStockPorSucursal(String sucursalId,
       Map<String, int> stockMap, Map<String, bool> disponibilidadMap) async {
     try {
-      // Obtener el stock específico para esta sucursal
-      final Producto response = await api.productos.getProducto(
-        productoId: widget.producto.id,
+      // Obtener el stock específico para esta sucursal usando el repositorio de productos
+      final Producto? response = await _productoRepository.getProducto(
         sucursalId: sucursalId,
+        productoId: widget.producto.id,
       );
 
       // Si la respuesta existe, almacenar el stock
-      stockMap[sucursalId] = response.stock;
-      disponibilidadMap[sucursalId] = true;
+      if (response != null) {
+        stockMap[sucursalId] = response.stock;
+        disponibilidadMap[sucursalId] = true;
+      } else {
+        stockMap[sucursalId] = 0;
+        disponibilidadMap[sucursalId] = false;
+      }
     } catch (e) {
       // En caso de error, marcamos el producto como no disponible
       debugPrint('Error obteniendo stock para sucursal $sucursalId: $e');

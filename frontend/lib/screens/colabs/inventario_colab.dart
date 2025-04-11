@@ -1,5 +1,5 @@
-import 'package:condorsmotors/main.dart' show api;
-import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
+import 'package:condorsmotors/repositories/stock.repository.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -15,91 +15,8 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
   String _selectedCategory = 'Todos';
   String? _sucursalId;
 
-  // Datos de ejemplo para productos
-  final List<Map<String, dynamic>> _productos = <Map<String, dynamic>>[
-    <String, dynamic>{
-      'id': 1,
-      'codigo': 'CAS001',
-      'nombre': 'Casco MT Thunder',
-      'descripcion':
-          'Casco integral MT Thunder con sistema de ventilación avanzado',
-      'precio': 299.99,
-      'precioMayorista': 250.00,
-      'stock': 15,
-      'stockMinimo': 5,
-      'categoria': 'Cascos',
-      'marca': 'MT Helmets',
-      'estado': 'ACTIVO',
-      'imagen': 'assets/images/casco_mt.jpg',
-      'ubicacion': 'Estante A-1',
-      'ultimoConteo': '2024-03-10',
-    },
-    <String, dynamic>{
-      'id': 2,
-      'codigo': 'ACE001',
-      'nombre': 'Aceite Motul 5100',
-      'descripcion': 'Aceite sintético 4T 15W-50 para motocicletas',
-      'precio': 89.99,
-      'precioMayorista': 75.00,
-      'stock': 3,
-      'stockMinimo': 10,
-      'categoria': 'Lubricantes',
-      'marca': 'Motul',
-      'estado': 'BAJO_STOCK',
-      'imagen': 'assets/images/aceite_motul.jpg',
-      'ubicacion': 'Estante B-2',
-      'ultimoConteo': '2024-03-11',
-    },
-    <String, dynamic>{
-      'id': 3,
-      'codigo': 'LLA001',
-      'nombre': 'Llanta Pirelli Diablo',
-      'descripcion': 'Llanta deportiva Pirelli Diablo Rosso III 180/55 ZR17',
-      'precio': 450.00,
-      'precioMayorista': 380.00,
-      'stock': 0,
-      'stockMinimo': 4,
-      'categoria': 'Llantas',
-      'marca': 'Pirelli',
-      'estado': 'AGOTADO',
-      'imagen': 'assets/images/llanta_pirelli.jpg',
-      'ubicacion': 'Estante C-3',
-      'ultimoConteo': '2024-03-09',
-    },
-    <String, dynamic>{
-      'id': 4,
-      'codigo': 'FRE001',
-      'nombre': 'Kit de Frenos Brembo',
-      'descripcion': 'Kit completo de frenos Brembo con pastillas y disco',
-      'precio': 850.00,
-      'precioMayorista': 720.00,
-      'stock': 8,
-      'stockMinimo': 3,
-      'categoria': 'Frenos',
-      'marca': 'Brembo',
-      'estado': 'ACTIVO',
-      'imagen': 'assets/images/frenos_brembo.jpg',
-      'ubicacion': 'Estante D-1',
-      'ultimoConteo': '2024-03-12',
-    },
-    <String, dynamic>{
-      'id': 5,
-      'codigo': 'AMO001',
-      'nombre': 'Amortiguador YSS',
-      'descripcion':
-          'Amortiguador trasero YSS ajustable en compresión y rebote',
-      'precio': 599.99,
-      'precioMayorista': 520.00,
-      'stock': 6,
-      'stockMinimo': 4,
-      'categoria': 'Suspensión',
-      'marca': 'YSS',
-      'estado': 'ACTIVO',
-      'imagen': 'assets/images/amortiguador_yss.jpg',
-      'ubicacion': 'Estante E-2',
-      'ultimoConteo': '2024-03-10',
-    }
-  ];
+  // Lista de productos que se llenará desde el repositorio
+  final List<Map<String, dynamic>> _productos = <Map<String, dynamic>>[];
 
   // Categorías disponibles
   final List<String> _categorias = <String>[
@@ -111,6 +28,10 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
     'Suspensión'
   ];
 
+  // Repositorios
+  final ProductoRepository _productoRepository = ProductoRepository.instance;
+  final StockRepository _stockRepository = StockRepository.instance;
+
   @override
   void initState() {
     super.initState();
@@ -119,14 +40,14 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
 
   Future<void> _inicializarDatos() async {
     try {
-      // Obtener el ID de sucursal usando la utilidad
-      final int? sucId = await VentasPendientesUtils.obtenerSucursalId();
+      // Obtener el ID de sucursal desde el repositorio
+      final String? sucId = await _productoRepository.getCurrentSucursalId();
       if (!mounted) {
         return;
       }
 
       setState(() {
-        _sucursalId = sucId?.toString();
+        _sucursalId = sucId;
       });
       await _cargarProductos();
     } catch (e) {
@@ -142,8 +63,8 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
     setState(() {});
 
     try {
-      // Obtener productos usando la API
-      final productos = await api.productos.getProductos(
+      // Obtener productos usando el repositorio
+      final productos = await _productoRepository.getProductos(
         sucursalId: _sucursalId ?? '1',
         useCache: false,
       );
@@ -179,8 +100,8 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
     }
 
     try {
-      // Usar la API de stocks para actualizar el inventario
-      await api.stocks.updateStock(
+      // Usar el repositorio de stocks para actualizar el inventario
+      await _stockRepository.updateStock(
         _sucursalId ?? '1',
         producto['id'].toString(),
         producto['stock'] as int,
@@ -220,8 +141,8 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
     }
 
     try {
-      // Usar la API de stocks para ajustar el inventario
-      await api.stocks.registrarMovimientoStock(
+      // Usar el repositorio de stocks para ajustar el inventario
+      await _stockRepository.registrarMovimientoStock(
         _sucursalId ?? '1',
         producto['id'].toString(),
         producto['stock'] as int,

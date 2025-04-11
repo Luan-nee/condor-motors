@@ -1,9 +1,13 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/sucursal.model.dart';
+// Importar el repositorio
+import 'package:condorsmotors/repositories/sucursal.repository.dart';
 import 'package:flutter/material.dart';
 
 /// Provider para gestionar sucursales
 class SucursalProvider extends ChangeNotifier {
+  // Instancia del repositorio de sucursales
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
+
   // Estado para sucursales
   bool _isLoading = false;
   List<Sucursal> _sucursales = [];
@@ -111,7 +115,8 @@ class SucursalProvider extends ChangeNotifier {
     }
 
     try {
-      final List<Sucursal> sucursales = await api.sucursales.getSucursales();
+      final List<Sucursal> sucursales =
+          await _sucursalRepository.getSucursales();
       _todasLasSucursales = sucursales;
       _aplicarFiltroBusqueda();
     } catch (e) {
@@ -217,10 +222,10 @@ class SucursalProvider extends ChangeNotifier {
       );
 
       if (data['id'] != null) {
-        await api.sucursales
-            .updateSucursal(data['id'].toString(), request.toJson());
+        await _sucursalRepository.updateSucursal(
+            data['id'].toString(), request.toJson());
       } else {
-        await api.sucursales.createSucursal(request.toJson());
+        await _sucursalRepository.createSucursal(request.toJson());
       }
 
       await cargarSucursales();
@@ -239,7 +244,7 @@ class SucursalProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await api.sucursales.deleteSucursal(sucursal.id.toString());
+      await _sucursalRepository.deleteSucursal(sucursal.id.toString());
       await cargarSucursales();
       return null; // Sin error
     } catch (e) {

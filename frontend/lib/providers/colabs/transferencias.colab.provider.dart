@@ -1,14 +1,15 @@
-import 'package:condorsmotors/api/protected/productos.api.dart';
-import 'package:condorsmotors/api/protected/transferencias.api.dart';
-import 'package:condorsmotors/main.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/transferencias.model.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
 
 class TransferenciasColabProvider extends ChangeNotifier {
-  final TransferenciasInventarioApi _transferenciasApi = api.transferencias;
-  final ProductosApi _productosApi = api.productos;
+  // Instancias de repositorios
+  final TransferenciaRepository _transferenciaRepository =
+      TransferenciaRepository.instance;
+  final ProductoRepository _productoRepository = ProductoRepository.instance;
+
   bool _isLoading = false;
   String? _errorMessage;
   List<TransferenciaInventario> _transferencias = [];
@@ -70,7 +71,7 @@ class TransferenciasColabProvider extends ChangeNotifier {
 
     try {
       final Map<String, dynamic>? userData =
-          await api.authService.getUserData();
+          await _transferenciaRepository.getUserData();
 
       if (userData != null) {
         _sucursalId = userData['sucursalId']?.toString();
@@ -95,12 +96,14 @@ class TransferenciasColabProvider extends ChangeNotifier {
     try {
       debugPrint('Cargando todas las transferencias');
 
-      final paginatedResponse = await _transferenciasApi.getAllTransferencias(
-        forceRefresh: forceRefresh,
+      // Usar método similar a getTransferencias pero con parámetros predeterminados
+      final paginatedResponse =
+          await _transferenciaRepository.getTransferencias(
         pageSize:
             100, // Ajustamos el tamaño de página para obtener más resultados
         sortBy: _ordenarPor,
         order: _orden,
+        forceRefresh: forceRefresh,
       );
 
       _transferencias = paginatedResponse.items;
@@ -128,7 +131,7 @@ class TransferenciasColabProvider extends ChangeNotifier {
       debugPrint('Obteniendo detalle de transferencia #$id');
 
       final TransferenciaInventario transferencia =
-          await _transferenciasApi.getTransferencia(id);
+          await _transferenciaRepository.getTransferencia(id);
 
       debugPrint('Detalle de transferencia cargado:');
       debugPrint('- ID: ${transferencia.id}');
@@ -153,10 +156,9 @@ class TransferenciasColabProvider extends ChangeNotifier {
       debugPrint('Obteniendo comparación de transferencia #$id');
 
       final ComparacionTransferencia comparacion =
-          await _transferenciasApi.compararTransferencia(
+          await _transferenciaRepository.compararTransferencia(
         id: id,
         sucursalOrigenId: int.parse(_sucursalId!),
-        useCache: false,
       );
 
       debugPrint('Comparación de transferencia cargada:');
@@ -189,15 +191,17 @@ class TransferenciasColabProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
+      final items = productos
+          .map((p) => <String, dynamic>{
+                'productoId': p.id,
+                'cantidad': p.cantidad,
+              })
+          .toList();
+
       final TransferenciaInventario nuevaTransferencia =
-          await _transferenciasApi.createTransferencia(
+          await _transferenciaRepository.createTransferencia(
         sucursalDestinoId: sucursalDestinoId,
-        items: productos
-            .map((p) => <String, dynamic>{
-                  'productoId': p.id,
-                  'cantidad': p.cantidad,
-                })
-            .toList(),
+        items: items,
       );
 
       _transferencias.insert(0, nuevaTransferencia);
@@ -267,7 +271,7 @@ class TransferenciasColabProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      await _transferenciasApi.recibirTransferencia(
+      await _transferenciaRepository.recibirTransferencia(
         transferencia.id.toString(),
       );
 
@@ -291,7 +295,7 @@ class TransferenciasColabProvider extends ChangeNotifier {
 
       final int sucursalOrigenId = int.parse(_sucursalId!);
 
-      await _transferenciasApi.enviarTransferencia(
+      await _transferenciaRepository.enviarTransferencia(
         transferencia.id.toString(),
         sucursalOrigenId: sucursalOrigenId,
       );
@@ -352,24 +356,25 @@ class TransferenciasColabProvider extends ChangeNotifier {
   }) async {
     try {
       if (_soloStockBajo) {
-        return await _productosApi.getProductosConStockBajo(
+        return await _productoRepository.getProductosConStockBajo(
           sucursalId: sucursalId,
-          page: page,
-          pageSize: pageSize,
+          page: page ?? 1,
+          pageSize: pageSize ?? 20,
           sortBy: _ordenarPor,
           useCache: useCache,
         );
       }
 
-      // Usar el método avanzado de filtrado
-      return await _productosApi.getProductosPorFiltros(
+      // Usar el método de filtro avanzado del repositorio
+      return await _productoRepository.getProductos(
         sucursalId: sucursalId,
-        categoria: _filtroCategoria != 'Todos' ? _filtroCategoria : null,
-        precioMinimo: _precioMinimo,
-        precioMaximo: _precioMaximo,
-        stockPositivo: _soloStockPositivo,
-        page: page,
-        pageSize: pageSize,
+        page: page ?? 1,
+        pageSize: pageSize ?? 20,
+        sortBy: _ordenarPor,
+        order: _orden,
+        filterType: _filtroCategoria != 'Todos' ? 'categoria' : null,
+        filterValue: _filtroCategoria != 'Todos' ? _filtroCategoria : null,
+        stockBajo: _soloStockPositivo ? true : null,
         useCache: useCache,
       );
     } catch (e) {
@@ -448,7 +453,7 @@ class TransferenciasColabProvider extends ChangeNotifier {
       debugPrint(
           'Obteniendo productos con stock bajo para sucursal $sucursalId');
 
-      final response = await _productosApi.getProductosConStockBajo(
+      final response = await _productoRepository.getProductosConStockBajo(
         sucursalId: sucursalId,
         pageSize: 100,
         sortBy: 'stock',
@@ -465,7 +470,7 @@ class TransferenciasColabProvider extends ChangeNotifier {
   // Método para obtener productos agotados
   Future<List<Producto>> obtenerProductosAgotados(String sucursalId) async {
     try {
-      final response = await _productosApi.getProductosAgotados(
+      final response = await _productoRepository.getProductosAgotados(
         sucursalId: sucursalId,
         pageSize: 100,
         sortBy: 'nombre',
@@ -489,7 +494,7 @@ class TransferenciasColabProvider extends ChangeNotifier {
         return [];
       }
 
-      final response = await _productosApi.buscarProductosPorNombre(
+      final response = await _productoRepository.buscarProductosPorNombre(
         sucursalId: sucursalId,
         nombre: nombre,
         pageSize: 50,
@@ -518,17 +523,19 @@ class TransferenciasColabProvider extends ChangeNotifier {
 
       for (final producto in transferencia.productos!) {
         // Obtener stock actual en nuestra sucursal
-        final stockActual = await _productosApi.getProducto(
-          productoId: producto.id,
+        final stockActual = await _productoRepository.getProducto(
           sucursalId: _sucursalId!,
+          productoId: producto.id,
           useCache: false,
         );
 
-        comparaciones.add({
-          'producto': producto,
-          'stockActual': stockActual.stock,
-          'cantidadSolicitada': producto.cantidad,
-        });
+        if (stockActual != null) {
+          comparaciones.add({
+            'producto': producto,
+            'stockActual': stockActual.stock,
+            'cantidadSolicitada': producto.cantidad,
+          });
+        }
       }
 
       return comparaciones;

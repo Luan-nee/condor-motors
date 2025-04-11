@@ -16,50 +16,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 // Configuración global de API
-late CondorMotorsApi api;
+// Nota: La variable api ahora se define en index.api.dart
 
 // Instancia global del sistema de notificaciones
 final ProformaNotification proformaNotification = ProformaNotification();
-
-// Lista de servidores posibles para intentar conectarse
-final List<String> _serverUrls = <String>[
-  'http://192.168.1.42:3000/api', // IP de tu PC en la red WiFi local
-  'http://localhost:3000/api', // Servidor local
-  'http://127.0.0.1:3000/api', // Localhost alternativo
-  'http://10.0.2.2:3000/api', // Emulador Android
-  'https://fseh2hb1d1h2ra5822cdvo.top/api', // En Producción
-];
-
-// Función para construir URL completa del servidor
-String buildServerUrl(String host, {int? port}) {
-  if (host.startsWith('http://') || host.startsWith('https://')) {
-    final Uri uri = Uri.parse(host);
-    // Si ya tiene puerto y path, retornar como está
-    if (uri.hasPort && uri.path.isNotEmpty) {
-      return host;
-    }
-    // Si ya tiene puerto pero no path
-    if (uri.hasPort) {
-      return '${host.trimRight()}/api';
-    }
-    // Si no tiene puerto pero es HTTPS o tiene path
-    if (uri.scheme == 'https' || uri.path.isNotEmpty) {
-      return host;
-    }
-    // Si es HTTP y no tiene puerto ni path
-    return '${host.trimRight()}:${port ?? 3000}/api';
-  }
-  // Si es solo un host sin protocolo
-  return 'http://$host:${port ?? 3000}/api';
-}
-
-// Función para inicializar la API global
-void initializeApi(CondorMotorsApi instance) {
-  api = instance;
-}
 
 // Clave global para el navegador
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -67,44 +29,6 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 // Clave global para el ScaffoldMessenger
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
-
-// Comprobar conectividad con un servidor
-Future<bool> _checkServerConnectivity(String url) async {
-  try {
-    debugPrint('Comprobando conectividad con: $url');
-    final Uri uri = Uri.parse(url);
-    final Socket socket = await Socket.connect(
-        uri.host, uri.hasPort ? uri.port : (uri.scheme == 'https' ? 443 : 3000),
-        timeout: const Duration(seconds: 3));
-    socket.destroy();
-    debugPrint('Conexión exitosa con: $url');
-    return true;
-  } catch (e) {
-    debugPrint('No se pudo conectar a: $url - Error: $e');
-    return false;
-  }
-}
-
-// Guardar la URL del servidor en preferencias
-Future<void> _saveServerUrl(String url, {int? port}) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final String fullUrl = buildServerUrl(url, port: port);
-  await prefs.setString('server_url', fullUrl);
-  if (port != null) {
-    await prefs.setInt('server_port', port);
-  }
-}
-
-// Obtener la última URL y puerto del servidor usados
-Future<Map<String, dynamic>> _getLastServerConfig() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  final String? url = prefs.getString('server_url');
-  final int? port = prefs.getInt('server_port');
-  return {
-    'url': url,
-    'port': port,
-  };
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -125,37 +49,8 @@ void main() async {
     await proformaNotification.init();
   }
 
-  // Inicializar API
-  debugPrint('Inicializando API...');
-
-  // Obtener la última configuración usada
-  final Map<String, dynamic> lastConfig = await _getLastServerConfig();
-  if (lastConfig['url'] != null) {
-    _serverUrls.insert(0, lastConfig['url'] as String);
-  }
-
-  // Verificar conectividad con los servidores en orden
-  String? workingUrl;
-  for (final String url in _serverUrls) {
-    if (await _checkServerConnectivity(url)) {
-      workingUrl = url;
-      break;
-    }
-  }
-
-  // Si no se encuentra ningún servidor disponible, usar el primero de la lista
-  final String baseUrl = workingUrl ?? _serverUrls.first;
-  debugPrint('URL base de la API: $baseUrl');
-
-  // Guardar la URL seleccionada para futuras sesiones
-  if (workingUrl != null) {
-    await _saveServerUrl(workingUrl, port: lastConfig['port']);
-  }
-
-  // Inicializar la API global
-  final apiInstance = CondorMotorsApi(baseUrl: baseUrl);
-  initializeApi(apiInstance);
-  debugPrint('API inicializada correctamente');
+  // Inicializar API usando la función centralizada en index.api.dart
+  await initializeApi();
 
   // Verificar autenticación del usuario
   debugPrint('Verificando autenticación del usuario...');
@@ -230,7 +125,7 @@ void main() async {
           create: (_) => EmpleadoProvider(),
         ),
         ChangeNotifierProvider<TransferenciasProvider>(
-          create: (_) => TransferenciasProvider(api.transferencias),
+          create: (_) => TransferenciasProvider(),
         ),
         ChangeNotifierProvider<ProductoProvider>(
           create: (_) => ProductoProvider(),
@@ -315,7 +210,7 @@ class CondorMotorsApp extends StatelessWidget {
           create: (_) => EmpleadoProvider(),
         ),
         ChangeNotifierProvider<TransferenciasProvider>(
-          create: (_) => TransferenciasProvider(api.transferencias),
+          create: (_) => TransferenciasProvider(),
         ),
         ChangeNotifierProvider<ProductoProvider>(
           create: (_) => ProductoProvider(),

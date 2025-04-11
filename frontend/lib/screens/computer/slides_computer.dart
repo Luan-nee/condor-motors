@@ -1,4 +1,4 @@
-import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/providers/auth.provider.dart';
 import 'package:condorsmotors/providers/computer/dash.computer.provider.dart';
 import 'package:condorsmotors/screens/computer/dashboard_computer.dart';

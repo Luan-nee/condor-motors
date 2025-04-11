@@ -1,9 +1,19 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/repositories/empleado.repository.dart';
+// Importar los repositorios
+import 'package:condorsmotors/repositories/producto.repository.dart';
+import 'package:condorsmotors/repositories/sucursal.repository.dart';
+import 'package:condorsmotors/repositories/venta.repository.dart';
 import 'package:flutter/material.dart';
 
 class DashboardComputerProvider extends ChangeNotifier {
+  // Instancias de repositorios
+  final ProductoRepository _productoRepository = ProductoRepository.instance;
+  final VentaRepository _ventaRepository = VentaRepository.instance;
+  final EmpleadoRepository _empleadoRepository = EmpleadoRepository.instance;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
+
   bool _isLoading = false;
   String _errorMessage = '';
   List<dynamic> _ultimasVentas = [];
@@ -52,7 +62,7 @@ class DashboardComputerProvider extends ChangeNotifier {
       debugPrint('🔄 Inicializando DashboardComputerProvider...');
 
       // Obtener datos del usuario autenticado
-      final userData = await api.auth.getUserData();
+      final userData = await _empleadoRepository.getUserData();
       if (userData == null) {
         throw Exception('No se encontraron datos del usuario autenticado');
       }
@@ -81,7 +91,7 @@ class DashboardComputerProvider extends ChangeNotifier {
       // Obtener nombre de la sucursal
       try {
         final sucursalData =
-            await api.sucursales.getSucursalData(_sucursalId.toString());
+            await _sucursalRepository.getSucursalData(_sucursalId.toString());
         _nombreSucursal = sucursalData.nombre;
       } catch (e) {
         debugPrint('⚠️ No se pudo obtener el nombre de la sucursal: $e');
@@ -115,7 +125,7 @@ class DashboardComputerProvider extends ChangeNotifier {
       _errorMessage = '';
 
       // Cargar últimas ventas usando la API de ventas
-      final ventasResponse = await api.ventas.getVentas(
+      final ventasResponse = await _ventaRepository.getVentas(
         sucursalId: _sucursalId.toString(),
         pageSize: 5,
         forceRefresh: true,
@@ -133,10 +143,9 @@ class DashboardComputerProvider extends ChangeNotifier {
 
       // Cargar solo productos con stock bajo
       try {
-        final productosResponse = await api.productos.getProductos(
+        final productosResponse = await _productoRepository.getProductos(
           sucursalId: _sucursalId.toString(),
           stockBajo: true,
-          pageSize: 10, // Limitamos a 10 productos para el dashboard
         );
 
         _productosStockBajo = productosResponse.items

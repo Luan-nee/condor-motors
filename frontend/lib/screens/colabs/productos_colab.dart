@@ -1,6 +1,6 @@
-import 'package:condorsmotors/main.dart' as app_main;
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/screens/colabs/selector_colab.dart';
 import 'package:condorsmotors/utils/stock_utils.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +31,9 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
   // Tamaño de página para la paginación
   static const int _pageSize = 20;
 
+  // Repositorio de productos
+  final ProductoRepository _productoRepository = ProductoRepository.instance;
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +42,10 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
 
   /// Carga los datos iniciales (productos y categorías)
   Future<void> _cargarDatos() async {
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -46,21 +53,19 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
 
     try {
       // Obtener el ID de la sucursal del usuario actual
-      final Map<String, dynamic>? userData =
-          await app_main.api.authService.getUserData();
-      final String sucursalId = userData?['sucursalId']?.toString() ?? '';
+      final String? sucursalId =
+          await _productoRepository.getCurrentSucursalId();
 
-      if (sucursalId.isEmpty) {
+      if (sucursalId == null || sucursalId.isEmpty) {
         throw Exception('No se pudo determinar la sucursal del usuario');
       }
 
-      // Cargar productos con su información usando ProductosApi
-      final response = await app_main.api.productos.getProductos(
+      // Cargar productos con su información usando el repositorio
+      final response = await _productoRepository.getProductos(
         sucursalId: sucursalId,
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         filter: _selectedCategory != 'Todos' ? 'categoria' : null,
         filterValue: _selectedCategory != 'Todos' ? _selectedCategory : null,
-        page: 1,
         pageSize: _pageSize,
         sortBy: 'nombre',
         order: 'asc',
@@ -72,6 +77,10 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
           .where((String c) => c.isNotEmpty)
           .toSet();
 
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
         _productos = response.items;
         _paginacion = response.paginacion;
@@ -79,6 +88,10 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -93,11 +106,14 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     }
 
     try {
-      final Map<String, dynamic>? userData =
-          await app_main.api.authService.getUserData();
-      final String sucursalId = userData?['sucursalId']?.toString() ?? '';
+      final String? sucursalId =
+          await _productoRepository.getCurrentSucursalId();
 
-      final response = await app_main.api.productos.getProductos(
+      if (sucursalId == null || sucursalId.isEmpty) {
+        throw Exception('No se pudo determinar la sucursal del usuario');
+      }
+
+      final response = await _productoRepository.getProductos(
         sucursalId: sucursalId,
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         filter: _selectedCategory != 'Todos' ? 'categoria' : null,
@@ -108,11 +124,19 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         order: 'asc',
       );
 
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
         _productos.addAll(response.items);
         _paginacion = response.paginacion;
       });
     } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
       // Mostrar error al cargar más productos
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

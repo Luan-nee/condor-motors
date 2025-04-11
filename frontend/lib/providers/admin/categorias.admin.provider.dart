@@ -1,11 +1,11 @@
-import 'package:condorsmotors/api/protected/categorias.api.dart';
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/categoria.model.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/material.dart';
 
 /// Provider para gestionar las categorías en el panel de administración
 class CategoriasProvider extends ChangeNotifier {
-  final CategoriasApi _categoriasApi;
+  // Repositorio para acceder a las categorías
+  final CategoriaRepository _categoriaRepository;
 
   // Estados
   bool _isLoading = false;
@@ -20,8 +20,9 @@ class CategoriasProvider extends ChangeNotifier {
   List<Categoria> get categorias => _categorias;
 
   // Constructor
-  CategoriasProvider({CategoriasApi? categoriasApi})
-      : _categoriasApi = categoriasApi ?? api.categorias;
+  CategoriasProvider({CategoriaRepository? categoriaRepository})
+      : _categoriaRepository =
+            categoriaRepository ?? CategoriaRepository.instance;
 
   /// Recarga todos los datos forzando actualización desde el servidor
   Future<void> recargarDatos() async {
@@ -29,9 +30,10 @@ class CategoriasProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      debugPrint('Forzando recarga de datos de categorías desde la API...');
+      debugPrint(
+          'Forzando recarga de datos de categorías desde el repositorio...');
       await cargarCategorias(useCache: false);
-      debugPrint('Datos de categorías recargados exitosamente desde la API');
+      debugPrint('Datos de categorías recargados exitosamente');
     } catch (e) {
       debugPrint('Error al recargar datos de categorías: $e');
       _setError('Error al recargar datos: $e');
@@ -40,16 +42,16 @@ class CategoriasProvider extends ChangeNotifier {
     }
   }
 
-  /// Carga la lista de categorías desde la API
+  /// Carga la lista de categorías desde el repositorio
   Future<void> cargarCategorias({bool useCache = true}) async {
     _setLoading(true);
     _clearError();
 
     try {
-      debugPrint('Cargando categorías desde la API...');
+      debugPrint('Cargando categorías desde el repositorio...');
 
       final List<Categoria> categoriasObtenidas =
-          await _categoriasApi.getCategoriasObjetos(useCache: useCache);
+          await _categoriaRepository.getCategorias(useCache: useCache);
 
       _categorias = categoriasObtenidas;
       debugPrint('${_categorias.length} categorías cargadas correctamente');
@@ -77,14 +79,14 @@ class CategoriasProvider extends ChangeNotifier {
       if (id == null) {
         // Crear nueva categoría
         debugPrint('Creando nueva categoría: $nombre');
-        await _categoriasApi.createCategoria(
+        await _categoriaRepository.createCategoria(
           nombre: nombre,
           descripcion: descripcion?.isNotEmpty == true ? descripcion : null,
         );
       } else {
         // Actualizar categoría existente
         debugPrint('Actualizando categoría: $id');
-        await _categoriasApi.updateCategoria(
+        await _categoriaRepository.updateCategoria(
           id: id.toString(),
           nombre: nombre,
           descripcion: descripcion?.isNotEmpty == true ? descripcion : null,
@@ -119,7 +121,7 @@ class CategoriasProvider extends ChangeNotifier {
 
     try {
       final bool resultado =
-          await _categoriasApi.deleteCategoria(id.toString());
+          await _categoriaRepository.deleteCategoria(id.toString());
       if (resultado) {
         await cargarCategorias(useCache: false);
       } else {
@@ -138,7 +140,7 @@ class CategoriasProvider extends ChangeNotifier {
   /// Obtiene el detalle de una categoría específica
   Future<Categoria?> obtenerCategoria(int id) async {
     try {
-      return await _categoriasApi.getCategoriaObjeto(id.toString());
+      return await _categoriaRepository.getCategoria(id.toString());
     } catch (e) {
       debugPrint('Error al obtener detalle de categoría: $e');
       _setError('Error al obtener detalle de categoría: $e');

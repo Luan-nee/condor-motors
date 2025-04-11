@@ -1,7 +1,7 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/utils/stock_utils.dart' as stock_utils;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -15,6 +15,9 @@ enum StockStatus {
 
 /// Provider para gestionar el inventario y stock
 class StockProvider extends ChangeNotifier {
+  // Repositorio para gestión de stock
+  final StockRepository _stockRepository = StockRepository.instance;
+
   // Estado
   String _selectedSucursalId = '';
   String _selectedSucursalNombre = '';
@@ -93,7 +96,7 @@ class StockProvider extends ChangeNotifier {
       // Si hay una sucursal seleccionada, recargar sus productos
       else if (_selectedSucursalId.isNotEmpty) {
         // Invalidar caché antes de recargar
-        api.productos.invalidateCache(_selectedSucursalId);
+        _stockRepository.invalidateCache(_selectedSucursalId);
         await cargarProductos(_selectedSucursalId);
       }
 
@@ -173,7 +176,7 @@ class StockProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _sucursales = await api.sucursales.getSucursales();
+      _sucursales = await _stockRepository.getSucursales();
       notifyListeners();
     } catch (e) {
       debugPrint('Error cargando sucursales: $e');
@@ -217,7 +220,7 @@ class StockProvider extends ChangeNotifier {
       // Si está seleccionado el filtro de stock bajo, usar el método específico
       if (_filtroEstadoStock == StockStatus.stockBajo) {
         final PaginatedResponse<Producto> paginatedProductos =
-            await api.productos.getProductosConStockBajo(
+            await _stockRepository.getProductosConStockBajo(
           sucursalId: sucursalId,
           page: _currentPage,
           pageSize: _pageSize,
@@ -234,7 +237,7 @@ class StockProvider extends ChangeNotifier {
       // Si está seleccionado el filtro de agotados, usamos el método específico
       if (_filtroEstadoStock == StockStatus.agotado) {
         final PaginatedResponse<Producto> paginatedProductos =
-            await api.productos.getProductosAgotados(
+            await _stockRepository.getProductosAgotados(
           sucursalId: sucursalId,
           page: _currentPage,
           pageSize: _pageSize,
@@ -251,7 +254,7 @@ class StockProvider extends ChangeNotifier {
       // Si está seleccionado el filtro de disponible, usamos el método específico
       if (_filtroEstadoStock == StockStatus.disponible) {
         final PaginatedResponse<Producto> paginatedProductos =
-            await api.productos.getProductosDisponibles(
+            await _stockRepository.getProductosDisponibles(
           sucursalId: sucursalId,
           page: _currentPage,
           pageSize: _pageSize,
@@ -267,7 +270,7 @@ class StockProvider extends ChangeNotifier {
 
       // Para otros casos, usar el método general
       final PaginatedResponse<Producto> paginatedProductos =
-          await api.productos.getProductos(
+          await _stockRepository.getProductos(
         sucursalId: sucursalId,
         search: searchQuery,
         page: _currentPage,
@@ -387,21 +390,21 @@ class StockProvider extends ChangeNotifier {
 
         // Según la condición, usamos el método API correspondiente
         if (condicion == 'stockBajo') {
-          respuesta = await api.productos.getProductosConStockBajo(
+          respuesta = await _stockRepository.getProductosConStockBajo(
             sucursalId: sucursal.id,
             page: paginaActual,
             pageSize: tamanioPagina,
           );
         } else if (condicion == 'agotados') {
           // Para los agotados ahora usamos el método específico
-          respuesta = await api.productos.getProductosAgotados(
+          respuesta = await _stockRepository.getProductosAgotados(
             sucursalId: sucursal.id,
             page: paginaActual,
             pageSize: tamanioPagina,
           );
         } else {
           // Por defecto, traemos todos los productos
-          respuesta = await api.productos.getProductos(
+          respuesta = await _stockRepository.getProductos(
             sucursalId: sucursal.id,
             page: paginaActual,
             pageSize: tamanioPagina,
@@ -539,12 +542,11 @@ class StockProvider extends ChangeNotifier {
       } else if (value.length >= 3) {
         // Si tenemos 3 o más caracteres, realizar búsqueda
         final PaginatedResponse<Producto> resultados =
-            await api.productos.buscarProductosPorNombre(
+            await _stockRepository.buscarProductosPorNombre(
           sucursalId: _selectedSucursalId,
           nombre: value,
           page: _currentPage,
           pageSize: _pageSize,
-          useCache: false, // No usar caché para búsquedas
         );
 
         _paginatedProductos = resultados;
@@ -590,7 +592,7 @@ class StockProvider extends ChangeNotifier {
         await cargarProductosTodasSucursales();
       } else if (_selectedSucursalId.isNotEmpty) {
         // Forzar recarga desde el servidor
-        api.productos.invalidateCache(_selectedSucursalId);
+        _stockRepository.invalidateCache(_selectedSucursalId);
         await cargarProductos(_selectedSucursalId);
       }
     } catch (e) {

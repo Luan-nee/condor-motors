@@ -1,8 +1,9 @@
 import 'dart:async';
 
-import 'package:condorsmotors/main.dart' show api, proformaNotification;
+import 'package:condorsmotors/main.dart' show proformaNotification;
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Provider para gestionar el estado y lógica de negocio de las proformas
 /// en la versión de computadora de la aplicación.
 class ProformaComputerProvider extends ChangeNotifier {
+  // Repositorio para acceder a las proformas
+  final ProformaRepository _proformaRepository = ProformaRepository.instance;
+
   int _currentPage = 1;
   String? _errorMessage;
   bool _hayNuevasProformas = false;
@@ -105,7 +109,7 @@ class ProformaComputerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Carga las proformas desde la API
+  /// Carga las proformas desde el repositorio
   Future<void> loadProformas({int? sucursalId, bool silencioso = false}) async {
     if (_isLoading && !silencioso) {
       return;
@@ -135,7 +139,7 @@ class ProformaComputerProvider extends ChangeNotifier {
         return;
       }
 
-      final response = await api.proformas.getProformasVenta(
+      final response = await _proformaRepository.getProformas(
         sucursalId: sucursalIdStr,
         page: _currentPage,
         forceRefresh: true, // Forzar actualización desde el servidor
@@ -143,7 +147,7 @@ class ProformaComputerProvider extends ChangeNotifier {
       );
 
       if (response.isNotEmpty) {
-        final proformas = api.proformas.parseProformasVenta(response);
+        final proformas = _proformaRepository.parseProformas(response);
 
         // Extraer información de paginación
         final Map<String, dynamic>? paginacionJson = response['pagination'];
@@ -247,139 +251,32 @@ class ProformaComputerProvider extends ChangeNotifier {
         return false;
       }
 
-      // Invalidar caché antes de la conversión
-      api.proformas.invalidateCache(sucursalIdStr);
-
-      // Obtener un ID de tipo de documento para BOLETA de manera independiente
-      int tipoDocumentoId =
-          await api.documentos.getTipoDocumentoId(sucursalIdStr, 'BOLETA');
-      Logger.debug('ID para BOLETA: $tipoDocumentoId');
-
-      // Obtener ID del tipoTax para gravado (18% IGV)
-      int tipoTaxId = await api.documentos.getGravadoTaxId(sucursalIdStr);
-      Logger.debug('ID para tipo Tax Gravado: $tipoTaxId');
-
-      // Obtener detalles de la proforma
-      final proformaResponse = await api.proformas.getProformaVenta(
+      // Usar el repositorio para convertir la proforma a venta
+      final ventaResponse = await _proformaRepository.convertirAVenta(
         sucursalId: sucursalIdStr,
-        proformaId: proforma.id,
-        forceRefresh: true, // Forzar actualización desde el servidor
+        proforma: proforma,
       );
 
-      if (proformaResponse.isEmpty ||
-          !proformaResponse.containsKey('data') ||
-          proformaResponse['data'] == null) {
-        Logger.error('No se pudo obtener información de la proforma');
-        return false;
-      }
+      if (ventaResponse['status'] == 'success') {
+        // Recargar proformas para actualizar la lista
+        await loadProformas(sucursalId: sucursalId);
 
-      final proformaData = proformaResponse['data'];
-      final List<dynamic> detalles = proformaData['detalles'] ?? [];
-
-      if (detalles.isEmpty) {
-        Logger.error(
-            'La proforma no tiene productos, no se puede convertir a venta');
-        return false;
-      }
-
-      // Transformar los detalles para la venta
-      final List<Map<String, dynamic>> detallesVenta = [];
-      for (final dynamic detalle in detalles) {
-        if (detalle == null || !detalle.containsKey('productoId')) {
-          continue;
+        // Si la proforma convertida es la seleccionada, deseleccionarla
+        if (_selectedProforma != null && _selectedProforma!.id == proforma.id) {
+          clearSelectedProforma();
         }
 
-        detallesVenta.add({
-          'productoId': detalle['productoId'],
-          'cantidad':
-              detalle['cantidadPagada'] ?? detalle['cantidadTotal'] ?? 1,
-          'tipoTaxId': tipoTaxId,
-          'aplicarOferta':
-              detalle['descuento'] != null && detalle['descuento'] > 0
-        });
-      }
-
-      if (detallesVenta.isEmpty) {
-        Logger.error('No hay productos válidos para convertir');
-        return false;
-      }
-
-      // Obtener cliente (intentar usar el de la proforma o uno predeterminado)
-      int clienteId = 1; // Cliente por defecto
-      if (proformaData.containsKey('clienteId') &&
-          proformaData['clienteId'] != null) {
-        clienteId =
-            int.tryParse(proformaData['clienteId'].toString()) ?? clienteId;
-      } else if (proformaData.containsKey('cliente') &&
-          proformaData['cliente'] is Map &&
-          proformaData['cliente'].containsKey('id')) {
-        clienteId =
-            int.tryParse(proformaData['cliente']['id'].toString()) ?? clienteId;
-      }
-
-      // Obtener empleadoId
-      int? empleadoId;
-      final userData = await api.authService.getUserData();
-      if (userData != null && userData.containsKey('empleadoId')) {
-        empleadoId = int.tryParse(userData['empleadoId'].toString());
-      }
-
-      if (empleadoId == null) {
-        // Buscar un empleado de la sucursal
-        final empleados =
-            await api.empleados.getEmpleadosPorSucursal(sucursalIdStr);
-        if (empleados.empleados.isNotEmpty) {
-          empleadoId = int.tryParse(empleados.empleados.first.id);
+        // Ejecutar callback de éxito si existe
+        if (onSuccess != null) {
+          onSuccess();
         }
-      }
 
-      if (empleadoId == null) {
-        Logger.error('No se pudo obtener un ID de empleado válido');
-        return false;
-      }
-
-      // Crear los datos para la venta
-      final Map<String, dynamic> ventaData = {
-        'observaciones': 'Convertida desde Proforma #${proforma.id}',
-        'tipoDocumentoId': tipoDocumentoId,
-        'detalles': detallesVenta,
-        'clienteId': clienteId,
-        'empleadoId': empleadoId,
-      };
-
-      // Crear la venta
-      final ventaResponse = await api.ventas.createVenta(
-        ventaData,
-        sucursalId: sucursalIdStr,
-      );
-
-      if (ventaResponse['status'] != 'success') {
+        return true;
+      } else {
         Logger.error(
-            'Error al crear venta: ${ventaResponse['error'] ?? ventaResponse['message'] ?? "Error desconocido"}');
+            'Error en respuesta al convertir a venta: ${ventaResponse['message'] ?? "Error desconocido"}');
         return false;
       }
-
-      // Actualizar el estado de la proforma
-      await api.proformas.updateProformaVenta(
-        sucursalId: sucursalIdStr,
-        proformaId: proforma.id,
-        estado: 'convertida',
-      );
-
-      // Recargar proformas para actualizar la lista
-      await loadProformas(sucursalId: sucursalId);
-
-      // Si la proforma convertida es la seleccionada, deseleccionarla
-      if (_selectedProforma != null && _selectedProforma!.id == proforma.id) {
-        clearSelectedProforma();
-      }
-
-      // Ejecutar callback de éxito si existe
-      if (onSuccess != null) {
-        onSuccess();
-      }
-
-      return true;
     } catch (e) {
       Logger.error('Error al convertir proforma a venta: $e');
       return false;
@@ -395,7 +292,7 @@ class ProformaComputerProvider extends ChangeNotifier {
         return false;
       }
 
-      final response = await api.proformas.deleteProformaVenta(
+      final response = await _proformaRepository.deleteProforma(
         sucursalId: sucursalIdStr,
         proformaId: proforma.id,
       );
@@ -504,7 +401,7 @@ class ProformaComputerProvider extends ChangeNotifier {
       }
 
       // Obtener proformas sin modificar el estado de carga
-      final response = await api.proformas.getProformasVenta(
+      final response = await _proformaRepository.getProformas(
         sucursalId: sucursalIdStr,
         pageSize: 30, // Aumentar tamaño para tener más visibilidad
         forceRefresh: true, // Forzar actualización desde el servidor
@@ -512,7 +409,7 @@ class ProformaComputerProvider extends ChangeNotifier {
       );
 
       if (response.isNotEmpty) {
-        return api.proformas.parseProformasVenta(response);
+        return _proformaRepository.parseProformas(response);
       }
       return [];
     } catch (e) {
@@ -583,13 +480,8 @@ class ProformaComputerProvider extends ChangeNotifier {
       // Usar el sucursalId pasado como parámetro
       return sucursalIdParam.toString();
     } else {
-      // Obtener el ID de sucursal del usuario
-      final userData = await api.authService.getUserData();
-      if (userData == null || !userData.containsKey('sucursalId')) {
-        Logger.error('No se pudo determinar la sucursal del usuario');
-        return null;
-      }
-      return userData['sucursalId'].toString();
+      // Obtener el ID de sucursal del usuario a través del repositorio
+      return await _proformaRepository.getCurrentSucursalId();
     }
   }
 }
