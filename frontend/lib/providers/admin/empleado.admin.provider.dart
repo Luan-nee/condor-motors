@@ -72,7 +72,7 @@ class EmpleadoProvider extends ChangeNotifier {
     try {
       debugPrint('Cargando datos de colaboradores...');
       final Future<Map<String, String>> futureSucursales = _cargarSucursales();
-      final Future<List<Empleado>> futureEmpleados =
+      final Future<EmpleadosPaginados> futureEmpleados =
           api.empleados.getEmpleados(useCache: false);
       final Future<List<Map<String, dynamic>>> futureRolesCuentas =
           cargarRolesCuentas();
@@ -83,18 +83,9 @@ class EmpleadoProvider extends ChangeNotifier {
         futureRolesCuentas,
       ]);
 
-      final List empleadosData = results[1] as List<dynamic>;
-      final List<Empleado> empleados = <Empleado>[];
-      for (var item in empleadosData) {
-        try {
-          final empleado = item;
-          empleados.add(empleado);
-        } catch (e) {
-          debugPrint('Error al procesar empleado: $e');
-        }
-      }
-
-      _empleados = empleados;
+      final EmpleadosPaginados empleadosPaginados =
+          results[1] as EmpleadosPaginados;
+      _empleados = empleadosPaginados.empleados;
       debugPrint('${_empleados.length} empleados cargados correctamente');
     } catch (e) {
       debugPrint('Error al cargar datos: $e');
@@ -151,6 +142,55 @@ class EmpleadoProvider extends ChangeNotifier {
       _rolesCuentas = <Map<String, dynamic>>[];
       return <Map<String, dynamic>>[];
     }
+  }
+
+  /// Crea un nuevo rol de cuenta de usuario
+  ///
+  /// Esta función es un ejemplo y no está realmente implementada en el backend.
+  /// En una implementación real, esta función invocaría un endpoint API
+  /// para crear un nuevo rol de cuenta de empleado.
+  Future<Map<String, dynamic>?> crearRolCuenta({
+    required String nombre,
+    required String codigo,
+  }) async {
+    // Verificar que el código sea único (simulación)
+    if (_rolesCuentas.any((rol) =>
+        rol['codigo'].toString().toLowerCase() == codigo.toLowerCase())) {
+      throw ApiException(
+        statusCode: 400,
+        message: 'Ya existe un rol con el código "$codigo"',
+      );
+    }
+
+    // Verificar que el nombre sea único (simulación)
+    if (_rolesCuentas.any((rol) =>
+        rol['nombreRol']?.toString().toLowerCase() == nombre.toLowerCase() ||
+        rol['nombre']?.toString().toLowerCase() == nombre.toLowerCase())) {
+      throw ApiException(
+        statusCode: 400,
+        message: 'Ya existe un rol con el nombre "$nombre"',
+      );
+    }
+
+    // Simular la creación del rol con un ID temporal
+    // En una implementación real, esto vendría del backend
+    final Map<String, dynamic> nuevoRol = {
+      'id': _rolesCuentas.length +
+          10, // Generar un ID temporal único (simulación)
+      'nombreRol': nombre,
+      'codigo': codigo,
+    };
+
+    // Agregar a la lista local (simulación)
+    _rolesCuentas.add(nuevoRol);
+    notifyListeners();
+
+    debugPrint('Nuevo rol creado (simulación): $nuevoRol');
+
+    // TODO: En una implementación real, esta función invocaría al backend:
+    // return await api.cuentasEmpleados.createRolCuenta(nombre: nombre, codigo: codigo);
+
+    return nuevoRol;
   }
 
   /// Guarda un empleado (creación o actualización)
@@ -438,6 +478,7 @@ class EmpleadoProvider extends ChangeNotifier {
     required int id,
     String? usuario,
     String? clave,
+    int? rolCuentaEmpleadoId,
   }) async {
     _setCuentaLoading(true);
     clearError();
@@ -447,6 +488,7 @@ class EmpleadoProvider extends ChangeNotifier {
         id: id,
         usuario: usuario,
         clave: clave,
+        rolCuentaEmpleadoId: rolCuentaEmpleadoId,
       );
 
       // Recargar datos para actualizar la información
@@ -535,6 +577,198 @@ class EmpleadoProvider extends ChangeNotifier {
     }
   }
 
+  /// Gestiona el proceso de actualización de una cuenta de empleado existente
+  ///
+  /// Maneja toda la lógica de validación y procesa la actualización
+  Future<Map<String, dynamic>> gestionarActualizacionCuenta({
+    required Empleado empleado,
+    required String? nuevoUsuario,
+    required String? nuevaClave,
+    required int? nuevoRolId,
+    bool validarSoloSiHayCambios = true,
+  }) async {
+    _setCuentaLoading(true);
+    clearError();
+
+    try {
+      // Verificar que tengamos un ID de cuenta válido
+      if (empleado.cuentaEmpleadoId == null) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'No se encontró ID de cuenta para este empleado',
+        );
+      }
+
+      final int? cuentaId = int.tryParse(empleado.cuentaEmpleadoId!);
+      if (cuentaId == null) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'ID de cuenta inválido',
+        );
+      }
+
+      // Verificar si hay cambios que realizar
+      if (validarSoloSiHayCambios &&
+          nuevoUsuario == null &&
+          nuevaClave == null &&
+          nuevoRolId == null) {
+        return {
+          'success': true,
+          'message': 'No se realizaron cambios',
+          'noChanges': true,
+        };
+      }
+
+      // Realizar la actualización
+      final bool success = await actualizarCuentaEmpleado(
+        id: cuentaId,
+        usuario: nuevoUsuario,
+        clave: nuevaClave,
+        rolCuentaEmpleadoId: nuevoRolId,
+      );
+
+      if (success) {
+        return {
+          'success': true,
+          'message': 'Cuenta actualizada correctamente',
+          'noChanges': false,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Error al actualizar la cuenta',
+          'noChanges': false,
+        };
+      }
+    } catch (e) {
+      _handleApiError(e);
+      return {
+        'success': false,
+        'message': 'Error: $_errorMessage',
+        'noChanges': false,
+      };
+    } finally {
+      _setCuentaLoading(false);
+    }
+  }
+
+  /// Gestiona el proceso de creación de una cuenta de empleado
+  ///
+  /// Maneja toda la lógica de validación y procesa la creación
+  Future<Map<String, dynamic>> gestionarCreacionCuenta({
+    required String empleadoId,
+    required String usuario,
+    required String clave,
+    required int rolCuentaEmpleadoId,
+  }) async {
+    _setCuentaLoading(true);
+    clearError();
+
+    try {
+      // Validar que los datos mínimos estén presentes
+      if (usuario.isEmpty) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'El nombre de usuario es obligatorio',
+        );
+      }
+
+      if (clave.isEmpty) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'La contraseña es obligatoria para crear una cuenta',
+        );
+      }
+
+      if (rolCuentaEmpleadoId <= 0) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'Debe seleccionar un rol válido',
+        );
+      }
+
+      // Realizar la creación
+      final bool success = await crearCuentaEmpleado(
+        empleadoId: empleadoId,
+        usuario: usuario,
+        clave: clave,
+        rolCuentaEmpleadoId: rolCuentaEmpleadoId,
+      );
+
+      if (success) {
+        return {
+          'success': true,
+          'message': 'Cuenta creada correctamente',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Error al crear la cuenta',
+        };
+      }
+    } catch (e) {
+      _handleApiError(e);
+      return {
+        'success': false,
+        'message': 'Error: $_errorMessage',
+      };
+    } finally {
+      _setCuentaLoading(false);
+    }
+  }
+
+  /// Gestiona el proceso de eliminación de una cuenta de empleado
+  ///
+  /// Maneja toda la lógica de validación y procesa la eliminación
+  Future<Map<String, dynamic>> gestionarEliminacionCuenta({
+    required Empleado empleado,
+  }) async {
+    _setCuentaLoading(true);
+    clearError();
+
+    try {
+      // Verificar que tengamos un ID de cuenta válido
+      if (empleado.cuentaEmpleadoId == null) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'No se encontró ID de cuenta para este empleado',
+        );
+      }
+
+      final int? cuentaId = int.tryParse(empleado.cuentaEmpleadoId!);
+      if (cuentaId == null || cuentaId <= 0) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'ID de cuenta inválido',
+        );
+      }
+
+      // Realizar la eliminación
+      final bool success = await eliminarCuentaEmpleado(cuentaId);
+
+      if (success) {
+        return {
+          'success': true,
+          'message': 'Cuenta eliminada correctamente',
+        };
+      } else {
+        return {
+          'success': false,
+          'message':
+              'No se pudo eliminar la cuenta. Por favor, intente nuevamente.',
+        };
+      }
+    } catch (e) {
+      _handleApiError(e);
+      return {
+        'success': false,
+        'message': 'Error: $_errorMessage',
+      };
+    } finally {
+      _setCuentaLoading(false);
+    }
+  }
+
   // Método para manejar errores de la API
   void _handleApiError(e) {
     String errorMsg = e.toString();
@@ -611,5 +845,51 @@ class EmpleadoProvider extends ChangeNotifier {
   void clearError() {
     _errorMessage = '';
     notifyListeners();
+  }
+
+  /// Valida un nombre de usuario
+  String? validarUsuario(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Ingrese un nombre de usuario';
+    }
+    if (value.length < 4) {
+      return 'Mínimo 4 caracteres';
+    }
+    if (value.length > 20) {
+      return 'Máximo 20 caracteres';
+    }
+    if (!RegExp(r'^[a-zA-Z0-9\-_]+$').hasMatch(value)) {
+      return 'Solo letras, números, guiones y guiones bajos';
+    }
+    return null;
+  }
+
+  /// Valida una contraseña
+  String? validarClave(String? value, {bool esRequerida = true}) {
+    if (esRequerida && (value == null || value.isEmpty)) {
+      return 'Ingrese una contraseña';
+    }
+    if (value != null && value.isNotEmpty) {
+      if (value.length < 6) {
+        return 'Mínimo 6 caracteres';
+      }
+      if (value.length > 20) {
+        return 'Máximo 20 caracteres';
+      }
+      if (!RegExp(r'\d').hasMatch(value)) {
+        return 'Debe contener al menos un número';
+      }
+    }
+    return null;
+  }
+
+  /// Valida que dos contraseñas coincidan
+  String? validarConfirmacionClave(String? value, String? claveOriginal) {
+    if (claveOriginal != null &&
+        claveOriginal.isNotEmpty &&
+        value != claveOriginal) {
+      return 'Las contraseñas no coinciden';
+    }
+    return null;
   }
 }

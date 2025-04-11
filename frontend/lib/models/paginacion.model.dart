@@ -213,7 +213,6 @@ class PaginatedResponse<T> {
     return PaginatedResponse<T>(
       items: <T>[],
       paginacion: Paginacion.empty(),
-      metadata: null,
     );
   }
 

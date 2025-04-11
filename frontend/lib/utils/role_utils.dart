@@ -17,16 +17,22 @@ const Map<String, String> roles = {
 };
 
 /// Normaliza un rol de usuario a un formato estándar
-String normalizeRole(dynamic rol) {
-  if (rol == null) return 'desconocido';
+String normalizeRole(rol) {
+  if (rol == null) {
+    return 'desconocido';
+  }
 
   // Si es un Map, extraer el código
   if (rol is Map) {
     final codigo = rol['codigo']?.toString().toLowerCase();
     if (codigo != null) {
       // Normalizar administrador a admin
-      if (codigo == 'administrador') return 'admin';
-      if (roles.containsKey(codigo)) return codigo;
+      if (codigo == 'administrador') {
+        return 'admin';
+      }
+      if (roles.containsKey(codigo)) {
+        return codigo;
+      }
     }
   }
 
@@ -34,8 +40,12 @@ String normalizeRole(dynamic rol) {
   if (rol is String) {
     final normalizedRole = rol.toLowerCase();
     // Normalizar administrador a admin
-    if (normalizedRole == 'administrador') return 'admin';
-    if (roles.containsKey(normalizedRole)) return normalizedRole;
+    if (normalizedRole == 'administrador') {
+      return 'admin';
+    }
+    if (roles.containsKey(normalizedRole)) {
+      return normalizedRole;
+    }
   }
 
   return 'desconocido';
@@ -64,7 +74,7 @@ bool hasAccess(String rol, String route) {
 }
 
 /// Obtiene la ruta inicial para un rol
-String getInitialRoute(dynamic rol) {
+String getInitialRoute(rol) {
   final normalizedRole = normalizeRole(rol);
   return roles[normalizedRole] ?? login;
 }

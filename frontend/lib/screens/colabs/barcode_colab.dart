@@ -156,7 +156,9 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
     // Si es un solo código
     for (final Barcode barcode in barcodes) {
       final String? code = barcode.rawValue;
-      if (code == null || code == _lastScannedCode) continue;
+      if (code == null || code == _lastScannedCode) {
+        continue;
+      }
 
       _lastScannedCode = code;
       _searchProduct(code);
@@ -164,7 +166,9 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
   }
 
   void _handleMultipleBarcodes(List<Barcode> barcodes) {
-    if (_isProcessingMultiple) return;
+    if (_isProcessingMultiple) {
+      return;
+    }
     _isProcessingMultiple = true;
 
     // Filtrar códigos únicos y válidos
@@ -327,7 +331,9 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
     _foundProducts.clear();
 
     for (final String code in codes) {
-      if (_scannedCodes.contains(code)) continue;
+      if (_scannedCodes.contains(code)) {
+        continue;
+      }
 
       final Map<String, dynamic> producto = widget.productos.firstWhere(
         (Map<String, dynamic> p) => p['codigo'] == code,

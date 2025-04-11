@@ -27,10 +27,8 @@ class ProductosUtils {
       final List<String> listaCategorias = categorias
           .map<String>((cat) => cat['nombre'] as String)
           .where((String nombre) => nombre.isNotEmpty)
-          .toList();
-
-      // Ordenar alfabéticamente
-      listaCategorias.sort();
+          .toList()
+        ..sort();
 
       return listaCategorias;
     } catch (e) {
@@ -56,10 +54,8 @@ class ProductosUtils {
       final List<String> listaMarcas = marcas
           .map<String>((Marca marca) => marca.nombre)
           .where((String nombre) => nombre.isNotEmpty)
-          .toList();
-
-      // Ordenar alfabéticamente
-      listaMarcas.sort();
+          .toList()
+        ..sort();
 
       return listaMarcas;
     } catch (e) {

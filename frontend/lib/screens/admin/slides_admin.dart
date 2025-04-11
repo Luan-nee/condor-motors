@@ -1,8 +1,8 @@
 import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
 import 'package:condorsmotors/providers/auth.provider.dart';
 import 'package:condorsmotors/screens/admin/categorias_admin.dart';
-import 'package:condorsmotors/screens/admin/colaboradores_admin.dart';
 import 'package:condorsmotors/screens/admin/dashboard_admin.dart';
+import 'package:condorsmotors/screens/admin/empleados_admin.dart';
 import 'package:condorsmotors/screens/admin/marcas_admin.dart';
 import 'package:condorsmotors/screens/admin/productos_admin.dart';
 import 'package:condorsmotors/screens/admin/settings_admin.dart';

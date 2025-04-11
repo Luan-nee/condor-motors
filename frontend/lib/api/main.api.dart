@@ -45,7 +45,7 @@ class ApiException implements Exception {
 
   factory ApiException.fromDioError(DioException error) {
     String errorMessage = error.message ?? 'Error desconocido';
-    int errorStatusCode = error.response?.statusCode ?? 0;
+    int errorStatusCode = error.response?.statusCode ?? 500;
     late String errorCodeValue;
     final dynamic errorData = error.response?.data;
     String? redirectUrl;
@@ -71,8 +71,6 @@ class ApiException implements Exception {
           case 401:
             errorCodeValue = errorUnauthorized;
             errorMessage = _extractErrorMessage(errorData) ?? 'No autorizado';
-
-            // Verificar si es específicamente un error de token inválido
             if (errorMessage.toLowerCase() ==
                 invalidTokenMessage.toLowerCase()) {
               Logger.error(
@@ -138,36 +136,34 @@ class ApiException implements Exception {
           default:
             errorCodeValue = errorUnknown;
             errorMessage = _extractErrorMessage(errorData) ??
-                'Error de respuesta desconocido';
-            errorStatusCode = -1;
-            Logger.error('Error Desconocido [$errorStatusCode]: $errorMessage');
+                'Error de respuesta del servidor';
+            Logger.error('Error de Respuesta: $errorMessage');
         }
         break;
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        errorStatusCode = -2;
         errorCodeValue = errorNetwork;
-        errorMessage = 'Tiempo de espera agotado en la conexión';
-        Logger.error('Error de Red [-2]: $errorMessage');
+        errorMessage =
+            'La conexión ha tardado demasiado tiempo. Por favor, verifica tu conexión a internet e intenta nuevamente.';
+        Logger.error('Error de Timeout: $errorMessage');
         break;
       case DioExceptionType.cancel:
-        errorStatusCode = -2;
         errorCodeValue = errorNetwork;
-        errorMessage = 'Solicitud cancelada';
-        Logger.warn('Solicitud Cancelada [-2]: $errorMessage');
+        errorMessage = 'La solicitud fue cancelada';
+        Logger.warn('Solicitud Cancelada: $errorMessage');
         break;
       case DioExceptionType.connectionError:
-        errorStatusCode = -3;
         errorCodeValue = errorConnectionFailed;
-        errorMessage = 'Error de conexión: No se pudo conectar al servidor';
-        Logger.error('Error de Conexión [-3]: $errorMessage');
+        errorMessage =
+            'No se pudo establecer conexión con el servidor. Por favor, verifica tu conexión a internet.';
+        Logger.error('Error de Conexión: $errorMessage');
         break;
       default:
-        errorStatusCode = -4;
         errorCodeValue = errorUnknown;
-        errorMessage = 'Error desconocido en la solicitud';
-        Logger.error('Error Desconocido [-4]: $errorMessage');
+        errorMessage =
+            'Ocurrió un error inesperado. Por favor, intenta nuevamente.';
+        Logger.error('Error Desconocido: $errorMessage');
     }
 
     // Log de datos adicionales si existen
@@ -214,9 +210,9 @@ class ApiException implements Exception {
   @override
   String toString() {
     if (message.toLowerCase() == invalidTokenMessage.toLowerCase()) {
-      return 'ApiException: [$statusCode] ${errorCode ?? 'unauthorized'} - Token inválido o faltante';
+      return 'Error de autenticación: Token inválido o faltante';
     }
-    return 'ApiException: [$statusCode] ${errorCode ?? 'unknown'} - $message';
+    return message;
   }
 }
 

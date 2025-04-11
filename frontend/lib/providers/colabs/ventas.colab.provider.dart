@@ -59,7 +59,7 @@ class VentasColabProvider extends ChangeNotifier {
   String get nombreProductoPromocion => _nombreProductoPromocion;
 
   // Métodos para gestionar el estado
-  void setLoading(bool loading, {String message = ''}) {
+  void setLoading({required bool loading, String message = ''}) {
     _isLoading = loading;
     _loadingMessage = message;
     notifyListeners();
@@ -67,9 +67,9 @@ class VentasColabProvider extends ChangeNotifier {
 
   /// Inicializar datos básicos del provider
   Future<void> inicializar() async {
-    setLoading(true, message: 'Configurando datos iniciales...');
+    setLoading(loading: true, message: 'Configurando datos iniciales...');
     await _configurarDatosIniciales();
-    setLoading(false);
+    setLoading(loading: false);
   }
 
   /// Configurar datos iniciales del provider
@@ -92,7 +92,7 @@ class VentasColabProvider extends ChangeNotifier {
             debugPrint('Usando empleadoId del userData: $_empleadoId');
           } else {
             // Buscar empleados por sucursal
-            final List<Empleado> empleados =
+            final EmpleadosPaginados empleadosPaginados =
                 await api.empleados.getEmpleadosPorSucursal(
               _sucursalId,
               pageSize: 100,
@@ -100,7 +100,7 @@ class VentasColabProvider extends ChangeNotifier {
 
             // Buscar empleado con cuentaEmpleadoId que coincida con el id del usuario
             Empleado? empleadoEncontrado;
-            for (final Empleado empleado in empleados) {
+            for (final Empleado empleado in empleadosPaginados.empleados) {
               if (empleado.cuentaEmpleadoId == usuarioId) {
                 empleadoEncontrado = empleado;
                 break;
@@ -108,8 +108,9 @@ class VentasColabProvider extends ChangeNotifier {
             }
 
             // Si no se encontró, usar el primer empleado como fallback
-            if (empleadoEncontrado == null && empleados.isNotEmpty) {
-              empleadoEncontrado = empleados.first;
+            if (empleadoEncontrado == null &&
+                empleadosPaginados.empleados.isNotEmpty) {
+              empleadoEncontrado = empleadosPaginados.empleados.first;
             }
 
             if (empleadoEncontrado != null) {
@@ -261,7 +262,7 @@ class VentasColabProvider extends ChangeNotifier {
       return; // Evitar cargar múltiples veces
     }
 
-    setLoading(true, message: 'Cargando clientes...');
+    setLoading(loading: true, message: 'Cargando clientes...');
 
     try {
       debugPrint('Cargando clientes desde la API...');
@@ -280,7 +281,7 @@ class VentasColabProvider extends ChangeNotifier {
       debugPrint('Error al cargar clientes: $e');
       throw Exception('Error al cargar clientes: $e');
     } finally {
-      setLoading(false);
+      setLoading(loading: false);
     }
   }
 
@@ -534,7 +535,7 @@ class VentasColabProvider extends ChangeNotifier {
 
   /// Crear un nuevo cliente
   Future<Cliente> crearCliente(Map<String, dynamic> clienteData) async {
-    setLoading(true, message: 'Creando cliente...');
+    setLoading(loading: true, message: 'Creando cliente...');
 
     try {
       // Crear cliente en la API
@@ -551,7 +552,7 @@ class VentasColabProvider extends ChangeNotifier {
       debugPrint('Error al crear cliente: $e');
       throw Exception('Error al crear cliente: $e');
     } finally {
-      setLoading(false);
+      setLoading(loading: false);
     }
   }
 
@@ -561,7 +562,8 @@ class VentasColabProvider extends ChangeNotifier {
       return false;
     }
 
-    setLoading(true, message: 'Verificando disponibilidad de stock...');
+    setLoading(
+        loading: true, message: 'Verificando disponibilidad de stock...');
 
     try {
       // Verificar stock de cada producto
@@ -575,14 +577,15 @@ class VentasColabProvider extends ChangeNotifier {
         } else if (productoIdDynamic is String) {
           productoId = int.parse(productoIdDynamic);
         } else {
-          setLoading(false);
+          setLoading(loading: false);
           return false;
         }
 
         final int cantidad = producto['cantidad'];
 
         // Actualizar mensaje de loading
-        setLoading(true,
+        setLoading(
+            loading: true,
             message: 'Verificando stock de ${producto['nombre']}...');
 
         // Obtener producto actualizado para verificar stock
@@ -593,7 +596,7 @@ class VentasColabProvider extends ChangeNotifier {
         );
 
         if (productoActual.stock < cantidad) {
-          setLoading(false);
+          setLoading(loading: false);
           return false;
         }
       }
@@ -603,7 +606,7 @@ class VentasColabProvider extends ChangeNotifier {
       debugPrint('Error al verificar stock: $e');
       return false;
     } finally {
-      setLoading(false);
+      setLoading(loading: false);
     }
   }
 
@@ -614,10 +617,10 @@ class VentasColabProvider extends ChangeNotifier {
       return null;
     }
 
-    setLoading(true, message: 'Enviando datos al servidor...');
+    setLoading(loading: true, message: 'Enviando datos al servidor...');
 
     try {
-      setLoading(true, message: 'Preparando detalles de la venta...');
+      setLoading(loading: true, message: 'Preparando detalles de la venta...');
 
       // Convertir los productos de la venta al formato esperado por la API
       final List<DetalleProforma> detalles =
@@ -645,7 +648,7 @@ class VentasColabProvider extends ChangeNotifier {
         );
       }).toList();
 
-      setLoading(true, message: 'Comunicando con el servidor...');
+      setLoading(loading: true, message: 'Comunicando con el servidor...');
 
       // Llamar a la API para crear la proforma
       final Map<String, dynamic> respuesta =
@@ -658,7 +661,7 @@ class VentasColabProvider extends ChangeNotifier {
         clienteId: _clienteSeleccionado!.id,
       );
 
-      setLoading(true, message: 'Procesando respuesta...');
+      setLoading(loading: true, message: 'Procesando respuesta...');
 
       // Convertir la respuesta a un objeto estructurado
       final Proforma? proformaCreada =
@@ -673,7 +676,7 @@ class VentasColabProvider extends ChangeNotifier {
       debugPrint('Error al crear la proforma: $e');
       throw Exception('Error al crear la proforma: $e');
     } finally {
-      setLoading(false);
+      setLoading(loading: false);
     }
   }
 

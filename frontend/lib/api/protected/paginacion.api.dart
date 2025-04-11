@@ -1,4 +1,4 @@
-import 'dart:math' as Math;
+import 'dart:math' as math;
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
@@ -33,7 +33,7 @@ class PaginacionUtils {
         // Solo incluir valores no vacíos
         if (stringValue.isNotEmpty) {
           components
-              .add('${key.substring(0, Math.min(3, key.length))}:$stringValue');
+              .add('${key.substring(0, math.min(3, key.length))}:$stringValue');
         }
       }
     }

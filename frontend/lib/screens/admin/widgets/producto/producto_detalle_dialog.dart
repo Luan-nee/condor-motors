@@ -64,7 +64,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     with TickerProviderStateMixin {
   bool _isLoading = true;
   List<ProductoEnSucursal> _sucursalesCompartidas = <ProductoEnSucursal>[];
-  List<ColorApp> _colores = <ColorApp>[];
   ColorApp? _colorProducto;
   String _error = '';
 
@@ -122,25 +121,14 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     try {
       final ProductoProvider productoProvider =
           Provider.of<ProductoProvider>(context, listen: false);
-      final List<ColorApp> colores = await productoProvider.obtenerColores();
 
       if (mounted) {
         setState(() {
-          _colores = colores;
-
-          // Si el producto tiene color, buscar la coincidencia en la lista
+          // Si el producto tiene color, buscar la coincidencia usando el provider
           if (widget.producto.color != null &&
               widget.producto.color!.isNotEmpty) {
-            try {
-              _colorProducto = _colores.firstWhere(
-                (ColorApp color) =>
-                    color.nombre.toLowerCase() ==
-                    widget.producto.color!.toLowerCase(),
-              );
-            } catch (e) {
-              // No se encontró coincidencia, _colorProducto queda como null
-              _colorProducto = null;
-            }
+            _colorProducto =
+                productoProvider.obtenerColorPorNombre(widget.producto.color!);
           }
         });
       }

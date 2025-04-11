@@ -334,7 +334,9 @@ class _LoginScreenState extends State<LoginScreen>
                           port: config['port'] as int?,
                         );
 
-                        if (!mounted) return;
+                        if (!mounted) {
+                          return;
+                        }
 
                         setState(() {
                           _isLoading = false;
@@ -348,7 +350,9 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         );
                       } catch (e) {
-                        if (!mounted) return;
+                        if (!mounted) {
+                          return;
+                        }
 
                         setState(() {
                           _isLoading = false;
@@ -438,7 +442,9 @@ class _LoginScreenState extends State<LoginScreen>
 
                   await _saveServerIp(newIp, port: port);
 
-                  if (!mounted) return;
+                  if (!mounted) {
+                    return;
+                  }
 
                   setState(() {
                     _isLoading = false;
@@ -452,7 +458,9 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                   );
                 } catch (e) {
-                  if (!mounted) return;
+                  if (!mounted) {
+                    return;
+                  }
 
                   setState(() {
                     _isLoading = false;
@@ -548,7 +556,9 @@ class _LoginScreenState extends State<LoginScreen>
         _passwordController.text,
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       if (usuario != null) {
         // Guardar credenciales si "Recordar me" está activado
@@ -584,7 +594,9 @@ class _LoginScreenState extends State<LoginScreen>
         debugPrint(
             'Login exitoso, navegando a ruta: $initialRoute para rol: $rolCodigo');
 
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
 
         await Navigator.pushReplacementNamed(
           context,
@@ -593,7 +605,9 @@ class _LoginScreenState extends State<LoginScreen>
         );
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         _isLoading = false;

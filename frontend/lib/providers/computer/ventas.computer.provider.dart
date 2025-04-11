@@ -498,7 +498,7 @@ class VentasComputerProvider extends ChangeNotifier {
   }
 
   /// Establece una sucursal directamente por su ID
-  Future<bool> establecerSucursalPorId(dynamic sucursalId) async {
+  Future<bool> establecerSucursalPorId(sucursalId) async {
     try {
       if (sucursalId == null) {
         debugPrint('⚠️ ID de sucursal no proporcionado');

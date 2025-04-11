@@ -1,13 +1,14 @@
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
-import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_list_item.dart';
+import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_list.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class EmpleadosTable extends StatefulWidget {
-  final List<Empleado> empleados;
+  final List<Empleado>
+      empleados; // Lista de empleados con información completa (incluye rol y cuenta)
   final Map<String, String> nombresSucursales;
   final Function(Empleado) onEdit;
   final Function(Empleado) onDelete;
@@ -63,7 +64,9 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       _empleadoProvider = Provider.of<EmpleadoProvider>(context, listen: false);
     });
   }

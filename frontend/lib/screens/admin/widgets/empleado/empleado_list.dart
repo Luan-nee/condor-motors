@@ -41,82 +41,16 @@ class EmpleadoListItem extends StatefulWidget {
 
 class _EmpleadoListItemState extends State<EmpleadoListItem> {
   bool _isHovered = false;
-  bool _isLoading = false;
-  String? _usuarioEmpleado;
-  late EmpleadoProvider _empleadoProvider;
 
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-
-      _empleadoProvider = Provider.of<EmpleadoProvider>(context, listen: false);
-
-      // Solo cargar la información de usuario si no viene en la respuesta de la API
-      if (widget.empleado.cuentaEmpleadoId != null &&
-          _usuarioEmpleado == null) {
-        _cargarUsuarioEmpleado();
-      }
-    });
-  }
-
-  Future<void> _cargarUsuarioEmpleado() async {
-    if (!mounted) return;
-
-    try {
-      setState(() => _isLoading = true);
-
-      // Usar el provider para obtener información de la cuenta
-      final Map<String, dynamic> infoCuenta =
-          await _empleadoProvider.obtenerInfoCuentaEmpleado(widget.empleado);
-
-      // Si hay un error de autenticación o datos desactualizados, recargar todo
-      if (infoCuenta['errorCargaInfo']
-                  ?.toString()
-                  .toLowerCase()
-                  .contains('401') ==
-              true ||
-          infoCuenta['errorCargaInfo']
-                  ?.toString()
-                  .toLowerCase()
-                  .contains('sesión expirada') ==
-              true) {
-        if (mounted) {
-          await _empleadoProvider.recargarDatos();
-          // Intentar obtener la información de nuevo después de recargar
-          final Map<String, dynamic> infoActualizada = await _empleadoProvider
-              .obtenerInfoCuentaEmpleado(widget.empleado);
-          if (mounted && infoActualizada['usuarioActual'] != null) {
-            setState(() => _usuarioEmpleado = infoActualizada['usuarioActual']);
-          }
-        }
+      if (!mounted) {
         return;
       }
-
-      // Actualizar el estado con el usuario obtenido
-      if (mounted && infoCuenta['usuarioActual'] != null) {
-        setState(() => _usuarioEmpleado = infoCuenta['usuarioActual']);
-      }
-    } catch (e) {
-      // Manejar específicamente errores de autenticación
-      if (e.toString().contains('401') ||
-          e.toString().contains('Sesión expirada') ||
-          e.toString().contains('No autorizado')) {
-        debugPrint('Error de autenticación al cargar usuario: $e');
-        if (mounted) {
-          await _empleadoProvider.recargarDatos();
-        }
-      } else {
-        // Otros errores
-        debugPrint('Error al cargar usuario del empleado: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+    });
   }
 
   @override
@@ -124,8 +58,9 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
     // Obtener el provider para escuchar cambios
     final empleadoProvider = Provider.of<EmpleadoProvider>(context);
 
-    // Obtener rol del empleado usando el provider
-    final String rol = empleadoProvider.obtenerRolDeEmpleado(widget.empleado);
+    // Obtener rol del empleado directamente desde el modelo
+    final String rol = widget.empleado.rol?.nombre ??
+        empleadoProvider.obtenerRolDeEmpleado(widget.empleado);
 
     // Determinar si el empleado está activo o inactivo
     final bool esInactivo = !widget.empleado.activo;
@@ -260,21 +195,11 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                 ),
                             ],
                           ),
-                          if (_isLoading) ...<Widget>[
-                            const SizedBox(height: 4),
-                            SizedBox(
-                              height: 2,
-                              width: 60,
-                              child: LinearProgressIndicator(
-                                backgroundColor: Colors.grey[800],
-                                valueColor: const AlwaysStoppedAnimation<Color>(
-                                    Color(0xFFE31E24)),
-                              ),
-                            ),
-                          ] else if (_usuarioEmpleado != null) ...<Widget>[
+                          if (widget.empleado.cuentaEmpleadoUsuario !=
+                              null) ...<Widget>[
                             const SizedBox(height: 4),
                             Text(
-                              '(@$_usuarioEmpleado)',
+                              '(@${widget.empleado.cuentaEmpleadoUsuario})',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.6),
                                 fontSize: 12,

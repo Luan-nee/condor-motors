@@ -177,8 +177,9 @@ class DashboardProvider extends ChangeNotifier {
   /// Carga los empleados
   Future<void> _loadEmpleados() async {
     try {
-      final List<Empleado> empleados = await api.empleados.getEmpleados();
-      _totalEmpleados = empleados.length;
+      final EmpleadosPaginados empleadosPaginados =
+          await api.empleados.getEmpleados();
+      _totalEmpleados = empleadosPaginados.empleados.length;
       notifyListeners();
     } catch (e) {
       debugPrint('Error cargando empleados: $e');

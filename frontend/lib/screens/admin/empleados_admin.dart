@@ -101,7 +101,6 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
       builder: (BuildContext context) => EmpleadoForm(
         empleado: empleado,
         sucursales: _empleadoProvider.nombresSucursales,
-        roles: _empleadoProvider.roles,
         onSave: (Map<String, dynamic> empleadoData) =>
             _guardarEmpleado(empleado, empleadoData),
         onCancel: () => Navigator.pop(context),
@@ -154,6 +153,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
     return Consumer<EmpleadoProvider>(
       builder: (context, empleadoProvider, _) {
         _empleadoProvider = empleadoProvider;
+        // Ya obtenemos empleados con toda la información de rol y cuenta directamente
         final List<Empleado> empleados = empleadoProvider.empleados;
         final bool isLoading = empleadoProvider.isLoading;
         final String errorMessage = empleadoProvider.errorMessage;

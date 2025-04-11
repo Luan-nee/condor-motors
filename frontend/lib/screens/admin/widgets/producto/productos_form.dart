@@ -1,8 +1,4 @@
-import 'package:condorsmotors/main.dart' show api;
-import 'package:condorsmotors/models/categoria.model.dart';
 import 'package:condorsmotors/models/color.model.dart';
-import 'package:condorsmotors/models/marca.model.dart';
-import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
@@ -79,11 +75,6 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   List<String> _marcas = <String>[];
   List<ColorApp> _colores = <ColorApp>[];
 
-  // Mapas para almacenar los IDs correspondientes a los nombres
-  Map<String, Map<String, Object>> _categoriasMap =
-      <String, Map<String, Object>>{};
-  Map<String, Map<String, Object>> _marcasMap = <String, Map<String, Object>>{};
-
   @override
   void initState() {
     super.initState();
@@ -140,153 +131,80 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     _sucursalSeleccionada = widget.sucursalSeleccionada ??
         (widget.sucursales.isNotEmpty ? widget.sucursales.first : null);
 
-    // Cargar categorías, marcas y colores
-    _cargarCategorias();
-    _cargarMarcas();
-    _cargarColores();
-
-    // Si estamos editando un producto existente, cargar la disponibilidad en otras sucursales
-    if (producto != null) {
-      _cargarSucursalesCompartidas(producto.id);
-    }
+    // Obtener el provider e inicializar datos
+    _initProvider();
   }
 
-  // Método para cargar las categorías desde la API
-  Future<void> _cargarCategorias() async {
-    setState(() => _isLoadingCategorias = true);
+  Future<void> _initProvider() async {
+    // Acceder al provider
+    final ProductoProvider productoProvider =
+        Provider.of<ProductoProvider>(context, listen: false);
+
+    // Cargar datos usando el provider
+    setState(() {
+      _isLoadingCategorias = true;
+      _isLoadingMarcas = true;
+      _isLoadingColores = true;
+    });
 
     try {
-      Provider.of<ProductoProvider>(context, listen: false);
+      // Extraer datos del provider después de asegurar que estén cargados
+      setState(() {
+        // Obtener categorías
+        _categorias =
+            productoProvider.categorias.where((c) => c != 'Todos').toList();
+        _isLoadingCategorias = false;
 
-      // Obtenemos las categorías como objetos tipados
-      final List<Categoria> categoriasList =
-          await api.categorias.getCategoriasObjetos(useCache: false);
+        // Establecer la categoría seleccionada
+        if (widget.producto != null &&
+            _categorias.contains(widget.producto!.categoria)) {
+          _categoriaSeleccionada = widget.producto!.categoria;
+        } else if (_categorias.isNotEmpty) {
+          _categoriaSeleccionada = _categorias.first;
+        }
 
-      if (mounted) {
-        setState(() {
-          // Extraer nombres para la lista desplegable
-          _categorias = categoriasList
-              .map<String>((Categoria cat) => cat.nombre)
-              .where((String nombre) => nombre.isNotEmpty)
-              .toList();
-          _categorias.sort(); // Mantener orden alfabético
+        // Obtener marcas
+        _marcas = productoProvider.marcasMap.keys.toList();
+        _marcas.sort();
+        _isLoadingMarcas = false;
 
-          // Crear un mapa para fácil acceso a los IDs por nombre
-          _categoriasMap = <String, Map<String, Object>>{
-            for (Categoria cat in categoriasList)
-              cat.nombre: <String, Object>{'id': cat.id, 'nombre': cat.nombre}
-          };
+        // Si la marca actual no está en la lista y hay una marca seleccionada
+        if (widget.producto != null &&
+            !_marcas.contains(widget.producto!.marca) &&
+            _marcaController.text.isNotEmpty) {
+          // Añadir la marca actual a la lista para evitar problemas
+          _marcas
+            ..add(widget.producto!.marca)
+            ..sort(); // Mantener orden alfabético
+        }
 
-          _isLoadingCategorias = false;
+        // Obtener colores
+        _colores = productoProvider.colores;
+        _isLoadingColores = false;
 
-          // Establecer la categoría seleccionada
-          if (widget.producto != null &&
-              _categorias.contains(widget.producto!.categoria)) {
-            _categoriaSeleccionada = widget.producto!.categoria;
-          } else if (_categorias.isNotEmpty) {
-            _categoriaSeleccionada = _categorias.first;
-          }
-        });
+        // Si estamos editando un producto con color, seleccionarlo
+        if (widget.producto?.color != null &&
+            widget.producto!.color!.isNotEmpty) {
+          // Buscar el color por nombre
+          _colorSeleccionado =
+              productoProvider.obtenerColorPorNombre(widget.producto!.color!);
+        } else if (_colores.isNotEmpty) {
+          // Seleccionar el primer color por defecto
+          _colorSeleccionado = _colores.first;
+        }
+      });
+
+      // Si estamos editando un producto existente, cargar la disponibilidad en otras sucursales
+      if (widget.producto != null) {
+        _cargarSucursalesCompartidas(widget.producto!.id);
       }
     } catch (e) {
-      debugPrint('Error al cargar categorías: $e');
-
-      if (mounted) {
-        setState(() => _isLoadingCategorias = false);
-      }
-    }
-  }
-
-  // Método para cargar las marcas desde la API
-  Future<void> _cargarMarcas() async {
-    setState(() => _isLoadingMarcas = true);
-
-    try {
-      // Obtenemos las marcas como objetos tipados
-      final ResultadoPaginado<Marca> marcasResult =
-          await api.marcas.getMarcasPaginadas(useCache: false);
-
-      // Extraemos la lista de marcas del resultado paginado
-      final List<Marca> marcasList = marcasResult.items;
-
-      if (mounted) {
-        setState(() {
-          // Extraer nombres para la lista desplegable
-          _marcas = marcasList
-              .map<String>((Marca marca) => marca.nombre)
-              .where((String nombre) => nombre.isNotEmpty)
-              .toList();
-          _marcas.sort(); // Mantener orden alfabético
-
-          // Crear un mapa para fácil acceso a los IDs por nombre
-          _marcasMap = <String, Map<String, Object>>{
-            for (Marca marca in marcasList)
-              marca.nombre: <String, Object>{
-                'id': marca.id,
-                'nombre': marca.nombre
-              }
-          };
-
-          _isLoadingMarcas = false;
-
-          // Si la marca actual no está en la lista y hay una marca seleccionada
-          if (widget.producto != null &&
-              !_marcas.contains(widget.producto!.marca) &&
-              _marcaController.text.isNotEmpty) {
-            // Añadir la marca actual a la lista para evitar problemas
-            _marcas
-              ..add(widget.producto!.marca)
-              ..sort(); // Mantener orden alfabético
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint('Error al cargar marcas: $e');
-
-      if (mounted) {
-        setState(() => _isLoadingMarcas = false);
-      }
-    }
-  }
-
-  // Método para cargar los colores desde la API
-  Future<void> _cargarColores() async {
-    setState(() => _isLoadingColores = true);
-
-    try {
-      final List<ColorApp> colores = await api.colores.getColores();
-
-      if (mounted) {
-        setState(() {
-          _colores = colores;
-          _isLoadingColores = false;
-
-          // Si estamos editando un producto con color, seleccionarlo
-          if (widget.producto?.color != null &&
-              widget.producto!.color!.isNotEmpty) {
-            // Buscar el color por nombre
-            try {
-              _colorSeleccionado = _colores.firstWhere(
-                (ColorApp color) =>
-                    color.nombre.toLowerCase() ==
-                    widget.producto!.color!.toLowerCase(),
-              );
-            } catch (e) {
-              // Si no encuentra coincidencia, usar el primer color disponible
-              _colorSeleccionado = _colores.isNotEmpty ? _colores.first : null;
-            }
-          } else if (_colores.isNotEmpty) {
-            // Seleccionar el primer color por defecto
-            _colorSeleccionado = _colores.first;
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint('Error al cargar colores: $e');
-
-      if (mounted) {
-        setState(() => _isLoadingColores = false);
-      }
+      debugPrint('Error al inicializar datos del formulario: $e');
+      setState(() {
+        _isLoadingCategorias = false;
+        _isLoadingMarcas = false;
+        _isLoadingColores = false;
+      });
     }
   }
 
@@ -295,11 +213,11 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     setState(() => _isLoadingSucursalesCompartidas = true);
 
     try {
+      final ProductoProvider productoProvider =
+          Provider.of<ProductoProvider>(context, listen: false);
+
       final List<ProductoEnSucursal> sucursalesCompartidas =
-          await ProductosUtils.obtenerProductoEnSucursales(
-        productoId: productoId,
-        sucursales: widget.sucursales,
-      );
+          await productoProvider.obtenerSucursalesCompartidas(productoId);
 
       if (mounted) {
         setState(() {
@@ -925,7 +843,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                         ),
                       ),
                       TextButton(
-                        onPressed: _cargarCategorias,
+                        onPressed: _initProvider,
                         child: const Text(
                           'Reintentar',
                           style: TextStyle(
@@ -1023,7 +941,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   ),
                 ),
                 TextButton(
-                  onPressed: _cargarColores,
+                  onPressed: _initProvider,
                   child: const Text(
                     'Reintentar',
                     style: TextStyle(
@@ -2087,117 +2005,43 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       // Verificar si estamos en modo edición
       final bool esNuevoProducto = widget.producto == null;
 
-      // Construir el cuerpo de la solicitud
-      final Map<String, dynamic> productoData = <String, dynamic>{
-        if (widget.producto != null) 'id': widget.producto!.id,
-        'nombre': _nombreController.text,
-        'descripcion': _descripcionController.text,
-        'marca': _marcaController.text,
-        'categoria': _categoriaSeleccionada,
-        'precioVenta': double.parse(_precioVentaController.text),
-        'precioCompra': double.parse(_precioCompraController.text),
-        // Solo incluir stock para productos nuevos
-        if (esNuevoProducto) 'stock': int.parse(_stockController.text),
-
-        // Liquidación (campo independiente)
-        'liquidacion': _liquidacionActiva,
-
-        // Por defecto, valores nulos para los campos opcionales
-        'cantidadMinimaDescuento': null,
-        'cantidadGratisDescuento': null,
-        'porcentajeDescuento': null,
-        'precioOferta': null,
-      };
-
-      // Si está en liquidación, incluir precio de oferta
-      if (_liquidacionActiva && _precioOfertaController.text.isNotEmpty) {
-        productoData['precioOferta'] =
-            double.parse(_precioOfertaController.text);
-      }
-
-      // Aplicar configuración según el tipo de promoción seleccionada
-      switch (_tipoPromocionSeleccionada) {
-        case 'gratis':
-          if (_cantidadMinimaDescuentoController.text.isNotEmpty) {
-            productoData['cantidadMinimaDescuento'] =
-                int.parse(_cantidadMinimaDescuentoController.text);
-          }
-          if (_cantidadGratisDescuentoController.text.isNotEmpty) {
-            productoData['cantidadGratisDescuento'] =
-                int.parse(_cantidadGratisDescuentoController.text);
-          }
-          break;
-
-        case 'descuentoPorcentual':
-          if (_cantidadMinimaDescuentoController.text.isNotEmpty) {
-            productoData['cantidadMinimaDescuento'] =
-                int.parse(_cantidadMinimaDescuentoController.text);
-          }
-          if (_porcentajeDescuentoController.text.isNotEmpty) {
-            productoData['porcentajeDescuento'] =
-                int.parse(_porcentajeDescuentoController.text);
-          }
-          break;
-      }
-
-      // Stock mínimo (opcional)
-      if (_stockMinimoController.text.isNotEmpty) {
-        productoData['stockMinimo'] = int.parse(_stockMinimoController.text);
-      }
-
-      // Buscar y añadir el ID de categoría si está disponible
-      if (_categoriasMap.containsKey(_categoriaSeleccionada)) {
-        final Map<String, Object>? categoriaInfo =
-            _categoriasMap[_categoriaSeleccionada];
-        if (categoriaInfo != null && categoriaInfo['id'] != null) {
-          final String idStr = categoriaInfo['id'].toString();
-          final int? id = int.tryParse(idStr);
-          if (id != null) {
-            productoData['categoriaId'] = id;
-            debugPrint(
-                'ProductosForm: Categoría $_categoriaSeleccionada con ID válido: $id');
-          } else {
-            debugPrint(
-                'ProductosForm: Advertencia - ID de categoría no válido: $idStr');
-          }
-        }
-      }
-
-      // Buscar y añadir el ID de marca si está disponible
-      final String marcaText = _marcaController.text;
-      if (_marcasMap.containsKey(marcaText)) {
-        final Map<String, Object>? marcaInfo = _marcasMap[marcaText];
-        if (marcaInfo != null && marcaInfo['id'] != null) {
-          final String idStr = marcaInfo['id'].toString();
-          final int? id = int.tryParse(idStr);
-          if (id != null) {
-            productoData['marcaId'] = id;
-            debugPrint('ProductosForm: Marca $marcaText con ID válido: $id');
-          } else {
-            debugPrint(
-                'ProductosForm: Advertencia - ID de marca no válido: $idStr');
-          }
-        }
-      }
-
-      // Manejar el color correctamente
-      if (_colorSeleccionado != null) {
-        // ColorApp.id ya es int según la definición del modelo
-        productoData['colorId'] = _colorSeleccionado!.id;
-        debugPrint(
-            'ProductosForm: Color ${_colorSeleccionado!.nombre} con ID: ${_colorSeleccionado!.id}');
-
-        // Incluir también el nombre para claridad
-        productoData['color'] = _colorSeleccionado!.nombre;
-      } else if (_colorController.text.isNotEmpty) {
-        // Si solo tenemos texto pero no ID, enviar solo el nombre
-        productoData['color'] = _colorController.text;
-        // No enviar colorId si no tenemos un ID válido
-      }
-
       // Obtener el provider
       final ProductoProvider productoProvider =
           Provider.of<ProductoProvider>(context, listen: false);
+
+      // Preparar los datos del producto usando el método del provider
+      final Map<String, dynamic> productoData =
+          productoProvider.prepararDatosProducto(
+        producto: widget.producto,
+        nombre: _nombreController.text,
+        descripcion: _descripcionController.text,
+        marca: _marcaController.text,
+        categoria: _categoriaSeleccionada,
+        precioVenta: double.tryParse(_precioVentaController.text) ?? 0,
+        precioCompra: double.tryParse(_precioCompraController.text) ?? 0,
+        stock: int.tryParse(_stockController.text) ?? 0,
+        stockMinimo: _stockMinimoController.text.isNotEmpty
+            ? int.tryParse(_stockMinimoController.text)
+            : null,
+        liquidacion: _liquidacionActiva,
+        precioOferta:
+            _liquidacionActiva && _precioOfertaController.text.isNotEmpty
+                ? double.tryParse(_precioOfertaController.text)
+                : null,
+        tipoPromocion: _tipoPromocionSeleccionada,
+        cantidadMinimaDescuento:
+            _cantidadMinimaDescuentoController.text.isNotEmpty
+                ? int.tryParse(_cantidadMinimaDescuentoController.text)
+                : null,
+        cantidadGratisDescuento:
+            _cantidadGratisDescuentoController.text.isNotEmpty
+                ? int.tryParse(_cantidadGratisDescuentoController.text)
+                : null,
+        porcentajeDescuento: _porcentajeDescuentoController.text.isNotEmpty
+            ? int.tryParse(_porcentajeDescuentoController.text)
+            : null,
+        colorSeleccionado: _colorSeleccionado,
+      );
 
       // Mostrar indicador de carga
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2215,11 +2059,14 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               productoData, esNuevoProducto);
 
           if (resultado) {
+            // Mensaje de depuración al limpiar la caché
+            debugPrint(
+                'ProductosForm: Caché de productos limpiada correctamente');
+            debugPrint(
+                'ProductosForm: Actualizando datos del productos desde el servidor (sin caché)');
+
             // Esperar a que los datos se recarguen completamente
             await productoProvider.cargarProductos();
-
-            // Forzar una actualización del provider
-            productoProvider.notifyListeners();
 
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(

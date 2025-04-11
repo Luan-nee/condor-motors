@@ -82,8 +82,13 @@ export class EmpleadosController {
 
     getEmpleados
       .execute(queriesDto)
-      .then((empleado) => {
-        CustomResponse.success({ res, data: empleado })
+      .then((empleados) => {
+        CustomResponse.success({
+          res,
+          data: empleados.results,
+          pagination: empleados.pagination,
+          metadata: empleados.metadata
+        })
       })
       .catch((error: unknown) => {
         handleError(error, res)
