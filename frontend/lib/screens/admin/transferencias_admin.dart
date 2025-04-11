@@ -211,19 +211,19 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                 padding:
                     const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                 child: Row(
-                  children: <Widget>[
+                  children: const <Widget>[
                     // Fechas (25%)
                     Expanded(
                       flex: 25,
                       child: Row(
                         children: [
-                          const FaIcon(
+                          FaIcon(
                             FontAwesomeIcons.calendar,
                             color: Color(0xFFE31E24),
                             size: 14,
                           ),
-                          const SizedBox(width: 8),
-                          const Text(
+                          SizedBox(width: 8),
+                          Text(
                             'Fechas',
                             style: TextStyle(
                               color: Colors.white,
@@ -234,7 +234,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                       ),
                     ),
                     // Sucursales (30%)
-                    const Expanded(
+                    Expanded(
                       flex: 30,
                       child: Text(
                         'Sucursales',
@@ -245,7 +245,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                       ),
                     ),
                     // Estado y Progreso (40%)
-                    const Expanded(
+                    Expanded(
                       flex: 40,
                       child: Center(
                         child: Text(
@@ -258,7 +258,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                       ),
                     ),
                     // Acciones (5%)
-                    const SizedBox(
+                    SizedBox(
                       width: 32,
                       child: Center(
                         child: Text(
@@ -685,7 +685,6 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: const Color(0xFF1A1A1A),
-                                  width: 1,
                                 ),
                               ),
                               child: const FaIcon(

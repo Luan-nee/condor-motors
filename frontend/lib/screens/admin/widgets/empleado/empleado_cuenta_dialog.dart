@@ -1,6 +1,7 @@
 import 'package:condorsmotors/api/main.api.dart' show ApiException;
+import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
-import 'package:condorsmotors/widgets/dialogs/confirm_dialog.dart';
+import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -9,22 +10,15 @@ import 'package:provider/provider.dart';
 /// Diálogo para gestionar la cuenta de un empleado
 ///
 /// Permite crear una nueva cuenta o actualizar una existente (cambiar usuario y/o clave)
+
 class EmpleadoCuentaDialog extends StatefulWidget {
-  final String empleadoId;
-  final String? empleadoNombre;
-  final String? cuentaId;
-  final String? usuarioActual;
-  final int? rolActualId;
+  final Empleado empleado;
   final List<Map<String, dynamic>> roles;
   final bool? esNuevaCuenta; // Permite forzar el modo de creación
 
   const EmpleadoCuentaDialog({
     super.key,
-    required this.empleadoId,
-    this.empleadoNombre,
-    this.cuentaId,
-    this.usuarioActual,
-    this.rolActualId,
+    required this.empleado,
     required this.roles,
     this.esNuevaCuenta,
   });
@@ -36,11 +30,7 @@ class EmpleadoCuentaDialog extends StatefulWidget {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties
-      ..add(StringProperty('empleadoId', empleadoId))
-      ..add(StringProperty('empleadoNombre', empleadoNombre))
-      ..add(StringProperty('cuentaId', cuentaId))
-      ..add(StringProperty('usuarioActual', usuarioActual))
-      ..add(IntProperty('rolActualId', rolActualId))
+      ..add(DiagnosticsProperty<Empleado>('empleado', empleado))
       ..add(IterableProperty<Map<String, dynamic>>('roles', roles))
       ..add(DiagnosticsProperty<bool?>('esNuevaCuenta', esNuevaCuenta));
   }
@@ -61,63 +51,69 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
   String? _rolActualNombre;
   late EmpleadoProvider _empleadoProvider;
 
-  // Usar esNuevaCuenta forzado si se proporciona, o determinar automáticamente
-  bool get _esNuevaCuenta => widget.esNuevaCuenta ?? widget.cuentaId == null;
+  // Constantes de colores para tema oscuro con rojo
+  static const Color colorPrimario = Color(0xFFE31E24); // Rojo Condor Motors
 
-  // Colores y estilos comunes
-  Color get _primaryColor => _esNuevaCuenta ? Colors.green : Colors.blue;
+  // Determinar si es una nueva cuenta o actualización
+  bool get _esNuevaCuenta =>
+      widget.esNuevaCuenta ?? !widget.empleado.tieneCuenta;
 
-  // Estilos predefinidos para mejor reutilización
-  late final TextStyle _labelStyle = TextStyle(
-    fontWeight: FontWeight.bold,
-    fontSize: 13,
-    color: _esNuevaCuenta ? Colors.green.shade700 : Colors.blue.shade700,
-  );
-
-  late final TextStyle _helperStyle = TextStyle(
-    fontStyle: FontStyle.italic,
-    fontSize: 11,
-    color: _esNuevaCuenta ? Colors.green.shade700 : Colors.blue.shade700,
-  );
-
-  late final InputDecoration _inputDecoration = InputDecoration(
-    contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-    isDense: true,
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-    ),
-  );
+  // Colores y estilos para UI consistente
 
   @override
   void initState() {
     super.initState();
 
+    // Obtener el provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       _empleadoProvider = Provider.of<EmpleadoProvider>(context, listen: false);
+
+      // Para cuentas existentes, obtener el ID del rol actual
+      if (!_esNuevaCuenta) {
+        _cargarDatosRolActual();
+      }
     });
 
-    // Si es una cuenta existente, inicializar con el usuario actual
-    if (widget.usuarioActual != null) {
-      _usuarioController.text = widget.usuarioActual!;
+    // Inicializar formulario con datos existentes si aplica
+    _inicializarFormulario();
+  }
+
+  void _inicializarFormulario() {
+    // Inicializar nombre de usuario si existe
+    if (widget.empleado.cuentaEmpleadoUsuario != null) {
+      _usuarioController.text = widget.empleado.cuentaEmpleadoUsuario!;
     }
 
+    // Inicializar información de rol
     _inicializarRol();
   }
 
   void _inicializarRol() {
-    // Inicializar el rol seleccionado
-    if (widget.rolActualId != null) {
-      _selectedRolId = widget.rolActualId;
-      // Buscar el nombre del rol actual eficientemente
-      final Map<String, dynamic> rolActual = widget.roles.firstWhere(
-        (Map<String, dynamic> rol) => rol['id'] == widget.rolActualId,
-        orElse: () => <String, dynamic>{},
+    // Primero intentar usar el rol del modelo Empleado
+    if (widget.empleado.rol != null) {
+      // Buscar ese rol en la lista de roles disponibles
+      final Map<String, dynamic> rolMatch = widget.roles.firstWhere(
+        (Map<String, dynamic> rol) =>
+            rol['codigo'] == widget.empleado.rol!.codigo ||
+            rol['nombre'] == widget.empleado.rol!.nombre ||
+            rol['nombreRol'] == widget.empleado.rol!.nombre,
+        orElse: () =>
+            widget.roles.isNotEmpty ? widget.roles.first : <String, dynamic>{},
       );
-      _rolActualNombre =
-          rolActual['nombre'] ?? rolActual['codigo'] ?? 'Rol desconocido';
-    } else if (widget.roles.isNotEmpty) {
-      // Si no hay rol actual pero hay roles disponibles, seleccionar el primero por defecto
+
+      if (rolMatch.isNotEmpty) {
+        _selectedRolId = rolMatch['id'];
+        _rolActualNombre = widget.empleado.rol!.nombre;
+      }
+    }
+    // Si no tiene rol asignado y hay roles disponibles, usar el primero por defecto
+    else if (widget.roles.isNotEmpty) {
       _selectedRolId = widget.roles.first['id'];
+      _rolActualNombre =
+          widget.roles.first['nombreRol'] ?? widget.roles.first['nombre'];
     }
   }
 
@@ -129,34 +125,38 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     super.dispose();
   }
 
-  // Validar el formulario
+  // Validar todos los campos del formulario
   bool _validarFormulario() {
     // Limpiar mensaje de error previo
     setState(() => _errorMessage = null);
 
-    // Validar campos del formulario
+    // Validar campos usando el FormState
     if (!_formKey.currentState!.validate()) {
       return false;
     }
 
-    // Validar que se haya seleccionado un rol (solo para nuevas cuentas)
+    // Validar rol seleccionado (solo para nuevas cuentas)
     if (_esNuevaCuenta && _selectedRolId == null) {
       setState(() => _errorMessage = 'Debe seleccionar un rol para la cuenta');
       return false;
     }
 
-    // Validar que las contraseñas coincidan
-    if (_claveController.text.isNotEmpty &&
-        _claveController.text != _confirmarClaveController.text) {
-      setState(() => _errorMessage = 'Las contraseñas no coinciden');
+    // Validar coincidencia de contraseñas
+    final String? errorConfirmacion =
+        _empleadoProvider.validarConfirmacionClave(
+            _confirmarClaveController.text, _claveController.text);
+
+    if (errorConfirmacion != null) {
+      setState(() => _errorMessage = errorConfirmacion);
       return false;
     }
 
     return true;
   }
 
-  // Guardar la cuenta (crear nueva o actualizar existente)
+  // Método principal para guardar la cuenta
   Future<void> _guardarCuenta() async {
+    // Validar formulario antes de continuar
     if (!_validarFormulario()) {
       return;
     }
@@ -169,6 +169,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     try {
       bool success = false;
 
+      // Determinar si es crear o actualizar
       if (_esNuevaCuenta) {
         success = await _crearNuevaCuenta();
       } else {
@@ -180,11 +181,21 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       }
 
       if (success) {
-        Navigator.of(context).pop(true); // Cerrar diálogo con resultado exitoso
+        // Mostrar confirmación y cerrar diálogo
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_esNuevaCuenta
+                ? 'Cuenta creada exitosamente'
+                : 'Cuenta actualizada exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.of(context).pop(true);
       } else {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'No se pudo realizar la operación';
+          _errorMessage =
+              'No se pudo ${_esNuevaCuenta ? "crear" : "actualizar"} la cuenta';
         });
       }
     } catch (e) {
@@ -192,57 +203,49 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     }
   }
 
+  // Crear una nueva cuenta
   Future<bool> _crearNuevaCuenta() async {
-    // Crear nueva cuenta usando el provider
-    final bool success = await _empleadoProvider.crearCuentaEmpleado(
-      empleadoId: widget.empleadoId,
+    if (_selectedRolId == null) {
+      setState(() {
+        _errorMessage = 'Debe seleccionar un rol para la cuenta';
+      });
+      return false;
+    }
+
+    // Usar el provider para validar y crear la cuenta
+    final Map<String, dynamic> resultado =
+        await _empleadoProvider.gestionarCreacionCuenta(
+      empleadoId: widget.empleado.id,
       usuario: _usuarioController.text,
       clave: _claveController.text,
       rolCuentaEmpleadoId: _selectedRolId!,
     );
 
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cuenta creada exitosamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
+    if (!resultado['success']) {
+      setState(() {
+        _errorMessage = resultado['message'];
+      });
+      return false;
     }
 
-    return success;
+    return resultado['success'];
   }
 
+  // Actualizar una cuenta existente
   Future<bool> _actualizarCuentaExistente() async {
-    // Solo actualizar si hay datos para actualizar
-    if (_usuarioController.text.isNotEmpty ||
-        _claveController.text.isNotEmpty) {
-      final int? cuentaId = int.tryParse(widget.cuentaId!);
-      if (cuentaId == null) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'ID de cuenta inválido',
-        );
-      }
+    // Usar el provider para validar y actualizar la cuenta
+    final Map<String, dynamic> resultado =
+        await _empleadoProvider.gestionarActualizacionCuenta(
+      empleado: widget.empleado,
+      nuevoUsuario:
+          _usuarioController.text.isNotEmpty ? _usuarioController.text : null,
+      nuevaClave:
+          _claveController.text.isNotEmpty ? _claveController.text : null,
+      nuevoRolId: _selectedRolId,
+      validarSoloSiHayCambios: true,
+    );
 
-      final bool success = await _empleadoProvider.actualizarCuentaEmpleado(
-        id: cuentaId,
-        usuario:
-            _usuarioController.text.isNotEmpty ? _usuarioController.text : null,
-        clave: _claveController.text.isNotEmpty ? _claveController.text : null,
-      );
-
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cuenta actualizada exitosamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-
-      return success;
-    } else {
+    if (resultado['noChanges'] == true) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -251,10 +254,20 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           ),
         );
       }
-      return true; // No hay cambios, pero consideramos que fue exitoso
+      return true;
     }
+
+    if (!resultado['success']) {
+      setState(() {
+        _errorMessage = resultado['message'];
+      });
+      return false;
+    }
+
+    return resultado['success'];
   }
 
+  // Manejar errores de forma amigable
   void _manejarError(e) {
     String errorMsg = e.toString();
 
@@ -275,6 +288,9 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         case 403:
           errorMsg = 'No tiene permisos para realizar esta acción.';
           break;
+        case 404:
+          errorMsg = 'No se encontró la cuenta o empleado especificado.';
+          break;
         case 500:
           errorMsg = 'Error en el servidor. Intente nuevamente más tarde.';
           break;
@@ -289,65 +305,144 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     }
   }
 
-  // Eliminar cuenta
+  // Eliminar cuenta existente
   Future<void> _eliminarCuenta() async {
-    if (_esNuevaCuenta) {
-      return; // No se puede eliminar una cuenta que no existe
-    }
-
-    final bool? confirmed = await showDialog<bool>(
+    // Solicitar confirmación antes de eliminar
+    final bool? confirmar = await showDialog<bool>(
       context: context,
-      builder: (BuildContext context) => ConfirmDialog(
-        title: 'Eliminar Cuenta',
-        message:
-            '¿Está seguro que desea eliminar la cuenta "${widget.usuarioActual}"? Esta acción no se puede deshacer.',
-        confirmText: 'Eliminar',
-        onConfirm: () => Navigator.of(context).pop(true),
+      builder: (BuildContext context) => Dialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              // Icono de advertencia
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const FaIcon(
+                  FontAwesomeIcons.triangleExclamation,
+                  color: Colors.red,
+                  size: 36,
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Título con advertencia
+              const Text(
+                '¿Eliminar cuenta de usuario?',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              // Mensaje de confirmación
+              Text(
+                'La cuenta del colaborador "${EmpleadosUtils.getNombreCompleto(widget.empleado)}" será eliminada permanentemente y no podrá iniciar sesión en el sistema.',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              // Botones de acción
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  // Botón cancelar
+                  OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide(color: Colors.white.withOpacity(0.5)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: const Text('Cancelar'),
+                  ),
+                  const SizedBox(width: 16),
+                  // Botón confirmar
+                  ElevatedButton.icon(
+                    icon: const FaIcon(FontAwesomeIcons.trash, size: 14),
+                    label: const Text('Eliminar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(true),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
 
-    if (confirmed != true) {
+    // Si no confirma, salir temprano
+    if (confirmar != true) {
       return;
     }
 
+    // Mostrar indicador de carga
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      final int? cuentaId = int.tryParse(widget.cuentaId!);
-      if (cuentaId == null) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'ID de cuenta inválido',
-        );
-      }
-
-      // Usar el provider para eliminar la cuenta
-      final bool success =
-          await _empleadoProvider.eliminarCuentaEmpleado(cuentaId);
+      // Usar el provider para eliminar la cuenta con validación
+      final Map<String, dynamic> resultado =
+          await _empleadoProvider.gestionarEliminacionCuenta(
+        empleado: widget.empleado,
+      );
 
       if (!mounted) {
         return;
       }
 
-      if (success) {
+      if (resultado['success']) {
+        // Notificar éxito y cerrar diálogo
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cuenta eliminada exitosamente'),
+          SnackBar(
+            content: Text(resultado['message']),
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pop(true); // Cerrar diálogo con resultado exitoso
+        Navigator.of(context).pop(true);
       } else {
         setState(() {
+          _errorMessage = resultado['message'];
           _isLoading = false;
-          _errorMessage = 'No se pudo eliminar la cuenta';
         });
       }
     } catch (e) {
-      _manejarError(e);
+      if (!mounted) {
+        return;
+      }
+
+      // Mostrar mensaje de error
+      setState(() {
+        _errorMessage = 'Error al eliminar cuenta: ${e.toString()}';
+        _isLoading = false;
+      });
     }
   }
 
@@ -357,138 +452,211 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         ? 'Crear Cuenta de Usuario'
         : 'Gestionar Cuenta de Usuario';
 
-    final String subtitle = widget.empleadoNombre != null
-        ? 'Empleado: ${widget.empleadoNombre}'
-        : 'ID Empleado: ${widget.empleadoId}';
+    final String subtitle =
+        'Empleado: ${EmpleadosUtils.getNombreCompleto(widget.empleado)}';
 
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       child: Container(
-        width: 420,
-        padding: const EdgeInsets.all(8),
-        child:
-            _isLoading ? _buildLoadingIndicator() : _buildForm(title, subtitle),
+        width: 500,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 15,
+              spreadRadius: 5,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: _isLoading
+              ? _buildLoadingIndicator()
+              : _buildForm(title, subtitle),
+        ),
       ),
     );
   }
 
+  // Indicador de carga con animación
   Widget _buildLoadingIndicator() {
-    return const Center(
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+      color: const Color(0xFF1A1A1A),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          CircularProgressIndicator(),
-          SizedBox(height: 12),
-          Text('Procesando...'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildForm(String title, String subtitle) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _buildHeader(title, subtitle),
-          const Divider(height: 16),
-          if (_errorMessage != null) _buildErrorMessage(),
-          _buildInstructions(),
+          SizedBox(
+            height: 80,
+            width: 80,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              valueColor: const AlwaysStoppedAnimation<Color>(colorPrimario),
+            ),
+          ),
+          const SizedBox(height: 30),
+          const Text(
+            'Procesando solicitud...',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(height: 10),
-          _buildUserFields(),
-          const SizedBox(height: 8),
-          _buildPasswordFields(),
-          const SizedBox(height: 12),
-          _buildActionButtons(),
+          Text(
+            _esNuevaCuenta
+                ? 'Creando cuenta de usuario'
+                : 'Actualizando información de cuenta',
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.white70,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(String title, String subtitle) {
-    return Row(
-      children: <Widget>[
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: _primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            _esNuevaCuenta ? Icons.person_add : Icons.manage_accounts,
-            color: _primaryColor,
-            size: 22,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: _esNuevaCuenta
-                          ? Colors.green.shade800
-                          : Colors.blue.shade800,
-                    ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildErrorMessage() {
+  // Construir formulario completo con tema oscuro
+  Widget _buildForm(String title, String subtitle) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.red[50],
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.red[300]!),
-          ),
-          child: Row(
-            children: <Widget>[
-              Icon(Icons.error_outline, color: Colors.red[700], size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Colors.red[700], fontSize: 13),
-                ),
+        _buildHeader(title, subtitle),
+        if (_errorMessage != null) _buildErrorMessage(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInstructions(),
+                  const SizedBox(height: 24),
+                  _buildUserFields(),
+                  const SizedBox(height: 24),
+                  _buildPasswordFields(),
+                  const SizedBox(height: 24),
+                  _buildActionButtons(),
+                ],
               ),
-            ],
+            ),
           ),
         ),
-        const SizedBox(height: 8),
       ],
     );
   }
 
+  // Encabezado con tema estilo empleado_form
+  Widget _buildHeader(String title, String subtitle) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+      decoration: const BoxDecoration(
+        color: Color(0xFFE31E24),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: FaIcon(
+              _esNuevaCuenta
+                  ? FontAwesomeIcons.userPlus
+                  : FontAwesomeIcons.userGear,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.85),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Mensaje de error con tema oscuro
+  Widget _buildErrorMessage() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade900.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red.shade700),
+      ),
+      child: Row(
+        children: <Widget>[
+          const FaIcon(FontAwesomeIcons.circleExclamation,
+              color: Colors.red, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const FaIcon(FontAwesomeIcons.xmark,
+                color: Colors.red, size: 18),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => setState(() => _errorMessage = null),
+          )
+        ],
+      ),
+    );
+  }
+
+  // Instrucciones con tema oscuro
   Widget _buildInstructions() {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _esNuevaCuenta ? Colors.green.shade50 : Colors.blue.shade50,
+        color: const Color(0xFF2D2D2D),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: _esNuevaCuenta ? Colors.green.shade300 : Colors.blue.shade300,
+          color: _esNuevaCuenta
+              ? colorPrimario.withOpacity(0.5)
+              : Colors.blue.withOpacity(0.3),
         ),
       ),
       child: Column(
@@ -496,299 +664,384 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         children: <Widget>[
           if (_esNuevaCuenta)
             _buildNewAccountInstructions()
-          else if (_rolActualNombre != null)
+          else
             _buildExistingAccountInstructions(),
         ],
       ),
     );
   }
 
+  // Instrucciones para nueva cuenta con tema oscuro
   Widget _buildNewAccountInstructions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Row(
           children: <Widget>[
-            Icon(Icons.info_outline, color: Colors.green[700], size: 16),
-            const SizedBox(width: 6),
-            Expanded(
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const FaIcon(
+                FontAwesomeIcons.circleInfo,
+                color: colorPrimario,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
               child: Text(
-                'Creando cuenta para acceso al sistema',
+                'Creando nueva cuenta de acceso',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.green[800],
-                  fontSize: 13,
+                  color: colorPrimario,
+                  fontSize: 16,
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 12),
         Text(
-          'El colaborador "${widget.empleadoNombre}" podrá acceder al sistema con las credenciales que defina aquí.',
-          style: TextStyle(color: Colors.green[700], fontSize: 12),
+          'El colaborador "${EmpleadosUtils.getNombreCompleto(widget.empleado)}" podrá iniciar sesión en el sistema con las credenciales que defina a continuación.',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            height: 1.4,
+          ),
         ),
       ],
     );
   }
 
+  // Instrucciones para cuenta existente con tema oscuro
   Widget _buildExistingAccountInstructions() {
+    final String rolName =
+        widget.empleado.rol?.nombre ?? _rolActualNombre ?? "No definido";
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
-            Icon(Icons.info_outline, color: Colors.blue[700], size: 16),
-            const SizedBox(width: 6),
-            Expanded(
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const FaIcon(
+                FontAwesomeIcons.userCheck,
+                color: Colors.blue,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
               child: Text(
-                'Información actual: ',
+                'Cuenta de usuario actual',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue[800],
-                  fontSize: 13,
+                  color: Colors.blue,
+                  fontSize: 16,
                 ),
               ),
             ),
-            Text(
-              'Usuario: ${widget.usuarioActual} | Rol: $_rolActualNombre',
-              style: TextStyle(color: Colors.blue[700], fontSize: 12),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildInfoRow(
+                icon: FontAwesomeIcons.userTag,
+                label: 'Usuario',
+                value: '@${widget.empleado.cuentaEmpleadoUsuario}',
+              ),
+              const SizedBox(height: 10),
+              _buildInfoRow(
+                icon: FontAwesomeIcons.userShield,
+                label: 'Rol',
+                value: rolName,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: const [
+            FaIcon(FontAwesomeIcons.penToSquare, size: 14, color: Colors.blue),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Puede modificar el usuario, contraseña y rol de la cuenta',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
+      ],
+    );
+  }
+
+  // Fila de información para datos de cuenta (misma estructura que empleado_form)
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        FaIcon(icon, size: 16, color: Colors.grey.shade400),
+        const SizedBox(width: 12),
         Text(
-          'Puede modificar el nombre de usuario y/o la contraseña.',
-          style: TextStyle(color: Colors.blue[700], fontSize: 12),
+          '$label:',
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ],
     );
   }
 
+  // Campos de usuario con tema oscuro
   Widget _buildUserFields() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Expanded(
-          child: _buildUserField(),
-        ),
-        if (_esNuevaCuenta && widget.roles.isNotEmpty) ...<Widget>[
-          const SizedBox(width: 10),
-          Expanded(
-            child: _buildRoleField(),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildUserField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 4),
-          child: Text(
-            'Nombre de usuario',
-            style: _labelStyle,
-          ),
-        ),
-        TextFormField(
-          controller: _usuarioController,
-          decoration: _inputDecoration.copyWith(
-            hintText: 'Ingrese un nombre de usuario',
-            prefixIcon: const Icon(Icons.person, size: 18),
-            helperText: _esNuevaCuenta
-                ? 'Usuario para iniciar sesión'
-                : 'Nuevo nombre de usuario',
-            helperStyle: _helperStyle,
-          ),
-          validator: _validarUsuario,
-        ),
-      ],
-    );
-  }
-
-  String? _validarUsuario(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Ingrese un nombre de usuario';
-    }
-    if (value.length < 4) {
-      return 'Mínimo 4 caracteres';
-    }
-    if (value.length > 20) {
-      return 'Máximo 20 caracteres';
-    }
-    if (!RegExp(r'^[a-zA-Z0-9\-_]+$').hasMatch(value)) {
-      return 'Solo letras, números, guiones y guiones bajos';
-    }
-    return null;
-  }
-
-  Widget _buildRoleField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 4),
-          child: Text(
-            'Rol del usuario',
-            style: _labelStyle,
-          ),
-        ),
-        DropdownButtonFormField<int>(
-          value: _selectedRolId,
-          decoration: _inputDecoration.copyWith(
-            hintText: 'Seleccione un rol',
-            prefixIcon: const Icon(Icons.badge, size: 18),
-            helperText: 'Define permisos en el sistema',
-            helperStyle: _helperStyle,
-          ),
-          items: widget.roles.map((Map<String, dynamic> rol) {
-            return DropdownMenuItem<int>(
-              value: rol['id'],
-              child: Text(
-                rol['nombre'] ?? rol['codigo'] ?? 'Rol sin nombre',
-                style: const TextStyle(fontSize: 13),
+        Row(
+          children: const <Widget>[
+            FaIcon(
+              FontAwesomeIcons.userPen,
+              size: 14,
+              color: colorPrimario,
+            ),
+            SizedBox(width: 8),
+            Text(
+              'DATOS DE ACCESO',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+                color: colorPrimario,
               ),
-            );
-          }).toList(),
-          onChanged: (int? value) {
-            setState(() {
-              _selectedRolId = value;
-            });
-          },
-          validator: (int? value) {
-            if (value == null) {
-              return 'Seleccione un rol';
-            }
-            return null;
-          },
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              child: TextFormField(
+                controller: _usuarioController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Nombre de usuario',
+                  labelStyle: TextStyle(color: Colors.white70),
+                  prefixIcon:
+                      Icon(Icons.person, color: Colors.white54, size: 20),
+                  helperText: 'Usuario para iniciar sesión',
+                  helperStyle: TextStyle(color: Colors.white54),
+                ),
+                validator: (value) => _empleadoProvider.validarUsuario(value),
+              ),
+            ),
+            if (widget.roles.isNotEmpty) ...<Widget>[
+              const SizedBox(width: 16),
+              Expanded(
+                child: DropdownButtonFormField<int>(
+                  value: _selectedRolId,
+                  dropdownColor: const Color(0xFF2D2D2D),
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  decoration: const InputDecoration(
+                    labelText: 'Rol del usuario',
+                    labelStyle: TextStyle(color: Colors.white70),
+                    prefixIcon: FaIcon(FontAwesomeIcons.userShield,
+                        size: 16, color: Colors.white54),
+                    helperText: 'Define permisos en el sistema',
+                    helperStyle: TextStyle(color: Colors.white54),
+                  ),
+                  items: widget.roles.map((Map<String, dynamic> rol) {
+                    IconData iconData = FontAwesomeIcons.userTag;
+                    final String codigo =
+                        (rol['codigo'] ?? '').toString().toLowerCase();
+
+                    switch (codigo) {
+                      case 'administrador':
+                        iconData = FontAwesomeIcons.userGear;
+                        break;
+                      case 'vendedor':
+                        iconData = FontAwesomeIcons.cashRegister;
+                        break;
+                      case 'computadora':
+                        iconData = FontAwesomeIcons.desktop;
+                        break;
+                    }
+
+                    return DropdownMenuItem<int>(
+                      value: rol['id'],
+                      child: Row(
+                        children: [
+                          FaIcon(iconData, size: 14, color: colorPrimario),
+                          const SizedBox(width: 10),
+                          Text(
+                            rol['nombreRol'] ??
+                                rol['nombre'] ??
+                                rol['codigo'] ??
+                                'Rol sin nombre',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (int? value) {
+                    setState(() {
+                      _selectedRolId = value;
+                    });
+                  },
+                  validator: (int? value) {
+                    if (value == null && _esNuevaCuenta) {
+                      return 'Seleccione un rol';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );
   }
 
+  // Campos de contraseña con tema oscuro
   Widget _buildPasswordFields() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Expanded(
-          child: _buildPasswordField(),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildConfirmPasswordField(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPasswordField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 4),
-          child: Text(
-            'Contraseña',
-            style: _labelStyle,
-          ),
-        ),
-        TextFormField(
-          controller: _claveController,
-          obscureText: _ocultarClave,
-          decoration: _inputDecoration.copyWith(
-            hintText: _esNuevaCuenta
-                ? 'Ingrese contraseña segura'
-                : 'Nueva contraseña (opcional)',
-            prefixIcon: const Icon(Icons.lock, size: 18),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _ocultarClave ? Icons.visibility : Icons.visibility_off,
-                size: 18,
-              ),
-              onPressed: () {
-                setState(() {
-                  _ocultarClave = !_ocultarClave;
-                });
-              },
+        Row(
+          children: const <Widget>[
+            FaIcon(
+              FontAwesomeIcons.lock,
+              size: 14,
+              color: colorPrimario,
             ),
-            helperText: _esNuevaCuenta
-                ? 'Mín. 6 caracteres con 1 número'
-                : 'Vacío = no cambiar',
-            helperStyle: _helperStyle,
-          ),
-          validator: _validarClave,
+            SizedBox(width: 8),
+            Text(
+              'CONTRASEÑA',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+                color: colorPrimario,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              child: TextFormField(
+                controller: _claveController,
+                style: const TextStyle(color: Colors.white),
+                obscureText: _ocultarClave,
+                decoration: InputDecoration(
+                  labelText: 'Contraseña',
+                  labelStyle: const TextStyle(color: Colors.white70),
+                  prefixIcon:
+                      const Icon(Icons.lock, color: Colors.white54, size: 20),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _ocultarClave ? Icons.visibility : Icons.visibility_off,
+                      color: Colors.white54,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _ocultarClave = !_ocultarClave;
+                      });
+                    },
+                  ),
+                  helperText: _esNuevaCuenta
+                      ? 'Mín. 6 caracteres con 1 número'
+                      : 'Vacío = no cambiar',
+                  helperStyle: const TextStyle(color: Colors.white54),
+                ),
+                validator: (value) => _empleadoProvider.validarClave(value,
+                    esRequerida: _esNuevaCuenta),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: TextFormField(
+                controller: _confirmarClaveController,
+                style: const TextStyle(color: Colors.white),
+                obscureText: _ocultarConfirmarClave,
+                decoration: InputDecoration(
+                  labelText: 'Confirmar contraseña',
+                  labelStyle: const TextStyle(color: Colors.white70),
+                  prefixIcon: const Icon(Icons.lock_outline,
+                      color: Colors.white54, size: 20),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _ocultarConfirmarClave
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color: Colors.white54,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _ocultarConfirmarClave = !_ocultarConfirmarClave;
+                      });
+                    },
+                  ),
+                  helperText: 'Debe coincidir con la contraseña',
+                  helperStyle: const TextStyle(color: Colors.white54),
+                ),
+                validator: (String? value) => _empleadoProvider
+                    .validarConfirmacionClave(value, _claveController.text),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  String? _validarClave(String? value) {
-    if (_esNuevaCuenta && (value == null || value.isEmpty)) {
-      return 'Ingrese una contraseña';
-    }
-    if (value != null && value.isNotEmpty) {
-      if (value.length < 6) {
-        return 'Mínimo 6 caracteres';
-      }
-      if (value.length > 20) {
-        return 'Máximo 20 caracteres';
-      }
-      if (!RegExp(r'\d').hasMatch(value)) {
-        return 'Debe contener al menos un número';
-      }
-    }
-    return null;
-  }
-
-  Widget _buildConfirmPasswordField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 4),
-          child: Text(
-            'Confirmar contraseña',
-            style: _labelStyle,
-          ),
-        ),
-        TextFormField(
-          controller: _confirmarClaveController,
-          obscureText: _ocultarConfirmarClave,
-          decoration: _inputDecoration.copyWith(
-            hintText: 'Confirme la contraseña',
-            prefixIcon: const Icon(Icons.lock_outline, size: 18),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _ocultarConfirmarClave
-                    ? Icons.visibility
-                    : Icons.visibility_off,
-                size: 18,
-              ),
-              onPressed: () {
-                setState(() {
-                  _ocultarConfirmarClave = !_ocultarConfirmarClave;
-                });
-              },
-            ),
-            helperText: 'Debe coincidir con la contraseña',
-            helperStyle: _helperStyle,
-          ),
-          validator: (String? value) {
-            if (_claveController.text.isNotEmpty &&
-                value != _claveController.text) {
-              return 'Las contraseñas no coinciden';
-            }
-            return null;
-          },
-        ),
-      ],
-    );
-  }
-
+  // Botones de acción con tema oscuro
   Widget _buildActionButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -798,19 +1051,26 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           TextButton.icon(
             icon: const FaIcon(
               FontAwesomeIcons.trash,
-              size: 14,
+              size: 16,
               color: Colors.red,
             ),
             label: const Text(
               'Eliminar cuenta',
-              style: TextStyle(color: Colors.red, fontSize: 13),
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             onPressed: _eliminarCuenta,
             style: TextButton.styleFrom(
               backgroundColor: Colors.red.withOpacity(0.1),
               padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
+                horizontal: 16,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           )
@@ -820,43 +1080,53 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         Row(
           children: <Widget>[
             // Botón para cancelar
-            TextButton.icon(
-              icon: const Icon(Icons.cancel_outlined, size: 18),
-              label: const Text('Cancelar', style: TextStyle(fontSize: 13)),
+            TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.grey[700],
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(color: Colors.white54),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 16),
 
             // Botón para guardar
-            ElevatedButton.icon(
-              icon: FaIcon(
-                _esNuevaCuenta
-                    ? FontAwesomeIcons.userPlus
-                    : FontAwesomeIcons.floppyDisk,
-                size: 14,
-              ),
-              label: Text(
-                _esNuevaCuenta ? 'Crear Cuenta' : 'Guardar Cambios',
-                style: const TextStyle(fontSize: 13),
-              ),
+            ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryColor,
+                backgroundColor: const Color(0xFFE31E24),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
+                  horizontal: 24,
+                  vertical: 12,
                 ),
               ),
               onPressed: _guardarCuenta,
+              child: Text(
+                _esNuevaCuenta ? 'Crear Cuenta' : 'Guardar Cambios',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),
       ],
     );
+  }
+
+  // Método para cargar el ID del rol actual usando el provider
+  Future<void> _cargarDatosRolActual() async {
+    try {
+      final datosGestion =
+          await _empleadoProvider.prepararDatosGestionCuenta(widget.empleado);
+      if (datosGestion['rolActualId'] != null && mounted) {
+        setState(() {
+          _selectedRolId = datosGestion['rolActualId'] as int;
+        });
+      }
+    } catch (e) {
+      // Silenciar errores, se mantiene el rol por defecto
+      debugPrint('Error al cargar datos del rol: $e');
+    }
   }
 }

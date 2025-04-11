@@ -31,6 +31,18 @@ class EmpleadosUtils {
     }
   }
 
+  /// Obtiene el rol de un empleado con prioridad al rol del modelo
+  static String getRolEmpleado(
+      Empleado empleado, Function obtenerRolDeEmpleado) {
+    // Primero intentar usar el rol que viene directamente del empleado
+    if (empleado.rol != null) {
+      return empleado.rol!.nombre;
+    }
+
+    // Si no está disponible, usar la función del provider
+    return obtenerRolDeEmpleado(empleado);
+  }
+
   /// Obtiene el nombre de la sucursal a partir de su ID
   static String getNombreSucursal(
       String? sucursalId, Map<String, String> nombresSucursales) {
@@ -88,7 +100,14 @@ class EmpleadosUtils {
   ///
   /// Retorna true si el empleado tiene una cuenta asociada
   static bool tieneCuentaAsociada(Empleado empleado) {
-    return empleado.cuentaEmpleadoId != null;
+    return empleado.tieneCuenta;
+  }
+
+  /// Obtiene el nombre de usuario de la cuenta de un empleado
+  ///
+  /// Retorna el nombre de usuario o null si no tiene cuenta asociada
+  static String? getUsuarioCuenta(Empleado empleado) {
+    return empleado.cuentaEmpleadoUsuario;
   }
 
   /// Formatea una hora para mostrarla sin segundos
@@ -433,6 +452,109 @@ class EmpleadosUtils {
                 if (rolCuentaActual != null)
                   Expanded(
                     child: buildInfoItem('Rol de cuenta', rolCuentaActual),
+                  ),
+              ],
+            ),
+            if (onGestionarCuenta != null) ...<Widget>[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+                  TextButton.icon(
+                    icon: const FaIcon(
+                      FontAwesomeIcons.key,
+                      size: 12,
+                      color: Colors.white70,
+                    ),
+                    label: const Text(
+                      'Gestionar cuenta',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                    onPressed: onGestionarCuenta,
+                    style: TextButton.styleFrom(
+                      backgroundColor: const Color(0xFF3D3D3D),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      );
+    } else {
+      return const SizedBox
+          .shrink(); // Devolver un widget vacío si no hay cuenta
+    }
+  }
+
+  /// Genera un contenedor con información de cuenta directamente desde un objeto Empleado
+  static Widget buildInfoCuentaContainerFromEmpleado({
+    required Empleado empleado,
+    required bool isLoading,
+    Function()? onGestionarCuenta,
+  }) {
+    if (isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 8.0),
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+            ),
+          ),
+        ),
+      );
+    } else if (empleado.tieneCuenta) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2D2D2D),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: const Color(0xFFE31E24).withOpacity(0.2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Row(
+              children: <Widget>[
+                FaIcon(
+                  FontAwesomeIcons.userShield,
+                  color: Color(0xFFE31E24),
+                  size: 14,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'INFORMACIÓN DE CUENTA',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFE31E24),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: buildInfoItem(
+                      'Usuario', '@${empleado.cuentaEmpleadoUsuario}'),
+                ),
+                if (empleado.rol != null)
+                  Expanded(
+                    child: buildInfoItem('Rol de cuenta', empleado.rol!.nombre),
                   ),
               ],
             ),

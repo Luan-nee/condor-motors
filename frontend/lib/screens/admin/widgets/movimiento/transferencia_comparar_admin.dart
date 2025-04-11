@@ -32,7 +32,7 @@ class TransferenciaCompararAdmin extends StatefulWidget {
 
 class _TransferenciaCompararAdminState
     extends State<TransferenciaCompararAdmin> {
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {

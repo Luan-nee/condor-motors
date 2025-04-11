@@ -597,7 +597,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
   Future<void> _mostrarDialogoProductos() async {
     // Mostrar indicador de carga mientras se cargan los productos
     if (!_productosLoaded) {
-      _provider.setLoading(true, message: 'Cargando productos...');
+      _provider.setLoading(loading: true, message: 'Cargando productos...');
       try {
         await _provider.cargarProductos();
       } catch (e) {
@@ -612,7 +612,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         return;
       } finally {
         if (mounted) {
-          _provider.setLoading(false);
+          _provider.setLoading(loading: false);
         }
       }
     }
@@ -1169,8 +1169,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
     // Verificar stock antes de finalizar
     try {
-      _provider.setLoading(true,
-          message: 'Verificando disponibilidad de stock...');
+      _provider.setLoading(
+          loading: true, message: 'Verificando disponibilidad de stock...');
 
       // Verificar stock de cada producto
       for (final Map<String, dynamic> producto in _productosVenta) {
@@ -1184,7 +1184,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
           productoId = int.parse(productoIdDynamic);
         } else {
           // Si hay un error con el formato de ID, mostrar error y salir
-          _provider.setLoading(false);
+          _provider.setLoading(loading: false);
 
           if (!mounted) {
             return;
@@ -1204,7 +1204,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
         // Actualizar mensaje de loading
         if (mounted) {
-          _provider.setLoading(true,
+          _provider.setLoading(
+              loading: true,
               message: 'Verificando stock de ${producto['nombre']}...');
         }
 
@@ -1220,7 +1221,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         }
 
         if (productoActual.stock < cantidad) {
-          _provider.setLoading(false);
+          _provider.setLoading(loading: false);
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1239,7 +1240,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       debugPrint('Error al verificar stock: $e');
 
       if (mounted) {
-        _provider.setLoading(false);
+        _provider.setLoading(loading: false);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1256,13 +1257,14 @@ class _VentasColabScreenState extends State<VentasColabScreen>
     debugPrint('📝 Iniciando creación de proforma...');
 
     // Mostrar indicador de carga con más contexto para reducir ansiedad
-    _provider.setLoading(true, message: 'Enviando datos al servidor...');
+    _provider.setLoading(
+        loading: true, message: 'Enviando datos al servidor...');
 
     try {
       // Actualizar mensaje para proporcionar retroalimentación del progreso
       if (mounted) {
-        _provider.setLoading(true,
-            message: 'Preparando detalles de la venta...');
+        _provider.setLoading(
+            loading: true, message: 'Preparando detalles de la venta...');
       }
 
       // Convertir los productos de la venta al formato esperado por la API
@@ -1293,7 +1295,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
       // Actualizar mensaje para proporcionar retroalimentación del progreso
       if (mounted) {
-        _provider.setLoading(true, message: 'Comunicando con el servidor...');
+        _provider.setLoading(
+            loading: true, message: 'Comunicando con el servidor...');
       }
 
       // Llamar a la API para crear la proforma
@@ -1312,7 +1315,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       }
 
       // Actualizar mensaje para proporcionar retroalimentación del progreso
-      _provider.setLoading(true, message: 'Procesando respuesta...');
+      _provider.setLoading(loading: true, message: 'Procesando respuesta...');
 
       // Convertir la respuesta a un objeto estructurado
       final Proforma? proformaCreada =
@@ -1322,7 +1325,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       _provider.cargarProductos();
 
       if (mounted) {
-        _provider.setLoading(true, message: 'Actualizando inventario...');
+        _provider.setLoading(
+            loading: true, message: 'Actualizando inventario...');
       }
 
       if (!mounted) {
@@ -1330,7 +1334,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       }
 
       // Cambiar estado antes de mostrar el diálogo
-      _provider.setLoading(false);
+      _provider.setLoading(loading: false);
 
       // Mostrar diálogo de confirmación
       await showDialog(
@@ -1407,7 +1411,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       }
 
       // Resetear estado de carga
-      _provider.setLoading(false);
+      _provider.setLoading(loading: false);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1482,7 +1486,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
   Future<void> _escanearProducto() async {
     // Asegurarse de que los productos estén cargados
     if (!_productosLoaded) {
-      _provider.setLoading(true, message: 'Cargando productos...');
+      _provider.setLoading(loading: true, message: 'Cargando productos...');
       try {
         await _cargarProductos();
       } catch (e) {
@@ -1497,7 +1501,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         return;
       } finally {
         if (mounted) {
-          _provider.setLoading(false);
+          _provider.setLoading(loading: false);
         }
       }
     }

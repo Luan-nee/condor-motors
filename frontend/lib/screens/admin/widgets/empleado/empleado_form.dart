@@ -12,7 +12,6 @@ import 'package:provider/provider.dart';
 class EmpleadoForm extends StatefulWidget {
   final Empleado? empleado;
   final Map<String, String> sucursales;
-  final List<String> roles;
   final Function(Map<String, dynamic>) onSave;
   final VoidCallback onCancel;
 
@@ -20,7 +19,6 @@ class EmpleadoForm extends StatefulWidget {
     super.key,
     this.empleado,
     required this.sucursales,
-    required this.roles,
     required this.onSave,
     required this.onCancel,
   });
@@ -34,7 +32,6 @@ class EmpleadoForm extends StatefulWidget {
     properties
       ..add(DiagnosticsProperty<Empleado?>('empleado', empleado))
       ..add(DiagnosticsProperty<Map<String, String>>('sucursales', sucursales))
-      ..add(IterableProperty<String>('roles', roles))
       ..add(ObjectFlagProperty<Function(Map<String, dynamic> p1)>.has(
           'onSave', onSave))
       ..add(ObjectFlagProperty<VoidCallback>.has('onCancel', onCancel));
@@ -61,7 +58,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       TextEditingController();
 
   String? _selectedSucursalId;
-  String? _selectedRol;
   bool _esSucursalCentral = false;
   bool _isLoading = false;
   String? _usuarioActual;
@@ -133,19 +129,11 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     // Datos laborales
     _selectedSucursalId = empleado.sucursalId;
 
-    // Utilizar el provider para obtener el rol
-    final empleadoProvider =
-        Provider.of<EmpleadoProvider>(context, listen: false);
-    _selectedRol = empleadoProvider.obtenerRolDeEmpleado(empleado);
-
     // Estado del empleado
     _isEmpleadoActivo = empleado.activo;
   }
 
   void _inicializarFormularioNuevoEmpleado() {
-    // Valores por defecto para nuevo empleado
-    _selectedRol = widget.roles.isNotEmpty ? widget.roles.first : null;
-
     // Valores por defecto para horario (8:00 - 17:00)
     EmpleadosUtils.inicializarHorarios(
         horaInicioHoraController: _horaInicioHoraController,
@@ -175,7 +163,9 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       final Map<String, dynamic> resultado =
           await empleadoProvider.obtenerInfoCuentaEmpleado(widget.empleado!);
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         _usuarioActual = resultado['usuarioActual'] as String?;
@@ -185,7 +175,9 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
         _isLoading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         _errorCargaInfo =
@@ -438,58 +430,9 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                 const SizedBox(height: 16),
 
                 // Rol y Sucursal
-
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    // Rol
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _selectedRol,
-                        style: const TextStyle(color: Colors.white),
-                        dropdownColor: const Color(0xFF2D2D2D),
-                        decoration: const InputDecoration(
-                          labelText: 'Rol',
-                          labelStyle: TextStyle(color: Colors.white70),
-                        ),
-                        items: widget.roles.map((String rol) {
-                          IconData iconData;
-                          switch (rol.toLowerCase()) {
-                            case 'administrador':
-                              iconData = FontAwesomeIcons.userGear;
-                              break;
-                            case 'vendedor':
-                              iconData = FontAwesomeIcons.cashRegister;
-                              break;
-                            case 'computadora':
-                              iconData = FontAwesomeIcons.desktop;
-                              break;
-                            default:
-                              iconData = FontAwesomeIcons.user;
-                          }
-
-                          return DropdownMenuItem<String>(
-                            value: rol,
-                            child: Row(
-                              children: <Widget>[
-                                FaIcon(iconData,
-                                    size: 14, color: const Color(0xFFE31E24)),
-                                const SizedBox(width: 8),
-                                Text(rol),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (String? value) {
-                          setState(() {
-                            _selectedRol = value;
-                          });
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(width: 10),
-
                     // Sucursal
                     Expanded(
                       child: Column(
@@ -978,7 +921,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
             ? double.parse(_sueldoController.text)
             : null,
         'sucursalId': _selectedSucursalId,
-        'rol': _selectedRol,
         'horaInicioJornada': horaInicio,
         'horaFinJornada': horaFin,
         'celular':
@@ -1058,11 +1000,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 600),
                 child: EmpleadoCuentaDialog(
-                  empleadoId: datosCuenta['empleadoId'],
-                  empleadoNombre: datosCuenta['empleadoNombre'],
-                  cuentaId: datosCuenta['cuentaId'],
-                  usuarioActual: datosCuenta['usuarioActual'],
-                  rolActualId: datosCuenta['rolActualId'],
+                  empleado: widget.empleado!,
                   roles: datosCuenta['roles'],
                   esNuevaCuenta: datosCuenta['esNuevaCuenta'],
                 ),

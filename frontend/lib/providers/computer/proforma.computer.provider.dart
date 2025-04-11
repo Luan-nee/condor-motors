@@ -328,8 +328,8 @@ class ProformaComputerProvider extends ChangeNotifier {
         // Buscar un empleado de la sucursal
         final empleados =
             await api.empleados.getEmpleadosPorSucursal(sucursalIdStr);
-        if (empleados.isNotEmpty) {
-          empleadoId = int.tryParse(empleados.first.id);
+        if (empleados.empleados.isNotEmpty) {
+          empleadoId = int.tryParse(empleados.empleados.first.id);
         }
       }
 

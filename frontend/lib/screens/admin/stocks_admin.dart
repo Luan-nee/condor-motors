@@ -431,7 +431,6 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                         border: Border.all(
                                           color: const Color(0xFFE31E24)
                                               .withOpacity(0.3),
-                                          width: 1,
                                         ),
                                       ),
                                       child: Row(

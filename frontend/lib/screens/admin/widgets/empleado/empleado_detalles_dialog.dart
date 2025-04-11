@@ -610,11 +610,7 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 600),
                 child: EmpleadoCuentaDialog(
-                  empleadoId: datosCuenta['empleadoId'],
-                  empleadoNombre: datosCuenta['empleadoNombre'],
-                  cuentaId: datosCuenta['cuentaId'],
-                  usuarioActual: datosCuenta['usuarioActual'],
-                  rolActualId: datosCuenta['rolActualId'],
+                  empleado: widget.empleado,
                   roles: datosCuenta['roles'],
                   esNuevaCuenta: datosCuenta['esNuevaCuenta'],
                 ),

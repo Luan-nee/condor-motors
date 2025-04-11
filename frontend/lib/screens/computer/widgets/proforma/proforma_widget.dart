@@ -959,18 +959,6 @@ class ProformaWidget extends StatelessWidget {
     );
   }
 
-  /// Verificar si hay información especial sobre cantidad
-  bool _tieneInfoCantidadEspecial(DetalleProforma detalle) {
-    try {
-      final dynamic cantidadGratis = (detalle as dynamic).cantidadGratis;
-      final dynamic cantidadPagada = (detalle as dynamic).cantidadPagada;
-      return (cantidadGratis != null && cantidadGratis > 0) ||
-          (cantidadPagada != null && cantidadPagada < detalle.cantidad);
-    } catch (e) {
-      return false;
-    }
-  }
-
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);

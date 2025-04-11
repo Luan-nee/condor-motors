@@ -13,7 +13,8 @@ class EmpleadosApi {
   /// Obtiene la lista de empleados con soporte de caché
   ///
   /// [useCache] Indica si se debe usar el caché (default: true)
-  Future<List<Empleado>> getEmpleados({
+  /// Retorna un objeto [EmpleadosPaginados] que contiene la lista de empleados, la información de paginación y las opciones de ordenamiento
+  Future<EmpleadosPaginados> getEmpleados({
     int? page,
     int? pageSize,
     String? sortBy,
@@ -38,9 +39,10 @@ class EmpleadosApi {
 
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final List<Empleado>? cachedData = _cache.get<List<Empleado>>(cacheKey);
+        final EmpleadosPaginados? cachedData =
+            _cache.get<EmpleadosPaginados>(cacheKey);
         if (cachedData != null) {
-          logCache('Empleados obtenidos desde caché: $cacheKey');
+          logCache('Empleados paginados obtenidos desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -82,34 +84,25 @@ class EmpleadosApi {
 
       Logger.debug('Respuesta de getEmpleados recibida');
 
-      // Extraer los datos de la respuesta
-      List<dynamic> items = <dynamic>[];
-
-      if (response['data'] is List) {
-        // Nueva estructura: { status: "success", data: [ ... ] }
-        items = response['data'] as List<dynamic>;
-      } else if (response['data'] is Map) {
-        if (response['data'].containsKey('data') &&
-            response['data']['data'] is List) {
-          // Estructura anterior anidada: { data: { data: [ ... ] } }
-          items = response['data']['data'] as List<dynamic>;
-        }
-      }
-
-      // Convertir a lista de Empleado
-      final List<Empleado> empleados = items
-          .map((item) => Empleado.fromJson(item as Map<String, dynamic>))
-          .toList();
-
-      Logger.debug('Total de empleados encontrados: ${empleados.length}');
+      // Crear objeto EmpleadosPaginados directamente de la respuesta
+      final EmpleadosPaginados empleadosPaginados =
+          EmpleadosPaginados.fromJson(response);
 
       // Guardar en caché si useCache es true
       if (useCache) {
-        _cache.set(cacheKey, empleados);
-        logCache('Empleados guardados en caché: $cacheKey');
+        _cache.set(cacheKey, empleadosPaginados);
+        logCache('Empleados paginados guardados en caché: $cacheKey');
       }
 
-      return empleados;
+      Logger.debug(
+          'Total de empleados encontrados: ${empleadosPaginados.empleados.length}');
+
+      if (empleadosPaginados.sortByOptions.isNotEmpty) {
+        Logger.debug(
+            'Opciones de ordenamiento disponibles: ${empleadosPaginados.sortByOptions.join(', ')}');
+      }
+
+      return empleadosPaginados;
     } catch (e) {
       Logger.error('ERROR al obtener empleados: $e');
       rethrow;
@@ -387,7 +380,7 @@ class EmpleadosApi {
   }
 
   /// Obtiene empleados filtrados por sucursal
-  Future<List<Empleado>> getEmpleadosPorSucursal(
+  Future<EmpleadosPaginados> getEmpleadosPorSucursal(
     String sucursalId, {
     int page = 1,
     int pageSize = 10,
@@ -405,7 +398,7 @@ class EmpleadosApi {
   }
 
   /// Obtiene empleados activos
-  Future<List<Empleado>> getEmpleadosActivos({
+  Future<EmpleadosPaginados> getEmpleadosActivos({
     int page = 1,
     int pageSize = 10,
     String order = 'asc',
@@ -789,5 +782,42 @@ class EmpleadosApi {
   /// Método para verificar si los datos en caché están obsoletos
   bool isCacheStale(String cacheKey) {
     return _cache.isStale(cacheKey);
+  }
+
+  /// Obtiene las opciones de ordenamiento disponibles para empleados
+  Future<List<String>> getSortByOptions({bool useCache = true}) async {
+    try {
+      const String cacheKey = 'empleados_sort_options';
+
+      // Intentar obtener desde caché si useCache es true
+      if (useCache) {
+        final List<String>? cachedData = _cache.get<List<String>>(cacheKey);
+        if (cachedData != null) {
+          logCache('Opciones de ordenamiento obtenidas desde caché: $cacheKey');
+          return cachedData;
+        }
+      }
+
+      // Si no hay datos en caché, realizar una consulta para obtener metadatos
+      final EmpleadosPaginados empleadosPaginados = await getEmpleados(
+        page: 1,
+        pageSize: 1, // Solo necesitamos un elemento para obtener los metadatos
+        useCache: false, // No usar caché para esta consulta específica
+      );
+
+      final List<String> sortByOptions = empleadosPaginados.sortByOptions;
+
+      // Guardar en caché si useCache es true
+      if (useCache && sortByOptions.isNotEmpty) {
+        _cache.set(cacheKey, sortByOptions);
+        logCache('Opciones de ordenamiento guardadas en caché: $cacheKey');
+      }
+
+      return sortByOptions;
+    } catch (e) {
+      Logger.error('ERROR al obtener opciones de ordenamiento: $e');
+      // Devolver una lista predeterminada en caso de error
+      return <String>['fechaCreacion', 'nombre', 'apellidos'];
+    }
   }
 }

@@ -1,5 +1,7 @@
 import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/models/categoria.model.dart';
 import 'package:condorsmotors/models/color.model.dart';
+import 'package:condorsmotors/models/marca.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
@@ -31,6 +33,7 @@ class ProductoProvider extends ChangeNotifier {
   bool _isLoadingSucursales = false;
   bool _isLoadingProductos = false;
   bool _isLoadingCategorias = false;
+  bool _isLoadingColores = false;
   String? _errorMessage;
 
   // Getters
@@ -50,12 +53,25 @@ class ProductoProvider extends ChangeNotifier {
   bool get isLoadingSucursales => _isLoadingSucursales;
   bool get isLoadingProductos => _isLoadingProductos;
   bool get isLoadingCategorias => _isLoadingCategorias;
+  bool get isLoadingColores => _isLoadingColores;
   String? get errorMessage => _errorMessage;
 
+  // Propiedades para formulario de productos
+  Map<String, Map<String, Object>> _categoriasMap =
+      <String, Map<String, Object>>{};
+  Map<String, Map<String, Object>> _marcasMap = <String, Map<String, Object>>{};
+  List<ColorApp> _colores = <ColorApp>[];
+
+  Map<String, Map<String, Object>> get categoriasMap => _categoriasMap;
+  Map<String, Map<String, Object>> get marcasMap => _marcasMap;
+  List<ColorApp> get colores => _colores;
+
   /// Inicializa el provider cargando sucursales y categorías
-  void inicializar() {
-    cargarSucursales();
-    cargarCategorias();
+  Future<void> inicializar() async {
+    await cargarSucursales();
+    await cargarCategorias();
+    await cargarColores();
+    await cargarMarcas();
   }
 
   /// Recarga todos los datos forzando actualización desde el servidor
@@ -69,6 +85,12 @@ class ProductoProvider extends ChangeNotifier {
 
       // Forzar recarga de categorías
       await cargarCategorias();
+
+      // Forzar recarga de colores
+      await cargarColores();
+
+      // Forzar recarga de marcas
+      await cargarMarcas();
 
       if (_sucursalSeleccionada != null) {
         // Invalidar caché en el repositorio
@@ -112,6 +134,23 @@ class ProductoProvider extends ChangeNotifier {
     try {
       final List<String> categoriasResult =
           await ProductosUtils.obtenerCategorias();
+
+      // Obtener las categorías como objetos para tener acceso a los IDs
+      final List<Categoria> categoriasList =
+          await api.categorias.getCategoriasObjetos(useCache: false);
+
+      // Extraer nombres para la lista desplegable
+      List<String> categoriaNames = categoriasList
+          .map<String>((Categoria cat) => cat.nombre)
+          .where((String nombre) => nombre.isNotEmpty)
+          .toList();
+      categoriaNames.sort(); // Mantener orden alfabético
+
+      // Crear un mapa para fácil acceso a los IDs por nombre
+      _categoriasMap = <String, Map<String, Object>>{
+        for (Categoria cat in categoriasList)
+          cat.nombre: <String, Object>{'id': cat.id, 'nombre': cat.nombre}
+      };
 
       // Actualizar la lista de categorías para el filtro, manteniendo 'Todos' al inicio
       _categorias
@@ -291,9 +330,6 @@ class ProductoProvider extends ChangeNotifier {
         );
 
         debugPrint('ProductosAdmin: Producto actualizado correctamente');
-
-        // Forzar limpieza de caché para este producto específico
-        _productoRepository.invalidateCache(sucursalId);
       }
 
       // Mostrar mensaje de error si no se pudo guardar el producto
@@ -303,6 +339,9 @@ class ProductoProvider extends ChangeNotifier {
         notifyListeners();
         return false;
       }
+
+      // Forzar limpieza de caché para los productos de esta sucursal
+      _productoRepository.invalidateCache(sucursalId);
 
       // Recargar productos forzando ignorar caché
       await cargarProductos();
@@ -386,30 +425,233 @@ class ProductoProvider extends ChangeNotifier {
     }
   }
 
-  /// Obtiene los colores disponibles
-  Future<List<ColorApp>> obtenerColores() async {
+  /// Carga las marcas disponibles
+  Future<void> cargarMarcas() async {
+    _isLoadingProductos = true;
+    _errorMessage = null;
+    notifyListeners();
+
     try {
-      return await api.colores.getColores();
-    } catch (e) {
-      _errorMessage = 'Error al obtener colores: $e';
+      // Obtenemos las marcas como objetos tipados
+      final ResultadoPaginado<Marca> marcasResult =
+          await api.marcas.getMarcasPaginadas(useCache: false);
+
+      // Extraemos la lista de marcas del resultado paginado
+      final List<Marca> marcasList = marcasResult.items;
+
+      // Crear un mapa para fácil acceso a los IDs por nombre
+      _marcasMap = <String, Map<String, Object>>{
+        for (Marca marca in marcasList)
+          marca.nombre: <String, Object>{'id': marca.id, 'nombre': marca.nombre}
+      };
+
+      _isLoadingProductos = false;
       notifyListeners();
-      return <ColorApp>[];
+    } catch (e) {
+      debugPrint('Error al cargar marcas: $e');
+      _errorMessage = 'Error al cargar marcas: $e';
+      _isLoadingProductos = false;
+      notifyListeners();
     }
   }
 
-  /// Obtiene la información de un producto en diferentes sucursales
-  Future<List<ProductoEnSucursal>> obtenerProductoEnSucursales(
-      {required int productoId, required List<Sucursal> sucursales}) async {
+  /// Carga los colores disponibles
+  Future<void> cargarColores() async {
+    _isLoadingColores = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _colores = await api.colores.getColores();
+      _isLoadingColores = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error al cargar colores: $e');
+      _errorMessage = 'Error al cargar colores: $e';
+      _isLoadingColores = false;
+      notifyListeners();
+    }
+  }
+
+  /// Obtener información completa de un producto en todas las sucursales
+  Future<List<ProductoEnSucursal>> obtenerSucursalesCompartidas(
+      int productoId) async {
+    try {
+      return await ProductosUtils.obtenerProductoEnSucursales(
+        productoId: productoId,
+        sucursales: _sucursales,
+      );
+    } catch (e) {
+      debugPrint('Error al obtener sucursales compartidas: $e');
+      _errorMessage = 'Error al obtener sucursales compartidas: $e';
+      notifyListeners();
+      return <ProductoEnSucursal>[];
+    }
+  }
+
+  /// Obtener información completa de un producto en las sucursales especificadas
+  Future<List<ProductoEnSucursal>> obtenerProductoEnSucursales({
+    required int productoId,
+    required List<Sucursal> sucursales,
+  }) async {
     try {
       return await ProductosUtils.obtenerProductoEnSucursales(
         productoId: productoId,
         sucursales: sucursales,
       );
     } catch (e) {
+      debugPrint('Error al obtener producto en sucursales: $e');
       _errorMessage = 'Error al obtener producto en sucursales: $e';
       notifyListeners();
       return <ProductoEnSucursal>[];
     }
+  }
+
+  /// Obtiene el color por nombre
+  ColorApp? obtenerColorPorNombre(String nombre) {
+    try {
+      if (nombre.isEmpty) {
+        return null;
+      }
+      return _colores.firstWhere(
+        (ColorApp color) => color.nombre.toLowerCase() == nombre.toLowerCase(),
+        orElse: () => _colores.isNotEmpty
+            ? _colores.first
+            : throw Exception('No hay colores disponibles'),
+      );
+    } catch (e) {
+      debugPrint('Error al obtener color por nombre: $e');
+      return _colores.isNotEmpty ? _colores.first : null;
+    }
+  }
+
+  /// Obtener lista de colores disponibles
+  Future<List<ColorApp>> obtenerColores() async {
+    if (_colores.isEmpty) {
+      await cargarColores();
+    }
+    return _colores;
+  }
+
+  /// Prepara los datos del producto para guardar
+  Map<String, dynamic> prepararDatosProducto({
+    required Producto? producto,
+    required String nombre,
+    required String descripcion,
+    required String marca,
+    required String categoria,
+    required double precioVenta,
+    required double precioCompra,
+    required int stock,
+    required int? stockMinimo,
+    required bool liquidacion,
+    required double? precioOferta,
+    required String tipoPromocion,
+    required int? cantidadMinimaDescuento,
+    required int? cantidadGratisDescuento,
+    required int? porcentajeDescuento,
+    required ColorApp? colorSeleccionado,
+  }) {
+    final bool esNuevoProducto = producto == null;
+
+    // Construir el cuerpo de la solicitud
+    final Map<String, dynamic> productoData = <String, dynamic>{
+      if (producto != null) 'id': producto.id,
+      'nombre': nombre,
+      'descripcion': descripcion,
+      'marca': marca,
+      'categoria': categoria,
+      'precioVenta': precioVenta,
+      'precioCompra': precioCompra,
+      // Solo incluir stock para productos nuevos
+      if (esNuevoProducto) 'stock': stock,
+
+      // Liquidación (campo independiente)
+      'liquidacion': liquidacion,
+
+      // Por defecto, valores nulos para los campos opcionales
+      'cantidadMinimaDescuento': null,
+      'cantidadGratisDescuento': null,
+      'porcentajeDescuento': null,
+      'precioOferta': null,
+    };
+
+    // Si está en liquidación, incluir precio de oferta
+    if (liquidacion && precioOferta != null) {
+      productoData['precioOferta'] = precioOferta;
+    }
+
+    // Aplicar configuración según el tipo de promoción seleccionada
+    switch (tipoPromocion) {
+      case 'gratis':
+        if (cantidadMinimaDescuento != null) {
+          productoData['cantidadMinimaDescuento'] = cantidadMinimaDescuento;
+        }
+        if (cantidadGratisDescuento != null) {
+          productoData['cantidadGratisDescuento'] = cantidadGratisDescuento;
+        }
+        break;
+
+      case 'descuentoPorcentual':
+        if (cantidadMinimaDescuento != null) {
+          productoData['cantidadMinimaDescuento'] = cantidadMinimaDescuento;
+        }
+        if (porcentajeDescuento != null) {
+          productoData['porcentajeDescuento'] = porcentajeDescuento;
+        }
+        break;
+    }
+
+    // Stock mínimo (opcional)
+    if (stockMinimo != null) {
+      productoData['stockMinimo'] = stockMinimo;
+    }
+
+    // Buscar y añadir el ID de categoría si está disponible
+    if (_categoriasMap.containsKey(categoria)) {
+      final Map<String, Object>? categoriaInfo = _categoriasMap[categoria];
+      if (categoriaInfo != null && categoriaInfo['id'] != null) {
+        final String idStr = categoriaInfo['id'].toString();
+        final int? id = int.tryParse(idStr);
+        if (id != null) {
+          productoData['categoriaId'] = id;
+          debugPrint(
+              'ProductoProvider: Categoría $categoria con ID válido: $id');
+        } else {
+          debugPrint(
+              'ProductoProvider: Advertencia - ID de categoría no válido: $idStr');
+        }
+      }
+    }
+
+    // Buscar y añadir el ID de marca si está disponible
+    if (_marcasMap.containsKey(marca)) {
+      final Map<String, Object>? marcaInfo = _marcasMap[marca];
+      if (marcaInfo != null && marcaInfo['id'] != null) {
+        final String idStr = marcaInfo['id'].toString();
+        final int? id = int.tryParse(idStr);
+        if (id != null) {
+          productoData['marcaId'] = id;
+          debugPrint('ProductoProvider: Marca $marca con ID válido: $id');
+        } else {
+          debugPrint(
+              'ProductoProvider: Advertencia - ID de marca no válido: $idStr');
+        }
+      }
+    }
+
+    // Manejar el color correctamente
+    if (colorSeleccionado != null) {
+      // ColorApp.id ya es int según la definición del modelo
+      productoData['colorId'] = colorSeleccionado.id;
+      debugPrint(
+          'ProductoProvider: Color ${colorSeleccionado.nombre} con ID: ${colorSeleccionado.id}');
+
+      // Incluir también el nombre para claridad
+      productoData['color'] = colorSeleccionado.nombre;
+    }
+
+    return productoData;
   }
 
   /// Exporta los productos de la sucursal actual (implementación pendiente)

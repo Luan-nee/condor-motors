@@ -672,8 +672,4 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
       ),
     );
   }
-
-  Color _getEstadoColor(EstadoTransferencia estado) {
-    return TransferenciasUtils.getEstadoColor(estado);
-  }
 }

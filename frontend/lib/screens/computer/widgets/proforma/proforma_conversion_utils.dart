@@ -357,22 +357,22 @@ class ProformaConversionManager {
             final empleadosSucursal =
                 await api.empleados.getEmpleadosPorSucursal(sucursalIdStr);
 
-            if (empleadosSucursal.isNotEmpty) {
+            if (empleadosSucursal.empleados.isNotEmpty) {
               // Preferir empleado asociado al usuario si existe
               String? userId = userData['id']?.toString();
               if (userId != null) {
                 // Buscar empleado que coincida con el ID de usuario
-                final empleadoUsuario = empleadosSucursal.firstWhere(
+                final empleadoUsuario = empleadosSucursal.empleados.firstWhere(
                   (emp) => emp.cuentaEmpleadoId == userId,
                   orElse: () => empleadosSucursal
-                      .first, // Si no encuentra, usar el primero
+                      .empleados.first, // Si no encuentra, usar el primero
                 );
                 empleadoId = int.tryParse(empleadoUsuario.id);
                 Logger.debug(
                     'Empleado encontrado asociado al usuario: $empleadoId');
               } else {
                 // Si no hay ID de usuario, usar el primer empleado de la sucursal
-                empleadoId = int.tryParse(empleadosSucursal.first.id);
+                empleadoId = int.tryParse(empleadosSucursal.empleados.first.id);
                 Logger.debug(
                     'Usando primer empleado de la sucursal: $empleadoId');
               }
@@ -670,8 +670,10 @@ class ProformaConversionManager {
       // Asegurarse de que sucursalId sea siempre String para la API
       final String sucursalIdStr = sucursalId.toString();
 
-      // Invalidar caché de proformas para la sucursal específica
+      // Invalidar caché de proformas
       api.proformas.invalidateCache(sucursalIdStr);
+      // Invalidar caché de la sucursal
+      api.sucursales.invalidateCache(sucursalIdStr);
       Logger.debug(
           'Caché de proformas invalidado para sucursal $sucursalIdStr');
 
@@ -689,35 +691,6 @@ class ProformaConversionManager {
     } catch (e) {
       Logger.error('Error al recargar datos: $e');
       // No propagamos el error para no interrumpir el flujo principal
-    }
-  }
-
-  /// Verifica si la proforma ya fue convertida (útil para casos donde el API falla pero la conversión fue exitosa)
-  static Future<bool> _verificarConversion(int proformaId) async {
-    try {
-      // Obtener el ID de sucursal del usuario
-      final userData = await api.authService.getUserData();
-      if (userData == null || !userData.containsKey('sucursalId')) {
-        return false;
-      }
-
-      final String sucursalId = userData['sucursalId'].toString();
-
-      // Verificar estado de la proforma
-      final response = await api.proformas.getProformaVenta(
-        sucursalId: sucursalId,
-        proformaId: proformaId,
-        forceRefresh: true,
-      );
-
-      if (response.isNotEmpty && response['data'] != null) {
-        final String estado = response['data']['estado'] ?? '';
-        return estado.toLowerCase() == 'convertida';
-      }
-      return false;
-    } catch (e) {
-      Logger.error('Error al verificar conversión: $e');
-      return false;
     }
   }
 

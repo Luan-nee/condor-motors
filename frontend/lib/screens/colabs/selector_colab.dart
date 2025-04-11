@@ -260,7 +260,6 @@ class SelectorColabScreen extends StatelessWidget {
         const SnackBar(
           content: Text('Hubo un error, pero la sesión ha sido cerrada'),
           backgroundColor: Colors.orange,
-          duration: Duration(seconds: 4),
         ),
       );
 
