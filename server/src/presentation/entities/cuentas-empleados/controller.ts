@@ -6,6 +6,8 @@ import { DeleteCuentaEmpleado } from '@/domain/use-cases/entities/cuentas-emplea
 import { GetCuentaEmpleado } from '@/domain/use-cases/entities/cuentas-empleados/get-cuenta-empleado.use-case'
 import { GetCuentasEmpleados } from '@/domain/use-cases/entities/cuentas-empleados/get-cuentas-empleados.use-case'
 import { UpdateCuentaEmpleado } from '@/domain/use-cases/entities/cuentas-empleados/update-cuenta-empleado.use-case'
+import { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
+import { RegisterUser } from '@domain/use-cases/auth/register-user.use-case'
 import type { Encryptor, TokenAuthenticator } from '@/types/interfaces'
 import type { Request, Response } from 'express'
 
@@ -14,6 +16,39 @@ export class CuentasEmpleadosController {
     private readonly tokenAuthenticator: TokenAuthenticator,
     private readonly encryptor: Encryptor
   ) {}
+
+  create = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [error, registerUserDto] = RegisterUserDto.create(req.body)
+    if (error !== undefined || registerUserDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload } = req
+
+    const registerUser = new RegisterUser(
+      this.tokenAuthenticator,
+      this.encryptor,
+      authPayload
+    )
+
+    registerUser
+      .execute(registerUserDto)
+      .then((user) => {
+        CustomResponse.success({
+          res,
+          data: user.data
+        })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
 
   getById = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {

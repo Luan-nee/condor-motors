@@ -10,9 +10,7 @@ import type {
   TokenAuthenticator
 } from '@/types/interfaces'
 import { LoginUserDto } from '@domain/dtos/auth/login-user.dto'
-import { RegisterUserDto } from '@domain/dtos/auth/register-user.dto'
 import { LoginUser } from '@domain/use-cases/auth/login-user.use-case'
-import { RegisterUser } from '@domain/use-cases/auth/register-user.use-case'
 import type { Request, Response } from 'express'
 
 export class AuthController {
@@ -21,39 +19,6 @@ export class AuthController {
     private readonly encryptor: Encryptor,
     private readonly authSerializer: AuthSerializer
   ) {}
-
-  registerUser = (req: Request, res: Response) => {
-    if (req.authPayload === undefined) {
-      CustomResponse.unauthorized({ res })
-      return
-    }
-
-    const [error, registerUserDto] = RegisterUserDto.create(req.body)
-    if (error !== undefined || registerUserDto === undefined) {
-      CustomResponse.badRequest({ res, error })
-      return
-    }
-
-    const { authPayload } = req
-
-    const registerUser = new RegisterUser(
-      this.tokenAuthenticator,
-      this.encryptor,
-      authPayload
-    )
-
-    registerUser
-      .execute(registerUserDto)
-      .then((user) => {
-        CustomResponse.success({
-          res,
-          data: user.data
-        })
-      })
-      .catch((error: unknown) => {
-        handleError(error, res)
-      })
-  }
 
   loginUser = (req: Request, res: Response) => {
     const [error, loginUserDto] = LoginUserDto.create(req.body)
