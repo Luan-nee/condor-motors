@@ -28,19 +28,16 @@ class TransferenciaDetalleColab extends StatefulWidget {
 }
 
 class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
-  late Future<TransferenciaInventario> _futureTransferencia;
   late final TransferenciasColabProvider _provider;
 
   @override
   void initState() {
     super.initState();
     _provider = context.read<TransferenciasColabProvider>();
-    _cargarTransferencia();
-  }
-
-  void _cargarTransferencia() {
-    _futureTransferencia =
-        _provider.obtenerDetalleTransferencia(widget.transferenciaid);
+    // Cargar los detalles solo una vez en el initState
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _provider.cargarDetalleTransferencia(widget.transferenciaid);
+    });
   }
 
   @override
@@ -61,18 +58,18 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.arrowsRotate),
             onPressed: () {
-              setState(() {
-                _cargarTransferencia();
-              });
+              // Usar el método del provider para recargar
+              _provider.cargarDetalleTransferencia(widget.transferenciaid);
             },
             tooltip: 'Recargar',
           ),
         ],
       ),
-      body: FutureBuilder<TransferenciaInventario>(
-        future: _futureTransferencia,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      // Usar Consumer para actualizar la UI automáticamente
+      body: Consumer<TransferenciasColabProvider>(
+        builder: (context, provider, child) {
+          // Si está cargando, mostrar indicador
+          if (provider.isLoading) {
             return const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
@@ -80,7 +77,8 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
             );
           }
 
-          if (snapshot.hasError) {
+          // Si hay error, mostrar mensaje
+          if (provider.errorMessage != null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -92,16 +90,15 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Error al cargar la transferencia: ${snapshot.error}',
+                    'Error al cargar la transferencia: ${provider.errorMessage}',
                     style: const TextStyle(color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: () {
-                      setState(() {
-                        _cargarTransferencia();
-                      });
+                      provider
+                          .cargarDetalleTransferencia(widget.transferenciaid);
                     },
                     icon: const FaIcon(FontAwesomeIcons.arrowsRotate),
                     label: const Text('Reintentar'),
@@ -114,7 +111,8 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
             );
           }
 
-          if (!snapshot.hasData) {
+          // Si no hay datos, mostrar mensaje
+          if (provider.detalleTransferenciaActual == null) {
             return const Center(
               child: Text(
                 'No se encontró la transferencia',
@@ -123,7 +121,8 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
             );
           }
 
-          final TransferenciaInventario transferencia = snapshot.data!;
+          // Mostrar detalle
+          final transferencia = provider.detalleTransferenciaActual!;
 
           return SingleChildScrollView(
             padding: EdgeInsets.all(isMobile ? 16 : 24),

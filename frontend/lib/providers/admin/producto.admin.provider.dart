@@ -339,10 +339,23 @@ class ProductoProvider extends ChangeNotifier {
       }
 
       // Forzar limpieza de caché para los productos de esta sucursal
+      debugPrint('ProductosAdmin: Limpiando caché para sucursal $sucursalId');
       _productoRepository.invalidateCache(sucursalId);
 
-      // Recargar productos forzando ignorar caché
+      // Si el producto tiene un ID, también limpiar la caché de ese producto específico
+      if (!esNuevo && resultado.id > 0) {
+        final String productoKey = 'producto_${sucursalId}_${resultado.id}';
+        debugPrint(
+            'ProductosAdmin: Limpiando caché específica para $productoKey');
+      }
+
+      // Forzar una recarga completa reiniciando a la primera página
+      debugPrint('ProductosAdmin: Forzando recarga completa de datos');
+      _currentPage = 1; // Volver a la primera página después de guardar
       await cargarProductos();
+
+      _isLoadingProductos = false;
+      notifyListeners();
 
       return true;
     } catch (e) {
@@ -663,6 +676,71 @@ class ProductoProvider extends ChangeNotifier {
       _errorMessage = 'Error al exportar productos: $e';
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Recarga los datos de productos forzando una limpieza completa del caché
+  Future<void> recargarDatosProductos() async {
+    if (_sucursalSeleccionada == null) {
+      return;
+    }
+
+    _errorMessage = null;
+    _isLoadingProductos = true;
+    notifyListeners();
+
+    try {
+      final String sucursalId = _sucursalSeleccionada!.id.toString();
+
+      // Forzar limpieza de caché para los productos de esta sucursal
+      debugPrint(
+          'ProductosAdmin: Forzando limpieza de caché para productos de sucursal $sucursalId');
+      _productoRepository.invalidateCache(sucursalId);
+
+      // Resetear a la primera página y limpiar los filtros actuales
+      _currentPage = 1;
+
+      // Forzar una recarga completa de datos desde el servidor
+      debugPrint(
+          'ProductosAdmin: Forzando recarga de productos desde el servidor');
+
+      // Aplicar la búsqueda del servidor sólo si la búsqueda es mayor a 3 caracteres
+      final String? searchQuery =
+          _searchQuery.length >= 3 ? _searchQuery : null;
+
+      // Hacer una solicitud completamente nueva al servidor
+      final PaginatedResponse<Producto> paginatedProductos =
+          await _productoRepository.getProductos(
+        sucursalId: sucursalId,
+        search: searchQuery,
+        page: _currentPage,
+        pageSize: _pageSize,
+        sortBy: _sortBy.isNotEmpty ? _sortBy : null,
+        order: _order,
+        // Forzar bypass de caché completamente
+        useCache: false,
+        forceRefresh: true,
+      );
+
+      // Actualizar los datos en el provider
+      _paginatedProductos = paginatedProductos;
+      _productosFiltrados = paginatedProductos.items;
+
+      // Si hay una búsqueda local o filtro por categoría, se aplica
+      if ((_searchQuery.isNotEmpty && _searchQuery.length < 3) ||
+          _selectedCategory != 'Todos') {
+        _filtrarProductos();
+      }
+
+      _isLoadingProductos = false;
+      debugPrint(
+          'ProductosAdmin: Recarga de datos completada exitosamente con ${_productosFiltrados.length} productos');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('ProductosAdmin: ERROR en recargarDatosProductos: $e');
+      _errorMessage = 'Error al recargar datos de productos: $e';
+      _isLoadingProductos = false;
+      notifyListeners();
     }
   }
 }

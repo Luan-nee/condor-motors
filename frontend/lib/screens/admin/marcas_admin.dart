@@ -36,24 +36,34 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
     final String nombre = _nombreController.text.trim();
     final String descripcion = _descripcionController.text.trim();
 
+    // Definir una función para mostrar el SnackBar
+    void showSuccessSnackBar() {
+      final String message = marca == null
+          ? 'Marca creada correctamente'
+          : 'Marca actualizada correctamente';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+    }
+
     final bool exito = await _marcasProvider.guardarMarca(
       id: marca?.id,
       nombre: nombre,
       descripcion: descripcion,
     );
 
-    if (exito && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            marca == null
-                ? 'Marca creada correctamente'
-                : 'Marca actualizada correctamente',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context);
+    // Verificar si el widget aún está montado
+    if (!mounted) {
+      return;
+    }
+
+    if (exito) {
+      showSuccessSnackBar();
     }
   }
 
@@ -266,9 +276,8 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                           onPressed: isLoading
                               ? null
                               : () async {
-                                  await marcasProvider.recargarDatos();
-                                  if (mounted &&
-                                      marcasProvider.errorMessage.isNotEmpty) {
+                                  // Definir funciones para mostrar SnackBars
+                                  void showErrorSnackBar() {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content:
@@ -276,7 +285,9 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                         backgroundColor: Colors.red,
                                       ),
                                     );
-                                  } else if (mounted) {
+                                  }
+
+                                  void showSuccessSnackBar() {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text(
@@ -284,6 +295,19 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                         backgroundColor: Colors.green,
                                       ),
                                     );
+                                  }
+
+                                  await marcasProvider.recargarDatos();
+
+                                  // Verificar si el widget aún está montado
+                                  if (!mounted) {
+                                    return;
+                                  }
+
+                                  if (marcasProvider.errorMessage.isNotEmpty) {
+                                    showErrorSnackBar();
+                                  } else {
+                                    showSuccessSnackBar();
                                   }
                                 },
                         ),

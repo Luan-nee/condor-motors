@@ -21,6 +21,9 @@ class TransferenciasColabProvider extends ChangeNotifier {
   TransferenciaInventario? _transferenciaEnProceso;
   final List<DetalleProducto> _productosSeleccionados = [];
 
+  // Agregar propiedad para almacenar el detalle de transferencia actual
+  TransferenciaInventario? _detalleTransferenciaActual;
+
   // Nuevas propiedades para filtrado avanzado
   String _searchQuery = '';
   String _filtroCategoria = 'Todos';
@@ -41,6 +44,10 @@ class TransferenciasColabProvider extends ChangeNotifier {
   TransferenciaInventario? get transferenciaEnProceso =>
       _transferenciaEnProceso;
   List<DetalleProducto> get productosSeleccionados => _productosSeleccionados;
+
+  // Getter para el detalle de la transferencia actual
+  TransferenciaInventario? get detalleTransferenciaActual =>
+      _detalleTransferenciaActual;
 
   // Nuevos getters para filtrado
   String get searchQuery => _searchQuery;
@@ -142,6 +149,28 @@ class TransferenciasColabProvider extends ChangeNotifier {
     } catch (e) {
       _setError('Error al obtener detalle de transferencia: $e');
       rethrow;
+    }
+  }
+
+  /// Carga y almacena el detalle de una transferencia específica
+  Future<void> cargarDetalleTransferencia(String id) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      debugPrint('Cargando detalle de transferencia #$id para la UI');
+
+      final TransferenciaInventario transferencia =
+          await _transferenciaRepository.getTransferencia(id);
+
+      _detalleTransferenciaActual = transferencia;
+      debugPrint('Detalle cargado correctamente');
+      debugPrint('Productos: ${transferencia.productos?.length ?? 0}');
+    } catch (e) {
+      debugPrint('Error al cargar detalle de transferencia: $e');
+      _errorMessage = e.toString();
+    } finally {
+      _setLoading(false);
     }
   }
 

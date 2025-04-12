@@ -24,8 +24,9 @@ class VentasComputerScreen extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(IntProperty('sucursalId', sucursalId));
-    properties.add(StringProperty('nombreSucursal', nombreSucursal));
+    properties
+      ..add(IntProperty('sucursalId', sucursalId))
+      ..add(StringProperty('nombreSucursal', nombreSucursal));
   }
 }
 
@@ -778,6 +779,24 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
       return;
     }
 
+    // Definir función local para mostrar el SnackBar
+    void showSnackBar(String mensaje,
+        {String? labelAccion, VoidCallback? onAccion}) {
+      ScaffoldMessenger.of(currentContext).showSnackBar(
+        SnackBar(
+          content: Text(mensaje),
+          backgroundColor: Colors.green,
+          action: labelAccion != null && onAccion != null
+              ? SnackBarAction(
+                  label: labelAccion,
+                  textColor: Colors.white,
+                  onPressed: onAccion,
+                )
+              : null,
+        ),
+      );
+    }
+
     final DateTimeRange? rango = await showDateRangePicker(
       context: currentContext,
       firstDate: DateTime(2020),
@@ -818,22 +837,14 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(currentContext).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Filtrando desde ${DateFormat('dd/MM/yyyy').format(rango.start)} hasta ${DateFormat('dd/MM/yyyy').format(rango.end)}',
-          ),
-          backgroundColor: Colors.green,
-          action: SnackBarAction(
-            label: 'Limpiar',
-            textColor: Colors.white,
-            onPressed: () {
-              if (mounted) {
-                ventasProvider.actualizarFiltrosFecha(null, null);
-              }
-            },
-          ),
-        ),
+      showSnackBar(
+        'Filtrando desde ${DateFormat('dd/MM/yyyy').format(rango.start)} hasta ${DateFormat('dd/MM/yyyy').format(rango.end)}',
+        labelAccion: 'Limpiar',
+        onAccion: () {
+          if (mounted) {
+            ventasProvider.actualizarFiltrosFecha(null, null);
+          }
+        },
       );
     }
   }
@@ -845,6 +856,16 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
 
     if (!mounted) {
       return;
+    }
+
+    // Definir función local para mostrar el SnackBar
+    void showSnackBar(String mensaje) {
+      ScaffoldMessenger.of(currentContext).showSnackBar(
+        SnackBar(
+          content: Text(mensaje),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
 
     final estados = [
@@ -924,14 +945,8 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
         if (!mounted) {
           return;
         }
-        ScaffoldMessenger.of(currentContext).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Filtrando por estado: ${seleccionado ?? 'Todos'}',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
+
+        showSnackBar('Filtrando por estado: ${seleccionado ?? 'Todos'}');
       }
     });
   }

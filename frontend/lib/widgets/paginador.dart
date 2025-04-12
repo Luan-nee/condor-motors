@@ -80,7 +80,7 @@ class Paginador extends StatelessWidget {
         paginacionProvider ?? Provider.of<PaginacionProvider>(context);
 
     logDebug(
-        'Paginador: Constructor - Provider actual: $provider, itemsPerPage: ${provider.itemsPerPage}');
+        'Paginador: Provider actual - itemsPerPage: ${provider.itemsPerPage}');
 
     final paginacionData =
         paginacion != null ? tempProvider.paginacion : provider.paginacion;
@@ -112,10 +112,11 @@ class Paginador extends StatelessWidget {
                   fontSize: 14,
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: _buildPageSizeSelector(context, provider, txtColor),
+              const Padding(
+                padding: EdgeInsets.only(left: 16),
+                child: SizedBox(width: 0), // Placeholder optimizado
               ),
+              _buildPageSizeSelector(context, provider, txtColor),
             ],
           ),
         );
@@ -294,22 +295,21 @@ class Paginador extends StatelessWidget {
 
   Widget _buildSortControls(BuildContext context, PaginacionProvider provider,
       Color bgColor, Color txtColor, Color accentColor) {
-    // Obtener opciones de ordenación, primero desde los campos proporcionados,
-    // luego desde los metadatos del provider
+    // Obtener opciones de ordenación de manera más eficiente
     List<Map<String, String>> opcionesOrdenacion = [];
 
     if (camposParaOrdenar != null && camposParaOrdenar!.isNotEmpty) {
       opcionesOrdenacion = camposParaOrdenar!;
     } else {
-      // Convertir lista de strings desde metadata a Map<String, String>
+      // Convertir lista de strings desde metadata a Map<String, String> - optimizado
       final opciones = provider.opcionesSortBy;
-      logDebug('Paginador: Opciones de ordenación desde metadatos: $opciones');
-      opcionesOrdenacion = opciones
-          .map((campo) => {
-                'value': campo,
-                'label': _formatearEtiquetaCampo(campo),
-              })
-          .toList();
+      opcionesOrdenacion = List.generate(
+        opciones.length,
+        (i) => {
+          'value': opciones[i],
+          'label': _formatearEtiquetaCampo(opciones[i]),
+        },
+      );
     }
 
     return Row(
@@ -361,7 +361,6 @@ class Paginador extends StatelessWidget {
               ],
               onChanged: (String? newValue) {
                 if (newValue != null) {
-                  logInfo('Paginador: Cambiando ordenación a: $newValue');
                   provider
                       .cambiarOrdenarPor(newValue.isEmpty ? null : newValue);
 
@@ -418,8 +417,6 @@ class Paginador extends StatelessWidget {
                 }).toList(),
                 onChanged: (String? newValue) {
                   if (newValue != null) {
-                    logInfo(
-                        'Paginador: Cambiando dirección de orden a: $newValue');
                     provider.cambiarOrden(newValue);
 
                     if (onOrderChanged != null) {
@@ -443,10 +440,8 @@ class Paginador extends StatelessWidget {
     PaginacionProvider provider,
     Color txtColor,
   ) {
-    // Capturar el valor actual para debugging
-    int currentValue = provider.itemsPerPage;
-    logDebug(
-        'Paginador: Construyendo selector de tamaño - Valor actual: $currentValue, Opciones: ${PaginacionProvider.opcionesTamanoPagina}');
+    // Acceder directamente al valor sin StatefulBuilder
+    final int currentValue = provider.itemsPerPage;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -459,65 +454,41 @@ class Paginador extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        StatefulBuilder(
-          builder: (context, setState) => DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: currentValue,
-              isDense: true,
-              style: TextStyle(
-                color: txtColor,
-                fontSize: 14,
-              ),
-              icon: Icon(
-                Icons.arrow_drop_down,
-                color: txtColor.withOpacity(0.8),
-                size: 16,
-              ),
-              items: PaginacionProvider.opcionesTamanoPagina.map((int value) {
-                return DropdownMenuItem<int>(
-                  value: value,
-                  child: Text(value.toString()),
-                );
-              }).toList(),
-              onChanged: (int? value) {
-                if (value != null) {
-                  logInfo(
-                      'Paginador: Usuario seleccionó tamaño de página: $value');
-
-                  // Actualizar el estado local para ver el cambio inmediatamente
-                  // Verificar si el widget está montado antes de actualizar el estado
-                  if (context.mounted) {
-                    setState(() {
-                      currentValue = value;
-                    });
-                  }
-
-                  // Llamar al método del provider
-                  provider.cambiarItemsPorPagina(value);
-
-                  // Llamar a los callbacks si existen
-                  if (onPageSizeChanged != null) {
-                    logDebug(
-                        'Paginador: Ejecutando callback onPageSizeChanged con valor: $value');
-                    onPageSizeChanged!(value);
-                  }
-
-                  if (onPageChange != null) {
-                    logDebug('Paginador: Ejecutando callback onPageChange');
-                    onPageChange!();
-                  }
-
-                  // Verificar si el cambio se aplicó correctamente
-                  Future.delayed(const Duration(milliseconds: 100), () {
-                    // Verificar que el contexto sigue montado antes de acceder a él
-                    if (context.mounted) {
-                      logDebug(
-                          'Paginador: Verificando cambio - Nuevo valor en provider: ${provider.itemsPerPage}');
-                    }
-                  });
-                }
-              },
+        // Eliminamos StatefulBuilder para mejor rendimiento
+        DropdownButtonHideUnderline(
+          child: DropdownButton<int>(
+            value: currentValue,
+            isDense: true,
+            style: TextStyle(
+              color: txtColor,
+              fontSize: 14,
             ),
+            icon: Icon(
+              Icons.arrow_drop_down,
+              color: txtColor.withOpacity(0.8),
+              size: 16,
+            ),
+            items: PaginacionProvider.opcionesTamanoPagina.map((int value) {
+              return DropdownMenuItem<int>(
+                value: value,
+                child: Text(value.toString()),
+              );
+            }).toList(),
+            onChanged: (int? value) {
+              if (value != null) {
+                // Llamar al método del provider directamente
+                provider.cambiarItemsPorPagina(value);
+
+                // Llamar a los callbacks si existen
+                if (onPageSizeChanged != null) {
+                  onPageSizeChanged!(value);
+                }
+
+                if (onPageChange != null) {
+                  onPageChange!();
+                }
+              }
+            },
           ),
         ),
       ],
@@ -525,17 +496,13 @@ class Paginador extends StatelessWidget {
   }
 
   void _cambiarPagina(PaginacionProvider provider, int pagina) {
-    logInfo('Paginador: Cambiando página a: $pagina');
     provider.cambiarPagina(pagina);
 
     if (onPageChange != null) {
-      logDebug('Paginador: Ejecutando callback onPageChange');
       onPageChange!();
     }
 
     if (onPageChanged != null) {
-      logDebug(
-          'Paginador: Ejecutando callback onPageChanged con página: $pagina');
       onPageChanged!(pagina);
     }
   }
@@ -602,26 +569,30 @@ class Paginador extends StatelessWidget {
     );
   }
 
-  /// Formatea un nombre de campo para mostrarlo como etiqueta
+  /// Formatea un nombre de campo para mostrarlo como etiqueta - optimizado
   String _formatearEtiquetaCampo(String campo) {
-    if (campo.isEmpty) {
-      return '';
+    if (campo.isEmpty) return '';
+
+    // Optimización: usar un StringBuffer para mejor rendimiento
+    final buffer = StringBuffer();
+    bool capitalizeNext = true;
+
+    for (int i = 0; i < campo.length; i++) {
+      final char = campo[i];
+
+      if (char == '_') {
+        buffer.write(' ');
+        capitalizeNext = true;
+      } else if (i > 0 && char.toUpperCase() == char) {
+        buffer.write(' ${char.toLowerCase()}');
+        capitalizeNext = false;
+      } else {
+        buffer.write(capitalizeNext ? char.toUpperCase() : char);
+        capitalizeNext = false;
+      }
     }
 
-    // Convertir camelCase o snake_case a palabras separadas
-    String resultado = campo.replaceAllMapped(
-      RegExp(r'([A-Z])'),
-      (Match match) => ' ${match.group(0)!.toLowerCase()}',
-    );
-
-    resultado = resultado.replaceAll('_', ' ');
-
-    // Capitalizar primera letra
-    if (resultado.isNotEmpty) {
-      resultado = resultado[0].toUpperCase() + resultado.substring(1);
-    }
-
-    return resultado;
+    return buffer.toString();
   }
 
   @override

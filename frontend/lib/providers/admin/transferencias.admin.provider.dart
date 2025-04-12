@@ -22,6 +22,8 @@ class TransferenciasProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   String _selectedFilter = 'Todos';
+  // Añadir una nueva propiedad para almacenar el detalle de transferencia actual
+  TransferenciaInventario? _detalleTransferenciaActual;
 
   // Propiedades para filtrado avanzado
   String _searchQuery = '';
@@ -46,6 +48,9 @@ class TransferenciasProvider extends ChangeNotifier {
   DateTime? get fechaFin => _fechaFin;
   String get ordenarPor => _ordenarPor;
   String get orden => _orden;
+  // Añadir getter para el detalle de transferencia
+  TransferenciaInventario? get detalleTransferenciaActual =>
+      _detalleTransferenciaActual;
 
   /// Recarga todos los datos forzando actualización desde el servidor
   Future<void> recargarDatos() async {
@@ -154,6 +159,27 @@ class TransferenciasProvider extends ChangeNotifier {
     } catch (e) {
       _setError('Error al obtener detalle de transferencia: $e');
       rethrow;
+    }
+  }
+
+  /// Carga y almacena los detalles de una transferencia
+  Future<void> cargarDetalleTransferencia(String id) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      debugPrint('Cargando detalles de la transferencia #$id');
+      final TransferenciaInventario transferencia =
+          await _transferenciaRepository.getTransferencia(id);
+
+      _detalleTransferenciaActual = transferencia;
+      debugPrint('Detalles cargados correctamente');
+      debugPrint('Productos: ${transferencia.productos?.length ?? 0}');
+    } catch (e) {
+      debugPrint('Error al cargar detalle de transferencia: $e');
+      _errorMessage = e.toString();
+    } finally {
+      _setLoading(false);
     }
   }
 
