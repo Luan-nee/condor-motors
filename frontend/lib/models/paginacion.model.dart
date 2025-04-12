@@ -6,6 +6,8 @@ class Paginacion {
   final int currentPage;
   final bool hasNext;
   final bool hasPrev;
+  final int? rangoInicio;
+  final int? rangoFin;
 
   // Caché para cálculos costosos
   List<int>? _cachedVisiblePages;
@@ -17,6 +19,8 @@ class Paginacion {
     required this.currentPage,
     required this.hasNext,
     required this.hasPrev,
+    this.rangoInicio,
+    this.rangoFin,
   });
 
   factory Paginacion.fromJson(Map<String, dynamic> json) {
@@ -26,6 +30,8 @@ class Paginacion {
       currentPage: json['currentPage'] as int? ?? 1,
       hasNext: json['hasNext'] as bool? ?? false,
       hasPrev: json['hasPrev'] as bool? ?? false,
+      rangoInicio: json['rangoInicio'] as int?,
+      rangoFin: json['rangoFin'] as int?,
     );
   }
 
@@ -162,6 +168,8 @@ class Paginacion {
         'currentPage': currentPage,
         'hasNext': hasNext,
         'hasPrev': hasPrev,
+        'rangoInicio': rangoInicio,
+        'rangoFin': rangoFin,
       };
 
   /// Obtiene un resumen detallado de la paginación (útil para depuración)
@@ -176,6 +184,8 @@ class Paginacion {
     int? currentPage,
     bool? hasNext,
     bool? hasPrev,
+    int? rangoInicio,
+    int? rangoFin,
   }) {
     return Paginacion(
       totalItems: totalItems ?? this.totalItems,
@@ -183,6 +193,8 @@ class Paginacion {
       currentPage: currentPage ?? this.currentPage,
       hasNext: hasNext ?? this.hasNext,
       hasPrev: hasPrev ?? this.hasPrev,
+      rangoInicio: rangoInicio ?? this.rangoInicio,
+      rangoFin: rangoFin ?? this.rangoFin,
     );
   }
 
@@ -197,7 +209,9 @@ class Paginacion {
         other.totalPages == totalPages &&
         other.currentPage == currentPage &&
         other.hasNext == hasNext &&
-        other.hasPrev == hasPrev;
+        other.hasPrev == hasPrev &&
+        other.rangoInicio == rangoInicio &&
+        other.rangoFin == rangoFin;
   }
 
   @override
@@ -207,6 +221,8 @@ class Paginacion {
         currentPage,
         hasNext,
         hasPrev,
+        rangoInicio,
+        rangoFin,
       );
 }
 

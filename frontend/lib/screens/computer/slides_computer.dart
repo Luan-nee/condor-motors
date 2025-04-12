@@ -56,6 +56,15 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    // Limpiar recursos y detener cualquier operación pendiente
+    _menuItems.clear();
+    _selectedIndex = 0;
+    _sucursalId = null;
+    super.dispose();
+  }
+
   void _obtenerInformacionSucursal() {
     debugPrint('Obteniendo información de sucursal...');
     try {
@@ -324,7 +333,9 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
 
             // Contenido principal
             Expanded(
-              child: _menuItems[_selectedIndex]['screen'] as Widget,
+              child: _menuItems.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : _menuItems[_selectedIndex]['screen'] as Widget,
             ),
           ],
         ),
@@ -427,13 +438,31 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
 
   // Método para manejar el cierre de sesión
   Future<void> _handleLogout(BuildContext context) async {
+    debugPrint('Iniciando proceso de cierre de sesión...');
     try {
+      // Primero obtenemos el provider antes de limpiar el estado
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      // Limpiar el estado actual y detener cualquier carga de proformas
+      if (mounted) {
+        setState(() {
+          _selectedIndex = 0;
+          // En lugar de vaciar completamente el menú, lo mantenemos con un widget de carga
+          _menuItems = <Map<String, dynamic>>[
+            <String, dynamic>{
+              'title': 'Cerrando sesión...',
+              'icon': FontAwesomeIcons.spinner,
+              'screen': const Center(child: CircularProgressIndicator()),
+              'description': 'Por favor espere...',
+            },
+          ];
+        });
+      }
+
+      // Realizar el logout
       await authProvider.logout();
 
-      if (!context.mounted) {
-        return;
-      }
+      if (!context.mounted) return;
 
       // Navegar al login y limpiar el stack de navegación
       await Navigator.of(context).pushNamedAndRemoveUntil(
@@ -441,9 +470,8 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
         (Route<dynamic> route) => false,
       );
     } catch (e) {
-      if (!context.mounted) {
-        return;
-      }
+      debugPrint('Error durante el cierre de sesión: $e');
+      if (!context.mounted) return;
 
       // Mostrar error pero igual intentar navegar al login
       ScaffoldMessenger.of(context).showSnackBar(

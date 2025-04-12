@@ -257,12 +257,24 @@ class PaginacionProvider extends ChangeNotifier {
       return;
     }
 
+    // Calcular hasNext y hasPrev basado en la nueva página
+    final bool hasNext = nuevaPagina < _paginacion.totalPages;
+    final bool hasPrev = nuevaPagina > 1;
+
+    // Calcular el rango de elementos para la nueva página
+    final int totalItems = _paginacion.totalItems;
+    final int inicio = ((nuevaPagina - 1) * _itemsPerPage) + 1;
+    final int fin = (inicio + _itemsPerPage - 1).clamp(inicio, totalItems);
+
     final nuevaPaginacion = Paginacion(
-      totalItems: _paginacion.totalItems,
+      totalItems: totalItems,
       totalPages: _paginacion.totalPages,
       currentPage: nuevaPagina,
-      hasNext: nuevaPagina < _paginacion.totalPages,
-      hasPrev: nuevaPagina > 1,
+      hasNext: hasNext,
+      hasPrev: hasPrev,
+      // Agregar información del rango actual
+      rangoInicio: inicio,
+      rangoFin: fin,
     );
 
     _paginacion = nuevaPaginacion;
@@ -299,20 +311,46 @@ class PaginacionProvider extends ChangeNotifier {
     }
   }
 
-  /// Cambiar el número de elementos por página - optimizado
+  /// Método para cambiar el número de elementos por página - optimizado
   void cambiarItemsPorPagina(int nuevoItemsPerPage) {
     if (nuevoItemsPerPage < 1 || nuevoItemsPerPage == _itemsPerPage) {
       return;
     }
 
+    // Limitar el tamaño de página al máximo permitido
     nuevoItemsPerPage = nuevoItemsPerPage.clamp(1, maximoPorPagina);
+
+    // Guardar el valor anterior para comparación
+    final anteriorItemsPerPage = _itemsPerPage;
     _itemsPerPage = nuevoItemsPerPage;
 
-    // Restaurar a la primera página al cambiar el tamaño
-    if (_paginacion.currentPage > 1) {
-      irAPrimeraPagina();
-    } else {
-      // Si ya estamos en la primera página, solo notificamos
+    // Calcular el nuevo número total de páginas
+    final int nuevoTotalPages =
+        (_paginacion.totalItems / nuevoItemsPerPage).ceil();
+
+    // Ajustar la página actual si es necesario
+    int nuevaPaginaActual = _paginacion.currentPage;
+    if (nuevaPaginaActual > nuevoTotalPages) {
+      nuevaPaginaActual = nuevoTotalPages;
+    }
+
+    // Calcular el nuevo rango de elementos
+    final int inicio = ((nuevaPaginaActual - 1) * nuevoItemsPerPage) + 1;
+    final int fin =
+        (inicio + nuevoItemsPerPage - 1).clamp(inicio, _paginacion.totalItems);
+
+    _paginacion = Paginacion(
+      totalItems: _paginacion.totalItems,
+      totalPages: nuevoTotalPages,
+      currentPage: nuevaPaginaActual,
+      hasNext: nuevaPaginaActual < nuevoTotalPages,
+      hasPrev: nuevaPaginaActual > 1,
+      rangoInicio: inicio,
+      rangoFin: fin,
+    );
+
+    // Notificar solo si hubo cambios
+    if (_itemsPerPage != anteriorItemsPerPage) {
       notifyListeners();
     }
   }
@@ -491,6 +529,13 @@ class PaginacionProvider extends ChangeNotifier {
       {Map<String, dynamic>? metadata}) {
     final provider = PaginacionProvider();
     if (paginacion != null) {
+      // Calcular el rango si no está definido
+      final int inicio = paginacion.rangoInicio ??
+          ((paginacion.currentPage - 1) * provider.itemsPerPage) + 1;
+      final int fin = paginacion.rangoFin ??
+          (inicio + provider.itemsPerPage - 1)
+              .clamp(inicio, paginacion.totalItems);
+
       provider
         .._paginacion = Paginacion(
           totalItems: paginacion.totalItems ?? 0,
@@ -498,6 +543,8 @@ class PaginacionProvider extends ChangeNotifier {
           currentPage: paginacion.currentPage ?? 1,
           hasNext: (paginacion.currentPage ?? 1) < (paginacion.totalPages ?? 1),
           hasPrev: (paginacion.currentPage ?? 1) > 1,
+          rangoInicio: inicio,
+          rangoFin: fin,
         )
         .._metadata = metadata;
     }
@@ -507,8 +554,19 @@ class PaginacionProvider extends ChangeNotifier {
   /// Crea un provider desde un PaginatedResponse
   static PaginacionProvider fromResponse<T>(PaginatedResponse<T> response) {
     final provider = PaginacionProvider();
-    provider._paginacion = response.paginacion;
-    provider._metadata = response.metadata;
+
+    // Calcular el rango para la paginación actual
+    final int inicio =
+        ((response.paginacion.currentPage - 1) * provider.itemsPerPage) + 1;
+    final int fin = (inicio + provider.itemsPerPage - 1)
+        .clamp(inicio, response.paginacion.totalItems);
+
+    provider
+      .._paginacion = response.paginacion.copyWith(
+        rangoInicio: inicio,
+        rangoFin: fin,
+      )
+      .._metadata = response.metadata;
     return provider;
   }
 
@@ -517,8 +575,19 @@ class PaginacionProvider extends ChangeNotifier {
     final provider = PaginacionProvider();
 
     if (response.containsKey('pagination')) {
-      final paginacion =
-          Paginacion.fromJson(response['pagination'] as Map<String, dynamic>);
+      final paginacionData = response['pagination'] as Map<String, dynamic>;
+
+      // Calcular el rango para la paginación actual
+      final int currentPage = paginacionData['currentPage'] as int? ?? 1;
+      final int totalItems = paginacionData['totalItems'] as int? ?? 0;
+      final int inicio = ((currentPage - 1) * provider.itemsPerPage) + 1;
+      final int fin =
+          (inicio + provider.itemsPerPage - 1).clamp(inicio, totalItems);
+
+      final paginacion = Paginacion.fromJson(paginacionData).copyWith(
+        rangoInicio: inicio,
+        rangoFin: fin,
+      );
       provider._paginacion = paginacion;
     }
 
