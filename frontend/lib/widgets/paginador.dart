@@ -95,7 +95,6 @@ class Paginador extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Selector de items por página
             if (!forceCompactMode)
@@ -129,8 +128,9 @@ class Paginador extends StatelessWidget {
                     onChanged: (int? value) {
                       if (value != null) {
                         provider.cambiarItemsPorPagina(value);
-                        if (onPageSizeChanged != null)
+                        if (onPageSizeChanged != null) {
                           onPageSizeChanged!(value);
+                        }
                         if (onPageChange != null) onPageChange!();
                       }
                     },

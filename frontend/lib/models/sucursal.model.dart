@@ -12,6 +12,7 @@ class Sucursal {
   final DateTime fechaCreacion;
   final DateTime fechaActualizacion;
   final bool activo;
+  final int totalEmpleados;
 
   Sucursal({
     required this.id,
@@ -27,6 +28,7 @@ class Sucursal {
     required this.fechaCreacion,
     required this.fechaActualizacion,
     this.activo = true,
+    this.totalEmpleados = 0,
   }) {
     // Validar formato de serie de factura
     if (serieFactura != null) {
@@ -147,6 +149,7 @@ class Sucursal {
           ? DateTime.parse(json['fechaActualizacion'])
           : DateTime.now(),
       activo: json['activo'] ?? true,
+      totalEmpleados: json['totalEmpleados'] ?? 0,
     );
   }
 
@@ -169,6 +172,7 @@ class Sucursal {
       'fechaCreacion': fechaCreacion.toIso8601String(),
       'fechaActualizacion': fechaActualizacion.toIso8601String(),
       'activo': activo,
+      'totalEmpleados': totalEmpleados,
     };
   }
 
@@ -187,6 +191,7 @@ class Sucursal {
     DateTime? fechaCreacion,
     DateTime? fechaActualizacion,
     bool? activo,
+    int? totalEmpleados,
   }) {
     return Sucursal(
       id: id ?? this.id,
@@ -203,6 +208,7 @@ class Sucursal {
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
       fechaActualizacion: fechaActualizacion ?? this.fechaActualizacion,
       activo: activo ?? this.activo,
+      totalEmpleados: totalEmpleados ?? this.totalEmpleados,
     );
   }
 

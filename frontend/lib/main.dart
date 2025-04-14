@@ -219,11 +219,8 @@ class CondorMotorsApp extends StatelessWidget {
           create: (_) => StockProvider(),
         ),
         ChangeNotifierProvider<VentasComputerProvider>(
-          create: (_) {
-            final provider = VentasComputerProvider();
-            provider.messengerKey = scaffoldMessengerKey;
-            return provider;
-          },
+          create: (_) =>
+              VentasComputerProvider()..messengerKey = scaffoldMessengerKey,
         ),
         ChangeNotifierProvider<SucursalProvider>(
           create: (_) => SucursalProvider(),
