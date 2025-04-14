@@ -8,7 +8,8 @@ import {
   getRandomNumber,
   getRandomUniqueElementsFromArray,
   getRandomValueFromArray,
-  productWithTwoDecimals
+  productWithTwoDecimals,
+  roundTwoDecimals
 } from '@/core/lib/utils'
 import { db } from '@db/connection'
 import * as schema from '@db/schema'
@@ -48,19 +49,25 @@ const insertInBatches = async (
 
 const sucursalesValues = Array.from({ length: seedConfig.sucursalesCount }).map(
   (_, i) => {
+    const id = (i + 1).toString()
+    const sucursal = {
+      nombre: faker.company.name() + i.toString(),
+      direccion: faker.location.streetAddress({ useFullAddress: true }),
+      sucursalCentral: faker.datatype.boolean(),
+      serieFactura: `F${id.padStart(3, '0')}`,
+      serieBoleta: `F${id.padStart(3, '0')}`,
+      codigoEstablecimiento: id.padStart(4, '0')
+    }
+
     if (i === 0) {
       return {
+        ...sucursal,
         nombre: 'Sucursal Principal',
-        sucursalCentral: true,
-        direccion: faker.location.streetAddress({ useFullAddress: true })
+        sucursalCentral: true
       }
     }
 
-    return {
-      nombre: faker.company.name() + i.toString(),
-      sucursalCentral: faker.datatype.boolean(),
-      direccion: faker.location.streetAddress({ useFullAddress: true })
-    }
+    return sucursal
   }
 )
 
@@ -109,32 +116,31 @@ const seedDatabase = async () => {
   const empleadosValues = Array.from({ length: seedConfig.empleadosCount }).map(
     (_, i) => {
       const [fechaString] = faker.date.recent().toISOString().split('T')
-      const baseValues = {
-        edad: faker.number.int({ min: 18, max: 60 }),
+      const empleado = {
+        nombre: faker.person.firstName(),
+        apellidos: faker.person.lastName(),
+        activo: faker.datatype.boolean(),
         dni:
           faker.number.int({ min: 1111111, max: 9999999 }).toString() +
           i.toString(),
+        celular: faker.phone.number({ style: 'international' }),
         horaInicioJornada: '08:00:00',
         horaFinJornada: '17:00:00',
-        fechaContratacion: fechaString
+        fechaContratacion: fechaString,
+        sucursalId: getRandomValueFromArray(sucursales).id
       }
 
       if (i === 0) {
         const [sucursal] = sucursales
         return {
+          ...empleado,
           nombre: 'Administrador',
           apellidos: 'Principal',
-          sucursalId: sucursal.id,
-          ...baseValues
+          sucursalId: sucursal.id
         }
       }
 
-      return {
-        nombre: faker.person.firstName(),
-        apellidos: faker.person.lastName(),
-        sucursalId: getRandomValueFromArray(sucursales).id,
-        ...baseValues
-      }
+      return empleado
     }
   )
 
@@ -161,16 +167,20 @@ const seedDatabase = async () => {
       codigo: schema.permisosTable.codigo
     })
 
-  const permisosVendedorId = permisos.filter((permiso) =>
-    vendedorPermisssions.some(
-      (vendedorPermiso) => vendedorPermiso.codigo === permiso.codigo
-    )
+  const vendedorPermisosCodigos = new Set(
+    vendedorPermisssions.map((permiso) => permiso.codigo)
   )
 
-  const permisosComputadoraId = permisos.filter((permiso) =>
-    computadoraPermissions.some(
-      (computadoraPermiso) => computadoraPermiso.codigo === permiso.codigo
-    )
+  const permisosVendedor = permisos.filter((permiso) =>
+    vendedorPermisosCodigos.has(permiso.codigo)
+  )
+
+  const computadoraPermisosCodigos = new Set(
+    computadoraPermissions.map((permiso) => permiso.codigo)
+  )
+
+  const permisosComputadora = permisos.filter((permiso) =>
+    computadoraPermisosCodigos.has(permiso.codigo)
   )
 
   await db.insert(schema.rolesPermisosTable).values([
@@ -178,11 +188,11 @@ const seedDatabase = async () => {
       permisoId: permiso.id,
       rolId: adminRole.id
     })),
-    ...permisosVendedorId.map((permiso) => ({
+    ...permisosVendedor.map((permiso) => ({
       permisoId: permiso.id,
       rolId: vendedorRole.id
     })),
-    ...permisosComputadoraId.map((permiso) => ({
+    ...permisosComputadora.map((permiso) => ({
       permisoId: permiso.id,
       rolId: computadoraRole.id
     }))
@@ -236,7 +246,7 @@ const seedDatabase = async () => {
         : undefined
 
       const porcentajeDescuento = !descuentoProdGratis
-        ? faker.number.int({ min: 10, max: 20 })
+        ? faker.number.int({ min: 5, max: 10 })
         : undefined
 
       return {
@@ -275,14 +285,23 @@ const seedDatabase = async () => {
 
   const detallesProductosValues = productos.flatMap((producto) =>
     sucursales.flatMap((sucursal) => {
+      const precioCompra = faker.commerce.price({ min: 100, max: 150 })
+      const precioVenta = faker.commerce.price({ min: 160, max: 180 })
+      const porcentajeGanancia = roundTwoDecimals(
+        100 - (parseFloat(precioCompra) * 100) / parseFloat(precioVenta)
+      )
+
       const stock = faker.number.int({ min: 10, max: 200 })
+
       return {
-        precioCompra: faker.commerce.price({ min: 100, max: 150 }),
-        precioVenta: faker.commerce.price({ min: 160, max: 180 }),
+        precioCompra,
+        precioVenta,
         precioOferta: faker.commerce.price({ min: 140, max: 160 }),
+        porcentajeGanancia,
         stock,
         stockBajo:
           producto.stockMinimo !== null ? stock < producto.stockMinimo : false,
+        liquidacion: faker.datatype.boolean(),
         productoId: producto.id,
         sucursalId: sucursal.id
       }
@@ -292,7 +311,7 @@ const seedDatabase = async () => {
   await insertInBatches(detallesProductosValues, schema.detallesProductoTable)
 
   const fotosProductoValues = productos.map((producto) => ({
-    path: `static/img/${faker.string.alphanumeric(10)}/${faker.string.alphanumeric(5)}.jpg`,
+    path: `assets/${faker.string.alphanumeric(10)}.webp`,
     productoId: producto.id
   }))
 
