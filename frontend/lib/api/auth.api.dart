@@ -1066,6 +1066,20 @@ class AuthApi {
       if (response['status'] != 'success' ||
           response['data'] == null ||
           response['data'] is! Map<String, dynamic>) {
+        // Manejo específico para errores de respuesta con formato correcto pero estatus 'fail'
+        if (response['status'] == 'fail' && response['error'] != null) {
+          final String errorMsg = response['error'].toString();
+          if (errorMsg.toLowerCase().contains('contraseña incorrectos') ||
+              errorMsg.toLowerCase().contains('nombre de usuario') ||
+              errorMsg.toLowerCase().contains('credenciales')) {
+            throw ApiException(
+              statusCode: 401,
+              message: 'Usuario o contraseña incorrectos',
+              errorCode: ApiException.errorUnauthorized,
+            );
+          }
+        }
+
         throw ApiException(
           statusCode: 500,
           message: 'Error: Formato de datos de usuario inválido',
@@ -1085,6 +1099,27 @@ class AuthApi {
       return usuarioAutenticado;
     } catch (e) {
       debugPrint('Error durante login: $e');
+
+      // Mejorar la detección de errores de credenciales incorrectas
+      if (e is ApiException) {
+        if (e.statusCode == 400) {
+          // Extraer el mensaje de error si existe
+          final dynamic errorData = e.data;
+          if (errorData is Map<String, dynamic> && errorData['error'] != null) {
+            final String errorMsg = errorData['error'].toString();
+            if (errorMsg.toLowerCase().contains('contraseña incorrectos') ||
+                errorMsg.toLowerCase().contains('nombre de usuario') ||
+                errorMsg.toLowerCase().contains('credenciales')) {
+              throw ApiException(
+                statusCode: 401,
+                message: 'Usuario o contraseña incorrectos',
+                errorCode: ApiException.errorUnauthorized,
+              );
+            }
+          }
+        }
+      }
+
       rethrow;
     }
   }

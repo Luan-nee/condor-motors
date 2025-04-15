@@ -168,7 +168,9 @@ class LoginProvider extends ChangeNotifier {
       _status = LoginStatus.error;
       _errorMessage = _formatErrorMessage(e);
       notifyListeners();
-      return null;
+
+      // Propagar el error formateado para que la UI pueda mostrarlo correctamente
+      throw Exception(_errorMessage);
     }
   }
 
@@ -182,9 +184,28 @@ class LoginProvider extends ChangeNotifier {
         case ApiException.errorServer:
           return 'Error en el servidor. Intente más tarde.';
         default:
+          // Verificar si el mensaje contiene información sobre credenciales incorrectas
+          if (error.message
+                  .toLowerCase()
+                  .contains('usuario o contraseña incorrectos') ||
+              error.message.toLowerCase().contains('incorrect') ||
+              error.message
+                  .toLowerCase()
+                  .contains('nombre de usuario o contraseña')) {
+            return 'Usuario o contraseña incorrectos';
+          }
           return 'Error: ${error.message}';
       }
     }
+
+    // Verificar mensajes de error comunes en formato string
+    final String errorStr = error.toString().toLowerCase();
+    if (errorStr.contains('usuario o contraseña incorrectos') ||
+        errorStr.contains('incorrect') ||
+        errorStr.contains('nombre de usuario o contraseña')) {
+      return 'Usuario o contraseña incorrectos';
+    }
+
     return 'Error inesperado: $error';
   }
 

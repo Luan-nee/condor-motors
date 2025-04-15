@@ -53,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen>
   bool _rememberMe = false;
   bool _stayLoggedIn = false; // Variable para "Permanecer conectado"
   late final AnimationController _animationController;
-  final String _errorMessage = '';
+  String _errorMessage = '';
   String _serverIp = 'localhost'; // IP local para el servidor
   late final LifecycleObserver _lifecycleObserver;
   bool _isCheckingAutoLogin = true; // Flag para controlar el auto-login
@@ -610,11 +610,18 @@ class _LoginScreenState extends State<LoginScreen>
 
       setState(() {
         _isLoading = false;
+        // Actualizar el mensaje de error para mostrarlo en el formulario
+        if (e.toString().contains('usuario o contraseña incorrectos') ||
+            e.toString().toLowerCase().contains('incorrect')) {
+          _errorMessage = 'Usuario o contraseña incorrectos';
+        } else {
+          _errorMessage = 'Error al iniciar sesión: ${e.toString()}';
+        }
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al iniciar sesión: ${e.toString()}'),
+          content: Text(_errorMessage),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
@@ -952,15 +959,33 @@ class _LoginScreenState extends State<LoginScreen>
 
                         // Error message
                         if (_errorMessage.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16.0),
-                            child: Text(
-                              _errorMessage,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                                fontSize: 14,
-                              ),
-                              textAlign: TextAlign.center,
+                          Container(
+                            margin: const EdgeInsets.only(top: 16.0),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: Colors.red.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage,
+                                    style: const TextStyle(
+                                      color: Colors.red,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
 

@@ -165,61 +165,59 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
             child: _buildSearchField(ventasProvider),
           ),
           const SizedBox(width: 16),
-          // Botón de recarga de ventas
-          if (ventasProvider.sucursalSeleccionada != null) ...[
-            ElevatedButton.icon(
-              icon: ventasProvider.isVentasLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const FaIcon(
-                      FontAwesomeIcons.arrowsRotate,
-                      size: 16,
+          // Botón de recargar ventas
+          ElevatedButton.icon(
+            icon: ventasProvider.isVentasLoading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
                       color: Colors.white,
+                      strokeWidth: 2,
                     ),
-              label: Text(
-                ventasProvider.isVentasLoading ? 'Recargando...' : 'Recargar',
-                style: const TextStyle(color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2D2D2D),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
-              onPressed: ventasProvider.isVentasLoading
-                  ? null
-                  : () async {
-                      await ventasProvider.cargarVentas();
-                      // Verificar si el widget sigue montado antes de mostrar SnackBar
-                      if (mounted) {
-                        if (ventasProvider.ventasErrorMessage.isNotEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(ventasProvider.ventasErrorMessage),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Ventas recargadas exitosamente'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        }
-                      }
-                    },
+                  )
+                : const FaIcon(
+                    FontAwesomeIcons.arrowsRotate,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+            label: Text(
+              ventasProvider.isVentasLoading ? 'Recargando...' : 'Recargar',
+              style: const TextStyle(color: Colors.white),
             ),
-            const SizedBox(width: 12),
-          ],
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2D2D2D),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+            onPressed: ventasProvider.isVentasLoading
+                ? null
+                : () async {
+                    await ventasProvider.cargarVentas();
+                    if (mounted) {
+                      // Mostrar mensaje de éxito o error
+                      if (ventasProvider.ventasErrorMessage.isNotEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(ventasProvider.ventasErrorMessage),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Ventas recargadas exitosamente'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    }
+                  },
+          ),
+          const SizedBox(width: 16),
           ElevatedButton.icon(
             icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
             label: const Text('Nueva Venta'),
