@@ -254,14 +254,14 @@ class _SucursalFormState extends State<SucursalForm>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
-                                      children: [
-                                        const FaIcon(
+                                      children: const [
+                                        FaIcon(
                                           FontAwesomeIcons.buildingFlag,
                                           size: 16,
                                           color: Colors.white70,
                                         ),
-                                        const SizedBox(width: 8),
-                                        const Text(
+                                        SizedBox(width: 8),
+                                        Text(
                                           'Tipo de Sucursal',
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
@@ -404,14 +404,14 @@ class _SucursalFormState extends State<SucursalForm>
                                           CrossAxisAlignment.start,
                                       children: [
                                         Row(
-                                          children: [
-                                            const FaIcon(
+                                          children: const [
+                                            FaIcon(
                                               FontAwesomeIcons.receipt,
                                               size: 14,
                                               color: Colors.white70,
                                             ),
-                                            const SizedBox(width: 8),
-                                            const Text(
+                                            SizedBox(width: 8),
+                                            Text(
                                               'Serie Factura',
                                               style: TextStyle(
                                                 color: Colors.white70,

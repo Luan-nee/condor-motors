@@ -28,9 +28,12 @@ class ProformaNotification {
 
   ProformaNotification._internal();
 
+  /// Verifica si la plataforma actual permite mostrar notificaciones de Windows.
+  bool get _canShowWindowsNotifications => !kIsWeb && Platform.isWindows;
+
   /// Inicializa el sistema de notificaciones
   Future<void> init() async {
-    if (!kIsWeb && Platform.isWindows) {
+    if (_canShowWindowsNotifications) {
       try {
         // Inicializar la biblioteca de notificaciones de Windows
         final bool initialized = await WinToast.instance().initialize(
@@ -62,8 +65,9 @@ class ProformaNotification {
     }
   }
 
-  /// Verifica si las notificaciones están habilitadas
-  bool get isEnabled => _notificationsEnabled && _isInitialized;
+  /// Verifica si las notificaciones están habilitadas y la plataforma lo permite
+  bool get isEnabled =>
+      _notificationsEnabled && _isInitialized && _canShowWindowsNotifications;
 
   /// Habilita o deshabilita las notificaciones
   void setNotificationsEnabled(bool enabled) {
@@ -104,104 +108,95 @@ class ProformaNotification {
     return diferencia < _notificationThrottleSeconds;
   }
 
+  /// Verifica si se puede enviar una notificación para una proforma específica.
+  /// Considera si ya fue notificada recientemente y si se debe limitar la frecuencia.
+  bool _puedeNotificar(int proformaId, {bool aplicarLimitacion = true}) {
+    if (_fueNotificadaRecientemente(proformaId)) {
+      Logger.debug(
+          '🔔 Notificación duplicada omitida para proforma #$proformaId');
+      return false;
+    }
+    if (aplicarLimitacion && _deberiaLimitarNotificaciones()) {
+      Logger.debug(
+          '🔔 Notificación limitada por frecuencia para proforma #$proformaId');
+      return false;
+    }
+    return true;
+  }
+
+  /// Intenta mostrar una notificación de Windows y maneja errores comunes.
+  Future<void> _attemptShowNotification({
+    required Proforma proforma,
+    required String title,
+    required String body,
+    required String tagPrefix,
+    required String logMessage,
+  }) async {
+    try {
+      await _showWindowsNotification(
+        title: title,
+        body: body,
+        tag: '$tagPrefix${proforma.id}',
+      );
+      _registrarProformaNotificada(proforma.id);
+      Logger.info('🔔 Notificación enviada: $logMessage #${proforma.id}');
+    } catch (e) {
+      Logger.error(
+          'Error al mostrar notificación ($logMessage #${proforma.id}): $e');
+    }
+  }
+
   /// Notifica sobre una nueva proforma creada
   Future<void> notifyNewProforma(Proforma proforma) async {
-    if (!isEnabled || !kIsWeb && !Platform.isWindows) {
+    if (!isEnabled || !_puedeNotificar(proforma.id)) {
       return;
     }
 
-    // Verificar limitación de frecuencia y duplicados
-    if (_fueNotificadaRecientemente(proforma.id) ||
-        _deberiaLimitarNotificaciones()) {
-      Logger.debug('🔔 Notificación limitada para proforma #${proforma.id}');
-      return;
-    }
-
-    try {
-      final String message =
-          'Se ha creado la proforma #${proforma.id} por un valor de S/ ${proforma.total.toStringAsFixed(2)}';
-
-      await _showWindowsNotification(
-        title: 'Nueva Proforma Creada',
-        body: message,
-        tag: 'new_proforma_${proforma.id}',
-      );
-
-      // Registrar esta proforma como notificada
-      _registrarProformaNotificada(proforma.id);
-
-      Logger.info('🔔 Notificación enviada: Nueva proforma #${proforma.id}');
-    } catch (e) {
-      Logger.error('Error al mostrar notificación: $e');
-    }
+    final String message =
+        'Se ha creado la proforma #${proforma.id} por un valor de S/ ${proforma.total.toStringAsFixed(2)}';
+    await _attemptShowNotification(
+      proforma: proforma,
+      title: 'Nueva Proforma Creada',
+      body: message,
+      tagPrefix: 'new_proforma_',
+      logMessage: 'Nueva proforma',
+    );
   }
 
   /// Notifica sobre una proforma convertida a venta
   Future<void> notifyProformaConverted(Proforma proforma) async {
-    if (!isEnabled || !kIsWeb && !Platform.isWindows) {
+    if (!isEnabled || !_puedeNotificar(proforma.id, aplicarLimitacion: false)) {
       return;
     }
 
-    // Para conversiones, no necesitamos limitar la frecuencia ya que son eventos importantes
-    // pero evitamos duplicados
-    if (_fueNotificadaRecientemente(proforma.id)) {
-      return;
-    }
-
-    try {
-      final String message =
-          'La proforma #${proforma.id} ha sido convertida a venta';
-
-      await _showWindowsNotification(
-        title: 'Proforma Convertida',
-        body: message,
-        tag: 'converted_proforma_${proforma.id}',
-      );
-
-      // Registrar esta proforma como notificada
-      _registrarProformaNotificada(proforma.id);
-
-      Logger.info(
-          '🔔 Notificación enviada: Proforma convertida #${proforma.id}');
-    } catch (e) {
-      Logger.error('Error al mostrar notificación: $e');
-    }
+    final String message =
+        'La proforma #${proforma.id} ha sido convertida a venta';
+    await _attemptShowNotification(
+      proforma: proforma,
+      title: 'Proforma Convertida',
+      body: message,
+      tagPrefix: 'converted_proforma_',
+      logMessage: 'Proforma convertida',
+    );
   }
 
   /// Notifica sobre una proforma pendiente de revisar (nueva) si el módulo computer está activo
   Future<void> notifyNewProformaPending(
       Proforma proforma, String clienteName) async {
-    if (!isEnabled || !kIsWeb && !Platform.isWindows) {
+    if (!isEnabled || !_puedeNotificar(proforma.id)) {
       return;
     }
 
-    // Verificar limitación de frecuencia y duplicados para proformas pendientes
-    if (_fueNotificadaRecientemente(proforma.id) ||
-        _deberiaLimitarNotificaciones()) {
-      Logger.debug(
-          '🔔 Notificación limitada para proforma pendiente #${proforma.id}');
-      return;
-    }
-
-    try {
-      final String message = clienteName.isNotEmpty
-          ? '¡NUEVA PROFORMA! Cliente: $clienteName - Monto: S/ ${proforma.total.toStringAsFixed(2)}'
-          : '¡NUEVA PROFORMA PENDIENTE! Monto: S/ ${proforma.total.toStringAsFixed(2)}';
-
-      await _showWindowsNotification(
-        title: '⚠️ Nueva Proforma #${proforma.id}',
-        body: message,
-        tag: 'pending_proforma_${proforma.id}',
-      );
-
-      // Registrar esta proforma como notificada
-      _registrarProformaNotificada(proforma.id);
-
-      Logger.info(
-          '🔔 Notificación enviada: Proforma pendiente #${proforma.id}');
-    } catch (e) {
-      Logger.error('Error al mostrar notificación: $e');
-    }
+    final String message = clienteName.isNotEmpty
+        ? '¡NUEVA PROFORMA! Cliente: $clienteName - Monto: S/ ${proforma.total.toStringAsFixed(2)}'
+        : '¡NUEVA PROFORMA PENDIENTE! Monto: S/ ${proforma.total.toStringAsFixed(2)}';
+    await _attemptShowNotification(
+      proforma: proforma,
+      title: '⚠️ Nueva Proforma #${proforma.id}',
+      body: message,
+      tagPrefix: 'pending_proforma_',
+      logMessage: 'Proforma pendiente',
+    );
   }
 
   /// Limpia el historial de notificaciones recientes
@@ -218,6 +213,7 @@ class ProformaNotification {
     required String tag,
   }) async {
     if (!_isInitialized) {
+      Logger.warn('Intento de mostrar notificación sin inicializar.');
       return;
     }
 
@@ -246,7 +242,8 @@ class ProformaNotification {
 
       Logger.debug('🔔 Notificación Windows mostrada: $title');
     } catch (e) {
-      Logger.error('Error mostrando notificación de Windows: $e');
+      Logger.error('Error interno mostrando notificación de Windows: $e');
+      throw Exception('Error al mostrar la notificación de Windows: $e');
     }
   }
 }

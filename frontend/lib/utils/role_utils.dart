@@ -17,35 +17,33 @@ const Map<String, String> roles = {
 };
 
 /// Normaliza un rol de usuario a un formato estándar
-String normalizeRole(rol) {
+String normalizeRole(dynamic rol) {
   if (rol == null) {
     return 'desconocido';
   }
 
-  // Si es un Map, extraer el código
-  if (rol is Map) {
-    final codigo = rol['codigo']?.toString().toLowerCase();
-    if (codigo != null) {
-      // Normalizar administrador a admin
-      if (codigo == 'administrador') {
-        return 'admin';
-      }
-      if (roles.containsKey(codigo)) {
-        return codigo;
-      }
-    }
+  String? roleString;
+
+  // Extraer el string del rol dependiendo del tipo
+  if (rol is Map && rol.containsKey('codigo')) {
+    roleString = rol['codigo']?.toString().toLowerCase();
+  } else if (rol is String) {
+    roleString = rol.toLowerCase();
   }
 
-  // Si es String, normalizar directamente
-  if (rol is String) {
-    final normalizedRole = rol.toLowerCase();
-    // Normalizar administrador a admin
-    if (normalizedRole == 'administrador') {
-      return 'admin';
-    }
-    if (roles.containsKey(normalizedRole)) {
-      return normalizedRole;
-    }
+  if (roleString == null) {
+    return 'desconocido';
+  }
+
+  // FIX: (anterior) Lógica duplicada para normalizar 'administrador'
+  // Ahora se comprueba una sola vez
+  if (roleString == 'administrador') {
+    return 'admin';
+  }
+
+  // Verificar si el rol normalizado existe en nuestro mapa de roles
+  if (roles.containsKey(roleString)) {
+    return roleString;
   }
 
   return 'desconocido';
