@@ -661,7 +661,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
             // Panel lateral de sucursales
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              width: _drawerOpen ? MediaQuery.of(context).size.width * 0.25 : 0,
+              width: _drawerOpen ? 350 : 0,
               decoration: BoxDecoration(
                 color: const Color(0xFF1A1A1A),
                 border: Border(

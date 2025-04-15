@@ -27,14 +27,18 @@ class SlideSucursal extends StatefulWidget {
     super.debugFillProperties(properties);
     properties
       ..add(IterableProperty<Sucursal>('sucursales', sucursales))
-      ..add(DiagnosticsProperty<Sucursal?>('sucursalSeleccionada', sucursalSeleccionada))
-      ..add(ObjectFlagProperty<Function(Sucursal)>.has('onSucursalSelected', onSucursalSelected))
-      ..add(ObjectFlagProperty<VoidCallback>.has('onRecargarSucursales', onRecargarSucursales))
+      ..add(DiagnosticsProperty<Sucursal?>(
+          'sucursalSeleccionada', sucursalSeleccionada))
+      ..add(ObjectFlagProperty<Function(Sucursal)>.has(
+          'onSucursalSelected', onSucursalSelected))
+      ..add(ObjectFlagProperty<VoidCallback>.has(
+          'onRecargarSucursales', onRecargarSucursales))
       ..add(DiagnosticsProperty<bool>('isLoading', isLoading));
   }
 }
 
-class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProviderStateMixin {
+class _SlideSucursalState extends State<SlideSucursal>
+    with SingleTickerProviderStateMixin {
   bool _mostrarAgrupados = true;
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -67,7 +71,7 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
     };
 
     for (final Sucursal sucursal in widget.sucursales) {
-      if (sucursal.nombre.toLowerCase().contains('central') || 
+      if (sucursal.nombre.toLowerCase().contains('central') ||
           sucursal.nombre.toLowerCase().contains('principal') ||
           sucursal.sucursalCentral) {
         grupos['Centrales']!.add(sucursal);
@@ -77,8 +81,10 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
     }
 
     // Ordenamos por nombre dentro de cada grupo
-    grupos['Centrales']!.sort((Sucursal a, Sucursal b) => a.nombre.compareTo(b.nombre));
-    grupos['Sucursales']!.sort((Sucursal a, Sucursal b) => a.nombre.compareTo(b.nombre));
+    grupos['Centrales']!
+        .sort((Sucursal a, Sucursal b) => a.nombre.compareTo(b.nombre));
+    grupos['Sucursales']!
+        .sort((Sucursal a, Sucursal b) => a.nombre.compareTo(b.nombre));
 
     return grupos;
   }
@@ -89,14 +95,16 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
     if (sucursal.sucursalCentral) {
       return FontAwesomeIcons.building;
     }
-    
+
     // Luego revisamos el nombre
     final String nombre = sucursal.nombre.toLowerCase();
     if (nombre.contains('central') || nombre.contains('principal')) {
       return FontAwesomeIcons.building;
     } else if (nombre.contains('taller')) {
       return FontAwesomeIcons.screwdriverWrench;
-    } else if (nombre.contains('almacén') || nombre.contains('almacen') || nombre.contains('bodega')) {
+    } else if (nombre.contains('almacén') ||
+        nombre.contains('almacen') ||
+        nombre.contains('bodega')) {
       return FontAwesomeIcons.warehouse;
     } else if (nombre.contains('tienda') || nombre.contains('venta')) {
       return FontAwesomeIcons.store;
@@ -155,7 +163,8 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
     }
 
     // Agrupar las sucursales si es necesario
-    final Map<String, List<Sucursal>>? sucursalesAgrupadas = _mostrarAgrupados ? _agruparSucursales() : null;
+    final Map<String, List<Sucursal>>? sucursalesAgrupadas =
+        _mostrarAgrupados ? _agruparSucursales() : null;
 
     return FadeTransition(
       opacity: _animation,
@@ -195,7 +204,8 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
                         Tooltip(
                           message: '${widget.sucursales.length} sucursales',
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: const Color(0xFF2D2D2D),
                               borderRadius: BorderRadius.circular(12),
@@ -232,8 +242,8 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
                     Row(
                       children: <Widget>[
                         FaIcon(
-                          _mostrarAgrupados 
-                              ? FontAwesomeIcons.layerGroup 
+                          _mostrarAgrupados
+                              ? FontAwesomeIcons.layerGroup
                               : FontAwesomeIcons.list,
                           color: Colors.white70,
                           size: 14,
@@ -262,7 +272,7 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
               ],
             ),
           ),
-          
+
           // Lista de sucursales
           Expanded(
             child: _mostrarAgrupados
@@ -281,12 +291,14 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
         // Construimos los grupos que tienen elementos
         if (grupos['Centrales']!.isNotEmpty) ...<Widget>[
           _buildGrupoHeader('Centrales', grupos['Centrales']!.length),
-          ...grupos['Centrales']!.map((Sucursal sucursal) => _buildSucursalItem(sucursal)),
+          ...grupos['Centrales']!
+              .map((Sucursal sucursal) => _buildSucursalItem(sucursal)),
         ],
         if (grupos['Sucursales']!.isNotEmpty) ...<Widget>[
           if (grupos['Centrales']!.isNotEmpty) const SizedBox(height: 16),
           _buildGrupoHeader('Sucursales', grupos['Sucursales']!.length),
-          ...grupos['Sucursales']!.map((Sucursal sucursal) => _buildSucursalItem(sucursal)),
+          ...grupos['Sucursales']!
+              .map((Sucursal sucursal) => _buildSucursalItem(sucursal)),
         ],
       ],
     );
@@ -339,7 +351,7 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
   Widget _buildSucursalItem(Sucursal sucursal) {
     final bool isSelected = widget.sucursalSeleccionada?.id == sucursal.id;
     final IconData icon = _getIconForSucursal(sucursal);
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Material(
@@ -351,13 +363,13 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isSelected 
-                  ? const Color(0xFFE31E24).withOpacity(0.2) 
+              color: isSelected
+                  ? const Color(0xFFE31E24).withOpacity(0.2)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isSelected 
-                    ? const Color(0xFFE31E24) 
+                color: isSelected
+                    ? const Color(0xFFE31E24)
                     : Colors.white.withOpacity(0.1),
                 width: isSelected ? 2 : 1,
               ),
@@ -370,8 +382,8 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isSelected 
-                          ? const Color(0xFFE31E24) 
+                      color: isSelected
+                          ? const Color(0xFFE31E24)
                           : const Color(0xFF2D2D2D),
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -391,11 +403,10 @@ class _SlideSucursalState extends State<SlideSucursal> with SingleTickerProvider
                         sucursal.nombre,
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: isSelected 
-                              ? FontWeight.bold 
-                              : FontWeight.normal,
-                          color: isSelected 
-                              ? Colors.white 
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? Colors.white
                               : Colors.white.withOpacity(0.8),
                         ),
                         overflow: TextOverflow.ellipsis,

@@ -81,7 +81,7 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
 
               // Panel derecho: Selector de sucursales (30%)
               Container(
-                width: 300,
+                width: 350,
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A1A1A),
                   border: Border(
@@ -93,44 +93,6 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Cabecera del panel de sucursales
-                    Container(
-                      padding: const EdgeInsets.all(16.0),
-                      color: const Color(0xFF2D2D2D),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Row(
-                            children: [
-                              FaIcon(
-                                FontAwesomeIcons.buildingUser,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'SUCURSALES',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (ventasProvider.isSucursalesLoading)
-                            const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-
                     // Mensaje de error para sucursales
                     if (ventasProvider.errorMessage.isNotEmpty)
                       Container(
@@ -203,6 +165,61 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
             child: _buildSearchField(ventasProvider),
           ),
           const SizedBox(width: 16),
+          // Botón de recarga de ventas
+          if (ventasProvider.sucursalSeleccionada != null) ...[
+            ElevatedButton.icon(
+              icon: ventasProvider.isVentasLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const FaIcon(
+                      FontAwesomeIcons.arrowsRotate,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+              label: Text(
+                ventasProvider.isVentasLoading ? 'Recargando...' : 'Recargar',
+                style: const TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2D2D2D),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              onPressed: ventasProvider.isVentasLoading
+                  ? null
+                  : () async {
+                      await ventasProvider.cargarVentas();
+                      // Verificar si el widget sigue montado antes de mostrar SnackBar
+                      if (mounted) {
+                        if (ventasProvider.ventasErrorMessage.isNotEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(ventasProvider.ventasErrorMessage),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Ventas recargadas exitosamente'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      }
+                    },
+            ),
+            const SizedBox(width: 12),
+          ],
           ElevatedButton.icon(
             icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
             label: const Text('Nueva Venta'),
