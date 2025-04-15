@@ -8,7 +8,8 @@ import {
   getRandomNumber,
   getRandomUniqueElementsFromArray,
   getRandomValueFromArray,
-  productWithTwoDecimals
+  productWithTwoDecimals,
+  roundTwoDecimals
 } from '@/core/lib/utils'
 import { db } from '@db/connection'
 import * as schema from '@db/schema'
@@ -20,7 +21,7 @@ import {
   vendedorPermisssions,
   computadoraPermissions
 } from '@db/config/seed.config'
-import { calcularPrecioYDescuento } from '@/core/lib/seed-utils'
+import { computePriceOffer } from '@/core/lib/seed-utils'
 
 const BATCH_SIZE = 500
 
@@ -48,19 +49,25 @@ const insertInBatches = async (
 
 const sucursalesValues = Array.from({ length: seedConfig.sucursalesCount }).map(
   (_, i) => {
+    const id = (i + 1).toString()
+    const sucursal = {
+      nombre: faker.company.name() + i.toString(),
+      direccion: faker.location.streetAddress({ useFullAddress: true }),
+      sucursalCentral: faker.datatype.boolean(),
+      serieFactura: `F${id.padStart(3, '0')}`,
+      serieBoleta: `F${id.padStart(3, '0')}`,
+      codigoEstablecimiento: id.padStart(4, '0')
+    }
+
     if (i === 0) {
       return {
+        ...sucursal,
         nombre: 'Sucursal Principal',
-        sucursalCentral: true,
-        direccion: faker.location.streetAddress({ useFullAddress: true })
+        sucursalCentral: true
       }
     }
 
-    return {
-      nombre: faker.company.name() + i.toString(),
-      sucursalCentral: faker.datatype.boolean(),
-      direccion: faker.location.streetAddress({ useFullAddress: true })
-    }
+    return sucursal
   }
 )
 
@@ -109,32 +116,31 @@ const seedDatabase = async () => {
   const empleadosValues = Array.from({ length: seedConfig.empleadosCount }).map(
     (_, i) => {
       const [fechaString] = faker.date.recent().toISOString().split('T')
-      const baseValues = {
-        edad: faker.number.int({ min: 18, max: 60 }),
+      const empleado = {
+        nombre: faker.person.firstName(),
+        apellidos: faker.person.lastName(),
+        activo: faker.datatype.boolean(),
         dni:
           faker.number.int({ min: 1111111, max: 9999999 }).toString() +
           i.toString(),
+        celular: faker.phone.number({ style: 'international' }),
         horaInicioJornada: '08:00:00',
         horaFinJornada: '17:00:00',
-        fechaContratacion: fechaString
+        fechaContratacion: fechaString,
+        sucursalId: getRandomValueFromArray(sucursales).id
       }
 
       if (i === 0) {
         const [sucursal] = sucursales
         return {
+          ...empleado,
           nombre: 'Administrador',
           apellidos: 'Principal',
-          sucursalId: sucursal.id,
-          ...baseValues
+          sucursalId: sucursal.id
         }
       }
 
-      return {
-        nombre: faker.person.firstName(),
-        apellidos: faker.person.lastName(),
-        sucursalId: getRandomValueFromArray(sucursales).id,
-        ...baseValues
-      }
+      return empleado
     }
   )
 
@@ -161,16 +167,20 @@ const seedDatabase = async () => {
       codigo: schema.permisosTable.codigo
     })
 
-  const permisosVendedorId = permisos.filter((permiso) =>
-    vendedorPermisssions.some(
-      (vendedorPermiso) => vendedorPermiso.codigo === permiso.codigo
-    )
+  const vendedorPermisosCodigos = new Set(
+    vendedorPermisssions.map((permiso) => permiso.codigo)
   )
 
-  const permisosComputadoraId = permisos.filter((permiso) =>
-    computadoraPermissions.some(
-      (computadoraPermiso) => computadoraPermiso.codigo === permiso.codigo
-    )
+  const permisosVendedor = permisos.filter((permiso) =>
+    vendedorPermisosCodigos.has(permiso.codigo)
+  )
+
+  const computadoraPermisosCodigos = new Set(
+    computadoraPermissions.map((permiso) => permiso.codigo)
+  )
+
+  const permisosComputadora = permisos.filter((permiso) =>
+    computadoraPermisosCodigos.has(permiso.codigo)
   )
 
   await db.insert(schema.rolesPermisosTable).values([
@@ -178,11 +188,11 @@ const seedDatabase = async () => {
       permisoId: permiso.id,
       rolId: adminRole.id
     })),
-    ...permisosVendedorId.map((permiso) => ({
+    ...permisosVendedor.map((permiso) => ({
       permisoId: permiso.id,
       rolId: vendedorRole.id
     })),
-    ...permisosComputadoraId.map((permiso) => ({
+    ...permisosComputadora.map((permiso) => ({
       permisoId: permiso.id,
       rolId: computadoraRole.id
     }))
@@ -236,7 +246,7 @@ const seedDatabase = async () => {
         : undefined
 
       const porcentajeDescuento = !descuentoProdGratis
-        ? faker.number.int({ min: 10, max: 20 })
+        ? faker.number.int({ min: 5, max: 10 })
         : undefined
 
       return {
@@ -275,14 +285,23 @@ const seedDatabase = async () => {
 
   const detallesProductosValues = productos.flatMap((producto) =>
     sucursales.flatMap((sucursal) => {
+      const precioCompra = faker.commerce.price({ min: 100, max: 150 })
+      const precioVenta = faker.commerce.price({ min: 160, max: 180 })
+      const porcentajeGanancia = roundTwoDecimals(
+        100 - (parseFloat(precioCompra) * 100) / parseFloat(precioVenta)
+      )
+
       const stock = faker.number.int({ min: 10, max: 200 })
+
       return {
-        precioCompra: faker.commerce.price({ min: 100, max: 150 }),
-        precioVenta: faker.commerce.price({ min: 160, max: 180 }),
+        precioCompra,
+        precioVenta,
         precioOferta: faker.commerce.price({ min: 140, max: 160 }),
+        porcentajeGanancia,
         stock,
         stockBajo:
           producto.stockMinimo !== null ? stock < producto.stockMinimo : false,
+        liquidacion: faker.datatype.boolean(),
         productoId: producto.id,
         sucursalId: sucursal.id
       }
@@ -292,7 +311,7 @@ const seedDatabase = async () => {
   await insertInBatches(detallesProductosValues, schema.detallesProductoTable)
 
   const fotosProductoValues = productos.map((producto) => ({
-    path: `static/img/${faker.string.alphanumeric(10)}/${faker.string.alphanumeric(5)}.jpg`,
+    path: `assets/${faker.string.alphanumeric(10)}.webp`,
     productoId: producto.id
   }))
 
@@ -309,61 +328,63 @@ const seedDatabase = async () => {
     ])
   )
 
-  const generateDetalles = (length: number, sucursalId: number) =>
-    getRandomUniqueElementsFromArray(productos, length).map((producto) => {
-      const detallesProducto = detallesProductosMap.get(
-        `${producto.id}:${sucursalId}`
-      )
+  const generateDetalles = (length: number, sucursalId: number) => {
+    let total = 0
 
-      if (detallesProducto === undefined) {
-        throw new Error('Product not found')
-      }
+    const detalles = getRandomUniqueElementsFromArray(productos, length).map(
+      (producto) => {
+        const detallesProducto = detallesProductosMap.get(
+          `${producto.id}:${sucursalId}`
+        )
 
-      const cantidad = faker.number.int({ min: 1, max: 12 })
+        if (detallesProducto === undefined) {
+          throw new Error('Product not found')
+        }
 
-      const {
-        precioUnitario,
-        precioOriginal,
-        cantidadGratis,
-        descuento,
-        cantidadPagada
-      } = calcularPrecioYDescuento(
-        {
+        const cantidad = faker.number.int({ min: 1, max: 12 })
+
+        const { free, price } = computePriceOffer({
+          cantidad,
           cantidadMinimaDescuento: producto.cantidadMinimaDescuento,
           cantidadGratisDescuento: producto.cantidadGratisDescuento,
           porcentajeDescuento: producto.porcentajeDescuento,
           precioVenta: detallesProducto.precioVenta,
           precioOferta: detallesProducto.precioOferta,
-          liquidacion: faker.datatype.boolean()
-        },
-        cantidad
-      )
+          liquidacion: producto.liquidacion
+        })
 
-      const cantidadTotal = cantidadPagada + cantidadGratis
-      const subtotal = productWithTwoDecimals(precioUnitario, cantidadPagada)
+        const cantidadTotal = cantidad + free
+        const subtotal = productWithTwoDecimals(price, cantidad)
+        total += subtotal
 
-      return {
-        productoId: detallesProducto.productoId,
-        nombre: producto.nombre,
-        cantidadGratis,
-        descuento,
-        cantidadPagada,
-        cantidadTotal,
-        precioUnitario,
-        precioOriginal,
-        subtotal
+        return {
+          productoId: detallesProducto.productoId,
+          nombre: producto.nombre,
+          cantidadGratis: free,
+          descuento: producto.descuento,
+          cantidadPagada: cantidad,
+          cantidadTotal,
+          precioUnitario: price,
+          precioOriginal: parseFloat(detallesProducto.precioVenta),
+          subtotal
+        }
       }
-    })
+    )
+
+    return {
+      detalles,
+      total
+    }
+  }
 
   const proformasVentaValues = Array.from({
     length: seedConfig.proformasVentaCount
   }).map(() => {
     const empleado = getRandomValueFromArray(empleados)
-    const detalles = generateDetalles(
+    const { detalles, total } = generateDetalles(
       getRandomNumber(2, 12),
       empleado.sucursalId
     )
-    const total = detalles.reduce((prev, current) => current.subtotal + prev, 0)
 
     return {
       nombre: faker.lorem.words({ min: 3, max: 6 }),
@@ -410,13 +431,14 @@ const seedDatabase = async () => {
   const clientesValues = Array.from({ length: seedConfig.clientesCount }).map(
     () => {
       const tipoDocumento = getRandomValueFromArray(tiposDocumentoCliente)
-      const personaNatural = tipoDocumento.codigo === tiposDocClienteCodes.dni
+      const isPersonaJuridica =
+        tipoDocumento.codigo === tiposDocClienteCodes.ruc
       const dni = faker.number.int({ min: 11111111, max: 99999999 }).toString()
-      const numeroDocumento = personaNatural
-        ? dni
-        : getRandomValueFromArray(['10', '20']) + dni + getRandomNumber(1, 9)
+      const numeroDocumento = isPersonaJuridica
+        ? getRandomValueFromArray(['10', '20']) + dni + getRandomNumber(1, 9)
+        : dni
 
-      const denominacion = personaNatural
+      const denominacion = isPersonaJuridica
         ? faker.person.fullName()
         : faker.company.name()
 

@@ -4,7 +4,7 @@ Este endpoint obtienen los datos de varios productos de una sucursal especificad
 
 ## URL
 
-`[POST] {{base_url}}/api/{{idSucursal}}/productos`
+`[GET] {{base_url}}/api/{{idSucursal}}/productos`
 
 #### Descripción de la url:
 
