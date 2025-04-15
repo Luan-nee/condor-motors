@@ -714,437 +714,108 @@ class _TransferenciasColabScreenState extends State<TransferenciasColabScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext dialogContext) =>
-          FutureBuilder<TransferenciaInventario>(
-        future:
-            _provider.obtenerDetalleTransferencia(transferencia.id.toString()),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2D2D2D),
+          title: const Row(
+            children: [
+              FaIcon(
+                FontAwesomeIcons.circleInfo,
+                color: Color(0xFFE31E24),
+                size: 24,
               ),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF2D2D2D),
-              title: const Row(
-                children: [
-                  FaIcon(
-                    FontAwesomeIcons.circleExclamation,
-                    color: Color(0xFFE31E24),
-                    size: 24,
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    'Error',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              content: Text(
-                'Error al cargar los detalles: ${snapshot.error}',
-                style: const TextStyle(color: Colors.white),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cerrar'),
+              SizedBox(width: 12),
+              Text(
+                'Validación de Transferencia',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
-            );
-          }
-
-          final TransferenciaInventario detalleTransferencia = snapshot.data!;
-
-          return Dialog(
-            backgroundColor: const Color(0xFF1A1A1A),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '¿Está seguro que desea validar la recepción de esta transferencia?',
+                style: TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'TRF${transferencia.id} - ${transferencia.nombreSucursalOrigen ?? "Desconocido"} → ${transferencia.nombreSucursalDestino}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Esta acción confirmará que todos los productos han sido recibidos correctamente y actualizará el inventario.',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar'),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF2D2D2D),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      const FaIcon(
-                        FontAwesomeIcons.clipboardCheck,
-                        size: 20,
-                        color: Color(0xFFE31E24),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Validar Recepción',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white54),
-                        onPressed: () => Navigator.pop(dialogContext),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                ),
-                Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2D2D2D),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: <Widget>[
-                                  Text(
-                                    'Transferencia: TRF${detalleTransferencia.id}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _getEstadoColor(
-                                              detalleTransferencia.estado)
-                                          .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      detalleTransferencia.estado.nombre,
-                                      style: TextStyle(
-                                        color: _getEstadoColor(
-                                            detalleTransferencia.estado),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Origen: ${detalleTransferencia.nombreSucursalOrigen}',
-                                style: TextStyle(color: Colors.grey[400]),
-                              ),
-                              Text(
-                                'Destino: ${detalleTransferencia.nombreSucursalDestino}',
-                                style: TextStyle(color: Colors.grey[400]),
-                              ),
-                              if (detalleTransferencia.salidaOrigen != null)
-                                Text(
-                                  'Fecha de Salida: ${detalleTransferencia.salidaOrigen!.day}/${detalleTransferencia.salidaOrigen!.month}/${detalleTransferencia.salidaOrigen!.year}',
-                                  style: TextStyle(color: Colors.grey[400]),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Productos a recibir:',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE31E24).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${detalleTransferencia.productos?.length ?? 0} productos',
-                                style: const TextStyle(
-                                  color: Color(0xFFE31E24),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        if (detalleTransferencia.productos != null &&
-                            detalleTransferencia.productos!.isNotEmpty)
-                          ...detalleTransferencia.productos!
-                              .map<Widget>((DetalleProducto detalle) {
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2D2D2D),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: <Widget>[
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE31E24)
-                                          .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const FaIcon(
-                                      FontAwesomeIcons.box,
-                                      color: Color(0xFFE31E24),
-                                      size: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: <Widget>[
-                                        Text(
-                                          detalle.nombre,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        if (detalle.codigo != null)
-                                          Text(
-                                            'Código: ${detalle.codigo}',
-                                            style: TextStyle(
-                                              color: Colors.grey[400],
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE31E24)
-                                          .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      '${detalle.cantidad} unidades',
-                                      style: const TextStyle(
-                                        color: Color(0xFFE31E24),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+            Consumer<TransferenciasColabProvider>(
+                builder: (context, provider, child) {
+              return ElevatedButton(
+                onPressed: provider.isLoading
+                    ? null
+                    : () async {
+                        try {
+                          // Usar directamente el provider y mostrar el estado de carga
+                          await provider.validarRecepcion(transferencia);
+
+                          if (dialogContext.mounted) {
+                            Navigator.pop(dialogContext);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Transferencia recibida correctamente'),
+                                backgroundColor: Colors.green,
                               ),
                             );
-                          })
-                        else
-                          const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Text(
-                              'No hay productos registrados para esta transferencia',
-                              style: TextStyle(color: Colors.white54),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF2D2D2D),
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(12),
-                      bottomRight: Radius.circular(12),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: <Widget>[
-                      TextButton(
-                        onPressed: () => Navigator.pop(dialogContext),
-                        child: const Text(
-                          'Cancelar',
-                          style: TextStyle(color: Colors.white54),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          final bool? confirmar = await showDialog<bool>(
-                            context: dialogContext,
-                            builder: (BuildContext confirmContext) =>
-                                AlertDialog(
-                              backgroundColor: const Color(0xFF2D2D2D),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              title: const Row(
-                                children: [
-                                  FaIcon(
-                                    FontAwesomeIcons.triangleExclamation,
-                                    color: Color(0xFFE31E24),
-                                    size: 24,
-                                  ),
-                                  SizedBox(width: 12),
-                                  Text(
-                                    'Confirmar Recepción',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              content: const Text(
-                                '¿Está seguro que desea validar la recepción de esta transferencia? Esta acción no se puede deshacer.',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(confirmContext),
-                                  child: const Text(
-                                    'Cancelar',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                ),
-                                ElevatedButton.icon(
-                                  onPressed: () =>
-                                      Navigator.pop(confirmContext, true),
-                                  icon: const FaIcon(
-                                    FontAwesomeIcons.check,
-                                    size: 16,
-                                  ),
-                                  label: const Text('Confirmar'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF43A047),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-
-                          if (confirmar == true) {
-                            Navigator.pop(dialogContext);
-                            await _validarRecepcion(detalleTransferencia);
                           }
-                        },
-                        icon: const FaIcon(FontAwesomeIcons.check, size: 16),
-                        label: const Text('Confirmar Recepción'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+                        } catch (e) {
+                          if (dialogContext.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text('Error al recibir transferencia: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF43A047),
+                  foregroundColor: Colors.white,
                 ),
-              ],
-            ),
-          );
-        },
-      ),
+                child: provider.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text('Confirmar Recepción'),
+              );
+            }),
+          ],
+        );
+      },
     );
-  }
-
-  Future<void> _validarRecepcion(TransferenciaInventario transferencia) async {
-    try {
-      // Mostrar indicador de carga
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) => const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
-          ),
-        ),
-      );
-
-      await _provider.validarRecepcion(transferencia);
-
-      // Cerrar indicador de carga
-      if (mounted) {
-        Navigator.pop(context);
-      }
-
-      // Mostrar mensaje de éxito
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Transferencia recibida correctamente'),
-            backgroundColor: Color(0xFF43A047),
-          ),
-        );
-      }
-    } catch (e) {
-      // Cerrar indicador de carga
-      if (mounted) {
-        Navigator.pop(context);
-      }
-
-      // Mostrar mensaje de error
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al validar recepción: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   Color _getEstadoColor(EstadoTransferencia estado) {

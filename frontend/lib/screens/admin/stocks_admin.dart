@@ -105,32 +105,6 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   }
 
   // Widget para botones de acción rápida
-  Widget _buildActionButton(
-      String label, IconData icon, Color color, VoidCallback onTap) {
-    return ElevatedButton.icon(
-      icon: FaIcon(
-        icon,
-        color: Colors.white,
-        size: 14,
-      ),
-      label: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 13,
-        ),
-      ),
-      onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -242,29 +216,42 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                 onPressed: stockProvider.isLoadingProductos
                                     ? null
                                     : () async {
+                                        // Definir funciones para mostrar SnackBars
+                                        void showErrorSnackBar() {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(stockProvider
+                                                  .errorProductos!),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+
+                                        void showSuccessSnackBar() {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                  'Datos recargados exitosamente'),
+                                              backgroundColor: Colors.green,
+                                            ),
+                                          );
+                                        }
+
                                         await stockProvider.recargarDatos();
-                                        if (mounted) {
-                                          // Mostrar mensaje de éxito o error
-                                          if (stockProvider.errorProductos !=
-                                              null) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                content: Text(stockProvider
-                                                    .errorProductos!),
-                                                backgroundColor: Colors.red,
-                                              ),
-                                            );
-                                          } else {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                    'Datos recargados exitosamente'),
-                                                backgroundColor: Colors.green,
-                                              ),
-                                            );
-                                          }
+
+                                        // Verificar si el widget aún está montado
+                                        if (!mounted) {
+                                          return;
+                                        }
+
+                                        // Mostrar mensaje de éxito o error
+                                        if (stockProvider.errorProductos !=
+                                            null) {
+                                          showErrorSnackBar();
+                                        } else {
+                                          showSuccessSnackBar();
                                         }
                                       },
                               ),

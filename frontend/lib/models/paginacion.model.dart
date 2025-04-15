@@ -1,4 +1,4 @@
-import 'dart:math' as Math;
+import 'dart:math' as math;
 
 class Paginacion {
   final int totalItems;
@@ -6,6 +6,12 @@ class Paginacion {
   final int currentPage;
   final bool hasNext;
   final bool hasPrev;
+  final int? rangoInicio;
+  final int? rangoFin;
+
+  // Caché para cálculos costosos
+  List<int>? _cachedVisiblePages;
+  int? _cachedMaxVisiblePages;
 
   Paginacion({
     required this.totalItems,
@@ -13,6 +19,8 @@ class Paginacion {
     required this.currentPage,
     required this.hasNext,
     required this.hasPrev,
+    this.rangoInicio,
+    this.rangoFin,
   });
 
   factory Paginacion.fromJson(Map<String, dynamic> json) {
@@ -22,6 +30,8 @@ class Paginacion {
       currentPage: json['currentPage'] as int? ?? 1,
       hasNext: json['hasNext'] as bool? ?? false,
       hasPrev: json['hasPrev'] as bool? ?? false,
+      rangoInicio: json['rangoInicio'] as int?,
+      rangoFin: json['rangoFin'] as int?,
     );
   }
 
@@ -42,15 +52,15 @@ class Paginacion {
   }
 
   /// Crea una Paginación vacía para inicialización
-  factory Paginacion.empty() {
-    return Paginacion(
-      totalItems: 0,
-      totalPages: 1,
-      currentPage: 1,
-      hasNext: false,
-      hasPrev: false,
-    );
-  }
+  static final Paginacion emptyPagination = Paginacion(
+    totalItems: 0,
+    totalPages: 1,
+    currentPage: 1,
+    hasNext: false,
+    hasPrev: false,
+  );
+
+  factory Paginacion.empty() => emptyPagination;
 
   /// Crea una paginación a partir de parámetros básicos, calculando automáticamente hasNext y hasPrev
   factory Paginacion.fromParams({
@@ -58,45 +68,51 @@ class Paginacion {
     required int pageSize,
     required int currentPage,
   }) {
+    if (pageSize <= 0) {
+      throw ArgumentError.value(
+          pageSize, 'pageSize', 'Debe ser mayor que cero');
+    }
+
     final int totalPages = (totalItems / pageSize).ceil();
+    final int safeTotalPages = totalPages > 0 ? totalPages : 1;
+    final int safeCurrentPage =
+        currentPage.clamp(1, math.max(1, safeTotalPages));
+
     return Paginacion(
       totalItems: totalItems,
-      totalPages: totalPages > 0 ? totalPages : 1,
-      currentPage: currentPage,
-      hasNext: currentPage < totalPages,
-      hasPrev: currentPage > 1,
+      totalPages: safeTotalPages,
+      currentPage: safeCurrentPage,
+      hasNext: safeCurrentPage < safeTotalPages,
+      hasPrev: safeCurrentPage > 1,
     );
   }
 
-  // Método para verificar si hay más páginas
+  // Getters directos para propiedades derivadas
   bool get hasNextPage => hasNext;
-
-  // Método para verificar si hay páginas anteriores
   bool get hasPrevPage => hasPrev;
-
-  // Método para obtener el número de la siguiente página
   int? get nextPage => hasNext ? currentPage + 1 : null;
-
-  // Método para obtener el número de la página anterior
   int? get prevPage => hasPrev ? currentPage - 1 : null;
-
-  /// Verifica si esta es la primera página
   bool get isFirstPage => currentPage == 1;
-
-  /// Verifica si esta es la última página
   bool get isLastPage => currentPage == totalPages;
 
   /// Calcula el índice del primer elemento de la página actual
-  int getFirstItemIndex(int pageSize) => (currentPage - 1) * pageSize;
+  int getFirstItemIndex(int pageSize) =>
+      math.max(0, (currentPage - 1) * pageSize);
 
   /// Calcula el índice del último elemento de la página actual
   int getLastItemIndex(int pageSize) {
+    if (totalItems == 0) {
+      return -1;
+    }
     final int lastIndex = currentPage * pageSize - 1;
-    return lastIndex < totalItems ? lastIndex : totalItems - 1;
+    return math.min(lastIndex, totalItems - 1);
   }
 
   /// Obtiene el número de elementos en la página actual
   int getItemCount(int pageSize) {
+    if (totalItems == 0) {
+      return 0;
+    }
     if (isLastPage) {
       return totalItems - getFirstItemIndex(pageSize);
     }
@@ -111,14 +127,23 @@ class Paginacion {
     }
 
     final int inicio = getFirstItemIndex(pageSize) + 1;
-    final int fin = Math.min(getLastItemIndex(pageSize) + 1, totalItems);
+    final int fin = math.min(getLastItemIndex(pageSize) + 1, totalItems);
     return "Mostrando $inicio-$fin de $totalItems elementos";
   }
 
   // Método para generar un rango de páginas visible (útil para UI)
   List<int> getVisiblePages({int maxVisiblePages = 5}) {
+    // Usar caché para evitar recálculos
+    if (_cachedVisiblePages != null &&
+        _cachedMaxVisiblePages == maxVisiblePages) {
+      return _cachedVisiblePages!;
+    }
+
+    _cachedMaxVisiblePages = maxVisiblePages;
+
     if (totalPages <= maxVisiblePages) {
-      return List.generate(totalPages, (int i) => i + 1);
+      _cachedVisiblePages = List.generate(totalPages, (int i) => i + 1);
+      return _cachedVisiblePages!;
     }
 
     // Calcular el rango de páginas visibles
@@ -129,31 +154,28 @@ class Paginacion {
     int end = start + maxVisiblePages - 1;
     if (end > totalPages) {
       end = totalPages;
-      start = end - maxVisiblePages + 1;
-      if (start < 1) {
-        start = 1;
-      }
+      start = math.max(1, end - maxVisiblePages + 1);
     }
 
-    return List.generate(end - start + 1, (int i) => start + i);
+    _cachedVisiblePages = List.generate(end - start + 1, (int i) => start + i);
+    return _cachedVisiblePages!;
   }
 
   /// Convierte esta paginación a un mapa JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'totalItems': totalItems,
-      'totalPages': totalPages,
-      'currentPage': currentPage,
-      'hasNext': hasNext,
-      'hasPrev': hasPrev,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'totalItems': totalItems,
+        'totalPages': totalPages,
+        'currentPage': currentPage,
+        'hasNext': hasNext,
+        'hasPrev': hasPrev,
+        'rangoInicio': rangoInicio,
+        'rangoFin': rangoFin,
+      };
 
   /// Obtiene un resumen detallado de la paginación (útil para depuración)
   @override
-  String toString() {
-    return 'Paginacion(page: $currentPage, total: $totalPages, items: $totalItems)';
-  }
+  String toString() =>
+      'Paginacion(page: $currentPage, total: $totalPages, items: $totalItems)';
 
   /// Crea una copia de esta paginación con modificaciones
   Paginacion copyWith({
@@ -162,6 +184,8 @@ class Paginacion {
     int? currentPage,
     bool? hasNext,
     bool? hasPrev,
+    int? rangoInicio,
+    int? rangoFin,
   }) {
     return Paginacion(
       totalItems: totalItems ?? this.totalItems,
@@ -169,8 +193,37 @@ class Paginacion {
       currentPage: currentPage ?? this.currentPage,
       hasNext: hasNext ?? this.hasNext,
       hasPrev: hasPrev ?? this.hasPrev,
+      rangoInicio: rangoInicio ?? this.rangoInicio,
+      rangoFin: rangoFin ?? this.rangoFin,
     );
   }
+
+  /// Compara dos objetos de paginación para determinar si son iguales
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is Paginacion &&
+        other.totalItems == totalItems &&
+        other.totalPages == totalPages &&
+        other.currentPage == currentPage &&
+        other.hasNext == hasNext &&
+        other.hasPrev == hasPrev &&
+        other.rangoInicio == rangoInicio &&
+        other.rangoFin == rangoFin;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        totalItems,
+        totalPages,
+        currentPage,
+        hasNext,
+        hasPrev,
+        rangoInicio,
+        rangoFin,
+      );
 }
 
 /// Representa una colección de elementos con paginación y metadatos opcionales.
@@ -181,6 +234,10 @@ class PaginatedResponse<T> {
   final List<T> items;
   final Paginacion paginacion;
   final Map<String, dynamic>? metadata;
+
+  // Caché para opciones derivadas de metadatos
+  List<String>? _sortByOptionsCache;
+  List<String>? _filterOptionsCache;
 
   PaginatedResponse({
     required this.items,
@@ -195,8 +252,10 @@ class PaginatedResponse<T> {
     T Function(Map<String, dynamic>) fromJson,
   ) {
     final List<dynamic> rawItems = response['data'] as List<dynamic>? ?? [];
-    final List<T> items =
-        rawItems.map((item) => fromJson(item as Map<String, dynamic>)).toList();
+    final List<T> items = rawItems
+        .cast<Map<String, dynamic>>()
+        .map(fromJson)
+        .toList(growable: false);
 
     final paginacion = Paginacion.fromApiResponse(response);
     final metadata = response['metadata'] as Map<String, dynamic>?;
@@ -209,12 +268,15 @@ class PaginatedResponse<T> {
   }
 
   /// Crea una respuesta paginada vacía
-  factory PaginatedResponse.empty() {
-    return PaginatedResponse<T>(
-      items: <T>[],
-      paginacion: Paginacion.empty(),
-    );
-  }
+  static final PaginatedResponse<dynamic> emptyResponse = PaginatedResponse(
+    items: [],
+    paginacion: Paginacion.emptyPagination,
+  );
+
+  factory PaginatedResponse.empty() => PaginatedResponse<T>(
+        items: [],
+        paginacion: Paginacion.emptyPagination,
+      );
 
   /// Verifica si la respuesta está vacía (sin elementos)
   bool get isEmpty => items.isEmpty;
@@ -237,35 +299,44 @@ class PaginatedResponse<T> {
   /// Verifica si hay una página anterior
   bool get hasPrevPage => paginacion.hasPrev;
 
-  /// Obtiene opciones de ordenación desde los metadatos si existen
+  /// Obtiene opciones de ordenación desde los metadatos si existen - con caché
   List<String> get sortByOptions {
+    if (_sortByOptionsCache != null) {
+      return _sortByOptionsCache!;
+    }
+
     if (metadata != null && metadata!.containsKey('sortByOptions')) {
-      final options = metadata!['sortByOptions'] as List<dynamic>?;
-      if (options != null) {
-        return options.map((e) => e.toString()).toList();
+      final options = metadata!['sortByOptions'];
+      if (options is List) {
+        _sortByOptionsCache =
+            options.map((e) => e.toString()).toList(growable: false);
+        return _sortByOptionsCache!;
       }
     }
-    return [];
+    _sortByOptionsCache = const [];
+    return _sortByOptionsCache!;
   }
 
-  /// Obtiene opciones de filtros desde los metadatos si existen
+  /// Obtiene opciones de filtros desde los metadatos si existen - con caché
   List<String> get filterOptions {
+    if (_filterOptionsCache != null) {
+      return _filterOptionsCache!;
+    }
+
     if (metadata != null && metadata!.containsKey('filterOptions')) {
-      final options = metadata!['filterOptions'] as List<dynamic>?;
-      if (options != null) {
-        return options.map((e) => e.toString()).toList();
+      final options = metadata!['filterOptions'];
+      if (options is List) {
+        _filterOptionsCache =
+            options.map((e) => e.toString()).toList(growable: false);
+        return _filterOptionsCache!;
       }
     }
-    return [];
+    _filterOptionsCache = const [];
+    return _filterOptionsCache!;
   }
 
   /// Obtiene el valor de cualquier metadato por su clave
-  dynamic getMetadata(String key) {
-    if (metadata != null && metadata!.containsKey(key)) {
-      return metadata![key];
-    }
-    return null;
-  }
+  dynamic getMetadata(String key) => metadata?[key];
 
   /// Crea una copia de esta respuesta con elementos modificados
   PaginatedResponse<T> copyWithItems(List<T> newItems) {
@@ -297,7 +368,7 @@ class PaginatedResponse<T> {
   /// Aplica una función a cada elemento y devuelve una nueva respuesta con los resultados
   PaginatedResponse<R> map<R>(R Function(T) mapper) {
     return PaginatedResponse<R>(
-      items: items.map(mapper).toList(),
+      items: items.map(mapper).toList(growable: false),
       paginacion: paginacion,
       metadata: metadata,
     );
@@ -306,7 +377,7 @@ class PaginatedResponse<T> {
   /// Aplica un filtro a los elementos y actualiza la paginación
   PaginatedResponse<T> where(bool Function(T) filtro, {int? pageSize}) {
     final filteredItems = items.where(filtro).toList();
-    final newPageSize = pageSize ?? filteredItems.length;
+    final newPageSize = pageSize ?? math.max(1, filteredItems.length);
 
     final newPaginacion = Paginacion.fromParams(
       totalItems: filteredItems.length,
@@ -320,6 +391,68 @@ class PaginatedResponse<T> {
       metadata: metadata,
     );
   }
+
+  /// Compara dos respuestas paginadas para determinar si son iguales
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+
+    return other is PaginatedResponse<T> &&
+        _listEquals(other.items, items) &&
+        other.paginacion == paginacion &&
+        _mapEquals(other.metadata, metadata);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        Object.hashAll(items),
+        paginacion,
+        metadata != null ? Object.hashAll(metadata!.entries) : null,
+      );
+
+  // Método auxiliar para comparar listas
+  bool _listEquals<E>(List<E>? a, List<E>? b) {
+    if (a == null && b == null) {
+      return true;
+    }
+    if (a == null || b == null) {
+      return false;
+    }
+    if (a.length != b.length) {
+      return false;
+    }
+
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // Método auxiliar para comparar mapas
+  bool _mapEquals<K, V>(Map<K, V>? a, Map<K, V>? b) {
+    if (a == null && b == null) {
+      return true;
+    }
+    if (a == null || b == null) {
+      return false;
+    }
+    if (a.length != b.length) {
+      return false;
+    }
+
+    for (final key in a.keys) {
+      if (!b.containsKey(key) || b[key] != a[key]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
 }
 
 /// Clase que representa un resultado paginado de la API
@@ -331,7 +464,7 @@ class ResultadoPaginado<T> {
   final int pageSize;
   final Map<String, dynamic>? metadata;
 
-  ResultadoPaginado({
+  const ResultadoPaginado({
     required this.items,
     required this.total,
     required this.page,
@@ -384,5 +517,73 @@ class ResultadoPaginado<T> {
       pageSize: pageSize ?? this.pageSize,
       metadata: metadata ?? this.metadata,
     );
+  }
+
+  /// Compara dos resultados paginados para determinar si son iguales
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+
+    return other is ResultadoPaginado<T> &&
+        _listEquals(other.items, items) &&
+        other.total == total &&
+        other.page == page &&
+        other.totalPages == totalPages &&
+        other.pageSize == pageSize &&
+        _mapEquals(other.metadata, metadata);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        Object.hashAll(items),
+        total,
+        page,
+        totalPages,
+        pageSize,
+        metadata != null ? Object.hashAll(metadata!.entries) : null,
+      );
+
+  // Método auxiliar para comparar listas
+  bool _listEquals<E>(List<E>? a, List<E>? b) {
+    if (a == null && b == null) {
+      return true;
+    }
+    if (a == null || b == null) {
+      return false;
+    }
+    if (a.length != b.length) {
+      return false;
+    }
+
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // Método auxiliar para comparar mapas
+  bool _mapEquals<K, V>(Map<K, V>? a, Map<K, V>? b) {
+    if (a == null && b == null) {
+      return true;
+    }
+    if (a == null || b == null) {
+      return false;
+    }
+    if (a.length != b.length) {
+      return false;
+    }
+
+    for (final key in a.keys) {
+      if (!b.containsKey(key) || b[key] != a[key]) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

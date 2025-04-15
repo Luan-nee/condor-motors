@@ -95,11 +95,18 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     try {
       final ProductoProvider productoProvider =
           Provider.of<ProductoProvider>(context, listen: false);
+
+      // Usar el método del provider y obtener el resultado
       final List<ProductoEnSucursal> sucursales =
           await productoProvider.obtenerProductoEnSucursales(
         productoId: widget.producto.id,
         sucursales: widget.sucursales,
       );
+
+      // Verificar si hay un error en el provider después de la operación
+      if (productoProvider.errorMessage != null) {
+        throw Exception(productoProvider.errorMessage);
+      }
 
       if (mounted) {
         setState(() {
@@ -110,9 +117,11 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'No se pudieron cargar los detalles del producto: $e';
+          _error =
+              'No se pudieron cargar los detalles del producto: ${e.toString().replaceAll('Exception: ', '')}';
           _isLoading = false;
         });
+        debugPrint('Error al cargar detalles del producto: $e');
       }
     }
   }
@@ -146,7 +155,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
 
     return ConstrainedBox(
       constraints: BoxConstraints(
-        maxWidth: 900,
+        maxWidth: 1000,
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
       child: Padding(
@@ -155,20 +164,19 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
+            // Encabezado común
             _buildHeader(context),
             const SizedBox(height: 16),
 
-            // Sección para mostrar promociones de forma destacada
-            _buildPromocionesDestacadas(widget.producto),
-            const SizedBox(height: 16),
-
-            // Información básica del producto
+            // Información básica del producto (destacada arriba)
             _buildProductoBasicInfo(isPantallaReducida),
             const SizedBox(height: 16),
-            // Ambas pestañas juntas (atributos y filtros) con su contenido
+
+            // Contenido principal (ocupa todo el ancho)
             Expanded(
               child: _buildTabBars(isPantallaReducida),
             ),
+
             const SizedBox(height: 16),
             _buildFooter(context),
           ],
@@ -333,50 +341,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          // Sección de estadísticas compacta
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                _buildCompactEstadistica(
-                  'Sucursales',
-                  _isLoading ? '...' : '${_sucursalesCompartidas.length}',
-                  icon: FontAwesomeIcons.store,
-                  color: Colors.blue,
-                  isSmall: isPantallaReducida,
-                ),
-                _buildCompactEstadistica(
-                  'Con stock',
-                  _isLoading
-                      ? '...'
-                      : '${_sucursalesCompartidas.where((ProductoEnSucursal s) => s.disponible && s.producto.stock > 0).length}',
-                  icon: FontAwesomeIcons.boxOpen,
-                  color: Colors.green,
-                  isSmall: isPantallaReducida,
-                ),
-                _buildCompactEstadistica(
-                  'Stock bajo',
-                  _isLoading
-                      ? '...'
-                      : '${_sucursalesCompartidas.where((ProductoEnSucursal s) => s.disponible && s.producto.tieneStockBajo()).length}',
-                  icon: FontAwesomeIcons.triangleExclamation,
-                  color: const Color(0xFFE31E24),
-                  isSmall: isPantallaReducida,
-                ),
-                _buildCompactEstadistica(
-                  'Agotado',
-                  _isLoading
-                      ? '...'
-                      : '${_sucursalesCompartidas.where((ProductoEnSucursal s) => s.disponible && s.producto.stock <= 0).length}',
-                  icon: FontAwesomeIcons.ban,
-                  color: Colors.red.shade800,
-                  isSmall: isPantallaReducida,
-                ),
-              ],
-            ),
-          ),
-
           // Contenedor para todas las pestañas
           Expanded(
             child: Padding(
@@ -384,78 +348,91 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  // Pestañas superiores: Atributos y Filtros
+                  // Título "Detalles"
                   Row(
-                    children: <Widget>[
-                      // Pestañas de atributos
-                      Expanded(
-                        flex: isPantallaReducida ? 3 : 2,
-                        child: Container(
-                          height: isPantallaReducida ? 40 : 48,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1A1A1A),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.white10),
-                          ),
-                          child: TabBar(
-                            controller: _atributosTabController,
-                            isScrollable: true,
-                            indicatorColor: const Color(0xFFE31E24),
-                            indicatorSize: TabBarIndicatorSize.label,
-                            labelColor: Colors.white,
-                            unselectedLabelColor: Colors.white70,
-                            padding: EdgeInsets.symmetric(
-                                horizontal: isPantallaReducida ? 4 : 8),
-                            labelPadding: EdgeInsets.symmetric(
-                                horizontal: isPantallaReducida ? 8 : 12),
-                            tabs: <Widget>[
-                              Tab(
-                                height: isPantallaReducida ? 34 : 40,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    FaIcon(FontAwesomeIcons.moneyBillWave,
-                                        size: isPantallaReducida ? 14 : 16,
-                                        color: Colors.green.shade700),
-                                    SizedBox(width: isPantallaReducida ? 4 : 8),
-                                    const Text('Precios',
-                                        style: TextStyle(fontSize: 15)),
-                                  ],
-                                ),
-                              ),
-                              Tab(
-                                height: isPantallaReducida ? 34 : 40,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    FaIcon(FontAwesomeIcons.boxOpen,
-                                        size: isPantallaReducida ? 14 : 16,
-                                        color: const Color(0xFFE31E24)),
-                                    SizedBox(width: isPantallaReducida ? 4 : 8),
-                                    const Text('Stock',
-                                        style: TextStyle(fontSize: 15)),
-                                  ],
-                                ),
-                              ),
-                              Tab(
-                                height: isPantallaReducida ? 34 : 40,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    FaIcon(FontAwesomeIcons.circleInfo,
-                                        size: isPantallaReducida ? 14 : 16,
-                                        color: Colors.blue),
-                                    SizedBox(width: isPantallaReducida ? 4 : 8),
-                                    const Text('Detalles',
-                                        style: TextStyle(fontSize: 15)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                    children: const <Widget>[
+                      FaIcon(
+                        FontAwesomeIcons.circleInfo,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Detalles',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Pestañas
+                  Container(
+                    height: isPantallaReducida ? 40 : 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: TabBar(
+                      controller: _atributosTabController,
+                      isScrollable: true,
+                      indicatorColor: const Color(0xFFE31E24),
+                      indicatorSize: TabBarIndicatorSize.label,
+                      labelColor: Colors.white,
+                      unselectedLabelColor: Colors.white70,
+                      padding: EdgeInsets.symmetric(
+                          horizontal: isPantallaReducida ? 4 : 8),
+                      labelPadding: EdgeInsets.symmetric(
+                          horizontal: isPantallaReducida ? 8 : 12),
+                      tabs: <Widget>[
+                        Tab(
+                          height: isPantallaReducida ? 34 : 40,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              FaIcon(FontAwesomeIcons.moneyBillWave,
+                                  size: isPantallaReducida ? 14 : 16,
+                                  color: Colors.green.shade700),
+                              SizedBox(width: isPantallaReducida ? 4 : 8),
+                              const Text('Precios',
+                                  style: TextStyle(fontSize: 15)),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          height: isPantallaReducida ? 34 : 40,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              FaIcon(FontAwesomeIcons.boxOpen,
+                                  size: isPantallaReducida ? 14 : 16,
+                                  color: const Color(0xFFE31E24)),
+                              SizedBox(width: isPantallaReducida ? 4 : 8),
+                              const Text('Stock',
+                                  style: TextStyle(fontSize: 15)),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          height: isPantallaReducida ? 34 : 40,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              FaIcon(FontAwesomeIcons.chartPie,
+                                  size: isPantallaReducida ? 14 : 16,
+                                  color: Colors.blue),
+                              SizedBox(width: isPantallaReducida ? 4 : 8),
+                              const Text('Estadísticas',
+                                  style: TextStyle(fontSize: 15)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
                   // Área para mostrar el contenido combinado de las pestañas
@@ -476,32 +453,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                             // Pestaña de Stock (con lista de sucursales integrada)
                             _buildStockConSucursales(isPantallaReducida),
 
-                            // Pestaña de Información Adicional
-                            Container(
-                              padding: EdgeInsets.all(
-                                  isPantallaReducida ? 12.0 : 16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Text(
-                                    'Información Adicional',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white.withOpacity(0.9),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Expanded(
-                                    child: SingleChildScrollView(
-                                      child: isPantallaReducida
-                                          ? _buildInfoAdicionalWrap()
-                                          : _buildInfoAdicionalRow(),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            // Pestaña de Estadísticas
+                            _buildEstadisticasTab(isPantallaReducida),
                           ],
                         ),
                       ),
@@ -514,6 +467,130 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         ],
       ),
     );
+  }
+
+  // Nueva pestaña de estadísticas
+  Widget _buildEstadisticasTab(bool isPantallaReducida) {
+    // Obtener el provider una sola vez para todas las operaciones
+    Provider.of<ProductoProvider>(context, listen: false);
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.all(isPantallaReducida ? 12.0 : 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            // Sección de estadísticas generales
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'Estadísticas Generales',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Indicadores de estadísticas
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: <Widget>[
+                      _buildCompactEstadistica(
+                        'Sucursales',
+                        _isLoading ? '...' : '${_sucursalesCompartidas.length}',
+                        icon: FontAwesomeIcons.store,
+                        color: Colors.blue,
+                        isSmall: isPantallaReducida,
+                      ),
+                      _buildCompactEstadistica(
+                        'Con stock',
+                        _isLoading ? '...' : '${_obtenerCantidadConStock()}',
+                        icon: FontAwesomeIcons.boxOpen,
+                        color: Colors.green,
+                        isSmall: isPantallaReducida,
+                      ),
+                      _buildCompactEstadistica(
+                        'Stock bajo',
+                        _isLoading ? '...' : '${_obtenerCantidadStockBajo()}',
+                        icon: FontAwesomeIcons.triangleExclamation,
+                        color: const Color(0xFFE31E24),
+                        isSmall: isPantallaReducida,
+                      ),
+                      _buildCompactEstadistica(
+                        'Agotado',
+                        _isLoading ? '...' : '${_obtenerCantidadAgotados()}',
+                        icon: FontAwesomeIcons.ban,
+                        color: Colors.red.shade800,
+                        isSmall: isPantallaReducida,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Información adicional
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'Información Adicional',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Información adicional que estaba en la tercera pestaña
+                  isPantallaReducida
+                      ? _buildInfoAdicionalWrap()
+                      : _buildInfoAdicionalRow(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Métodos auxiliares para calcular estadísticas (mejora la legibilidad y reutilización)
+  int _obtenerCantidadConStock() {
+    return _sucursalesCompartidas
+        .where((s) => s.disponible && s.producto.stock > 0)
+        .length;
+  }
+
+  int _obtenerCantidadStockBajo() {
+    return _sucursalesCompartidas
+        .where((s) => s.disponible && s.producto.tieneStockBajo())
+        .length;
+  }
+
+  int _obtenerCantidadAgotados() {
+    return _sucursalesCompartidas
+        .where((s) => s.disponible && s.producto.stock <= 0)
+        .length;
   }
 
   // Estadística en formato compacto
@@ -611,8 +688,323 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               // Llamamos a nuestra función de visualización de promociones
               _buildPromocionesInfo(),
             ],
+
+            // Divisor
+            const SizedBox(height: 16),
+            const Divider(color: Colors.white24, height: 1),
+
+            // Título de sección de precios por sucursal
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: const <Widget>[
+                  Text(
+                    'Precios por Sucursal',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Lista de precios por sucursal
+            _buildPreciosPorSucursal(),
           ],
         ),
+      ),
+    );
+  }
+
+  // Construye la lista de precios por sucursal
+  Widget _buildPreciosPorSucursal() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_error.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const Icon(
+              Icons.error_outline,
+              color: Color(0xFFE31E24),
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _error,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reintentar', style: TextStyle(fontSize: 15)),
+              onPressed: _cargarDetallesProducto,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE31E24),
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Mostramos todas las sucursales disponibles
+    final List<ProductoEnSucursal> sucursalesDisponibles =
+        _sucursalesCompartidas
+            .where((ProductoEnSucursal s) => s.disponible)
+            .toList();
+
+    if (sucursalesDisponibles.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const <Widget>[
+            FaIcon(
+              FontAwesomeIcons.store,
+              size: 48,
+              color: Colors.white24,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Este producto no está disponible en ninguna sucursal.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      itemCount: sucursalesDisponibles.length,
+      separatorBuilder: (BuildContext context, int index) => const Divider(
+        color: Colors.white10,
+        height: 1,
+      ),
+      itemBuilder: (BuildContext context, int index) {
+        final ProductoEnSucursal sucursalInfo = sucursalesDisponibles[index];
+        return _buildPreciosSucursalTile(sucursalInfo);
+      },
+    );
+  }
+
+  // Tile para mostrar precios por sucursal
+  Widget _buildPreciosSucursalTile(ProductoEnSucursal sucursalInfo) {
+    final Producto producto = sucursalInfo.producto;
+    final Sucursal sucursal = sucursalInfo.sucursal;
+    final bool esCentral = sucursal.sucursalCentral;
+    final bool tieneOferta = producto.estaEnOferta();
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          // Contenedor coloreado para sucursal central
+          if (esCentral)
+            Container(
+              width: 4,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            )
+          else
+            const SizedBox(width: 4),
+          const SizedBox(width: 12),
+
+          // Información principal
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                // Nombre de sucursal y etiqueta central
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        sucursal.nombre,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (esCentral)
+                      Container(
+                        margin: const EdgeInsets.only(left: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(2),
+                          border: Border.all(
+                            color: Colors.blue,
+                          ),
+                        ),
+                        child: const Text(
+                          'CENTRAL',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Información de precios en formato de tarjetas
+                Row(
+                  children: <Widget>[
+                    // Precio compra
+                    _buildPrecioChip(
+                      'Compra',
+                      producto.getPrecioCompraFormateado(),
+                      Colors.blue,
+                      FontAwesomeIcons.cartShopping,
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Precio venta
+                    _buildPrecioChip(
+                      'Venta',
+                      producto.getPrecioVentaFormateado(),
+                      Colors.green,
+                      FontAwesomeIcons.tag,
+                    ),
+
+                    // Precio liquidación (sólo si tiene)
+                    if (tieneOferta) ...[
+                      const SizedBox(width: 8),
+                      _buildPrecioChip(
+                        'Liquidación',
+                        producto.getPrecioOfertaFormateado() ?? 'N/A',
+                        Colors.amber,
+                        FontAwesomeIcons.percent,
+                      ),
+                    ],
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                // Margen y ganancia
+                Row(
+                  children: <Widget>[
+                    // Ganancia
+                    Text(
+                      'Ganancia: ',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                    Text(
+                      ProductosUtils.formatearPrecio(producto.getGanancia()),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(width: 16),
+
+                    // Margen
+                    Text(
+                      'Margen: ',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                    Text(
+                      ProductosUtils.formatearPorcentaje(
+                          producto.getMargenPorcentaje()),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget para crear una tarjeta con precio
+  Widget _buildPrecioChip(
+      String label, String precio, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          FaIcon(
+            icon,
+            size: 12,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: color.withOpacity(0.9),
+                ),
+              ),
+              Text(
+                precio,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -658,25 +1050,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               Colors.blue,
               FontAwesomeIcons.percent),
         ],
-
-        const SizedBox(height: 16),
-        TextButton.icon(
-          onPressed: () {
-            // Volver al inicio del diálogo para ver la promoción destacada
-            Navigator.of(context).pop();
-            ProductoDetalleDialog.show(
-              context: context,
-              producto: widget.producto,
-              sucursales: widget.sucursales,
-              onSave: widget.onSave,
-            );
-          },
-          icon: const Icon(Icons.arrow_back),
-          label: const Text('Ver detalles completos'),
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white70,
-          ),
-        ),
       ],
     );
   }
@@ -773,7 +1146,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           if (widget.producto.estaEnOferta())
             SizedBox(
                 width: 150,
-                child: _buildAtributo('Precio oferta',
+                child: _buildAtributo('Precio liquidación',
                     widget.producto.getPrecioOfertaFormateado() ?? '',
                     color: Colors.amber)),
           SizedBox(
@@ -974,7 +1347,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
 
     // Versión compacta del tile
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       child: Row(
         children: <Widget>[
           // Indicador de estado (barra vertical)
@@ -1130,14 +1503,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               ],
             ),
           ),
-
-          // Flecha de navegación
-          if (disponible)
-            const Icon(
-              Icons.chevron_right,
-              color: Colors.white38,
-              size: 18,
-            ),
         ],
       ),
     );
@@ -1166,13 +1531,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                     : (widget.producto.stock <= 0
                         ? Colors.red
                         : Colors.green))),
-        if (widget.producto.maxDiasSinReabastecer != null)
-          Expanded(
-              child: _buildAtributo('Días Antes de Liquidación',
-                  '${widget.producto.maxDiasSinReabastecer}')),
-        // Si no hay "Días sin reabastecer", añadir un contenedor vacío
-        if (widget.producto.maxDiasSinReabastecer == null)
-          Expanded(child: Container()),
       ],
     );
   }
@@ -1205,11 +1563,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                       : (widget.producto.stock <= 0
                           ? Colors.red
                           : Colors.green))),
-          if (widget.producto.maxDiasSinReabastecer != null)
-            SizedBox(
-                width: 150,
-                child: _buildAtributo('Días sin reabastecer',
-                    '${widget.producto.maxDiasSinReabastecer}')),
         ],
       ),
     );
@@ -1353,375 +1706,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  // Método que muestra las promociones de forma destacada
-  Widget _buildPromocionesDestacadas(Producto producto) {
-    // Determinar los tipos de promoción activas
-    final bool enLiquidacion = producto.liquidacion;
-    final bool tienePromocionGratis =
-        producto.cantidadGratisDescuento != null &&
-            producto.cantidadGratisDescuento! > 0;
-    final bool tieneDescuentoPorcentual =
-        producto.cantidadMinimaDescuento != null &&
-            producto.cantidadMinimaDescuento! > 0 &&
-            producto.porcentajeDescuento != null &&
-            producto.porcentajeDescuento! > 0;
-
-    // Si no hay promociones, no mostrar nada
-    if (!enLiquidacion && !tienePromocionGratis && !tieneDescuentoPorcentual) {
-      return Container(); // Widget vacío
-    }
-
-    return Card(
-      color: const Color(0xFF2A2A2A),
-      elevation: 4,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const <Widget>[
-                FaIcon(
-                  FontAwesomeIcons.tags,
-                  color: Colors.amber,
-                  size: 18,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Promociones Activas',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ],
-            ),
-            if ((enLiquidacion && tienePromocionGratis) ||
-                (enLiquidacion && tieneDescuentoPorcentual) ||
-                (tienePromocionGratis && tieneDescuentoPorcentual)) ...<Widget>[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: const <Widget>[
-                    FaIcon(
-                      FontAwesomeIcons.circleInfo,
-                      color: Colors.blue,
-                      size: 16,
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Este producto tiene múltiples promociones activas que se pueden aplicar conjuntamente.',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-
-            // Mostrar todas las promociones activas
-            if (enLiquidacion) ...<Widget>[
-              _buildPromocionLiquidacion(producto),
-              if (tienePromocionGratis || tieneDescuentoPorcentual)
-                const SizedBox(height: 16),
-            ],
-
-            if (tienePromocionGratis) ...<Widget>[
-              _buildPromocionGratis(producto),
-              if (tieneDescuentoPorcentual) const SizedBox(height: 16),
-            ],
-
-            if (tieneDescuentoPorcentual)
-              _buildPromocionDescuentoPorcentual(producto),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Método para mostrar la promoción de liquidación
-  Widget _buildPromocionLiquidacion(Producto producto) {
-    // Mostrar promoción de liquidación
-    final double ahorro = producto.precioVenta - (producto.precioOferta ?? 0);
-    final num porcentaje =
-        producto.precioVenta > 0 ? (ahorro / producto.precioVenta) * 100 : 0;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.withOpacity(0.3)),
-      ),
-      child: Column(
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const FaIcon(
-                  FontAwesomeIcons.tag,
-                  color: Colors.amber,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Liquidación',
-                  style: TextStyle(
-                    color: Colors.amber,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${porcentaje.toStringAsFixed(0)}% OFF',
-                  style: const TextStyle(
-                    color: Colors.amber,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Precio regular',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      producto.getPrecioVentaFormateado(),
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        decoration: TextDecoration.lineThrough,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                height: 40,
-                width: 1,
-                color: Colors.white.withOpacity(0.1),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: <Widget>[
-                    Text(
-                      'Precio de liquidación',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      producto.getPrecioOfertaFormateado() ?? 'N/A',
-                      style: const TextStyle(
-                        color: Colors.amber,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Método para mostrar la promoción de productos gratis
-  Widget _buildPromocionGratis(Producto producto) {
-    // Mostrar promoción de productos gratis
-    final int cantidadMinima = producto.cantidadMinimaDescuento!;
-    final int cantidadGratis = producto.cantidadGratisDescuento!;
-    final int cantidadPago = cantidadMinima - cantidadGratis;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
-      ),
-      child: Column(
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const FaIcon(
-                  FontAwesomeIcons.gift,
-                  color: Colors.green,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Lleva $cantidadMinima, Paga $cantidadPago',
-                  style: const TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: <Widget>[
-                const FaIcon(
-                  FontAwesomeIcons.circleInfo,
-                  color: Colors.green,
-                  size: 16,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'El cliente recibe $cantidadGratis ${cantidadGratis == 1 ? 'unidad gratis' : 'unidades gratis'} al comprar $cantidadMinima unidades.',
-                    style: const TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Método para mostrar la promoción de descuento porcentual
-  Widget _buildPromocionDescuentoPorcentual(Producto producto) {
-    // Mostrar promoción de descuento porcentual
-    final int cantidadMinima = producto.cantidadMinimaDescuento!;
-    final int porcentaje = producto.porcentajeDescuento!;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withOpacity(0.3)),
-      ),
-      child: Column(
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const FaIcon(
-                  FontAwesomeIcons.percent,
-                  color: Colors.blue,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  '$porcentaje% de descuento',
-                  style: const TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: <Widget>[
-                const FaIcon(
-                  FontAwesomeIcons.circleInfo,
-                  color: Colors.blue,
-                  size: 16,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Se aplica un $porcentaje% de descuento al comprar $cantidadMinima o más unidades.',
-                    style: const TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

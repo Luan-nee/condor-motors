@@ -735,9 +735,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                 children: [
                   const SizedBox(width: 36), // Espacio para el icono
                   Expanded(
-                    flex: 3,
+                    flex: 4,
                     child: Text(
-                      'NOMBRE',
+                      'NOMBRE / CÓDIGO',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -749,6 +749,28 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                     flex: 4,
                     child: Text(
                       'DIRECCIÓN',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'SERIE FACTURA',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'SERIE BOLETA',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -811,9 +833,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
               ),
               const SizedBox(width: 12),
 
-              // Nombre
+              // Nombre y Código
               Expanded(
-                flex: 3,
+                flex: 4,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -825,24 +847,62 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                         color: Colors.white,
                       ),
                     ),
-                    if (sucursal.sucursalCentral)
-                      Container(
-                        margin: const EdgeInsets.only(top: 4),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE31E24).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'CENTRAL',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFE31E24),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (sucursal.codigoEstablecimiento != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2D2D2D),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const FaIcon(
+                                  FontAwesomeIcons.buildingUser,
+                                  size: 10,
+                                  color: Colors.white54,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  sucursal.codigoEstablecimiento!,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white54,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ),
+                        ],
+                        if (sucursal.sucursalCentral) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE31E24).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'CENTRAL',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFE31E24),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -861,6 +921,26 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              // Serie Factura
+              Expanded(
+                flex: 2,
+                child: _buildSerieInfo(
+                  sucursal.serieFactura,
+                  sucursal.numeroFacturaInicial,
+                  'F',
+                ),
+              ),
+
+              // Serie Boleta
+              Expanded(
+                flex: 2,
+                child: _buildSerieInfo(
+                  sucursal.serieBoleta,
+                  sucursal.numeroBoletaInicial,
+                  'B',
                 ),
               ),
 
@@ -901,6 +981,50 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSerieInfo(String? serie, int? numeroInicial, String tipo) {
+    if (serie == null) {
+      return const Text(
+        'No configurado',
+        style: TextStyle(
+          fontSize: 12,
+          fontStyle: FontStyle.italic,
+          color: Colors.white38,
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2D2D2D),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            serie,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        if (numeroInicial != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Desde: $numeroInicial',
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.white54,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -1052,7 +1176,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                       children: [
                         const SizedBox(width: 36), // Espacio para el icono
                         Expanded(
-                          flex: 3,
+                          flex: 4,
                           child: Text(
                             'NOMBRE',
                             style: TextStyle(
@@ -1066,6 +1190,28 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                           flex: 4,
                           child: Text(
                             'DIRECCIÓN',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'SERIE FACTURA',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'SERIE BOLETA',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,

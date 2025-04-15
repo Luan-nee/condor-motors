@@ -1,4 +1,3 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/categoria.model.dart';
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/marca.model.dart';
@@ -13,6 +12,10 @@ import 'package:flutter/material.dart';
 /// Provider para gestionar productos
 class ProductoProvider extends ChangeNotifier {
   final ProductoRepository _productoRepository = ProductoRepository.instance;
+  final CategoriaRepository _categoriaRepository = CategoriaRepository.instance;
+  final MarcaRepository _marcaRepository = MarcaRepository.instance;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
+  final ColorRepository _colorRepository = ColorRepository.instance;
 
   // Datos de productos
   PaginatedResponse<Producto>? _paginatedProductos;
@@ -137,14 +140,9 @@ class ProductoProvider extends ChangeNotifier {
 
       // Obtener las categorías como objetos para tener acceso a los IDs
       final List<Categoria> categoriasList =
-          await api.categorias.getCategoriasObjetos(useCache: false);
+          await _categoriaRepository.getCategorias(useCache: false);
 
       // Extraer nombres para la lista desplegable
-      List<String> categoriaNames = categoriasList
-          .map<String>((Categoria cat) => cat.nombre)
-          .where((String nombre) => nombre.isNotEmpty)
-          .toList();
-      categoriaNames.sort(); // Mantener orden alfabético
 
       // Crear un mapa para fácil acceso a los IDs por nombre
       _categoriasMap = <String, Map<String, Object>>{
@@ -176,7 +174,7 @@ class ProductoProvider extends ChangeNotifier {
 
     try {
       final List<Sucursal> sucursalesList =
-          await api.sucursales.getSucursales();
+          await _sucursalRepository.getSucursales();
 
       _sucursales = sucursalesList;
       _isLoadingSucursales = false;
@@ -341,10 +339,23 @@ class ProductoProvider extends ChangeNotifier {
       }
 
       // Forzar limpieza de caché para los productos de esta sucursal
+      debugPrint('ProductosAdmin: Limpiando caché para sucursal $sucursalId');
       _productoRepository.invalidateCache(sucursalId);
 
-      // Recargar productos forzando ignorar caché
+      // Si el producto tiene un ID, también limpiar la caché de ese producto específico
+      if (!esNuevo && resultado.id > 0) {
+        final String productoKey = 'producto_${sucursalId}_${resultado.id}';
+        debugPrint(
+            'ProductosAdmin: Limpiando caché específica para $productoKey');
+      }
+
+      // Forzar una recarga completa reiniciando a la primera página
+      debugPrint('ProductosAdmin: Forzando recarga completa de datos');
+      _currentPage = 1; // Volver a la primera página después de guardar
       await cargarProductos();
+
+      _isLoadingProductos = false;
+      notifyListeners();
 
       return true;
     } catch (e) {
@@ -433,11 +444,8 @@ class ProductoProvider extends ChangeNotifier {
 
     try {
       // Obtenemos las marcas como objetos tipados
-      final ResultadoPaginado<Marca> marcasResult =
-          await api.marcas.getMarcasPaginadas(useCache: false);
-
-      // Extraemos la lista de marcas del resultado paginado
-      final List<Marca> marcasList = marcasResult.items;
+      final List<Marca> marcasList =
+          await _marcaRepository.getMarcas(forceRefresh: true);
 
       // Crear un mapa para fácil acceso a los IDs por nombre
       _marcasMap = <String, Map<String, Object>>{
@@ -462,7 +470,7 @@ class ProductoProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _colores = await api.colores.getColores();
+      _colores = await _colorRepository.getColores(useCache: false);
       _isLoadingColores = false;
       notifyListeners();
     } catch (e) {
@@ -668,6 +676,71 @@ class ProductoProvider extends ChangeNotifier {
       _errorMessage = 'Error al exportar productos: $e';
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Recarga los datos de productos forzando una limpieza completa del caché
+  Future<void> recargarDatosProductos() async {
+    if (_sucursalSeleccionada == null) {
+      return;
+    }
+
+    _errorMessage = null;
+    _isLoadingProductos = true;
+    notifyListeners();
+
+    try {
+      final String sucursalId = _sucursalSeleccionada!.id.toString();
+
+      // Forzar limpieza de caché para los productos de esta sucursal
+      debugPrint(
+          'ProductosAdmin: Forzando limpieza de caché para productos de sucursal $sucursalId');
+      _productoRepository.invalidateCache(sucursalId);
+
+      // Resetear a la primera página y limpiar los filtros actuales
+      _currentPage = 1;
+
+      // Forzar una recarga completa de datos desde el servidor
+      debugPrint(
+          'ProductosAdmin: Forzando recarga de productos desde el servidor');
+
+      // Aplicar la búsqueda del servidor sólo si la búsqueda es mayor a 3 caracteres
+      final String? searchQuery =
+          _searchQuery.length >= 3 ? _searchQuery : null;
+
+      // Hacer una solicitud completamente nueva al servidor
+      final PaginatedResponse<Producto> paginatedProductos =
+          await _productoRepository.getProductos(
+        sucursalId: sucursalId,
+        search: searchQuery,
+        page: _currentPage,
+        pageSize: _pageSize,
+        sortBy: _sortBy.isNotEmpty ? _sortBy : null,
+        order: _order,
+        // Forzar bypass de caché completamente
+        useCache: false,
+        forceRefresh: true,
+      );
+
+      // Actualizar los datos en el provider
+      _paginatedProductos = paginatedProductos;
+      _productosFiltrados = paginatedProductos.items;
+
+      // Si hay una búsqueda local o filtro por categoría, se aplica
+      if ((_searchQuery.isNotEmpty && _searchQuery.length < 3) ||
+          _selectedCategory != 'Todos') {
+        _filtrarProductos();
+      }
+
+      _isLoadingProductos = false;
+      debugPrint(
+          'ProductosAdmin: Recarga de datos completada exitosamente con ${_productosFiltrados.length} productos');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('ProductosAdmin: ERROR en recargarDatosProductos: $e');
+      _errorMessage = 'Error al recargar datos de productos: $e';
+      _isLoadingProductos = false;
+      notifyListeners();
     }
   }
 }

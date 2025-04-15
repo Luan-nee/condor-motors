@@ -167,24 +167,34 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
     final String nombre = _nombreController.text.trim();
     final String descripcion = _descripcionController.text.trim();
 
+    // Definir una función para mostrar el SnackBar
+    void showSuccessSnackBar() {
+      final String message = categoria == null
+          ? 'Categoría creada correctamente'
+          : 'Categoría actualizada correctamente';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+    }
+
     final bool exito = await _categoriasProvider.guardarCategoria(
       id: categoria?.id,
       nombre: nombre,
       descripcion: descripcion,
     );
 
-    if (exito && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            categoria == null
-                ? 'Categoría creada correctamente'
-                : 'Categoría actualizada correctamente',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context);
+    // Verificar si el widget aún está montado
+    if (!mounted) {
+      return;
+    }
+
+    if (exito) {
+      showSuccessSnackBar();
     }
   }
 
@@ -269,10 +279,8 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                           onPressed: isLoading
                               ? null
                               : () async {
-                                  await categoriasProvider.recargarDatos();
-                                  if (mounted &&
-                                      categoriasProvider
-                                          .errorMessage.isNotEmpty) {
+                                  // Definir funciones para mostrar SnackBars
+                                  void showErrorSnackBar() {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
@@ -280,7 +288,9 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                         backgroundColor: Colors.red,
                                       ),
                                     );
-                                  } else if (mounted) {
+                                  }
+
+                                  void showSuccessSnackBar() {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text(
@@ -288,6 +298,20 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                         backgroundColor: Colors.green,
                                       ),
                                     );
+                                  }
+
+                                  await categoriasProvider.recargarDatos();
+
+                                  // Verificar si el widget aún está montado
+                                  if (!mounted) {
+                                    return;
+                                  }
+
+                                  if (categoriasProvider
+                                      .errorMessage.isNotEmpty) {
+                                    showErrorSnackBar();
+                                  } else {
+                                    showSuccessSnackBar();
                                   }
                                 },
                         ),

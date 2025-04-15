@@ -1,5 +1,4 @@
 import 'package:condorsmotors/api/index.api.dart';
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/cliente.model.dart'; // Importamos el modelo de Cliente
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' hide DetalleProforma;

@@ -1,16 +1,20 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Provider para gestionar ventas y sucursales
 class VentasProvider extends ChangeNotifier {
+  // Repositorios
+  final VentaRepository _ventaRepository = VentaRepository.instance;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
+
   // Estado para sucursales
   String _errorMessage = '';
   List<Sucursal> _sucursales = [];
@@ -291,8 +295,8 @@ class VentasProvider extends ChangeNotifier {
         throw Exception(errorMsg);
       }
 
-      // Llamar a la API para declarar la venta
-      final result = await api.ventas.declararVenta(
+      // Llamar al repositorio para declarar la venta
+      final result = await _ventaRepository.declararVenta(
         ventaId,
         sucursalId: _sucursalSeleccionada!.id,
         enviarCliente: enviarCliente,
@@ -423,8 +427,8 @@ class VentasProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('Cargando sucursales desde la API...');
-      final data = await api.sucursales.getSucursales();
+      debugPrint('Cargando sucursales desde el repositorio...');
+      final data = await _sucursalRepository.getSucursales();
 
       debugPrint('Datos recibidos tipo: ${data.runtimeType}');
       debugPrint('Longitud de la lista: ${data.length}');
@@ -494,27 +498,14 @@ class VentasProvider extends ChangeNotifier {
         }
       }
 
-      // Si no está en la lista o la lista está vacía, crear una sucursal provisional
-      // con la información mínima necesaria para funcionar
-      final DateTime ahora = DateTime.now();
-      final Sucursal sucursalProvisional = Sucursal(
-        id: sucursalIdStr,
-        nombre: 'Sucursal $sucursalIdStr',
-        direccion: '',
-        sucursalCentral: false,
-        serieFactura: '',
-        serieBoleta: '',
-        fechaCreacion: ahora,
-        fechaActualizacion: ahora,
-      );
-
-      // Intentar cargar los datos completos de la sucursal si se tienen permisos
+      // Intentar obtener los datos de la sucursal a través del repositorio
       try {
         debugPrint('🔄 Intentando obtener datos completos de la sucursal');
-        final sucursalCompleta = await api.sucursales.getSucursalData(
-            sucursalIdStr,
-            useCache: false,
-            forceRefresh: true);
+        final sucursalCompleta = await _sucursalRepository.getSucursalData(
+          sucursalIdStr,
+          useCache: false,
+          forceRefresh: true,
+        );
 
         // Si se pudo obtener, usar esta sucursal
         debugPrint(
@@ -526,9 +517,13 @@ class VentasProvider extends ChangeNotifier {
           _sucursales.add(sucursalCompleta);
         }
       } catch (e) {
-        // Si hay error al obtener datos completos, usar la sucursal provisional
+        // Si hay error al obtener datos completos, usar una sucursal provisional
         debugPrint(
             '⚠️ No se pudieron obtener datos completos, usando información mínima: $e');
+
+        // Crear una sucursal provisional con el repositorio
+        final sucursalProvisional =
+            _sucursalRepository.createProvisionalSucursal(sucursalIdStr);
         _sucursalSeleccionada = sucursalProvisional;
       }
 
@@ -587,8 +582,8 @@ class VentasProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Llamar a la API para obtener las ventas
-      final response = await api.ventas.getVentas(
+      // Llamar al repositorio para obtener las ventas
+      final response = await _ventaRepository.getVentas(
         sucursalId: _sucursalSeleccionada!.id,
         page: _paginacion.currentPage,
         pageSize: _itemsPerPage,
@@ -596,6 +591,8 @@ class VentasProvider extends ChangeNotifier {
         fechaInicio: _fechaInicio,
         fechaFin: _fechaFin,
         estado: _estadoFiltro,
+        sortBy: _ordenarPor,
+        order: _orden,
         forceRefresh: true,
       );
 
@@ -711,7 +708,7 @@ class VentasProvider extends ChangeNotifier {
       debugPrint(
           'Cargando detalle de venta: $id para sucursal: ${_sucursalSeleccionada!.id}');
 
-      final Venta? venta = await api.ventas.getVenta(
+      final Venta? venta = await _ventaRepository.getVenta(
         id,
         sucursalId: _sucursalSeleccionada!.id,
         forceRefresh: true, // Forzar recarga para obtener datos actualizados

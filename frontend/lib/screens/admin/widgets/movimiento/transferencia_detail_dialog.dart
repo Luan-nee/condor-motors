@@ -31,9 +31,7 @@ class TransferenciaDetailDialog extends StatefulWidget {
 }
 
 class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
-  bool _isLoading = true;
   String? _errorMessage;
-  TransferenciaInventario? _detalleTransferencia;
   int _retryCount = 0;
   sucursal_model.Sucursal? _sucursalSeleccionada;
 
@@ -48,50 +46,18 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    final TransferenciasProvider transferenciasProvider =
+        Provider.of<TransferenciasProvider>(context, listen: false);
 
     try {
       debugPrint(
           '⏳ [TransferenciaDetailDialog] Cargando detalles de la transferencia #${widget.transferencia.id}');
 
-      final TransferenciasProvider transferenciasProvider =
-          Provider.of<TransferenciasProvider>(context, listen: false);
-
-      // Obtener detalle de la transferencia
-      final TransferenciaInventario detalleTransferencia =
-          await transferenciasProvider.obtenerDetalleTransferencia(
+      transferenciasProvider.cargarDetalleTransferencia(
         widget.transferencia.id.toString(),
       );
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _detalleTransferencia = detalleTransferencia;
-        _isLoading = false;
-      });
-
-      debugPrint(
-          '✅ [TransferenciaDetailDialog] Detalles cargados correctamente');
-      debugPrint(
-          '📦 [TransferenciaDetailDialog] Productos: ${_detalleTransferencia?.productos?.length ?? 0}');
-    } catch (e, stackTrace) {
+    } catch (e) {
       debugPrint('❌ [TransferenciaDetailDialog] Error al cargar detalles: $e');
-      debugPrint('📋 [TransferenciaDetailDialog] StackTrace: $stackTrace');
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _detalleTransferencia = widget.transferencia;
-        _isLoading = false;
-        _errorMessage = e.toString();
-      });
     }
   }
 
@@ -101,7 +67,6 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
     }
 
     setState(() {
-      _isLoading = true;
       _errorMessage = null;
     });
 
@@ -119,9 +84,7 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
         return;
       }
 
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() {});
 
       if (mounted) {
         final bool? resultado = await showDialog<bool>(
@@ -179,7 +142,6 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
       }
 
       setState(() {
-        _isLoading = false;
         _errorMessage = 'Error al cargar comparación: $e';
       });
     }
@@ -225,19 +187,28 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
 
   Widget _buildContent(
       BuildContext context, bool isWideScreen, bool isMediumScreen) {
-    // Estado de carga
-    if (_isLoading) {
-      return _buildLoadingContent();
-    }
+    // En lugar de usar variables de estado locales, usamos Consumer para
+    // acceder a los datos del provider
+    return Consumer<TransferenciasProvider>(
+      builder: (context, provider, child) {
+        // Estado de carga
+        if (provider.isLoading) {
+          return _buildLoadingContent();
+        }
 
-    // Estado de error
-    if (_errorMessage != null && _retryCount < 2) {
-      return _buildErrorContent();
-    }
+        // Estado de error
+        if (provider.errorMessage != null && _retryCount < 2) {
+          return _buildErrorContent(provider.errorMessage!);
+        }
 
-    // Estado normal - muestra los detalles usando el movimiento actual
-    // (ya sea el cargado exitosamente o el original como fallback)
-    return _buildDetailContent(context, isWideScreen, isMediumScreen);
+        // Estado normal - muestra los detalles usando la transferencia del provider
+        // o la transferencia original como fallback
+        final transferencia =
+            provider.detalleTransferenciaActual ?? widget.transferencia;
+        return _buildDetailContent(
+            context, isWideScreen, isMediumScreen, transferencia);
+      },
+    );
   }
 
   // Widget para mostrar estado de carga
@@ -276,7 +247,7 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
   }
 
   // Widget para mostrar estado de error
-  Widget _buildErrorContent() {
+  Widget _buildErrorContent(String errorMessage) {
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -346,7 +317,6 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
                   onPressed: () {
                     // Usar los datos básicos del movimiento sin productos detallados
                     setState(() {
-                      _detalleTransferencia = widget.transferencia;
                       _errorMessage = null;
                     });
                   },
@@ -364,11 +334,8 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
   }
 
   // Widget para mostrar los detalles del movimiento
-  Widget _buildDetailContent(
-      BuildContext context, bool isWideScreen, bool isMediumScreen) {
-    final TransferenciaInventario transferencia =
-        _detalleTransferencia ?? widget.transferencia;
-
+  Widget _buildDetailContent(BuildContext context, bool isWideScreen,
+      bool isMediumScreen, TransferenciaInventario transferencia) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -766,7 +733,6 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
                 try {
                   setState(() {
                     _sucursalSeleccionada = sucursal;
-                    _isLoading = true;
                   });
 
                   await _cargarComparacion(int.parse(sucursal.id));
@@ -781,9 +747,7 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
                   }
                 } finally {
                   if (mounted) {
-                    setState(() {
-                      _isLoading = false;
-                    });
+                    setState(() {});
                   }
                 }
               }

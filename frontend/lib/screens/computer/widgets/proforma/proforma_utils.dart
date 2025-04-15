@@ -1,18 +1,25 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/producto.model.dart';
-import 'package:condorsmotors/models/proforma.model.dart';
+import 'package:condorsmotors/models/proforma.model.dart' as model_proforma;
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 /// Utilidades para manejar proformas y ventas pendientes
 class VentasPendientesUtils {
+  /// Instancias de repositorios
+  static final ProformaRepository _proformaRepository =
+      ProformaRepository.instance;
+  static final SucursalRepository _sucursalRepository =
+      SucursalRepository.instance;
+  static final VentaRepository _ventaRepository = VentaRepository.instance;
+
   /// Obtiene el ID de sucursal del usuario autenticado
   ///
   /// Retorna el ID como entero, o null si no se encuentra
   static Future<int?> obtenerSucursalId() async {
     try {
       final Map<String, dynamic>? userData =
-          await api.authService.getUserData();
+          await _proformaRepository.getUserData();
       if (userData != null && userData.containsKey('sucursalId')) {
         try {
           return int.parse(userData['sucursalId'].toString());
@@ -34,8 +41,8 @@ class VentasPendientesUtils {
   ///
   /// Retorna una lista de mapas con el formato necesario para PendingSalesWidget
   static List<Map<String, dynamic>> convertirProformasAVentasPendientes(
-      List<Proforma> proformas) {
-    return proformas.map((Proforma proforma) {
+      List<model_proforma.Proforma> proformas) {
+    return proformas.map((model_proforma.Proforma proforma) {
       return convertirProformaAVentaPendiente(proforma);
     }).toList();
   }
@@ -46,7 +53,7 @@ class VentasPendientesUtils {
   ///
   /// Retorna un mapa con el formato necesario para PendingSalesWidget
   static Map<String, dynamic> convertirProformaAVentaPendiente(
-      Proforma proforma) {
+      model_proforma.Proforma proforma) {
     // Obtener datos del cliente, o crear uno genérico si no existe
     final Map<String, dynamic> cliente = proforma.cliente ??
         <String, dynamic>{
@@ -62,8 +69,9 @@ class VentasPendientesUtils {
         _procesarProductosProforma(proforma);
 
     // Incluir información sobre promociones en la proforma
-    final List<DetalleProforma> detallesConPromociones = proforma.detalles
-        .where((DetalleProforma d) => tienePromocion(d))
+    final List<model_proforma.DetalleProforma> detallesConPromociones = proforma
+        .detalles
+        .where((model_proforma.DetalleProforma d) => tienePromocion(d))
         .toList();
 
     // Generar un resumen de promociones para mostrar en la UI
@@ -94,9 +102,9 @@ class VentasPendientesUtils {
 
   /// Procesa los detalles de proforma y los convierte a formato de productos para UI
   static List<Map<String, dynamic>> _procesarProductosProforma(
-      Proforma proforma) {
+      model_proforma.Proforma proforma) {
     return proforma.detalles
-        .map<Map<String, dynamic>>((DetalleProforma detalle) {
+        .map<Map<String, dynamic>>((model_proforma.DetalleProforma detalle) {
       // Verificar si tiene promociones
       final bool enPromocion = tienePromocion(detalle);
 
@@ -132,13 +140,13 @@ class VentasPendientesUtils {
 
   /// Genera un resumen de las promociones en una proforma
   static Map<String, dynamic> _generarResumenPromociones(
-      List<DetalleProforma> detalles) {
+      List<model_proforma.DetalleProforma> detalles) {
     int cantidadLiquidacion = 0;
     int cantidadGratis = 0;
     int cantidadDescuento = 0;
     double ahorroEstimado = 0.0;
 
-    for (final DetalleProforma detalle in detalles) {
+    for (final model_proforma.DetalleProforma detalle in detalles) {
       if (detalle.producto == null) {
         continue;
       }
@@ -189,7 +197,7 @@ class VentasPendientesUtils {
   }
 
   /// Verifica si un detalle de proforma tiene promociones
-  static bool tienePromocion(DetalleProforma detalle) {
+  static bool tienePromocion(model_proforma.DetalleProforma detalle) {
     if (detalle.producto == null) {
       return false;
     }
@@ -278,8 +286,10 @@ class VentasPendientesUtils {
   /// [proforma] - Proforma a validar
   ///
   /// Retorna un mapa con el resultado de la validación y mensajes
-  static Map<String, dynamic> validarProformaParaVenta(Proforma proforma) {
-    final bool esValida = proforma.estado == EstadoProforma.pendiente;
+  static Map<String, dynamic> validarProformaParaVenta(
+      model_proforma.Proforma proforma) {
+    final bool esValida =
+        proforma.estado == model_proforma.EstadoProforma.pendiente;
     final bool estaExpirada = proforma.haExpirado();
     final List<String> mensajes = <String>[];
 
@@ -312,7 +322,7 @@ class VentasPendientesUtils {
     try {
       // Obtener datos del usuario
       final Map<String, dynamic>? userData =
-          await api.authService.getUserData();
+          await _proformaRepository.getUserData();
       if (userData == null) {
         return <String, dynamic>{
           'exito': false,
@@ -350,7 +360,7 @@ class VentasPendientesUtils {
 
         // Primero, verificar si la proforma existe sin usar caché para evitar problemas
         final Map<String, dynamic> proformaExistResponse =
-            await api.proformas.getProformaVenta(
+            await _proformaRepository.getProforma(
           sucursalId: sucursalId.toString(),
           proformaId: proformaId,
           useCache: false, // Evitar usar caché
@@ -363,7 +373,7 @@ class VentasPendientesUtils {
             !proformaExistResponse.containsKey('data') ||
             proformaExistResponse['data'] == null) {
           // Invalidar la caché para esta proforma específica
-          api.proformas.invalidateCache(sucursalId.toString());
+          _proformaRepository.invalidateCache(sucursalId.toString());
 
           String mensaje = 'La proforma #$proformaId no existe o fue eliminada';
           if (proformaExistResponse.containsKey('error')) {
@@ -422,7 +432,8 @@ class VentasPendientesUtils {
         debugPrint('Preparando datos para crear venta: $ventaData');
 
         // Crear la venta usando la API de ventas
-        final Map<String, dynamic> ventaResponse = await api.ventas.createVenta(
+        final Map<String, dynamic> ventaResponse =
+            await _ventaRepository.createVenta(
           ventaData,
           sucursalId: sucursalId.toString(),
         );
@@ -440,7 +451,7 @@ class VentasPendientesUtils {
         }
 
         // Actualizar el estado de la proforma a "convertida"
-        await api.proformas.updateProformaVenta(
+        await _proformaRepository.updateProforma(
           sucursalId: sucursalId.toString(),
           proformaId: proformaId,
           estado: 'convertida',
@@ -459,7 +470,7 @@ class VentasPendientesUtils {
         if (apiError.toString().contains('404') ||
             apiError.toString().contains('Not found')) {
           // Invalidar la caché para esta proforma
-          api.proformas.invalidateCache(sucursalId.toString());
+          _proformaRepository.invalidateCache(sucursalId.toString());
 
           debugPrint(
               'Error 404: Proforma $proformaId no existe. Error: $apiError');
@@ -488,15 +499,15 @@ class VentasPendientesUtils {
   static Future<void> _recargarDatos(String sucursalId) async {
     try {
       // Invalidar caché de proformas para la sucursal específica
-      api.proformas.invalidateCache(sucursalId);
+      _proformaRepository.invalidateCache(sucursalId);
       debugPrint('🔄 Caché de proformas invalidado para sucursal $sucursalId');
 
       // Recargar datos de la sucursal para mantener coherencia
-      await api.sucursales.getSucursalData(sucursalId, forceRefresh: true);
+      await _sucursalRepository.getSucursalData(sucursalId, forceRefresh: true);
       debugPrint('🔄 Datos de sucursal recargados: $sucursalId');
 
       // Recargar proformas específicas para esta sucursal
-      await api.proformas.getProformasVenta(
+      await _proformaRepository.getProformas(
         sucursalId: sucursalId,
         useCache: false,
         forceRefresh: true,
@@ -519,22 +530,22 @@ class VentasPendientesUtils {
   }
 
   /// Verifica si una proforma está en estado pendiente
-  static bool estaEnPendiente(Proforma proforma) {
-    return proforma.estado == EstadoProforma.pendiente;
+  static bool estaEnPendiente(model_proforma.Proforma proforma) {
+    return proforma.estado == model_proforma.EstadoProforma.pendiente;
   }
 
   /// Verifica si una proforma ya ha sido convertida a venta
-  static bool estaConvertida(Proforma proforma) {
-    return proforma.estado == EstadoProforma.convertida;
+  static bool estaConvertida(model_proforma.Proforma proforma) {
+    return proforma.estado == model_proforma.EstadoProforma.convertida;
   }
 
   /// Verifica si una proforma está cancelada
-  static bool estaCancelada(Proforma proforma) {
-    return proforma.estado == EstadoProforma.cancelada;
+  static bool estaCancelada(model_proforma.Proforma proforma) {
+    return proforma.estado == model_proforma.EstadoProforma.cancelada;
   }
 
   /// Verifica si una proforma ha expirado
-  static bool haExpirado(Proforma proforma) {
+  static bool haExpirado(model_proforma.Proforma proforma) {
     if (proforma.fechaExpiracion == null) {
       return false;
     }
@@ -542,7 +553,7 @@ class VentasPendientesUtils {
   }
 
   /// Calcula el tiempo restante hasta la expiración de la proforma
-  static String tiempoRestante(Proforma proforma) {
+  static String tiempoRestante(model_proforma.Proforma proforma) {
     if (proforma.fechaExpiracion == null) {
       return 'Sin fecha de expiración';
     }
@@ -634,13 +645,16 @@ class VentasPendientesUtils {
   }
 
   /// Genera un texto descriptivo del estado de la proforma
-  static String textoEstado(Proforma proforma) {
+  static String textoEstado(model_proforma.Proforma proforma) {
     switch (proforma.estado) {
-      case EstadoProforma.pendiente:
-        return haExpirado(proforma) ? 'Expirada' : 'Pendiente';
-      case EstadoProforma.convertida:
+      case model_proforma.EstadoProforma.pendiente:
+        if (proforma.haExpirado()) {
+          return 'Expirada';
+        }
+        return 'Pendiente';
+      case model_proforma.EstadoProforma.convertida:
         return 'Convertida a venta';
-      case EstadoProforma.cancelada:
+      case model_proforma.EstadoProforma.cancelada:
         return 'Cancelada';
       default:
         return 'Desconocido';
@@ -648,22 +662,25 @@ class VentasPendientesUtils {
   }
 
   /// Obtiene un color asociado al estado de la proforma
-  static Color colorEstado(Proforma proforma) {
+  static Color colorEstado(model_proforma.Proforma proforma) {
     switch (proforma.estado) {
-      case EstadoProforma.pendiente:
-        return haExpirado(proforma) ? Colors.orange : Colors.blue;
-      case EstadoProforma.convertida:
+      case model_proforma.EstadoProforma.pendiente:
+        if (proforma.haExpirado()) {
+          return Colors.red;
+        }
+        return Colors.blue;
+      case model_proforma.EstadoProforma.convertida:
         return Colors.green;
-      case EstadoProforma.cancelada:
-        return Colors.red;
-      default:
+      case model_proforma.EstadoProforma.cancelada:
         return Colors.grey;
+      default:
+        return Colors.black;
     }
   }
 }
 
 /// Extensión para agregar métodos útiles a las proformas
-extension ProformaExtension on Proforma {
+extension ProformaExtension on model_proforma.Proforma {
   /// Obtiene el nombre del cliente de la proforma
   String getNombreCliente() {
     if (cliente != null) {
@@ -680,6 +697,6 @@ extension ProformaExtension on Proforma {
   /// Verifica si la proforma puede convertirse en venta
   bool puedeConvertirseEnVenta() {
     // Solo se pueden convertir proformas pendientes y no expiradas
-    return estado == EstadoProforma.pendiente && !haExpirado();
+    return estado == model_proforma.EstadoProforma.pendiente && !haExpirado();
   }
 }

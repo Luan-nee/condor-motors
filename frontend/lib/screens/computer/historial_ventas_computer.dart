@@ -1,6 +1,6 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
+import 'package:condorsmotors/repositories/venta.repository.dart';
 import 'package:condorsmotors/screens/admin/widgets/venta/venta_detalle_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -212,6 +212,8 @@ class _HistorialVentasComputerScreenState
     extends State<HistorialVentasComputerScreen> {
   late VentasComputerProvider _ventasProvider;
   bool _isInitialized = false;
+  // Instancia del repositorio para acceder a las ventas
+  final VentaRepository _ventaRepository = VentaRepository.instance;
 
   @override
   void didChangeDependencies() {
@@ -551,7 +553,7 @@ class _HistorialVentasComputerScreenState
       );
 
       try {
-        final bool resultado = await api.ventas.anularVenta(
+        final bool resultado = await _ventaRepository.anularVenta(
           venta.id.toString(),
           motivoController.text,
           sucursalId: widget.sucursalId?.toString(),

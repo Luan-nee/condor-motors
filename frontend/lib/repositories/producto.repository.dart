@@ -1,14 +1,14 @@
-import 'package:condorsmotors/api/protected/productos.api.dart';
-import 'package:condorsmotors/main.dart' show api;
+import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
 
 /// Repositorio para gestionar productos
 ///
 /// Esta clase encapsula la lógica de negocio relacionada con productos,
 /// actuando como una capa intermedia entre la UI y la API
-class ProductoRepository {
+class ProductoRepository implements BaseRepository {
   /// Instancia singleton del repositorio
   static final ProductoRepository _instance = ProductoRepository._internal();
 
@@ -20,7 +20,44 @@ class ProductoRepository {
 
   /// Constructor privado para el patrón singleton
   ProductoRepository._internal() {
-    _productosApi = api.productos;
+    try {
+      // Utilizamos la API global inicializada en index.api.dart
+      _productosApi = api.productos;
+    } catch (e) {
+      debugPrint('Error al obtener ProductosApi: $e');
+      // Si hay un error al acceder a la API global, lanzamos una excepción
+      throw Exception('No se pudo inicializar ProductoRepository: $e');
+    }
+  }
+
+  /// Obtiene datos del usuario desde la API centralizada
+  ///
+  /// Ayuda a los providers a acceder a la información del usuario autenticado
+  @override
+  Future<Map<String, dynamic>?> getUserData() async {
+    try {
+      return await api.getUserData();
+    } catch (e) {
+      debugPrint('Error en ProductoRepository.getUserData: $e');
+      return null;
+    }
+  }
+
+  /// Obtiene el ID de la sucursal del usuario actual
+  ///
+  /// Útil para operaciones que requieren el ID de sucursal automáticamente
+  @override
+  Future<String?> getCurrentSucursalId() async {
+    try {
+      final userData = await getUserData();
+      if (userData == null) {
+        return null;
+      }
+      return userData['sucursalId']?.toString();
+    } catch (e) {
+      debugPrint('Error en ProductoRepository.getCurrentSucursalId: $e');
+      return null;
+    }
   }
 
   /// Obtiene los productos de una sucursal con filtros y paginación

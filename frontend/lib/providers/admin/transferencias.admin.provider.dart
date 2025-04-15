@@ -1,15 +1,20 @@
-import 'package:condorsmotors/api/protected/sucursales.api.dart';
-import 'package:condorsmotors/api/protected/transferencias.api.dart';
-import 'package:condorsmotors/main.dart';
 import 'package:condorsmotors/models/sucursal.model.dart' as sucursal_model;
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/providers/paginacion.provider.dart';
+import 'package:condorsmotors/repositories/sucursal.repository.dart';
+// Importar los repositorios
+import 'package:condorsmotors/repositories/transferencia.repository.dart';
 import 'package:flutter/material.dart';
 
 /// Provider para gestionar las transferencias de inventario desde la vista de administración
 class TransferenciasProvider extends ChangeNotifier {
-  final TransferenciasInventarioApi _transferenciasApi;
-  final SucursalesApi _sucursalesApi = api.sucursales;
+  // Instancias de repositorios
+  final TransferenciaRepository _transferenciaRepository =
+      TransferenciaRepository.instance;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
+
+  // API legacy que se seguirá usando hasta la transición completa
+
   final PaginacionProvider paginacionProvider = PaginacionProvider();
 
   List<TransferenciaInventario> _transferencias = [];
@@ -17,6 +22,8 @@ class TransferenciasProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   String _selectedFilter = 'Todos';
+  // Añadir una nueva propiedad para almacenar el detalle de transferencia actual
+  TransferenciaInventario? _detalleTransferenciaActual;
 
   // Propiedades para filtrado avanzado
   String _searchQuery = '';
@@ -25,7 +32,7 @@ class TransferenciasProvider extends ChangeNotifier {
   String _ordenarPor = 'fecha';
   String _orden = 'desc';
 
-  TransferenciasProvider(this._transferenciasApi) {
+  TransferenciasProvider() {
     // Cargar sucursales al inicializar
     cargarSucursales();
   }
@@ -41,6 +48,9 @@ class TransferenciasProvider extends ChangeNotifier {
   DateTime? get fechaFin => _fechaFin;
   String get ordenarPor => _ordenarPor;
   String get orden => _orden;
+  // Añadir getter para el detalle de transferencia
+  TransferenciaInventario? get detalleTransferenciaActual =>
+      _detalleTransferenciaActual;
 
   /// Recarga todos los datos forzando actualización desde el servidor
   Future<void> recargarDatos() async {
@@ -72,7 +82,7 @@ class TransferenciasProvider extends ChangeNotifier {
   /// Carga la lista de sucursales disponibles
   Future<void> cargarSucursales() async {
     try {
-      _sucursales = await _sucursalesApi.getSucursales(forceRefresh: true);
+      _sucursales = await _sucursalRepository.getSucursales();
       notifyListeners();
     } catch (e) {
       _setError('Error al cargar sucursales: $e');
@@ -111,7 +121,8 @@ class TransferenciasProvider extends ChangeNotifier {
             .codigo;
       }
 
-      final paginatedResponse = await _transferenciasApi.getTransferencias(
+      final paginatedResponse =
+          await _transferenciaRepository.getTransferencias(
         sucursalId: sucursalId,
         estado: estadoFiltro,
         fechaInicio: _fechaInicio,
@@ -140,7 +151,7 @@ class TransferenciasProvider extends ChangeNotifier {
   }) async {
     try {
       final TransferenciaInventario transferencia =
-          await _transferenciasApi.getTransferencia(
+          await _transferenciaRepository.getTransferencia(
         id,
         useCache: useCache,
       );
@@ -151,23 +162,35 @@ class TransferenciasProvider extends ChangeNotifier {
     }
   }
 
+  /// Carga y almacena los detalles de una transferencia
+  Future<void> cargarDetalleTransferencia(String id) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      debugPrint('Cargando detalles de la transferencia #$id');
+      final TransferenciaInventario transferencia =
+          await _transferenciaRepository.getTransferencia(id);
+
+      _detalleTransferenciaActual = transferencia;
+      debugPrint('Detalles cargados correctamente');
+      debugPrint('Productos: ${transferencia.productos?.length ?? 0}');
+    } catch (e) {
+      debugPrint('Error al cargar detalle de transferencia: $e');
+      _errorMessage = e.toString();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Verifica si una transferencia puede ser comparada basado en su estado
   bool puedeCompararTransferencia(String estadoCodigo) {
-    return estadoCodigo.toUpperCase() == 'PEDIDO';
+    return _transferenciaRepository.puedeCompararTransferencia(estadoCodigo);
   }
 
   /// Obtiene el mensaje de estado para la comparación de transferencias
   String obtenerMensajeComparacion(String estadoCodigo) {
-    switch (estadoCodigo.toUpperCase()) {
-      case 'PEDIDO':
-        return 'Seleccione una sucursal para comparar el stock disponible antes de enviar.';
-      case 'RECIBIDO':
-        return 'Transferencia completada. Los stocks mostrados reflejan el estado final.';
-      case 'ENVIADO':
-        return 'Transferencia en tránsito. La comparación de stock no está disponible.';
-      default:
-        return 'No es posible realizar la comparación en el estado actual.';
-    }
+    return _transferenciaRepository.obtenerMensajeComparacion(estadoCodigo);
   }
 
   /// Obtiene comparación de stocks entre sucursales
@@ -185,10 +208,9 @@ class TransferenciasProvider extends ChangeNotifier {
             'No se puede comparar una transferencia en estado ${transferencia.estado.nombre}');
       }
 
-      return await _transferenciasApi.compararTransferencia(
+      return await _transferenciaRepository.compararTransferencia(
         id: id,
         sucursalOrigenId: sucursalOrigenId,
-        useCache: false,
       );
     } catch (e) {
       _setError('Error al obtener comparación de transferencia: $e');
@@ -251,49 +273,7 @@ class TransferenciasProvider extends ChangeNotifier {
 
   /// Obtiene información de estilo según el estado de la transferencia
   Map<String, dynamic> obtenerEstiloEstado(String estado) {
-    Color backgroundColor;
-    Color textColor;
-    IconData iconData;
-    String tooltipText;
-
-    switch (estado.toUpperCase()) {
-      case 'RECIBIDO':
-        backgroundColor = const Color(0xFF2D8A3B).withOpacity(0.15);
-        textColor = const Color(0xFF4CAF50);
-        iconData = Icons.check_circle;
-        tooltipText = 'Transferencia completada';
-        break;
-      case 'PEDIDO':
-        backgroundColor = const Color(0xFFFFA000).withOpacity(0.15);
-        textColor = const Color(0xFFFFA000);
-        iconData = Icons.history;
-        tooltipText = 'En proceso';
-        break;
-      case 'ENVIADO':
-        backgroundColor = const Color(0xFF009688).withOpacity(0.15);
-        textColor = const Color(0xFF009688);
-        iconData = Icons.local_shipping;
-        tooltipText = 'En tránsito';
-        break;
-      default:
-        backgroundColor = const Color(0xFF757575).withOpacity(0.15);
-        textColor = const Color(0xFF9E9E9E);
-        iconData = Icons.hourglass_empty;
-        tooltipText = 'Estado sin definir';
-    }
-
-    final estadoEnum = EstadoTransferencia.values.firstWhere(
-      (e) => e.codigo == estado.toUpperCase(),
-      orElse: () => EstadoTransferencia.pedido,
-    );
-
-    return {
-      'backgroundColor': backgroundColor,
-      'textColor': textColor,
-      'iconData': iconData,
-      'tooltipText': tooltipText,
-      'estadoDisplay': estadoEnum.nombre,
-    };
+    return _transferenciaRepository.obtenerEstiloEstado(estado);
   }
 
   /// Cambia la página actual y recarga los datos
@@ -337,10 +317,9 @@ class TransferenciasProvider extends ChangeNotifier {
       }
 
       // Obtenemos la comparación para validar que todo esté correcto
-      final comparacion = await _transferenciasApi.compararTransferencia(
+      final comparacion = await _transferenciaRepository.compararTransferencia(
         id: id,
         sucursalOrigenId: sucursalOrigenId,
-        useCache: false,
       );
 
       // Validamos que todos los productos sean procesables
@@ -350,8 +329,8 @@ class TransferenciasProvider extends ChangeNotifier {
       }
 
       // Realizamos el envío
-      await _transferenciasApi.enviarTransferencia(
-        transferencia.id.toString(),
+      await _transferenciaRepository.enviarTransferencia(
+        id,
         sucursalOrigenId: sucursalOrigenId,
       );
 

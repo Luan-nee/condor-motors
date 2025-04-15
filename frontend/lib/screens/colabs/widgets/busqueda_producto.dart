@@ -1,7 +1,8 @@
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/categoria.model.dart';
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
+import 'package:condorsmotors/repositories/categoria.repository.dart';
+import 'package:condorsmotors/repositories/color.repository.dart';
 import 'package:condorsmotors/screens/colabs/widgets/list_busqueda_producto.dart';
 import 'package:condorsmotors/utils/busqueda_producto_utils.dart'
     show BusquedaProductoUtils, TipoDescuento;
@@ -81,6 +82,10 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
   final Color darkBackground = const Color(0xFF1A1A1A);
   final Color darkSurface = const Color(0xFF2D2D2D);
 
+  // Repositorios
+  final CategoriaRepository _categoriaRepository = CategoriaRepository.instance;
+  final ColorRepository _colorRepository = ColorRepository.instance;
+
   @override
   void initState() {
     super.initState();
@@ -125,16 +130,16 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
     }
   }
 
-  /// Carga las categorías desde la API o usa las proporcionadas como fallback
+  /// Carga las categorías desde el repositorio o usa las proporcionadas como fallback
   Future<void> _cargarCategorias() async {
     setState(() {
       _loadingCategorias = true;
     });
 
     try {
-      // Intentar cargar desde API
+      // Intentar cargar desde el repositorio
       final List<Categoria> categoriasApi =
-          await api.categorias.getCategoriasObjetos();
+          await _categoriaRepository.getCategorias();
 
       // Usar el método de utilidades para combinar categorías
       final List<String> categoriasCombinadas =
@@ -162,10 +167,10 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
     }
   }
 
-  /// Carga los colores desde la API
+  /// Carga los colores desde el repositorio
   Future<void> _cargarColores() async {
     try {
-      final List<ColorApp> colores = await api.colores.getColores();
+      final List<ColorApp> colores = await _colorRepository.getColores();
       setState(() {
         _colores = colores;
       });

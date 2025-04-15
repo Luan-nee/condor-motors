@@ -684,7 +684,6 @@ class ProductosApi {
     bool? stockBajo,
     bool? liquidacion,
   }) {
-    // TODO: Este método está obsoleto y será eliminado en futuras versiones
     // Usar PaginacionUtils.generateCacheKey en su lugar
     final List<String> components = <String>[base];
 

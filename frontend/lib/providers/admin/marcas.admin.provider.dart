@@ -1,10 +1,13 @@
 import 'package:condorsmotors/api/main.api.dart' show ApiException;
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/marca.model.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/material.dart';
 
 /// Provider para gestionar las marcas en el panel de administración
 class MarcasProvider extends ChangeNotifier {
+  // Repositorio para acceder a las marcas
+  final MarcaRepository _marcaRepository;
+
   // Estados
   bool _isLoading = false;
   bool _isCreating = false;
@@ -19,16 +22,20 @@ class MarcasProvider extends ChangeNotifier {
   List<Marca> get marcas => _marcas;
   Map<int, int> get productosPorMarca => _productosPorMarca;
 
+  // Constructor
+  MarcasProvider({MarcaRepository? marcaRepository})
+      : _marcaRepository = marcaRepository ?? MarcaRepository.instance;
+
   /// Recarga todos los datos forzando actualización desde el servidor
   Future<void> recargarDatos() async {
     _setLoading(true);
     clearError();
 
     try {
-      debugPrint('Forzando recarga de datos de marcas desde la API...');
-      // Forzar recarga desde la API ignorando caché
+      debugPrint('Forzando recarga de datos de marcas desde el repositorio...');
+      // Forzar recarga desde el servidor ignorando caché
       await cargarMarcas(forceRefresh: true);
-      debugPrint('Datos de marcas recargados exitosamente desde la API');
+      debugPrint('Datos de marcas recargados exitosamente');
     } catch (e) {
       debugPrint('Error al recargar datos de marcas: $e');
       _setError('Error al recargar datos: $e');
@@ -37,16 +44,16 @@ class MarcasProvider extends ChangeNotifier {
     }
   }
 
-  /// Carga la lista de marcas desde la API
+  /// Carga la lista de marcas desde el repositorio
   Future<void> cargarMarcas({bool forceRefresh = false}) async {
     _setLoading(true);
     clearError();
 
     try {
-      debugPrint('Cargando marcas desde la API...');
+      debugPrint('Cargando marcas desde el repositorio...');
       // Obtenemos las marcas directamente como objetos Marca
       final List<Marca> marcasObtenidas =
-          await api.marcas.getMarcas(forceRefresh: forceRefresh);
+          await _marcaRepository.getMarcas(forceRefresh: forceRefresh);
 
       // Crear mapa de totalProductos usando el valor real que viene en el modelo
       final Map<int, int> tempProductosPorMarca = <int, int>{};
@@ -91,11 +98,11 @@ class MarcasProvider extends ChangeNotifier {
       if (id != null) {
         // Actualizar marca existente
         debugPrint('Actualizando marca: $id');
-        await api.marcas.updateMarca(id.toString(), marcaData);
+        await _marcaRepository.updateMarca(id.toString(), marcaData);
       } else {
         // Crear nueva marca
         debugPrint('Creando nueva marca: $nombre');
-        await api.marcas.createMarca(marcaData);
+        await _marcaRepository.createMarca(marcaData);
       }
 
       // Recargar la lista de marcas para mostrar cambios
@@ -125,7 +132,7 @@ class MarcasProvider extends ChangeNotifier {
     clearError();
 
     try {
-      final bool resultado = await api.marcas.deleteMarca(id.toString());
+      final bool resultado = await _marcaRepository.deleteMarca(id.toString());
       if (resultado) {
         await cargarMarcas();
       } else {

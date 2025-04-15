@@ -1,12 +1,14 @@
 import 'package:condorsmotors/api/main.api.dart' show ApiException;
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/empleado.model.dart';
-import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/material.dart';
 
 /// Provider para gestionar los empleados/colaboradores en el panel de administración
 class EmpleadoProvider extends ChangeNotifier {
+  // Repositorio para acceder a los empleados
+  final EmpleadoRepository _empleadoRepository;
+
   // Estados
   bool _isLoading = false;
   bool _isCuentaLoading = false;
@@ -47,15 +49,20 @@ class EmpleadoProvider extends ChangeNotifier {
   List<String> get roles => _roles;
   List<Map<String, dynamic>> get rolesCuentas => _rolesCuentas;
 
+  // Constructor
+  EmpleadoProvider({EmpleadoRepository? empleadoRepository})
+      : _empleadoRepository = empleadoRepository ?? EmpleadoRepository.instance;
+
   /// Recarga todos los datos forzando actualización desde el servidor
   Future<void> recargarDatos() async {
     _setLoading(true);
     clearError();
 
     try {
-      debugPrint('Forzando recarga de datos de colaboradores desde la API...');
+      debugPrint(
+          'Forzando recarga de datos de colaboradores desde el repositorio...');
       await cargarDatos();
-      debugPrint('Datos de colaboradores recargados exitosamente desde la API');
+      debugPrint('Datos de colaboradores recargados exitosamente');
     } catch (e) {
       debugPrint('Error al recargar datos de colaboradores: $e');
       _setError('Error al recargar datos: $e');
@@ -73,7 +80,7 @@ class EmpleadoProvider extends ChangeNotifier {
       debugPrint('Cargando datos de colaboradores...');
       final Future<Map<String, String>> futureSucursales = _cargarSucursales();
       final Future<EmpleadosPaginados> futureEmpleados =
-          api.empleados.getEmpleados(useCache: false);
+          _empleadoRepository.getEmpleados(useCache: false);
       final Future<List<Map<String, dynamic>>> futureRolesCuentas =
           cargarRolesCuentas();
 
@@ -103,25 +110,8 @@ class EmpleadoProvider extends ChangeNotifier {
   /// Carga la lista de sucursales
   Future<Map<String, String>> _cargarSucursales() async {
     try {
-      final List<Sucursal> sucursalesData =
-          await api.sucursales.getSucursales();
-      final Map<String, String> sucursales = <String, String>{};
-
-      for (Sucursal sucursal in sucursalesData) {
-        final String id = sucursal.id.toString();
-        String nombre = sucursal.nombre;
-        final bool esCentral = sucursal.sucursalCentral;
-
-        // Agregar indicador de Central al nombre si corresponde
-        if (esCentral) {
-          nombre = '$nombre (Central)';
-        }
-
-        if (id.isNotEmpty) {
-          sucursales[id] = nombre;
-        }
-      }
-
+      final Map<String, String> sucursales =
+          await _empleadoRepository.getNombresSucursales();
       _nombresSucursales = sucursales;
       return sucursales;
     } catch (e) {
@@ -134,7 +124,7 @@ class EmpleadoProvider extends ChangeNotifier {
   Future<List<Map<String, dynamic>>> cargarRolesCuentas() async {
     try {
       final List<Map<String, dynamic>> roles =
-          await api.cuentasEmpleados.getRolesCuentas();
+          await _empleadoRepository.getRolesCuentas();
       _rolesCuentas = roles;
       return roles;
     } catch (e) {
@@ -188,7 +178,7 @@ class EmpleadoProvider extends ChangeNotifier {
     debugPrint('Nuevo rol creado (simulación): $nuevoRol');
 
     // TODO: En una implementación real, esta función invocaría al backend:
-    // return await api.cuentasEmpleados.createRolCuenta(nombre: nombre, codigo: codigo);
+    // return await _empleadoRepository.createRolCuenta(nombre: nombre, codigo: codigo);
 
     return nuevoRol;
   }
@@ -202,10 +192,11 @@ class EmpleadoProvider extends ChangeNotifier {
     try {
       if (empleadoExistente != null) {
         // Actualizar empleado existente
-        await api.empleados.updateEmpleado(empleadoExistente.id, empleadoData);
+        await _empleadoRepository.updateEmpleado(
+            empleadoExistente.id, empleadoData);
       } else {
         // Crear nuevo empleado
-        await api.empleados.createEmpleado(empleadoData);
+        await _empleadoRepository.createEmpleado(empleadoData);
       }
 
       // Recargar la lista de empleados para mostrar cambios
@@ -234,7 +225,7 @@ class EmpleadoProvider extends ChangeNotifier {
     clearError();
 
     try {
-      await api.empleados.deleteEmpleado(empleado.id);
+      await _empleadoRepository.deleteEmpleado(empleado.id);
 
       // Actualizar localmente sin tener que recargar todo
       _empleados.removeWhere((Empleado e) => e.id == empleado.id);
@@ -297,98 +288,10 @@ class EmpleadoProvider extends ChangeNotifier {
     _setCuentaLoading(true);
 
     try {
-      // Preparar valores por defecto
-      final Map<String, dynamic> resultado = <String, dynamic>{
-        'cuentaNoEncontrada': false,
-        'errorCargaInfo': null as String?,
-        'usuarioActual': null as String?,
-        'rolCuentaActual': null as String?,
-        'cuentaId': null as String?,
-        'rolActualId': null as int?,
-      };
-
-      // Intentar obtener la cuenta - primero por ID de cuenta si está disponible
-      if (empleado.cuentaEmpleadoId != null) {
-        try {
-          final int? cuentaIdInt = int.tryParse(empleado.cuentaEmpleadoId!);
-          if (cuentaIdInt != null) {
-            final Map<String, dynamic>? cuentaInfo =
-                await api.cuentasEmpleados.getCuentaEmpleadoById(cuentaIdInt);
-            if (cuentaInfo != null) {
-              // Cuenta encontrada por ID
-              resultado['usuarioActual'] = cuentaInfo['usuario']?.toString();
-              resultado['cuentaId'] = empleado.cuentaEmpleadoId;
-
-              // Obtener información del rol si está disponible
-              final rolId = cuentaInfo['rolCuentaEmpleadoId'];
-              if (rolId != null) {
-                resultado['rolActualId'] = rolId;
-                resultado['rolCuentaActual'] = await obtenerNombreRol(rolId);
-              }
-
-              return resultado;
-            }
-          }
-        } catch (e) {
-          final String errorStr = e.toString();
-          // Si es error de "no encontrado", solo continuamos al siguiente método
-          // Si es error de autenticación, lo propagamos
-          if (_esErrorAutenticacion(errorStr)) {
-            rethrow;
-          }
-          // Para otros errores, continuamos con el siguiente método
-        }
-      }
-
-      // Si llegamos aquí, intentamos encontrar la cuenta por ID de empleado
-      try {
-        final Map<String, dynamic>? cuentaInfo =
-            await api.cuentasEmpleados.getCuentaByEmpleadoId(empleado.id);
-
-        if (cuentaInfo != null) {
-          resultado['usuarioActual'] = cuentaInfo['usuario']?.toString();
-          resultado['cuentaId'] = cuentaInfo['id']?.toString();
-
-          // Obtener información del rol si está disponible
-          final rolId = cuentaInfo['rolCuentaEmpleadoId'];
-          if (rolId != null) {
-            resultado['rolActualId'] = rolId;
-            resultado['rolCuentaActual'] = await obtenerNombreRol(rolId);
-          }
-
-          return resultado;
-        } else {
-          // API devolvió null - no hay cuenta
-          resultado['cuentaNoEncontrada'] = true;
-          return resultado;
-        }
-      } catch (e) {
-        final String errorStr = e.toString();
-
-        if (_esErrorNotFound(errorStr)) {
-          resultado['cuentaNoEncontrada'] = true;
-          return resultado;
-        }
-
-        if (_esErrorAutenticacion(errorStr)) {
-          rethrow;
-        }
-
-        // Cualquier otro error
-        resultado['errorCargaInfo'] =
-            'Error: ${errorStr.replaceAll('Exception: ', '')}';
-        return resultado;
-      }
+      final result =
+          await _empleadoRepository.obtenerInfoCuentaEmpleado(empleado);
+      return result;
     } catch (e) {
-      if (_esErrorNotFound(e.toString())) {
-        return {
-          'cuentaNoEncontrada': true,
-          'errorCargaInfo': null,
-          'usuarioActual': null,
-          'rolCuentaActual': null,
-        };
-      }
-
       debugPrint('Error al obtener información de cuenta: $e');
       return {
         'cuentaNoEncontrada': _esErrorNotFound(e.toString()),
@@ -404,14 +307,7 @@ class EmpleadoProvider extends ChangeNotifier {
   /// Obtiene el nombre de un rol a partir de su ID
   Future<String?> obtenerNombreRol(int rolId) async {
     try {
-      final List<Map<String, dynamic>> roles =
-          await api.cuentasEmpleados.getRolesCuentas();
-      final Map<String, dynamic> rol = roles.firstWhere(
-        (Map<String, dynamic> r) => r['id'] == rolId,
-        orElse: () => <String, dynamic>{},
-      );
-
-      return rol['nombre'] ?? rol['codigo'] ?? 'Rol #$rolId';
+      return await _empleadoRepository.obtenerNombreRol(rolId);
     } catch (e) {
       debugPrint('Error al obtener nombre de rol: $e');
       return null;
@@ -445,7 +341,7 @@ class EmpleadoProvider extends ChangeNotifier {
     clearError();
 
     try {
-      await api.cuentasEmpleados.registerEmpleadoAccount(
+      await _empleadoRepository.registerEmpleadoAccount(
         empleadoId: empleadoId,
         usuario: usuario,
         clave: clave,
@@ -484,7 +380,7 @@ class EmpleadoProvider extends ChangeNotifier {
     clearError();
 
     try {
-      await api.cuentasEmpleados.updateCuentaEmpleado(
+      await _empleadoRepository.updateCuentaEmpleado(
         id: id,
         usuario: usuario,
         clave: clave,
@@ -518,7 +414,7 @@ class EmpleadoProvider extends ChangeNotifier {
     clearError();
 
     try {
-      final bool success = await api.cuentasEmpleados.deleteCuentaEmpleado(id);
+      final bool success = await _empleadoRepository.deleteCuentaEmpleado(id);
 
       if (success) {
         // Recargar datos para actualizar la información

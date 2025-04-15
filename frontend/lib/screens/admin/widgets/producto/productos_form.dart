@@ -2043,32 +2043,52 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         colorSeleccionado: _colorSeleccionado,
       );
 
-      // Mostrar indicador de carga
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Guardando producto...'),
-          backgroundColor: Colors.blue,
-          duration: Duration(seconds: 1),
-        ),
-      );
-
       // Ejecutar en función asíncrona para evitar bloquear la UI
       Future<void> saveProducto() async {
         try {
+          // Mostrar indicador de progreso en la UI
+          if (mounted) {
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Row(
+                  children: [
+                    SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        )),
+                    SizedBox(width: 12),
+                    Text('Guardando y actualizando datos...'),
+                  ],
+                ),
+                backgroundColor: Colors.blue,
+                duration: Duration(seconds: 30),
+              ),
+            );
+          }
+
+          // Guardar el producto
           final bool resultado = await productoProvider.guardarProducto(
               productoData, esNuevoProducto);
 
           if (resultado) {
             // Mensaje de depuración al limpiar la caché
             debugPrint(
-                'ProductosForm: Caché de productos limpiada correctamente');
-            debugPrint(
-                'ProductosForm: Actualizando datos del productos desde el servidor (sin caché)');
+                'ProductosForm: Producto guardado. Actualizando datos...');
 
-            // Esperar a que los datos se recarguen completamente
-            await productoProvider.cargarProductos();
+            // Forzar una recarga completa de datos
+            await productoProvider.recargarDatosProductos();
+
+            debugPrint('ProductosForm: Datos actualizados correctamente');
 
             if (mounted) {
+              // Limpiar cualquier SnackBar existente
+              ScaffoldMessenger.of(context).clearSnackBars();
+
+              // Mostrar mensaje de éxito
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Producto guardado exitosamente'),
@@ -2076,10 +2096,17 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 ),
               );
 
+              // Pasar callback con el producto actualizado si está disponible
+              widget.onSave(productoData);
+
               // Cerrar el diálogo y notificar a la vista padre que debe actualizarse
               Navigator.pop(context, true);
             }
           } else if (mounted && productoProvider.errorMessage != null) {
+            // Limpiar cualquier SnackBar existente
+            ScaffoldMessenger.of(context).clearSnackBars();
+
+            // Mostrar mensaje de error
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(productoProvider.errorMessage!),
@@ -2091,6 +2118,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           debugPrint('ProductosForm: ERROR al guardar producto: $e');
 
           if (mounted) {
+            // Limpiar cualquier SnackBar existente
+            ScaffoldMessenger.of(context).clearSnackBars();
+
+            // Mostrar mensaje de error
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Error al guardar producto: $e'),

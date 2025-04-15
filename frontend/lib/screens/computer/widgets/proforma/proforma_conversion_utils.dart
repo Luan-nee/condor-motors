@@ -1,13 +1,21 @@
 import 'dart:async';
 import 'dart:math' show min;
 
-import 'package:condorsmotors/main.dart' show api; // Importar la API global
+import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 /// Clase para gestionar la conversión de proformas a ventas
 class ProformaConversionManager {
+  // Instancias de repositorios
+  static final SucursalRepository _sucursalRepository =
+      SucursalRepository.instance;
+  static final ProformaRepository _proformaRepository =
+      ProformaRepository.instance;
+  static final VentaRepository _ventaRepository = VentaRepository.instance;
+
   /// Convierte una proforma a venta con manejo de errores
   ///
   /// [context] Contexto para mostrar mensajes
@@ -52,7 +60,7 @@ class ProformaConversionManager {
         // Asegurarse de que sucursalId sea siempre String para la API
         final String sucursalIdStr = sucursalId.toString();
 
-        final Sucursal sucursal = await api.sucursales
+        final Sucursal sucursal = await _sucursalRepository
             .getSucursalData(sucursalIdStr, forceRefresh: true);
 
         // Verificar la serie según el tipo de documento
@@ -113,7 +121,7 @@ class ProformaConversionManager {
         // Asegurarse de que sucursalId sea siempre String para la API
         final String sucursalIdStr = sucursalId.toString();
 
-        final proformaExistResponse = await api.proformas.getProformaVenta(
+        final proformaExistResponse = await _proformaRepository.getProforma(
           sucursalId: sucursalIdStr,
           proformaId: proformaId,
           useCache: false,
@@ -150,7 +158,7 @@ class ProformaConversionManager {
           }
 
           // Invalidar la caché completamente
-          api.proformas.invalidateCache(sucursalIdStr);
+          _proformaRepository.invalidateCache(sucursalIdStr);
           // Forzar recarga de lista de proformas
           _recargarProformasSucursal(sucursalIdStr);
 
@@ -161,7 +169,7 @@ class ProformaConversionManager {
             'ÉXITO: Proforma #$proformaId verificada, obteniendo datos completos...');
 
         // Si llegamos aquí, la proforma existe, obtenerla de nuevo para procesar sus datos
-        final proformaResponse = await api.proformas.getProformaVenta(
+        final proformaResponse = await _proformaRepository.getProforma(
           sucursalId: sucursalIdStr,
           proformaId: proformaId,
         );
@@ -205,7 +213,7 @@ class ProformaConversionManager {
         // Obtener ID del tipoTax para gravado (18% IGV)
         Logger.debug('Obteniendo ID para tipo Tax Gravado (IGV 18%)');
         final int tipoTaxId =
-            await api.documentos.getGravadoTaxId(sucursalIdStr);
+            await _proformaRepository.getGravadoTaxId(sucursalIdStr);
         Logger.debug('ID obtenido para Tax Gravado: $tipoTaxId');
 
         // Transformar los detalles al formato esperado por el endpoint de ventas
@@ -249,8 +257,8 @@ class ProformaConversionManager {
 
         // Determinar el tipo de documento correcto según la opción seleccionada
         Logger.debug('Obteniendo ID para tipo de documento: $tipoDocumento');
-        final int tipoDocumentoId = await api.documentos
-            .getTipoDocumentoId(sucursalIdStr, tipoDocumento);
+        final int tipoDocumentoId =
+            await _proformaRepository.getTipoDocumentoIdBoleta(sucursalIdStr);
         Logger.debug('ID obtenido para $tipoDocumento: $tipoDocumentoId');
 
         // Obtener un cliente válido del sistema en lugar de usar uno genérico fijo
@@ -318,7 +326,7 @@ class ProformaConversionManager {
         try {
           Logger.debug(
               'Obteniendo información del empleado asociado a la cuenta...');
-          final userData = await api.authService.getUserData();
+          final userData = await api.getUserData();
 
           if (userData == null) {
             Logger.error('No se pudo obtener información del usuario actual');
@@ -550,18 +558,6 @@ class ProformaConversionManager {
             return false;
           }
 
-          // Verificación adicional para asegurar que realmente se creó la venta
-          if (!ventaResponse.containsKey('data') ||
-              ventaResponse['data'] == null) {
-            Logger.error('ERROR: Respuesta de creación de venta sin datos');
-            if (context.mounted) {
-              _cerrarDialogoProcesamiento(context);
-              _mostrarError(
-                  context, 'Error en formato de respuesta al crear venta');
-            }
-            return false;
-          }
-
           // Verificar si el objeto data contiene un error anidado
           final dynamic responseData = ventaResponse['data'];
           if (responseData is Map &&
@@ -592,7 +588,7 @@ class ProformaConversionManager {
 
           // Marcar la proforma como convertida (actualizar estado)
           Logger.debug('Actualizando estado de proforma a "convertida"...');
-          final updateResponse = await api.proformas.updateProformaVenta(
+          final updateResponse = await _proformaRepository.updateProforma(
             sucursalId: sucursalIdStr,
             proformaId: proformaId,
             estado: 'convertida',
@@ -633,7 +629,7 @@ class ProformaConversionManager {
           final String sucursalIdStr = sucursalId.toString();
 
           // Invalidar caché
-          api.proformas.invalidateCache(sucursalIdStr);
+          _proformaRepository.invalidateCache(sucursalIdStr);
           _recargarProformasSucursal(sucursalIdStr);
 
           if (context.mounted) {
@@ -671,18 +667,19 @@ class ProformaConversionManager {
       final String sucursalIdStr = sucursalId.toString();
 
       // Invalidar caché de proformas
-      api.proformas.invalidateCache(sucursalIdStr);
+      _proformaRepository.invalidateCache(sucursalIdStr);
       // Invalidar caché de la sucursal
-      api.sucursales.invalidateCache(sucursalIdStr);
+      _sucursalRepository.invalidateCache();
       Logger.debug(
           'Caché de proformas invalidado para sucursal $sucursalIdStr');
 
       // Recargar datos de la sucursal para mantener coherencia
-      await api.sucursales.getSucursalData(sucursalIdStr, forceRefresh: true);
+      await _sucursalRepository.getSucursalData(sucursalIdStr,
+          forceRefresh: true);
       Logger.debug('Datos de sucursal recargados: $sucursalIdStr');
 
       // Recargar proformas específicas para esta sucursal
-      await api.proformas.getProformasVenta(
+      await _proformaRepository.getProformas(
         sucursalId: sucursalIdStr,
         useCache: false,
         forceRefresh: true,
@@ -764,23 +761,20 @@ class ProformaConversionManager {
       final String sucursalIdStr = sucursalId.toString();
 
       // Invalidar caché de proformas
-      api.proformas.invalidateCache(sucursalIdStr);
+      _proformaRepository.invalidateCache(sucursalIdStr);
       // Invalidar caché de la sucursal
-      api.sucursales.invalidateCache(sucursalIdStr);
+      _sucursalRepository.invalidateCache();
 
       // Forzar recarga de la lista de proformas
-      await api.proformas.getProformasVenta(
+      await _proformaRepository.getProformas(
         sucursalId: sucursalIdStr,
         useCache: false,
         forceRefresh: true,
       );
 
       // También recargar desde la API de sucursales para mantener sincronización
-      await api.sucursales.getProformasVenta(
-        sucursalIdStr,
-        useCache: false,
-        forceRefresh: true,
-      );
+      await _sucursalRepository.getSucursalData(sucursalIdStr,
+          forceRefresh: true);
 
       Logger.debug('Lista de proformas recargada para sucursal $sucursalIdStr');
     } catch (e) {
@@ -795,11 +789,11 @@ class ProformaConversionManager {
       final String sucursalIdStr = sucursalId.toString();
 
       // Limpiar caché de ventas para la sucursal específica
-      api.ventas.invalidateCache(sucursalIdStr);
+      _ventaRepository.invalidateCache(sucursalIdStr);
       Logger.debug('Caché de ventas limpiado para sucursal $sucursalIdStr');
 
       // También limpiar caché global de ventas por si acaso
-      api.ventas.invalidateCache();
+      _ventaRepository.invalidateCache();
       Logger.debug('Caché global de ventas limpiado');
     } catch (e) {
       Logger.error('Error al limpiar caché de ventas: $e');

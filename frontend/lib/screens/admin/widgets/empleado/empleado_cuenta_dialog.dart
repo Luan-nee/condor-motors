@@ -242,7 +242,6 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       nuevaClave:
           _claveController.text.isNotEmpty ? _claveController.text : null,
       nuevoRolId: _selectedRolId,
-      validarSoloSiHayCambios: true,
     );
 
     if (resultado['noChanges'] == true) {

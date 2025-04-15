@@ -175,9 +175,6 @@ class Logger {
       // ignore: avoid_print
       print(message);
     }
-
-    // TODO: Implementar almacenamiento persistente de logs para producción
-    // Esto podría incluir enviar logs a un servicio remoto o guardarlos localmente
   }
 }
 

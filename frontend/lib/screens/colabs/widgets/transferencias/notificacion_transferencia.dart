@@ -1,6 +1,5 @@
-import 'package:condorsmotors/api/protected/transferencias.api.dart';
-import 'package:condorsmotors/main.dart' show api;
 import 'package:condorsmotors/models/transferencias.model.dart';
+import 'package:condorsmotors/repositories/transferencia.repository.dart';
 import 'package:flutter/material.dart';
 
 // Definición de la clase MovimientoStock para manejar los datos
@@ -74,7 +73,7 @@ class NotificacionMovimiento extends StatefulWidget {
 }
 
 class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
-  late final TransferenciasInventarioApi _transferenciasApi;
+  late final TransferenciaRepository _transferenciaRepository;
   bool _isLoading = false;
   List<TransferenciaInventario> _notificaciones = <TransferenciaInventario>[];
   String? _error;
@@ -82,7 +81,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
   @override
   void initState() {
     super.initState();
-    _transferenciasApi = api.transferencias;
+    _transferenciaRepository = TransferenciaRepository.instance;
     _cargarNotificaciones();
   }
 
@@ -97,7 +96,8 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
     });
 
     try {
-      final paginatedResponse = await _transferenciasApi.getTransferencias(
+      final paginatedResponse =
+          await _transferenciaRepository.getTransferencias(
         estado: EstadoTransferencia.pedido.codigo,
         pageSize:
             50, // Ajustamos el tamaño de página para obtener más resultados
@@ -354,7 +354,7 @@ class _NotificacionMovimientoState extends State<NotificacionMovimiento> {
                         'No se ha establecido la sucursal de origen');
                   }
 
-                  await _transferenciasApi.enviarTransferencia(
+                  await _transferenciaRepository.enviarTransferencia(
                     transferencia.id.toString(),
                     sucursalOrigenId: transferencia.sucursalOrigenId!,
                   );
