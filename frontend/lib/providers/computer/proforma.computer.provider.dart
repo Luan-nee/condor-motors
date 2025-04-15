@@ -12,8 +12,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Provider para gestionar el estado y lógica de negocio de las proformas
 /// en la versión de computadora de la aplicación.
 class ProformaComputerProvider extends ChangeNotifier {
-  // Repositorio para acceder a las proformas
+  // Repositorios para acceder a los diferentes recursos
   final ProformaRepository _proformaRepository = ProformaRepository.instance;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
+  final VentaRepository _ventaRepository = VentaRepository.instance;
 
   int _currentPage = 1;
   String? _errorMessage;
@@ -251,6 +253,9 @@ class ProformaComputerProvider extends ChangeNotifier {
         return false;
       }
 
+      // Limpiar cachés antes de la conversión
+      _limpiarCaches(sucursalIdStr);
+
       // Usar el repositorio para convertir la proforma a venta
       final ventaResponse = await _proformaRepository.convertirAVenta(
         sucursalId: sucursalIdStr,
@@ -258,10 +263,14 @@ class ProformaComputerProvider extends ChangeNotifier {
       );
 
       if (ventaResponse['status'] == 'success') {
-        // Recargar proformas para actualizar la lista
-        await loadProformas(sucursalId: sucursalId);
+        // Limpiar cachés después de la conversión exitosa
+        _limpiarCaches(sucursalIdStr);
 
-        // Si la proforma convertida es la seleccionada, deseleccionarla
+        // Recargar datos completos
+        await _recargarDatosCompletos(sucursalIdStr, sucursalId);
+
+        // Si la proforma convertida es la seleccionada, deseleccionarla siempre,
+        // ya que ahora no existe más en el sistema
         if (_selectedProforma != null && _selectedProforma!.id == proforma.id) {
           clearSelectedProforma();
         }
@@ -280,6 +289,56 @@ class ProformaComputerProvider extends ChangeNotifier {
     } catch (e) {
       Logger.error('Error al convertir proforma a venta: $e');
       return false;
+    }
+  }
+
+  /// Limpia todos los cachés relevantes
+  void _limpiarCaches(String sucursalId) {
+    try {
+      // Invalidar caché de proformas para la sucursal específica
+      _proformaRepository.invalidateCache(sucursalId);
+      // Invalidar caché global de proformas
+      _proformaRepository.invalidateCache();
+      Logger.debug('Caché de proformas invalidado para sucursal $sucursalId');
+
+      // Invalidar caché de ventas para la sucursal específica
+      _ventaRepository.invalidateCache(sucursalId);
+      // Invalidar caché global de ventas
+      _ventaRepository.invalidateCache();
+      Logger.debug('Caché de ventas invalidado para sucursal $sucursalId');
+
+      // Invalidar caché de sucursales
+      _sucursalRepository.invalidateCache();
+      Logger.debug('Caché de sucursales invalidado');
+    } catch (e) {
+      Logger.error('Error al limpiar cachés: $e');
+    }
+  }
+
+  /// Recarga todos los datos necesarios después de convertir una proforma
+  Future<void> _recargarDatosCompletos(
+      String sucursalIdStr, int? sucursalId) async {
+    try {
+      // Recargar datos de la sucursal
+      await _sucursalRepository.getSucursalData(sucursalIdStr,
+          forceRefresh: true);
+      Logger.debug('Datos de sucursal recargados: $sucursalIdStr');
+
+      // Recargar proformas específicas para esta sucursal
+      await loadProformas(sucursalId: sucursalId);
+      Logger.debug('Lista de proformas recargada para sucursal $sucursalIdStr');
+
+      // Recargar lista de ventas para mantener coherencia
+      await _ventaRepository.getVentas(
+        sucursalId: sucursalIdStr,
+        useCache: false,
+        forceRefresh: true,
+      );
+      Logger.debug('Lista de ventas recargada para sucursal $sucursalIdStr');
+    } catch (e) {
+      Logger.error('Error al recargar datos completos: $e');
+      // Asegurarse de que al menos se recarguen las proformas
+      await loadProformas(sucursalId: sucursalId);
     }
   }
 

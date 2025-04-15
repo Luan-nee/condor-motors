@@ -508,6 +508,10 @@ class ProformaVentaApi {
     required int proformaId,
   }) async {
     try {
+      // Registrar la solicitud de eliminación
+      logCache(
+          '🗑️ [ProformaVentaApi] Eliminando proforma #$proformaId de sucursal $sucursalId');
+
       // Intentar llamar al endpoint real
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
@@ -517,27 +521,57 @@ class ProformaVentaApi {
       // Invalidar caché después de eliminar
       invalidateCache(sucursalId);
 
+      logCache(
+          '✅ [ProformaVentaApi] Proforma #$proformaId eliminada exitosamente');
       return response;
     } catch (e) {
-      // Si el servidor retorna notImplemented, devolver una respuesta simulada
-      logCache('⚠️ Error al eliminar proforma: $e');
-      logCache(
-          '⚠️ El método deleteProformaVenta puede no estar implementado en el servidor.');
-      logCache(
-          '⚠️ Devolviendo respuesta simulada para propósitos de demostración.');
+      // Analizar el error
+      if (e.toString().toLowerCase().contains('not implemented') ||
+          e.toString().toLowerCase().contains('no implementado')) {
+        // Si el servidor retorna notImplemented, intentar marcar como "eliminada"
+        // mediante una actualización de estado
+        logCache(
+            '⚠️ [ProformaVentaApi] Endpoint DELETE no implementado, intentando PATCH...');
 
-      // Invalidar caché de todos modos para consistencia
-      invalidateCache(sucursalId);
+        try {
+          // Intentar PATCH como alternativa
+          final Map<String, dynamic> patchResponse =
+              await _api.authenticatedRequest(
+            endpoint: '/$sucursalId/proformasventa/$proformaId',
+            method: 'PATCH',
+            body: {'estado': 'eliminada'},
+          );
 
-      return <String, dynamic>{
-        'status': 'success',
-        'data': <String, Object>{
-          'id': proformaId,
-          'message': 'Proforma eliminada (simulado)',
-          'warning':
-              'Esta respuesta es simulada. El endpoint aún no está implementado en el servidor.'
+          // Invalidar caché después de la actualización
+          invalidateCache(sucursalId);
+
+          logCache(
+              '✅ [ProformaVentaApi] Proforma #$proformaId marcada como "eliminada" mediante PATCH');
+          return patchResponse;
+        } catch (patchError) {
+          // Si falla la alternativa, registrar el error
+          logCache(
+              '❌ [ProformaVentaApi] ERROR al marcar proforma como eliminada: $patchError');
+
+          // Simular respuesta exitosa como último recurso
+          logCache(
+              '⚠️ Simulando respuesta exitosa para propósitos de la aplicación');
+          return <String, dynamic>{
+            'status': 'success',
+            'data': <String, Object>{
+              'id': proformaId,
+              'message': 'Proforma eliminada (simulado)',
+              'warning':
+                  'Esta respuesta es simulada. El método DELETE o PATCH no está disponible en el servidor.'
+            }
+          };
         }
-      };
+      } else {
+        // Para otros errores, registrar y relanzar
+        logCache(
+            '❌ [ProformaVentaApi] ERROR al eliminar proforma #$proformaId: $e');
+        rethrow;
+      }
     }
   }
 

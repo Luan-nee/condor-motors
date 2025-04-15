@@ -450,12 +450,19 @@ class VentasPendientesUtils {
           };
         }
 
-        // Actualizar el estado de la proforma a "convertida"
-        await _proformaRepository.updateProforma(
-          sucursalId: sucursalId.toString(),
-          proformaId: proformaId,
-          estado: 'convertida',
-        );
+        // Eliminar la proforma después de convertirla a venta
+        try {
+          await _proformaRepository.deleteProforma(
+            sucursalId: sucursalId.toString(),
+            proformaId: proformaId,
+          );
+          debugPrint(
+              'Proforma #$proformaId eliminada después de convertirse a venta');
+        } catch (deleteError) {
+          // Si hay error al eliminar, registrarlo pero no fallar el proceso completo
+          debugPrint(
+              'Advertencia: No se pudo eliminar la proforma #$proformaId: $deleteError');
+        }
 
         // Recargar datos después de la conversión
         _recargarDatos(sucursalId.toString());
@@ -500,11 +507,23 @@ class VentasPendientesUtils {
     try {
       // Invalidar caché de proformas para la sucursal específica
       _proformaRepository.invalidateCache(sucursalId);
-      debugPrint('🔄 Caché de proformas invalidado para sucursal $sucursalId');
+      // Invalidar caché global de proformas
+      _proformaRepository.invalidateCache();
+      debugPrint('Caché de proformas invalidado para sucursal $sucursalId');
+
+      // Invalidar caché de ventas para la sucursal específica
+      _ventaRepository.invalidateCache(sucursalId);
+      // Invalidar caché global de ventas
+      _ventaRepository.invalidateCache();
+      debugPrint('Caché de ventas invalidado para sucursal $sucursalId');
+
+      // Invalidar caché de sucursales
+      _sucursalRepository.invalidateCache();
+      debugPrint('Caché de sucursales invalidado');
 
       // Recargar datos de la sucursal para mantener coherencia
       await _sucursalRepository.getSucursalData(sucursalId, forceRefresh: true);
-      debugPrint('🔄 Datos de sucursal recargados: $sucursalId');
+      debugPrint('Datos de sucursal recargados: $sucursalId');
 
       // Recargar proformas específicas para esta sucursal
       await _proformaRepository.getProformas(
@@ -512,9 +531,17 @@ class VentasPendientesUtils {
         useCache: false,
         forceRefresh: true,
       );
-      debugPrint('🔄 Lista de proformas recargada para sucursal $sucursalId');
+      debugPrint('Lista de proformas recargada para sucursal $sucursalId');
+
+      // Recargar lista de ventas para mantener coherencia
+      await _ventaRepository.getVentas(
+        sucursalId: sucursalId,
+        useCache: false,
+        forceRefresh: true,
+      );
+      debugPrint('Lista de ventas recargada para sucursal $sucursalId');
     } catch (e) {
-      debugPrint('❌ Error al recargar datos: $e');
+      debugPrint('Error al recargar datos: $e');
       // No propagamos el error para no interrumpir el flujo principal
     }
   }

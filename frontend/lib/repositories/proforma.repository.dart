@@ -378,12 +378,19 @@ class ProformaRepository implements BaseRepository {
             'Error al crear venta: ${ventaResponse['error'] ?? ventaResponse['message'] ?? "Error desconocido"}');
       }
 
-      // Actualizar el estado de la proforma
-      await updateProforma(
-        sucursalId: sucursalId,
-        proformaId: proforma.id,
-        estado: 'convertida',
-      );
+      // CAMBIO: Eliminar la proforma en lugar de actualizarla
+      try {
+        await deleteProforma(
+          sucursalId: sucursalId,
+          proformaId: proforma.id,
+        );
+        debugPrint(
+            'Proforma #${proforma.id} eliminada después de convertirse a venta');
+      } catch (deleteError) {
+        // Si hay error al eliminar, registrarlo pero no fallar el proceso completo
+        debugPrint(
+            'Advertencia: No se pudo eliminar la proforma #${proforma.id} después de convertirla: $deleteError');
+      }
 
       return ventaResponse;
     } catch (e) {

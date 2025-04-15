@@ -586,15 +586,21 @@ class ProformaConversionManager {
             _mostrarExito(context, 'Venta creada correctamente: $numeroDoc');
           }
 
-          // Marcar la proforma como convertida (actualizar estado)
-          Logger.debug('Actualizando estado de proforma a "convertida"...');
-          final updateResponse = await _proformaRepository.updateProforma(
-            sucursalId: sucursalIdStr,
-            proformaId: proformaId,
-            estado: 'convertida',
-          );
-
-          Logger.debug('Respuesta de actualización proforma: $updateResponse');
+          // Eliminar la proforma después de convertirla a venta
+          Logger.debug(
+              'Eliminando proforma #$proformaId después de convertirla a venta...');
+          try {
+            final deleteResponse = await _proformaRepository.deleteProforma(
+              sucursalId: sucursalIdStr,
+              proformaId: proformaId,
+            );
+            Logger.debug(
+                'Respuesta de eliminación de proforma: $deleteResponse');
+          } catch (deleteError) {
+            // Si hay error al eliminar, registrarlo pero no fallar el proceso completo
+            Logger.error(
+                'Advertencia: No se pudo eliminar la proforma #$proformaId: $deleteError');
+          }
 
           // Ejecutar callback de éxito
           Logger.debug('Ejecutando callback de éxito...');
@@ -663,28 +669,41 @@ class ProformaConversionManager {
   /// Recarga los datos de proformas y sucursales para asegurar sincronización
   static Future<void> _recargarDatos(String sucursalId) async {
     try {
-      // Asegurarse de que sucursalId sea siempre String para la API
-      final String sucursalIdStr = sucursalId.toString();
+      // Invalidar caché de proformas para la sucursal específica
+      _proformaRepository.invalidateCache(sucursalId);
+      // Invalidar caché global de proformas
+      _proformaRepository.invalidateCache();
+      Logger.debug('Caché de proformas invalidado para sucursal $sucursalId');
 
-      // Invalidar caché de proformas
-      _proformaRepository.invalidateCache(sucursalIdStr);
-      // Invalidar caché de la sucursal
+      // Invalidar caché de ventas para la sucursal específica
+      _ventaRepository.invalidateCache(sucursalId);
+      // Invalidar caché global de ventas
+      _ventaRepository.invalidateCache();
+      Logger.debug('Caché de ventas invalidado para sucursal $sucursalId');
+
+      // Invalidar caché de sucursales
       _sucursalRepository.invalidateCache();
-      Logger.debug(
-          'Caché de proformas invalidado para sucursal $sucursalIdStr');
+      Logger.debug('Caché de sucursales invalidado');
 
       // Recargar datos de la sucursal para mantener coherencia
-      await _sucursalRepository.getSucursalData(sucursalIdStr,
-          forceRefresh: true);
-      Logger.debug('Datos de sucursal recargados: $sucursalIdStr');
+      await _sucursalRepository.getSucursalData(sucursalId, forceRefresh: true);
+      Logger.debug('Datos de sucursal recargados: $sucursalId');
 
       // Recargar proformas específicas para esta sucursal
       await _proformaRepository.getProformas(
-        sucursalId: sucursalIdStr,
+        sucursalId: sucursalId,
         useCache: false,
         forceRefresh: true,
       );
-      Logger.debug('Lista de proformas recargada para sucursal $sucursalIdStr');
+      Logger.debug('Lista de proformas recargada para sucursal $sucursalId');
+
+      // Recargar lista de ventas para mantener coherencia
+      await _ventaRepository.getVentas(
+        sucursalId: sucursalId,
+        useCache: false,
+        forceRefresh: true,
+      );
+      Logger.debug('Lista de ventas recargada para sucursal $sucursalId');
     } catch (e) {
       Logger.error('Error al recargar datos: $e');
       // No propagamos el error para no interrumpir el flujo principal
@@ -757,26 +776,41 @@ class ProformaConversionManager {
   /// Recarga la lista de proformas de una sucursal para mantener datos actualizados
   static Future<void> _recargarProformasSucursal(String sucursalId) async {
     try {
-      // Asegurarse de que sucursalId sea siempre String para la API
-      final String sucursalIdStr = sucursalId.toString();
+      // Invalidar caché de proformas para la sucursal específica
+      _proformaRepository.invalidateCache(sucursalId);
+      // Invalidar caché global de proformas
+      _proformaRepository.invalidateCache();
+      Logger.debug('Caché de proformas invalidado para sucursal $sucursalId');
 
-      // Invalidar caché de proformas
-      _proformaRepository.invalidateCache(sucursalIdStr);
-      // Invalidar caché de la sucursal
+      // Invalidar caché de ventas para la sucursal específica
+      _ventaRepository.invalidateCache(sucursalId);
+      // Invalidar caché global de ventas
+      _ventaRepository.invalidateCache();
+      Logger.debug('Caché de ventas invalidado para sucursal $sucursalId');
+
+      // Invalidar caché de sucursales
       _sucursalRepository.invalidateCache();
+      Logger.debug('Caché de sucursales invalidado');
 
       // Forzar recarga de la lista de proformas
       await _proformaRepository.getProformas(
-        sucursalId: sucursalIdStr,
+        sucursalId: sucursalId,
         useCache: false,
         forceRefresh: true,
       );
+      Logger.debug('Lista de proformas recargada para sucursal $sucursalId');
+
+      // Recargar lista de ventas para mantener coherencia
+      await _ventaRepository.getVentas(
+        sucursalId: sucursalId,
+        useCache: false,
+        forceRefresh: true,
+      );
+      Logger.debug('Lista de ventas recargada para sucursal $sucursalId');
 
       // También recargar desde la API de sucursales para mantener sincronización
-      await _sucursalRepository.getSucursalData(sucursalIdStr,
-          forceRefresh: true);
-
-      Logger.debug('Lista de proformas recargada para sucursal $sucursalIdStr');
+      await _sucursalRepository.getSucursalData(sucursalId, forceRefresh: true);
+      Logger.debug('Datos de sucursal recargados: $sucursalId');
     } catch (e) {
       Logger.error('Error al recargar lista de proformas: $e');
     }
