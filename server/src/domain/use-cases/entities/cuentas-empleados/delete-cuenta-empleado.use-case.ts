@@ -31,6 +31,29 @@ export class DeleteCuentaEmpleado {
     return cuentaEmpleado
   }
 
+  private async canDeleteCuentaEmpleado(numericIdDto: NumericIdDto) {
+    const cuentasEmpleados = await db
+      .select({
+        eliminable: cuentasEmpleadosTable.eliminable
+      })
+      .from(cuentasEmpleadosTable)
+      .where(eq(cuentasEmpleadosTable.id, numericIdDto.id))
+
+    if (cuentasEmpleados.length < 1) {
+      throw CustomError.notFound(
+        'No se pudo eliminar la cuenta del colaborador (no encontrado)'
+      )
+    }
+
+    const [cuentaEmpleado] = cuentasEmpleados
+
+    if (!cuentaEmpleado.eliminable) {
+      throw CustomError.badRequest(
+        'La cuenta de este colaborador no puede ser eliminado'
+      )
+    }
+  }
+
   private async validatePermissions() {
     const validPermissions = await AccessControl.verifyPermissions(
       this.authPayload,
@@ -48,6 +71,7 @@ export class DeleteCuentaEmpleado {
 
   async execute(numericIdDto: NumericIdDto) {
     await this.validatePermissions()
+    await this.canDeleteCuentaEmpleado(numericIdDto)
 
     const cuentaEmpleado = await this.deleteCuentaEmpleado(numericIdDto)
 

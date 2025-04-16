@@ -1,7 +1,11 @@
 import { permissionCodes } from '@/consts'
 import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
-import { empleadosTable, sucursalesTable } from '@/db/schema'
+import {
+  cuentasEmpleadosTable,
+  empleadosTable,
+  sucursalesTable
+} from '@/db/schema'
 import type { UpdateEmpleadoDto } from '@/domain/dtos/entities/empleados/update-empleado.dto'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import { db } from '@db/connection'
@@ -19,10 +23,35 @@ export class UpdateEmpleado {
     updateEmpleadoDto: UpdateEmpleadoDto,
     numericIdDto: NumericIdDto
   ) {
-    const sueldoString =
-      updateEmpleadoDto.sueldo === undefined
-        ? undefined
-        : updateEmpleadoDto.sueldo.toFixed(2)
+    if (updateEmpleadoDto.activo != null) {
+      const empleados = await db
+        .select({
+          id: empleadosTable.id,
+          eliminable: cuentasEmpleadosTable.eliminable
+        })
+        .from(empleadosTable)
+        .leftJoin(
+          cuentasEmpleadosTable,
+          eq(empleadosTable.id, cuentasEmpleadosTable.empleadoId)
+        )
+        .where(eq(empleadosTable.id, numericIdDto.id))
+
+      if (empleados.length < 1) {
+        throw CustomError.notFound(
+          'Los datos del colaborador no se pudieron actualizar (no encontrado)'
+        )
+      }
+
+      const [empleado] = empleados
+
+      if (empleado.eliminable != null && !empleado.eliminable) {
+        throw CustomError.badRequest(
+          'Este colaborador no puede ser desactivado'
+        )
+      }
+    }
+
+    const sueldoString = updateEmpleadoDto.sueldo?.toFixed(2)
 
     const updateEmpleadoResultado = await db
       .update(empleadosTable)
