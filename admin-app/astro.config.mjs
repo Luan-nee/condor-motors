@@ -22,11 +22,9 @@ export default defineConfig({
  * @param {any} defaultValue
  */
 function get(name, defaultValue = '') {
-  const val = loadEnv(
-    process.env.BASE_URL ?? String(defaultValue),
-    process.cwd(),
-    ''
-  )[name];
+  const val =
+    loadEnv(process.env.NODE_ENV ?? 'development', process.cwd(), '')[name] ??
+    defaultValue;
 
   if (val === '') {
     return;
