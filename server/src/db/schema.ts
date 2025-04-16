@@ -290,6 +290,7 @@ export const cuentasEmpleadosTable = pgTable('cuentas_empleados', {
   usuario: text('usuario').notNull().unique(),
   clave: text('clave').notNull(),
   secret: text('secret').notNull(),
+  eliminable: boolean('eliminable').notNull().default(true),
   rolId: integer('rol_id')
     .notNull()
     .references(() => rolesTable.id),
