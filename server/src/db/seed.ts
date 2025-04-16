@@ -55,7 +55,7 @@ const sucursalesValues = Array.from({ length: seedConfig.sucursalesCount }).map(
       direccion: faker.location.streetAddress({ useFullAddress: true }),
       sucursalCentral: faker.datatype.boolean(),
       serieFactura: `F${id.padStart(3, '0')}`,
-      serieBoleta: `F${id.padStart(3, '0')}`,
+      serieBoleta: `B${id.padStart(3, '0')}`,
       codigoEstablecimiento: id.padStart(4, '0')
     }
 
@@ -407,8 +407,6 @@ const seedDatabase = async () => {
     }))
   )
 
-  await db.insert(schema.notificacionesTable).values(notificacionesValues)
-
   const tiposDocumentoCliente = await db
     .insert(schema.tiposDocumentoClienteTable)
     .values(seedConfig.tiposDocumentoClienteDefault)
@@ -416,17 +414,6 @@ const seedDatabase = async () => {
       id: schema.tiposDocumentoClienteTable.id,
       codigo: schema.tiposDocumentoClienteTable.codigo
     })
-  await db
-    .insert(schema.tiposDocFacturacionTable)
-    .values(seedConfig.tiposDocumentoFacturacionDefault)
-  await db
-    .insert(schema.monedasFacturacionTable)
-    .values(seedConfig.monedasFacturacionDefault)
-  await db.insert(schema.metodosPagoTable).values(seedConfig.metodosPagoDefault)
-  await db.insert(schema.tiposTaxTable).values(seedConfig.tiposTaxDefault)
-  await db
-    .insert(schema.estadosDocFacturacionTable)
-    .values(seedConfig.estadosDocFacturacion)
 
   const clientesValues = Array.from({ length: seedConfig.clientesCount }).map(
     () => {
@@ -453,7 +440,49 @@ const seedDatabase = async () => {
     }
   )
 
-  await db.insert(schema.clientesTable).values(clientesValues)
+  /* const clientes = */ await db
+    .insert(schema.clientesTable)
+    .values(clientesValues)
+    .returning({
+      id: schema.clientesTable.id,
+      tipoDocumentoId: schema.clientesTable.tipoDocumentoId
+    })
+
+  /* const tiposDocFacturacion = */ await db
+    .insert(schema.tiposDocFacturacionTable)
+    .values(seedConfig.tiposDocumentoFacturacionDefault)
+    .returning({
+      id: schema.tiposDocFacturacionTable.id,
+      codigo: schema.tiposDocFacturacionTable.codigo
+    })
+
+  await db
+    .insert(schema.monedasFacturacionTable)
+    .values(seedConfig.monedasFacturacionDefault)
+
+  await db.insert(schema.metodosPagoTable).values(seedConfig.metodosPagoDefault)
+
+  await db.insert(schema.tiposTaxTable).values(seedConfig.tiposTaxDefault)
+
+  await db
+    .insert(schema.estadosDocFacturacionTable)
+    .values(seedConfig.estadosDocFacturacion)
+
+  // const ventasValues = Array.from({ length: seedConfig.ventasCount }).map(
+  //   () => {
+  //     const cliente = getRandomValueFromArray(clientes)
+  //     const isPersonaJuridica = false
+
+  //     const tipoDocumento = getRandomValueFromArray(tiposDocFacturacion)
+
+  //     return {
+  //       observaciones: faker.lorem.words({ min: 4, max: 8 }),
+  //       tipoDocumentoId: tipoDocumento.id
+  //     }
+  //   }
+  // )
+
+  await db.insert(schema.notificacionesTable).values(notificacionesValues)
 }
 
 const { NODE_ENV: nodeEnv } = envs
