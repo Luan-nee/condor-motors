@@ -1,6 +1,5 @@
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/models/cliente.model.dart';
-import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' hide DetalleProforma;
@@ -75,56 +74,25 @@ class VentasColabProvider extends ChangeNotifier {
   Future<void> _configurarDatosIniciales() async {
     try {
       // Obtener datos del usuario autenticado
-      final Map<String, dynamic>? userData =
-          await api.authService.getUserData();
+      final Map<String, dynamic>? userData = await api.getUserData();
       if (userData != null && userData['sucursalId'] != null) {
         _sucursalId = userData['sucursalId'].toString();
         debugPrint('Usando sucursal del usuario autenticado: $_sucursalId');
 
-        // Determinar ID de empleado
-        try {
-          String usuarioId = userData['id']?.toString() ?? '0';
-
-          // Comprobar si userData contiene directamente el empleadoId
-          if (userData['empleadoId'] != null) {
-            _empleadoId = int.tryParse(userData['empleadoId'].toString()) ?? 0;
-            debugPrint('Usando empleadoId del userData: $_empleadoId');
+        // Determinar ID de empleado directamente desde userData
+        if (userData['empleadoId'] != null) {
+          _empleadoId = int.tryParse(userData['empleadoId'].toString()) ?? 0;
+          debugPrint('Usando empleadoId del userData: $_empleadoId');
+        } else {
+          // Si no hay empleadoId en userData, usar el ID del usuario como empleadoId
+          // Esta es la solución más segura sin depender de la API de empleados
+          if (userData['id'] != null) {
+            _empleadoId = int.tryParse(userData['id'].toString()) ?? 0;
+            debugPrint('Usando id del usuario como empleadoId: $_empleadoId');
           } else {
-            // Buscar empleados por sucursal
-            final EmpleadosPaginados empleadosPaginados =
-                await api.empleados.getEmpleadosPorSucursal(
-              _sucursalId,
-              pageSize: 100,
-            );
-
-            // Buscar empleado con cuentaEmpleadoId que coincida con el id del usuario
-            Empleado? empleadoEncontrado;
-            for (final Empleado empleado in empleadosPaginados.empleados) {
-              if (empleado.cuentaEmpleadoId == usuarioId) {
-                empleadoEncontrado = empleado;
-                break;
-              }
-            }
-
-            // Si no se encontró, usar el primer empleado como fallback
-            if (empleadoEncontrado == null &&
-                empleadosPaginados.empleados.isNotEmpty) {
-              empleadoEncontrado = empleadosPaginados.empleados.first;
-            }
-
-            if (empleadoEncontrado != null) {
-              _empleadoId = int.tryParse(empleadoEncontrado.id) ?? 0;
-              debugPrint(
-                  'Empleado encontrado por búsqueda: ${empleadoEncontrado.nombre} (ID: $_empleadoId)');
-            } else {
-              _empleadoId = 1; // ID genérico
-              debugPrint(
-                  'No se encontró un empleado asociado, usando ID por defecto: $_empleadoId');
-            }
+            _empleadoId = 0; // Valor cero para que sea un error explícito
+            debugPrint('No se pudo determinar el empleadoId, usando 0');
           }
-        } catch (e) {
-          debugPrint('Error al determinar ID de empleado: $e');
-          _empleadoId = 1; // Valor por defecto en caso de error
         }
       } else {
         debugPrint(
