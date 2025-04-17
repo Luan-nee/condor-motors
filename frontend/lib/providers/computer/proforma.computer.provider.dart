@@ -266,6 +266,9 @@ class ProformaComputerProvider extends ChangeNotifier {
         // Limpiar cachés después de la conversión exitosa
         _limpiarCaches(sucursalIdStr);
 
+        // Intentar declarar la venta ante SUNAT si se creó correctamente
+        await _declararVentaRecienCreada(ventaResponse, sucursalIdStr);
+
         // Recargar datos completos
         await _recargarDatosCompletos(sucursalIdStr, sucursalId);
 
@@ -289,6 +292,49 @@ class ProformaComputerProvider extends ChangeNotifier {
     } catch (e) {
       Logger.error('Error al convertir proforma a venta: $e');
       return false;
+    }
+  }
+
+  /// Declara una venta recién creada ante SUNAT
+  Future<void> _declararVentaRecienCreada(
+      Map<String, dynamic> ventaResponse, String sucursalId) async {
+    try {
+      // Obtener el ID de la venta desde la respuesta
+      int? ventaId;
+
+      if (ventaResponse.containsKey('data') &&
+          ventaResponse['data'] is Map<String, dynamic> &&
+          ventaResponse['data'].containsKey('id')) {
+        ventaId = int.tryParse(ventaResponse['data']['id'].toString());
+      }
+
+      if (ventaId == null) {
+        Logger.error(
+            'No se pudo obtener el ID de la venta creada para declararla');
+        return;
+      }
+
+      Logger.debug('Declarando venta #$ventaId ante SUNAT');
+
+      // Llamar al endpoint de declaración
+      final Map<String, dynamic> declaracionResponse =
+          await _ventaRepository.declararVenta(
+        ventaId.toString(),
+        sucursalId: sucursalId,
+        enviarCliente:
+            false, // No enviar comprobante al cliente automáticamente
+      );
+
+      if (declaracionResponse['status'] == 'success') {
+        Logger.debug('Venta #$ventaId declarada correctamente ante SUNAT');
+      } else {
+        final String errorMsg = declaracionResponse['error'] ??
+            declaracionResponse['message'] ??
+            'Error desconocido';
+        Logger.error('Error al declarar venta #$ventaId: $errorMsg');
+      }
+    } catch (e) {
+      Logger.error('Error al declarar venta recién creada: $e');
     }
   }
 

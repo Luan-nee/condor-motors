@@ -450,6 +450,43 @@ class VentasPendientesUtils {
           };
         }
 
+        // Intentar declarar la venta recién creada ante SUNAT
+        try {
+          int? ventaId;
+
+          if (ventaResponse.containsKey('data') &&
+              ventaResponse['data'] is Map<String, dynamic> &&
+              ventaResponse['data'].containsKey('id')) {
+            ventaId = int.tryParse(ventaResponse['data']['id'].toString());
+          }
+
+          if (ventaId != null) {
+            debugPrint('Declarando venta #$ventaId ante SUNAT');
+
+            final Map<String, dynamic> declaracionResponse =
+                await _ventaRepository.declararVenta(
+              ventaId.toString(),
+              sucursalId: sucursalId.toString(),
+              enviarCliente: false, // No enviar comprobante automáticamente
+            );
+
+            if (declaracionResponse['status'] == 'success') {
+              debugPrint('Venta #$ventaId declarada correctamente ante SUNAT');
+            } else {
+              final errorMsg = declaracionResponse['error'] ??
+                  declaracionResponse['message'] ??
+                  'Error desconocido';
+              debugPrint('Error al declarar venta #$ventaId: $errorMsg');
+              // No detenemos el proceso si la declaración falla
+            }
+          } else {
+            debugPrint('No se pudo obtener el ID de la venta para declararla');
+          }
+        } catch (e) {
+          debugPrint('Error al declarar venta ante SUNAT: $e');
+          // Continuamos con el proceso aunque la declaración falle
+        }
+
         // Eliminar la proforma después de convertirla a venta
         try {
           await _proformaRepository.deleteProforma(

@@ -17,7 +17,7 @@ const Map<String, String> roles = {
 };
 
 /// Normaliza un rol de usuario a un formato estándar
-String normalizeRole(dynamic rol) {
+String normalizeRole(rol) {
   if (rol == null) {
     return 'desconocido';
   }

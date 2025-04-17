@@ -556,63 +556,66 @@ class ProformaConversionManager {
               _mostrarError(context, mensajeError);
             }
             return false;
-          }
+          } else {
+            // Verificar si el objeto data contiene un error anidado
+            final dynamic responseData = ventaResponse['data'];
+            if (responseData is Map &&
+                responseData.containsKey('status') &&
+                responseData['status'] == 'fail') {
+              final String nestedErrorMsg = responseData.containsKey('error')
+                  ? responseData['error'].toString()
+                  : 'Error desconocido en respuesta';
 
-          // Verificar si el objeto data contiene un error anidado
-          final dynamic responseData = ventaResponse['data'];
-          if (responseData is Map &&
-              responseData.containsKey('status') &&
-              responseData['status'] == 'fail') {
-            final String nestedErrorMsg = responseData.containsKey('error')
-                ? responseData['error'].toString()
-                : 'Error desconocido en respuesta';
-
-            Logger.error('ERROR ANIDADO EN RESPUESTA: $nestedErrorMsg');
-            if (context.mounted) {
-              _cerrarDialogoProcesamiento(context);
-              _mostrarError(
-                  context, 'No se pudo crear la venta: $nestedErrorMsg');
+              Logger.error('ERROR ANIDADO EN RESPUESTA: $nestedErrorMsg');
+              if (context.mounted) {
+                _cerrarDialogoProcesamiento(context);
+                _mostrarError(
+                    context, 'No se pudo crear la venta: $nestedErrorMsg');
+              }
+              return false;
             }
-            return false;
-          }
 
-          final String numeroDoc =
-              ventaResponse['data']?['numeroDocumento'] ?? '';
-          Logger.debug(
-              'ÉXITO: Venta creada correctamente con documento: $numeroDoc');
-          Logger.debug('Datos de venta creada: ${ventaResponse['data']}');
-
-          if (context.mounted) {
-            _mostrarExito(context, 'Venta creada correctamente: $numeroDoc');
-          }
-
-          // Eliminar la proforma después de convertirla a venta
-          Logger.debug(
-              'Eliminando proforma #$proformaId después de convertirla a venta...');
-          try {
-            final deleteResponse = await _proformaRepository.deleteProforma(
-              sucursalId: sucursalIdStr,
-              proformaId: proformaId,
-            );
+            final String numeroDoc =
+                ventaResponse['data']?['numeroDocumento'] ?? '';
             Logger.debug(
-                'Respuesta de eliminación de proforma: $deleteResponse');
-          } catch (deleteError) {
-            // Si hay error al eliminar, registrarlo pero no fallar el proceso completo
-            Logger.error(
-                'Advertencia: No se pudo eliminar la proforma #$proformaId: $deleteError');
+                'ÉXITO: Venta creada correctamente con documento: $numeroDoc');
+            Logger.debug('Datos de venta creada: ${ventaResponse['data']}');
+
+            // Venta creada exitosamente, intentar declararla ante SUNAT
+            await _declararVentaRecienCreada(ventaResponse, sucursalIdStr);
+
+            if (context.mounted) {
+              _mostrarExito(context, 'Venta creada correctamente: $numeroDoc');
+            }
+
+            // Eliminar la proforma después de convertirla a venta
+            Logger.debug(
+                'Eliminando proforma #$proformaId después de convertirla a venta...');
+            try {
+              final deleteResponse = await _proformaRepository.deleteProforma(
+                sucursalId: sucursalIdStr,
+                proformaId: proformaId,
+              );
+              Logger.debug(
+                  'Respuesta de eliminación de proforma: $deleteResponse');
+            } catch (deleteError) {
+              // Si hay error al eliminar, registrarlo pero no fallar el proceso completo
+              Logger.error(
+                  'Advertencia: No se pudo eliminar la proforma #$proformaId: $deleteError');
+            }
+
+            // Ejecutar callback de éxito
+            Logger.debug('Ejecutando callback de éxito...');
+            onSuccess();
+
+            // Forzar recarga de proformas para actualizar UI
+            Logger.debug('Recargando lista de proformas...');
+            _recargarProformasSucursal(sucursalIdStr);
+
+            Logger.debug(
+                'PROCESO COMPLETADO: Proforma #$proformaId convertida exitosamente a venta');
+            return true;
           }
-
-          // Ejecutar callback de éxito
-          Logger.debug('Ejecutando callback de éxito...');
-          onSuccess();
-
-          // Forzar recarga de proformas para actualizar UI
-          Logger.debug('Recargando lista de proformas...');
-          _recargarProformasSucursal(sucursalIdStr);
-
-          Logger.debug(
-              'PROCESO COMPLETADO: Proforma #$proformaId convertida exitosamente a venta');
-          return true;
         } catch (e) {
           Logger.error('ERROR EN API DE VENTAS: $e');
 
@@ -832,6 +835,49 @@ class ProformaConversionManager {
     } catch (e) {
       Logger.error('Error al limpiar caché de ventas: $e');
       // No propagamos el error para no interrumpir el flujo principal
+    }
+  }
+
+  /// Declara una venta recién creada ante SUNAT
+  static Future<void> _declararVentaRecienCreada(
+      Map<String, dynamic> ventaResponse, String sucursalId) async {
+    try {
+      // Obtener el ID de la venta desde la respuesta
+      int? ventaId;
+
+      if (ventaResponse.containsKey('data') &&
+          ventaResponse['data'] is Map<String, dynamic> &&
+          ventaResponse['data'].containsKey('id')) {
+        ventaId = int.tryParse(ventaResponse['data']['id'].toString());
+      }
+
+      if (ventaId == null) {
+        Logger.error(
+            'No se pudo obtener el ID de la venta creada para declararla');
+        return;
+      }
+
+      Logger.debug('Declarando venta #$ventaId ante SUNAT');
+
+      // Llamar al endpoint de declaración
+      final Map<String, dynamic> declaracionResponse =
+          await _ventaRepository.declararVenta(
+        ventaId.toString(),
+        sucursalId: sucursalId,
+        enviarCliente:
+            false, // No enviar comprobante al cliente automáticamente
+      );
+
+      if (declaracionResponse['status'] == 'success') {
+        Logger.debug('Venta #$ventaId declarada correctamente ante SUNAT');
+      } else {
+        final String errorMsg = declaracionResponse['error'] ??
+            declaracionResponse['message'] ??
+            'Error desconocido';
+        Logger.error('Error al declarar venta #$ventaId: $errorMsg');
+      }
+    } catch (e) {
+      Logger.error('Error al declarar venta recién creada: $e');
     }
   }
 }
