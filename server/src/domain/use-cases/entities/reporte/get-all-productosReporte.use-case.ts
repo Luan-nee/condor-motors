@@ -199,11 +199,12 @@ export class GetProductosReporte {
       }
     }
 
-    await workbook.xlsx.writeFile('storage/private/reportes/archivo.xlsx')
-    return { archivo: 'archivo.xlsx' }
+    return workbook
   }
+
   async execute() {
     const resultado = await this.createExcelFile()
+
     return resultado
   }
 }
