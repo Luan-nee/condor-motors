@@ -82,7 +82,19 @@ export class CreateCliente {
           )
         }
 
-        if (createClienteDto.direccion == null) {
+        const isRuc20 = createClienteDto.numeroDocumento.startsWith('20')
+
+        if (!isRuc20 && !createClienteDto.numeroDocumento.startsWith('10')) {
+          throw CustomError.badRequest(
+            'Si el tipo de documento es ruc este solo puede empezar con "10" o "20"'
+          )
+        }
+
+        if (
+          isRuc20 &&
+          (createClienteDto.direccion === null ||
+            createClienteDto.direccion === undefined)
+        ) {
           throw CustomError.badRequest('La dirección es requerida')
         }
       }
