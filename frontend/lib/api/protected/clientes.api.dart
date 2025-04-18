@@ -250,6 +250,62 @@ class ClientesApi {
     }
   }
 
+  /// Busca datos de un cliente externo (RENIEC/SUNAT) por su número de documento
+  ///
+  /// Este método consulta un servicio externo para obtener los datos de un cliente
+  /// que aún no existe en la base de datos, para facilitar el registro de nuevos clientes.
+  ///
+  /// Retorna un mapa con los datos del cliente o null si no se encontró.
+  Future<Map<String, dynamic>?> buscarClienteExternoPorDoc(
+      String numeroDocumento) async {
+    try {
+      // Validar que el número de documento no sea nulo o vacío
+      if (numeroDocumento.isEmpty) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'Número de documento no puede estar vacío',
+        );
+      }
+
+      debugPrint(
+          'ClientesApi: Consultando API externa para documento: $numeroDocumento');
+
+      // Realizar la petición al endpoint externo
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
+        endpoint: '/clientes/doc/$numeroDocumento',
+        method: 'GET',
+      );
+
+      debugPrint('ClientesApi: Respuesta de API externa recibida');
+
+      // Verificar si la respuesta fue exitosa
+      if (response['status'] != 'success' || response['data'] == null) {
+        debugPrint(
+            'ClientesApi: La API externa no encontró datos para el documento $numeroDocumento');
+        return null;
+      }
+
+      // Extraer los datos del cliente de la respuesta
+      Map<String, dynamic> clienteData;
+      if (response['data'] is Map<String, dynamic>) {
+        clienteData = response['data'] as Map<String, dynamic>;
+      } else {
+        debugPrint('ClientesApi: Formato de respuesta inesperado');
+        return null;
+      }
+
+      debugPrint(
+          'ClientesApi: Datos encontrados: ${clienteData['denominacion']}');
+      return clienteData;
+    } catch (e) {
+      debugPrint(
+          'ClientesApi: ERROR al consultar API externa para documento $numeroDocumento: $e');
+
+      // Si ocurre cualquier error, devolvemos null para manejar el error de forma silenciosa
+      return null;
+    }
+  }
+
   /// Crea un nuevo cliente
   Future<Cliente> createCliente(Map<String, dynamic> clienteData) async {
     try {
@@ -263,12 +319,26 @@ class ClientesApi {
         );
       }
 
+      // Limpiar datos antes de enviar (remover campos vacíos)
+      final Map<String, dynamic> datosLimpios = Map.from(clienteData)
+        ..removeWhere((key, value) =>
+            value == null ||
+            (value is String && value.isEmpty) ||
+            (key == 'correo' &&
+                (value == null || value.toString().trim().isEmpty)) ||
+            (key == 'direccion' &&
+                (value == null || value.toString().trim().isEmpty)) ||
+            (key == 'telefono' &&
+                (value == null ||
+                    value.toString().trim() == '+51 ' ||
+                    value.toString().trim().isEmpty)));
+
       debugPrint(
-          'ClientesApi: Creando nuevo cliente: ${clienteData['denominacion']}');
+          'ClientesApi: Creando nuevo cliente: ${datosLimpios['denominacion']}');
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/clientes',
         method: 'POST',
-        body: clienteData,
+        body: datosLimpios,
       );
 
       debugPrint('ClientesApi: Respuesta de createCliente recibida');

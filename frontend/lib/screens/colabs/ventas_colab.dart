@@ -4,10 +4,10 @@ import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' hide DetalleProforma;
 import 'package:condorsmotors/providers/colabs/ventas.colab.provider.dart';
 import 'package:condorsmotors/screens/colabs/barcode_colab.dart';
-import 'package:condorsmotors/screens/colabs/widgets/busqueda_cliente.dart';
 import 'package:condorsmotors/screens/colabs/widgets/busqueda_producto.dart';
+import 'package:condorsmotors/screens/colabs/widgets/cliente/busqueda_cliente.dart';
+import 'package:condorsmotors/screens/colabs/widgets/cliente/busqueda_cliente_form.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -162,30 +162,6 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Mostrar diálogo para crear nuevo cliente
   void _mostrarDialogoNuevoCliente() {
-    final TextEditingController denominacionController =
-        TextEditingController();
-    final TextEditingController numeroDocumentoController =
-        TextEditingController();
-    final TextEditingController telefonoController =
-        TextEditingController(text: '+51 ');
-    final TextEditingController direccionController = TextEditingController();
-    final TextEditingController correoController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    int tipoDocumentoSeleccionado = 2; // Por defecto DNI
-
-    // Función para formatear el número de teléfono
-    String formatearTelefono(String value) {
-      if (value.isEmpty) {
-        return '';
-      }
-      // Mantener solo números y el símbolo +
-      String numero = value.replaceAll(RegExp(r'[^\d+]'), '');
-      if (!numero.startsWith('+')) {
-        numero = '+51$numero';
-      }
-      return numero;
-    }
-
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) => Dialog(
@@ -195,397 +171,27 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         ),
         child: Container(
           padding: const EdgeInsets.all(24),
-          child: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  // Encabezado con título e icono
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.person_add,
-                          color: Colors.green,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'Nuevo Cliente',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white60),
-                        onPressed: () => Navigator.pop(dialogContext),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
+          child: BusquedaClienteForm(
+            onClienteCreado: (Cliente nuevoCliente) {
+              // Cerrar el diálogo actual
+              Navigator.pop(dialogContext);
 
-                  // Selector de tipo de documento y campo de número de documento
-                  StatefulBuilder(
-                    builder: (BuildContext context, StateSetter setState) {
-                      return Column(
-                        children: [
-                          DropdownButtonFormField<int>(
-                            value: tipoDocumentoSeleccionado,
-                            decoration: const InputDecoration(
-                              labelText: 'Tipo de Documento *',
-                              labelStyle: TextStyle(color: Colors.white70),
-                              prefixIcon:
-                                  Icon(Icons.badge, color: Colors.white70),
-                              border: OutlineInputBorder(),
-                              enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.white24),
-                              ),
-                              helperText: 'Campo obligatorio',
-                              helperStyle: TextStyle(color: Colors.white38),
-                            ),
-                            dropdownColor: const Color(0xFF2D2D2D),
-                            style: const TextStyle(color: Colors.white),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 2,
-                                child: Text('DNI',
-                                    style: TextStyle(color: Colors.white)),
-                              ),
-                              DropdownMenuItem(
-                                value: 1,
-                                child: Text('RUC',
-                                    style: TextStyle(color: Colors.white)),
-                              ),
-                              DropdownMenuItem(
-                                value: 3,
-                                child: Text('Carnet de Extranjería',
-                                    style: TextStyle(color: Colors.white)),
-                              ),
-                              DropdownMenuItem(
-                                value: 4,
-                                child: Text('Pasaporte',
-                                    style: TextStyle(color: Colors.white)),
-                              ),
-                            ],
-                            onChanged: (int? value) {
-                              if (value != null) {
-                                setState(() {
-                                  tipoDocumentoSeleccionado = value;
-                                  // Limpiar el campo de número de documento
-                                  numeroDocumentoController.clear();
-                                });
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 16),
+              // Seleccionar automáticamente el cliente recién creado
+              _provider.seleccionarCliente(nuevoCliente);
 
-                          // Campo de número de documento con validación dinámica
-                          TextFormField(
-                            controller: numeroDocumentoController,
-                            decoration: InputDecoration(
-                              labelText: 'Número de Documento *',
-                              labelStyle:
-                                  const TextStyle(color: Colors.white70),
-                              prefixIcon:
-                                  const Icon(Icons.pin, color: Colors.white70),
-                              border: const OutlineInputBorder(),
-                              enabledBorder: const OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.white24),
-                              ),
-                              helperText: tipoDocumentoSeleccionado == 2
-                                  ? 'DNI: 8 dígitos numéricos'
-                                  : tipoDocumentoSeleccionado == 1
-                                      ? 'RUC: 11 dígitos, debe empezar con 10 o 20'
-                                      : tipoDocumentoSeleccionado == 3
-                                          ? 'CE: 8-12 caracteres alfanuméricos'
-                                          : 'Pasaporte: 6-12 caracteres alfanuméricos',
-                              helperStyle:
-                                  const TextStyle(color: Colors.white38),
-                              counterText: '',
-                            ),
-                            style: const TextStyle(color: Colors.white),
-                            keyboardType: tipoDocumentoSeleccionado == 4 ||
-                                    tipoDocumentoSeleccionado == 3
-                                ? TextInputType.text
-                                : TextInputType.number,
-                            inputFormatters: [
-                              LengthLimitingTextInputFormatter(
-                                  tipoDocumentoSeleccionado == 1
-                                      ? 11
-                                      : // RUC
-                                      tipoDocumentoSeleccionado == 2
-                                          ? 8
-                                          : // DNI
-                                          tipoDocumentoSeleccionado == 3
-                                              ? 12
-                                              : // CE
-                                              12 // Pasaporte
-                                  ),
-                            ],
-                            textCapitalization:
-                                tipoDocumentoSeleccionado == 4 ||
-                                        tipoDocumentoSeleccionado == 3
-                                    ? TextCapitalization.characters
-                                    : TextCapitalization.none,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Este campo es obligatorio';
-                              }
+              // Mostrar mensaje de éxito
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                      'Cliente ${nuevoCliente.denominacion} creado y seleccionado'),
+                  backgroundColor: Colors.green,
+                ),
+              );
 
-                              switch (tipoDocumentoSeleccionado) {
-                                case 1: // RUC
-                                  if (value.length != 11) {
-                                    return 'El RUC debe tener 11 dígitos';
-                                  }
-                                  if (!RegExp(r'^[12][0]\d{9}$')
-                                      .hasMatch(value)) {
-                                    return 'El RUC debe comenzar con 10 o 20';
-                                  }
-                                  break;
-                                case 2: // DNI
-                                  if (value.length != 8) {
-                                    return 'El DNI debe tener 8 dígitos';
-                                  }
-                                  if (!RegExp(r'^\d+$').hasMatch(value)) {
-                                    return 'El DNI solo debe contener números';
-                                  }
-                                  break;
-                                case 3: // Carnet de Extranjería
-                                  if (value.length < 8 || value.length > 12) {
-                                    return 'El CE debe tener entre 8 y 12 caracteres';
-                                  }
-                                  if (!RegExp(r'^[A-Z0-9]+$')
-                                      .hasMatch(value.toUpperCase())) {
-                                    return 'El CE solo debe contener números y letras';
-                                  }
-                                  break;
-                                case 4: // Pasaporte
-                                  if (value.length < 6 || value.length > 12) {
-                                    return 'El Pasaporte debe tener entre 6 y 12 caracteres';
-                                  }
-                                  if (!RegExp(r'^[A-Z0-9]+$')
-                                      .hasMatch(value.toUpperCase())) {
-                                    return 'El Pasaporte solo debe contener números y letras';
-                                  }
-                                  break;
-                              }
-                              return null;
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Campo de nombre/razón social
-                  TextFormField(
-                    controller: denominacionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nombre/Razón Social *',
-                      labelStyle: TextStyle(color: Colors.white70),
-                      prefixIcon: Icon(Icons.person, color: Colors.white70),
-                      border: OutlineInputBorder(),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white24),
-                      ),
-                      helperText: 'Campo obligatorio - Mínimo 3 caracteres',
-                      helperStyle: TextStyle(color: Colors.white38),
-                    ),
-                    style: const TextStyle(color: Colors.white),
-                    textCapitalization: TextCapitalization.words,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      if (value.length < 3) {
-                        return 'Debe tener al menos 3 caracteres';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Campo de teléfono con formato peruano
-                  TextFormField(
-                    controller: telefonoController,
-                    decoration: const InputDecoration(
-                      labelText: 'Teléfono',
-                      labelStyle: TextStyle(color: Colors.white70),
-                      prefixIcon: Icon(Icons.phone, color: Colors.white70),
-                      border: OutlineInputBorder(),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white24),
-                      ),
-                      helperText: 'Formato: +51 999999999',
-                      helperStyle: TextStyle(color: Colors.white38),
-                    ),
-                    style: const TextStyle(color: Colors.white),
-                    keyboardType: TextInputType.phone,
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        final String numero =
-                            value.replaceAll(RegExp(r'\s+'), '');
-                        if (!RegExp(r'^\+51\d{9}$').hasMatch(numero)) {
-                          return 'Ingrese un número peruano válido';
-                        }
-                      }
-                      return null;
-                    },
-                    onChanged: (value) {
-                      if (!value.startsWith('+51')) {
-                        telefonoController
-                          ..text = '+51 ${value.replaceAll('+51', '')}'
-                          ..selection = TextSelection.fromPosition(
-                            TextPosition(
-                                offset: telefonoController.text.length),
-                          );
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Campo de dirección
-                  TextFormField(
-                    controller: direccionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Dirección (Opcional)',
-                      labelStyle: TextStyle(color: Colors.white70),
-                      prefixIcon:
-                          Icon(Icons.location_on, color: Colors.white70),
-                      border: OutlineInputBorder(),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white24),
-                      ),
-                      helperText: 'Campo opcional - Máximo 100 caracteres',
-                      helperStyle: TextStyle(color: Colors.white38),
-                    ),
-                    style: const TextStyle(color: Colors.white),
-                    maxLength: 100,
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Campo de correo electrónico
-                  TextFormField(
-                    controller: correoController,
-                    decoration: const InputDecoration(
-                      labelText: 'Correo Electrónico (Opcional)',
-                      labelStyle: TextStyle(color: Colors.white70),
-                      prefixIcon: Icon(Icons.email, color: Colors.white70),
-                      border: OutlineInputBorder(),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white24),
-                      ),
-                      helperText: 'Campo opcional - ejemplo@dominio.com',
-                      helperStyle: TextStyle(color: Colors.white38),
-                    ),
-                    style: const TextStyle(color: Colors.white),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(value)) {
-                          return 'Ingrese un correo válido';
-                        }
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Botones de acción
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(dialogContext),
-                        child: const Text('Cancelar',
-                            style: TextStyle(color: Colors.white70)),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
-                        icon: const Icon(Icons.save),
-                        label: const Text('Guardar'),
-                        onPressed: () async {
-                          if (formKey.currentState!.validate()) {
-                            try {
-                              // Formatear el teléfono antes de enviar
-                              String telefono = telefonoController.text.trim();
-                              if (telefono.isNotEmpty) {
-                                telefono = formatearTelefono(telefono);
-                              }
-
-                              // Crear cliente usando el provider
-                              final nuevoCliente =
-                                  await _provider.crearCliente({
-                                'tipoDocumentoId': tipoDocumentoSeleccionado,
-                                'numeroDocumento': numeroDocumentoController
-                                    .text
-                                    .toUpperCase(),
-                                'denominacion':
-                                    denominacionController.text.trim(),
-                                'telefono': telefono,
-                                'direccion': direccionController.text.trim(),
-                                'correo': correoController.text.trim(),
-                              });
-
-                              if (!dialogContext.mounted) {
-                                return;
-                              }
-
-                              // Cerrar el diálogo actual
-                              Navigator.pop(dialogContext);
-
-                              // Seleccionar automáticamente el cliente recién creado
-                              _provider.seleccionarCliente(nuevoCliente);
-
-                              // Mostrar mensaje de éxito
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      'Cliente ${denominacionController.text} creado y seleccionado'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-
-                              // Mostrar el diálogo de selección de clientes
-                              _mostrarDialogoClientes();
-                            } catch (e) {
-                              ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error al crear cliente: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+              // Mostrar el diálogo de selección de clientes
+              _mostrarDialogoClientes();
+            },
+            onCancel: () => Navigator.pop(dialogContext),
           ),
         ),
       ),
