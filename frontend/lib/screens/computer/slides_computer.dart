@@ -462,7 +462,9 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
       // Realizar el logout
       await authProvider.logout();
 
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        return;
+      }
 
       // Navegar al login y limpiar el stack de navegación
       await Navigator.of(context).pushNamedAndRemoveUntil(
@@ -471,7 +473,9 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
       );
     } catch (e) {
       debugPrint('Error durante el cierre de sesión: $e');
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        return;
+      }
 
       // Mostrar error pero igual intentar navegar al login
       ScaffoldMessenger.of(context).showSnackBar(

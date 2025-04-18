@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -577,7 +579,7 @@ class VentasComputerProvider extends ChangeNotifier {
   }
 
   /// Carga las ventas según los filtros actuales
-  Future<void> cargarVentas() async {
+  Future<void> cargarVentas({int? sucursalId}) async {
     if (_sucursalSeleccionada == null) {
       _ventasErrorMessage = 'Debe seleccionar una sucursal';
       _ventas = [];
@@ -592,7 +594,7 @@ class VentasComputerProvider extends ChangeNotifier {
     try {
       // Llamar al repositorio para obtener las ventas
       final response = await _ventaRepository.getVentas(
-        sucursalId: _sucursalSeleccionada!.id,
+        sucursalId: sucursalId ?? _sucursalSeleccionada!.id,
         page: _paginacion.currentPage,
         pageSize: _itemsPerPage,
         search: _searchQuery.isEmpty ? null : _searchQuery,
@@ -805,5 +807,120 @@ class VentasComputerProvider extends ChangeNotifier {
 
     // Recargar datos con la nueva dirección de ordenación
     await cargarVentas();
+  }
+
+  /// Crea una venta nueva con productos personalizados
+  Future<Map<String, dynamic>> crearVentaPersonalizada({
+    required int? sucursalId,
+    required int clienteId,
+    required int empleadoId,
+    required int tipoDocumentoId,
+    required List<DetalleVenta> detalles,
+    String? observaciones,
+    int monedaId = 1,
+    int metodoPagoId = 1,
+    DateTime? fechaEmision,
+    String? horaEmision,
+  }) async {
+    try {
+      // Verificar sucursal
+      final String? sucursalIdStr = await _getCurrentSucursalId(sucursalId);
+      if (sucursalIdStr == null) {
+        return {
+          'status': 'error',
+          'message': 'No se pudo determinar la sucursal para la venta',
+        };
+      }
+
+      // Verificar cliente
+      if (clienteId <= 0) {
+        return {
+          'status': 'error',
+          'message': 'Se requiere un cliente válido',
+        };
+      }
+
+      // Verificar empleado
+      if (empleadoId <= 0) {
+        return {
+          'status': 'error',
+          'message': 'Se requiere un empleado válido',
+        };
+      }
+
+      // Verificar detalles
+      if (detalles.isEmpty) {
+        return {
+          'status': 'error',
+          'message': 'La venta debe contener al menos un producto',
+        };
+      }
+
+      // Estructurar datos de la API
+      final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
+      final DateFormat timeFormat = DateFormat('HH:mm:ss');
+      final DateTime now = DateTime.now();
+
+      final Map<String, dynamic> ventaData = {
+        'observaciones': observaciones,
+        'tipoDocumentoId': tipoDocumentoId,
+        'monedaId': monedaId,
+        'metodoPagoId': metodoPagoId,
+        'clienteId': clienteId,
+        'empleadoId': empleadoId,
+        'fechaEmision': fechaEmision != null
+            ? dateFormat.format(fechaEmision)
+            : dateFormat.format(now),
+        'horaEmision': horaEmision ?? timeFormat.format(now),
+        'detalles': detalles.map((detalle) => detalle.toCreateJson()).toList(),
+      };
+
+      // Llamar a la API para crear la venta
+      final response = await _ventaRepository.createVenta(
+        ventaData,
+        sucursalId: sucursalIdStr,
+      );
+
+      // Recargar la lista de ventas después de crear una nueva
+      await cargarVentas(sucursalId: int.tryParse(sucursalIdStr));
+
+      return response;
+    } catch (e) {
+      debugPrint('Error al crear venta personalizada: $e');
+      return {
+        'status': 'error',
+        'message': 'Error al crear la venta: $e',
+      };
+    }
+  }
+
+  /// Crea un detalle para productos personalizados (sin registro previo)
+  DetalleVenta crearDetallePersonalizado({
+    required String nombre,
+    required int cantidad,
+    required double precio,
+    required int tipoTaxId,
+    String sku = '',
+  }) {
+    return DetalleVenta.personalizado(
+      nombre: nombre,
+      cantidad: cantidad,
+      precio: precio,
+      tipoTaxId: tipoTaxId,
+      sku: sku,
+    );
+  }
+
+  /// Obtiene el ID de la sucursal actual
+  Future<String?> _getCurrentSucursalId(int? sucursalId) async {
+    if (sucursalId != null) {
+      return sucursalId.toString();
+    }
+
+    if (_sucursalSeleccionada != null) {
+      return _sucursalSeleccionada!.id.toString();
+    }
+
+    return await _ventaRepository.getCurrentSucursalId();
   }
 }

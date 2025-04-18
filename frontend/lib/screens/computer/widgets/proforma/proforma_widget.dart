@@ -1,13 +1,15 @@
 import 'dart:math' show min;
 
 import 'package:condorsmotors/models/proforma.model.dart';
+import 'package:condorsmotors/providers/computer/proforma.computer.provider.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/form_proforma.dart';
-import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_conversion_utils.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
+import 'package:condorsmotors/utils/documento_utils.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 /// Widget para mostrar los detalles de una proforma individual
 class ProformaWidget extends StatelessWidget {
@@ -517,7 +519,7 @@ class ProformaWidget extends StatelessWidget {
             children: [
               if (onDelete != null)
                 OutlinedButton.icon(
-                  onPressed: onDelete,
+                  onPressed: () => _handleDelete(context),
                   icon: const Icon(Icons.delete),
                   label: const Text('Eliminar'),
                   style: OutlinedButton.styleFrom(
@@ -546,11 +548,126 @@ class ProformaWidget extends StatelessWidget {
     );
   }
 
+  /// Maneja la eliminación de una proforma utilizando el provider
+  void _handleDelete(BuildContext context) async {
+    try {
+      final proformaProvider = Provider.of<ProformaComputerProvider>(
+        context,
+        listen: false,
+      );
+
+      // Mostrar diálogo de confirmación
+      bool? confirmar = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext dialogContext) => AlertDialog(
+          backgroundColor: const Color(0xFF2D2D2D),
+          title: const Row(
+            children: [
+              Icon(Icons.delete, color: Colors.red),
+              SizedBox(width: 10),
+              Text(
+                'Confirmar eliminación',
+                style: TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+          content: Text(
+            '¿Estás seguro de que deseas eliminar la proforma #${proforma.id}? Esta acción no se puede deshacer.',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+                backgroundColor: Colors.red.withOpacity(0.1),
+              ),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        ),
+      );
+
+      // Si el usuario confirmó, eliminar la proforma
+      if (confirmar == true) {
+        // Mostrar diálogo de carga
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) => const Dialog(
+            backgroundColor: Color(0xFF2D2D2D),
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 20),
+                  Text(
+                    'Eliminando...',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        // Eliminar proforma usando el provider
+        final success = await proformaProvider.deleteProforma(proforma, null);
+
+        // Cerrar diálogo de carga
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+
+        // Mostrar resultado
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                success
+                    ? 'Proforma #${proforma.id} eliminada con éxito'
+                    : 'Error al eliminar la proforma',
+              ),
+              backgroundColor: success ? Colors.green : Colors.red,
+            ),
+          );
+        }
+
+        // Ejecutar callback si existe
+        if (success && onDelete != null) {
+          onDelete!();
+        }
+      }
+    } catch (e) {
+      Logger.error('Error al eliminar proforma: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al eliminar la proforma: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleConvert(BuildContext context) async {
     // Guardamos el contexto de construcción antes de operaciones asíncronas
     final BuildContext originalContext = context;
 
     try {
+      // Obtener el provider de proformas
+      final proformaProvider = Provider.of<ProformaComputerProvider>(
+        context,
+        listen: false,
+      );
+
       // Registrar inicio del proceso
       Logger.debug(
           'INICIO CONVERSIÓN UI: Iniciando conversión de proforma #${proforma.id}');
@@ -565,6 +682,13 @@ class ProformaWidget extends StatelessWidget {
                 'Confirmación recibida con datos: ${ventaData.toString().substring(0, min(100, ventaData.toString().length))}...');
             Navigator.of(dialogContext).pop();
 
+            // Verificar si el widget sigue montado antes de mostrar diálogo
+            if (!originalContext.mounted) {
+              Logger.debug(
+                  'Widget desmontado antes de mostrar diálogo de procesamiento');
+              return;
+            }
+
             // Mostrar diálogo de procesamiento
             showDialog(
               context: originalContext,
@@ -573,20 +697,12 @@ class ProformaWidget extends StatelessWidget {
                   ventaData['tipoDocumento'].toLowerCase()),
             );
 
-            Logger.debug('Obteniendo ID de sucursal...');
-            final String sucursalId = await _obtenerSucursalId();
-            Logger.debug('ID de sucursal obtenido: $sucursalId');
-
-            // Intentar la conversión
-            Logger.debug('Llamando a convertirProformaAVenta...');
-            bool success =
-                await ProformaConversionManager.convertirProformaAVenta(
-              context: originalContext,
-              sucursalId: sucursalId,
-              proformaId: proforma.id,
-              tipoDocumento: ventaData['tipoDocumento'],
+            // Usar provider para convertir proforma a venta
+            final success = await proformaProvider.handleConvertToSale(
+              proforma,
+              null, // Dejar que el provider obtenga el ID de sucursal
               onSuccess: () {
-                Logger.debug('Callback de éxito ejecutado');
+                Logger.debug('Callback de éxito ejecutado desde provider');
                 if (onConvert != null) {
                   onConvert!(proforma);
                 }
@@ -595,7 +711,7 @@ class ProformaWidget extends StatelessWidget {
 
             // Verificar si el widget sigue montado antes de continuar
             if (!originalContext.mounted) {
-              Logger.debug('Widget desmontado, deteniendo proceso');
+              Logger.debug('Widget desmontado después de la conversión');
               return;
             }
 
@@ -605,111 +721,18 @@ class ProformaWidget extends StatelessWidget {
             Logger.debug(
                 'Resultado de conversión: ${success ? 'Éxito' : 'Fallo'}');
 
-            // Si falló, intentar con el método alternativo
-            if (!success) {
-              Logger.debug(
-                  'Primer intento fallido, buscando método alternativo...');
-              final sucursalId =
-                  await VentasPendientesUtils.obtenerSucursalId();
-
-              // Verificar nuevamente si el widget sigue montado
-              if (!originalContext.mounted) {
-                Logger.debug(
-                    'Widget desmontado durante obtención de sucursal alternativa');
-                return;
-              }
-
-              if (sucursalId != null) {
-                Logger.debug('Sucursal alternativa encontrada: $sucursalId');
-                // Mostrar diálogo preguntando si desea intentar el método alternativo
-                final bool intentarAlternativo = await showDialog<bool>(
-                      context: originalContext,
-                      builder: (BuildContext context) => AlertDialog(
-                        backgroundColor: const Color(0xFF2D2D2D),
-                        title: const Row(
-                          children: [
-                            Icon(Icons.warning_amber_rounded,
-                                color: Colors.orange),
-                            SizedBox(width: 10),
-                            Text(
-                              'Error en la conversión',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        ),
-                        content: const Text(
-                          'La conversión normal falló. ¿Desea intentar de nuevo?',
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(false),
-                            child: const Text('Cancelar'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(true),
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.blue,
-                              backgroundColor: Colors.blue.withOpacity(0.1),
-                            ),
-                            child: const Text('Intentar de nuevo'),
-                          ),
-                        ],
-                      ),
-                    ) ??
-                    false;
-
-                // Verificar si el widget sigue montado antes de continuar
-                if (!originalContext.mounted) {
-                  Logger.debug(
-                      'Widget desmontado durante confirmación de método alternativo');
-                  return;
-                }
-
-                if (intentarAlternativo) {
-                  Logger.debug(
-                      'Usuario confirmó intento alternativo, procesando...');
-                  // Mostrar diálogo de procesamiento nuevamente
-                  showDialog(
-                    context: originalContext,
-                    barrierDismissible: false,
-                    builder: (BuildContext context) => _buildProcessingDialog(
-                        ventaData['tipoDocumento'].toLowerCase()),
-                  );
-
-                  // Intentar nuevamente
-                  Logger.debug('Segundo intento con sucursal alternativa...');
-                  final bool segundoResultado =
-                      await ProformaConversionManager.convertirProformaAVenta(
-                    context: originalContext,
-                    sucursalId: sucursalId.toString(),
-                    proformaId: proforma.id,
-                    tipoDocumento: ventaData['tipoDocumento'],
-                    onSuccess: () {
-                      Logger.debug(
-                          'Callback de éxito ejecutado en segundo intento');
-                      if (onConvert != null) {
-                        onConvert!(proforma);
-                      }
-                    },
-                  );
-
-                  // Verificar si el widget sigue montado antes de continuar
-                  if (!originalContext.mounted) {
-                    Logger.debug(
-                        'Widget desmontado después del segundo intento');
-                    return;
-                  }
-
-                  // Cerrar el diálogo de procesamiento
-                  Navigator.of(originalContext).pop();
-
-                  Logger.debug(
-                      'Resultado del segundo intento: ${segundoResultado ? 'Éxito' : 'Fallo'}');
-                }
-              } else {
-                Logger.debug('No se pudo encontrar sucursal alternativa');
-              }
+            // Mostrar resultado al usuario
+            if (originalContext.mounted) {
+              ScaffoldMessenger.of(originalContext).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    success
+                        ? 'Proforma #${proforma.id} convertida a venta con éxito'
+                        : 'Error al convertir la proforma a venta',
+                  ),
+                  backgroundColor: success ? Colors.green : Colors.red,
+                ),
+              );
             }
           },
           onCancel: () {
@@ -784,87 +807,34 @@ class ProformaWidget extends StatelessWidget {
     );
   }
 
-  /// Obtener el ID de sucursal actual
-  Future<String> _obtenerSucursalId() async {
-    final int? sucursalId = await VentasPendientesUtils.obtenerSucursalId();
-    if (sucursalId == null) {
-      throw Exception('No se pudo obtener el ID de sucursal');
-    }
-    return sucursalId.toString();
-  }
-
   /// Verificar si el detalle de la proforma tiene descuento aplicado
   bool _tieneDescuento(DetalleProforma detalle) {
-    try {
-      final dynamic descuento = (detalle as dynamic).descuento;
-      return descuento != null && descuento > 0;
-    } catch (e) {
-      return false;
-    }
+    return ProformaUtils.tieneDescuento(detalle);
   }
 
   /// Obtener el valor del descuento formateado
   String _getDescuento(DetalleProforma detalle) {
-    try {
-      final dynamic descuento = (detalle as dynamic).descuento;
-      if (descuento != null && descuento is num) {
-        return '${descuento.toInt()}';
-      }
-      return '0';
-    } catch (e) {
-      return '0';
-    }
+    return ProformaUtils.getDescuento(detalle);
   }
 
   /// Obtener el precio original antes del descuento
   double? _getPrecioOriginal(DetalleProforma detalle) {
-    try {
-      final dynamic precioOriginal = (detalle as dynamic).precioOriginal;
-      if (precioOriginal != null && precioOriginal is num) {
-        return precioOriginal.toDouble();
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
+    return ProformaUtils.getPrecioOriginal(detalle);
   }
 
   /// Verificar si hay unidades gratis
   bool _tieneUnidadesGratis(DetalleProforma detalle) {
-    try {
-      final dynamic cantidadGratis = (detalle as dynamic).cantidadGratis;
-      return cantidadGratis != null && cantidadGratis > 0;
-    } catch (e) {
-      return false;
-    }
+    return ProformaUtils.tieneUnidadesGratis(detalle);
   }
 
   /// Obtener cantidad de unidades gratis
   int _getCantidadGratis(DetalleProforma detalle) {
-    try {
-      final dynamic cantidadGratis = (detalle as dynamic).cantidadGratis;
-      if (cantidadGratis != null && cantidadGratis is num) {
-        return cantidadGratis.toInt();
-      }
-      return 0;
-    } catch (e) {
-      return 0;
-    }
+    return ProformaUtils.getCantidadGratis(detalle);
   }
 
   /// Obtener cantidad de unidades pagadas
   int _getCantidadPagada(DetalleProforma detalle) {
-    try {
-      final dynamic cantidadPagada = (detalle as dynamic).cantidadPagada;
-      if (cantidadPagada != null && cantidadPagada is num) {
-        return cantidadPagada.toInt();
-      }
-      // Si no hay campo específico, calcular restando gratis del total
-      final int cantidadGratis = _getCantidadGratis(detalle);
-      return detalle.cantidad - cantidadGratis;
-    } catch (e) {
-      return detalle.cantidad;
-    }
+    return ProformaUtils.getCantidadPagada(detalle);
   }
 
   /// Construye la columna de información de cantidad
@@ -1002,71 +972,84 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
   String _customerName = '';
   String _paymentAmount = '';
   bool _isProcessing = false;
+  bool _documentoValidado = false;
+  String? _numeroDocumentoCliente;
+  bool _puedeEmitirBoleta = true;
+  bool _puedeEmitirFactura = false;
+  String _mensajeValidacion = '';
 
   @override
   void initState() {
     super.initState();
     // Inicializar con el nombre del cliente de la proforma
     _customerName = widget.proforma.getNombreCliente();
+    // Obtener número de documento del cliente si está disponible
+    _extraerNumeroDocumentoCliente();
   }
 
-  /// Verificar si un detalle de proforma tiene descuento
+  /// Extrae el número de documento del cliente de la proforma
+  void _extraerNumeroDocumentoCliente() {
+    // Usar el método utilitario para extraer el número de documento
+    final numeroDocumento =
+        ProformaUtils.extraerNumeroDocumentoCliente(widget.proforma.cliente);
+    _actualizarValidacionDocumento(numeroDocumento);
+  }
+
+  /// Actualiza el estado de validación según el número de documento
+  void _actualizarValidacionDocumento(String? numeroDocumento) {
+    // Obtener la validación completa desde la clase utilitaria
+    final validacion =
+        DocumentoUtils.obtenerValidacionCompleta(numeroDocumento);
+
+    setState(() {
+      _numeroDocumentoCliente = numeroDocumento;
+      _documentoValidado =
+          numeroDocumento != null && numeroDocumento.isNotEmpty;
+
+      // Usar los datos de validación
+      _puedeEmitirBoleta = validacion['puedeEmitirBoleta'];
+      _puedeEmitirFactura = validacion['puedeEmitirFactura'];
+      _mensajeValidacion = validacion['mensajeValidacion'];
+
+      // Ajustar el tipo de documento seleccionado si es necesario
+      if (_documentoValidado) {
+        if (_tipoDocumento == 'BOLETA' && !_puedeEmitirBoleta) {
+          _tipoDocumento = 'FACTURA';
+        } else if (_tipoDocumento == 'FACTURA' && !_puedeEmitirFactura) {
+          _tipoDocumento = 'BOLETA';
+        }
+      }
+    });
+  }
+
+  /// Verificar si el detalle de la proforma tiene descuento aplicado
   bool _tieneDescuento(DetalleProforma detalle) {
-    try {
-      final dynamic descuento = (detalle as dynamic).descuento;
-      return descuento != null && descuento > 0;
-    } catch (e) {
-      return false;
-    }
+    return ProformaUtils.tieneDescuento(detalle);
   }
 
   /// Obtener el valor del descuento formateado
   String _getDescuento(DetalleProforma detalle) {
-    try {
-      final dynamic descuento = (detalle as dynamic).descuento;
-      if (descuento != null && descuento is num) {
-        return '${descuento.toInt()}';
-      }
-      return '0';
-    } catch (e) {
-      return '0';
-    }
+    return ProformaUtils.getDescuento(detalle);
   }
 
   /// Obtener el precio original antes del descuento
   double? _getPrecioOriginal(DetalleProforma detalle) {
-    try {
-      final dynamic precioOriginal = (detalle as dynamic).precioOriginal;
-      if (precioOriginal != null && precioOriginal is num) {
-        return precioOriginal.toDouble();
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
+    return ProformaUtils.getPrecioOriginal(detalle);
   }
 
   /// Verificar si hay unidades gratis
   bool _tieneUnidadesGratis(DetalleProforma detalle) {
-    try {
-      final dynamic cantidadGratis = (detalle as dynamic).cantidadGratis;
-      return cantidadGratis != null && cantidadGratis > 0;
-    } catch (e) {
-      return false;
-    }
+    return ProformaUtils.tieneUnidadesGratis(detalle);
   }
 
   /// Obtener cantidad de unidades gratis
   int _getCantidadGratis(DetalleProforma detalle) {
-    try {
-      final dynamic cantidadGratis = (detalle as dynamic).cantidadGratis;
-      if (cantidadGratis != null && cantidadGratis is num) {
-        return cantidadGratis.toInt();
-      }
-      return 0;
-    } catch (e) {
-      return 0;
-    }
+    return ProformaUtils.getCantidadGratis(detalle);
+  }
+
+  /// Obtener cantidad de unidades pagadas
+  int _getCantidadPagada(DetalleProforma detalle) {
+    return ProformaUtils.getCantidadPagada(detalle);
   }
 
   @override
@@ -1397,64 +1380,130 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
             // Teclado numérico para cálculo de vuelto (lado derecho)
             Expanded(
               flex: 4,
-              child: NumericKeypad(
-                onKeyPressed: (value) {
-                  setState(() {
-                    _paymentAmount = value;
-                  });
-                },
-                onClear: () {
-                  setState(() {
-                    _paymentAmount = '';
-                  });
-                },
-                onSubmit: () {
-                  // Método vacío, la acción se maneja en onCharge
-                },
-                currentAmount: widget.proforma.total.toString(),
-                paymentAmount: _paymentAmount,
-                customerName: _customerName,
-                documentType: _tipoDocumento == 'BOLETA' ? 'Boleta' : 'Factura',
-                onCustomerNameChanged: (String value) {
-                  setState(() {
-                    _customerName = value;
-                  });
-                },
-                onDocumentTypeChanged: (String value) {
-                  setState(() {
-                    _tipoDocumento = value == 'Boleta' ? 'BOLETA' : 'FACTURA';
-                  });
-                },
-                isProcessing: _isProcessing,
-                minAmount: widget.proforma.total,
-                onCharge: (montoRecibido) {
-                  // Crear los datos de venta y llamar a onConfirm
-                  final Map<String, dynamic> ventaData = {
-                    'tipoDocumento': _tipoDocumento,
-                    'productos': widget.proforma.detalles
-                        .map((detalle) => {
-                              'productoId': detalle.productoId,
-                              'cantidad': detalle.cantidad,
-                              'precio': detalle.precioUnitario,
-                              'subtotal': detalle.subtotal,
-                            })
-                        .toList(),
-                    'cliente':
-                        widget.proforma.cliente ?? {'nombre': _customerName},
-                    'metodoPago': 'EFECTIVO', // Por defecto
-                    'total': widget.proforma.total,
-                    'montoRecibido': montoRecibido,
-                    'vuelto': montoRecibido - widget.proforma.total,
-                  };
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Mensaje de validación del tipo de documento
+                  if (_documentoValidado)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFF4CAF50).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: const Color(0xFF4CAF50),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _mensajeValidacion,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
-                  // Iniciar procesamiento
-                  setState(() {
-                    _isProcessing = true;
-                  });
+                  Expanded(
+                    child: NumericKeypad(
+                      onKeyPressed: (value) {
+                        setState(() {
+                          _paymentAmount = value;
+                        });
+                      },
+                      onClear: () {
+                        setState(() {
+                          _paymentAmount = '';
+                        });
+                      },
+                      onSubmit: () {
+                        // Método vacío, la acción se maneja en onCharge
+                      },
+                      currentAmount: widget.proforma.total.toString(),
+                      paymentAmount: _paymentAmount,
+                      customerName: _customerName,
+                      documentType:
+                          _tipoDocumento == 'BOLETA' ? 'Boleta' : 'Factura',
+                      onCustomerNameChanged: (String value) {
+                        setState(() {
+                          _customerName = value;
+                        });
+                      },
+                      onDocumentTypeChanged: (String value) {
+                        // Si el tipo seleccionado no es válido para este cliente, no permitirlo
+                        final String nuevoTipo =
+                            value == 'Boleta' ? 'BOLETA' : 'FACTURA';
 
-                  // Invocar callback con los datos de venta
-                  widget.onConfirm(ventaData);
-                },
+                        if (nuevoTipo == 'BOLETA' && !_puedeEmitirBoleta) {
+                          // No permitir cambiar a boleta si el cliente no puede recibirla
+                          return;
+                        }
+
+                        if (nuevoTipo == 'FACTURA' && !_puedeEmitirFactura) {
+                          // No permitir cambiar a factura si el cliente no puede recibirla
+                          return;
+                        }
+
+                        setState(() {
+                          _tipoDocumento = nuevoTipo;
+                        });
+                      },
+                      isProcessing: _isProcessing,
+                      minAmount: widget.proforma.total,
+                      puedeEmitirBoleta: _puedeEmitirBoleta,
+                      puedeEmitirFactura: _puedeEmitirFactura,
+                      onCharge: (montoRecibido) {
+                        // Validar que el tipo de documento sea correcto para este cliente
+                        if (_documentoValidado &&
+                            !DocumentoUtils.esComprobanteValidoParaCliente(
+                                _numeroDocumentoCliente, _tipoDocumento)) {
+                          // No permitir cobrar con una combinación inválida
+                          // Esto no debería ocurrir debido a las restricciones en la UI
+                          return;
+                        }
+
+                        // Crear los datos de venta y llamar a onConfirm
+                        final Map<String, dynamic> ventaData = {
+                          'tipoDocumento': _tipoDocumento,
+                          'productos': widget.proforma.detalles
+                              .map((detalle) => {
+                                    'productoId': detalle.productoId,
+                                    'cantidad': detalle.cantidad,
+                                    'precio': detalle.precioUnitario,
+                                    'subtotal': detalle.subtotal,
+                                  })
+                              .toList(),
+                          'cliente': widget.proforma.cliente ??
+                              {'nombre': _customerName},
+                          'metodoPago': 'EFECTIVO', // Por defecto
+                          'total': widget.proforma.total,
+                          'montoRecibido': montoRecibido,
+                          'vuelto': montoRecibido - widget.proforma.total,
+                        };
+
+                        // Iniciar procesamiento
+                        setState(() {
+                          _isProcessing = true;
+                        });
+
+                        // Invocar callback con los datos de venta
+                        widget.onConfirm(ventaData);
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -1470,6 +1519,11 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
       ..add(StringProperty('_tipoDocumento', _tipoDocumento))
       ..add(StringProperty('_customerName', _customerName))
       ..add(StringProperty('_paymentAmount', _paymentAmount))
-      ..add(DiagnosticsProperty<bool>('_isProcessing', _isProcessing));
+      ..add(DiagnosticsProperty<bool>('_isProcessing', _isProcessing))
+      ..add(StringProperty('_numeroDocumentoCliente', _numeroDocumentoCliente))
+      ..add(DiagnosticsProperty<bool>('_puedeEmitirBoleta', _puedeEmitirBoleta))
+      ..add(
+          DiagnosticsProperty<bool>('_puedeEmitirFactura', _puedeEmitirFactura))
+      ..add(StringProperty('_mensajeValidacion', _mensajeValidacion));
   }
 }

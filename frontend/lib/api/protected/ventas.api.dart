@@ -297,14 +297,14 @@ class VentasApi {
 
   /// Crear una nueva venta
   ///
-  /// [ventaData] - Datos de la venta
+  /// [ventaData] - Datos de la venta en el formato correcto para el backend
   /// [sucursalId] - ID de la sucursal
   ///
   /// Retorna los datos de la venta creada
   Future<Map<String, dynamic>> createVenta(Map<String, dynamic> ventaData,
       {sucursalId}) async {
     try {
-      Logger.debug('Creando venta con datos: $ventaData');
+      Logger.debug('Creando venta con datos optimizados');
 
       // Construir el endpoint según si hay sucursal o no
       String endpoint = _endpoint;
@@ -318,7 +318,8 @@ class VentasApi {
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: endpoint,
         method: 'POST',
-        body: ventaData,
+        body:
+            ventaData, // ventaData ya debe estar en formato correcto (CreateVentaDto)
       );
 
       // Invalidar caché al crear una nueva venta
@@ -469,73 +470,6 @@ class VentasApi {
     } catch (e) {
       Logger.error('Error al anular venta: $e');
       return false;
-    }
-  }
-
-  /// Declarar una venta a SUNAT
-  ///
-  /// [id] - ID de la venta
-  /// [sucursalId] - ID de la sucursal (requerido)
-  /// [enviarCliente] - Indica si se debe enviar el comprobante al cliente
-  Future<Map<String, dynamic>> declararVenta(
-    String id, {
-    required sucursalId,
-    bool enviarCliente = false,
-  }) async {
-    try {
-      Logger.debug('Declarando venta $id a SUNAT');
-
-      // Validar que tengamos un ID de sucursal
-      if (sucursalId == null) {
-        throw Exception(
-            'El ID de sucursal es requerido para declarar una venta');
-      }
-
-      // Convertir el ID de la venta a entero para el cuerpo de la solicitud
-      final int ventaId = int.tryParse(id) ?? 0;
-      if (ventaId <= 0) {
-        throw Exception('ID de venta inválido: $id');
-      }
-
-      // Construir el endpoint para la declaración
-      final String sucursalIdStr = sucursalId.toString();
-      final String endpoint = '/$sucursalIdStr/facturacion/declarar';
-
-      // Realizar la solicitud
-      final Map<String, dynamic> response = await _api.authenticatedRequest(
-        endpoint: endpoint,
-        method: 'POST',
-        body: <String, dynamic>{
-          'ventaId': ventaId,
-          'enviarCliente': enviarCliente,
-        },
-      );
-
-      // Invalidar caché relacionada con la venta y la sucursal
-      invalidateCache(sucursalIdStr);
-
-      final String cacheKey = '$_prefixVenta${sucursalIdStr}_$id';
-      _cache.invalidate(cacheKey);
-
-      Logger.debug(
-          'Venta declarada correctamente: ${response['data'] ?? response}');
-
-      // Procesar respuesta
-      Map<String, dynamic> resultData;
-      if (response.containsKey('data') && response['data'] != null) {
-        resultData = response['data'];
-      } else {
-        resultData = response;
-      }
-
-      return {
-        'data': resultData,
-        'status': response['status'] ?? 'success',
-        'message': response['message'] ?? 'Venta declarada correctamente',
-      };
-    } catch (e) {
-      Logger.error('Error al declarar venta: $e');
-      rethrow;
     }
   }
 

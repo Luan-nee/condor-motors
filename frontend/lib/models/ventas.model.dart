@@ -59,6 +59,7 @@ class DetalleVenta {
   final int? productoId;
   final int? ventaId;
   final String tipoUnidad;
+  final bool aplicarOferta;
 
   DetalleVenta({
     this.id,
@@ -74,6 +75,7 @@ class DetalleVenta {
     this.productoId,
     this.ventaId,
     this.tipoUnidad = 'NIU',
+    this.aplicarOferta = false,
   });
 
   /// Crea un detalle de venta desde un JSON
@@ -98,6 +100,7 @@ class DetalleVenta {
           ? int.tryParse(json['ventaId'])
           : json['ventaId'],
       tipoUnidad: json['tipoUnidad'] ?? 'NIU',
+      aplicarOferta: json['aplicarOferta'] ?? false,
     );
   }
 
@@ -117,17 +120,97 @@ class DetalleVenta {
       'tipoUnidad': tipoUnidad,
       if (productoId != null) 'productoId': productoId,
       if (ventaId != null) 'ventaId': ventaId,
+      'aplicarOferta': aplicarOferta,
     };
   }
 
-  /// Versión simplificada para crear una venta desde un detalle de proforma
+  /// Versión simplificada para crear una venta desde un detalle de proforma o personalizado
   Map<String, dynamic> toCreateJson() {
-    return {
-      'productoId': productoId,
-      'cantidad': cantidad,
-      'tipoTaxId': tipoTaxId,
-      'aplicarOferta': true,
-    };
+    if (productoId != null) {
+      // Producto registrado (DefinedProduct)
+      // El backend calculará precios e impuestos según el producto en la base de datos
+      return {
+        'productoId': productoId,
+        'cantidad': cantidad,
+        'tipoTaxId': tipoTaxId,
+        'aplicarOferta': aplicarOferta,
+      };
+    } else {
+      // Producto personalizado (CustomProduct)
+      // El backend necesita el precio SIN IGV para hacer sus cálculos
+      return {
+        'productoId': null,
+        'nombre': nombre,
+        'cantidad': cantidad,
+        'tipoTaxId': tipoTaxId,
+        'precio':
+            precioSinIgv, // Precio unitario sin IGV para que el backend calcule correctamente
+      };
+    }
+  }
+
+  /// Crea un detalle de venta para un producto personalizado
+  ///
+  /// [nombre] - Nombre del producto
+  /// [cantidad] - Cantidad de unidades
+  /// [precio] - Precio unitario sin IGV
+  /// [tipoTaxId] - Tipo de impuesto (10: Gravado IGV 18%, 20: Exonerado, 30: Inafecto)
+  /// [sku] - Código o SKU opcional
+  /// [tipoUnidad] - Tipo de unidad (por defecto 'NIU')
+  factory DetalleVenta.personalizado({
+    required String nombre,
+    required int cantidad,
+    required double precio,
+    required int tipoTaxId,
+    String sku = '',
+    String tipoUnidad = 'NIU',
+  }) {
+    // Calcular impuestos según el tipo de impuesto
+    final double precioSinIgv = precio;
+    final double precioConIgv = tipoTaxId == 10 ? precio * 1.18 : precio;
+
+    final double subtotal = precioSinIgv * cantidad;
+    final double montoIgv = tipoTaxId == 10 ? subtotal * 0.18 : 0.0;
+
+    // Los campos totalBaseTax, totalTax y total se calculan según el tipo de impuesto
+    double totalBaseTax = 0.0;
+    double totalTax = 0.0;
+    double total = 0.0;
+
+    switch (tipoTaxId) {
+      case 10: // Gravado
+        totalBaseTax = subtotal;
+        totalTax = montoIgv;
+        total = subtotal + montoIgv;
+        break;
+      case 20: // Exonerado
+        totalBaseTax = subtotal;
+        totalTax = 0.0;
+        total = subtotal;
+        break;
+      case 30: // Inafecto
+        totalBaseTax = 0.0;
+        totalTax = 0.0;
+        total = subtotal;
+        break;
+      default: // Por defecto tratar como gravado
+        totalBaseTax = subtotal;
+        totalTax = montoIgv;
+        total = subtotal + montoIgv;
+    }
+
+    return DetalleVenta(
+      sku: sku,
+      nombre: nombre,
+      cantidad: cantidad,
+      precioSinIgv: precioSinIgv,
+      precioConIgv: precioConIgv,
+      tipoTaxId: tipoTaxId,
+      totalBaseTax: totalBaseTax,
+      totalTax: totalTax,
+      total: total,
+      tipoUnidad: tipoUnidad,
+    );
   }
 }
 
@@ -594,6 +677,56 @@ class Venta {
       return totales!.totalVenta;
     }
     return detalles.fold(0, (sum, detalle) => sum + detalle.total);
+  }
+
+  /// Método estático para crear un objeto de venta optimizado para enviar al backend
+  static Map<String, dynamic> crearVentaOptimizada({
+    required int tipoDocumentoId,
+    required int clienteId,
+    required int empleadoId,
+    required List<DetalleVenta> detalles,
+    String? observaciones,
+    int? monedaId,
+    int? metodoPagoId,
+    DateTime? fechaEmision,
+    String? horaEmision,
+  }) {
+    // Transformar detalles al formato que espera el backend
+    final detallesFormateados =
+        detalles.map((detalle) => detalle.toCreateJson()).toList();
+
+    // Preparar datos de la venta según la estructura de CreateVentaDto
+    final Map<String, dynamic> ventaData = {
+      'tipoDocumentoId': tipoDocumentoId,
+      'clienteId': clienteId,
+      'empleadoId': empleadoId,
+      'detalles': detallesFormateados,
+    };
+
+    // Añadir campos opcionales solo si tienen valor
+    if (observaciones != null && observaciones.isNotEmpty) {
+      ventaData['observaciones'] = observaciones;
+    }
+
+    if (monedaId != null) {
+      ventaData['monedaId'] = monedaId;
+    }
+
+    if (metodoPagoId != null) {
+      ventaData['metodoPagoId'] = metodoPagoId;
+    }
+
+    // Formatear fecha y hora si se proporcionan
+    if (fechaEmision != null) {
+      final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
+      ventaData['fechaEmision'] = dateFormat.format(fechaEmision);
+    }
+
+    if (horaEmision != null && horaEmision.isNotEmpty) {
+      ventaData['horaEmision'] = horaEmision;
+    }
+
+    return ventaData;
   }
 }
 

@@ -1,5 +1,6 @@
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
+import 'package:condorsmotors/repositories/facturacion.repository.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
 
@@ -135,9 +136,11 @@ class VentaRepository implements BaseRepository {
     bool enviarCliente = false,
   }) async {
     try {
-      return await _ventasApi.declararVenta(
-        ventaId,
-        sucursalId: sucursalId,
+      // Delegamos esta funcionalidad a FacturacionRepository para mantener
+      // toda la lógica de facturación centralizada
+      return await FacturacionRepository.instance.declararVenta(
+        ventaId: ventaId,
+        sucursalId: sucursalId.toString(),
         enviarCliente: enviarCliente,
       );
     } catch (e) {
@@ -291,5 +294,54 @@ class VentaRepository implements BaseRepository {
   /// Invalida la caché de ventas
   void invalidateCache([String? sucursalId]) {
     _ventasApi.invalidateCache(sucursalId);
+  }
+
+  /// Crea una venta optimizada utilizando solo los datos necesarios para el backend
+  ///
+  /// [tipoDocumentoId] - Tipo de documento (1: Factura, 2: Boleta)
+  /// [clienteId] - ID del cliente
+  /// [empleadoId] - ID del empleado
+  /// [detalles] - Lista de detalles de venta
+  /// [sucursalId] - ID de la sucursal
+  /// [observaciones] - Observaciones opcionales
+  /// [monedaId] - ID de la moneda (opcional)
+  /// [metodoPagoId] - ID del método de pago (opcional)
+  /// [fechaEmision] - Fecha de emisión (opcional)
+  /// [horaEmision] - Hora de emisión (opcional)
+  Future<Map<String, dynamic>> crearVentaOptimizada({
+    required int tipoDocumentoId,
+    required int clienteId,
+    required int empleadoId,
+    required List<DetalleVenta> detalles,
+    required String sucursalId,
+    String? observaciones,
+    int? monedaId,
+    int? metodoPagoId,
+    DateTime? fechaEmision,
+    String? horaEmision,
+  }) async {
+    try {
+      // Crear objeto optimizado utilizando el modelo de Venta
+      final ventaData = Venta.crearVentaOptimizada(
+        tipoDocumentoId: tipoDocumentoId,
+        clienteId: clienteId,
+        empleadoId: empleadoId,
+        detalles: detalles,
+        observaciones: observaciones,
+        monedaId: monedaId,
+        metodoPagoId: metodoPagoId,
+        fechaEmision: fechaEmision,
+        horaEmision: horaEmision,
+      );
+
+      // Llamar a la API con datos optimizados
+      return await _ventasApi.createVenta(
+        ventaData,
+        sucursalId: sucursalId,
+      );
+    } catch (e) {
+      debugPrint('Error en VentaRepository.crearVentaOptimizada: $e');
+      rethrow;
+    }
   }
 }

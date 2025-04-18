@@ -5,6 +5,7 @@ export 'colores.api.dart';
 export 'documento.api.dart';
 export 'empleados.api.dart';
 export 'estadisticas.api.dart';
+export 'facturacion.api.dart';
 export 'marcas.api.dart';
 export 'productos.api.dart';
 export 'proforma.api.dart';

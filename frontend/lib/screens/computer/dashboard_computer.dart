@@ -180,8 +180,39 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
   }
 
   Widget _buildVentasCard(DashboardComputerProvider provider) {
-    final List<Venta> ventas =
-        provider.ultimasVentas.map((item) => Venta.fromJson(item)).toList();
+    // Verificar el tipo de los elementos en ultimasVentas
+    final List<Venta> ventas = provider.ultimasVentas.map((item) {
+      try {
+        // Si el elemento ya es un objeto Venta, devolverlo directamente
+        if (item is Venta) {
+          return item;
+        }
+        // Si es un Map, convertirlo a Venta usando fromJson
+        else if (item is Map<String, dynamic>) {
+          return Venta.fromJson(item);
+        }
+        // Si no es ninguno de los anteriores, crear un objeto Venta con valores predeterminados
+        else {
+          return Venta(
+            id: 'N/A',
+            estado: 'DESCONOCIDO',
+            subtotal: 0.0,
+            igv: 0.0,
+            total: 0.0,
+          );
+        }
+      } catch (e) {
+        debugPrint('Error al convertir venta: $e');
+        // En caso de error, devolver un objeto Venta con valores predeterminados
+        return Venta(
+          id: 'N/A',
+          estado: 'DESCONOCIDO',
+          subtotal: 0.0,
+          igv: 0.0,
+          total: 0.0,
+        );
+      }
+    }).toList();
 
     return Card(
       color: const Color(0xFF2D2D2D),

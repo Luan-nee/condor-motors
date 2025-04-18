@@ -488,8 +488,9 @@ class CategoriasApi {
 
   /// Invalidar caché de categorías
   void _invalidateCache() {
-    _cache.invalidate('categorias_all');
-    _cache.invalidateByPattern('categorias_paginadas');
+    _cache
+      ..invalidate('categorias_all')
+      ..invalidateByPattern('categorias_paginadas');
     logCache('Caché de categorías invalidada');
   }
 

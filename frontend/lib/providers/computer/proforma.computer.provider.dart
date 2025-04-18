@@ -321,8 +321,6 @@ class ProformaComputerProvider extends ChangeNotifier {
           await _ventaRepository.declararVenta(
         ventaId.toString(),
         sucursalId: sucursalId,
-        enviarCliente:
-            false, // No enviar comprobante al cliente automáticamente
       );
 
       if (declaracionResponse['status'] == 'success') {
@@ -342,15 +340,17 @@ class ProformaComputerProvider extends ChangeNotifier {
   void _limpiarCaches(String sucursalId) {
     try {
       // Invalidar caché de proformas para la sucursal específica
-      _proformaRepository.invalidateCache(sucursalId);
-      // Invalidar caché global de proformas
-      _proformaRepository.invalidateCache();
+      _proformaRepository
+        ..invalidateCache(sucursalId)
+        // Invalidar caché global de proformas
+        ..invalidateCache();
       Logger.debug('Caché de proformas invalidado para sucursal $sucursalId');
 
       // Invalidar caché de ventas para la sucursal específica
-      _ventaRepository.invalidateCache(sucursalId);
-      // Invalidar caché global de ventas
-      _ventaRepository.invalidateCache();
+      _ventaRepository
+        ..invalidateCache(sucursalId)
+        // Invalidar caché global de ventas
+        ..invalidateCache();
       Logger.debug('Caché de ventas invalidado para sucursal $sucursalId');
 
       // Invalidar caché de sucursales

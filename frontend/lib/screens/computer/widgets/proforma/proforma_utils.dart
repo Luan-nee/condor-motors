@@ -467,7 +467,6 @@ class VentasPendientesUtils {
                 await _ventaRepository.declararVenta(
               ventaId.toString(),
               sucursalId: sucursalId.toString(),
-              enviarCliente: false, // No enviar comprobante automáticamente
             );
 
             if (declaracionResponse['status'] == 'success') {
@@ -543,15 +542,17 @@ class VentasPendientesUtils {
   static Future<void> _recargarDatos(String sucursalId) async {
     try {
       // Invalidar caché de proformas para la sucursal específica
-      _proformaRepository.invalidateCache(sucursalId);
-      // Invalidar caché global de proformas
-      _proformaRepository.invalidateCache();
+      _proformaRepository
+        ..invalidateCache(sucursalId)
+        // Invalidar caché global de proformas
+        ..invalidateCache();
       debugPrint('Caché de proformas invalidado para sucursal $sucursalId');
 
       // Invalidar caché de ventas para la sucursal específica
-      _ventaRepository.invalidateCache(sucursalId);
-      // Invalidar caché global de ventas
-      _ventaRepository.invalidateCache();
+      _ventaRepository
+        ..invalidateCache(sucursalId)
+        // Invalidar caché global de ventas
+        ..invalidateCache();
       debugPrint('Caché de ventas invalidado para sucursal $sucursalId');
 
       // Invalidar caché de sucursales
@@ -762,5 +763,108 @@ extension ProformaExtension on model_proforma.Proforma {
   bool puedeConvertirseEnVenta() {
     // Solo se pueden convertir proformas pendientes y no expiradas
     return estado == model_proforma.EstadoProforma.pendiente && !haExpirado();
+  }
+}
+
+/// Utilidades para trabajar con proformas
+/// Centraliza operaciones comunes relacionadas con proformas
+/// para evitar duplicación de código
+class ProformaUtils {
+  // Métodos para manejo de descuentos
+
+  /// Verificar si un detalle de proforma tiene descuento aplicado
+  static bool tieneDescuento(model_proforma.DetalleProforma detalle) {
+    try {
+      final dynamic descuento = (detalle as dynamic).descuento;
+      return descuento != null && descuento > 0;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Obtener el valor del descuento formateado como String
+  static String getDescuento(model_proforma.DetalleProforma detalle) {
+    try {
+      final dynamic descuento = (detalle as dynamic).descuento;
+      if (descuento != null && descuento is num) {
+        return '${descuento.toInt()}';
+      }
+      return '0';
+    } catch (e) {
+      return '0';
+    }
+  }
+
+  /// Obtener el precio original antes del descuento
+  static double? getPrecioOriginal(model_proforma.DetalleProforma detalle) {
+    try {
+      final dynamic precioOriginal = (detalle as dynamic).precioOriginal;
+      if (precioOriginal != null && precioOriginal is num) {
+        return precioOriginal.toDouble();
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Métodos para manejo de unidades gratis
+
+  /// Verificar si un detalle tiene unidades gratis
+  static bool tieneUnidadesGratis(model_proforma.DetalleProforma detalle) {
+    try {
+      final dynamic cantidadGratis = (detalle as dynamic).cantidadGratis;
+      return cantidadGratis != null && cantidadGratis > 0;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Obtener cantidad de unidades gratis
+  static int getCantidadGratis(model_proforma.DetalleProforma detalle) {
+    try {
+      final dynamic cantidadGratis = (detalle as dynamic).cantidadGratis;
+      if (cantidadGratis != null && cantidadGratis is num) {
+        return cantidadGratis.toInt();
+      }
+      return 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// Obtener cantidad de unidades pagadas
+  static int getCantidadPagada(model_proforma.DetalleProforma detalle) {
+    try {
+      final dynamic cantidadPagada = (detalle as dynamic).cantidadPagada;
+      if (cantidadPagada != null && cantidadPagada is num) {
+        return cantidadPagada.toInt();
+      }
+      // Si no hay campo específico, calcular restando gratis del total
+      final int cantidadGratis = getCantidadGratis(detalle);
+      return detalle.cantidad - cantidadGratis;
+    } catch (e) {
+      return detalle.cantidad;
+    }
+  }
+
+  /// Extraer y obtener el número de documento de un cliente de proforma
+  static String? extraerNumeroDocumentoCliente(dynamic cliente) {
+    if (cliente == null) {
+      return null;
+    }
+
+    String? numeroDocumento;
+    if (cliente is Map<String, dynamic>) {
+      numeroDocumento = cliente['numeroDocumento']?.toString();
+    } else {
+      try {
+        numeroDocumento = (cliente.numeroDocumento as String?);
+      } catch (_) {
+        numeroDocumento = null;
+      }
+    }
+
+    return numeroDocumento;
   }
 }

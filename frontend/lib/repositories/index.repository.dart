@@ -5,6 +5,7 @@ export 'categoria.repository.dart';
 export 'color.repository.dart';
 export 'empleado.repository.dart';
 export 'estadistica.repository.dart';
+export 'facturacion.repository.dart';
 export 'marcas.repository.dart';
 export 'producto.repository.dart';
 export 'proforma.repository.dart';

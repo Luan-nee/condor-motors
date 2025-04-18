@@ -1,12 +1,15 @@
 import 'dart:developer' as developer;
 
 import 'package:condorsmotors/models/proforma.model.dart';
+import 'package:condorsmotors/providers/computer/proforma.computer.provider.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
+import 'package:condorsmotors/utils/documento_utils.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
 class ProcessingDialog extends StatelessWidget {
   final String documentType;
@@ -78,6 +81,8 @@ class NumericKeypad extends StatefulWidget {
   final bool isProcessing;
   final double minAmount;
   final Function(double) onCharge;
+  final bool puedeEmitirBoleta;
+  final bool puedeEmitirFactura;
 
   const NumericKeypad({
     super.key,
@@ -93,6 +98,8 @@ class NumericKeypad extends StatefulWidget {
     required this.isProcessing,
     required this.minAmount,
     required this.onCharge,
+    this.puedeEmitirBoleta = true,
+    this.puedeEmitirFactura = true,
   });
 
   @override
@@ -116,7 +123,10 @@ class NumericKeypad extends StatefulWidget {
           'onDocumentTypeChanged', onDocumentTypeChanged))
       ..add(DiagnosticsProperty<bool>('isProcessing', isProcessing))
       ..add(DoubleProperty('minAmount', minAmount))
-      ..add(ObjectFlagProperty<Function(double)>.has('onCharge', onCharge));
+      ..add(ObjectFlagProperty<Function(double)>.has('onCharge', onCharge))
+      ..add(DiagnosticsProperty<bool>('puedeEmitirBoleta', puedeEmitirBoleta))
+      ..add(
+          DiagnosticsProperty<bool>('puedeEmitirFactura', puedeEmitirFactura));
   }
 }
 
@@ -338,104 +348,65 @@ class _NumericKeypadState extends State<NumericKeypad> {
                   // Selector de tipo de documento
                   Row(
                     children: <Widget>[
-                      Expanded(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              developer.log(
-                                  'Seleccionado tipo de documento: Boleta');
-                              widget.onDocumentTypeChanged('Boleta');
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: widget.documentType == 'Boleta'
-                                    ? const Color(0xFFE31E24).withOpacity(0.1)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: widget.documentType == 'Boleta'
-                                      ? const Color(0xFFE31E24)
-                                      : Colors.white24,
-                                ),
-                              ),
-                              child: Column(
-                                children: <Widget>[
-                                  FaIcon(
-                                    FontAwesomeIcons.receipt,
-                                    color: widget.documentType == 'Boleta'
-                                        ? const Color(0xFFE31E24)
-                                        : Colors.white54,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Boleta',
-                                    style: TextStyle(
-                                      color: widget.documentType == 'Boleta'
-                                          ? const Color(0xFFE31E24)
-                                          : Colors.white54,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                      const Text(
+                        'Tipo de documento:',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              developer.log(
-                                  'Seleccionado tipo de documento: Factura');
-                              widget.onDocumentTypeChanged('Factura');
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: widget.documentType == 'Factura'
-                                    ? const Color(0xFFE31E24).withOpacity(0.1)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: widget.documentType == 'Factura'
-                                      ? const Color(0xFFE31E24)
-                                      : Colors.white24,
-                                ),
-                              ),
-                              child: Column(
-                                children: <Widget>[
-                                  FaIcon(
-                                    FontAwesomeIcons.fileInvoiceDollar,
-                                    color: widget.documentType == 'Factura'
-                                        ? const Color(0xFFE31E24)
-                                        : Colors.white54,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Factura',
-                                    style: TextStyle(
-                                      color: widget.documentType == 'Factura'
-                                          ? const Color(0xFFE31E24)
-                                          : Colors.white54,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                      const SizedBox(width: 16),
+                      DropdownButton<String>(
+                        value: widget.documentType,
+                        dropdownColor: const Color(0xFF2D2D2D),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                        onChanged: widget.isProcessing
+                            ? null
+                            : (String? newValue) {
+                                if (newValue != null) {
+                                  // Verificar si el tipo de documento seleccionado está permitido
+                                  if (newValue == 'Boleta' &&
+                                      !widget.puedeEmitirBoleta) {
+                                    return; // No permitir seleccionar boleta
+                                  }
+                                  if (newValue == 'Factura' &&
+                                      !widget.puedeEmitirFactura) {
+                                    return; // No permitir seleccionar factura
+                                  }
+                                  widget.onDocumentTypeChanged(newValue);
+                                }
+                              },
+                        items: <DropdownMenuItem<String>>[
+                          // Boleta - Deshabilitada si no se puede emitir
+                          DropdownMenuItem<String>(
+                            value: 'Boleta',
+                            enabled: widget.puedeEmitirBoleta,
+                            child: Text(
+                              'Boleta',
+                              style: TextStyle(
+                                color: widget.puedeEmitirBoleta
+                                    ? Colors.white
+                                    : Colors.white38,
                               ),
                             ),
                           ),
-                        ),
+                          // Factura - Deshabilitada si no se puede emitir
+                          DropdownMenuItem<String>(
+                            value: 'Factura',
+                            enabled: widget.puedeEmitirFactura,
+                            child: Text(
+                              'Factura',
+                              style: TextStyle(
+                                color: widget.puedeEmitirFactura
+                                    ? Colors.white
+                                    : Colors.white38,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -752,6 +723,12 @@ class ProformaSaleDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Obtener el provider de proformas
+    final proformaProvider = Provider.of<ProformaComputerProvider>(
+      context,
+      listen: false,
+    );
+
     return Dialog(
       backgroundColor: const Color(0xFF2D2D2D),
       shape: RoundedRectangleBorder(
@@ -935,10 +912,14 @@ class ProformaSaleDialog extends StatelessWidget {
                 const SizedBox(width: 16),
                 ElevatedButton.icon(
                   onPressed: () {
-                    // Convertir proforma a formato para procesar venta
+                    // Preparar la venta desde la proforma
                     final Map<String, dynamic> ventaData =
                         VentasPendientesUtils.convertirProformaAVentaPendiente(
                             proforma);
+
+                    // También podríamos usar una función de utilidad del provider:
+                    // final ventaData = proformaProvider.prepararVentaDesdeProforma(proforma);
+
                     onConfirm(ventaData);
                   },
                   style: ElevatedButton.styleFrom(

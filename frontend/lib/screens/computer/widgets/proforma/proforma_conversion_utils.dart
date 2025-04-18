@@ -527,8 +527,9 @@ class ProformaConversionManager {
                     if (nuevoResponse['status'] == 'success') {
                       Logger.debug('¡Éxito con cliente alternativo!');
                       // Reemplazar la respuesta fallida con la exitosa
-                      ventaResponse.clear();
-                      ventaResponse.addAll(nuevoResponse);
+                      ventaResponse
+                        ..clear()
+                        ..addAll(nuevoResponse);
 
                       // Continuar el flujo normal (al salir del if)
                       return true; // Retornar éxito directamente
@@ -673,15 +674,17 @@ class ProformaConversionManager {
   static Future<void> _recargarDatos(String sucursalId) async {
     try {
       // Invalidar caché de proformas para la sucursal específica
-      _proformaRepository.invalidateCache(sucursalId);
-      // Invalidar caché global de proformas
-      _proformaRepository.invalidateCache();
+      _proformaRepository
+        ..invalidateCache(sucursalId)
+        // Invalidar caché global de proformas
+        ..invalidateCache();
       Logger.debug('Caché de proformas invalidado para sucursal $sucursalId');
 
       // Invalidar caché de ventas para la sucursal específica
-      _ventaRepository.invalidateCache(sucursalId);
-      // Invalidar caché global de ventas
-      _ventaRepository.invalidateCache();
+      _ventaRepository
+        ..invalidateCache(sucursalId)
+        // Invalidar caché global de ventas
+        ..invalidateCache();
       Logger.debug('Caché de ventas invalidado para sucursal $sucursalId');
 
       // Invalidar caché de sucursales
@@ -780,15 +783,17 @@ class ProformaConversionManager {
   static Future<void> _recargarProformasSucursal(String sucursalId) async {
     try {
       // Invalidar caché de proformas para la sucursal específica
-      _proformaRepository.invalidateCache(sucursalId);
-      // Invalidar caché global de proformas
-      _proformaRepository.invalidateCache();
+      _proformaRepository
+        ..invalidateCache(sucursalId)
+        // Invalidar caché global de proformas
+        ..invalidateCache();
       Logger.debug('Caché de proformas invalidado para sucursal $sucursalId');
 
       // Invalidar caché de ventas para la sucursal específica
-      _ventaRepository.invalidateCache(sucursalId);
-      // Invalidar caché global de ventas
-      _ventaRepository.invalidateCache();
+      _ventaRepository
+        ..invalidateCache(sucursalId)
+        // Invalidar caché global de ventas
+        ..invalidateCache();
       Logger.debug('Caché de ventas invalidado para sucursal $sucursalId');
 
       // Invalidar caché de sucursales
@@ -864,8 +869,6 @@ class ProformaConversionManager {
           await _ventaRepository.declararVenta(
         ventaId.toString(),
         sucursalId: sucursalId,
-        enviarCliente:
-            false, // No enviar comprobante al cliente automáticamente
       );
 
       if (declaracionResponse['status'] == 'success') {

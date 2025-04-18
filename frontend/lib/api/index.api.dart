@@ -132,7 +132,7 @@ class CondorMotorsApi {
   late final ClientesApi clientes;
   late final DocumentoApi documentos;
   late final EstadisticasApi estadisticas;
-
+  late final FacturacionApi facturacion;
   // Clave para almacenar datos de usuario
   static const String _userDataKey = 'user_data';
 
@@ -163,6 +163,7 @@ class CondorMotorsApi {
       clientes = ClientesApi(_apiClient);
       documentos = DocumentoApi(_apiClient);
       estadisticas = EstadisticasApi(_apiClient);
+      facturacion = FacturacionApi(_apiClient);
 
       debugPrint('APIs inicializadas correctamente');
     } catch (e) {
