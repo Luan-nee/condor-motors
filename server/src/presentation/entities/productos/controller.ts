@@ -54,17 +54,24 @@ export class ProductosController {
       })
   }
 
-  getReporteProducto = (req: Request, res: Response) => {
-    if (req.authPayload === undefined) {
-      CustomResponse.invalidAccessToken({ res })
-      return
-    }
-    const getresporte = new GetProductosReporte()
+  getReporteProducto = (_req: Request, res: Response) => {
+    const getReporteProductos = new GetProductosReporte()
 
-    getresporte
+    getReporteProductos
       .execute()
-      .then((reporte) => {
-        CustomResponse.success({ res, data: reporte })
+      .then(async (workbook) => {
+        res.setHeader(
+          'Content-Type',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        res.setHeader(
+          'Content-Disposition',
+          'attachment; filename=personas.xlsx'
+        )
+
+        await workbook.xlsx.write(res)
+
+        res.end()
       })
       .catch((error: unknown) => {
         handleError(error, res)
