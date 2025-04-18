@@ -441,6 +441,105 @@ class EmpleadoRepository implements BaseRepository {
     }
   }
 
+  /// Crea un nuevo rol de cuenta de empleado
+  ///
+  /// [nombre] Nombre del rol
+  /// [codigo] Código único del rol
+  Future<Map<String, dynamic>?> crearRolCuenta({
+    required String nombre,
+    required String codigo,
+  }) async {
+    try {
+      // Validar que el código sea único
+      final roles = await getRolesCuentas();
+      if (roles.any((rol) =>
+          rol['codigo'].toString().toLowerCase() == codigo.toLowerCase())) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'Ya existe un rol con el código "$codigo"',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
+        );
+      }
+
+      // Validar que el nombre sea único
+      if (roles.any((rol) =>
+          rol['nombreRol']?.toString().toLowerCase() == nombre.toLowerCase() ||
+          rol['nombre']?.toString().toLowerCase() == nombre.toLowerCase())) {
+        throw ApiException(
+          statusCode: 400,
+          message: 'Ya existe un rol con el nombre "$nombre"',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
+        );
+      }
+
+      // Llamar al endpoint de creación de rol
+      return await _cuentasEmpleadosApi.createRolCuenta(
+        nombre: nombre,
+        codigo: codigo,
+      );
+    } catch (e) {
+      debugPrint('Error en EmpleadoRepository.crearRolCuenta: $e');
+      rethrow;
+    }
+  }
+
+  /// Valida los datos de una cuenta de empleado
+  ///
+  /// Lanza ApiException si los datos son inválidos
+  void validarDatosCuenta({
+    String? usuario,
+    String? clave,
+    int? rolCuentaEmpleadoId,
+    bool esCreacion = false,
+  }) {
+    if (esCreacion && (usuario?.isEmpty ?? true)) {
+      throw ApiException(
+        statusCode: 400,
+        message: 'El nombre de usuario es obligatorio',
+        errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
+      );
+    }
+
+    if (esCreacion && (clave?.isEmpty ?? true)) {
+      throw ApiException(
+        statusCode: 400,
+        message: 'La contraseña es obligatoria para crear una cuenta',
+        errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
+      );
+    }
+
+    if (esCreacion &&
+        (rolCuentaEmpleadoId == null || rolCuentaEmpleadoId <= 0)) {
+      throw ApiException(
+        statusCode: 400,
+        message: 'Debe seleccionar un rol válido',
+        errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
+      );
+    }
+  }
+
+  /// Valida el ID de cuenta de un empleado
+  ///
+  /// Lanza ApiException si el ID es inválido
+  void validarIdCuenta(String? cuentaEmpleadoId) {
+    if (cuentaEmpleadoId == null) {
+      throw ApiException(
+        statusCode: 400,
+        message: 'No se encontró ID de cuenta para este empleado',
+        errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
+      );
+    }
+
+    final int? cuentaId = int.tryParse(cuentaEmpleadoId);
+    if (cuentaId == null || cuentaId <= 0) {
+      throw ApiException(
+        statusCode: 400,
+        message: 'ID de cuenta inválido',
+        errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
+      );
+    }
+  }
+
   // MÉTODOS AUXILIARES
 
   /// Determina si un error es debido a recurso no encontrado

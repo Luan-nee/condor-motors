@@ -55,6 +55,62 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
     }
   }
 
+  // Botón de refrescar
+  Widget _buildRefreshButton(TransferenciasProvider transferenciasProvider) {
+    return ElevatedButton.icon(
+      icon: transferenciasProvider.isLoading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            )
+          : const FaIcon(
+              FontAwesomeIcons.arrowsRotate,
+              size: 16,
+              color: Colors.white,
+            ),
+      label: Text(
+        transferenciasProvider.isLoading ? 'Recargando...' : 'Recargar',
+        style: const TextStyle(color: Colors.white),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF2D2D2D),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+      ),
+      onPressed: transferenciasProvider.isLoading
+          ? null
+          : () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              await transferenciasProvider.recargarDatos();
+
+              if (!mounted) return;
+
+              if (transferenciasProvider.errorMessage != null) {
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text(transferenciasProvider.errorMessage!),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              } else {
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Datos recargados exitosamente'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<TransferenciasProvider>(
@@ -144,6 +200,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                         ),
                       ),
                       // Botón de refrescar
+                      _buildRefreshButton(transferenciasProvider),
                       ElevatedButton.icon(
                         icon: transferenciasProvider.isLoading
                             ? const SizedBox(

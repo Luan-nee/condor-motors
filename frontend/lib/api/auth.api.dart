@@ -1075,7 +1075,8 @@ class AuthApi {
             throw ApiException(
               statusCode: 401,
               message: 'Usuario o contraseña incorrectos',
-              errorCode: ApiException.errorUnauthorized,
+              errorCode:
+                  ApiConstants.errorCodes[401] ?? ApiConstants.unknownError,
             );
           }
         }
@@ -1083,6 +1084,7 @@ class AuthApi {
         throw ApiException(
           statusCode: 500,
           message: 'Error: Formato de datos de usuario inválido',
+          errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
         );
       }
 
@@ -1113,7 +1115,8 @@ class AuthApi {
               throw ApiException(
                 statusCode: 401,
                 message: 'Usuario o contraseña incorrectos',
-                errorCode: ApiException.errorUnauthorized,
+                errorCode:
+                    ApiConstants.errorCodes[401] ?? ApiConstants.unknownError,
               );
             }
           }
@@ -1139,7 +1142,7 @@ class AuthApi {
         throw ApiException(
           statusCode: 401,
           message: 'Error: No se pudo obtener el nuevo token',
-          errorCode: ApiException.errorUnauthorized,
+          errorCode: ApiConstants.errorCodes[401] ?? ApiConstants.unknownError,
         );
       }
 
@@ -1389,6 +1392,7 @@ class CuentasEmpleadosApi {
         throw ApiException(
           statusCode: 400,
           message: 'Debe proporcionar al menos un campo para actualizar',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -1418,6 +1422,7 @@ class CuentasEmpleadosApi {
       throw ApiException(
         statusCode: 500,
         message: 'Formato de respuesta inesperado',
+        errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
       );
     } catch (e) {
       debugPrint(
@@ -1548,6 +1553,7 @@ class CuentasEmpleadosApi {
       throw ApiException(
         statusCode: 500,
         message: 'Formato de respuesta inesperado al registrar cuenta',
+        errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
       );
     } catch (e) {
       debugPrint(

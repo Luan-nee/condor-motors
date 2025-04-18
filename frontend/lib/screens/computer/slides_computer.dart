@@ -1,8 +1,10 @@
-import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/providers/auth.provider.dart';
 import 'package:condorsmotors/providers/computer/dash.computer.provider.dart';
+import 'package:condorsmotors/providers/computer/index.computer.provider.dart';
+import 'package:condorsmotors/repositories/auth.repository.dart';
 import 'package:condorsmotors/screens/computer/dashboard_computer.dart';
 import 'package:condorsmotors/screens/computer/proforma_computer.dart';
+import 'package:condorsmotors/screens/computer/settings_computer.dart';
 import 'package:condorsmotors/screens/computer/ventas_computer.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/material.dart';
@@ -47,6 +49,12 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
         'icon': FontAwesomeIcons.fileInvoiceDollar,
         'screen': const VentasComputerScreen(),
         'description': 'Ver y gestionar ventas realizadas',
+      },
+      <String, dynamic>{
+        'title': 'Configuración',
+        'icon': FontAwesomeIcons.gear,
+        'screen': const SettingsComputerScreen(),
+        'description': 'Configurar preferencias del sistema',
       },
     ];
 
@@ -158,8 +166,13 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
           'screen': VentasComputerScreen(
               sucursalId: _sucursalId, nombreSucursal: _nombreSucursal),
           'description': 'Ver y gestionar ventas realizadas',
-          'badge':
-              true, // Indicador para mostrar que es una nueva funcionalidad
+        },
+        <String, dynamic>{
+          'title': 'Configuración',
+          'icon': FontAwesomeIcons.gear,
+          'screen': SettingsComputerScreen(
+              sucursalId: _sucursalId, nombreSucursal: _nombreSucursal),
+          'description': 'Configurar preferencias del sistema',
         },
       ];
     });
@@ -170,7 +183,15 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => DashboardComputerProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider(api.auth)),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(AuthRepository.instance),
+        ),
+        ChangeNotifierProvider(create: (_) => VentasComputerProvider()),
+        ChangeNotifierProvider(
+          create: (context) => ProformaComputerProvider(
+            Provider.of<VentasComputerProvider>(context, listen: false),
+          ),
+        ),
       ],
       child: Scaffold(
         body: Row(
@@ -438,46 +459,37 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
 
   // Método para manejar el cierre de sesión
   Future<void> _handleLogout(BuildContext context) async {
-    debugPrint('Iniciando proceso de cierre de sesión...');
     try {
-      // Primero obtenemos el provider antes de limpiar el estado
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final proformaProvider =
+          Provider.of<ProformaComputerProvider>(context, listen: false);
 
-      // Limpiar el estado actual y detener cualquier carga de proformas
+      // Detener actualizaciones automáticas de proformas
+      proformaProvider.pausarActualizacionesEnTiempoReal();
+
+      // Limpiar el estado actual
       if (mounted) {
         setState(() {
           _selectedIndex = 0;
-          // En lugar de vaciar completamente el menú, lo mantenemos con un widget de carga
-          _menuItems = <Map<String, dynamic>>[
-            <String, dynamic>{
-              'title': 'Cerrando sesión...',
-              'icon': FontAwesomeIcons.spinner,
-              'screen': const Center(child: CircularProgressIndicator()),
-              'description': 'Por favor espere...',
-            },
-          ];
+          _menuItems.clear();
         });
       }
 
-      // Realizar el logout
       await authProvider.logout();
 
       if (!context.mounted) {
         return;
       }
 
-      // Navegar al login y limpiar el stack de navegación
       await Navigator.of(context).pushNamedAndRemoveUntil(
         role_utils.login,
         (Route<dynamic> route) => false,
       );
     } catch (e) {
-      debugPrint('Error durante el cierre de sesión: $e');
       if (!context.mounted) {
         return;
       }
 
-      // Mostrar error pero igual intentar navegar al login
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Hubo un error, pero la sesión ha sido cerrada'),
@@ -485,7 +497,6 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
         ),
       );
 
-      // Forzar navegación al login independientemente del error
       await Navigator.of(context).pushNamedAndRemoveUntil(
         role_utils.login,
         (Route<dynamic> route) => false,

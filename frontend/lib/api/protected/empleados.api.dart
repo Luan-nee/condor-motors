@@ -121,6 +121,7 @@ class EmpleadosApi {
         throw ApiException(
           statusCode: 400,
           message: 'ID de empleado no puede estar vacío',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -176,6 +177,7 @@ class EmpleadosApi {
         throw ApiException(
           statusCode: 400,
           message: 'Nombre y apellidos son requeridos para crear empleado',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -226,6 +228,7 @@ class EmpleadosApi {
         throw ApiException(
           statusCode: 500,
           message: 'Error al crear empleado',
+          errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
         );
       }
 
@@ -251,6 +254,7 @@ class EmpleadosApi {
         throw ApiException(
           statusCode: 400,
           message: 'ID de empleado no puede estar vacío',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -335,6 +339,7 @@ class EmpleadosApi {
         throw ApiException(
           statusCode: 400,
           message: 'ID de empleado no puede estar vacío',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -373,6 +378,7 @@ class EmpleadosApi {
       throw ApiException(
         statusCode: 500,
         message: 'Error al procesar respuesta del servidor',
+        errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
       );
     }
 
@@ -446,6 +452,7 @@ class EmpleadosApi {
         throw ApiException(
           statusCode: 500,
           message: 'Formato de respuesta inesperado al registrar cuenta',
+          errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
         );
       }
     } catch (e) {
@@ -467,6 +474,7 @@ class EmpleadosApi {
       throw ApiException(
         statusCode: 400,
         message: 'Debe proporcionar al menos un campo para actualizar',
+        errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
       );
     }
 
@@ -495,6 +503,7 @@ class EmpleadosApi {
     throw ApiException(
       statusCode: 500,
       message: 'Formato de respuesta inesperado',
+      errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
     );
   }
 
@@ -705,7 +714,7 @@ class EmpleadosApi {
         throw ApiException(
           statusCode: 404, // Usar 404 para representar "no encontrado"
           message: 'El empleado no tiene cuenta asociada',
-          errorCode: ApiException.errorNotFound,
+          errorCode: ApiConstants.errorCodes[404] ?? ApiConstants.unknownError,
         );
       }
 

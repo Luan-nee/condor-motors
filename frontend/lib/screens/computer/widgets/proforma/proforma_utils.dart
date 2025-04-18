@@ -849,7 +849,7 @@ class ProformaUtils {
   }
 
   /// Extraer y obtener el número de documento de un cliente de proforma
-  static String? extraerNumeroDocumentoCliente(dynamic cliente) {
+  static String? extraerNumeroDocumentoCliente(cliente) {
     if (cliente == null) {
       return null;
     }

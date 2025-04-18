@@ -1,6 +1,7 @@
 // Exportación de los repositorios
 // Este archivo facilita la importación desde módulos externos
 
+export 'auth.repository.dart';
 export 'categoria.repository.dart';
 export 'color.repository.dart';
 export 'empleado.repository.dart';

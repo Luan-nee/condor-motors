@@ -33,13 +33,6 @@ class EmpleadoProvider extends ChangeNotifier {
     'empleado no tiene cuenta'
   ];
 
-  static const List<String> _errorAuthResponses = <String>[
-    '401',
-    'no autorizado',
-    'sesión expirada',
-    'token inválido'
-  ];
-
   // Getters
   bool get isLoading => _isLoading;
   bool get isCuentaLoading => _isCuentaLoading;
@@ -135,52 +128,19 @@ class EmpleadoProvider extends ChangeNotifier {
   }
 
   /// Crea un nuevo rol de cuenta de usuario
-  ///
-  /// Esta función es un ejemplo y no está realmente implementada en el backend.
-  /// En una implementación real, esta función invocaría un endpoint API
-  /// para crear un nuevo rol de cuenta de empleado.
   Future<Map<String, dynamic>?> crearRolCuenta({
     required String nombre,
     required String codigo,
   }) async {
-    // Verificar que el código sea único (simulación)
-    if (_rolesCuentas.any((rol) =>
-        rol['codigo'].toString().toLowerCase() == codigo.toLowerCase())) {
-      throw ApiException(
-        statusCode: 400,
-        message: 'Ya existe un rol con el código "$codigo"',
+    try {
+      return await _empleadoRepository.crearRolCuenta(
+        nombre: nombre,
+        codigo: codigo,
       );
+    } catch (e) {
+      _handleApiError(e);
+      return null;
     }
-
-    // Verificar que el nombre sea único (simulación)
-    if (_rolesCuentas.any((rol) =>
-        rol['nombreRol']?.toString().toLowerCase() == nombre.toLowerCase() ||
-        rol['nombre']?.toString().toLowerCase() == nombre.toLowerCase())) {
-      throw ApiException(
-        statusCode: 400,
-        message: 'Ya existe un rol con el nombre "$nombre"',
-      );
-    }
-
-    // Simular la creación del rol con un ID temporal
-    // En una implementación real, esto vendría del backend
-    final Map<String, dynamic> nuevoRol = {
-      'id': _rolesCuentas.length +
-          10, // Generar un ID temporal único (simulación)
-      'nombreRol': nombre,
-      'codigo': codigo,
-    };
-
-    // Agregar a la lista local (simulación)
-    _rolesCuentas.add(nuevoRol);
-    notifyListeners();
-
-    debugPrint('Nuevo rol creado (simulación): $nuevoRol');
-
-    // TODO: En una implementación real, esta función invocaría al backend:
-    // return await _empleadoRepository.createRolCuenta(nombre: nombre, codigo: codigo);
-
-    return nuevoRol;
   }
 
   /// Guarda un empleado (creación o actualización)
@@ -318,14 +278,6 @@ class EmpleadoProvider extends ChangeNotifier {
   bool _esErrorNotFound(String errorMessage) {
     final String msgLower = errorMessage.toLowerCase();
     return _errorNotFoundResponses.any((String term) {
-      return msgLower.contains(term);
-    });
-  }
-
-  /// Determina si un error es debido a problemas de autenticación
-  bool _esErrorAutenticacion(String errorMessage) {
-    final String msgLower = errorMessage.toLowerCase();
-    return _errorAuthResponses.any((String term) {
       return msgLower.contains(term);
     });
   }
@@ -474,8 +426,6 @@ class EmpleadoProvider extends ChangeNotifier {
   }
 
   /// Gestiona el proceso de actualización de una cuenta de empleado existente
-  ///
-  /// Maneja toda la lógica de validación y procesa la actualización
   Future<Map<String, dynamic>> gestionarActualizacionCuenta({
     required Empleado empleado,
     required String? nuevoUsuario,
@@ -487,21 +437,9 @@ class EmpleadoProvider extends ChangeNotifier {
     clearError();
 
     try {
-      // Verificar que tengamos un ID de cuenta válido
-      if (empleado.cuentaEmpleadoId == null) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'No se encontró ID de cuenta para este empleado',
-        );
-      }
-
-      final int? cuentaId = int.tryParse(empleado.cuentaEmpleadoId!);
-      if (cuentaId == null) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'ID de cuenta inválido',
-        );
-      }
+      // Validar ID de cuenta
+      _empleadoRepository.validarIdCuenta(empleado.cuentaEmpleadoId);
+      final int cuentaId = int.parse(empleado.cuentaEmpleadoId!);
 
       // Verificar si hay cambios que realizar
       if (validarSoloSiHayCambios &&
@@ -549,8 +487,6 @@ class EmpleadoProvider extends ChangeNotifier {
   }
 
   /// Gestiona el proceso de creación de una cuenta de empleado
-  ///
-  /// Maneja toda la lógica de validación y procesa la creación
   Future<Map<String, dynamic>> gestionarCreacionCuenta({
     required String empleadoId,
     required String usuario,
@@ -561,27 +497,13 @@ class EmpleadoProvider extends ChangeNotifier {
     clearError();
 
     try {
-      // Validar que los datos mínimos estén presentes
-      if (usuario.isEmpty) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'El nombre de usuario es obligatorio',
-        );
-      }
-
-      if (clave.isEmpty) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'La contraseña es obligatoria para crear una cuenta',
-        );
-      }
-
-      if (rolCuentaEmpleadoId <= 0) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'Debe seleccionar un rol válido',
-        );
-      }
+      // Validar datos
+      _empleadoRepository.validarDatosCuenta(
+        usuario: usuario,
+        clave: clave,
+        rolCuentaEmpleadoId: rolCuentaEmpleadoId,
+        esCreacion: true,
+      );
 
       // Realizar la creación
       final bool success = await crearCuentaEmpleado(
@@ -614,8 +536,6 @@ class EmpleadoProvider extends ChangeNotifier {
   }
 
   /// Gestiona el proceso de eliminación de una cuenta de empleado
-  ///
-  /// Maneja toda la lógica de validación y procesa la eliminación
   Future<Map<String, dynamic>> gestionarEliminacionCuenta({
     required Empleado empleado,
   }) async {
@@ -623,21 +543,9 @@ class EmpleadoProvider extends ChangeNotifier {
     clearError();
 
     try {
-      // Verificar que tengamos un ID de cuenta válido
-      if (empleado.cuentaEmpleadoId == null) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'No se encontró ID de cuenta para este empleado',
-        );
-      }
-
-      final int? cuentaId = int.tryParse(empleado.cuentaEmpleadoId!);
-      if (cuentaId == null || cuentaId <= 0) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'ID de cuenta inválido',
-        );
-      }
+      // Validar ID de cuenta
+      _empleadoRepository.validarIdCuenta(empleado.cuentaEmpleadoId);
+      final int cuentaId = int.parse(empleado.cuentaEmpleadoId!);
 
       // Realizar la eliminación
       final bool success = await eliminarCuentaEmpleado(cuentaId);

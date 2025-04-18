@@ -90,6 +90,8 @@ class TransferenciasInventarioApi {
             onTimeout: () => throw ApiException(
               message: 'Tiempo de espera agotado al obtener transferencias',
               statusCode: 408,
+              errorCode:
+                  ApiConstants.errorCodes[408] ?? ApiConstants.unknownError,
             ),
           );
 
@@ -140,6 +142,8 @@ class TransferenciasInventarioApi {
               message:
                   'Tiempo de espera agotado al obtener detalles de la transferencia',
               statusCode: 408,
+              errorCode:
+                  ApiConstants.errorCodes[408] ?? ApiConstants.unknownError,
             ),
           );
 
@@ -375,6 +379,7 @@ class TransferenciasInventarioApi {
         onTimeout: () => throw ApiException(
           message: 'Tiempo de espera agotado al comparar transferencia',
           statusCode: 408,
+          errorCode: ApiConstants.errorCodes[408] ?? ApiConstants.unknownError,
         ),
       );
 
@@ -425,6 +430,8 @@ class TransferenciasInventarioApi {
             onTimeout: () => throw ApiException(
               message: 'Tiempo de espera agotado al obtener transferencias',
               statusCode: 408,
+              errorCode:
+                  ApiConstants.errorCodes[408] ?? ApiConstants.unknownError,
             ),
           );
 

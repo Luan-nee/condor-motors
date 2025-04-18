@@ -4,238 +4,206 @@ import 'package:condorsmotors/utils/logger.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Constantes de error y estado
+class ApiConstants {
+  static const errorCodes = {
+    400: 'bad_request',
+    401: 'unauthorized',
+    403: 'unauthorized',
+    404: 'not_found',
+    409: 'conflict',
+    422: 'unprocessable_entity',
+    429: 'too_many_requests',
+    500: 'server_error',
+    501: 'not_implemented',
+    502: 'bad_gateway',
+    503: 'service_unavailable',
+  };
+
+  static const errorMessages = {
+    'bad_request': 'Solicitud inválida',
+    'unauthorized': 'No autorizado',
+    'not_found': 'Recurso no encontrado',
+    'conflict': 'Conflicto con el estado actual',
+    'unprocessable_entity': 'Entidad no procesable',
+    'too_many_requests': 'Demasiadas solicitudes',
+    'server_error': 'Error interno del servidor',
+    'not_implemented': 'No implementado',
+    'bad_gateway': 'Error de puerta de enlace',
+    'service_unavailable': 'Servicio no disponible',
+    'network_error': 'Error de red',
+    'connection_failed': 'Error de conexión',
+    'unknown_error': 'Error inesperado',
+  };
+
+  static const String invalidTokenMessage =
+      'Invalid or missing authorization token';
+  static const String unknownError = 'unknown_error';
+}
+
 class ApiException implements Exception {
   final int statusCode;
   final String message;
-  final String? errorCode;
+  final String errorCode;
   final dynamic data;
   final String? redirect;
-
-  // Códigos de error alineados con el servidor
-  static const String errorUnauthorized = 'unauthorized';
-  static const String errorNotFound = 'not_found';
-  static const String errorBadRequest = 'bad_request';
-  static const String errorServer = 'server_error';
-  static const String errorNetwork = 'network_error';
-  static const String errorUnknown = 'unknown_error';
-  static const String errorConnectionFailed = 'connection_failed';
-  static const String errorConflict = 'conflict';
-  static const String errorUnprocessable = 'unprocessable_entity';
-  static const String errorTooManyRequests = 'too_many_requests';
-  static const String errorNotImplemented = 'not_implemented';
-  static const String errorBadGateway = 'bad_gateway';
-  static const String errorServiceUnavailable = 'service_unavailable';
-
-  // Estados de respuesta del servidor
-  static const String statusSuccess = 'success';
-  static const String statusFail = 'fail';
-  static const String statusError = 'error';
-
-  // Mensajes de error específicos del servidor
-  static const String invalidTokenMessage =
-      'Invalid or missing authorization token';
 
   ApiException({
     required this.statusCode,
     required this.message,
-    this.errorCode,
+    required this.errorCode,
     this.data,
     this.redirect,
   });
 
   factory ApiException.fromDioError(DioException error) {
-    String errorMessage = error.message ?? 'Error desconocido';
-    int errorStatusCode = error.response?.statusCode ?? 500;
-    late String errorCodeValue;
-    final dynamic errorData = error.response?.data;
-    String? redirectUrl;
+    final errorStatusCode = error.response?.statusCode ?? 500;
+    final errorData = error.response?.data;
 
-    // Extraer mensaje y redirección si existe en la respuesta
-    if (errorData != null && errorData is Map<String, dynamic>) {
-      final String? serverMessage = errorData['error']?.toString();
-      if (serverMessage != null && serverMessage.isNotEmpty) {
-        errorMessage = serverMessage;
-      }
-      redirectUrl = errorData['redirect']?.toString();
-    }
-
-    switch (error.type) {
-      case DioExceptionType.badResponse:
-        switch (errorStatusCode) {
-          case 400:
-            errorCodeValue = errorBadRequest;
-            errorMessage =
-                _extractErrorMessage(errorData) ?? 'Solicitud inválida';
-            Logger.error('Error 400 - Bad Request: $errorMessage');
-            break;
-          case 401:
-            errorCodeValue = errorUnauthorized;
-            errorMessage = _extractErrorMessage(errorData) ?? 'No autorizado';
-            if (errorMessage.toLowerCase() ==
-                invalidTokenMessage.toLowerCase()) {
-              Logger.error(
-                  'Error de Autenticación: Token inválido o faltante - Se requiere iniciar sesión');
-              errorMessage =
-                  'Token inválido o faltante - Se requiere iniciar sesión';
-            } else {
-              Logger.error('Error 401 - Unauthorized: $errorMessage');
-            }
-            break;
-          case 403:
-            errorCodeValue = errorUnauthorized;
-            errorMessage = _extractErrorMessage(errorData) ?? 'Acceso denegado';
-            Logger.error('Error 403 - Forbidden: $errorMessage');
-            break;
-          case 404:
-            errorCodeValue = errorNotFound;
-            errorMessage =
-                _extractErrorMessage(errorData) ?? 'Recurso no encontrado';
-            Logger.error('Error 404 - Not Found: $errorMessage');
-            break;
-          case 409:
-            errorCodeValue = errorConflict;
-            errorMessage = _extractErrorMessage(errorData) ??
-                'Conflicto con el estado actual';
-            Logger.error('Error 409 - Conflict: $errorMessage');
-            break;
-          case 422:
-            errorCodeValue = errorUnprocessable;
-            errorMessage =
-                _extractErrorMessage(errorData) ?? 'Entidad no procesable';
-            Logger.error('Error 422 - Unprocessable Entity: $errorMessage');
-            break;
-          case 429:
-            errorCodeValue = errorTooManyRequests;
-            errorMessage =
-                _extractErrorMessage(errorData) ?? 'Demasiadas solicitudes';
-            Logger.error('Error 429 - Too Many Requests: $errorMessage');
-            break;
-          case 500:
-            errorCodeValue = errorServer;
-            errorMessage =
-                _extractErrorMessage(errorData) ?? 'Error interno del servidor';
-            Logger.error('Error 500 - Internal Server Error: $errorMessage');
-            break;
-          case 501:
-            errorCodeValue = errorNotImplemented;
-            errorMessage = _extractErrorMessage(errorData) ?? 'No implementado';
-            Logger.error('Error 501 - Not Implemented: $errorMessage');
-            break;
-          case 502:
-            errorCodeValue = errorBadGateway;
-            errorMessage =
-                _extractErrorMessage(errorData) ?? 'Error de puerta de enlace';
-            Logger.error('Error 502 - Bad Gateway: $errorMessage');
-            break;
-          case 503:
-            errorCodeValue = errorServiceUnavailable;
-            errorMessage =
-                _extractErrorMessage(errorData) ?? 'Servicio no disponible';
-            Logger.error('Error 503 - Service Unavailable: $errorMessage');
-            break;
-          default:
-            errorCodeValue = errorUnknown;
-            errorMessage = _extractErrorMessage(errorData) ??
-                'Error de respuesta del servidor';
-            Logger.error('Error de Respuesta: $errorMessage');
-        }
-        break;
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        errorCodeValue = errorNetwork;
-        errorMessage =
-            'La conexión ha tardado demasiado tiempo. Por favor, verifica tu conexión a internet e intenta nuevamente.';
-        Logger.error('Error de Timeout: $errorMessage');
-        break;
-      case DioExceptionType.cancel:
-        errorCodeValue = errorNetwork;
-        errorMessage = 'La solicitud fue cancelada';
-        Logger.warn('Solicitud Cancelada: $errorMessage');
-        break;
-      case DioExceptionType.connectionError:
-        errorCodeValue = errorConnectionFailed;
-        errorMessage =
-            'No se pudo establecer conexión con el servidor. Por favor, verifica tu conexión a internet.';
-        Logger.error('Error de Conexión: $errorMessage');
-        break;
-      default:
-        errorCodeValue = errorUnknown;
-        errorMessage =
-            'Ocurrió un error inesperado. Por favor, intenta nuevamente.';
-        Logger.error('Error Desconocido: $errorMessage');
+    // Si hay un mensaje del servidor, usarlo directamente
+    if (errorData is Map<String, dynamic> && errorData['error'] != null) {
+      return ApiException(
+        statusCode: errorStatusCode,
+        message: errorData['error'].toString(),
+        errorCode: ApiConstants.errorCodes[errorStatusCode] ??
+            ApiConstants.unknownError,
+        data: errorData,
+        redirect: errorData['redirect']?.toString(),
+      );
     }
 
-    // Log de datos adicionales si existen
-    if (errorData != null) {
-      Logger.debug('Datos adicionales del error: $errorData');
-    }
-    if (redirectUrl != null) {
-      Logger.info('URL de redirección: $redirectUrl');
-    }
+    // Determinar código de error basado en el tipo de error
+    final errorCode = _getErrorCodeFromDioError(error);
+    final message = _extractErrorMessage(errorData) ??
+        ApiConstants.errorMessages[errorCode] ??
+        'Error inesperado';
+
+    Logger.error('${error.type} - $errorCode: $message');
 
     return ApiException(
       statusCode: errorStatusCode,
-      message: errorMessage,
-      errorCode: errorCodeValue,
+      message: message,
+      errorCode: errorCode,
       data: errorData,
-      redirect: redirectUrl,
     );
+  }
+
+  static String _getErrorCodeFromDioError(DioException error) {
+    if (error.type == DioExceptionType.badResponse) {
+      return ApiConstants.errorCodes[error.response?.statusCode] ??
+          ApiConstants.unknownError;
+    }
+
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return 'network_error';
+      case DioExceptionType.connectionError:
+        return 'connection_failed';
+      default:
+        return ApiConstants.unknownError;
+    }
   }
 
   static String? _extractErrorMessage(data) {
     if (data == null) {
       return null;
     }
-
-    if (data is Map<String, dynamic>) {
-      // Intentar obtener el mensaje de error en el formato del servidor
-      final String? error = data['error']?.toString();
-      final String? message = data['message']?.toString();
-
-      // Si el error es específicamente de token inválido, retornarlo tal cual
-      if (error == invalidTokenMessage) {
-        return error;
-      }
-
-      return error ?? message ?? data['msg']?.toString();
-    }
-
     if (data is String) {
       return data;
+    }
+    if (data is Map<String, dynamic>) {
+      return data['error']?.toString() ??
+          data['message']?.toString() ??
+          data['msg']?.toString();
     }
     return null;
   }
 
   @override
-  String toString() {
-    if (message.toLowerCase() == invalidTokenMessage.toLowerCase()) {
-      return 'Error de autenticación: Token inválido o faltante';
+  String toString() => message;
+}
+
+// Constantes para almacenamiento de tokens
+class TokenConstants {
+  static const String accessTokenKey = 'access_token';
+  static const String refreshTokenKey = 'refresh_token';
+}
+
+class TokenManager {
+  final Dio _dio;
+  bool _isRefreshing = false;
+
+  TokenManager(this._dio);
+
+  Future<String?> getAccessToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(TokenConstants.accessTokenKey);
+  }
+
+  Future<void> setAccessToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(TokenConstants.accessTokenKey, token);
+  }
+
+  Future<bool> refreshToken() async {
+    if (_isRefreshing) {
+      return false;
     }
-    return message;
+    _isRefreshing = true;
+
+    try {
+      Logger.info('Renovando token de acceso...');
+      final prefs = await SharedPreferences.getInstance();
+      final refreshToken = prefs.getString(TokenConstants.refreshTokenKey);
+
+      if (refreshToken == null) {
+        Logger.error('No hay refresh token disponible');
+        return false;
+      }
+
+      final response = await _dio.post(
+        '/auth/refresh',
+        options: Options(headers: {'Cookie': refreshToken}),
+      );
+
+      final newToken = _extractTokenFromResponse(response);
+      if (newToken != null) {
+        await setAccessToken(newToken);
+        Logger.info('Token renovado exitosamente');
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      Logger.error('Error al renovar token: $e');
+      return false;
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
+  String? _extractTokenFromResponse(Response response) {
+    return response.headers.value('authorization')?.replaceAll('Bearer ', '') ??
+        response.data?['authorization']?.toString().replaceAll('Bearer ', '');
   }
 }
 
 class ApiClient {
   String baseUrl;
   late Dio _dio;
-  bool _isRefreshingToken = false;
-  static const String _accessTokenKey = 'access_token';
-  static const String _refreshTokenKey = 'refresh_token';
+  late TokenManager _tokenManager;
+  final Map<String, dynamic> _cache = {};
 
-  // Headers por defecto
-  final Map<String, String> _defaultHeaders = {
+  static const _defaultHeaders = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   };
 
-  // Cache y estado
-  final Map<String, dynamic> _cache = {};
-
-  ApiClient({
-    required this.baseUrl,
-  }) {
+  ApiClient({required this.baseUrl}) {
     _initializeDio();
+    _tokenManager = TokenManager(_dio);
   }
 
   void _initializeDio() {
@@ -250,179 +218,71 @@ class ApiClient {
         connectTimeout: const Duration(seconds: 30),
       )
       ..interceptors.addAll([
-        LogInterceptor(
-          requestBody: true,
-          responseBody: true,
-          responseHeader: false,
-          requestHeader: false,
-          logPrint: (obj) {
-            // Filtrar información irrelevante
-            if (obj is String) {
-              // Ignorar logs de configuración de Dio
-              if (obj.contains('method:') ||
-                  obj.contains('responseType:') ||
-                  obj.contains('followRedirects:') ||
-                  obj.contains('persistentConnection:') ||
-                  obj.contains('connectTimeout:') ||
-                  obj.contains('sendTimeout:') ||
-                  obj.contains('receiveTimeout:') ||
-                  obj.contains('receiveDataWhenStatusError:') ||
-                  obj.contains('date:') ||
-                  obj.contains('vary:') ||
-                  obj.contains('content-length:') ||
-                  obj.contains('etag:')) {
-                return;
-              }
-
-              // Solo mostrar el body de la petición/respuesta
-              if (obj.startsWith('{') ||
-                  obj.startsWith('[') ||
-                  obj.contains('Request Body:') ||
-                  obj.contains('Response:')) {
-                Logger.debug(obj.toString());
-              }
-            }
-          },
-        ),
-        QueuedInterceptorsWrapper(
-          onRequest: _onRequest,
-          onResponse: _onResponse,
-          onError: _onError,
-        ),
+        _createLogInterceptor(),
+        _createAuthInterceptor(),
       ]);
-
-    // Interceptor para tokens
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: _onTokenRequest,
-      onError: _onTokenError,
-    ));
   }
 
-  void _onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final String method = options.method;
-    final String endpoint = options.uri.toString().replaceAll(baseUrl, '');
-    logHttp(method, endpoint);
+  Interceptor _createLogInterceptor() {
+    return InterceptorsWrapper(
+      onRequest: (options, handler) {
+        logHttp(
+          options.method,
+          '${options.baseUrl}${options.path}',
+        );
+        return handler.next(options);
+      },
+      onResponse: (response, handler) {
+        logHttp(
+          response.requestOptions.method,
+          '${response.requestOptions.baseUrl}${response.requestOptions.path}',
+          response.statusCode,
+        );
 
-    if (method != 'GET' && options.data != null) {
-      final String dataPreview = options.data.toString();
-      final String truncated = dataPreview.length > 500
-          ? '${dataPreview.substring(0, 500)}...'
-          : dataPreview;
-      Logger.debug('Request Body: $truncated');
-    }
-
-    return handler.next(options);
-  }
-
-  void _onResponse(Response response, ResponseInterceptorHandler handler) {
-    final int statusCode = response.statusCode ?? 0;
-    final String method = response.requestOptions.method;
-    final String endpoint =
-        response.requestOptions.uri.toString().replaceAll(baseUrl, '');
-
-    logHttp(method, endpoint, statusCode);
-
-    if (response.data != null && response.data.toString() != '{}') {
-      final String dataPreview = response.data.toString();
-      final String truncated = dataPreview.length > 500
-          ? '${dataPreview.substring(0, 500)}...'
-          : dataPreview;
-      Logger.debug('Response: $truncated');
-    }
-
-    return handler.next(response);
-  }
-
-  void _onError(DioException error, ErrorInterceptorHandler handler) {
-    final int statusCode = error.response?.statusCode ?? 0;
-    final String method = error.requestOptions.method;
-    final String endpoint =
-        error.requestOptions.uri.toString().replaceAll(baseUrl, '');
-
-    logHttp(method, endpoint, statusCode);
-    Logger.error('API Error: ${error.message}');
-    if (error.response?.data != null) {
-      Logger.error('Error data: ${error.response?.data}');
-    }
-
-    return handler.next(error);
-  }
-
-  Future<void> _onTokenRequest(
-      RequestOptions options, RequestInterceptorHandler handler) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? token = prefs.getString(_accessTokenKey);
-    if (token != null) {
-      options.headers['Authorization'] = 'Bearer $token';
-    }
-    return handler.next(options);
-  }
-
-  Future<void> _onTokenError(
-      DioException error, ErrorInterceptorHandler handler) async {
-    if (error.response?.statusCode == 401 && !_isRefreshingToken) {
-      _isRefreshingToken = true;
-      try {
-        final bool success = await _refreshToken();
-        if (success) {
-          final RequestOptions opts = error.requestOptions;
-          final SharedPreferences prefs = await SharedPreferences.getInstance();
-          final String? token = prefs.getString(_accessTokenKey);
-          if (token != null) {
-            opts.headers['Authorization'] = 'Bearer $token';
-            final Response response = await _dio.fetch(opts);
-            _isRefreshingToken = false;
-            return handler.resolve(response);
-          }
+        if (response.data != null) {
+          logDebug(response.data.toString());
         }
-      } catch (e) {
-        Logger.error('Error refreshing token: $e');
-      }
-      _isRefreshingToken = false;
-    }
-    return handler.reject(error);
+        return handler.next(response);
+      },
+      onError: (error, handler) {
+        logError(
+          'Error en solicitud HTTP: ${error.message}',
+          error,
+          error.stackTrace,
+        );
+        return handler.next(error);
+      },
+    );
   }
 
-  Future<bool> _refreshToken() async {
-    try {
-      Logger.info('Renovando token de acceso...');
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? refreshToken = prefs.getString(_refreshTokenKey);
-
-      if (refreshToken == null) {
-        Logger.error('No hay refresh token disponible');
-        return false;
-      }
-
-      final Response response = await _dio.post(
-        '/auth/refresh',
-        options: Options(
-          headers: {
-            'Cookie': refreshToken,
-          },
-        ),
-      );
-
-      if (response.data != null) {
-        final String? newToken = response.headers
-                .value('authorization')
-                ?.replaceAll('Bearer ', '') ??
-            response.data['authorization']
-                ?.toString()
-                .replaceAll('Bearer ', '');
-
-        if (newToken != null && newToken.isNotEmpty) {
-          await prefs.setString(_accessTokenKey, newToken);
-          Logger.info('Token renovado exitosamente');
-          return true;
+  Interceptor _createAuthInterceptor() {
+    return InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final token = await _tokenManager.getAccessToken();
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
+          logDebug(
+              'Token agregado a la solicitud: ${token.substring(0, 10)}...');
         }
-      }
+        return handler.next(options);
+      },
+      onError: (error, handler) async {
+        if (error.response?.statusCode == 401 &&
+            await _tokenManager.refreshToken()) {
+          logInfo('Token renovado, reintentando solicitud...');
+          return handler.resolve(await _retryRequest(error.requestOptions));
+        }
+        return handler.next(error);
+      },
+    );
+  }
 
-      return false;
-    } catch (e) {
-      Logger.error('Error al renovar token: $e');
-      return false;
-    }
+  Future<Response<dynamic>> _retryRequest(RequestOptions options) async {
+    final token = await _tokenManager.getAccessToken();
+    options.headers['Authorization'] = 'Bearer $token';
+    logDebug(
+        'Reintentando solicitud con nuevo token: ${token?.substring(0, 10)}...');
+    return _dio.fetch(options);
   }
 
   Future<Map<String, dynamic>> request({
@@ -439,8 +299,7 @@ class ApiClient {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        validateStatus: (status) =>
-            true, // Para manejar todos los códigos de estado
+        validateStatus: (status) => true,
       );
 
       final Response response = await _dio.request(
@@ -455,8 +314,8 @@ class ApiClient {
       if (authHeader != null && authHeader.startsWith('Bearer ')) {
         final String token = authHeader.substring(7);
         final SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_accessTokenKey, token);
-        Logger.debug(
+        await prefs.setString(TokenConstants.accessTokenKey, token);
+        logDebug(
             'Token actualizado desde headers: ${token.substring(0, 10)}...');
       }
 
@@ -464,8 +323,8 @@ class ApiClient {
       final String? cookie = response.headers.value('set-cookie');
       if (cookie != null && cookie.isNotEmpty) {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_refreshTokenKey, cookie);
-        Logger.debug('Refresh token actualizado desde cookies');
+        await prefs.setString(TokenConstants.refreshTokenKey, cookie);
+        logDebug('Refresh token actualizado desde cookies');
       }
 
       // Procesar la respuesta
@@ -501,7 +360,7 @@ class ApiClient {
       throw ApiException(
         statusCode: 0,
         message: 'Error inesperado: $e',
-        errorCode: ApiException.errorUnknown,
+        errorCode: ApiConstants.unknownError,
       );
     }
   }
@@ -525,7 +384,7 @@ class ApiClient {
   /// Limpia el estado del cliente API
   Future<void> clearState() async {
     try {
-      Logger.info('Limpiando estado del cliente API...');
+      logInfo('Limpiando estado del cliente API...');
 
       // Limpiar caché
       _cache.clear();
@@ -548,14 +407,14 @@ class ApiClient {
         // Reinicializar Dio con la configuración limpia
         _initializeDio();
       } catch (dioError) {
-        Logger.debug('Error no crítico al reiniciar cliente Dio: $dioError');
+        logDebug('Error no crítico al reiniciar cliente Dio: $dioError');
         // Intentar reinicializar Dio incluso si hubo error al cerrar
         _initializeDio();
       }
 
-      Logger.info('Estado del cliente API limpiado correctamente');
+      logInfo('Estado del cliente API limpiado correctamente');
     } catch (e) {
-      Logger.error('Error al limpiar estado del cliente API: $e');
+      logError('Error al limpiar estado del cliente API', e);
       // No relanzar el error ya que no es crítico
     }
   }

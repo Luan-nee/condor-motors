@@ -131,7 +131,9 @@ class Paginador extends StatelessWidget {
                         if (onPageSizeChanged != null) {
                           onPageSizeChanged!(value);
                         }
-                        if (onPageChange != null) onPageChange!();
+                        if (onPageChange != null) {
+                          onPageChange!();
+                        }
                       }
                     },
                   ),

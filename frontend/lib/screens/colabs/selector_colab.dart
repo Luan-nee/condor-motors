@@ -226,31 +226,19 @@ class SelectorColabScreen extends StatelessWidget {
   // Método para realizar el cierre de sesión
   Future<void> _logout(BuildContext context) async {
     try {
-      debugPrint('Iniciando proceso de logout en selector_colab.dart');
-
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      debugPrint('AuthProvider obtenido correctamente');
-
-      // Cerrar el diálogo antes de proceder con el logout
-      Navigator.of(context).pop();
-
-      debugPrint('Llamando a authProvider.logout()');
       await authProvider.logout();
-      debugPrint('Logout completado exitosamente');
 
       if (!context.mounted) {
         return;
       }
 
       // Navegar al login y limpiar el stack de navegación
-      debugPrint('Navegando a la pantalla de login');
       await Navigator.of(context).pushNamedAndRemoveUntil(
         role_utils.login,
         (Route<dynamic> route) => false,
       );
     } catch (e) {
-      debugPrint('Error durante el logout: $e');
-
       if (!context.mounted) {
         return;
       }
@@ -264,7 +252,6 @@ class SelectorColabScreen extends StatelessWidget {
       );
 
       // Forzar navegación al login independientemente del error
-      debugPrint('Forzando navegación a login después del error');
       await Navigator.of(context).pushNamedAndRemoveUntil(
         role_utils.login,
         (Route<dynamic> route) => false,

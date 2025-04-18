@@ -129,6 +129,7 @@ class ClientesApi {
         throw ApiException(
           statusCode: 400,
           message: 'ID de cliente no puede estar vacío',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -167,6 +168,7 @@ class ClientesApi {
         throw ApiException(
           statusCode: 500,
           message: 'Error: Respuesta del servidor no tiene el formato esperado',
+          errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
         );
       }
 
@@ -196,6 +198,7 @@ class ClientesApi {
         throw ApiException(
           statusCode: 400,
           message: 'Número de documento no puede estar vacío',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -264,6 +267,7 @@ class ClientesApi {
         throw ApiException(
           statusCode: 400,
           message: 'Número de documento no puede estar vacío',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -316,6 +320,7 @@ class ClientesApi {
           statusCode: 400,
           message:
               'Denominación y número de documento son requeridos para crear cliente',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -358,6 +363,7 @@ class ClientesApi {
         throw ApiException(
           statusCode: 500,
           message: 'Error: Respuesta del servidor no tiene el formato esperado',
+          errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
         );
       }
 
@@ -382,6 +388,7 @@ class ClientesApi {
         throw ApiException(
           statusCode: 400,
           message: 'ID de cliente no puede estar vacío',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -406,6 +413,7 @@ class ClientesApi {
         throw ApiException(
           statusCode: 500,
           message: 'Error al actualizar cliente',
+          errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
         );
       }
 

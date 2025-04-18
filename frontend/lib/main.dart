@@ -8,6 +8,7 @@ import 'package:condorsmotors/providers/colabs/index.colab.provider.dart';
 import 'package:condorsmotors/providers/computer/index.computer.provider.dart';
 import 'package:condorsmotors/providers/login.provider.dart';
 import 'package:condorsmotors/providers/paginacion.provider.dart';
+import 'package:condorsmotors/repositories/auth.repository.dart';
 import 'package:condorsmotors/routes/routes.dart' as routes;
 import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
@@ -104,10 +105,10 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => LoginProvider(api: api),
+          create: (_) => LoginProvider(),
         ),
         ChangeNotifierProvider(
-          create: (_) => AuthProvider(api.auth),
+          create: (_) => AuthProvider(AuthRepository.instance),
         ),
         ChangeNotifierProvider(create: (_) => VentasComputerProvider()),
         // Provider para paginación global
@@ -141,7 +142,9 @@ void main() async {
         ),
         // Providers para módulo de computadora
         ChangeNotifierProvider<ProformaComputerProvider>(
-          create: (_) => ProformaComputerProvider(),
+          create: (context) => ProformaComputerProvider(
+            Provider.of<VentasComputerProvider>(context, listen: false),
+          ),
         ),
         // Provider para transferencias de colaboradores
         ChangeNotifierProvider<TransferenciasColabProvider>(
@@ -230,7 +233,9 @@ class CondorMotorsApp extends StatelessWidget {
         ),
         // Providers para módulo de computadora
         ChangeNotifierProvider<ProformaComputerProvider>(
-          create: (_) => ProformaComputerProvider(),
+          create: (context) => ProformaComputerProvider(
+            Provider.of<VentasComputerProvider>(context, listen: false),
+          ),
         ),
         // Provider para transferencias de colaboradores
         ChangeNotifierProvider<TransferenciasColabProvider>(

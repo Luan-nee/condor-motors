@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/utils/sucursal_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -71,9 +72,7 @@ class _SlideSucursalState extends State<SlideSucursal>
     };
 
     for (final Sucursal sucursal in widget.sucursales) {
-      if (sucursal.nombre.toLowerCase().contains('central') ||
-          sucursal.nombre.toLowerCase().contains('principal') ||
-          sucursal.sucursalCentral) {
+      if (sucursal.sucursalCentral) {
         grupos['Centrales']!.add(sucursal);
       } else {
         grupos['Sucursales']!.add(sucursal);
@@ -87,29 +86,6 @@ class _SlideSucursalState extends State<SlideSucursal>
         .sort((Sucursal a, Sucursal b) => a.nombre.compareTo(b.nombre));
 
     return grupos;
-  }
-
-  // Método para obtener icono según la sucursal
-  IconData _getIconForSucursal(Sucursal sucursal) {
-    // Primero revisamos si es sucursal central
-    if (sucursal.sucursalCentral) {
-      return FontAwesomeIcons.building;
-    }
-
-    // Luego revisamos el nombre
-    final String nombre = sucursal.nombre.toLowerCase();
-    if (nombre.contains('central') || nombre.contains('principal')) {
-      return FontAwesomeIcons.building;
-    } else if (nombre.contains('taller')) {
-      return FontAwesomeIcons.screwdriverWrench;
-    } else if (nombre.contains('almacén') ||
-        nombre.contains('almacen') ||
-        nombre.contains('bodega')) {
-      return FontAwesomeIcons.warehouse;
-    } else if (nombre.contains('tienda') || nombre.contains('venta')) {
-      return FontAwesomeIcons.store;
-    }
-    return FontAwesomeIcons.locationDot;
   }
 
   @override
@@ -350,7 +326,9 @@ class _SlideSucursalState extends State<SlideSucursal>
 
   Widget _buildSucursalItem(Sucursal sucursal) {
     final bool isSelected = widget.sucursalSeleccionada?.id == sucursal.id;
-    final IconData icon = _getIconForSucursal(sucursal);
+    final IconData icon = SucursalUtils.getIconForSucursal(sucursal);
+    final Color iconColor = SucursalUtils.getColorForSucursal(sucursal);
+    final Color iconBgColor = SucursalUtils.getIconBackgroundColor(sucursal);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -382,14 +360,12 @@ class _SlideSucursalState extends State<SlideSucursal>
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? const Color(0xFFE31E24)
-                          : const Color(0xFF2D2D2D),
+                      color: isSelected ? const Color(0xFFE31E24) : iconBgColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: FaIcon(
                       icon,
-                      color: Colors.white,
+                      color: isSelected ? Colors.white : iconColor,
                       size: 16,
                     ),
                   ),
@@ -413,20 +389,30 @@ class _SlideSucursalState extends State<SlideSucursal>
                         maxLines: 1,
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        sucursal.direccion ?? 'Sin dirección registrada',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: sucursal.direccion != null
-                              ? Colors.white.withOpacity(0.5)
-                              : Colors.white.withOpacity(0.3),
-                          fontStyle: sucursal.direccion != null
-                              ? FontStyle.normal
-                              : FontStyle.italic,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
+                      Row(
+                        children: [
+                          if (sucursal.codigoEstablecimiento != null)
+                            SucursalUtils.buildCodigoEstablecimiento(
+                              sucursal.codigoEstablecimiento,
+                            ),
+                          if (sucursal.sucursalCentral) ...[
+                            const SizedBox(width: 8),
+                            SucursalUtils.buildTipoSucursalBadge(sucursal),
+                          ],
+                        ],
                       ),
+                      if (sucursal.direccion != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          sucursal.direccion!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.5),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -172,9 +172,20 @@ abstract class AppTheme {
         // Configuración de Snackbar
         snackBarTheme: SnackBarThemeData(
           backgroundColor: cardColor,
-          contentTextStyle: _baseTextStyle,
+          behavior: SnackBarBehavior.floating,
+          elevation: 6,
+          width: 400,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(smallRadius),
+            borderRadius: BorderRadius.circular(mediumRadius),
+          ),
+          contentTextStyle: _baseTextStyle.copyWith(
+            fontSize: 14,
+            color: Colors.white.withOpacity(0.9),
+          ),
+          actionTextColor: primaryColor,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 40,
+            vertical: 20,
           ),
         ),
 
@@ -196,6 +207,88 @@ abstract class AppTheme {
           ),
         ),
       );
+
+  // Helper method for SnackBar styles
+  static SnackBar getStyledSnackBar({
+    required String message,
+    required bool isError,
+    Duration duration = const Duration(seconds: 4),
+    SnackBarAction? action,
+  }) {
+    return SnackBar(
+      content: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isError
+                  ? Colors.red.withOpacity(0.1)
+                  : primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(smallRadius),
+            ),
+            child: Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: isError ? Colors.red : primaryColor,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: _baseTextStyle.copyWith(
+                fontSize: 14,
+                color: Colors.white.withOpacity(0.9),
+              ),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: cardColor,
+      behavior: SnackBarBehavior.floating,
+      elevation: 6,
+      width: 400,
+      duration: duration,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(mediumRadius),
+      ),
+      action: action,
+    );
+  }
+
+  // Helper method for success SnackBar
+  static void showSuccessSnackBar(
+    BuildContext context, {
+    required String message,
+    Duration duration = const Duration(seconds: 4),
+    SnackBarAction? action,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      getStyledSnackBar(
+        message: message,
+        isError: false,
+        duration: duration,
+        action: action,
+      ),
+    );
+  }
+
+  // Helper method for error SnackBar
+  static void showErrorSnackBar(
+    BuildContext context, {
+    required String message,
+    Duration duration = const Duration(seconds: 4),
+    SnackBarAction? action,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      getStyledSnackBar(
+        message: message,
+        isError: true,
+        duration: duration,
+        action: action,
+      ),
+    );
+  }
 
   /// Retorna un conjunto de sombras para usar en la aplicación
   static List<BoxShadow> get commonShadows => <BoxShadow>[

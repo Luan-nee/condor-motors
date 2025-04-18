@@ -254,6 +254,7 @@ class ProductosApi {
       throw ApiException(
         statusCode: 400,
         message: 'El término de búsqueda no puede estar vacío',
+        errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
       );
     }
 
@@ -383,6 +384,7 @@ class ProductosApi {
         throw ApiException(
           statusCode: 400,
           message: 'ID de sucursal no puede estar vacío',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -390,13 +392,14 @@ class ProductosApi {
         throw ApiException(
           statusCode: 400,
           message: 'ID de producto inválido: $productoId',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
       // Eliminar el ID del producto de los datos para evitar conflictos
       final Map<String, dynamic> dataToSend =
-          Map<String, dynamic>.from(productoData);
-      dataToSend.remove('id'); // No enviar el ID en el cuerpo
+          Map<String, dynamic>.from(productoData)
+            ..remove('id'); // Usar cascade para remover el ID
 
       Logger.debug('Actualizando producto $productoId en sucursal $sucursalId');
       Logger.debug('Endpoint: /$sucursalId/productos/$productoId');
@@ -419,6 +422,7 @@ class ProductosApi {
         throw ApiException(
           statusCode: 500,
           message: 'Respuesta inválida del servidor al actualizar el producto',
+          errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
         );
       }
 
@@ -623,6 +627,7 @@ class ProductosApi {
         throw ApiException(
           statusCode: 400,
           message: 'ID de sucursal no puede estar vacío',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -630,6 +635,7 @@ class ProductosApi {
         throw ApiException(
           statusCode: 400,
           message: 'ID de producto inválido: $productoId',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -639,6 +645,7 @@ class ProductosApi {
           statusCode: 400,
           message:
               'Se requiere precio de liquidación al poner un producto en liquidación',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 

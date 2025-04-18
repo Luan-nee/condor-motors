@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:condorsmotors/main.dart' show proformaNotification;
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart';
+import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:flutter/foundation.dart';
@@ -16,6 +17,7 @@ class ProformaComputerProvider extends ChangeNotifier {
   final ProformaRepository _proformaRepository = ProformaRepository.instance;
   final SucursalRepository _sucursalRepository = SucursalRepository.instance;
   final VentaRepository _ventaRepository = VentaRepository.instance;
+  late final VentasComputerProvider _ventasProvider;
 
   int _currentPage = 1;
   String? _errorMessage;
@@ -36,6 +38,22 @@ class ProformaComputerProvider extends ChangeNotifier {
   static const List<int> intervalosDisponibles = [8, 15, 30];
   static const String actualizacionAutomaticaKey =
       'proforma_actualizacion_automatica';
+
+  /// Constructor que recibe el VentasComputerProvider
+  ProformaComputerProvider(VentasComputerProvider ventasProvider) {
+    _ventasProvider = ventasProvider;
+    // Asegurar que la configuración de impresión esté cargada
+    _ventasProvider.cargarConfiguracionImpresion().then((_) {
+      Logger.debug(
+          '⚙️ Configuración de impresión cargada en ProformaComputerProvider');
+      Logger.debug('- Formato A4: ${_ventasProvider.imprimirFormatoA4}');
+      Logger.debug(
+          '- Formato Ticket: ${_ventasProvider.imprimirFormatoTicket}');
+      Logger.debug('- Impresión directa: ${_ventasProvider.impresionDirecta}');
+      Logger.debug(
+          '- Impresora seleccionada: ${_ventasProvider.impresoraSeleccionada}');
+    });
+  }
 
   @override
   void dispose() {
@@ -267,7 +285,13 @@ class ProformaComputerProvider extends ChangeNotifier {
         _limpiarCaches(sucursalIdStr);
 
         // Intentar declarar la venta ante SUNAT si se creó correctamente
-        await _declararVentaRecienCreada(ventaResponse, sucursalIdStr);
+        final ventaDeclarada =
+            await _declararVentaRecienCreada(ventaResponse, sucursalIdStr);
+
+        // Si la venta fue declarada exitosamente, intentar imprimir
+        if (ventaDeclarada) {
+          await _imprimirVentaDeclarada(ventaResponse, sucursalIdStr);
+        }
 
         // Recargar datos completos
         await _recargarDatosCompletos(sucursalIdStr, sucursalId);
@@ -296,7 +320,7 @@ class ProformaComputerProvider extends ChangeNotifier {
   }
 
   /// Declara una venta recién creada ante SUNAT
-  Future<void> _declararVentaRecienCreada(
+  Future<bool> _declararVentaRecienCreada(
       Map<String, dynamic> ventaResponse, String sucursalId) async {
     try {
       // Obtener el ID de la venta desde la respuesta
@@ -311,7 +335,7 @@ class ProformaComputerProvider extends ChangeNotifier {
       if (ventaId == null) {
         Logger.error(
             'No se pudo obtener el ID de la venta creada para declararla');
-        return;
+        return false;
       }
 
       Logger.debug('Declarando venta #$ventaId ante SUNAT');
@@ -325,14 +349,70 @@ class ProformaComputerProvider extends ChangeNotifier {
 
       if (declaracionResponse['status'] == 'success') {
         Logger.debug('Venta #$ventaId declarada correctamente ante SUNAT');
+        return true;
       } else {
         final String errorMsg = declaracionResponse['error'] ??
             declaracionResponse['message'] ??
             'Error desconocido';
         Logger.error('Error al declarar venta #$ventaId: $errorMsg');
+        return false;
       }
     } catch (e) {
       Logger.error('Error al declarar venta recién creada: $e');
+      return false;
+    }
+  }
+
+  /// Imprime la venta recién declarada según la configuración
+  Future<void> _imprimirVentaDeclarada(
+      Map<String, dynamic> ventaResponse, String sucursalId) async {
+    try {
+      // Obtener la venta completa con sus documentos
+      final ventaId = ventaResponse['data']['id'].toString();
+      final ventaCompleta = await _ventaRepository.getVenta(
+        ventaId,
+        sucursalId: sucursalId,
+        forceRefresh: true,
+      );
+
+      if (ventaCompleta == null || ventaCompleta.documentoFacturacion == null) {
+        Logger.error(
+            'No se pudo obtener la información de la venta para imprimir');
+        return;
+      }
+
+      // Obtener la URL del PDF según el formato configurado
+      String? pdfUrl;
+      if (_ventasProvider.imprimirFormatoTicket) {
+        pdfUrl = ventaCompleta.documentoFacturacion!.linkPdfTicket;
+        Logger.debug('🎫 Usando formato ticket para impresión');
+      } else {
+        pdfUrl = ventaCompleta.documentoFacturacion!.linkPdfA4;
+        Logger.debug('📄 Usando formato A4 para impresión');
+      }
+
+      if (pdfUrl == null) {
+        Logger.error('No se encontró URL del PDF para imprimir');
+        return;
+      }
+
+      Logger.debug('⚙️ Configuración de impresión:');
+      Logger.debug('- Formato A4: ${_ventasProvider.imprimirFormatoA4}');
+      Logger.debug(
+          '- Formato Ticket: ${_ventasProvider.imprimirFormatoTicket}');
+      Logger.debug('- Impresión directa: ${_ventasProvider.impresionDirecta}');
+      Logger.debug(
+          '- Impresora seleccionada: ${_ventasProvider.impresoraSeleccionada}');
+
+      // Usar el VentasComputerProvider para imprimir
+      await _ventasProvider.imprimirDocumentoPdf(
+        pdfUrl,
+        '${ventaCompleta.serieDocumento}-${ventaCompleta.numeroDocumento}_${_ventasProvider.imprimirFormatoTicket ? "TICKET" : "A4"}',
+      );
+
+      Logger.debug('🖨️ Documento enviado a imprimir automáticamente');
+    } catch (e) {
+      Logger.error('Error al imprimir venta declarada: $e');
     }
   }
 

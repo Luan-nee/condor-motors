@@ -1,6 +1,6 @@
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
-import 'package:condorsmotors/screens/admin/widgets/venta/venta_detalle_dialog.dart';
+import 'package:condorsmotors/screens/computer/widgets/venta/venta_detalle_computer.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -726,10 +726,11 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
             return ValueListenableBuilder<bool>(
               valueListenable: isLoadingFullData,
               builder: (dialogContextLoading, isLoading, _) {
-                return VentaDetalleDialog(
+                return VentaDetalleComputer(
                   venta: currentVenta,
                   isLoadingFullData: isLoading,
                   onDeclararPressed: declararVenta,
+                  ventasProvider: ventasProvider,
                 );
               },
             );

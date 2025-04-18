@@ -75,6 +75,7 @@ class MarcasApi {
         throw ApiException(
           statusCode: 500,
           message: 'Respuesta inesperada del servidor: falta campo "data"',
+          errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
         );
       }
 
@@ -199,6 +200,7 @@ class MarcasApi {
         throw ApiException(
           statusCode: 400,
           message: 'ID de marca no puede estar vacío',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -232,6 +234,7 @@ class MarcasApi {
         throw ApiException(
           statusCode: 404,
           message: 'Marca no encontrada',
+          errorCode: ApiConstants.errorCodes[404] ?? ApiConstants.unknownError,
         );
       }
 
@@ -262,6 +265,7 @@ class MarcasApi {
         throw ApiException(
           statusCode: 400,
           message: 'Nombre de marca es requerido',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -280,6 +284,7 @@ class MarcasApi {
         throw ApiException(
           statusCode: 500,
           message: 'Error al crear marca: respuesta inesperada del servidor',
+          errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
         );
       }
 
@@ -315,6 +320,7 @@ class MarcasApi {
         throw ApiException(
           statusCode: 400,
           message: 'ID de marca no puede estar vacío',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -324,6 +330,7 @@ class MarcasApi {
         throw ApiException(
           statusCode: 400,
           message: 'Nombre de marca es requerido',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 
@@ -342,6 +349,7 @@ class MarcasApi {
         throw ApiException(
           statusCode: 404,
           message: 'Marca no encontrada',
+          errorCode: ApiConstants.errorCodes[404] ?? ApiConstants.unknownError,
         );
       }
 
@@ -377,6 +385,7 @@ class MarcasApi {
         throw ApiException(
           statusCode: 400,
           message: 'ID de marca no puede estar vacío',
+          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
         );
       }
 

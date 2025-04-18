@@ -1,10 +1,10 @@
-import 'package:condorsmotors/api/auth.api.dart';
 import 'package:condorsmotors/models/auth.model.dart';
+import 'package:condorsmotors/repositories/auth.repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthApi _authApi;
+  final AuthRepository _authRepository;
   AuthState _state = AuthState.initial();
 
   // Getters
@@ -15,22 +15,19 @@ class AuthProvider extends ChangeNotifier {
   AuthUser? get user => _state.user;
   String? get token => _state.token;
 
-  AuthProvider(this._authApi) {
+  AuthProvider(this._authRepository) {
     _init();
   }
 
   Future<void> _init() async {
     try {
-      final bool isAuth = await _authApi.isAuthenticated();
-      if (isAuth) {
-        final userData = await _authApi.getUserData();
-        if (userData != null) {
-          _state = AuthState.authenticated(
-            AuthUser.fromJson(userData),
-            userData['token'] ?? '',
-          );
-          notifyListeners();
-        }
+      final userData = await _authRepository.getUserData();
+      if (userData != null) {
+        _state = AuthState.authenticated(
+          AuthUser.fromJson(userData),
+          userData['token'] ?? '',
+        );
+        notifyListeners();
       }
     } catch (e) {
       debugPrint('Error al inicializar AuthProvider: $e');
@@ -42,7 +39,7 @@ class AuthProvider extends ChangeNotifier {
       _state = AuthState.loading();
       notifyListeners();
 
-      final usuario = await _authApi.login(username, password);
+      final usuario = await _authRepository.login(username, password);
 
       _state = AuthState.authenticated(
         AuthUser.fromJson(usuario.toMap()),
@@ -66,8 +63,8 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('Iniciando proceso de cierre de sesión...');
 
       try {
-        // 1. Intentar hacer logout en el servidor
-        await _authApi.logout();
+        // 1. Intentar hacer logout usando el repository
+        await _authRepository.logout();
       } catch (serverError) {
         // Si hay error de conexión, solo lo registramos pero continuamos con la limpieza local
         debugPrint('Error al contactar servidor para logout: $serverError');
@@ -75,7 +72,7 @@ class AuthProvider extends ChangeNotifier {
 
       // 2. Limpiar tokens y estado independientemente de la respuesta del servidor
       await Future.wait([
-        _authApi.clearTokens(),
+        _authRepository.clearTokens(),
         _clearLocalData(),
       ]);
 
@@ -148,8 +145,8 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> checkAuthStatus() async {
     try {
-      final bool isAuth = await _authApi.isAuthenticated();
-      if (!isAuth) {
+      final userData = await _authRepository.getUserData();
+      if (userData == null) {
         await logout();
       }
     } catch (e) {
@@ -181,7 +178,7 @@ class AuthProvider extends ChangeNotifier {
   // Refrescar token
   Future<void> refreshToken() async {
     try {
-      await _authApi.refreshToken();
+      await _authRepository.refreshToken();
       await checkAuthStatus();
     } catch (e) {
       debugPrint('Error al refrescar token: $e');

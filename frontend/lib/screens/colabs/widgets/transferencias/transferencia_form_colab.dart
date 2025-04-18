@@ -375,8 +375,8 @@ class _ProductSelectionDialog extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(StringProperty('sucursalId', sucursalId));
     properties
+      ..add(StringProperty('sucursalId', sucursalId))
       ..add(DiagnosticsProperty<ProductoRepository>(
           'productoRepository', productoRepository))
       ..add(IterableProperty<DetalleProducto>(

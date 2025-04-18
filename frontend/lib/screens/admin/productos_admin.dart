@@ -223,106 +223,76 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                     _buildSearchBar(productoProvider),
                     // Tabla de productos
                     Expanded(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: productoProvider.sucursalSeleccionada == null
-                            ? Center(
-                                key: const ValueKey<String>(
-                                    'no_branch_selected'),
-                                child: Text(
-                                  'Seleccione una sucursal para ver los productos',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
+                      child: productoProvider.sucursalSeleccionada == null
+                          ? Center(
+                              child: Text(
+                                'Seleccione una sucursal para ver los productos',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                ),
+                              ),
+                            )
+                          : Column(
+                              children: <Widget>[
+                                // Tabla de productos
+                                Expanded(
+                                  child: ValueListenableBuilder<String>(
+                                    valueListenable: _productosKey,
+                                    builder: (BuildContext context, String key,
+                                        Widget? child) {
+                                      return ProductosTable(
+                                        key: ValueKey<String>(key),
+                                        productos:
+                                            productoProvider.productosFiltrados,
+                                        sucursales: productoProvider.sucursales,
+                                        onEdit: _showProductDialog,
+                                        onDelete: _eliminarProducto,
+                                        onViewDetails:
+                                            _showProductoDetalleDialog,
+                                        onSort: productoProvider.ordenarPor,
+                                        sortBy: productoProvider.sortBy,
+                                        sortOrder: productoProvider.order,
+                                        isLoading:
+                                            productoProvider.isLoadingProductos,
+                                      );
+                                    },
                                   ),
                                 ),
-                              )
-                            : productoProvider.isLoadingProductos
-                                ? Center(
-                                    key: const ValueKey<String>(
-                                        'loading_products'),
+
+                                // Paginador
+                                if (productoProvider.paginatedProductos !=
+                                        null &&
+                                    productoProvider.paginatedProductos!
+                                            .paginacion.totalPages >
+                                        0)
+                                  Padding(
+                                    padding: const EdgeInsets.all(16.0),
                                     child: Column(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: <Widget>[
-                                        const CircularProgressIndicator(
-                                          color: Color(0xFFE31E24),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'Cargando productos...',
-                                          style: TextStyle(
-                                            color:
-                                                Colors.white.withOpacity(0.7),
+                                        // Paginador con provider
+                                        ChangeNotifierProvider.value(
+                                          value: _paginacionProvider,
+                                          child: Paginador(
+                                            paginacion: productoProvider
+                                                .paginatedProductos!.paginacion,
+                                            onPageChanged:
+                                                productoProvider.cambiarPagina,
+                                            onPageSizeChanged: productoProvider
+                                                .cambiarTamanioPagina,
+                                            backgroundColor:
+                                                const Color(0xFF2D2D2D),
+                                            textColor: Colors.white,
+                                            accentColor:
+                                                const Color(0xFFE31E24),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  )
-                                : Column(
-                                    children: <Widget>[
-                                      // Tabla de productos
-                                      Expanded(
-                                        child: ValueListenableBuilder<String>(
-                                          valueListenable: _productosKey,
-                                          builder: (BuildContext context,
-                                              String key, Widget? child) {
-                                            return ProductosTable(
-                                              key: ValueKey<String>(key),
-                                              productos: productoProvider
-                                                  .productosFiltrados,
-                                              sucursales:
-                                                  productoProvider.sucursales,
-                                              onEdit: _showProductDialog,
-                                              onDelete: _eliminarProducto,
-                                              onViewDetails:
-                                                  _showProductoDetalleDialog,
-                                              onSort:
-                                                  productoProvider.ordenarPor,
-                                              sortBy: productoProvider.sortBy,
-                                              sortOrder: productoProvider.order,
-                                            );
-                                          },
-                                        ),
-                                      ),
-
-                                      // Paginador
-                                      if (productoProvider.paginatedProductos !=
-                                              null &&
-                                          productoProvider.paginatedProductos!
-                                                  .paginacion.totalPages >
-                                              0)
-                                        Padding(
-                                          padding: const EdgeInsets.all(16.0),
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: <Widget>[
-                                              // Paginador con provider
-                                              ChangeNotifierProvider.value(
-                                                value: _paginacionProvider,
-                                                child: Paginador(
-                                                  paginacion: productoProvider
-                                                      .paginatedProductos!
-                                                      .paginacion,
-                                                  onPageChanged:
-                                                      productoProvider
-                                                          .cambiarPagina,
-                                                  onPageSizeChanged:
-                                                      productoProvider
-                                                          .cambiarTamanioPagina,
-                                                  backgroundColor:
-                                                      const Color(0xFF2D2D2D),
-                                                  textColor: Colors.white,
-                                                  accentColor:
-                                                      const Color(0xFFE31E24),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                    ],
                                   ),
-                      ),
+                              ],
+                            ),
                     ),
                   ],
                 ),

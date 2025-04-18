@@ -7,18 +7,19 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 class VentaDetalleComputer extends StatefulWidget {
   final Venta? venta;
   final bool isLoadingFullData;
   final Function(String)? onDeclararPressed;
+  final VentasComputerProvider ventasProvider;
 
   const VentaDetalleComputer({
     super.key,
     required this.venta,
     this.isLoadingFullData = false,
     this.onDeclararPressed,
+    required this.ventasProvider,
   });
 
   @override
@@ -31,7 +32,9 @@ class VentaDetalleComputer extends StatefulWidget {
       ..add(DiagnosticsProperty<Venta?>('venta', venta))
       ..add(DiagnosticsProperty<bool>('isLoadingFullData', isLoadingFullData))
       ..add(ObjectFlagProperty<Function(String)?>.has(
-          'onDeclararPressed', onDeclararPressed));
+          'onDeclararPressed', onDeclararPressed))
+      ..add(DiagnosticsProperty<VentasComputerProvider>(
+          'ventasProvider', ventasProvider));
   }
 }
 
@@ -48,8 +51,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
   late Animation<double> _opacityAnimation;
 
   // Obtener referencia al provider
-  VentasComputerProvider get _ventasProvider =>
-      Provider.of<VentasComputerProvider>(context, listen: false);
+  VentasComputerProvider get _ventasProvider => widget.ventasProvider;
 
   @override
   void initState() {
@@ -280,8 +282,17 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
         widget.venta != null && VentasUtils.tienePdfDisponible(widget.venta!);
     final bool declarada = widget.venta?.declarada ?? false;
     final bool anulada = widget.venta?.anulada ?? false;
-    final String? pdfLink =
-        widget.venta != null ? VentasUtils.obtenerUrlPdf(widget.venta!) : null;
+    final String? pdfLink = widget.venta != null
+        ? _ventasProvider.imprimirFormatoTicket
+            ? VentasUtils.obtenerUrlPdf(widget.venta!, formatoTicket: true)
+            : VentasUtils.obtenerUrlPdf(widget.venta!)
+        : null;
+
+    debugPrint(
+        '🎫 Formato de impresión seleccionado - Ticket: ${_ventasProvider.imprimirFormatoTicket}');
+    debugPrint(
+        '📄 Formato de impresión seleccionado - A4: ${_ventasProvider.imprimirFormatoA4}');
+    debugPrint('🔗 URL PDF seleccionada: $pdfLink');
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1011,14 +1022,22 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
     final bool tienePdfTicket =
         VentasUtils.tienePdfTicketDisponible(widget.venta!);
 
-    // Obtener URLs de PDFs en diferentes formatos
-    final String? pdfLinkA4 = VentasUtils.obtenerUrlPdf(widget.venta!);
-    final String? pdfLinkTicket =
-        VentasUtils.obtenerUrlPdf(widget.venta!, formatoTicket: true);
+    // Obtener URLs de PDFs según el formato seleccionado
+    final String? pdfLink = _ventasProvider.imprimirFormatoTicket
+        ? VentasUtils.obtenerUrlPdf(widget.venta!, formatoTicket: true)
+        : VentasUtils.obtenerUrlPdf(widget.venta!);
+
+    debugPrint('🖨️ Estado de impresión:');
+    debugPrint('📄 Tiene PDF A4: $tienePdf');
+    debugPrint('🎫 Tiene PDF Ticket: $tienePdfTicket');
+    debugPrint('🔗 URL PDF a imprimir: $pdfLink');
 
     // Determinar nombre de documento para impresión
     final String nombreDocumento =
         VentasUtils.formatearNumeroDocumento(widget.venta!);
+    final String formatoSufijo =
+        _ventasProvider.imprimirFormatoTicket ? '_TICKET' : '_A4';
+    final String nombreCompleto = '$nombreDocumento$formatoSufijo';
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -1069,132 +1088,61 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
             ),
           ),
 
-        // Botón de impresión con menú desplegable para formatos
+        // Botón de impresión
         if (tienePdf)
-          PopupMenuButton<String>(
-            position: PopupMenuPosition.under,
-            tooltip: 'Opciones de impresión',
-            onSelected: (String value) {
-              switch (value) {
-                case 'imprimir_a4':
-                  if (pdfLinkA4 != null) {
-                    _ventasProvider.imprimirDocumentoPdf(
-                      pdfLinkA4,
-                      '${nombreDocumento}_A4',
-                      context,
-                    );
-                  }
-                  break;
-                case 'imprimir_ticket':
-                  if (pdfLinkTicket != null) {
-                    _ventasProvider.imprimirDocumentoPdf(
-                      pdfLinkTicket,
-                      '${nombreDocumento}_Ticket',
-                      context,
-                    );
-                  }
-                  break;
-                case 'abrir_a4':
-                  if (pdfLinkA4 != null) {
-                    _ventasProvider.abrirPdf(pdfLinkA4, context);
-                  }
-                  break;
-                case 'abrir_ticket':
-                  if (pdfLinkTicket != null) {
-                    _ventasProvider.abrirPdf(pdfLinkTicket, context);
-                  }
-                  break;
-              }
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              if (pdfLinkA4 != null)
-                const PopupMenuItem<String>(
-                  value: 'imprimir_a4',
-                  child: Row(
-                    children: [
-                      FaIcon(FontAwesomeIcons.print, size: 16),
-                      SizedBox(width: 12),
-                      Text('Imprimir formato A4'),
-                    ],
-                  ),
-                ),
-              if (tienePdfTicket)
-                const PopupMenuItem<String>(
-                  value: 'imprimir_ticket',
-                  child: Row(
-                    children: [
-                      FaIcon(FontAwesomeIcons.receipt, size: 16),
-                      SizedBox(width: 12),
-                      Text('Imprimir formato Ticket'),
-                    ],
-                  ),
-                ),
-              const PopupMenuDivider(),
-              if (pdfLinkA4 != null)
-                const PopupMenuItem<String>(
-                  value: 'abrir_a4',
-                  child: Row(
-                    children: [
-                      FaIcon(FontAwesomeIcons.filePdf, size: 16),
-                      SizedBox(width: 12),
-                      Text('Abrir PDF A4'),
-                    ],
-                  ),
-                ),
-              if (tienePdfTicket)
-                const PopupMenuItem<String>(
-                  value: 'abrir_ticket',
-                  child: Row(
-                    children: [
-                      FaIcon(FontAwesomeIcons.fileLines, size: 16),
-                      SizedBox(width: 12),
-                      Text('Abrir PDF Ticket'),
-                    ],
-                  ),
-                ),
-            ],
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
             child: ElevatedButton.icon(
               icon: const FaIcon(
                 FontAwesomeIcons.print,
                 size: 16,
               ),
-              label: const Text('Imprimir'),
+              label: Text(_ventasProvider.imprimirFormatoTicket
+                  ? 'Imprimir Ticket'
+                  : 'Imprimir A4'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2D2D2D),
                 foregroundColor: Colors.white,
               ),
-              onPressed: null, // El botón no tiene acción directa, usa el menú
+              onPressed: () async {
+                debugPrint('🖨️ Iniciando proceso de impresión...');
+                if (pdfLink != null) {
+                  debugPrint('📑 Imprimiendo documento: $nombreCompleto');
+                  await widget.ventasProvider.imprimirDocumentoPdf(
+                    pdfLink,
+                    nombreCompleto,
+                    context,
+                  );
+                } else {
+                  debugPrint('❌ Error: URL de PDF no disponible');
+                }
+              },
             ),
           )
         else
           // Botón normal deshabilitado si no hay PDF disponible
-          Tooltip(
-            message: 'La venta debe estar declarada para generar PDF',
-            child: ElevatedButton.icon(
-              icon: const FaIcon(
-                FontAwesomeIcons.print,
-                size: 16,
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Tooltip(
+              message: 'La venta debe estar declarada para generar PDF',
+              child: ElevatedButton.icon(
+                icon: const FaIcon(
+                  FontAwesomeIcons.print,
+                  size: 16,
+                ),
+                label: const Text('Imprimir'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2D2D2D),
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor:
+                      const Color(0xFF2D2D2D).withOpacity(0.5),
+                  disabledForegroundColor: Colors.white.withOpacity(0.5),
+                ),
+                onPressed: null,
               ),
-              label: const Text('Imprimir'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2D2D2D),
-                foregroundColor: Colors.white,
-                disabledBackgroundColor:
-                    const Color(0xFF2D2D2D).withOpacity(0.5),
-                disabledForegroundColor: Colors.white.withOpacity(0.5),
-              ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                        'La venta debe ser declarada primero para generar el PDF'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              },
             ),
           ),
-        const SizedBox(width: 16),
+
         ElevatedButton(
           child: const Text('Cerrar'),
           onPressed: () => Navigator.of(context).pop(),

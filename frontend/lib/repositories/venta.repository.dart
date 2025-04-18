@@ -1,6 +1,5 @@
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
-import 'package:condorsmotors/repositories/facturacion.repository.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
 

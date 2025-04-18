@@ -1,4 +1,5 @@
 import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -13,7 +14,7 @@ enum LoginStatus {
 
 class LoginProvider extends ChangeNotifier {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  final CondorMotorsApi api;
+  final AuthRepository _authRepository;
 
   LoginStatus _status = LoginStatus.initial;
   String _errorMessage = '';
@@ -28,7 +29,8 @@ class LoginProvider extends ChangeNotifier {
   bool get stayLoggedIn => _stayLoggedIn;
   bool get isCheckingAutoLogin => _isCheckingAutoLogin;
 
-  LoginProvider({required this.api}) {
+  LoginProvider({AuthRepository? authRepository})
+      : _authRepository = authRepository ?? AuthRepository.instance {
     _init();
   }
 
@@ -112,10 +114,10 @@ class LoginProvider extends ChangeNotifier {
       }
 
       final UsuarioAutenticado usuario =
-          await api.auth.login(username, password);
+          await _authRepository.login(username, password);
 
       // Guardar datos del usuario
-      await api.authService.saveUserData(usuario);
+      await _authRepository.saveUserData(usuario);
 
       _status = LoginStatus.authenticated;
       notifyListeners();
@@ -138,14 +140,15 @@ class LoginProvider extends ChangeNotifier {
       notifyListeners();
 
       final UsuarioAutenticado usuario =
-          await api.auth.login(username, password);
+          await _authRepository.login(username, password);
 
       // Validar que el usuario tenga un rol válido
       if (usuario.rolCuentaEmpleadoCodigo.isEmpty) {
         throw ApiException(
-            message: 'El usuario no tiene un rol asignado',
-            errorCode: ApiException.errorUnauthorized,
-            statusCode: 401);
+          message: 'El usuario no tiene un rol asignado',
+          errorCode: ApiConstants.errorCodes[401] ?? ApiConstants.unknownError,
+          statusCode: 401,
+        );
       }
 
       // Normalizar el rol antes de procesar
@@ -154,7 +157,7 @@ class LoginProvider extends ChangeNotifier {
       debugPrint('Rol normalizado para autenticación: $rolNormalizado');
 
       // Guardar datos del usuario
-      await api.authService.saveUserData(usuario);
+      await _authRepository.saveUserData(usuario);
 
       // Guardar credenciales si es necesario
       await saveCredentials(username, password);
@@ -176,26 +179,30 @@ class LoginProvider extends ChangeNotifier {
 
   String _formatErrorMessage(error) {
     if (error is ApiException) {
-      switch (error.errorCode) {
-        case ApiException.errorUnauthorized:
-          return 'Usuario o contraseña incorrectos';
-        case ApiException.errorNetwork:
-          return 'Error de conexión. Verifique su conexión a internet o la configuración del servidor.';
-        case ApiException.errorServer:
-          return 'Error en el servidor. Intente más tarde.';
-        default:
-          // Verificar si el mensaje contiene información sobre credenciales incorrectas
-          if (error.message
-                  .toLowerCase()
-                  .contains('usuario o contraseña incorrectos') ||
-              error.message.toLowerCase().contains('incorrect') ||
-              error.message
-                  .toLowerCase()
-                  .contains('nombre de usuario o contraseña')) {
-            return 'Usuario o contraseña incorrectos';
-          }
-          return 'Error: ${error.message}';
+      final String errorCode = error.errorCode;
+
+      if (errorCode == ApiConstants.errorCodes[401]) {
+        return 'Usuario o contraseña incorrectos';
       }
+      if (errorCode == ApiConstants.errorCodes[503] ||
+          errorCode == ApiConstants.errorCodes[504]) {
+        return 'Error de conexión. Verifique su conexión a internet o la configuración del servidor.';
+      }
+      if (errorCode == ApiConstants.errorCodes[500]) {
+        return 'Error en el servidor. Intente más tarde.';
+      }
+
+      // Verificar si el mensaje contiene información sobre credenciales incorrectas
+      if (error.message
+              .toLowerCase()
+              .contains('usuario o contraseña incorrectos') ||
+          error.message.toLowerCase().contains('incorrect') ||
+          error.message
+              .toLowerCase()
+              .contains('nombre de usuario o contraseña')) {
+        return 'Usuario o contraseña incorrectos';
+      }
+      return 'Error: ${error.message}';
     }
 
     // Verificar mensajes de error comunes en formato string
@@ -211,7 +218,7 @@ class LoginProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     try {
-      await api.auth.logout();
+      await _authRepository.logout();
       _status = LoginStatus.initial;
       _errorMessage = '';
 
@@ -219,7 +226,7 @@ class LoginProvider extends ChangeNotifier {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await Future.wait([
         prefs.clear(), // Limpiar todas las preferencias
-        api.auth.clearTokens(), // Limpiar tokens
+        _authRepository.clearTokens(), // Limpiar tokens
       ]);
 
       notifyListeners();
@@ -234,7 +241,7 @@ class LoginProvider extends ChangeNotifier {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
         await Future.wait([
           prefs.clear(),
-          api.auth.clearTokens(),
+          _authRepository.clearTokens(),
         ]);
       } catch (cleanupError) {
         debugPrint('Error adicional durante limpieza de datos: $cleanupError');
@@ -244,12 +251,14 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
-  void setRememberMe(bool value) {
+  /// Establece si se deben recordar las credenciales
+  void setRememberMe({required bool value}) {
     _rememberMe = value;
     notifyListeners();
   }
 
-  void setStayLoggedIn(bool value) {
+  /// Establece si se debe mantener la sesión iniciada
+  void setStayLoggedIn({required bool value}) {
     _stayLoggedIn = value;
     notifyListeners();
   }

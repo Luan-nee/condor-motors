@@ -94,8 +94,9 @@ class ProformaComputerScreenState extends State<ProformaComputerScreen>
         }
         // Animar el indicador de notificación cuando hay nuevas proformas
         if (_proformaProvider.hayNuevasProformas) {
-          _notificationAnimController.reset();
-          _notificationAnimController.repeat(reverse: true);
+          _notificationAnimController
+            ..reset()
+            ..repeat(reverse: true);
         } else {
           _notificationAnimController.stop();
         }

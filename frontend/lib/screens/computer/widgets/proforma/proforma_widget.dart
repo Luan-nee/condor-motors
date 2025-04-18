@@ -690,49 +690,65 @@ class ProformaWidget extends StatelessWidget {
             }
 
             // Mostrar diálogo de procesamiento
+            BuildContext? processingDialogContext;
             showDialog(
               context: originalContext,
               barrierDismissible: false,
-              builder: (BuildContext context) => _buildProcessingDialog(
-                  ventaData['tipoDocumento'].toLowerCase()),
-            );
-
-            // Usar provider para convertir proforma a venta
-            final success = await proformaProvider.handleConvertToSale(
-              proforma,
-              null, // Dejar que el provider obtenga el ID de sucursal
-              onSuccess: () {
-                Logger.debug('Callback de éxito ejecutado desde provider');
-                if (onConvert != null) {
-                  onConvert!(proforma);
-                }
+              builder: (BuildContext context) {
+                processingDialogContext = context;
+                return _buildProcessingDialog(
+                    ventaData['tipoDocumento'].toLowerCase());
               },
             );
 
-            // Verificar si el widget sigue montado antes de continuar
-            if (!originalContext.mounted) {
-              Logger.debug('Widget desmontado después de la conversión');
-              return;
-            }
-
-            // Cerrar el diálogo de procesamiento
-            Navigator.of(originalContext).pop();
-
-            Logger.debug(
-                'Resultado de conversión: ${success ? 'Éxito' : 'Fallo'}');
-
-            // Mostrar resultado al usuario
-            if (originalContext.mounted) {
-              ScaffoldMessenger.of(originalContext).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    success
-                        ? 'Proforma #${proforma.id} convertida a venta con éxito'
-                        : 'Error al convertir la proforma a venta',
-                  ),
-                  backgroundColor: success ? Colors.green : Colors.red,
-                ),
+            try {
+              // Usar provider para convertir proforma a venta
+              final success = await proformaProvider.handleConvertToSale(
+                proforma,
+                null, // Dejar que el provider obtenga el ID de sucursal
+                onSuccess: () {
+                  Logger.debug('Callback de éxito ejecutado desde provider');
+                  if (onConvert != null) {
+                    onConvert!(proforma);
+                  }
+                },
               );
+
+              // Cerrar el diálogo de procesamiento si aún está abierto
+              if (processingDialogContext != null &&
+                  Navigator.of(processingDialogContext!).canPop()) {
+                Navigator.of(processingDialogContext!).pop();
+              }
+
+              // Verificar si el widget sigue montado antes de mostrar el resultado
+              if (originalContext.mounted) {
+                ScaffoldMessenger.of(originalContext).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? 'Proforma #${proforma.id} convertida a venta con éxito'
+                          : 'Error al convertir la proforma a venta',
+                    ),
+                    backgroundColor: success ? Colors.green : Colors.red,
+                  ),
+                );
+              }
+            } catch (e) {
+              // Cerrar el diálogo de procesamiento en caso de error
+              if (processingDialogContext != null &&
+                  Navigator.of(processingDialogContext!).canPop()) {
+                Navigator.of(processingDialogContext!).pop();
+              }
+
+              // Mostrar error si el widget sigue montado
+              if (originalContext.mounted) {
+                ScaffoldMessenger.of(originalContext).showSnackBar(
+                  SnackBar(
+                    content: Text('Error al procesar la venta: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             }
           },
           onCancel: () {
@@ -1045,11 +1061,6 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
   /// Obtener cantidad de unidades gratis
   int _getCantidadGratis(DetalleProforma detalle) {
     return ProformaUtils.getCantidadGratis(detalle);
-  }
-
-  /// Obtener cantidad de unidades pagadas
-  int _getCantidadPagada(DetalleProforma detalle) {
-    return ProformaUtils.getCantidadPagada(detalle);
   }
 
   @override

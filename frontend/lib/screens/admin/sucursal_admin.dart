@@ -2,6 +2,7 @@ import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/providers/admin/sucursal.admin.provider.dart';
 import 'package:condorsmotors/screens/admin/widgets/sucursal/sucursal_detalles.dart';
 import 'package:condorsmotors/screens/admin/widgets/sucursal/sucursal_form.dart';
+import 'package:condorsmotors/utils/sucursal_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -32,7 +33,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
   // Filtros avanzados
   bool _mostrarFiltrosAvanzados = false;
   String _filtroTipo = 'Todos';
-  final List<String> _opcionesTipo = ['Todos', 'Central', 'Local'];
+  final List<String> _opcionesTipo = SucursalUtils.tiposSucursal;
 
   // Estado de la lista
   bool _isListScrollable = false;
@@ -213,29 +214,6 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
 
     bool esCentral = _filtroTipo == 'Central';
     return sucursales.where((s) => s.sucursalCentral == esCentral).toList();
-  }
-
-  // Método para obtener icono según la sucursal
-  IconData _getIconForSucursal(Sucursal sucursal) {
-    // Primero revisamos si es sucursal central
-    if (sucursal.sucursalCentral) {
-      return FontAwesomeIcons.building;
-    }
-
-    // Luego revisamos el nombre
-    final String nombre = sucursal.nombre.toLowerCase();
-    if (nombre.contains('central') || nombre.contains('principal')) {
-      return FontAwesomeIcons.building;
-    } else if (nombre.contains('taller')) {
-      return FontAwesomeIcons.screwdriverWrench;
-    } else if (nombre.contains('almacén') ||
-        nombre.contains('almacen') ||
-        nombre.contains('bodega')) {
-      return FontAwesomeIcons.warehouse;
-    } else if (nombre.contains('tienda') || nombre.contains('venta')) {
-      return FontAwesomeIcons.store;
-    }
-    return FontAwesomeIcons.locationDot;
   }
 
   @override
@@ -804,7 +782,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
   }
 
   Widget _buildFilaSucursal(Sucursal sucursal) {
-    final IconData icon = _getIconForSucursal(sucursal);
+    final IconData icon = SucursalUtils.getIconForSucursal(sucursal);
+    final Color iconColor = SucursalUtils.getColorForSucursal(sucursal);
+    final Color iconBgColor = SucursalUtils.getIconBackgroundColor(sucursal);
 
     return Material(
       color: Colors.transparent,
@@ -818,16 +798,12 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: sucursal.sucursalCentral
-                      ? const Color(0xFFE31E24).withOpacity(0.1)
-                      : const Color(0xFF2D2D2D),
+                  color: iconBgColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: FaIcon(
                   icon,
-                  color: sucursal.sucursalCentral
-                      ? const Color(0xFFE31E24)
-                      : Colors.white70,
+                  color: iconColor,
                   size: 20,
                 ),
               ),
@@ -850,56 +826,13 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        if (sucursal.codigoEstablecimiento != null) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2D2D2D),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const FaIcon(
-                                  FontAwesomeIcons.buildingUser,
-                                  size: 10,
-                                  color: Colors.white54,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  sucursal.codigoEstablecimiento!,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white54,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        if (sucursal.codigoEstablecimiento != null)
+                          SucursalUtils.buildCodigoEstablecimiento(
+                            sucursal.codigoEstablecimiento,
                           ),
-                        ],
                         if (sucursal.sucursalCentral) ...[
                           const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE31E24).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'CENTRAL',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFE31E24),
-                              ),
-                            ),
-                          ),
+                          SucursalUtils.buildTipoSucursalBadge(sucursal),
                         ],
                       ],
                     ),
@@ -927,20 +860,18 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
               // Serie Factura
               Expanded(
                 flex: 2,
-                child: _buildSerieInfo(
+                child: SucursalUtils.buildSerieInfo(
                   sucursal.serieFactura,
                   sucursal.numeroFacturaInicial,
-                  'F',
                 ),
               ),
 
               // Serie Boleta
               Expanded(
                 flex: 2,
-                child: _buildSerieInfo(
+                child: SucursalUtils.buildSerieInfo(
                   sucursal.serieBoleta,
                   sucursal.numeroBoletaInicial,
-                  'B',
                 ),
               ),
 
@@ -981,50 +912,6 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildSerieInfo(String? serie, int? numeroInicial, String tipo) {
-    if (serie == null) {
-      return const Text(
-        'No configurado',
-        style: TextStyle(
-          fontSize: 12,
-          fontStyle: FontStyle.italic,
-          color: Colors.white38,
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2D2D2D),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            serie,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ),
-        if (numeroInicial != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            'Desde: $numeroInicial',
-            style: const TextStyle(
-              fontSize: 11,
-              color: Colors.white54,
-            ),
-          ),
-        ],
-      ],
     );
   }
 
@@ -1388,14 +1275,8 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
                         prefixIcon: Icon(Icons.receipt_long),
                         helperText: 'Debe empezar con F y tener 4 caracteres',
                       ),
-                      validator: (String? value) {
-                        if (value != null && value.isNotEmpty) {
-                          if (!value.startsWith('F') || value.length != 4) {
-                            return 'La serie debe empezar con F y tener 4 caracteres';
-                          }
-                        }
-                        return null;
-                      },
+                      validator: (value) =>
+                          SucursalUtils.validarSerie(value, 'factura'),
                     ),
                     const SizedBox(height: 8),
                     // Número de Factura Inicial
@@ -1407,15 +1288,7 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
                         prefixIcon: Icon(Icons.format_list_numbered),
                       ),
                       keyboardType: TextInputType.number,
-                      validator: (String? value) {
-                        if (value != null && value.isNotEmpty) {
-                          if (int.tryParse(value) == null ||
-                              int.parse(value) < 1) {
-                            return 'Debe ser un número positivo';
-                          }
-                        }
-                        return null;
-                      },
+                      validator: SucursalUtils.validarNumeroInicial,
                     ),
                     const SizedBox(height: 16),
                     // Serie de Boleta
@@ -1427,14 +1300,8 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
                         prefixIcon: Icon(Icons.receipt),
                         helperText: 'Debe empezar con B y tener 4 caracteres',
                       ),
-                      validator: (String? value) {
-                        if (value != null && value.isNotEmpty) {
-                          if (!value.startsWith('B') || value.length != 4) {
-                            return 'La serie debe empezar con B y tener 4 caracteres';
-                          }
-                        }
-                        return null;
-                      },
+                      validator: (value) =>
+                          SucursalUtils.validarSerie(value, 'boleta'),
                     ),
                     const SizedBox(height: 8),
                     // Número de Boleta Inicial
@@ -1446,15 +1313,7 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
                         prefixIcon: Icon(Icons.format_list_numbered),
                       ),
                       keyboardType: TextInputType.number,
-                      validator: (String? value) {
-                        if (value != null && value.isNotEmpty) {
-                          if (int.tryParse(value) == null ||
-                              int.parse(value) < 1) {
-                            return 'Debe ser un número positivo';
-                          }
-                        }
-                        return null;
-                      },
+                      validator: SucursalUtils.validarNumeroInicial,
                     ),
                     const SizedBox(height: 16),
                     // Código de Establecimiento
