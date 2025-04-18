@@ -5,19 +5,15 @@ interface PopulateConfig {
   }
   sucursal: {
     nombre: string
-    sucursalCentral: boolean
     direccion: string
+    sucursalCentral: boolean
   }
   empleado: {
     nombre: string
     apellidos: string
     activo: boolean
-    dni: string
   }
-  rolEmpleado: {
-    codigo: string
-    nombre: string
-  }
+  rolesDefault: string[]
   defaultCategoria: {
     nombre: string
     descripcion?: string
@@ -26,6 +22,45 @@ interface PopulateConfig {
     nombre: string
     descripcion?: string
   }
+  coloresDefault: Array<{
+    nombre: string
+    hex: string
+  }>
+  estadosTransferenciasInvDefault: Array<{
+    nombre: string
+    codigo: string
+  }>
+  tiposDocumentoClienteDefault: Array<{
+    nombre: string
+    codigoSunat: string
+    codigo: string
+  }>
+  tiposDocumentoFacturacionDefault: Array<{
+    nombre: string
+    codigoSunat: string
+    codigo: string
+  }>
+  monedasFacturacionDefault: Array<{
+    nombre: string
+    codigoSunat: string
+  }>
+  metodosPagoDefault: Array<{
+    nombre: string
+    codigoTipo: string
+    codigoSunat: string
+    activado: boolean
+  }>
+  tiposTaxDefault: Array<{
+    nombre: string
+    codigo: string
+    porcentaje: number
+    codigoSunat: string
+  }>
+  estadosDocFacturacion: Array<{
+    nombre: string
+    codigo: string
+    codigoSunat: string
+  }>
 }
 
 interface SeedConfig {

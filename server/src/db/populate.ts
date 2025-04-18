@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import { BcryptAdapter } from '@/config/bcrypt'
 import { JwtAdapter } from '@/config/jwt'
-import { permissionCodes } from '@/consts'
 import { db } from '@db/connection'
 import {
   cuentasEmpleadosTable,
@@ -11,11 +10,12 @@ import {
   rolesPermisosTable,
   sucursalesTable,
   marcasTable,
-  categoriasTable
+  categoriasTable,
+  coloresTable
 } from '@db/schema'
 import { exit } from 'process'
-import { populateConfig } from '@db/config/populate.config'
-import { transformPermissionCodes } from '@/core/lib/utils'
+import { adminPermissions, populateConfig } from '@db/config/populate.config'
+import { formatCode } from '@/core/lib/format-values'
 
 const populateDatabase = async (
   config: PopulateConfig,
@@ -28,7 +28,7 @@ const populateDatabase = async (
     const [sucursal] = await tx
       .insert(sucursalesTable)
       .values(config.sucursal)
-      .returning()
+      .returning({ id: sucursalesTable.id })
 
     const [empleado] = await tx
       .insert(empleadosTable)
@@ -36,35 +36,41 @@ const populateDatabase = async (
         ...config.empleado,
         sucursalId: sucursal.id
       })
-      .returning()
+      .returning({ id: empleadosTable.id })
 
-    const [rolEmpleado] = await tx
+    const [adminRole] = await tx
       .insert(rolesTable)
-      .values(config.rolEmpleado)
+      .values(
+        config.rolesDefault.map((rol) => ({
+          codigo: formatCode(rol),
+          nombre: rol
+        }))
+      )
       .returning()
 
-    await tx.insert(cuentasEmpleadosTable).values({
-      usuario: config.user.usuario,
-      clave: hashedPassword,
-      secret,
-      rolId: rolEmpleado.id,
-      empleadoId: empleado.id
-    })
-
-    await tx.insert(categoriasTable).values(config.defaultCategoria)
-    await tx.insert(marcasTable).values(config.defaultCategoria)
-
-    const permisosId = await tx
+    const adminPermissions = await tx
       .insert(permisosTable)
       .values(permissions)
       .returning({ id: permisosTable.id })
 
     await tx.insert(rolesPermisosTable).values(
-      permisosId.map((permiso) => ({
-        permisoId: permiso.id,
-        rolId: rolEmpleado.id
+      adminPermissions.map((permission) => ({
+        permisoId: permission.id,
+        rolId: adminRole.id
       }))
     )
+
+    await tx.insert(cuentasEmpleadosTable).values({
+      usuario: config.user.usuario,
+      clave: hashedPassword,
+      secret,
+      rolId: adminRole.id,
+      empleadoId: empleado.id
+    })
+
+    await tx.insert(coloresTable).values(config.coloresDefault)
+    await tx.insert(categoriasTable).values(config.defaultCategoria)
+    await tx.insert(marcasTable).values(config.defaultCategoria)
   })
 
   return {
@@ -73,7 +79,7 @@ const populateDatabase = async (
   }
 }
 
-const permissions = transformPermissionCodes(permissionCodes)
+const permissions = adminPermissions
 
 populateDatabase(populateConfig, permissions)
   .then((administrador) => {
