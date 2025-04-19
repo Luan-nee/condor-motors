@@ -16,7 +16,7 @@ class SucursalProvider extends ChangeNotifier {
   String _terminoBusqueda = '';
 
   // Nuevos estados para ayuda en la interfaz
-  final List<String> tiposSucursal = ['Local', 'Central'];
+  final List<String> tiposSucursal = ['Sucursal', 'Central'];
   final Map<String, String> prefijosDocumentos = {
     'factura': 'F',
     'boleta': 'B',
