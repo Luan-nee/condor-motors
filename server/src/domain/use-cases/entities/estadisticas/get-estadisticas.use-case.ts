@@ -2,7 +2,7 @@ import { CustomError } from '@/core/errors/custom.error'
 import { getDateTimeString, getOffsetDateTime } from '@/core/lib/utils'
 import { db } from '@/db/connection'
 import { sucursalesTable, totalesVentaTable, ventasTable } from '@/db/schema'
-import { count, eq, gte, isNull, or, sql, sum } from 'drizzle-orm'
+import { count, eq, gte, isNull, or, sql } from 'drizzle-orm'
 
 export class GetReporteVentas {
   private async getventasReporte() {
@@ -25,7 +25,7 @@ export class GetReporteVentas {
     const [salesToday] = await db
       .select({
         count: count(ventasTable.id),
-        total: sum(totalesVentaTable.totalVenta)
+        total: sql<string>`coalesce(sum(${totalesVentaTable.totalVenta}), 0)`
       })
       .from(ventasTable)
       .innerJoin(
@@ -37,7 +37,7 @@ export class GetReporteVentas {
     const [salesThisMonth] = await db
       .select({
         count: count(ventasTable.id),
-        total: sum(totalesVentaTable.totalVenta)
+        total: sql<string>`coalesce(sum(${totalesVentaTable.totalVenta}), 0)`
       })
       .from(ventasTable)
       .innerJoin(
