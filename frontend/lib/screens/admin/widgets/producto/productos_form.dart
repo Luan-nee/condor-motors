@@ -1401,13 +1401,6 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       if (cantidadGratis == null || cantidadGratis <= 0) {
                         return 'Cantidad inválida';
                       }
-
-                      final int cantidadMinima = int.tryParse(
-                              _cantidadMinimaDescuentoController.text) ??
-                          0;
-                      if (cantidadGratis >= cantidadMinima) {
-                        return 'Debe ser menor a la cantidad mínima';
-                      }
                     }
                     return null;
                   },
@@ -1432,9 +1425,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   final int cantidadGratis =
                       int.tryParse(cantidadGratisText.text) ?? 0;
 
-                  if (cantidadMinima > 0 &&
-                      cantidadGratis > 0 &&
-                      cantidadGratis < cantidadMinima) {
+                  if (cantidadMinima > 0 && cantidadGratis > 0) {
                     return Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
