@@ -262,7 +262,7 @@ class _SucursalFormState extends State<SucursalForm>
                                         ),
                                         SizedBox(width: 8),
                                         Text(
-                                          'Tipo de Sucursal',
+                                          'Tipo de local',
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
@@ -274,7 +274,7 @@ class _SucursalFormState extends State<SucursalForm>
                                     DropdownButtonFormField<String>(
                                       value: _sucursalCentral
                                           ? 'Central'
-                                          : 'Local',
+                                          : 'Sucursal',
                                       items: provider.tiposSucursal
                                           .map((tipo) => DropdownMenuItem(
                                                 value: tipo,
