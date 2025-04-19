@@ -50,5 +50,6 @@ export const productoSchema = {
 }
 
 export const queriesProductoSchema = {
-  stockBajo: z.coerce.string().optional()
+  stockBajo: z.coerce.string().optional(),
+  activo: z.coerce.string().optional()
 }

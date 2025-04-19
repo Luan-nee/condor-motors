@@ -2,6 +2,7 @@
 import { envs } from '@/config/envs'
 import { CustomLogger } from '@/config/logger'
 import { isProduction, logsDestination } from '@/consts'
+import { Validator } from '@/domain/validators/validator'
 import type { NextFunction, Request, Response } from 'express'
 
 export class LoggerMiddleware {
@@ -47,7 +48,14 @@ export class LoggerMiddleware {
       }
 
       if (envs.LOGS === logsDestination.filesystem) {
-        const ip = req.ip ?? null
+        const forwardedFor =
+          typeof req.headers['x-forwarded-for'] === 'string'
+            ? req.headers['x-forwarded-for']
+            : null
+
+        const isValidIp = Validator.isValidIp(forwardedFor ?? '')
+
+        const ip = isValidIp ? forwardedFor : (req.ip ?? null)
         const user = req.authPayload ?? { id: null }
         const message = `${req.method} ${resource} ${req.protocol.toUpperCase()}/${req.httpVersion} ${res.statusCode} ${duration}ms`
         const meta = { ip, user }
