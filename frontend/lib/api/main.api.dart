@@ -232,11 +232,12 @@ class ApiClient {
           '${options.baseUrl}${options.path}',
         );
 
-        // Añadir logging del cuerpo de la solicitud
+        // Añadir logging del cuerpo de la solicitud sin formateo
         if (options.data != null) {
           try {
             if (options.data is Map || options.data is List) {
-              logJson('Request Body', options.data);
+              // Imprimir JSON sin formato para ahorrar espacio
+              logDebug('Request Body: ${options.data}');
             } else {
               logDebug('Request Body: ${options.data}');
             }
@@ -258,7 +259,8 @@ class ApiClient {
         if (response.data != null) {
           try {
             if (response.data is Map || response.data is List) {
-              logJson('Response Body', response.data);
+              // Imprimir JSON sin formato para ahorrar espacio
+              logDebug('Response Body: ${response.data}');
             } else {
               logDebug('Response Body: ${response.data}');
             }
@@ -276,11 +278,12 @@ class ApiClient {
           error.stackTrace,
         );
 
-        // Añadir detalles adicionales del error cuando sea posible
+        // Añadir detalles adicionales del error sin formateo
         if (error.response?.data != null) {
           try {
             if (error.response!.data is Map || error.response!.data is List) {
-              logJson('Error Response', error.response!.data);
+              // Imprimir JSON sin formato para ahorrar espacio
+              logDebug('Error Response Body: ${error.response!.data}');
             } else {
               logDebug('Error Response Body: ${error.response!.data}');
             }
@@ -341,17 +344,13 @@ class ApiClient {
         validateStatus: (status) => true,
       );
 
-      // Log detallado de la solicitud
+      // Log simple de la solicitud sin formateo JSON
       logInfo('Enviando solicitud $method a $endpoint');
       if (body != null) {
-        try {
-          logJson('Request Body', body);
-        } catch (e) {
-          logInfo('Body: [No se pudo serializar body]');
-        }
+        logDebug('Body: $body');
       }
       if (queryParams != null) {
-        logJson('Query Params', queryParams);
+        logDebug('Query Params: $queryParams');
       }
 
       final Response response = await _dio.request(
