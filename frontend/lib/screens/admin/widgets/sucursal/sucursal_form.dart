@@ -762,7 +762,9 @@ class _SucursalFormState extends State<SucursalForm>
   }
 
   void _handleCodigoChange(String value) {
-    if (value.isEmpty) return;
+    if (value.isEmpty) {
+      return;
+    }
 
     // Filtrar: permitir solo dígitos
     final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');

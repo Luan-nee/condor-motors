@@ -148,6 +148,12 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     });
 
     try {
+      // IMPORTANTE: Forzamos la carga de categorías, marcas y colores sin usar caché
+      // para asegurar que siempre tengamos la información más actualizada al abrir el formulario
+      await productoProvider.cargarCategorias();
+      await productoProvider.cargarMarcas();
+      await productoProvider.cargarColores();
+
       // Extraer datos del provider después de asegurar que estén cargados
       setState(() {
         // Obtener categorías
@@ -2070,7 +2076,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             debugPrint(
                 'ProductosForm: Producto guardado. Actualizando datos...');
 
-            // Forzar una recarga completa de datos
+            // IMPORTANTE: Forzamos una recarga completa de datos del servidor
+            // para asegurar que tengamos la información más actualizada, incluyendo
+            // nuevas categorías o marcas que puedan haberse creado automáticamente
             await productoProvider.recargarDatosProductos();
 
             debugPrint('ProductosForm: Datos actualizados correctamente');

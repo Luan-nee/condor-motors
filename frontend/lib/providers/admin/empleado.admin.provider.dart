@@ -423,7 +423,7 @@ class EmpleadoProvider extends ChangeNotifier {
   }
 
   /// Refactorizar el método _handleApiError para que pueda retornar un mensaje de error sin establecerlo en el estado
-  String _procesarErrorApi(dynamic e, {bool setearError = true}) {
+  String _procesarErrorApi(e, {bool setearError = true}) {
     String errorMsg = e.toString();
 
     if (e is ApiException) {
@@ -483,8 +483,8 @@ class EmpleadoProvider extends ChangeNotifier {
   }
 
   // Reemplazar _handleApiError con la nueva función
-  void _handleApiError(dynamic e) {
-    _procesarErrorApi(e, setearError: true);
+  void _handleApiError(e) {
+    _procesarErrorApi(e);
   }
 
   /// Gestiona el proceso de actualización de una cuenta de empleado existente
