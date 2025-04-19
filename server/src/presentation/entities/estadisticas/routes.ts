@@ -7,7 +7,11 @@ export class EstadisticaRouter {
     const estadisticasController = new EstadisticasController()
 
     router.get('/ventas', estadisticasController.getReporteVentas)
+
+    router.get('/ultimasventas', estadisticasController.getUltimasVentas)
+
     router.get('/productos', estadisticasController.getStockBajoLiquidacion)
+
     return router
   }
 }
