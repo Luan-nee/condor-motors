@@ -43,4 +43,22 @@ export class Validator {
 
     return !Validator.containsIvalidCharacters(trimValue)
   }
+
+  static isValidIp = (val: string) => {
+    const octets = val.split('.')
+
+    if (octets.length !== 4) {
+      return false
+    }
+
+    for (const octet of octets) {
+      const numericOctet = parseInt(octet)
+
+      if (isNaN(numericOctet) || numericOctet < 0 || numericOctet > 255) {
+        return false
+      }
+    }
+
+    return true
+  }
 }
