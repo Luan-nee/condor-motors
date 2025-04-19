@@ -11,7 +11,14 @@ import {
   sucursalesTable,
   marcasTable,
   categoriasTable,
-  coloresTable
+  coloresTable,
+  estadosTransferenciasInventarios,
+  tiposDocumentoClienteTable,
+  monedasFacturacionTable,
+  metodosPagoTable,
+  tiposTaxTable,
+  estadosDocFacturacionTable,
+  tiposDocFacturacionTable
 } from '@db/schema'
 import { exit } from 'process'
 import {
@@ -101,9 +108,35 @@ const populateDatabase = async (
       empleadoId: empleado.id
     })
 
-    await tx.insert(coloresTable).values(config.coloresDefault)
     await tx.insert(categoriasTable).values(config.defaultCategoria)
+
     await tx.insert(marcasTable).values(config.defaultCategoria)
+
+    await tx.insert(coloresTable).values(config.coloresDefault)
+
+    await tx
+      .insert(estadosTransferenciasInventarios)
+      .values(config.estadosTransferenciasInvDefault)
+
+    await tx
+      .insert(tiposDocumentoClienteTable)
+      .values(config.tiposDocumentoClienteDefault)
+
+    await tx
+      .insert(tiposDocFacturacionTable)
+      .values(config.tiposDocumentoFacturacionDefault)
+
+    await tx
+      .insert(monedasFacturacionTable)
+      .values(config.monedasFacturacionDefault)
+
+    await tx.insert(metodosPagoTable).values(config.metodosPagoDefault)
+
+    await tx.insert(tiposTaxTable).values(config.tiposTaxDefault)
+
+    await tx
+      .insert(estadosDocFacturacionTable)
+      .values(config.estadosDocFacturacion)
   })
 
   return {
