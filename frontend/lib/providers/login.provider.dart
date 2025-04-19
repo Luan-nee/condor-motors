@@ -1,4 +1,5 @@
 import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/models/auth.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/foundation.dart';
@@ -98,7 +99,7 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
-  Future<UsuarioAutenticado?> tryAutoLogin() async {
+  Future<AuthUser?> tryAutoLogin() async {
     try {
       _status = LoginStatus.authenticating;
       notifyListeners();
@@ -113,8 +114,7 @@ class LoginProvider extends ChangeNotifier {
         return null;
       }
 
-      final UsuarioAutenticado usuario =
-          await _authRepository.login(username, password);
+      final AuthUser usuario = await _authRepository.login(username, password);
 
       // Guardar datos del usuario
       await _authRepository.saveUserData(usuario);
@@ -133,14 +133,13 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
-  Future<UsuarioAutenticado?> login(String username, String password) async {
+  Future<AuthUser?> login(String username, String password) async {
     try {
       _status = LoginStatus.authenticating;
       _errorMessage = '';
       notifyListeners();
 
-      final UsuarioAutenticado usuario =
-          await _authRepository.login(username, password);
+      final AuthUser usuario = await _authRepository.login(username, password);
 
       // Validar que el usuario tenga un rol válido
       if (usuario.rolCuentaEmpleadoCodigo.isEmpty) {

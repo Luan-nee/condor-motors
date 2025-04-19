@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:condorsmotors/api/auth.api.dart';
 import 'package:condorsmotors/api/index.api.dart' show CondorMotorsApi, api;
+import 'package:condorsmotors/models/auth.model.dart';
 import 'package:condorsmotors/providers/login.provider.dart';
 import 'package:condorsmotors/utils/role_utils.dart'
     as role_utils; // Importar utilidad de roles con alias
@@ -176,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen>
           'Auto-login: Intentando iniciar sesión automáticamente con usuario: $username');
 
       // Intentamos el login
-      final UsuarioAutenticado usuarioAutenticado = await api.auth.login(
+      final AuthUser usuarioAutenticado = await api.auth.login(
         username,
         password,
       );

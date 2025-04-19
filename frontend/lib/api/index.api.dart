@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:condorsmotors/api/auth.api.dart';
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/index.protected.dart';
+import 'package:condorsmotors/models/auth.model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -193,10 +194,19 @@ class CondorMotorsApi {
   /// Guarda los datos del usuario localmente
   ///
   /// Método de utilidad para almacenar datos del usuario desde cualquier componente
-  Future<void> saveUserData(Map<String, dynamic> userData) async {
+  Future<void> saveUserData(dynamic userData) async {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_userDataKey, json.encode(userData));
+
+      // Si es un AuthUser, convertir a Map primero
+      if (userData is AuthUser) {
+        await prefs.setString(_userDataKey, json.encode(userData.toMap()));
+      } else if (userData is Map<String, dynamic>) {
+        await prefs.setString(_userDataKey, json.encode(userData));
+      } else {
+        throw ArgumentError('Tipo de datos no soportado para saveUserData');
+      }
+
       debugPrint('CondorMotorsApi: Datos del usuario guardados correctamente');
     } catch (e) {
       debugPrint('Error en CondorMotorsApi.saveUserData: $e');

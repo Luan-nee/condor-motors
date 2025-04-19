@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:condorsmotors/api/main.api.dart';
+import 'package:condorsmotors/models/auth.model.dart';
+import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -269,52 +271,26 @@ class TokenService {
 
   /// Elimina los tokens del almacenamiento
   Future<void> clearTokens() async {
-    debugPrint('Limpiando tokens y datos de usuario...');
+    debugPrint('TokenService: Delegando limpieza de tokens al repositorio');
     try {
+      // Limpiar variables en memoria
+      _accessToken = null;
+      _refreshToken = null;
+      _expiryTime = null;
+
+      // Limpiar solo los tokens específicos que gestiona esta clase
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-      // Obtener todas las claves almacenadas
-      final Set<String> keys = prefs.getKeys();
-
-      // Lista de claves específicas que queremos conservar (como configuraciones de app)
-      final Set<String> keysToKeep = {
-        'theme_mode',
-        'language',
-        // Agregar otras configuraciones de app que no deban borrarse
-      };
-
-      // Crear lista de futures para borrar todo excepto las claves a conservar
-      final List<Future<bool>> deleteFutures = keys
-          .where((key) => !keysToKeep.contains(key))
-          .map((key) => prefs.remove(key))
-          .toList();
-
-      // Ejecutar todas las operaciones de borrado
       await Future.wait([
-        ...deleteFutures,
-        // Asegurar que estas claves específicas se borren
         prefs.remove(_accessTokenKey),
         prefs.remove(_refreshTokenKey),
-        prefs.remove('remember_me'),
-        prefs.remove('username'),
-        prefs.remove('password'),
-        prefs.remove('username_auto'),
-        prefs.remove('password_auto'),
-        prefs.remove('last_sucursal'),
-        prefs.remove('user_data'),
-        prefs.setBool('stay_logged_in', false),
-        // Limpiar datos de sucursal actual
-        prefs.remove('current_sucursal_id'),
-        prefs.remove('current_sucursal_data'),
-        // Limpiar cualquier caché de datos
-        prefs.remove('ventas_cache'),
-        prefs.remove('productos_cache'),
-        prefs.remove('proformas_cache'),
+        prefs.remove(_expiryTimeKey),
+        prefs.remove(_lastUsernameKey),
+        prefs.remove(_lastPasswordKey),
       ]);
 
-      debugPrint('Tokens y datos de usuario limpiados correctamente');
+      debugPrint('TokenService: Tokens limpiados correctamente');
     } catch (e) {
-      debugPrint('Error al limpiar tokens y datos: $e');
+      debugPrint('TokenService: ERROR al limpiar tokens: $e');
       rethrow;
     }
   }
@@ -352,30 +328,13 @@ class TokenService {
       return <String, dynamic>{};
     }
 
-    // Normalizar el rol
+    // Obtener el rol original del token
     final String? rolOriginal = decodedToken['rolCuentaEmpleadoCodigo'];
-    String rolNormalizado = 'DESCONOCIDO';
 
+    // Usar la función normalizeRole de role_utils para normalizar el rol
+    String rolNormalizado = 'desconocido';
     if (rolOriginal != null) {
-      // Normalizar el rol según las reglas conocidas
-      switch (rolOriginal.toUpperCase()) {
-        case 'ADMINISTRADOR':
-        case 'ADMINSTRADOR': // Typo en backend
-        case 'ADM':
-        case 'ADMIN':
-          rolNormalizado = 'ADMINISTRADOR';
-          break;
-        case 'VENDEDOR':
-        case 'VEN':
-          rolNormalizado = 'VENDEDOR';
-          break;
-        case 'COMPUTADORA':
-        case 'COMP':
-          rolNormalizado = 'COMPUTADORA';
-          break;
-        default:
-          rolNormalizado = 'DESCONOCIDO';
-      }
+      rolNormalizado = role_utils.normalizeRole(rolOriginal);
     }
 
     return <String, dynamic>{
@@ -878,52 +837,31 @@ class AuthApi {
 
   /// Limpia los tokens y datos de usuario almacenados
   Future<void> clearTokens() async {
-    debugPrint('Limpiando tokens y datos de usuario...');
+    debugPrint('AuthApi: Limpiando tokens y datos específicos...');
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-      // Obtener todas las claves almacenadas
-      final Set<String> keys = prefs.getKeys();
-
-      // Lista de claves específicas que queremos conservar
-      final Set<String> keysToKeep = {
-        'theme_mode',
-        'language',
-        'server_url', // Mantener la configuración del servidor
-      };
-
-      // Crear lista de futures para borrar todo excepto las claves a conservar
-      final List<Future<bool>> deleteFutures = keys
-          .where((key) => !keysToKeep.contains(key))
-          .map((key) => prefs.remove(key))
-          .toList();
-
-      // Ejecutar todas las operaciones de borrado
+      // Limpiar solo las claves específicas que gestiona esta clase
       await Future.wait([
-        ...deleteFutures,
-        // Asegurar que estas claves críticas se borren
+        // Tokens de autenticación
         prefs.remove(_getKey('token')),
         prefs.remove(_getKey('refresh')),
+        // Datos de usuario
         prefs.remove(_getKey('userData')),
         prefs.remove(_getKey('sucursal')),
         prefs.remove(_getKey('sucursalId')),
-        // Limpiar datos de sesión
+        // Datos de sesión
         prefs.remove(_getKey('remember')),
         prefs.remove(_getKey('username')),
         prefs.remove(_getKey('password')),
         prefs.remove(_getKey('usernameAuto')),
         prefs.remove(_getKey('passwordAuto')),
         prefs.setBool(_getKey('stayLogged'), false),
-        // Limpiar caches específicos
-        prefs.remove(_getKey('ventasCache')),
-        prefs.remove(_getKey('productosCache')),
-        prefs.remove(_getKey('proformasCache')),
-        prefs.remove(_getKey('dashboardCache')),
       ]);
 
-      debugPrint('Tokens y datos de usuario limpiados correctamente');
+      debugPrint('AuthApi: Tokens y datos específicos limpiados correctamente');
     } catch (e) {
-      debugPrint('Error al limpiar tokens y datos: $e');
+      debugPrint('AuthApi: Error al limpiar tokens y datos: $e');
       rethrow;
     }
   }
@@ -1052,7 +990,7 @@ class AuthApi {
   }
 
   /// Inicia sesión con usuario y contraseña
-  Future<UsuarioAutenticado> login(String usuario, String clave) async {
+  Future<AuthUser> login(String usuario, String clave) async {
     try {
       final Map<String, dynamic> response = await _api.request(
         endpoint: '/auth/login',
@@ -1094,9 +1032,8 @@ class AuthApi {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString(_getKey('userData'), json.encode(userData));
 
-      // Crear instancia de UsuarioAutenticado con los datos recibidos
-      final UsuarioAutenticado usuarioAutenticado =
-          UsuarioAutenticado.fromJson(userData);
+      // Crear instancia de AuthUser con los datos recibidos
+      final AuthUser usuarioAutenticado = AuthUser.fromJson(userData);
       debugPrint('Login exitoso para usuario: ${usuarioAutenticado.usuario}');
       return usuarioAutenticado;
     } catch (e) {
@@ -1156,101 +1093,6 @@ class AuthApi {
   }
 }
 
-/// Clase para representar los datos del usuario autenticado
-class UsuarioAutenticado {
-  final String id;
-  final String usuario;
-  final String rolCuentaEmpleadoId;
-  final String rolCuentaEmpleadoCodigo;
-  final String empleadoId;
-  final Map<String, dynamic> empleado;
-  final DateTime fechaCreacion;
-  final DateTime fechaActualizacion;
-  final String sucursal;
-  final int sucursalId;
-
-  UsuarioAutenticado({
-    required this.id,
-    required this.usuario,
-    required this.rolCuentaEmpleadoId,
-    required this.rolCuentaEmpleadoCodigo,
-    required this.empleadoId,
-    required this.empleado,
-    required this.fechaCreacion,
-    required this.fechaActualizacion,
-    required this.sucursal,
-    required this.sucursalId,
-  });
-
-  // Convertir a Map para almacenamiento o navegación
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'id': id,
-      'usuario': usuario,
-      'rol': {
-        'codigo': rolCuentaEmpleadoCodigo.toLowerCase(),
-        'nombre': rolCuentaEmpleadoCodigo
-      },
-      'rolId': rolCuentaEmpleadoId,
-      'empleadoId': empleadoId,
-      'empleado': empleado,
-      'sucursal': sucursal,
-      'sucursalId': sucursalId.toString(),
-    };
-  }
-
-  // Crear desde respuesta JSON
-  factory UsuarioAutenticado.fromJson(Map<String, dynamic> json) {
-    debugPrint('Procesando datos de usuario: ${json.toString()}');
-
-    // Extraer sucursalId con manejo seguro de tipos
-    int sucursalId;
-    try {
-      if (json['sucursalId'] is int) {
-        sucursalId = json['sucursalId'];
-      } else if (json['sucursalId'] is String) {
-        sucursalId = int.tryParse(json['sucursalId']) ?? 0;
-        debugPrint('Convertido sucursalId de String a int: $sucursalId');
-      } else {
-        sucursalId = 0;
-        debugPrint(
-            'ADVERTENCIA: sucursalId no es int ni String, usando valor por defecto 0');
-      }
-    } catch (e) {
-      sucursalId = 0;
-      debugPrint('ERROR al procesar sucursalId: $e');
-    }
-
-    // Procesar datos del empleado
-    final Map<String, dynamic> empleadoData =
-        json['empleado'] as Map<String, dynamic>? ??
-            <String, dynamic>{'activo': true, 'nombres': '', 'apellidos': ''};
-
-    return UsuarioAutenticado(
-      id: json['id']?.toString() ?? '',
-      usuario: json['usuario'] ?? '',
-      rolCuentaEmpleadoId: json['rolCuentaEmpleadoId']?.toString() ?? '',
-      rolCuentaEmpleadoCodigo:
-          json['rolCuentaEmpleadoCodigo']?.toString().toLowerCase() ?? '',
-      empleadoId: json['empleadoId']?.toString() ?? '',
-      empleado: empleadoData,
-      fechaCreacion: json['fechaCreacion'] != null
-          ? DateTime.parse(json['fechaCreacion'])
-          : DateTime.now(),
-      fechaActualizacion: json['fechaActualizacion'] != null
-          ? DateTime.parse(json['fechaActualizacion'])
-          : DateTime.now(),
-      sucursal: json['sucursal'] ?? '',
-      sucursalId: sucursalId,
-    );
-  }
-
-  @override
-  String toString() {
-    return 'UsuarioAutenticado{id: $id, usuario: $usuario, rol: $rolCuentaEmpleadoCodigo, empleado: ${empleado['nombres']} ${empleado['apellidos']}, sucursal: $sucursal, sucursalId: $sucursalId}';
-  }
-}
-
 class AuthService {
   final AuthApi _auth;
   static const String _userIdKey = 'user_id';
@@ -1261,7 +1103,7 @@ class AuthService {
 
   AuthService(this._auth);
 
-  Future<void> saveUserData(UsuarioAutenticado usuario) async {
+  Future<void> saveUserData(AuthUser usuario) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userIdKey, usuario.id);
     await prefs.setString(_usernameKey, usuario.usuario);

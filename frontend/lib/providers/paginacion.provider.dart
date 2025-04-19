@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:math' as math;
 
 /// Provider para manejar la lógica de paginación
 class PaginacionProvider extends ChangeNotifier {
@@ -529,20 +530,27 @@ class PaginacionProvider extends ChangeNotifier {
       {Map<String, dynamic>? metadata}) {
     final provider = PaginacionProvider();
     if (paginacion != null) {
+      // Asegurarse que hay valores válidos para evitar errores en clamp
+      final int totalItems = math.max(0, paginacion.totalItems ?? 0);
+      final int currentPage = math.max(1, paginacion.currentPage ?? 1);
+      final int itemsPerPage = math.max(1, provider.itemsPerPage);
+
       // Calcular el rango si no está definido
-      final int inicio = paginacion.rangoInicio ??
-          ((paginacion.currentPage - 1) * provider.itemsPerPage) + 1;
-      final int fin = paginacion.rangoFin ??
-          (inicio + provider.itemsPerPage - 1)
-              .clamp(inicio, paginacion.totalItems);
+      final int inicio =
+          paginacion.rangoInicio ?? ((currentPage - 1) * itemsPerPage) + 1;
+
+      // Asegurar que fin sea al menos igual a inicio para evitar errores en clamp
+      final int fin = totalItems > 0
+          ? math.min((inicio + itemsPerPage - 1), totalItems)
+          : inicio;
 
       provider
         .._paginacion = Paginacion(
-          totalItems: paginacion.totalItems ?? 0,
-          totalPages: paginacion.totalPages ?? 1,
-          currentPage: paginacion.currentPage ?? 1,
-          hasNext: (paginacion.currentPage ?? 1) < (paginacion.totalPages ?? 1),
-          hasPrev: (paginacion.currentPage ?? 1) > 1,
+          totalItems: totalItems,
+          totalPages: math.max(1, paginacion.totalPages ?? 1),
+          currentPage: currentPage,
+          hasNext: currentPage < math.max(1, paginacion.totalPages ?? 1),
+          hasPrev: currentPage > 1,
           rangoInicio: inicio,
           rangoFin: fin,
         )
@@ -555,11 +563,18 @@ class PaginacionProvider extends ChangeNotifier {
   static PaginacionProvider fromResponse<T>(PaginatedResponse<T> response) {
     final provider = PaginacionProvider();
 
+    // Asegurar valores válidos
+    final int totalItems = math.max(0, response.paginacion.totalItems);
+    final int currentPage = math.max(1, response.paginacion.currentPage);
+    final int itemsPerPage = math.max(1, provider.itemsPerPage);
+
     // Calcular el rango para la paginación actual
-    final int inicio =
-        ((response.paginacion.currentPage - 1) * provider.itemsPerPage) + 1;
-    final int fin = (inicio + provider.itemsPerPage - 1)
-        .clamp(inicio, response.paginacion.totalItems);
+    final int inicio = ((currentPage - 1) * itemsPerPage) + 1;
+
+    // Usar min en lugar de clamp para evitar errores con valores inválidos
+    final int fin = totalItems > 0
+        ? math.min((inicio + itemsPerPage - 1), totalItems)
+        : inicio;
 
     provider
       .._paginacion = response.paginacion.copyWith(
@@ -577,12 +592,20 @@ class PaginacionProvider extends ChangeNotifier {
     if (response.containsKey('pagination')) {
       final paginacionData = response['pagination'] as Map<String, dynamic>;
 
+      // Asegurar valores válidos
+      final int currentPage =
+          math.max(1, paginacionData['currentPage'] as int? ?? 1);
+      final int totalItems =
+          math.max(0, paginacionData['totalItems'] as int? ?? 0);
+      final int itemsPerPage = math.max(1, provider.itemsPerPage);
+
       // Calcular el rango para la paginación actual
-      final int currentPage = paginacionData['currentPage'] as int? ?? 1;
-      final int totalItems = paginacionData['totalItems'] as int? ?? 0;
-      final int inicio = ((currentPage - 1) * provider.itemsPerPage) + 1;
-      final int fin =
-          (inicio + provider.itemsPerPage - 1).clamp(inicio, totalItems);
+      final int inicio = ((currentPage - 1) * itemsPerPage) + 1;
+
+      // Usar min en lugar de clamp para evitar errores
+      final int fin = totalItems > 0
+          ? math.min((inicio + itemsPerPage - 1), totalItems)
+          : inicio;
 
       final paginacion = Paginacion.fromJson(paginacionData).copyWith(
         rangoInicio: inicio,

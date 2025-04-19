@@ -42,7 +42,7 @@ class AuthProvider extends ChangeNotifier {
       final usuario = await _authRepository.login(username, password);
 
       _state = AuthState.authenticated(
-        AuthUser.fromJson(usuario.toMap()),
+        usuario,
         usuario.toMap()['token'] ?? '',
       );
       notifyListeners();
@@ -113,8 +113,15 @@ class AuthProvider extends ChangeNotifier {
         prefs.remove('remember_me'),
         prefs.remove('username'),
         prefs.remove('password'),
+        prefs.remove('access_token'),
+        prefs.remove('refresh_token'),
+        prefs.remove('expiry_time'),
+        prefs.remove('last_username'),
+        prefs.remove('last_password'),
         prefs.remove('last_sucursal'),
         prefs.remove('user_data'),
+        prefs.remove('current_sucursal_id'),
+        prefs.remove('current_sucursal_data'),
       ]);
     } else {
       // Limpieza completa normal
@@ -131,9 +138,18 @@ class AuthProvider extends ChangeNotifier {
         // Asegurar que estas claves críticas se borren
         prefs.remove('access_token'),
         prefs.remove('refresh_token'),
+        prefs.remove('expiry_time'),
+        prefs.remove('last_username'),
+        prefs.remove('last_password'),
+        prefs.remove('remember_me'),
+        prefs.remove('username'),
+        prefs.remove('password'),
+        prefs.remove('username_auto'),
+        prefs.remove('password_auto'),
         prefs.remove('user_data'),
         prefs.remove('current_sucursal_id'),
         prefs.remove('current_sucursal_data'),
+        prefs.setBool('stay_logged_in', false),
         // Limpiar caches específicos
         prefs.remove('ventas_cache'),
         prefs.remove('productos_cache'),

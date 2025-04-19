@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
-export 'stock_table.dart' show TableProducts;
+// Export InventarioResumen from stock_table.dart
+export 'stock_table.dart' show TableProducts, InventarioResumen;
 
 /// Widget para mostrar un resumen del inventario
 class InventarioResumen extends StatefulWidget {
