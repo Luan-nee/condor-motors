@@ -1,5 +1,6 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/models/estadisticas.model.dart';
 import 'package:condorsmotors/utils/logger.dart';
 
 /// Clase para manejar las estadísticas de productos y ventas
@@ -53,6 +54,33 @@ class EstadisticasApi {
         method: 'GET',
       );
 
+      // Validar y normalizar la respuesta
+      if (response['status'] == 'success' && response['data'] != null) {
+        final data = response['data'];
+
+        // Si sucursales no es una lista, convertirlo a lista vacía
+        if (data['sucursales'] != null && data['sucursales'] is! List) {
+          data['sucursales'] = <dynamic>[];
+        }
+
+        // Normalizar valores numéricos
+        if (data['stockBajo'] != null && data['stockBajo'] is String) {
+          try {
+            data['stockBajo'] = int.parse(data['stockBajo']);
+          } catch (e) {
+            data['stockBajo'] = 0;
+          }
+        }
+
+        if (data['liquidacion'] != null && data['liquidacion'] is String) {
+          try {
+            data['liquidacion'] = int.parse(data['liquidacion']);
+          } catch (e) {
+            data['liquidacion'] = 0;
+          }
+        }
+      }
+
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, response);
@@ -65,11 +93,11 @@ class EstadisticasApi {
       return <String, dynamic>{
         'status': 'error',
         'message': 'Error al obtener estadísticas de productos',
-        'data': <String, dynamic>{
-          'stockBajo': 0,
-          'liquidacion': 0,
-          'sucursales': <Map<String, dynamic>>[]
-        }
+        'data': EstadisticasProductos(
+          stockBajo: 0,
+          liquidacion: 0,
+          sucursales: [],
+        ).toJson(),
       };
     }
   }
@@ -105,6 +133,62 @@ class EstadisticasApi {
         method: 'GET',
       );
 
+      // Validar y normalizar la respuesta
+      if (response['status'] == 'success' && response['data'] != null) {
+        final data = response['data'];
+
+        // Si sucursales no es una lista, convertirlo a lista vacía
+        if (data['sucursales'] != null && data['sucursales'] is! List) {
+          data['sucursales'] = <dynamic>[];
+        }
+
+        // Normalizar el mapa de ventas
+        if (data['ventas'] != null) {
+          if (data['ventas'] is! Map) {
+            data['ventas'] = {'hoy': 0, 'esteMes': 0};
+          } else {
+            final Map<String, dynamic> ventasMap =
+                Map<String, dynamic>.from(data['ventas']);
+            // Normalizar valores de ventas
+            ventasMap.forEach((key, value) {
+              if (value is String) {
+                try {
+                  ventasMap[key] = num.parse(value);
+                } catch (e) {
+                  ventasMap[key] = 0;
+                }
+              }
+            });
+            data['ventas'] = ventasMap;
+          }
+        } else {
+          data['ventas'] = {'hoy': 0, 'esteMes': 0};
+        }
+
+        // Normalizar el mapa de totalVentas
+        if (data['totalVentas'] != null) {
+          if (data['totalVentas'] is! Map) {
+            data['totalVentas'] = {'hoy': 0, 'esteMes': 0};
+          } else {
+            final Map<String, dynamic> totalVentasMap =
+                Map<String, dynamic>.from(data['totalVentas']);
+            // Normalizar valores de totalVentas
+            totalVentasMap.forEach((key, value) {
+              if (value is String) {
+                try {
+                  totalVentasMap[key] = num.parse(value);
+                } catch (e) {
+                  totalVentasMap[key] = 0;
+                }
+              }
+            });
+            data['totalVentas'] = totalVentasMap;
+          }
+        } else {
+          data['totalVentas'] = {'hoy': 0, 'esteMes': 0};
+        }
+      }
+
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, response);
@@ -117,17 +201,11 @@ class EstadisticasApi {
       return <String, dynamic>{
         'status': 'error',
         'message': 'Error al obtener estadísticas de ventas',
-        'data': <String, dynamic>{
-          'ventas': <String, dynamic>{
-            'hoy': 0,
-            'esteMes': 0,
-          },
-          'totalVentas': <String, dynamic>{
-            'hoy': 0,
-            'esteMes': 0,
-          },
-          'sucursales': <Map<String, dynamic>>[]
-        }
+        'data': EstadisticasVentas(
+          ventas: {'hoy': 0, 'esteMes': 0},
+          totalVentas: {'hoy': 0, 'esteMes': 0},
+          sucursales: [],
+        ).toJson(),
       };
     }
   }
@@ -153,6 +231,9 @@ class EstadisticasApi {
         forceRefresh: forceRefresh,
       );
 
+      // Los datos ya han sido validados y normalizados en los métodos anteriores
+      // No es necesario repetir la validación aquí
+
       // Combinar las estadísticas
       return <String, dynamic>{
         'status': 'success',
@@ -166,24 +247,15 @@ class EstadisticasApi {
       return <String, dynamic>{
         'status': 'error',
         'message': 'Error al obtener resumen de estadísticas',
-        'data': <String, dynamic>{
-          'productos': <String, dynamic>{
-            'stockBajo': 0,
-            'liquidacion': 0,
-            'sucursales': <Map<String, dynamic>>[]
-          },
-          'ventas': <String, dynamic>{
-            'ventas': <String, dynamic>{
-              'hoy': 0,
-              'esteMes': 0,
-            },
-            'totalVentas': <String, dynamic>{
-              'hoy': 0,
-              'esteMes': 0,
-            },
-            'sucursales': <Map<String, dynamic>>[]
-          }
-        }
+        'data': ResumenEstadisticas(
+          productos: EstadisticasProductos(
+              stockBajo: 0, liquidacion: 0, sucursales: []),
+          ventas: EstadisticasVentas(
+            ventas: {'hoy': 0, 'esteMes': 0},
+            totalVentas: {'hoy': 0, 'esteMes': 0},
+            sucursales: [],
+          ),
+        ).toJson(),
       };
     }
   }

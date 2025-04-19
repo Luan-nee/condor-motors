@@ -85,19 +85,20 @@ class _SucursalFormState extends State<SucursalForm>
       _nombreController.text = widget.sucursal!.nombre;
       _direccionController.text = widget.sucursal!.direccion ?? '';
       _sucursalCentral = widget.sucursal!.sucursalCentral;
-      _serieFacturaController.text = widget.sucursal!.serieFactura ?? 'F';
-      _serieBoletaController.text = widget.sucursal!.serieBoleta ?? 'B';
+      _serieFacturaController.text = widget.sucursal!.serieFactura ?? '';
+      _serieBoletaController.text = widget.sucursal!.serieBoleta ?? '';
       _numeroFacturaInicialController.text =
           widget.sucursal!.numeroFacturaInicial?.toString() ?? '1';
       _numeroBoletaInicialController.text =
           widget.sucursal!.numeroBoletaInicial?.toString() ?? '1';
       _codigoEstablecimientoController.text =
-          widget.sucursal!.codigoEstablecimiento ?? 'E';
+          widget.sucursal!.codigoEstablecimiento ?? '';
     } else {
       // Valores predeterminados para nuevas sucursales
-      _serieFacturaController.text = 'F';
-      _serieBoletaController.text = 'B';
-      _codigoEstablecimientoController.text = 'E';
+      // Los campos de serie se dejan vacíos para que sean opcionales
+      _serieFacturaController.text = '';
+      _serieBoletaController.text = '';
+      _codigoEstablecimientoController.text = '';
       _numeroFacturaInicialController.text =
           _sucursalProvider.getSiguienteNumeroFactura().toString();
       _numeroBoletaInicialController.text =
@@ -123,14 +124,43 @@ class _SucursalFormState extends State<SucursalForm>
       final Map<String, Object> data = <String, Object>{
         if (_isEditing) 'id': widget.sucursal!.id,
         'nombre': _nombreController.text,
-        'direccion': _direccionController.text,
+        // Solo incluir dirección si no está vacía
+        if (_direccionController.text.trim().isNotEmpty)
+          'direccion': _direccionController.text.trim(),
         'sucursalCentral': _sucursalCentral,
-        'serieFactura': _serieFacturaController.text,
-        'numeroFacturaInicial': int.parse(_numeroFacturaInicialController.text),
-        'serieBoleta': _serieBoletaController.text,
-        'numeroBoletaInicial': int.parse(_numeroBoletaInicialController.text),
-        'codigoEstablecimiento': _codigoEstablecimientoController.text,
       };
+
+      // Agregar series y código siempre que tengan valores válidos (4 caracteres)
+      final String serieFactura = _serieFacturaController.text.trim();
+      if (serieFactura.length == 4 && serieFactura.startsWith('F')) {
+        data['serieFactura'] = serieFactura;
+
+        // Agregar número de factura inicial si se proporciona
+        if (_numeroFacturaInicialController.text.isNotEmpty) {
+          data['numeroFacturaInicial'] =
+              int.parse(_numeroFacturaInicialController.text);
+        }
+      }
+
+      final String serieBoleta = _serieBoletaController.text.trim();
+      if (serieBoleta.length == 4 && serieBoleta.startsWith('B')) {
+        data['serieBoleta'] = serieBoleta;
+
+        // Agregar número de boleta inicial si se proporciona
+        if (_numeroBoletaInicialController.text.isNotEmpty) {
+          data['numeroBoletaInicial'] =
+              int.parse(_numeroBoletaInicialController.text);
+        }
+      }
+
+      final String codigoEstablecimiento =
+          _codigoEstablecimientoController.text.trim();
+      if (codigoEstablecimiento.length == 4 &&
+          RegExp(r'^[0-9]{4}$').hasMatch(codigoEstablecimiento)) {
+        data['codigoEstablecimiento'] = codigoEstablecimiento;
+      }
+
+      // Guardar los datos - el provider ya hará la recarga automáticamente
       widget.onSave(data);
     }
   }
@@ -223,7 +253,7 @@ class _SucursalFormState extends State<SucursalForm>
                               TextFormField(
                                 controller: _direccionController,
                                 decoration: const InputDecoration(
-                                  labelText: 'Dirección *',
+                                  labelText: 'Dirección',
                                   hintText: 'Ej: Av. Principal 123',
                                   prefixIcon: FaIcon(
                                       FontAwesomeIcons.locationDot,
@@ -231,9 +261,7 @@ class _SucursalFormState extends State<SucursalForm>
                                   border: OutlineInputBorder(),
                                 ),
                                 validator: (String? value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'La dirección es requerida';
-                                  }
+                                  // Ya no se requiere validación para campo opcional
                                   return null;
                                 },
                                 maxLines: 2,
@@ -406,13 +434,13 @@ class _SucursalFormState extends State<SucursalForm>
                                         Row(
                                           children: const [
                                             FaIcon(
-                                              FontAwesomeIcons.receipt,
+                                              FontAwesomeIcons.fileInvoice,
                                               size: 14,
                                               color: Colors.white70,
                                             ),
                                             SizedBox(width: 8),
                                             Text(
-                                              'Serie Factura',
+                                              'Serie Factura (Opcional)',
                                               style: TextStyle(
                                                 color: Colors.white70,
                                                 fontSize: 14,
@@ -426,9 +454,11 @@ class _SucursalFormState extends State<SucursalForm>
                                           maxLength: 4,
                                           decoration: const InputDecoration(
                                             border: OutlineInputBorder(),
-                                            helperText: 'F + 3 dígitos (F001)',
+                                            helperText:
+                                                'F + 3 dígitos (F001) o dejar vacío',
                                             counterText: '',
                                             isDense: true,
+                                            hintText: 'Ej: F001',
                                           ),
                                           validator: (value) =>
                                               _validateSerie(value, 'F'),
@@ -446,44 +476,20 @@ class _SucursalFormState extends State<SucursalForm>
                                           CrossAxisAlignment.start,
                                       children: [
                                         Row(
-                                          children: [
-                                            const FaIcon(
+                                          children: const [
+                                            FaIcon(
                                               FontAwesomeIcons.receipt,
                                               size: 14,
                                               color: Colors.white70,
                                             ),
-                                            const SizedBox(width: 8),
-                                            const Text(
-                                              'Serie Boleta',
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'Serie Boleta (Opcional)',
                                               style: TextStyle(
                                                 color: Colors.white70,
                                                 fontSize: 14,
                                               ),
                                             ),
-                                            if (_seriesVinculadas)
-                                              Container(
-                                                margin: const EdgeInsets.only(
-                                                    left: 8),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 2,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.blue
-                                                      .withOpacity(0.2),
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
-                                                child: const Text(
-                                                  'Vinculada',
-                                                  style: TextStyle(
-                                                    color: Colors.blue,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
@@ -493,9 +499,11 @@ class _SucursalFormState extends State<SucursalForm>
                                           enabled: !_seriesVinculadas,
                                           decoration: InputDecoration(
                                             border: const OutlineInputBorder(),
-                                            helperText: 'B + 3 dígitos (B001)',
+                                            helperText:
+                                                'B + 3 dígitos (B001) o dejar vacío',
                                             counterText: '',
                                             isDense: true,
+                                            hintText: 'Ej: B001',
                                             filled: _seriesVinculadas,
                                             fillColor: _seriesVinculadas
                                                 ? Colors.blue.withOpacity(0.1)
@@ -576,8 +584,8 @@ class _SucursalFormState extends State<SucursalForm>
                                           _codigoEstablecimientoController,
                                       maxLength: 4,
                                       decoration: const InputDecoration(
-                                        labelText: 'Código',
-                                        helperText: 'E + 3 dígitos (E001)',
+                                        labelText: 'Código (Opcional)',
+                                        hintText: 'Ej: 0001',
                                         counterText: '',
                                         border: OutlineInputBorder(),
                                         isDense: true,
@@ -585,19 +593,25 @@ class _SucursalFormState extends State<SucursalForm>
                                             FontAwesomeIcons.buildingUser,
                                             size: 16),
                                       ),
+                                      keyboardType: TextInputType.number,
                                       validator: (value) =>
-                                          _validateSerie(value, 'E'),
-                                      onChanged: (value) => _handleSerieChange(
-                                          value,
-                                          _codigoEstablecimientoController,
-                                          'E'),
+                                          _validateCodigo(value),
+                                      onChanged: (value) =>
+                                          _handleCodigoChange(value),
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'El código de establecimiento es único para cada sucursal',
+                                      'El código de establecimiento es único para cada sucursal (opcional)',
                                       style: TextStyle(
                                         color: Colors.white.withOpacity(0.7),
                                         fontSize: 12,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Ingresar solo 4 dígitos numéricos (0-9)',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.6),
+                                        fontSize: 11,
                                       ),
                                     ),
                                   ],
@@ -660,31 +674,74 @@ class _SucursalFormState extends State<SucursalForm>
   }
 
   // Métodos auxiliares para validación
-  String? _validateSerie(String? value, String prefix) {
+  String? _validateSerie(String? value, String prefix,
+      {bool isRequired = false}) {
     if (value == null || value.isEmpty) {
-      return 'Requerido';
+      if (isRequired) {
+        return 'Campo requerido';
+      }
+      return null; // Permitir campo vacío
     }
-    if (!value.startsWith(prefix)) {
-      return 'Inicia con $prefix';
+
+    if (prefix == 'E') {
+      // Para código de establecimiento, verificar que tenga 4 dígitos si no está vacío
+      if (value.isNotEmpty && value.length != 4) {
+        return 'Debe tener 4 caracteres';
+      }
+      if (value.isNotEmpty && !RegExp(r'^[0-9]{4}$').hasMatch(value)) {
+        return 'Solo se permiten dígitos';
+      }
+    } else {
+      // Para series de factura y boleta
+      if (value.isNotEmpty && !value.startsWith(prefix) && value.length > 0) {
+        return 'Debe comenzar con $prefix';
+      }
+
+      if (value.isNotEmpty && value.length != 4) {
+        return 'Debe tener 4 caracteres';
+      }
+
+      if (value.isNotEmpty && value.length == 4) {
+        final serieNum = value.substring(1);
+        if (!RegExp(r'^[0-9]{3}$').hasMatch(serieNum)) {
+          return 'Formato: ${prefix}000';
+        }
+      }
     }
-    if (value.length != 4) {
-      return '4 caracteres';
-    }
-    if (!RegExp('^$prefix\\d{3}\$').hasMatch(value)) {
-      return 'Formato: ${prefix}001';
-    }
+
     return null;
   }
 
   void _handleSerieChange(
       String value, TextEditingController controller, String prefix) {
+    // No forzar el prefijo si el campo está vacío
     if (value.isEmpty) {
-      controller
-        ..text = prefix
-        ..selection = TextSelection.fromPosition(
-          const TextPosition(offset: 1),
+      return;
+    }
+
+    // Si es código de establecimiento, solo permitir dígitos
+    if (prefix == 'E') {
+      final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digitsOnly != value) {
+        controller.text = digitsOnly;
+        controller.selection = TextSelection.fromPosition(
+          TextPosition(offset: controller.text.length),
         );
-    } else if (!value.startsWith(prefix)) {
+      }
+      return;
+    }
+
+    // Si es el primer carácter que se escribe, asignar el prefijo correspondiente
+    if (value.length == 1 && !value.startsWith(prefix)) {
+      controller.text = prefix;
+      controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: controller.text.length),
+      );
+      return;
+    }
+
+    if (prefix != 'E' && !value.startsWith(prefix) && value.isNotEmpty) {
+      // Solo para series de factura y boleta forzamos el prefijo si hay contenido
       controller
         ..text = '$prefix${value.replaceAll(RegExp(r'[^0-9]'), '')}'
         ..selection = TextSelection.fromPosition(
@@ -702,12 +759,37 @@ class _SucursalFormState extends State<SucursalForm>
 
   String? _validateNumeroInicial(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Requerido';
+      return null; // Ahora es opcional
     }
     if (int.tryParse(value) == null || int.parse(value) < 1) {
       return 'Número inválido';
     }
     return null;
+  }
+
+  String? _validateCodigo(String? value) {
+    if (value == null || value.isEmpty) {
+      return null; // Ahora es opcional
+    }
+    if (value.length != 4 || !RegExp(r'^[0-9]{4}$').hasMatch(value)) {
+      return 'Debe tener exactamente 4 dígitos numéricos';
+    }
+    return null;
+  }
+
+  void _handleCodigoChange(String value) {
+    if (value.isEmpty) return;
+
+    // Filtrar: permitir solo dígitos
+    final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // Si el usuario intentó ingresar algo que no son dígitos, corregirlo
+    if (digitsOnly != value) {
+      _codigoEstablecimientoController.text = digitsOnly;
+      _codigoEstablecimientoController.selection = TextSelection.fromPosition(
+        TextPosition(offset: digitsOnly.length),
+      );
+    }
   }
 
   Widget _buildSectionTitle(String title, IconData icon) {

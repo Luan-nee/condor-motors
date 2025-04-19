@@ -1,4 +1,5 @@
 import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/models/estadisticas.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
 
@@ -78,6 +79,56 @@ class EstadisticaRepository implements BaseRepository {
     }
   }
 
+  /// Obtiene un resumen general de estadísticas como objeto tipado
+  ///
+  /// [useCache] Indica si se debe usar la caché
+  /// [forceRefresh] Indica si se debe forzar la recarga desde el servidor
+  Future<ResumenEstadisticas> getResumenEstadisticasTyped({
+    bool useCache = false,
+    bool forceRefresh = true,
+  }) async {
+    try {
+      final response = await getResumenEstadisticas(
+        useCache: useCache,
+        forceRefresh: forceRefresh,
+      );
+
+      if (response['status'] == 'success' && response['data'] != null) {
+        return ResumenEstadisticas.fromJson(response['data']);
+      }
+
+      // Respuesta por defecto si no hay datos
+      return ResumenEstadisticas(
+        productos: EstadisticasProductos(
+          stockBajo: 0,
+          liquidacion: 0,
+          sucursales: [],
+        ),
+        ventas: EstadisticasVentas(
+          ventas: {'hoy': 0, 'esteMes': 0},
+          totalVentas: {'hoy': 0, 'esteMes': 0},
+          sucursales: [],
+        ),
+      );
+    } catch (e) {
+      debugPrint(
+          'Error en EstadisticaRepository.getResumenEstadisticasTyped: $e');
+      // Respuesta por defecto en caso de error
+      return ResumenEstadisticas(
+        productos: EstadisticasProductos(
+          stockBajo: 0,
+          liquidacion: 0,
+          sucursales: [],
+        ),
+        ventas: EstadisticasVentas(
+          ventas: {'hoy': 0, 'esteMes': 0},
+          totalVentas: {'hoy': 0, 'esteMes': 0},
+          sucursales: [],
+        ),
+      );
+    }
+  }
+
   /// Obtiene estadísticas por sucursal
   ///
   /// [sucursalId] ID de la sucursal para la que se quieren obtener estadísticas
@@ -136,6 +187,84 @@ class EstadisticaRepository implements BaseRepository {
     } catch (e) {
       debugPrint('Error en EstadisticaRepository.getEstadisticasProductos: $e');
       return {'status': 'error', 'message': e.toString()};
+    }
+  }
+
+  /// Obtiene estadísticas de productos como objeto tipado
+  ///
+  /// [sucursalId] ID de la sucursal (opcional)
+  /// [categoria] Categoría de productos (opcional)
+  /// [useCache] Indica si se debe usar la caché
+  /// [forceRefresh] Indica si se debe forzar la recarga desde el servidor
+  Future<EstadisticasProductos> getEstadisticasProductosTyped({
+    String? sucursalId,
+    String? categoria,
+    bool useCache = false,
+    bool forceRefresh = true,
+  }) async {
+    try {
+      final response = await _estadisticasApi.getEstadisticasProductos(
+        sucursalId: sucursalId,
+        categoria: categoria,
+        useCache: useCache,
+        forceRefresh: forceRefresh,
+      );
+
+      if (response['status'] == 'success' && response['data'] != null) {
+        return EstadisticasProductos.fromJson(response['data']);
+      }
+
+      // Respuesta por defecto si no hay datos
+      return EstadisticasProductos(
+        stockBajo: 0,
+        liquidacion: 0,
+        sucursales: [],
+      );
+    } catch (e) {
+      debugPrint(
+          'Error en EstadisticaRepository.getEstadisticasProductosTyped: $e');
+      // Respuesta por defecto en caso de error
+      return EstadisticasProductos(
+        stockBajo: 0,
+        liquidacion: 0,
+        sucursales: [],
+      );
+    }
+  }
+
+  /// Obtiene estadísticas de ventas como objeto tipado
+  ///
+  /// [useCache] Indica si se debe usar la caché
+  /// [forceRefresh] Indica si se debe forzar la recarga desde el servidor
+  Future<EstadisticasVentas> getEstadisticasVentasTyped({
+    bool useCache = false,
+    bool forceRefresh = true,
+  }) async {
+    try {
+      final response = await _estadisticasApi.getEstadisticasVentas(
+        useCache: useCache,
+        forceRefresh: forceRefresh,
+      );
+
+      if (response['status'] == 'success' && response['data'] != null) {
+        return EstadisticasVentas.fromJson(response['data']);
+      }
+
+      // Respuesta por defecto si no hay datos
+      return EstadisticasVentas(
+        ventas: {'hoy': 0, 'esteMes': 0},
+        totalVentas: {'hoy': 0, 'esteMes': 0},
+        sucursales: [],
+      );
+    } catch (e) {
+      debugPrint(
+          'Error en EstadisticaRepository.getEstadisticasVentasTyped: $e');
+      // Respuesta por defecto en caso de error
+      return EstadisticasVentas(
+        ventas: {'hoy': 0, 'esteMes': 0},
+        totalVentas: {'hoy': 0, 'esteMes': 0},
+        sucursales: [],
+      );
     }
   }
 

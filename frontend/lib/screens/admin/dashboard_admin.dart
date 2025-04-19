@@ -218,43 +218,46 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
       ),
     );
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Ventas por Sucursal',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Ver Todo',
-                      style: TextStyle(
-                        color: Color(0xFFE31E24),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Ventas por Sucursal',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  height: 300,
-                  child: BarChart(
+              ),
+              Text(
+                'Ver Todo',
+                style: TextStyle(
+                  color: Color(0xFFE31E24),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 300,
+            child: provider.sucursales.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No hay datos disponibles',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                : BarChart(
                     BarChartData(
                       alignment: BarChartAlignment.spaceAround,
                       maxY: provider.totalVentas * 1.2,
@@ -265,72 +268,9 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                       barGroups: _createBarGroups(provider),
                     ),
                   ),
-                ),
-              ],
-            ),
           ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Ventas y Ganancias',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Ver Todo',
-                      style: TextStyle(
-                        color: Color(0xFFE31E24),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  height: 300,
-                  child: LineChart(
-                    LineChartData(
-                      gridData: const FlGridData(show: false),
-                      titlesData: titlesData,
-                      borderData: FlBorderData(show: false),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: _createLineSpots(provider.ventasMensuales),
-                          isCurved: true,
-                          color: const Color(0xFFE31E24),
-                          barWidth: 3,
-                          isStrokeCapRound: true,
-                          dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: const Color(0xFFE31E24).withOpacity(0.1),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -347,17 +287,40 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }
 
   List<BarChartGroupData> _createBarGroups(DashboardProvider provider) {
-    return provider.sucursales.asMap().entries.map((entry) {
+    // Obtener las sucursales con estadísticas de ventas desde el modelo
+    final ventasSucursales =
+        provider.resumenEstadisticas?.ventas.sucursales ?? [];
+
+    // Si no hay datos, mostrar barras vacías para las sucursales disponibles
+    if (ventasSucursales.isEmpty) {
+      return provider.sucursales.asMap().entries.map((entry) {
+        final index = entry.key;
+        return BarChartGroupData(
+          x: index,
+          barRods: [
+            BarChartRodData(
+              toY: 0,
+              color: const Color(0xFFE31E24),
+              width: 16,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(4),
+              ),
+            ),
+          ],
+        );
+      }).toList();
+    }
+
+    // Crear las barras con los datos reales de ventas por sucursal
+    return ventasSucursales.asMap().entries.map((entry) {
       final index = entry.key;
-      final sucursal = entry.value;
-      final ventasSucursal =
-          provider.productosPorSucursal[sucursal.id.toString()]?.length ?? 0;
+      final sucursalEstadistica = entry.value;
 
       return BarChartGroupData(
         x: index,
         barRods: [
           BarChartRodData(
-            toY: ventasSucursal.toDouble(),
+            toY: sucursalEstadistica.totalVentas,
             color: const Color(0xFFE31E24),
             width: 16,
             borderRadius: const BorderRadius.vertical(
@@ -366,12 +329,6 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
           ),
         ],
       );
-    }).toList();
-  }
-
-  List<FlSpot> _createLineSpots(List<double> data) {
-    return data.asMap().entries.map((entry) {
-      return FlSpot(entry.key.toDouble(), entry.value);
     }).toList();
   }
 
@@ -397,82 +354,97 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
           const SizedBox(height: 20),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 650),
-              child: DataTable(
-                headingRowColor:
-                    WidgetStateProperty.all(const Color(0xFF222222)),
-                columnSpacing: 20,
-                horizontalMargin: 12,
-                columns: const [
-                  DataColumn(
-                    label: Text(
-                      'Sucursal',
-                      style: TextStyle(color: Colors.white),
+            child: provider.productosStockBajoDetalle.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                      child: Text(
+                        'No hay productos con stock bajo',
+                        style: TextStyle(color: Colors.grey),
+                      ),
                     ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'Producto',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'Stock',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'Estado',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-                rows:
-                    provider.productosStockBajoDetalle.take(5).map((producto) {
-                  final bool stockCritico =
-                      producto['stock'] <= (producto['stockMinimo'] / 2);
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(
-                        producto['sucursalNombre'],
-                        style: const TextStyle(color: Colors.grey),
-                      )),
-                      DataCell(Text(
-                        producto['productoNombre'],
-                        style: const TextStyle(color: Colors.grey),
-                        overflow: TextOverflow.ellipsis,
-                      )),
-                      DataCell(Text(
-                        '${producto['stock']}/${producto['stockMinimo']}',
-                        style: const TextStyle(color: Colors.grey),
-                      )),
-                      DataCell(Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: stockCritico
-                              ? Colors.red.withOpacity(0.2)
-                              : Colors.orange.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          stockCritico ? 'Crítico' : 'Bajo',
-                          style: TextStyle(
-                            color: stockCritico ? Colors.red : Colors.orange,
-                            fontSize: 12,
+                  )
+                : ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 650),
+                    child: DataTable(
+                      headingRowColor:
+                          WidgetStateProperty.all(const Color(0xFF222222)),
+                      columnSpacing: 20,
+                      horizontalMargin: 12,
+                      columns: const [
+                        DataColumn(
+                          label: Text(
+                            'Sucursal',
+                            style: TextStyle(color: Colors.white),
                           ),
                         ),
-                      )),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
+                        DataColumn(
+                          label: Text(
+                            'Producto',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Stock',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Estado',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                      rows: provider.productosStockBajoDetalle
+                          .take(5)
+                          .map((producto) {
+                        final bool stockCritico = producto['stock'] <=
+                            (producto['stockMinimo'] != null
+                                ? producto['stockMinimo'] / 2
+                                : 1);
+                        return DataRow(
+                          cells: [
+                            DataCell(Text(
+                              producto['sucursalNombre'] ?? 'Desconocida',
+                              style: const TextStyle(color: Colors.grey),
+                            )),
+                            DataCell(Text(
+                              producto['productoNombre'] ??
+                                  'Producto sin nombre',
+                              style: const TextStyle(color: Colors.grey),
+                              overflow: TextOverflow.ellipsis,
+                            )),
+                            DataCell(Text(
+                              '${producto['stock'] ?? 0}/${producto['stockMinimo'] ?? "N/A"}',
+                              style: const TextStyle(color: Colors.grey),
+                            )),
+                            DataCell(Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: stockCritico
+                                    ? Colors.red.withOpacity(0.2)
+                                    : Colors.orange.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                stockCritico ? 'Crítico' : 'Bajo',
+                                style: TextStyle(
+                                  color:
+                                      stockCritico ? Colors.red : Colors.orange,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            )),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -501,84 +473,120 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
           const SizedBox(height: 20),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 650),
-              child: DataTable(
-                headingRowColor:
-                    WidgetStateProperty.all(const Color(0xFF222222)),
-                columnSpacing: 20,
-                horizontalMargin: 12,
-                columns: const [
-                  DataColumn(
-                    label: Text(
-                      'Fecha',
-                      style: TextStyle(color: Colors.white),
+            child: provider.ventasRecientes.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                      child: Text(
+                        'No hay ventas recientes disponibles',
+                        style: TextStyle(color: Colors.grey),
+                      ),
                     ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'Cliente',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'Monto',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  DataColumn(
-                    label: Text(
-                      'Estado',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-                rows: provider.ventasRecientes.take(5).map((venta) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(
-                        venta.fecha,
-                        style: const TextStyle(color: Colors.grey),
-                      )),
-                      DataCell(Text(
-                        venta.cliente,
-                        style: const TextStyle(color: Colors.grey),
-                        overflow: TextOverflow.ellipsis,
-                      )),
-                      DataCell(Text(
-                        'S/ ${venta.monto.toStringAsFixed(2)}',
-                        style: const TextStyle(color: Colors.grey),
-                      )),
-                      DataCell(Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: venta.estado == 'Pagado'
-                              ? Colors.green.withOpacity(0.2)
-                              : Colors.orange.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          venta.estado,
-                          style: TextStyle(
-                            color: venta.estado == 'Pagado'
-                                ? Colors.green
-                                : Colors.orange,
-                            fontSize: 12,
+                  )
+                : ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 650),
+                    child: DataTable(
+                      headingRowColor:
+                          WidgetStateProperty.all(const Color(0xFF222222)),
+                      columnSpacing: 20,
+                      horizontalMargin: 12,
+                      columns: const [
+                        DataColumn(
+                          label: Text(
+                            'Fecha',
+                            style: TextStyle(color: Colors.white),
                           ),
                         ),
-                      )),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
+                        DataColumn(
+                          label: Text(
+                            'Cliente',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Monto',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Estado',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                      rows: provider.ventasRecientes.take(5).map((venta) {
+                        return DataRow(
+                          cells: [
+                            DataCell(Text(
+                              venta.fecha,
+                              style: const TextStyle(color: Colors.grey),
+                            )),
+                            DataCell(Text(
+                              venta.cliente,
+                              style: const TextStyle(color: Colors.grey),
+                              overflow: TextOverflow.ellipsis,
+                            )),
+                            DataCell(Text(
+                              'S/ ${venta.monto.toStringAsFixed(2)}',
+                              style: const TextStyle(color: Colors.grey),
+                            )),
+                            DataCell(Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: venta.estado == 'Pagado'
+                                    ? Colors.green.withOpacity(0.2)
+                                    : Colors.orange.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                venta.estado,
+                                style: TextStyle(
+                                  color: venta.estado == 'Pagado'
+                                      ? Colors.green
+                                      : Colors.orange,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            )),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class VentaReciente {
+  final String fecha;
+  final String factura;
+  final String cliente;
+  final double monto;
+  final String estado;
+
+  VentaReciente({
+    required this.fecha,
+    required this.factura,
+    required this.cliente,
+    required this.monto,
+    required this.estado,
+  });
+
+  factory VentaReciente.fromJson(Map<String, dynamic> json) {
+    return VentaReciente(
+      fecha: json['fecha'] ?? '',
+      factura: json['factura'] ?? '',
+      cliente: json['cliente'] ?? '',
+      monto: (json['monto'] ?? 0).toDouble(),
+      estado: json['estado'] ?? 'Pendiente',
     );
   }
 }

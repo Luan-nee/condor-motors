@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/models/estadisticas.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/repositories/empleado.repository.dart';
@@ -32,7 +33,7 @@ class DashboardProvider extends ChangeNotifier {
   int _totalEmpleados = 0;
   int _productosStockBajo = 0;
   int _productosAgotados = 0;
-  final int _productosLiquidacion = 0;
+  int _productosLiquidacion = 0;
   List<VentaReciente> _ventasRecientes = [];
 
   // Datos para gráficos
@@ -43,6 +44,9 @@ class DashboardProvider extends ChangeNotifier {
 
   // Estadísticas por sucursal
   final Map<String, Map<String, dynamic>> _estadisticasSucursales = {};
+
+  // Resumen completo de estadísticas
+  ResumenEstadisticas? _resumenEstadisticas;
 
   // Getters
   bool get isLoading => _isLoading;
@@ -64,6 +68,7 @@ class DashboardProvider extends ChangeNotifier {
   List<VentaReciente> get ventasRecientes => _ventasRecientes;
   Map<String, Map<String, dynamic>> get estadisticasSucursales =>
       _estadisticasSucursales;
+  ResumenEstadisticas? get resumenEstadisticas => _resumenEstadisticas;
 
   /// Inicializa el provider cargando todos los datos necesarios
   Future<void> inicializar() async {
@@ -227,48 +232,41 @@ class DashboardProvider extends ChangeNotifier {
         }
       }
 
-      // Usar el nuevo repositorio de estadísticas
-      final resumen = await _estadisticaRepository.getResumenEstadisticas();
+      // Usar el repositorio de estadísticas con modelos tipados
+      try {
+        final ResumenEstadisticas resumen =
+            await _estadisticaRepository.getResumenEstadisticasTyped();
 
-      if (resumen['status'] == 'success' && resumen['data'] != null) {
-        final data = resumen['data'] as Map<String, dynamic>;
+        // Almacenar el resumen completo
+        _resumenEstadisticas = resumen;
 
         // Procesar estadísticas de productos
-        _productos = data['productos'] as List<dynamic>? ?? [];
-        _productosStockBajo = data['productos_stock_bajo'] as int? ?? 0;
-        _productosAgotados = data['productos_agotados'] as int? ?? 0;
+        _productosStockBajo = resumen.productos.stockBajo;
+        _productosLiquidacion = resumen.productos.liquidacion;
 
-        // Procesar estadísticas de ventas
-        _totalVentas = (data['total_ventas'] as num?)?.toDouble() ?? 0.0;
-        _ventasHoy = (data['ventas_hoy'] as num?)?.toDouble() ?? 0.0;
+        // Procesar estadísticas de ventas usando los métodos seguros
+        _totalVentas = resumen.ventas.getVentasValue('esteMes');
+        _ventasHoy = resumen.ventas.getVentasValue('hoy');
+
         _totalGanancias = _totalVentas * 0.30; // 30% de margen
         _ingresosHoy = _ventasHoy * 0.30;
 
-        // Procesar ventas recientes
-        final List<dynamic> ventasData =
-            data['ventas_recientes'] as List<dynamic>? ?? [];
-        _ventasRecientes = ventasData
-            .map((venta) =>
-                VentaReciente.fromJson(venta as Map<String, dynamic>))
-            .toList();
-
-        // Actualizar empleados
-        _totalEmpleados = data['total_empleados'] as int? ?? 0;
-
-        // Procesar estadísticas por sucursal
-        if (data['sucursales'] != null) {
-          final List<dynamic> sucursalesStats =
-              data['sucursales'] as List<dynamic>;
-          for (final sucursalStat in sucursalesStats) {
-            final String sucursalId = sucursalStat['id'].toString();
-            _estadisticasSucursales[sucursalId] = {
-              'stockBajo': int.parse(sucursalStat['stockBajo'].toString()),
-              'liquidacion': int.parse(sucursalStat['liquidacion'].toString()),
-            };
-          }
+        // Procesar estadísticas por sucursal (productos)
+        for (final sucursalStat in resumen.productos.sucursales) {
+          _estadisticasSucursales[sucursalStat.id.toString()] = {
+            'stockBajo': sucursalStat.stockBajo,
+            'liquidacion': sucursalStat.liquidacion,
+          };
         }
 
+        // Si hay ventas recientes en los datos, procesarlas
+        // Este es un ejemplo - si no se incluyen en la respuesta actual,
+        // puede que necesites otro endpoint para obtenerlas
+        _ventasRecientes = [];
+
         notifyListeners();
+      } catch (e) {
+        debugPrint('Error al procesar el resumen de estadísticas: $e');
       }
     } catch (e) {
       debugPrint('Error al cargar estadísticas: $e');

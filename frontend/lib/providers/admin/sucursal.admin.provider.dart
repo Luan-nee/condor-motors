@@ -158,6 +158,28 @@ class SucursalProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Limpia el caché del repositorio y recarga los datos
+  Future<void> limpiarCacheYRecargar() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Limpiar el caché del repositorio
+      _sucursalRepository.invalidateCache();
+
+      // Recargar los datos frescos
+      await cargarSucursales();
+
+      debugPrint('Caché de sucursales limpiado y datos recargados');
+    } catch (e) {
+      _errorMessage = 'Error al limpiar caché: $e';
+      debugPrint('Error limpiando caché: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Guarda una sucursal (nueva o actualizada) con validaciones mejoradas
   Future<String?> guardarSucursal(Map<String, dynamic> data) async {
     _isLoading = true;
@@ -169,12 +191,9 @@ class SucursalProvider extends ChangeNotifier {
         return 'El nombre de la sucursal es requerido';
       }
 
-      if (data['direccion']?.toString().trim().isEmpty ?? true) {
-        return 'La dirección de la sucursal es requerida';
-      }
-
-      // Validar series y códigos únicos
-      if (data['serieFactura'] != null) {
+      // Validar series y códigos únicos solo si se proporcionan
+      if (data['serieFactura'] != null &&
+          data['serieFactura'].toString().isNotEmpty) {
         if (!isSerieFacturaDisponible(data['serieFactura']) &&
             (data['id'] == null ||
                 _sucursales
@@ -186,7 +205,8 @@ class SucursalProvider extends ChangeNotifier {
         }
       }
 
-      if (data['serieBoleta'] != null) {
+      if (data['serieBoleta'] != null &&
+          data['serieBoleta'].toString().isNotEmpty) {
         if (!isSerieBoletaDisponible(data['serieBoleta']) &&
             (data['id'] == null ||
                 _sucursales
@@ -197,7 +217,8 @@ class SucursalProvider extends ChangeNotifier {
         }
       }
 
-      if (data['codigoEstablecimiento'] != null) {
+      if (data['codigoEstablecimiento'] != null &&
+          data['codigoEstablecimiento'].toString().isNotEmpty) {
         if (!isCodigoEstablecimientoDisponible(data['codigoEstablecimiento']) &&
             (data['id'] == null ||
                 _sucursales
@@ -210,25 +231,152 @@ class SucursalProvider extends ChangeNotifier {
         }
       }
 
-      final SucursalRequest request = SucursalRequest(
-        nombre: data['nombre'],
-        direccion: data['direccion'] ?? '',
-        sucursalCentral: data['sucursalCentral'] ?? false,
-        serieFactura: data['serieFactura'] as String?,
-        numeroFacturaInicial: data['numeroFacturaInicial'] as int?,
-        serieBoleta: data['serieBoleta'] as String?,
-        numeroBoletaInicial: data['numeroBoletaInicial'] as int?,
-        codigoEstablecimiento: data['codigoEstablecimiento'] as String?,
-      );
-
       if (data['id'] != null) {
-        await _sucursalRepository.updateSucursal(
-            data['id'].toString(), request.toJson());
+        // Estamos actualizando una sucursal existente
+        // Buscar la sucursal actual para comparar cambios
+        final sucursalId = data['id'].toString();
+        final sucursalActual = _todasLasSucursales.firstWhere(
+          (s) => s.id.toString() == sucursalId,
+          orElse: () => throw Exception('Sucursal no encontrada'),
+        );
+
+        // Crear un mapa solo con los campos que han cambiado
+        final Map<String, dynamic> camposModificados = {};
+
+        // Nombre - convertir a string para comparar correctamente
+        if (data['nombre'].toString() != sucursalActual.nombre) {
+          camposModificados['nombre'] = data['nombre'].toString();
+          debugPrint(
+              'Campo nombre modificado: ${data['nombre']} != ${sucursalActual.nombre}');
+        }
+
+        // Dirección - usar toString y manejar posibles nulos
+        final direccionNueva = data['direccion']?.toString() ?? '';
+        final direccionActual = sucursalActual.direccion ?? '';
+        if (direccionNueva != direccionActual) {
+          // Solo incluir la dirección en los cambios si no está vacía o si explícitamente
+          // se está cambiando de un valor a vacío
+          if (direccionNueva.isNotEmpty ||
+              (direccionActual.isNotEmpty && direccionNueva.isEmpty)) {
+            camposModificados['direccion'] = direccionNueva;
+            debugPrint(
+                'Campo dirección modificado: $direccionNueva != $direccionActual');
+          }
+        }
+
+        // Tipo de sucursal - convertir explícitamente a boolean
+        final bool sucursalCentralNueva = data['sucursalCentral'] == true;
+        if (sucursalCentralNueva != sucursalActual.sucursalCentral) {
+          camposModificados['sucursalCentral'] = sucursalCentralNueva;
+          debugPrint(
+              'Campo sucursalCentral modificado: $sucursalCentralNueva != ${sucursalActual.sucursalCentral}');
+        }
+
+        // Serie Factura - comparar como strings
+        final serieFacturaNueva = data['serieFactura']?.toString() ?? '';
+        final serieFacturaActual = sucursalActual.serieFactura ?? '';
+        if (serieFacturaNueva != serieFacturaActual) {
+          // Solo incluir si no está vacía o si explícitamente se está cambiando de un valor a vacío
+          if (serieFacturaNueva.isNotEmpty ||
+              (serieFacturaActual.isNotEmpty && serieFacturaNueva.isEmpty)) {
+            camposModificados['serieFactura'] = serieFacturaNueva;
+            debugPrint(
+                'Campo serieFactura modificado: $serieFacturaNueva != $serieFacturaActual');
+          }
+        }
+
+        // Número Factura Inicial - convertir a entero para comparar
+        final int? numeroFacturaInicialNuevo =
+            data['numeroFacturaInicial'] != null
+                ? int.parse(data['numeroFacturaInicial'].toString())
+                : null;
+        final int? numeroFacturaInicialActual =
+            sucursalActual.numeroFacturaInicial;
+        if (numeroFacturaInicialNuevo != numeroFacturaInicialActual) {
+          if (numeroFacturaInicialNuevo != null) {
+            camposModificados['numeroFacturaInicial'] =
+                numeroFacturaInicialNuevo;
+            debugPrint(
+                'Campo numeroFacturaInicial modificado: $numeroFacturaInicialNuevo != $numeroFacturaInicialActual');
+          }
+        }
+
+        // Serie Boleta - comparar como strings
+        final serieBoletaNueva = data['serieBoleta']?.toString() ?? '';
+        final serieBoletaActual = sucursalActual.serieBoleta ?? '';
+        if (serieBoletaNueva != serieBoletaActual) {
+          // Solo incluir si no está vacía o si explícitamente se está cambiando de un valor a vacío
+          if (serieBoletaNueva.isNotEmpty ||
+              (serieBoletaActual.isNotEmpty && serieBoletaNueva.isEmpty)) {
+            camposModificados['serieBoleta'] = serieBoletaNueva;
+            debugPrint(
+                'Campo serieBoleta modificado: $serieBoletaNueva != $serieBoletaActual');
+          }
+        }
+
+        // Número Boleta Inicial - convertir a entero para comparar
+        final int? numeroBoletaInicialNuevo =
+            data['numeroBoletaInicial'] != null
+                ? int.parse(data['numeroBoletaInicial'].toString())
+                : null;
+        final int? numeroBoletaInicialActual =
+            sucursalActual.numeroBoletaInicial;
+        if (numeroBoletaInicialNuevo != numeroBoletaInicialActual) {
+          if (numeroBoletaInicialNuevo != null) {
+            camposModificados['numeroBoletaInicial'] = numeroBoletaInicialNuevo;
+            debugPrint(
+                'Campo numeroBoletaInicial modificado: $numeroBoletaInicialNuevo != $numeroBoletaInicialActual');
+          }
+        }
+
+        // Código Establecimiento - comparar como strings
+        final codigoEstablecimientoNuevo =
+            data['codigoEstablecimiento']?.toString() ?? '';
+        final codigoEstablecimientoActual =
+            sucursalActual.codigoEstablecimiento ?? '';
+        if (codigoEstablecimientoNuevo != codigoEstablecimientoActual) {
+          // Solo incluir si no está vacía o si explícitamente se está cambiando de un valor a vacío
+          if (codigoEstablecimientoNuevo.isNotEmpty ||
+              (codigoEstablecimientoActual.isNotEmpty &&
+                  codigoEstablecimientoNuevo.isEmpty)) {
+            camposModificados['codigoEstablecimiento'] =
+                codigoEstablecimientoNuevo;
+            debugPrint(
+                'Campo codigoEstablecimiento modificado: $codigoEstablecimientoNuevo != $codigoEstablecimientoActual');
+          }
+        }
+
+        // Solo enviar la solicitud si hay campos modificados
+        if (camposModificados.isNotEmpty) {
+          debugPrint(
+              'Enviando campos modificados: ${camposModificados.keys.join(', ')}');
+          await _sucursalRepository.updateSucursal(
+              sucursalId, camposModificados);
+        } else {
+          debugPrint(
+              'No hay cambios que actualizar en la sucursal $sucursalId');
+        }
       } else {
+        // Es una nueva sucursal, enviar todos los datos
+        final SucursalRequest request = SucursalRequest(
+          nombre: data['nombre'],
+          direccion: data['direccion'],
+          sucursalCentral: data['sucursalCentral'] ?? false,
+          serieFactura: data['serieFactura'] as String?,
+          numeroFacturaInicial: data['numeroFacturaInicial'] as int?,
+          serieBoleta: data['serieBoleta'] as String?,
+          numeroBoletaInicial: data['numeroBoletaInicial'] as int?,
+          codigoEstablecimiento: data['codigoEstablecimiento'] as String?,
+        );
+
         await _sucursalRepository.createSucursal(request.toJson());
       }
 
+      // Limpiar el caché después de la operación
+      _sucursalRepository.invalidateCache();
       await cargarSucursales();
+
+      debugPrint('Sucursal guardada y caché limpiado');
       return null;
     } catch (e) {
       return 'Error al guardar sucursal: $e';
@@ -245,7 +393,12 @@ class SucursalProvider extends ChangeNotifier {
 
     try {
       await _sucursalRepository.deleteSucursal(sucursal.id.toString());
+
+      // Limpiar el caché después de la operación
+      _sucursalRepository.invalidateCache();
       await cargarSucursales();
+
+      debugPrint('Sucursal eliminada y caché limpiado');
       return null; // Sin error
     } catch (e) {
       return 'Error al eliminar sucursal: $e'; // Devuelve el mensaje de error
@@ -284,10 +437,17 @@ class SucursalProvider extends ChangeNotifier {
     final List<Sucursal> listaSucursales = sucursales ?? _sucursales;
 
     for (final Sucursal sucursal in listaSucursales) {
-      if (sucursal.nombre.toLowerCase().contains('central') ||
-          sucursal.nombre.toLowerCase().contains('principal') ||
-          sucursal.sucursalCentral) {
+      // Priorizar la propiedad sucursalCentral
+      if (sucursal.sucursalCentral) {
         grupos['Centrales']!.add(sucursal);
+      }
+      // Como respaldo, también considerar el nombre para compatibilidad
+      else if (sucursal.nombre.toLowerCase().contains('central') ||
+          sucursal.nombre.toLowerCase().contains('principal')) {
+        grupos['Centrales']!.add(sucursal);
+        // Registrar inconsistencia para depuración
+        debugPrint(
+            '⚠️ Sucursal con nombre de central pero no marcada como central: ${sucursal.nombre}');
       } else {
         grupos['Sucursales']!.add(sucursal);
       }
@@ -312,7 +472,7 @@ class SucursalProvider extends ChangeNotifier {
 // Clase para la solicitud de creación/actualización de sucursal
 class SucursalRequest {
   final String nombre;
-  final String direccion;
+  final String? direccion;
   final bool sucursalCentral;
   final String? serieFactura;
   final int? numeroFacturaInicial;
@@ -322,7 +482,7 @@ class SucursalRequest {
 
   SucursalRequest({
     required this.nombre,
-    required this.direccion,
+    this.direccion,
     required this.sucursalCentral,
     this.serieFactura,
     this.numeroFacturaInicial,
@@ -334,7 +494,7 @@ class SucursalRequest {
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'nombre': nombre,
-      'direccion': direccion,
+      if (direccion != null && direccion!.isNotEmpty) 'direccion': direccion,
       'sucursalCentral': sucursalCentral,
       if (serieFactura != null && serieFactura!.isNotEmpty)
         'serieFactura': serieFactura,

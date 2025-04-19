@@ -132,6 +132,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
     Navigator.of(context).pop();
 
     if (error == null) {
+      // Si no hubo error, recargamos explícitamente la caché
+      await _sucursalProvider.limpiarCacheYRecargar();
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Sucursal guardada exitosamente'),
@@ -183,6 +186,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
       }
 
       if (error == null) {
+        // Si no hubo error, recargamos explícitamente la caché
+        await _sucursalProvider.limpiarCacheYRecargar();
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content:
@@ -250,18 +256,68 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
               onPressed: _toggleFiltrosAvanzados,
             ),
             ElevatedButton.icon(
-              icon: const FaIcon(FontAwesomeIcons.arrowsRotate,
-                  size: 16, color: Colors.white),
-              label: const Text('Actualizar datos'),
+              icon: provider.isLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const FaIcon(
+                      FontAwesomeIcons.arrowsRotate,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+              label: Text(
+                provider.isLoading ? 'Recargando...' : 'Recargar',
+                style: const TextStyle(color: Colors.white),
+              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0075FF),
+                backgroundColor: const Color(0xFF2D2D2D),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
+                  horizontal: 16,
+                  vertical: 12,
                 ),
               ),
-              onPressed: provider.cargarSucursales,
+              onPressed: provider.isLoading
+                  ? null
+                  : () async {
+                      // Definir funciones para mostrar SnackBars
+                      void showErrorSnackBar() {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(provider.errorMessage),
+                            backgroundColor: const Color(0xFFE31E24),
+                          ),
+                        );
+                      }
+
+                      void showSuccessSnackBar() {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Datos recargados exitosamente'),
+                            backgroundColor: Color(0xFF4CAF50),
+                          ),
+                        );
+                      }
+
+                      // Usar el método que también limpia el caché
+                      await provider.limpiarCacheYRecargar();
+
+                      // Verificar si el widget aún está montado
+                      if (!mounted) {
+                        return;
+                      }
+
+                      if (provider.errorMessage.isNotEmpty) {
+                        showErrorSnackBar();
+                      } else {
+                        showSuccessSnackBar();
+                      }
+                    },
             ),
             const SizedBox(width: 12),
             ElevatedButton.icon(
@@ -844,7 +900,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
               Expanded(
                 flex: 4,
                 child: Text(
-                  sucursal.direccion ?? 'Sin dirección registrada',
+                  sucursal.direccion ?? 'Sin dirección',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.white70,
