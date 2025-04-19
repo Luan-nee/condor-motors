@@ -90,7 +90,9 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
               final scaffoldMessenger = ScaffoldMessenger.of(context);
               await transferenciasProvider.recargarDatos();
 
-              if (!mounted) return;
+              if (!mounted) {
+                return;
+              }
 
               if (transferenciasProvider.errorMessage != null) {
                 scaffoldMessenger.showSnackBar(

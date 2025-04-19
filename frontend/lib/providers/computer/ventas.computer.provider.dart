@@ -1,21 +1,26 @@
-import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
+import 'package:condorsmotors/providers/print.provider.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provider para gestionar ventas y sucursales
 class VentasComputerProvider extends ChangeNotifier {
+  // Claves para SharedPreferences
+  static const String keyImprimirFormatoA4 = 'imprimir_formato_a4';
+  static const String keyImprimirFormatoTicket = 'imprimir_formato_ticket';
+  static const String keyAbrirPdfDespuesDeImprimir =
+      'abrir_pdf_despues_imprimir';
+  static const String keyImpresionDirecta = 'impresion_directa';
+  static const String keyImpresoraSeleccionada = 'impresora_seleccionada';
+
   // Repositorios
   final VentaRepository _ventaRepository = VentaRepository.instance;
   final SucursalRepository _sucursalRepository = SucursalRepository.instance;
+  final PrintProvider _printProvider = PrintProvider.instance;
 
   // Estado para sucursales
   String _errorMessage = '';
@@ -54,29 +59,74 @@ class VentasComputerProvider extends ChangeNotifier {
   // Referencia global al messenger
   GlobalKey<ScaffoldMessengerState>? messengerKey;
 
-  // Claves para SharedPreferences
-  static const String keyImprimirFormatoA4 = 'imprimir_formato_a4';
-  static const String keyImprimirFormatoTicket = 'imprimir_formato_ticket';
-  static const String keyAbrirPdfDespuesDeImprimir =
-      'abrir_pdf_despues_imprimir';
-  static const String keyImpresionDirecta = 'impresion_directa';
-  static const String keyImpresoraSeleccionada = 'impresora_seleccionada';
-
   // Estado de configuración de impresión
-  bool _imprimirFormatoA4 = true;
-  bool _imprimirFormatoTicket = false;
-  bool _abrirPdfDespuesDeImprimir = false;
-  bool _impresionDirecta = false;
-  String? _impresoraSeleccionada;
-  List<Printer> _impresorasDisponibles = [];
 
-  // Getters para configuración de impresión
-  bool get imprimirFormatoA4 => _imprimirFormatoA4;
-  bool get imprimirFormatoTicket => _imprimirFormatoTicket;
-  bool get abrirPdfDespuesDeImprimir => _abrirPdfDespuesDeImprimir;
-  bool get impresionDirecta => _impresionDirecta;
-  String? get impresoraSeleccionada => _impresoraSeleccionada;
-  List<Printer> get impresorasDisponibles => _impresorasDisponibles;
+  // Getters para configuración de impresión - delegados a PrintProvider
+  bool get imprimirFormatoA4 => _printProvider.imprimirFormatoA4;
+  bool get imprimirFormatoTicket => _printProvider.imprimirFormatoTicket;
+  bool get abrirPdfDespuesDeImprimir =>
+      _printProvider.abrirPdfDespuesDeImprimir;
+  bool get impresionDirecta => _printProvider.impresionDirecta;
+  String? get impresoraSeleccionada => _printProvider.impresoraSeleccionada;
+  List<Printer> get impresorasDisponibles =>
+      _printProvider.impresorasDisponibles;
+
+  /// Obtiene la impresora seleccionada actual
+  Printer? obtenerImpresoraSeleccionada() {
+    return _printProvider.obtenerImpresoraSeleccionada();
+  }
+
+  /// Carga la lista de impresoras disponibles
+  Future<void> cargarImpresoras() async {
+    await _printProvider.cargarImpresoras();
+    notifyListeners();
+  }
+
+  /// Carga la configuración de impresión desde SharedPreferences
+  Future<void> cargarConfiguracionImpresion() async {
+    await _printProvider.cargarConfiguracion();
+    notifyListeners();
+  }
+
+  /// Guarda la configuración de impresión en SharedPreferences
+  Future<void> guardarConfiguracionImpresion({
+    bool? imprimirFormatoA4,
+    bool? imprimirFormatoTicket,
+    bool? abrirPdfDespuesDeImprimir,
+    bool? impresionDirecta,
+    String? impresoraSeleccionada,
+    double? margenIzquierdo,
+    double? margenDerecho,
+    double? margenSuperior,
+    double? margenInferior,
+    double? anchoTicket,
+    double? escalaTicket,
+    bool? rotacionAutomatica,
+    bool? ajusteAutomatico,
+  }) async {
+    await _printProvider.guardarConfiguracion(
+      imprimirFormatoA4: imprimirFormatoA4,
+      imprimirFormatoTicket: imprimirFormatoTicket,
+      abrirPdfDespuesDeImprimir: abrirPdfDespuesDeImprimir,
+      impresionDirecta: impresionDirecta,
+      impresoraSeleccionada: impresoraSeleccionada,
+      margenIzquierdo: margenIzquierdo,
+      margenDerecho: margenDerecho,
+      margenSuperior: margenSuperior,
+      margenInferior: margenInferior,
+      anchoTicket: anchoTicket,
+      escalaTicket: escalaTicket,
+      rotacionAutomatica: rotacionAutomatica,
+      ajusteAutomatico: ajusteAutomatico,
+    );
+    notifyListeners();
+  }
+
+  /// Restaura la configuración de impresión a valores por defecto
+  Future<void> restaurarConfiguracionImpresion() async {
+    await _printProvider.restaurarConfiguracionPorDefecto();
+    notifyListeners();
+  }
 
   // Método para mostrar mensajes globales sin depender de un contexto específico
   void mostrarMensaje({
@@ -84,16 +134,15 @@ class VentasComputerProvider extends ChangeNotifier {
     Color backgroundColor = Colors.black,
     Duration duration = const Duration(seconds: 3),
   }) {
-    final messenger = messengerKey?.currentState;
-    if (messenger != null) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(mensaje),
-          backgroundColor: backgroundColor,
-          duration: duration,
-        ),
-      );
+    if (_printProvider.messengerKey == null && messengerKey != null) {
+      _printProvider.messengerKey = messengerKey;
     }
+
+    _printProvider.mostrarMensaje(
+      mensaje: mensaje,
+      backgroundColor: backgroundColor,
+      duration: duration,
+    );
   }
 
   /// Abre un PDF en una aplicación externa
@@ -101,33 +150,7 @@ class VentasComputerProvider extends ChangeNotifier {
   /// [url] URL del documento PDF
   /// [context] Contexto para mostrar mensajes de error (opcional)
   Future<bool> abrirPdf(String url, [BuildContext? context]) async {
-    try {
-      final Uri uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        return true;
-      } else {
-        throw 'No se pudo abrir el enlace: $url';
-      }
-    } catch (e) {
-      debugPrint('Error al abrir el PDF: $e');
-
-      // Usar el método global para mostrar mensajes si no hay contexto
-      if (context == null || !context.mounted) {
-        mostrarMensaje(
-          mensaje: 'Error al abrir el PDF: $e',
-          backgroundColor: Colors.red,
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al abrir el PDF: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return false;
-    }
+    return _printProvider.abrirPdf(url, context);
   }
 
   /// Imprime un documento PDF desde una URL con bypass de verificación SSL
@@ -137,157 +160,7 @@ class VentasComputerProvider extends ChangeNotifier {
   /// [context] Contexto para mostrar mensajes (opcional)
   Future<bool> imprimirDocumentoPdf(String url, String nombreDocumento,
       [BuildContext? context]) async {
-    try {
-      debugPrint('🖨️ Iniciando impresión...');
-      debugPrint('📄 Formato A4: $_imprimirFormatoA4');
-      debugPrint('🎫 Formato Ticket: $_imprimirFormatoTicket');
-      debugPrint('🔗 URL original: $url');
-      debugPrint('⚡ Impresión directa: $_impresionDirecta');
-      debugPrint('🖨️ Impresora seleccionada: $_impresoraSeleccionada');
-
-      // Ajustar URL según el formato seleccionado
-      String urlFinal = url;
-      if (_imprimirFormatoTicket && url.contains('type=a4')) {
-        urlFinal = url.replaceAll('type=a4', 'type=ticket');
-        debugPrint('🔄 URL ajustada para ticket: $urlFinal');
-      } else if (_imprimirFormatoA4 && url.contains('type=ticket')) {
-        urlFinal = url.replaceAll('type=ticket', 'type=a4');
-        debugPrint('🔄 URL ajustada para A4: $urlFinal');
-      }
-
-      // Mostrar mensaje de preparación
-      if (context != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Preparando documento para impresión...'),
-            duration: Duration(seconds: 1),
-          ),
-        );
-      } else {
-        mostrarMensaje(
-          mensaje: 'Preparando documento para impresión...',
-          duration: const Duration(seconds: 1),
-        );
-      }
-
-      // Crear un cliente HTTP que acepte todos los certificados
-      final httpClient = HttpClient()
-        ..badCertificateCallback =
-            (X509Certificate cert, String host, int port) => true;
-
-      debugPrint('📥 Descargando PDF desde: $urlFinal');
-
-      // Realizar la solicitud HTTP
-      final request = await httpClient.getUrl(Uri.parse(urlFinal));
-      final response = await request.close();
-
-      if (response.statusCode != 200) {
-        throw Exception('Error al descargar el PDF: ${response.statusCode}');
-      }
-
-      // Leer los bytes de la respuesta
-      final List<int> bytesBuilder = [];
-      await for (var data in response) {
-        bytesBuilder.addAll(data);
-      }
-      final Uint8List bytes = Uint8List.fromList(bytesBuilder);
-
-      debugPrint('📦 PDF descargado: ${bytes.length} bytes');
-
-      // Cerrar el cliente HTTP
-      httpClient.close();
-
-      bool result;
-      if (_impresionDirecta) {
-        // Obtener la impresora seleccionada o la predeterminada
-        final printer = obtenerImpresoraSeleccionada();
-        if (printer == null) {
-          throw Exception('No hay impresora disponible');
-        }
-
-        debugPrint('🖨️ Usando impresora: ${printer.name}');
-
-        // Imprimir directamente sin diálogo
-        result = await Printing.directPrintPdf(
-          printer: printer,
-          onLayout: (_) => Future.value(bytes),
-          name: nombreDocumento,
-        );
-      } else {
-        // Mostrar diálogo de impresión
-        result = await Printing.layoutPdf(
-          onLayout: (_) => Future.value(bytes),
-          name: nombreDocumento,
-        );
-      }
-
-      debugPrint(
-          '🖨️ Resultado de impresión: ${result ? 'Exitoso' : 'Fallido'}');
-
-      if (result) {
-        if (context != null && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Documento enviado a la impresora'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          mostrarMensaje(
-            mensaje: 'Documento enviado a la impresora',
-            backgroundColor: Colors.green,
-          );
-        }
-
-        // Si la impresión es exitosa y está configurado para abrir PDF
-        if (result && _abrirPdfDespuesDeImprimir) {
-          debugPrint('🌐 Abriendo PDF después de imprimir');
-          await abrirPdf(urlFinal);
-        }
-
-        return true;
-      } else {
-        // Si la impresión falló, abrir el PDF como fallback
-        debugPrint('⚠️ Impresión fallida, abriendo PDF en navegador');
-        await abrirPdf(urlFinal);
-
-        if (context != null && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No se pudo imprimir. PDF abierto en navegador'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        } else {
-          mostrarMensaje(
-            mensaje: 'No se pudo imprimir. PDF abierto en navegador',
-            backgroundColor: Colors.orange,
-          );
-        }
-        return false;
-      }
-    } catch (e) {
-      // Manejar errores
-      debugPrint('❌ Error al imprimir documento: $e');
-
-      // Intentar abrir el PDF en el navegador como alternativa
-      await abrirPdf(url);
-
-      if (context != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al imprimir: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } else {
-        mostrarMensaje(
-          mensaje: 'Error al imprimir: $e',
-          backgroundColor: Colors.red,
-        );
-      }
-      return false;
-    }
+    return _printProvider.imprimirDocumentoPdf(url, nombreDocumento, context);
   }
 
   /// Obtiene el color según el estado de una venta (se mantiene por ser UI-related)
@@ -459,9 +332,15 @@ class VentasComputerProvider extends ChangeNotifier {
   String? get ordenarPor => _ordenarPor;
 
   /// Inicializa el provider cargando los datos necesarios
-  Future<void> inicializar() async {
+  Future<void> inicializar({GlobalKey<ScaffoldMessengerState>? key}) async {
     try {
       debugPrint('🔄 Inicializando VentasComputerProvider...');
+
+      if (key != null) {
+        messengerKey = key;
+        // Inicializar PrintProvider con la misma key
+        await _printProvider.inicializar(key: key);
+      }
 
       // Obtener datos del usuario autenticado usando el repositorio
       final userData = await _ventaRepository.getUserData();
@@ -997,115 +876,5 @@ class VentasComputerProvider extends ChangeNotifier {
     }
 
     return await _ventaRepository.getCurrentSucursalId();
-  }
-
-  /// Obtiene la lista de impresoras disponibles
-  Future<void> cargarImpresoras() async {
-    try {
-      debugPrint('🔍 Buscando impresoras disponibles...');
-      _impresorasDisponibles = await Printing.listPrinters();
-      debugPrint('📝 Impresoras encontradas: ${_impresorasDisponibles.length}');
-
-      // Si no hay impresora seleccionada, usar la predeterminada
-      if (_impresoraSeleccionada == null ||
-          !_impresorasDisponibles
-              .any((p) => p.name == _impresoraSeleccionada)) {
-        final defaultPrinter = _impresorasDisponibles.firstWhere(
-          (p) => p.isDefault,
-          orElse: () => _impresorasDisponibles.firstWhere(
-            (p) => p.isAvailable,
-            orElse: () => _impresorasDisponibles.first,
-          ),
-        );
-        _impresoraSeleccionada = defaultPrinter.name;
-        await guardarConfiguracionImpresion(
-          impresoraSeleccionada: defaultPrinter.name,
-        );
-      }
-
-      notifyListeners();
-    } catch (e) {
-      debugPrint('❌ Error al cargar impresoras: $e');
-    }
-  }
-
-  /// Obtiene la impresora seleccionada actual
-  Printer? obtenerImpresoraSeleccionada() {
-    if (_impresoraSeleccionada == null) return null;
-    try {
-      return _impresorasDisponibles.firstWhere(
-        (p) => p.name == _impresoraSeleccionada,
-        orElse: () => _impresorasDisponibles.firstWhere(
-          (p) => p.isDefault,
-          orElse: () => _impresorasDisponibles.first,
-        ),
-      );
-    } catch (e) {
-      debugPrint('❌ Error al obtener impresora seleccionada: $e');
-      return null;
-    }
-  }
-
-  /// Carga la configuración de impresión desde SharedPreferences
-  Future<void> cargarConfiguracionImpresion() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      _imprimirFormatoA4 = prefs.getBool(keyImprimirFormatoA4) ?? true;
-      _imprimirFormatoTicket = prefs.getBool(keyImprimirFormatoTicket) ?? false;
-      _abrirPdfDespuesDeImprimir =
-          prefs.getBool(keyAbrirPdfDespuesDeImprimir) ?? false;
-      _impresionDirecta = prefs.getBool(keyImpresionDirecta) ?? false;
-      _impresoraSeleccionada = prefs.getString(keyImpresoraSeleccionada);
-
-      // Cargar lista de impresoras
-      await cargarImpresoras();
-
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error al cargar configuración de impresión: $e');
-    }
-  }
-
-  /// Guarda la configuración de impresión en SharedPreferences
-  Future<void> guardarConfiguracionImpresion({
-    bool? imprimirFormatoA4,
-    bool? imprimirFormatoTicket,
-    bool? abrirPdfDespuesDeImprimir,
-    bool? impresionDirecta,
-    String? impresoraSeleccionada,
-  }) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-
-      if (imprimirFormatoA4 != null) {
-        _imprimirFormatoA4 = imprimirFormatoA4;
-        await prefs.setBool(keyImprimirFormatoA4, imprimirFormatoA4);
-      }
-
-      if (imprimirFormatoTicket != null) {
-        _imprimirFormatoTicket = imprimirFormatoTicket;
-        await prefs.setBool(keyImprimirFormatoTicket, imprimirFormatoTicket);
-      }
-
-      if (abrirPdfDespuesDeImprimir != null) {
-        _abrirPdfDespuesDeImprimir = abrirPdfDespuesDeImprimir;
-        await prefs.setBool(
-            keyAbrirPdfDespuesDeImprimir, abrirPdfDespuesDeImprimir);
-      }
-
-      if (impresionDirecta != null) {
-        _impresionDirecta = impresionDirecta;
-        await prefs.setBool(keyImpresionDirecta, impresionDirecta);
-      }
-
-      if (impresoraSeleccionada != null) {
-        _impresoraSeleccionada = impresoraSeleccionada;
-        await prefs.setString(keyImpresoraSeleccionada, impresoraSeleccionada);
-      }
-
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error al guardar configuración de impresión: $e');
-    }
   }
 }

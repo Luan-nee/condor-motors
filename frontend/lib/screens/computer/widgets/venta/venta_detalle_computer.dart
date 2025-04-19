@@ -2,24 +2,24 @@ import 'dart:math' show min;
 
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
+import 'package:condorsmotors/providers/print.provider.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class VentaDetalleComputer extends StatefulWidget {
   final Venta? venta;
   final bool isLoadingFullData;
   final Function(String)? onDeclararPressed;
-  final VentasComputerProvider ventasProvider;
 
   const VentaDetalleComputer({
     super.key,
     required this.venta,
     this.isLoadingFullData = false,
     this.onDeclararPressed,
-    required this.ventasProvider,
   });
 
   @override
@@ -32,9 +32,7 @@ class VentaDetalleComputer extends StatefulWidget {
       ..add(DiagnosticsProperty<Venta?>('venta', venta))
       ..add(DiagnosticsProperty<bool>('isLoadingFullData', isLoadingFullData))
       ..add(ObjectFlagProperty<Function(String)?>.has(
-          'onDeclararPressed', onDeclararPressed))
-      ..add(DiagnosticsProperty<VentasComputerProvider>(
-          'ventasProvider', ventasProvider));
+          'onDeclararPressed', onDeclararPressed));
   }
 }
 
@@ -49,9 +47,6 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
   // Controlador de animación
   late AnimationController _animationController;
   late Animation<double> _opacityAnimation;
-
-  // Obtener referencia al provider
-  VentasComputerProvider get _ventasProvider => widget.ventasProvider;
 
   @override
   void initState() {
@@ -277,22 +272,20 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
   // Builder para la cabecera del diálogo
   Widget _buildHeader(String serie, String numero, String idVenta,
       DateTime fechaCreacion, BuildContext context) {
+    // Obtener providers usando Provider.of
+    Provider.of<VentasComputerProvider>(context);
+    final printProvider = PrintProvider.instance;
+
     // Usar VentasUtils para verificar disponibilidad de PDF
     final bool tienePdf =
         widget.venta != null && VentasUtils.tienePdfDisponible(widget.venta!);
     final bool declarada = widget.venta?.declarada ?? false;
     final bool anulada = widget.venta?.anulada ?? false;
     final String? pdfLink = widget.venta != null
-        ? _ventasProvider.imprimirFormatoTicket
+        ? printProvider.imprimirFormatoTicket
             ? VentasUtils.obtenerUrlPdf(widget.venta!, formatoTicket: true)
             : VentasUtils.obtenerUrlPdf(widget.venta!)
         : null;
-
-    debugPrint(
-        '🎫 Formato de impresión seleccionado - Ticket: ${_ventasProvider.imprimirFormatoTicket}');
-    debugPrint(
-        '📄 Formato de impresión seleccionado - A4: ${_ventasProvider.imprimirFormatoA4}');
-    debugPrint('🔗 URL PDF seleccionada: $pdfLink');
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -373,7 +366,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                 ),
                 tooltip: 'Ver PDF',
                 onPressed: () => pdfLink != null
-                    ? _ventasProvider.abrirPdf(pdfLink, context)
+                    ? printProvider.abrirPdf(pdfLink, context)
                     : null,
               ),
             IconButton(
@@ -1009,6 +1002,9 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
       return const SizedBox.shrink();
     }
 
+    // Obtener provider usando Provider.of
+    final ventasProvider = Provider.of<VentasComputerProvider>(context);
+
     // Obtener el ID de la venta
     final String idVenta = widget.venta!.id.toString();
 
@@ -1017,26 +1013,21 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
     final bool anulada = widget.venta!.anulada;
     final bool cancelada = widget.venta!.cancelada;
 
-    // Usar VentasUtils para verificar disponibilidad de PDF
+    // Usar VentasUtils para verificar disponibilidad de PDF (sin logs)
     final bool tienePdf = VentasUtils.tienePdfDisponible(widget.venta!);
     final bool tienePdfTicket =
         VentasUtils.tienePdfTicketDisponible(widget.venta!);
 
-    // Obtener URLs de PDFs según el formato seleccionado
-    final String? pdfLink = _ventasProvider.imprimirFormatoTicket
+    // Obtener URLs de PDFs según el formato seleccionado (sin logs)
+    final String? pdfLink = ventasProvider.imprimirFormatoTicket
         ? VentasUtils.obtenerUrlPdf(widget.venta!, formatoTicket: true)
         : VentasUtils.obtenerUrlPdf(widget.venta!);
-
-    debugPrint('🖨️ Estado de impresión:');
-    debugPrint('📄 Tiene PDF A4: $tienePdf');
-    debugPrint('🎫 Tiene PDF Ticket: $tienePdfTicket');
-    debugPrint('🔗 URL PDF a imprimir: $pdfLink');
 
     // Determinar nombre de documento para impresión
     final String nombreDocumento =
         VentasUtils.formatearNumeroDocumento(widget.venta!);
     final String formatoSufijo =
-        _ventasProvider.imprimirFormatoTicket ? '_TICKET' : '_A4';
+        ventasProvider.imprimirFormatoTicket ? '_TICKET' : '_A4';
     final String nombreCompleto = '$nombreDocumento$formatoSufijo';
 
     return Row(
@@ -1077,7 +1068,10 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).pop();
-                          widget.onDeclararPressed!(idVenta);
+                          // La llamada es asincrónica, pero el resultado lo maneja el callback
+                          if (widget.onDeclararPressed != null) {
+                            widget.onDeclararPressed!(idVenta);
+                          }
                         },
                         child: const Text('Declarar'),
                       ),
@@ -1097,7 +1091,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                 FontAwesomeIcons.print,
                 size: 16,
               ),
-              label: Text(_ventasProvider.imprimirFormatoTicket
+              label: Text(PrintProvider.instance.imprimirFormatoTicket
                   ? 'Imprimir Ticket'
                   : 'Imprimir A4'),
               style: ElevatedButton.styleFrom(
@@ -1105,14 +1099,62 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                 foregroundColor: Colors.white,
               ),
               onPressed: () async {
-                debugPrint('🖨️ Iniciando proceso de impresión...');
+                // Un solo log al iniciar impresión en lugar de debugPrint repetitivos
                 if (pdfLink != null) {
-                  debugPrint('📑 Imprimiendo documento: $nombreCompleto');
-                  await widget.ventasProvider.imprimirDocumentoPdf(
-                    pdfLink,
-                    nombreCompleto,
-                    context,
-                  );
+                  try {
+                    // Obtener directamente el PrintProvider
+                    final currentContext = context;
+                    final printProvider = PrintProvider.instance;
+                    Provider.of<VentasComputerProvider>(currentContext,
+                        listen: false);
+
+                    // Variables locales
+                    final localPdfLink = pdfLink;
+                    final localNombreCompleto = nombreCompleto;
+                    final localTienePdf = tienePdf;
+                    final localTienePdfTicket = tienePdfTicket;
+
+                    // Logs solo una vez al inicio del proceso
+                    debugPrint('''
+🖨️ Iniciando proceso de impresión...
+📑 Documento: $localNombreCompleto
+📄 PDF disponible: $localTienePdf, Formato Ticket: $localTienePdfTicket
+🔗 URL: $localPdfLink
+''');
+
+                    // Cargar la configuración más reciente
+                    await printProvider.cargarConfiguracion();
+
+                    // Verificar que el widget sigue montado
+                    if (!mounted) {
+                      return;
+                    }
+
+                    // Imprimir directamente usando PrintProvider
+                    final result = await printProvider.imprimirDocumentoPdf(
+                      localPdfLink,
+                      localNombreCompleto,
+                      currentContext,
+                    );
+
+                    // Verificar nuevamente que el widget sigue montado
+                    if (!mounted) {
+                      return;
+                    }
+
+                    debugPrint(
+                        '📋 Resultado impresión: ${result ? "Exitoso" : "Fallido"}');
+                  } catch (e) {
+                    debugPrint('❌ Error durante impresión: $e');
+
+                    // Mostrar error al usuario solo si el widget sigue montado
+                    if (!mounted) {
+                      return;
+                    }
+
+                    // Usar un método que ejecuta el código UI en un Future.microtask
+                    _mostrarErrorSnackBar(e.toString());
+                  }
                 } else {
                   debugPrint('❌ Error: URL de PDF no disponible');
                 }
@@ -1228,5 +1270,20 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
         ),
       ),
     );
+  }
+
+  /// Método para mostrar un snackbar con un mensaje de error
+  /// Este método no tiene operaciones asincrónicas, por lo que es seguro usarlo después de comprobar mounted
+  void _mostrarErrorSnackBar(String mensaje) {
+    // Ejecutar en microtask para asegurar que se ejecute después de la actualización del estado
+    Future.microtask(() {
+      if (mounted) {
+        // Usar PrintProvider para mostrar el mensaje de error
+        PrintProvider.instance.mostrarMensaje(
+          mensaje: 'Error al imprimir: $mensaje',
+          backgroundColor: Colors.red,
+        );
+      }
+    });
   }
 }
