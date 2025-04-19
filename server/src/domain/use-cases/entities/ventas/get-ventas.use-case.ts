@@ -17,8 +17,8 @@ import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm'
 
 export class GetVentas {
   private readonly authPayload: AuthPayload
-  private readonly permissionAny = permissionCodes.ventas.createAny
-  private readonly permissionRelated = permissionCodes.ventas.createRelated
+  private readonly permissionAny = permissionCodes.ventas.getAny
+  private readonly permissionRelated = permissionCodes.ventas.getRelated
   private readonly selectFields = {
     id: ventasTable.id,
     declarada: ventasTable.declarada,
