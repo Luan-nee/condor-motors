@@ -11,7 +11,7 @@ class SucursalUtils {
   static const Color colorLocal = Colors.white70;
 
   /// Tipos de sucursales disponibles
-  static const List<String> tiposSucursal = ['Todos', 'Central', 'Local'];
+  static const List<String> tiposSucursal = ['Todos', 'Central', 'Sucursal'];
 
   /// Obtiene el icono apropiado para una sucursal basado en su tipo y nombre
   static IconData getIconForSucursal(Sucursal sucursal) {

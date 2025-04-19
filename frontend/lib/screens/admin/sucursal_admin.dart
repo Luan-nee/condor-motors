@@ -385,7 +385,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                           Row(
                             children: [
                               const Text(
-                                'Tipo de Sucursal:',
+                                'Tipo de Local:',
                                 style: TextStyle(
                                   color: Colors.white70,
                                   fontSize: 14,
