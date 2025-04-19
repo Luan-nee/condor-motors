@@ -21,6 +21,8 @@ import {
   eq,
   gt,
   ilike,
+  isNotNull,
+  isNull,
   lt,
   or,
   type SQL
@@ -160,8 +162,9 @@ export class GetProductos {
     }
   }
 
+  // eslint-disable-next-line complexity
   private getFilterCondition(queriesProductoDto: QueriesProductoDto) {
-    const { stockBajo } = queriesProductoDto
+    const { stockBajo, activo } = queriesProductoDto
     const conditions: SQL[] = []
 
     if (stockBajo !== undefined) {
@@ -169,6 +172,18 @@ export class GetProductos {
 
       if (stockBajoBoolean !== undefined) {
         conditions.push(eq(detallesProductoTable.stockBajo, stockBajoBoolean))
+      }
+    }
+
+    if (activo !== undefined) {
+      const activoBoolean = parseBoolString(activo)
+
+      if (activoBoolean !== undefined) {
+        if (activoBoolean) {
+          conditions.push(isNotNull(detallesProductoTable.id))
+        } else {
+          conditions.push(isNull(detallesProductoTable.id))
+        }
       }
     }
 

@@ -17,6 +17,7 @@ export class QueriesProductoDto {
   filter_value?: QueriesDtoType['filter_value']
   filter_type: FilterTypeValuesType
   stockBajo?: string
+  activo?: string
 
   private constructor({
     sort_by: sortBy,
@@ -27,7 +28,8 @@ export class QueriesProductoDto {
     filter,
     filter_value: filterValue,
     filter_type: filterType,
-    stockBajo
+    stockBajo,
+    activo
   }: QueriesProductoDto) {
     this.sort_by = sortBy
     this.order = order
@@ -38,6 +40,7 @@ export class QueriesProductoDto {
     this.filter_value = filterValue
     this.filter_type = filterType
     this.stockBajo = stockBajo
+    this.activo = activo
   }
 
   private static isValidFilterType(
@@ -78,7 +81,8 @@ export class QueriesProductoDto {
         filter: result.data.filter,
         filter_value: result.data.filter_value,
         filter_type: result.data.filter_type,
-        stockBajo: result.data.stockBajo
+        stockBajo: result.data.stockBajo,
+        activo: result.data.activo
       })
     ]
   }
