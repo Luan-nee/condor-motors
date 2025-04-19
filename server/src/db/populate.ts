@@ -14,7 +14,12 @@ import {
   coloresTable
 } from '@db/schema'
 import { exit } from 'process'
-import { adminPermissions, populateConfig } from '@db/config/populate.config'
+import {
+  adminPermissions,
+  computadoraPermissions,
+  populateConfig,
+  vendedorPermisssions
+} from '@db/config/populate.config'
 import { formatCode } from '@/core/lib/format-values'
 
 const populateDatabase = async (
@@ -38,7 +43,7 @@ const populateDatabase = async (
       })
       .returning({ id: empleadosTable.id })
 
-    const [adminRole] = await tx
+    const [adminRole, vendedorRole, computadoraRole] = await tx
       .insert(rolesTable)
       .values(
         config.rolesDefault.map((rol) => ({
@@ -46,19 +51,46 @@ const populateDatabase = async (
           nombre: rol
         }))
       )
-      .returning()
+      .returning({ id: rolesTable.id })
 
-    const adminPermissions = await tx
+    const permisos = await tx
       .insert(permisosTable)
       .values(permissions)
-      .returning({ id: permisosTable.id })
+      .returning({
+        id: permisosTable.id,
+        codigo: permisosTable.codigo
+      })
 
-    await tx.insert(rolesPermisosTable).values(
-      adminPermissions.map((permission) => ({
+    const vendedorPermisosCodigos = new Set(
+      vendedorPermisssions.map((permiso) => permiso.codigo)
+    )
+
+    const permisosVendedor = permisos.filter((permiso) =>
+      vendedorPermisosCodigos.has(permiso.codigo)
+    )
+
+    const computadoraPermisosCodigos = new Set(
+      computadoraPermissions.map((permiso) => permiso.codigo)
+    )
+
+    const permisosComputadora = permisos.filter((permiso) =>
+      computadoraPermisosCodigos.has(permiso.codigo)
+    )
+
+    await tx.insert(rolesPermisosTable).values([
+      ...permisos.map((permission) => ({
         permisoId: permission.id,
         rolId: adminRole.id
+      })),
+      ...permisosVendedor.map((permiso) => ({
+        permisoId: permiso.id,
+        rolId: vendedorRole.id
+      })),
+      ...permisosComputadora.map((permiso) => ({
+        permisoId: permiso.id,
+        rolId: computadoraRole.id
       }))
-    )
+    ])
 
     await tx.insert(cuentasEmpleadosTable).values({
       usuario: config.user.usuario,

@@ -151,6 +151,10 @@ export class GetEmpleados {
     const results = await db
       .select({ count: count(empleadosTable.id) })
       .from(empleadosTable)
+      .innerJoin(
+        sucursalesTable,
+        eq(empleadosTable.sucursalId, sucursalesTable.id)
+      )
       .where(whereCondition)
 
     const [totalItems] = results
