@@ -1,93 +1,76 @@
+import { CustomError } from '@/core/errors/custom.error'
 import { getDateTimeString, getOffsetDateTime } from '@/core/lib/utils'
 import { db } from '@/db/connection'
 import { sucursalesTable, totalesVentaTable, ventasTable } from '@/db/schema'
-import { count, eq, gte, sum } from 'drizzle-orm'
+import { count, eq, gte, isNull, or, sql, sum } from 'drizzle-orm'
 
 export class GetReporteVentas {
   private async getventasReporte() {
-    const fechaActual = getOffsetDateTime(new Date(), -5)
-    if (fechaActual === undefined) {
-      return []
-    }
-    const fecha = getDateTimeString(fechaActual)
-    const hoy = getOffsetDateTime(new Date(fecha.date), 5)
-    if (hoy === undefined) {
-      return []
-    }
-    const primerDiaMes = new Date(fechaActual.getDate())
-    primerDiaMes.setDate(1)
-    const inicioMes = getOffsetDateTime(primerDiaMes, 5)
+    const currentOffsetDateTime = getOffsetDateTime(new Date(), -5)
 
-    if (inicioMes === undefined) {
-      return []
+    if (currentOffsetDateTime === undefined) {
+      throw CustomError.internalServer()
     }
 
-    const ultimoDiaMes = new Date(fechaActual.getDate())
-    ultimoDiaMes.setMonth(ultimoDiaMes.getMonth() + 1, 0)
-    const finMes = getOffsetDateTime(ultimoDiaMes, 5)
+    const dateTime = getDateTimeString(currentOffsetDateTime)
+    const today = getOffsetDateTime(new Date(dateTime.date), 5)
 
-    if (finMes === undefined) {
-      return []
+    if (today === undefined) {
+      throw CustomError.internalServer()
     }
 
-    const getVentasMes = await db
-      .select({ esteMes: count(ventasTable.id) })
-      .from(ventasTable)
-      .where(gte(ventasTable.fechaCreacion, inicioMes))
-    const [esteMes] = getVentasMes
-    const whereCondition = undefined
-    // queriesDto.startDate instanceof Date && queriesDto.endDate instanceof Date
-    //   ? and(
-    //       gte(ventasTable.fechaCreacion, new Date(queriesDto.startDate)),
-    //       lte(ventasTable.fechaCreacion, new Date(queriesDto.endDate))
-    //     )
-    //   : queriesDto.startDate instanceof Date
-    //     ? gte(ventasTable.fechaCreacion, new Date(queriesDto.startDate))
-    //     : undefined
+    const firstDayThisMonth = new Date(today)
+    firstDayThisMonth.setDate(1)
 
-    const dataTotal = await db
+    const [salesToday] = await db
       .select({
-        hoy: count(),
-        esteMes: sum(totalesVentaTable.totalVenta)
+        count: count(ventasTable.id),
+        total: sum(totalesVentaTable.totalVenta)
       })
-      .from(totalesVentaTable)
-      .innerJoin(ventasTable, eq(totalesVentaTable.ventaId, ventasTable.id))
-      .where(whereCondition)
-
-    const getVentaHoy = await db
-      .select({ hoy: count(ventasTable.id) })
       .from(ventasTable)
-      .where(gte(ventasTable.fechaCreacion, hoy))
+      .innerJoin(
+        totalesVentaTable,
+        eq(ventasTable.id, totalesVentaTable.ventaId)
+      )
+      .where(gte(ventasTable.fechaCreacion, today))
+
+    const [salesThisMonth] = await db
+      .select({
+        count: count(ventasTable.id),
+        total: sum(totalesVentaTable.totalVenta)
+      })
+      .from(ventasTable)
+      .innerJoin(
+        totalesVentaTable,
+        eq(ventasTable.id, totalesVentaTable.ventaId)
+      )
+      .where(gte(ventasTable.fechaCreacion, firstDayThisMonth))
 
     const sucursales = await db
       .select({
+        id: sucursalesTable.id,
         nombre: sucursalesTable.nombre,
-        ventas: count(),
-        totalVentas: sum(totalesVentaTable.totalVenta)
+        ventas: count(ventasTable.id),
+        totalVentas: sql<string>`coalesce(sum(${totalesVentaTable.totalVenta}), 0)`
       })
-      .from(ventasTable)
-      .innerJoin(
-        sucursalesTable,
-        eq(sucursalesTable.id, ventasTable.sucursalId)
-      )
-      .innerJoin(
+      .from(sucursalesTable)
+      .leftJoin(ventasTable, eq(sucursalesTable.id, ventasTable.sucursalId))
+      .leftJoin(
         totalesVentaTable,
-        eq(totalesVentaTable.ventaId, ventasTable.id)
+        eq(ventasTable.id, totalesVentaTable.ventaId)
       )
-      .where(whereCondition)
-      .groupBy(ventasTable.sucursalId, sucursalesTable.nombre)
-
-    const [ventas] = dataTotal
-    const [hoyDia] = getVentaHoy
-
-    const totalVentas = {
-      ...hoyDia,
-      ...esteMes
-    }
+      .where(or(isNull(ventasTable.id), gte(ventasTable.fechaCreacion, today)))
+      .groupBy(sucursalesTable.id)
 
     return {
-      ventas,
-      totalVentas,
+      ventas: {
+        hoy: salesToday.count,
+        esteMes: salesThisMonth.count
+      },
+      totalVentas: {
+        hoy: salesToday.total,
+        esteMes: salesThisMonth.total
+      },
       sucursales
     }
   }
