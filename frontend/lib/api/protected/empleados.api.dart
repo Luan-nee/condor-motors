@@ -201,7 +201,7 @@ class EmpleadosApi {
       Logger.debug(
           'Creando nuevo empleado: ${formattedData['nombre']} ${formattedData['apellidos']}');
       final Map<String, dynamic> response = await _api.authenticatedRequest(
-        endpoint: '/api/empleados',
+        endpoint: '/empleados',
         method: 'POST',
         body: formattedData,
       );

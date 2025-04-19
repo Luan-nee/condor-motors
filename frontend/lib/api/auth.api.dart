@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/models/auth.model.dart';
+import 'package:condorsmotors/utils/logger.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Servicio para gestionar tokens de autenticación
@@ -26,6 +26,9 @@ class TokenService {
   // URL base del API (será configurada por la aplicación)
   String _baseUrl = '';
 
+  // Cliente Dio para peticiones HTTP
+  late Dio _dio;
+
   // Variables en memoria
   String? _accessToken;
   String? _refreshToken;
@@ -37,12 +40,21 @@ class TokenService {
   static const int _maxRetryCount = 2;
 
   // Constructor privado
-  TokenService._internal();
+  TokenService._internal() {
+    _dio = Dio(BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+      validateStatus: (status) =>
+          true, // Aceptar cualquier código de estado para manejar errores manualmente
+    ));
+  }
 
   // Configurar URL base
   void setBaseUrl(String baseUrl) {
     _baseUrl = baseUrl;
-    debugPrint('TokenService: URL base configurada: $_baseUrl');
+    _dio.options.baseUrl = baseUrl;
+    logInfo('TokenService: URL base configurada: $_baseUrl');
   }
 
   // Getters
@@ -71,7 +83,7 @@ class TokenService {
   /// Carga los tokens desde SharedPreferences
   Future<bool> loadTokens() async {
     try {
-      debugPrint('TokenService: Cargando tokens desde SharedPreferences');
+      logInfo('TokenService: Cargando tokens desde SharedPreferences');
 
       final SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -85,22 +97,21 @@ class TokenService {
 
       // Verificar si el token está expirado
       if (isTokenExpired) {
-        debugPrint('TokenService: Token expirado o a punto de expirar');
+        logInfo('TokenService: Token expirado o a punto de expirar');
 
         // Intentar hacer login automático si hay credenciales guardadas
         if (await _attemptAutoLogin()) {
-          debugPrint(
-              'TokenService: Login automático exitoso, token actualizado');
+          logInfo('TokenService: Login automático exitoso, token actualizado');
           return true;
         }
 
         return false;
       }
 
-      debugPrint('TokenService: Tokens cargados correctamente');
+      logInfo('TokenService: Tokens cargados correctamente');
       return _accessToken != null;
     } catch (e) {
-      debugPrint('TokenService: ERROR al cargar tokens: $e');
+      logError('TokenService: ERROR al cargar tokens', e);
       return false;
     }
   }
@@ -116,38 +127,38 @@ class TokenService {
           password == null ||
           username.isEmpty ||
           password.isEmpty) {
-        debugPrint(
+        logInfo(
             'TokenService: No hay credenciales guardadas para login automático');
         return false;
       }
 
       if (_baseUrl.isEmpty) {
-        debugPrint(
+        logWarning(
             'TokenService: URL base no configurada, no se puede hacer login automático');
         return false;
       }
 
-      debugPrint(
+      logInfo(
           'TokenService: Intentando login automático para usuario: $username');
 
-      // Construir URL completa para login
-      final String loginUrl = '$_baseUrl/auth/login';
-
       // Realizar solicitud de login
-      final http.Response response = await http
-          .post(
-            Uri.parse(loginUrl),
-            headers: <String, String>{'Content-Type': 'application/json'},
-            body: json.encode(<String, String>{
-              'usuario': username,
-              'clave': password,
-            }),
-          )
-          .timeout(const Duration(seconds: 10));
+      final Response response = await _dio.post(
+        '/auth/login',
+        data: <String, String>{
+          'usuario': username,
+          'clave': password,
+        },
+        options: Options(
+          headers: <String, String>{'Content-Type': 'application/json'},
+          validateStatus: (status) => true,
+        ),
+      );
 
       // Verificar respuesta
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final responseData = json.decode(response.body);
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300) {
+        final responseData = response.data;
 
         // Buscar token en la respuesta
         String? accessToken;
@@ -207,16 +218,16 @@ class TokenService {
             expiryInSeconds: expiryInSeconds,
           );
 
-          debugPrint('TokenService: Login automático exitoso, token guardado');
+          logInfo('TokenService: Login automático exitoso, token guardado');
           return true;
         }
       }
 
-      debugPrint(
+      logWarning(
           'TokenService: Login automático falló: ${response.statusCode}');
       return false;
     } catch (e) {
-      debugPrint('TokenService: ERROR en login automático: $e');
+      logError('TokenService: ERROR en login automático', e);
       return false;
     }
   }
@@ -228,7 +239,7 @@ class TokenService {
     int expiryInSeconds = 3600, // 1 hora por defecto
   }) async {
     try {
-      debugPrint('TokenService: Guardando tokens en SharedPreferences');
+      logInfo('TokenService: Guardando tokens en SharedPreferences');
 
       // Actualizar variables en memoria primero
       _accessToken = accessToken;
@@ -248,30 +259,30 @@ class TokenService {
       }
       await prefs.setString(_expiryTimeKey, _expiryTime!.toIso8601String());
 
-      debugPrint('TokenService: Tokens guardados correctamente');
+      logInfo('TokenService: Tokens guardados correctamente');
     } catch (e) {
-      debugPrint('TokenService: ERROR al guardar tokens: $e');
+      logError('TokenService: ERROR al guardar tokens', e);
     }
   }
 
   /// Guarda las credenciales del usuario para futuros login automáticos
   Future<void> saveCredentials(String username, String password) async {
     try {
-      debugPrint('TokenService: Guardando credenciales para login automático');
+      logInfo('TokenService: Guardando credenciales para login automático');
 
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString(_lastUsernameKey, username);
       await prefs.setString(_lastPasswordKey, password);
 
-      debugPrint('TokenService: Credenciales guardadas correctamente');
+      logInfo('TokenService: Credenciales guardadas correctamente');
     } catch (e) {
-      debugPrint('TokenService: ERROR al guardar credenciales: $e');
+      logError('TokenService: ERROR al guardar credenciales', e);
     }
   }
 
   /// Elimina los tokens del almacenamiento
   Future<void> clearTokens() async {
-    debugPrint('TokenService: Delegando limpieza de tokens al repositorio');
+    logInfo('TokenService: Delegando limpieza de tokens al repositorio');
     try {
       // Limpiar variables en memoria
       _accessToken = null;
@@ -288,9 +299,9 @@ class TokenService {
         prefs.remove(_lastPasswordKey),
       ]);
 
-      debugPrint('TokenService: Tokens limpiados correctamente');
+      logInfo('TokenService: Tokens limpiados correctamente');
     } catch (e) {
-      debugPrint('TokenService: ERROR al limpiar tokens: $e');
+      logError('TokenService: ERROR al limpiar tokens', e);
       rethrow;
     }
   }
@@ -301,7 +312,7 @@ class TokenService {
       // Dividir el token en partes
       final List<String> parts = token.split('.');
       if (parts.length < 2) {
-        debugPrint('TokenService: Formato de token inválido');
+        logWarning('TokenService: Formato de token inválido');
         return null;
       }
 
@@ -312,7 +323,7 @@ class TokenService {
 
       return json.decode(decodedPayload) as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('TokenService: ERROR al decodificar token: $e');
+      logError('TokenService: ERROR al decodificar token', e);
       return null;
     }
   }
@@ -349,7 +360,7 @@ class TokenService {
   /// Actualiza solo el refresh token manteniendo el access token existente
   Future<void> updateRefreshToken(String refreshToken) async {
     try {
-      debugPrint('TokenService: Actualizando solo el refresh token');
+      logInfo('TokenService: Actualizando solo el refresh token');
 
       _refreshToken = refreshToken;
 
@@ -357,9 +368,9 @@ class TokenService {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString(_refreshTokenKey, refreshToken);
 
-      debugPrint('TokenService: Refresh token actualizado correctamente');
+      logInfo('TokenService: Refresh token actualizado correctamente');
     } catch (e) {
-      debugPrint('TokenService: ERROR al actualizar refresh token: $e');
+      logError('TokenService: ERROR al actualizar refresh token', e);
     }
   }
 
@@ -380,26 +391,17 @@ class TokenService {
         ? endpoint
         : '$_baseUrl${endpoint.startsWith('/') ? endpoint : '/$endpoint'}';
 
-    // Agregar parámetros de consulta si existen
-    if (queryParams != null && queryParams.isNotEmpty) {
-      final String queryString = queryParams.entries
-          .map((MapEntry<String, String> e) =>
-              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-          .join('&');
-      url = '$url${url.contains('?') ? '&' : '?'}$queryString';
-    }
-
     // Verificar si necesitamos refrescar el token antes de hacer la solicitud
     if (_accessToken != null &&
         isTokenExpired &&
         hasRefreshToken &&
         !_isRefreshingToken) {
-      debugPrint(
+      logInfo(
           'TokenService: Token expirado, intentando refrescar antes de la solicitud');
       try {
         await _refreshTokenRequest();
       } catch (e) {
-        debugPrint('TokenService: Error al refrescar token expirado: $e');
+        logError('TokenService: Error al refrescar token expirado', e);
         // Si no podemos refrescar, continuamos con el token actual (podría ser rechazado)
       }
     }
@@ -415,95 +417,103 @@ class TokenService {
     if (_accessToken != null && _accessToken!.isNotEmpty) {
       requestHeaders['Authorization'] = 'Bearer $_accessToken';
     } else {
-      debugPrint(
+      logWarning(
           'TokenService: ADVERTENCIA - Realizando solicitud sin token de autenticación');
     }
 
-    http.Response response;
+    Response response;
 
     // Realizar la solicitud HTTP según el método
     try {
-      debugPrint('TokenService: Enviando solicitud $method a $url');
+      logHttp(method, url);
 
       // Para solicitudes PATCH, añadir más detalles
       if (method.toUpperCase() == 'PATCH') {
-        debugPrint('TokenService: [PATCH] URL completa: $url');
-        debugPrint('TokenService: [PATCH] Headers: $requestHeaders');
+        logDebug('TokenService: [PATCH] URL completa: $url');
+        logDebug('TokenService: [PATCH] Headers: $requestHeaders');
         if (body != null) {
-          debugPrint('TokenService: [PATCH] Body: ${json.encode(body)}');
+          logDebug('TokenService: [PATCH] Body: ${json.encode(body)}');
         }
       }
 
+      // Configurar opciones de la solicitud
+      final Options options = Options(
+        method: method,
+        headers: requestHeaders,
+        validateStatus: (status) =>
+            true, // Aceptar cualquier código de estado para manejar errores manualmente
+      );
+
       switch (method.toUpperCase()) {
         case 'GET':
-          response = await http
-              .get(
-                Uri.parse(url),
-                headers: requestHeaders,
-              )
-              .timeout(const Duration(seconds: 30));
+          response = await _dio.get(
+            url,
+            queryParameters: queryParams,
+            options: options,
+          );
           break;
         case 'POST':
-          response = await http
-              .post(
-                Uri.parse(url),
-                headers: requestHeaders,
-                body: body != null ? json.encode(body) : null,
-              )
-              .timeout(const Duration(seconds: 30));
+          response = await _dio.post(
+            url,
+            data: body,
+            queryParameters: queryParams,
+            options: options,
+          );
           break;
         case 'PUT':
-          response = await http
-              .put(
-                Uri.parse(url),
-                headers: requestHeaders,
-                body: body != null ? json.encode(body) : null,
-              )
-              .timeout(const Duration(seconds: 30));
+          response = await _dio.put(
+            url,
+            data: body,
+            queryParameters: queryParams,
+            options: options,
+          );
           break;
         case 'PATCH':
-          response = await http
-              .patch(
-                Uri.parse(url),
-                headers: requestHeaders,
-                body: body != null ? json.encode(body) : null,
-              )
-              .timeout(const Duration(seconds: 30));
+          response = await _dio.patch(
+            url,
+            data: body,
+            queryParameters: queryParams,
+            options: options,
+          );
           break;
         case 'DELETE':
-          response = await http
-              .delete(
-                Uri.parse(url),
-                headers: requestHeaders,
-                body: body != null ? json.encode(body) : null,
-              )
-              .timeout(const Duration(seconds: 30));
+          response = await _dio.delete(
+            url,
+            data: body,
+            queryParameters: queryParams,
+            options: options,
+          );
           break;
         default:
           throw Exception('Método HTTP no soportado: $method');
       }
 
       // Procesar la respuesta
-      final int statusCode = response.statusCode;
+      final int? statusCode = response.statusCode;
+
+      if (statusCode == null) {
+        throw Exception('No se pudo obtener código de estado de la respuesta');
+      }
 
       // Extraer token de la respuesta si existe
       _processTokenFromResponse(response);
 
       if (statusCode >= 200 && statusCode < 300) {
         // Respuesta exitosa
-        if (response.body.isEmpty) {
+        if (response.data == null ||
+            (response.data is String && response.data.toString().isEmpty)) {
           return <String, dynamic>{'status': 'success'};
         }
 
         try {
-          final responseData = json.decode(response.body);
+          final responseData = response.data;
           if (responseData is Map<String, dynamic>) {
             return responseData;
           } else {
             return <String, dynamic>{'status': 'success', 'data': responseData};
           }
         } catch (e) {
-          return <String, dynamic>{'status': 'success', 'data': response.body};
+          return <String, dynamic>{'status': 'success', 'data': response.data};
         }
       } else if (statusCode == 401 &&
           _accessToken != null &&
@@ -515,19 +525,26 @@ class TokenService {
             headers['x-no-retry-on-401'] == 'true';
 
         if (noRetryOn401) {
-          debugPrint(
+          logWarning(
               'TokenService: Token rechazado (401), pero no se reintentará debido al header x-no-retry-on-401');
           // Convertir a una respuesta que indique claramente "no encontrado" (404)
-          if (response.body.toLowerCase().contains('not found') ||
-              response.body.toLowerCase().contains('no encontrado') ||
-              response.body.toLowerCase().contains('no existe')) {
-            throw Exception('404 - Resource not found: ${response.body}');
+          if (response.data != null &&
+                  response.data
+                      .toString()
+                      .toLowerCase()
+                      .contains('not found') ||
+              response.data
+                  .toString()
+                  .toLowerCase()
+                  .contains('no encontrado') ||
+              response.data.toString().toLowerCase().contains('no existe')) {
+            throw Exception('404 - Resource not found: ${response.data}');
           }
           // Propagar el error original
-          throw _createExceptionFromResponse(statusCode, response.body);
+          throw _createExceptionFromResponse(statusCode, response.data);
         }
 
-        debugPrint(
+        logInfo(
             'TokenService: Token rechazado (401), intentando refrescar y reintentar');
 
         _requestRetryCount++;
@@ -549,16 +566,16 @@ class TokenService {
           _requestRetryCount = 0;
           return retriedResponse;
         } catch (refreshError) {
-          debugPrint(
-              'TokenService: Error al refrescar token rechazado: $refreshError');
+          logError(
+              'TokenService: Error al refrescar token rechazado', refreshError);
           _requestRetryCount = 0;
 
           // Propagar el error original
-          throw _createExceptionFromResponse(statusCode, response.body);
+          throw _createExceptionFromResponse(statusCode, response.data);
         }
       } else {
         // Otro tipo de error
-        throw _createExceptionFromResponse(statusCode, response.body);
+        throw _createExceptionFromResponse(statusCode, response.data);
       }
     } catch (e) {
       if (e is Exception) {
@@ -571,17 +588,21 @@ class TokenService {
   }
 
   /// Procesa y extrae tokens de la respuesta HTTP si existen
-  void _processTokenFromResponse(http.Response response) {
+  void _processTokenFromResponse(Response response) {
     try {
-      final Map<String, String> headers = response.headers;
-      final body = response.body.isNotEmpty ? json.decode(response.body) : null;
+      final Headers headers = response.headers;
+      final body = response.data;
 
       // Verificar si hay token en los encabezados
-      final String authHeader = headers['authorization'] ?? '';
+      final List<String>? authHeaders = headers.map['authorization'];
+      final String authHeader = authHeaders != null && authHeaders.isNotEmpty
+          ? authHeaders.first
+          : '';
+
       if (authHeader.startsWith('Bearer ')) {
         final String token = authHeader.substring(7);
         if (token.isNotEmpty) {
-          debugPrint(
+          logDebug(
               'TokenService: Token encontrado en encabezados de respuesta');
 
           // Decodificar token para obtener tiempo de expiración
@@ -651,7 +672,7 @@ class TokenService {
 
         // Si el token fue encontrado en el cuerpo, guardarlo
         if (accessToken != null && accessToken.isNotEmpty) {
-          debugPrint('TokenService: Token encontrado en cuerpo de respuesta');
+          logInfo('TokenService: Token encontrado en cuerpo de respuesta');
 
           // Decodificar token para verificar/ajustar tiempo de expiración
           final Map<String, dynamic>? decodedToken = decodeToken(accessToken);
@@ -670,14 +691,14 @@ class TokenService {
         }
       }
     } catch (e) {
-      debugPrint('TokenService: ERROR al procesar tokens de respuesta: $e');
+      logError('TokenService: ERROR al procesar tokens de respuesta', e);
     }
   }
 
   /// Refresca el token usando el endpoint /auth/refresh
   Future<void> _refreshTokenRequest() async {
     if (_isRefreshingToken) {
-      debugPrint(
+      logInfo(
           'TokenService: Ya hay una operación de refresh en curso, esperando...');
       // Esperar a que termine la operación actual
       int attempts = 0;
@@ -705,17 +726,17 @@ class TokenService {
     _isRefreshingToken = true;
 
     try {
-      debugPrint(
+      logInfo(
           'TokenService: Intentando refrescar token con endpoint /auth/refresh');
 
-      // Construir URL para refresh
-      final String url = '$_baseUrl/auth/refresh';
-
       // Preparar encabezados con el refresh token
-      final Map<String, String> headers = <String, String>{
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+      final Options options = Options(
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        validateStatus: (status) => true,
+      );
 
       // Incluir refresh token en body
       final Map<String, String?> body = <String, String?>{
@@ -723,15 +744,17 @@ class TokenService {
       };
 
       // Realizar solicitud POST
-      final http.Response response = await http
-          .post(
-            Uri.parse(url),
-            headers: headers,
-            body: json.encode(body),
-          )
-          .timeout(const Duration(seconds: 30));
+      final Response response = await _dio.post(
+        '/auth/refresh',
+        data: body,
+        options: options,
+      );
 
-      final int statusCode = response.statusCode;
+      final int? statusCode = response.statusCode;
+
+      if (statusCode == null) {
+        throw Exception('No se pudo obtener código de estado de la respuesta');
+      }
 
       if (statusCode >= 200 && statusCode < 300) {
         // Procesar tokens de la respuesta
@@ -742,14 +765,14 @@ class TokenService {
           throw Exception('Token sigue expirado después de refresh');
         }
 
-        debugPrint('TokenService: Token refrescado exitosamente');
+        logInfo('TokenService: Token refrescado exitosamente');
       } else {
         // Error al refrescar token
-        debugPrint('TokenService: Error al refrescar token: $statusCode');
-        throw _createExceptionFromResponse(statusCode, response.body);
+        logError('TokenService: Error al refrescar token: $statusCode');
+        throw _createExceptionFromResponse(statusCode, response.data);
       }
     } catch (e) {
-      debugPrint('TokenService: ERROR durante refresh token: $e');
+      logError('TokenService: ERROR durante refresh token', e);
       // Si hay un error durante el refresh, limpiar tokens
       await clearTokens();
       rethrow;
@@ -760,23 +783,47 @@ class TokenService {
   }
 
   /// Crea una excepción a partir de la respuesta HTTP
-  Exception _createExceptionFromResponse(int statusCode, String responseBody) {
+  ApiException _createExceptionFromResponse(
+      int statusCode, dynamic responseBody) {
     try {
       // Intentar parsear el cuerpo para obtener mensaje de error
-      if (responseBody.isNotEmpty) {
-        final responseData = json.decode(responseBody);
-        if (responseData is Map<String, dynamic>) {
-          final message = responseData['message'] ??
-              responseData['error'] ??
+      String message = 'Error en la solicitud HTTP';
+      dynamic data;
+
+      if (responseBody != null) {
+        if (responseBody is String && responseBody.isNotEmpty) {
+          try {
+            data = json.decode(responseBody);
+            if (data is Map<String, dynamic>) {
+              message = data['message']?.toString() ??
+                  data['error']?.toString() ??
+                  'Error en la solicitud HTTP';
+            }
+          } catch (e) {
+            message = responseBody;
+          }
+        } else if (responseBody is Map<String, dynamic>) {
+          data = responseBody;
+          message = data['message']?.toString() ??
+              data['error']?.toString() ??
               'Error en la solicitud HTTP';
-          return Exception('$statusCode - $message');
         }
       }
+
+      return ApiException(
+          statusCode: statusCode,
+          message: message,
+          errorCode:
+              ApiConstants.errorCodes[statusCode] ?? ApiConstants.unknownError,
+          data: data);
     } catch (e) {
       // Si no se puede parsear, usar mensaje genérico
+      return ApiException(
+          statusCode: statusCode,
+          message: 'Error en la solicitud HTTP',
+          errorCode:
+              ApiConstants.errorCodes[statusCode] ?? ApiConstants.unknownError);
     }
-
-    return Exception('$statusCode - Error en la solicitud HTTP');
   }
 }
 
@@ -818,7 +865,7 @@ class AuthApi {
       }
       return json.decode(userData) as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('Error obteniendo datos del usuario: $e');
+      logError('Error obteniendo datos del usuario', e);
       return null;
     }
   }
@@ -828,16 +875,16 @@ class AuthApi {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString(_getKey('userData'), json.encode(userData));
-      debugPrint('Datos del usuario guardados correctamente');
+      logInfo('Datos del usuario guardados correctamente');
     } catch (e) {
-      debugPrint('Error al guardar datos del usuario: $e');
+      logError('Error al guardar datos del usuario', e);
       rethrow;
     }
   }
 
   /// Limpia los tokens y datos de usuario almacenados
   Future<void> clearTokens() async {
-    debugPrint('AuthApi: Limpiando tokens y datos específicos...');
+    logInfo('AuthApi: Limpiando tokens y datos específicos...');
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -859,9 +906,9 @@ class AuthApi {
         prefs.setBool(_getKey('stayLogged'), false),
       ]);
 
-      debugPrint('AuthApi: Tokens y datos específicos limpiados correctamente');
+      logInfo('AuthApi: Tokens y datos específicos limpiados correctamente');
     } catch (e) {
-      debugPrint('AuthApi: Error al limpiar tokens y datos: $e');
+      logError('AuthApi: Error al limpiar tokens y datos', e);
       rethrow;
     }
   }
@@ -869,7 +916,7 @@ class AuthApi {
   /// Cierra la sesión del usuario
   Future<void> logout() async {
     try {
-      debugPrint('Iniciando proceso de logout en el servidor...');
+      logInfo('Iniciando proceso de logout en el servidor...');
 
       // Intentar hacer logout en el servidor
       final Map<String, dynamic> response = await _api.request(
@@ -883,7 +930,7 @@ class AuthApi {
 
       // Verificar la respuesta del servidor
       if (response['status'] == 'success') {
-        debugPrint(
+        logInfo(
             'Servidor: ${response['message'] ?? 'Sesión terminada exitosamente'}');
       }
 
@@ -894,24 +941,24 @@ class AuthApi {
       try {
         await _api.clearState();
       } catch (stateError) {
-        debugPrint(
+        logWarning(
             'Error no crítico al limpiar estado del cliente API: $stateError');
       }
 
-      debugPrint('Logout completado exitosamente');
+      logInfo('Logout completado exitosamente');
     } catch (e) {
-      debugPrint('Error durante proceso de logout: $e');
+      logError('Error durante proceso de logout', e);
       // Intentar limpiar datos locales incluso si falla la comunicación con el servidor
       try {
         await clearTokens();
         try {
           await _api.clearState();
         } catch (stateError) {
-          debugPrint(
+          logWarning(
               'Error no crítico al limpiar estado del cliente API: $stateError');
         }
       } catch (cleanupError) {
-        debugPrint('Error adicional durante limpieza: $cleanupError');
+        logError('Error adicional durante limpieza', cleanupError);
       }
     }
   }
@@ -927,7 +974,7 @@ class AuthApi {
       // Verificar con el backend si el token es válido
       return await verificarToken();
     } catch (e) {
-      debugPrint('Error verificando autenticación: $e');
+      logError('Error verificando autenticación', e);
       return false;
     }
   }
@@ -951,7 +998,7 @@ class AuthApi {
       if (response['status'] != 'success' ||
           response['data'] == null ||
           response['data'] is! Map<String, dynamic>) {
-        debugPrint('Token inválido: respuesta con formato incorrecto');
+        logWarning('Token inválido: respuesta con formato incorrecto');
         await clearTokens();
         return false;
       }
@@ -964,14 +1011,14 @@ class AuthApi {
 
       return true;
     } catch (e) {
-      debugPrint('Error verificando token: $e');
+      logError('Error verificando token', e);
 
       // Si el error contiene "Invalid or missing authorization token", consideramos que estamos deslogueados
       if (e
           .toString()
           .toLowerCase()
           .contains('invalid or missing authorization token')) {
-        debugPrint(
+        logInfo(
             'Estado de sesión: Usuario no logueado o token inválido - Se requiere iniciar sesión');
         await clearTokens();
         return false;
@@ -979,7 +1026,7 @@ class AuthApi {
 
       // Para otros tipos de errores, verificar si es un error de autorización
       if (e is ApiException && (e.statusCode == 401 || e.statusCode == 403)) {
-        debugPrint(
+        logInfo(
             'Error de autorización: Usuario no autorizado - Se requiere iniciar sesión');
         await clearTokens();
         return false;
@@ -1034,10 +1081,10 @@ class AuthApi {
 
       // Crear instancia de AuthUser con los datos recibidos
       final AuthUser usuarioAutenticado = AuthUser.fromJson(userData);
-      debugPrint('Login exitoso para usuario: ${usuarioAutenticado.usuario}');
+      logInfo('Login exitoso para usuario: ${usuarioAutenticado.usuario}');
       return usuarioAutenticado;
     } catch (e) {
-      debugPrint('Error durante login: $e');
+      logError('Error durante login', e);
 
       // Mejorar la detección de errores de credenciales incorrectas
       if (e is ApiException) {
@@ -1087,7 +1134,7 @@ class AuthApi {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString(_getKey('token'), newToken);
     } catch (e) {
-      debugPrint('Error durante refresh token: $e');
+      logError('Error durante refresh token', e);
       rethrow;
     }
   }
@@ -1104,6 +1151,10 @@ class AuthService {
   AuthService(this._auth);
 
   Future<void> saveUserData(AuthUser usuario) async {
+    // Guardar data usando AuthApi primero
+    await _auth.saveUserData(usuario.toMap());
+
+    // Guardar atributos específicos para acceso rápido
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userIdKey, usuario.id);
     await prefs.setString(_usernameKey, usuario.usuario);
@@ -1117,6 +1168,13 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>?> getUserData() async {
+    // Intenta obtener los datos desde el AuthApi primero
+    final userData = await _auth.getUserData();
+    if (userData != null) {
+      return userData;
+    }
+
+    // Si no hay datos en AuthApi, intenta recuperar desde las claves específicas
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? id = prefs.getString(_userIdKey);
     final String? username = prefs.getString(_usernameKey);
@@ -1160,8 +1218,7 @@ class CuentasEmpleadosApi {
   /// sobre el empleado, rol y sucursal asociados
   Future<List<Map<String, dynamic>>> getCuentasEmpleados() async {
     try {
-      debugPrint(
-          'CuentasEmpleadosApi: Obteniendo lista de cuentas de empleados');
+      logInfo('CuentasEmpleadosApi: Obteniendo lista de cuentas de empleados');
 
       final Map<String, dynamic> response = await _api.request(
         endpoint: '/cuentasempleados',
@@ -1174,12 +1231,11 @@ class CuentasEmpleadosApi {
       final List<Map<String, dynamic>> items =
           data.map((item) => item as Map<String, dynamic>).toList();
 
-      debugPrint(
+      logInfo(
           'CuentasEmpleadosApi: Total de cuentas encontradas: ${items.length}');
       return items;
     } catch (e) {
-      debugPrint(
-          'CuentasEmpleadosApi: ERROR al obtener cuentas de empleados: $e');
+      logError('CuentasEmpleadosApi: ERROR al obtener cuentas de empleados', e);
       rethrow;
     }
   }
@@ -1189,8 +1245,7 @@ class CuentasEmpleadosApi {
   /// Retorna la información completa de una cuenta específica
   Future<Map<String, dynamic>?> getCuentaEmpleadoById(int id) async {
     try {
-      debugPrint(
-          'CuentasEmpleadosApi: Obteniendo cuenta de empleado con ID $id');
+      logInfo('CuentasEmpleadosApi: Obteniendo cuenta de empleado con ID $id');
 
       final Map<String, dynamic> response = await _api.request(
         endpoint: '/cuentasempleados/$id',
@@ -1206,12 +1261,11 @@ class CuentasEmpleadosApi {
     } catch (e) {
       // Si el error es 404, simplemente retornar null
       if (e is ApiException && e.statusCode == 404) {
-        debugPrint('CuentasEmpleadosApi: No se encontró la cuenta con ID $id');
+        logInfo('CuentasEmpleadosApi: No se encontró la cuenta con ID $id');
         return null;
       }
 
-      debugPrint(
-          'CuentasEmpleadosApi: ERROR al obtener cuenta de empleado: $e');
+      logError('CuentasEmpleadosApi: ERROR al obtener cuenta de empleado', e);
       rethrow;
     }
   }
@@ -1226,7 +1280,7 @@ class CuentasEmpleadosApi {
     int? rolCuentaEmpleadoId,
   }) async {
     try {
-      debugPrint(
+      logInfo(
           'CuentasEmpleadosApi: Actualizando cuenta de empleado con ID $id');
 
       // Verificar que se haya proporcionado al menos un campo
@@ -1267,8 +1321,8 @@ class CuentasEmpleadosApi {
         errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
       );
     } catch (e) {
-      debugPrint(
-          'CuentasEmpleadosApi: ERROR al actualizar cuenta de empleado: $e');
+      logError(
+          'CuentasEmpleadosApi: ERROR al actualizar cuenta de empleado', e);
       rethrow;
     }
   }
@@ -1278,8 +1332,7 @@ class CuentasEmpleadosApi {
   /// Elimina permanentemente una cuenta de usuario
   Future<bool> deleteCuentaEmpleado(int id) async {
     try {
-      debugPrint(
-          'CuentasEmpleadosApi: Eliminando cuenta de empleado con ID $id');
+      logInfo('CuentasEmpleadosApi: Eliminando cuenta de empleado con ID $id');
 
       await _api.request(
         endpoint: '/cuentasempleados/$id',
@@ -1287,12 +1340,11 @@ class CuentasEmpleadosApi {
         requiresAuth: true,
       );
 
-      debugPrint(
+      logInfo(
           'CuentasEmpleadosApi: Cuenta de empleado eliminada correctamente');
       return true;
     } catch (e) {
-      debugPrint(
-          'CuentasEmpleadosApi: ERROR al eliminar cuenta de empleado: $e');
+      logError('CuentasEmpleadosApi: ERROR al eliminar cuenta de empleado', e);
       return false;
     }
   }
@@ -1302,7 +1354,7 @@ class CuentasEmpleadosApi {
   /// Útil para verificar si un empleado ya tiene una cuenta asociada
   Future<Map<String, dynamic>?> getCuentaByEmpleadoId(String empleadoId) async {
     try {
-      debugPrint(
+      logInfo(
           'CuentasEmpleadosApi: Obteniendo cuenta para empleado con ID $empleadoId');
 
       final Map<String, dynamic> response = await _api.request(
@@ -1320,13 +1372,12 @@ class CuentasEmpleadosApi {
       // Si el error es 404 o 401, simplemente retornar null (el empleado no tiene cuenta)
       // El backend a veces devuelve 401 en lugar de 404 para este caso específico
       if (e is ApiException && (e.statusCode == 404 || e.statusCode == 401)) {
-        debugPrint(
+        logInfo(
             'CuentasEmpleadosApi: El empleado $empleadoId no tiene cuenta asociada (${e.statusCode})');
         return null;
       }
 
-      debugPrint(
-          'CuentasEmpleadosApi: ERROR al obtener cuenta por empleado: $e');
+      logError('CuentasEmpleadosApi: ERROR al obtener cuenta por empleado', e);
       rethrow;
     }
   }
@@ -1336,7 +1387,7 @@ class CuentasEmpleadosApi {
   /// Retorna una lista de todos los roles que pueden asignarse a una cuenta
   Future<List<Map<String, dynamic>>> getRolesCuentas() async {
     try {
-      debugPrint('CuentasEmpleadosApi: Obteniendo roles para cuentas');
+      logInfo('CuentasEmpleadosApi: Obteniendo roles para cuentas');
 
       final Map<String, dynamic> response = await _api.request(
         endpoint: '/rolescuentas',
@@ -1352,7 +1403,7 @@ class CuentasEmpleadosApi {
 
       return <Map<String, dynamic>>[];
     } catch (e) {
-      debugPrint('CuentasEmpleadosApi: ERROR al obtener roles de cuentas: $e');
+      logError('CuentasEmpleadosApi: ERROR al obtener roles de cuentas', e);
       return <Map<String, dynamic>>[];
     }
   }
@@ -1367,7 +1418,7 @@ class CuentasEmpleadosApi {
     required int rolCuentaEmpleadoId,
   }) async {
     try {
-      debugPrint(
+      logInfo(
           'CuentasEmpleadosApi: Registrando cuenta para empleado con ID $empleadoId');
 
       // Preparar datos para la petición
@@ -1388,7 +1439,7 @@ class CuentasEmpleadosApi {
 
       // Verificar y devolver la respuesta
       if (response['data'] is Map<String, dynamic>) {
-        debugPrint('CuentasEmpleadosApi: Cuenta registrada exitosamente');
+        logInfo('CuentasEmpleadosApi: Cuenta registrada exitosamente');
         return response['data'];
       }
 
@@ -1398,8 +1449,7 @@ class CuentasEmpleadosApi {
         errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
       );
     } catch (e) {
-      debugPrint(
-          'CuentasEmpleadosApi: ERROR al registrar cuenta de empleado: $e');
+      logError('CuentasEmpleadosApi: ERROR al registrar cuenta de empleado', e);
       rethrow;
     }
   }

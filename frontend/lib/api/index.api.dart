@@ -1,11 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:condorsmotors/api/auth.api.dart';
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/index.protected.dart';
 import 'package:condorsmotors/models/auth.model.dart';
-import 'package:flutter/foundation.dart';
+import 'package:condorsmotors/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 export 'auth.api.dart';
@@ -46,16 +45,16 @@ String buildServerUrl(String host, {int? port}) {
 /// Comprobar conectividad con un servidor
 Future<bool> _checkServerConnectivity(String url) async {
   try {
-    debugPrint('Comprobando conectividad con: $url');
+    logInfo('Comprobando conectividad con: $url');
     final Uri uri = Uri.parse(url);
     final Socket socket = await Socket.connect(
         uri.host, uri.hasPort ? uri.port : (uri.scheme == 'https' ? 443 : 3000),
         timeout: const Duration(seconds: 3));
     socket.destroy();
-    debugPrint('Conexión exitosa con: $url');
+    logInfo('Conexión exitosa con: $url');
     return true;
   } catch (e) {
-    debugPrint('No se pudo conectar a: $url - Error: $e');
+    logError('No se pudo conectar a: $url', e);
     return false;
   }
 }
@@ -83,7 +82,7 @@ Future<Map<String, dynamic>> _getLastServerConfig() async {
 
 /// Inicializa la instancia global de la API
 Future<void> initializeApi() async {
-  debugPrint('Inicializando API...');
+  logInfo('Inicializando API...');
 
   // Obtener la última configuración usada
   final Map<String, dynamic> lastConfig = await _getLastServerConfig();
@@ -102,7 +101,7 @@ Future<void> initializeApi() async {
 
   // Si no se encuentra ningún servidor disponible, usar el primero de la lista
   final String baseUrl = workingUrl ?? _serverUrls.first;
-  debugPrint('URL base de la API: $baseUrl');
+  logInfo('URL base de la API: $baseUrl');
 
   // Guardar la URL seleccionada para futuras sesiones
   if (workingUrl != null) {
@@ -111,7 +110,7 @@ Future<void> initializeApi() async {
 
   // Inicializar la API global
   api = CondorMotorsApi(baseUrl: baseUrl);
-  debugPrint('API inicializada correctamente');
+  logInfo('API inicializada correctamente');
 }
 
 /// Clase principal para acceder a todas las APIs
@@ -134,12 +133,10 @@ class CondorMotorsApi {
   late final DocumentoApi documentos;
   late final EstadisticasApi estadisticas;
   late final FacturacionApi facturacion;
-  // Clave para almacenar datos de usuario
-  static const String _userDataKey = 'user_data';
 
   /// Inicializa todas las APIs con la URL base
   CondorMotorsApi({required String baseUrl}) {
-    debugPrint('Inicializando CondorMotorsApi con URL base: $baseUrl');
+    logInfo('Inicializando CondorMotorsApi con URL base: $baseUrl');
 
     try {
       // Crear el cliente API
@@ -166,50 +163,35 @@ class CondorMotorsApi {
       estadisticas = EstadisticasApi(_apiClient);
       facturacion = FacturacionApi(_apiClient);
 
-      debugPrint('APIs inicializadas correctamente');
+      logInfo('APIs inicializadas correctamente');
     } catch (e) {
-      debugPrint('Error al inicializar APIs: $e');
+      logError('Error al inicializar APIs', e);
       rethrow;
     }
   }
 
   /// Obtiene los datos del usuario almacenados localmente
   ///
-  /// Este método permite acceder a los datos del usuario autenticado desde cualquier parte
-  /// de la aplicación de manera centralizada.
+  /// Este método delega al método getUserData de AuthApi para evitar duplicidad
   Future<Map<String, dynamic>?> getUserData() async {
-    try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? userData = prefs.getString(_userDataKey);
-      if (userData == null || userData.isEmpty) {
-        return null;
-      }
-      return json.decode(userData) as Map<String, dynamic>;
-    } catch (e) {
-      debugPrint('Error en CondorMotorsApi.getUserData: $e');
-      return null;
-    }
+    return auth.getUserData();
   }
 
   /// Guarda los datos del usuario localmente
   ///
-  /// Método de utilidad para almacenar datos del usuario desde cualquier componente
-  Future<void> saveUserData(dynamic userData) async {
+  /// Delega a saveUserData de AuthApi para evitar duplicidad
+  Future<void> saveUserData(userData) async {
     try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-      // Si es un AuthUser, convertir a Map primero
       if (userData is AuthUser) {
-        await prefs.setString(_userDataKey, json.encode(userData.toMap()));
+        await authService.saveUserData(userData);
       } else if (userData is Map<String, dynamic>) {
-        await prefs.setString(_userDataKey, json.encode(userData));
+        await auth.saveUserData(userData);
       } else {
         throw ArgumentError('Tipo de datos no soportado para saveUserData');
       }
-
-      debugPrint('CondorMotorsApi: Datos del usuario guardados correctamente');
     } catch (e) {
-      debugPrint('Error en CondorMotorsApi.saveUserData: $e');
+      logError('Error en CondorMotorsApi.saveUserData', e);
+      rethrow;
     }
   }
 
@@ -217,10 +199,10 @@ class CondorMotorsApi {
   Future<bool> checkConnectivity() async {
     try {
       await auth.verificarToken();
-      debugPrint('Conectividad verificada correctamente');
+      logInfo('Conectividad verificada correctamente');
       return true;
     } catch (e) {
-      debugPrint('Error al verificar conectividad: $e');
+      logError('Error al verificar conectividad', e);
       return false;
     }
   }
@@ -229,11 +211,10 @@ class CondorMotorsApi {
   Future<bool> hasActiveSession() async {
     try {
       final bool isAuthenticated = await auth.isAuthenticated();
-      debugPrint(
-          'Estado de sesión: ${isAuthenticated ? 'activa' : 'inactiva'}');
+      logInfo('Estado de sesión: ${isAuthenticated ? 'activa' : 'inactiva'}');
       return isAuthenticated;
     } catch (e) {
-      debugPrint('Error al verificar sesión: $e');
+      logError('Error al verificar sesión', e);
       return false;
     }
   }
@@ -242,9 +223,9 @@ class CondorMotorsApi {
   Future<void> logout() async {
     try {
       await auth.logout();
-      debugPrint('Sesión cerrada correctamente');
+      logInfo('Sesión cerrada correctamente');
     } catch (e) {
-      debugPrint('Error al cerrar sesión: $e');
+      logError('Error al cerrar sesión', e);
       rethrow;
     }
   }
