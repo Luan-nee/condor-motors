@@ -64,6 +64,7 @@ const populateDatabase = async (
       usuario: config.user.usuario,
       clave: hashedPassword,
       secret,
+      eliminable: false,
       rolId: adminRole.id,
       empleadoId: empleado.id
     })

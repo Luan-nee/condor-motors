@@ -203,6 +203,7 @@ const seedDatabase = async () => {
       usuario: adminAccount.usuario,
       clave: hashedAdminPassword,
       secret: adminSecret,
+      eliminable: false,
       rolId: adminRole.id,
       empleadoId: admin.id
     },
