@@ -1,6 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:math' as math;
 
 /// Provider para manejar la lógica de paginación
 class PaginacionProvider extends ChangeNotifier {

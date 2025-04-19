@@ -192,14 +192,115 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     if (_selectedSucursalId != null) {
       final String nombreSucursal =
           widget.sucursales[_selectedSucursalId] ?? '';
-      setState(() {
-        _esSucursalCentral = nombreSucursal.contains('(Central)');
-      });
-    } else {
+      final bool esCentral = nombreSucursal.contains('(Central)');
+
+      if (_esSucursalCentral != esCentral) {
+        setState(() {
+          _esSucursalCentral = esCentral;
+        });
+      }
+    } else if (_esSucursalCentral) {
       setState(() {
         _esSucursalCentral = false;
       });
     }
+  }
+
+  // Método para validar nombres y apellidos
+  String? _validarNombreApellido(String? value, String campo) {
+    if (value == null || value.isEmpty) {
+      return 'El $campo es requerido';
+    }
+    // Validar que solo contenga letras, tildes y espacios
+    if (!RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$").hasMatch(value)) {
+      return 'El $campo solo puede contener letras y espacios';
+    }
+    return null;
+  }
+
+  // Método separado para validar datos de horas y minutos
+  bool _validarHorarioInput({
+    required String horaInicioText,
+    required String minutoInicioText,
+    required String horaFinText,
+    required String minutoFinText,
+    BuildContext? contexto,
+  }) {
+    final int? horaInicio = int.tryParse(horaInicioText);
+    final int? minutoInicio = int.tryParse(minutoInicioText);
+    final int? horaFin = int.tryParse(horaFinText);
+    final int? minutoFin = int.tryParse(minutoFinText);
+
+    final bool esValido = horaInicio != null &&
+        horaInicio >= 0 &&
+        horaInicio <= 23 &&
+        minutoInicio != null &&
+        minutoInicio >= 0 &&
+        minutoInicio <= 59 &&
+        horaFin != null &&
+        horaFin >= 0 &&
+        horaFin <= 23 &&
+        minutoFin != null &&
+        minutoFin >= 0 &&
+        minutoFin <= 59;
+
+    if (!esValido && contexto != null) {
+      ScaffoldMessenger.of(contexto).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, ingrese horas válidas'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+
+    return esValido;
+  }
+
+  // Widget reutilizable para etiqueta de horario
+  Widget _buildHorarioLabel(String texto, IconData icono) {
+    return SizedBox(
+      width: 120,
+      child: Row(
+        children: <Widget>[
+          Icon(
+            icono,
+            color: Colors.white54,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            texto,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget reutilizable para fila de entrada de tiempo
+  Widget _buildHorarioInputRow({
+    required String label,
+    required IconData icon,
+    required TextEditingController horaController,
+    required TextEditingController minutoController,
+  }) {
+    return Row(
+      children: <Widget>[
+        // Etiqueta
+        _buildHorarioLabel(label, icon),
+
+        // Campo de hora
+        Expanded(
+          child: _buildTimeInputRow(
+            horaController: horaController,
+            minutoController: minutoController,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -276,17 +377,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                               prefixIcon: Icon(Icons.person,
                                   color: Colors.white54, size: 20),
                             ),
-                            validator: (String? value) {
-                              if (value == null || value.isEmpty) {
-                                return 'El nombre es requerido';
-                              }
-                              // Validar que solo contenga letras, tildes y espacios
-                              if (!RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$")
-                                  .hasMatch(value)) {
-                                return 'El nombre solo puede contener letras y espacios';
-                              }
-                              return null;
-                            },
+                            validator: (value) =>
+                                _validarNombreApellido(value, 'nombre'),
                           ),
                           const SizedBox(height: 16),
                           TextFormField(
@@ -362,17 +454,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                               prefixIcon: Icon(Icons.person_outline,
                                   color: Colors.white54, size: 20),
                             ),
-                            validator: (String? value) {
-                              if (value == null || value.isEmpty) {
-                                return 'El nombre es requerido';
-                              }
-                              // Validar que solo contenga letras, tildes y espacios
-                              if (!RegExp(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$")
-                                  .hasMatch(value)) {
-                                return 'El nombre solo puede contener letras y espacios';
-                              }
-                              return null;
-                            },
+                            validator: (value) =>
+                                _validarNombreApellido(value, 'apellido'),
                           ),
                         ],
                       ),
@@ -666,75 +749,21 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                   Column(
                     children: <Widget>[
                       // Horario de inicio
-                      Row(
-                        children: <Widget>[
-                          // Etiqueta
-                          SizedBox(
-                            width: 120,
-                            child: Row(
-                              children: <Widget>[
-                                const Icon(
-                                  Icons.access_time,
-                                  color: Colors.white54,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Hora inicio:',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Campo de hora
-                          Expanded(
-                            child: _buildTimeInputRow(
-                              horaController: _horaInicioHoraController,
-                              minutoController: _horaInicioMinutoController,
-                            ),
-                          ),
-                        ],
+                      _buildHorarioInputRow(
+                        label: 'Hora inicio:',
+                        icon: Icons.access_time,
+                        horaController: _horaInicioHoraController,
+                        minutoController: _horaInicioMinutoController,
                       ),
 
                       const SizedBox(height: 16),
 
                       // Horario de fin
-                      Row(
-                        children: <Widget>[
-                          // Etiqueta
-                          SizedBox(
-                            width: 120,
-                            child: Row(
-                              children: <Widget>[
-                                const Icon(
-                                  Icons.access_time_filled,
-                                  color: Colors.white54,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Hora fin:',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Campo de hora
-                          Expanded(
-                            child: _buildTimeInputRow(
-                              horaController: _horaFinHoraController,
-                              minutoController: _horaFinMinutoController,
-                            ),
-                          ),
-                        ],
+                      _buildHorarioInputRow(
+                        label: 'Hora fin:',
+                        icon: Icons.access_time_filled,
+                        horaController: _horaFinHoraController,
+                        minutoController: _horaFinMinutoController,
                       ),
                     ],
                   ),
@@ -1214,76 +1243,21 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
               ),
               const SizedBox(height: 24),
 
-              // Horario de inicio
-              Row(
-                children: <Widget>[
-                  // Etiqueta
-                  SizedBox(
-                    width: 120,
-                    child: Row(
-                      children: <Widget>[
-                        const Icon(
-                          Icons.access_time,
-                          color: Colors.white54,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Hora inicio:',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Campo de hora
-                  Expanded(
-                    child: _buildTimeInputRow(
-                      horaController: _horaInicioHoraController,
-                      minutoController: _horaInicioMinutoController,
-                    ),
-                  ),
-                ],
+              // Horario de inicio y fin usando widgets reutilizables
+              _buildHorarioInputRow(
+                label: 'Hora inicio:',
+                icon: Icons.access_time,
+                horaController: _horaInicioHoraController,
+                minutoController: _horaInicioMinutoController,
               ),
 
               const SizedBox(height: 16),
 
-              // Horario de fin
-              Row(
-                children: <Widget>[
-                  // Etiqueta
-                  SizedBox(
-                    width: 120,
-                    child: Row(
-                      children: <Widget>[
-                        const Icon(
-                          Icons.access_time_filled,
-                          color: Colors.white54,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Hora fin:',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Campo de hora
-                  Expanded(
-                    child: _buildTimeInputRow(
-                      horaController: _horaFinHoraController,
-                      minutoController: _horaFinMinutoController,
-                    ),
-                  ),
-                ],
+              _buildHorarioInputRow(
+                label: 'Hora fin:',
+                icon: Icons.access_time_filled,
+                horaController: _horaFinHoraController,
+                minutoController: _horaFinMinutoController,
               ),
 
               const SizedBox(height: 24),
@@ -1318,43 +1292,18 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                       ),
                     ),
                     onPressed: () {
-                      // Validar campos de hora
-                      final int? horaInicio =
-                          int.tryParse(_horaInicioHoraController.text);
-                      final int? minutoInicio =
-                          int.tryParse(_horaInicioMinutoController.text);
-                      final int? horaFin =
-                          int.tryParse(_horaFinHoraController.text);
-                      final int? minutoFin =
-                          int.tryParse(_horaFinMinutoController.text);
-
-                      if (horaInicio == null ||
-                          horaInicio < 0 ||
-                          horaInicio > 23 ||
-                          minutoInicio == null ||
-                          minutoInicio < 0 ||
-                          minutoInicio > 59 ||
-                          horaFin == null ||
-                          horaFin < 0 ||
-                          horaFin > 23 ||
-                          minutoFin == null ||
-                          minutoFin < 0 ||
-                          minutoFin > 59) {
-                        // Mostrar mensaje de error
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Por favor, ingrese horas válidas'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
+                      // Validar con el método reutilizable
+                      if (!_validarHorarioInput(
+                        horaInicioText: _horaInicioHoraController.text,
+                        minutoInicioText: _horaInicioMinutoController.text,
+                        horaFinText: _horaFinHoraController.text,
+                        minutoFinText: _horaFinMinutoController.text,
+                        contexto: context,
+                      )) {
                         return;
                       }
 
-                      // Todo válido, actualizar localmente
-                      setState(() {
-                        // Se guardará al confirmar el formulario
-                      });
-
+                      // Todo válido, cerrar diálogo
                       Navigator.pop(context);
 
                       // Mostrar mensaje de confirmación

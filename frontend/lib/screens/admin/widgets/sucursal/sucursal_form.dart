@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/providers/admin/sucursal.admin.provider.dart';
+import 'package:condorsmotors/utils/sucursal_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -197,7 +198,7 @@ class _SucursalFormState extends State<SucursalForm>
                         _isEditing
                             ? FontAwesomeIcons.penToSquare
                             : FontAwesomeIcons.plus,
-                        color: const Color(0xFFE31E24),
+                        color: SucursalUtils.colorCentral,
                         size: 20,
                       ),
                       const SizedBox(width: 12),
@@ -303,7 +304,8 @@ class _SucursalFormState extends State<SucursalForm>
                                       value: _sucursalCentral
                                           ? 'Central'
                                           : 'Sucursal',
-                                      items: provider.tiposSucursal
+                                      items: SucursalUtils.tiposSucursal
+                                          .where((tipo) => tipo != 'Todos')
                                           .map((tipo) => DropdownMenuItem(
                                                 value: tipo,
                                                 child: Text(tipo),
@@ -653,7 +655,7 @@ class _SucursalFormState extends State<SucursalForm>
                       ElevatedButton.icon(
                         onPressed: _guardarSucursal,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE31E24),
+                          backgroundColor: SucursalUtils.colorCentral,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 12),
@@ -692,21 +694,9 @@ class _SucursalFormState extends State<SucursalForm>
         return 'Solo se permiten dígitos';
       }
     } else {
-      // Para series de factura y boleta
-      if (value.isNotEmpty && !value.startsWith(prefix)) {
-        return 'Debe comenzar con $prefix';
-      }
-
-      if (value.isNotEmpty && value.length != 4) {
-        return 'Debe tener 4 caracteres';
-      }
-
-      if (value.isNotEmpty && value.length == 4) {
-        final serieNum = value.substring(1);
-        if (!RegExp(r'^[0-9]{3}$').hasMatch(serieNum)) {
-          return 'Formato: ${prefix}000';
-        }
-      }
+      // Usar SucursalUtils para validar series
+      final tipo = prefix == 'F' ? 'factura' : 'boleta';
+      return SucursalUtils.validarSerie(value, tipo);
     }
 
     return null;
@@ -758,13 +748,7 @@ class _SucursalFormState extends State<SucursalForm>
   }
 
   String? _validateNumeroInicial(String? value) {
-    if (value == null || value.isEmpty) {
-      return null; // Ahora es opcional
-    }
-    if (int.tryParse(value) == null || int.parse(value) < 1) {
-      return 'Número inválido';
-    }
-    return null;
+    return SucursalUtils.validarNumeroInicial(value);
   }
 
   String? _validateCodigo(String? value) {

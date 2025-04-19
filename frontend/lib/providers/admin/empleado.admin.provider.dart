@@ -143,6 +143,64 @@ class EmpleadoProvider extends ChangeNotifier {
     }
   }
 
+  /// Actualiza localmente un empleado en la lista sin necesidad de recargar todos los datos
+  void _actualizarEmpleadoLocal(String id, Map<String, dynamic> nuevosDatos) {
+    final int index = _empleados.indexWhere((emp) => emp.id == id);
+    if (index != -1) {
+      // Crear una copia actualizada del empleado
+      final Empleado empleadoActualizado = _empleados[index].copyWith(
+        nombre: nuevosDatos['nombre'] as String?,
+        apellidos: nuevosDatos['apellidos'] as String?,
+        dni: nuevosDatos['dni'] as String?,
+        sueldo: nuevosDatos['sueldo'] as double?,
+        sucursalId: nuevosDatos['sucursalId'] as String?,
+        horaInicioJornada: nuevosDatos['horaInicioJornada'] as String?,
+        horaFinJornada: nuevosDatos['horaFinJornada'] as String?,
+        celular: nuevosDatos['celular'] as String?,
+        activo: nuevosDatos['activo'] as bool?,
+      );
+
+      // Reemplazar el empleado en la lista
+      _empleados[index] = empleadoActualizado;
+      notifyListeners();
+    }
+  }
+
+  /// Ejecuta una operación sobre una cuenta de usuario con manejo de errores unificado
+  Future<bool> _ejecutarOperacionCuenta({
+    required Future<void> Function() operacion,
+    required String mensajeErrorGenerico,
+    bool recargarDatosDespues = true,
+  }) async {
+    _setCuentaLoading(true);
+    clearError();
+
+    try {
+      await operacion();
+
+      // Solo recargar datos si es explícitamente solicitado
+      if (recargarDatosDespues) {
+        await cargarDatos();
+      }
+      return true;
+    } catch (e) {
+      if (e is ApiException) {
+        if (e.statusCode == 404) {
+          _setError('$mensajeErrorGenerico: El recurso no existe');
+        } else if (e.message.contains('Formato de respuesta inesperado')) {
+          _setError('$mensajeErrorGenerico: Respuesta inesperada del servidor');
+        } else {
+          _handleApiError(e);
+        }
+      } else {
+        _handleApiError(e);
+      }
+      return false;
+    } finally {
+      _setCuentaLoading(false);
+    }
+  }
+
   /// Guarda un empleado (creación o actualización)
   Future<bool> guardarEmpleado(
       Empleado? empleadoExistente, Map<String, dynamic> empleadoData) async {
@@ -154,13 +212,15 @@ class EmpleadoProvider extends ChangeNotifier {
         // Actualizar empleado existente
         await _empleadoRepository.updateEmpleado(
             empleadoExistente.id, empleadoData);
+
+        // Actualizar localmente sin recargar todo
+        _actualizarEmpleadoLocal(empleadoExistente.id, empleadoData);
       } else {
-        // Crear nuevo empleado
+        // Crear nuevo empleado - aquí sí necesitamos recargar para obtener el nuevo ID
         await _empleadoRepository.createEmpleado(empleadoData);
+        await cargarDatos();
       }
 
-      // Recargar la lista de empleados para mostrar cambios
-      await cargarDatos();
       return true;
     } catch (e) {
       debugPrint('Error al guardar empleado: $e');
@@ -289,36 +349,15 @@ class EmpleadoProvider extends ChangeNotifier {
     required String clave,
     required int rolCuentaEmpleadoId,
   }) async {
-    _setCuentaLoading(true);
-    clearError();
-
-    try {
-      await _empleadoRepository.registerEmpleadoAccount(
+    return _ejecutarOperacionCuenta(
+      operacion: () => _empleadoRepository.registerEmpleadoAccount(
         empleadoId: empleadoId,
         usuario: usuario,
         clave: clave,
         rolCuentaEmpleadoId: rolCuentaEmpleadoId,
-      );
-
-      // Recargar datos para actualizar la información
-      await cargarDatos();
-      return true;
-    } catch (e) {
-      // Verificar si es un error 404 relacionado con empleado no encontrado
-      if (e is ApiException && e.statusCode == 404) {
-        _setError(
-            'No se pudo crear la cuenta: El empleado o rol especificado no existe');
-      } else if (e is ApiException &&
-          e.message.contains('Formato de respuesta inesperado')) {
-        _setError(
-            'Error al registrar la cuenta: Respuesta inesperada del servidor. Verifique que el ID de empleado y rol sean válidos.');
-      } else {
-        _handleApiError(e);
-      }
-      return false;
-    } finally {
-      _setCuentaLoading(false);
-    }
+      ),
+      mensajeErrorGenerico: 'No se pudo crear la cuenta',
+    );
   }
 
   /// Actualiza una cuenta de usuario existente
@@ -328,70 +367,28 @@ class EmpleadoProvider extends ChangeNotifier {
     String? clave,
     int? rolCuentaEmpleadoId,
   }) async {
-    _setCuentaLoading(true);
-    clearError();
-
-    try {
-      await _empleadoRepository.updateCuentaEmpleado(
+    return _ejecutarOperacionCuenta(
+      operacion: () => _empleadoRepository.updateCuentaEmpleado(
         id: id,
         usuario: usuario,
         clave: clave,
         rolCuentaEmpleadoId: rolCuentaEmpleadoId,
-      );
-
-      // Recargar datos para actualizar la información
-      await cargarDatos();
-      return true;
-    } catch (e) {
-      // Manejar casos específicos de error en actualización
-      if (e is ApiException && e.statusCode == 404) {
-        _setError(
-            'No se pudo actualizar la cuenta: La cuenta especificada no existe');
-      } else if (e is ApiException &&
-          e.message.contains('Formato de respuesta inesperado')) {
-        _setError(
-            'Error al actualizar la cuenta: Respuesta inesperada del servidor');
-      } else {
-        _handleApiError(e);
-      }
-      return false;
-    } finally {
-      _setCuentaLoading(false);
-    }
+      ),
+      mensajeErrorGenerico: 'No se pudo actualizar la cuenta',
+    );
   }
 
   /// Elimina una cuenta de usuario
   Future<bool> eliminarCuentaEmpleado(int id) async {
-    _setCuentaLoading(true);
-    clearError();
-
-    try {
-      final bool success = await _empleadoRepository.deleteCuentaEmpleado(id);
-
-      if (success) {
-        // Recargar datos para actualizar la información
-        await cargarDatos();
-        return true;
-      } else {
-        _setError('No se pudo eliminar la cuenta');
-        return false;
-      }
-    } catch (e) {
-      // Manejar casos específicos de error en eliminación
-      if (e is ApiException && e.statusCode == 404) {
-        _setError(
-            'No se pudo eliminar la cuenta: La cuenta especificada no existe');
-      } else if (e is ApiException &&
-          e.message.contains('Formato de respuesta inesperado')) {
-        _setError(
-            'Error al eliminar la cuenta: Respuesta inesperada del servidor');
-      } else {
-        _handleApiError(e);
-      }
-      return false;
-    } finally {
-      _setCuentaLoading(false);
-    }
+    return _ejecutarOperacionCuenta(
+      operacion: () async {
+        final bool success = await _empleadoRepository.deleteCuentaEmpleado(id);
+        if (!success) {
+          throw Exception('No se pudo eliminar la cuenta');
+        }
+      },
+      mensajeErrorGenerico: 'No se pudo eliminar la cuenta',
+    );
   }
 
   /// Prepara y devuelve los datos necesarios para gestionar la cuenta de un empleado
@@ -425,156 +422,8 @@ class EmpleadoProvider extends ChangeNotifier {
     }
   }
 
-  /// Gestiona el proceso de actualización de una cuenta de empleado existente
-  Future<Map<String, dynamic>> gestionarActualizacionCuenta({
-    required Empleado empleado,
-    required String? nuevoUsuario,
-    required String? nuevaClave,
-    required int? nuevoRolId,
-    bool validarSoloSiHayCambios = true,
-  }) async {
-    _setCuentaLoading(true);
-    clearError();
-
-    try {
-      // Validar ID de cuenta
-      _empleadoRepository.validarIdCuenta(empleado.cuentaEmpleadoId);
-      final int cuentaId = int.parse(empleado.cuentaEmpleadoId!);
-
-      // Verificar si hay cambios que realizar
-      if (validarSoloSiHayCambios &&
-          nuevoUsuario == null &&
-          nuevaClave == null &&
-          nuevoRolId == null) {
-        return {
-          'success': true,
-          'message': 'No se realizaron cambios',
-          'noChanges': true,
-        };
-      }
-
-      // Realizar la actualización
-      final bool success = await actualizarCuentaEmpleado(
-        id: cuentaId,
-        usuario: nuevoUsuario,
-        clave: nuevaClave,
-        rolCuentaEmpleadoId: nuevoRolId,
-      );
-
-      if (success) {
-        return {
-          'success': true,
-          'message': 'Cuenta actualizada correctamente',
-          'noChanges': false,
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'Error al actualizar la cuenta',
-          'noChanges': false,
-        };
-      }
-    } catch (e) {
-      _handleApiError(e);
-      return {
-        'success': false,
-        'message': 'Error: $_errorMessage',
-        'noChanges': false,
-      };
-    } finally {
-      _setCuentaLoading(false);
-    }
-  }
-
-  /// Gestiona el proceso de creación de una cuenta de empleado
-  Future<Map<String, dynamic>> gestionarCreacionCuenta({
-    required String empleadoId,
-    required String usuario,
-    required String clave,
-    required int rolCuentaEmpleadoId,
-  }) async {
-    _setCuentaLoading(true);
-    clearError();
-
-    try {
-      // Validar datos
-      _empleadoRepository.validarDatosCuenta(
-        usuario: usuario,
-        clave: clave,
-        rolCuentaEmpleadoId: rolCuentaEmpleadoId,
-        esCreacion: true,
-      );
-
-      // Realizar la creación
-      final bool success = await crearCuentaEmpleado(
-        empleadoId: empleadoId,
-        usuario: usuario,
-        clave: clave,
-        rolCuentaEmpleadoId: rolCuentaEmpleadoId,
-      );
-
-      if (success) {
-        return {
-          'success': true,
-          'message': 'Cuenta creada correctamente',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'Error al crear la cuenta',
-        };
-      }
-    } catch (e) {
-      _handleApiError(e);
-      return {
-        'success': false,
-        'message': 'Error: $_errorMessage',
-      };
-    } finally {
-      _setCuentaLoading(false);
-    }
-  }
-
-  /// Gestiona el proceso de eliminación de una cuenta de empleado
-  Future<Map<String, dynamic>> gestionarEliminacionCuenta({
-    required Empleado empleado,
-  }) async {
-    _setCuentaLoading(true);
-    clearError();
-
-    try {
-      // Validar ID de cuenta
-      _empleadoRepository.validarIdCuenta(empleado.cuentaEmpleadoId);
-      final int cuentaId = int.parse(empleado.cuentaEmpleadoId!);
-
-      // Realizar la eliminación
-      final bool success = await eliminarCuentaEmpleado(cuentaId);
-
-      if (success) {
-        return {
-          'success': true,
-          'message': 'Cuenta eliminada correctamente',
-        };
-      } else {
-        return {
-          'success': false,
-          'message':
-              'No se pudo eliminar la cuenta. Por favor, intente nuevamente.',
-        };
-      }
-    } catch (e) {
-      _handleApiError(e);
-      return {
-        'success': false,
-        'message': 'Error: $_errorMessage',
-      };
-    } finally {
-      _setCuentaLoading(false);
-    }
-  }
-
-  // Método para manejar errores de la API
-  void _handleApiError(e) {
+  /// Refactorizar el método _handleApiError para que pueda retornar un mensaje de error sin establecerlo en el estado
+  String _procesarErrorApi(dynamic e, {bool setearError = true}) {
     String errorMsg = e.toString();
 
     if (e is ApiException) {
@@ -626,7 +475,147 @@ class EmpleadoProvider extends ChangeNotifier {
           'No se pudo conectar al servidor. Verifique su conexión a internet.';
     }
 
-    _setError(errorMsg);
+    if (setearError) {
+      _setError(errorMsg);
+    }
+
+    return errorMsg;
+  }
+
+  // Reemplazar _handleApiError con la nueva función
+  void _handleApiError(dynamic e) {
+    _procesarErrorApi(e, setearError: true);
+  }
+
+  /// Gestiona el proceso de actualización de una cuenta de empleado existente
+  Future<Map<String, dynamic>> gestionarActualizacionCuenta({
+    required Empleado empleado,
+    required String? nuevoUsuario,
+    required String? nuevaClave,
+    required int? nuevoRolId,
+    bool validarSoloSiHayCambios = true,
+  }) async {
+    _setCuentaLoading(true);
+    clearError();
+
+    try {
+      // Validar ID de cuenta
+      _empleadoRepository.validarIdCuenta(empleado.cuentaEmpleadoId);
+      final int cuentaId = int.parse(empleado.cuentaEmpleadoId!);
+
+      // Verificar si hay cambios que realizar
+      if (validarSoloSiHayCambios &&
+          nuevoUsuario == null &&
+          nuevaClave == null &&
+          nuevoRolId == null) {
+        return {
+          'success': true,
+          'message': 'No se realizaron cambios',
+          'noChanges': true,
+        };
+      }
+
+      // Realizar la actualización
+      final bool success = await actualizarCuentaEmpleado(
+        id: cuentaId,
+        usuario: nuevoUsuario,
+        clave: nuevaClave,
+        rolCuentaEmpleadoId: nuevoRolId,
+      );
+
+      return {
+        'success': success,
+        'message': success
+            ? 'Cuenta actualizada correctamente'
+            : 'Error al actualizar la cuenta: $_errorMessage',
+        'noChanges': false,
+      };
+    } catch (e) {
+      final String errorMsg = _procesarErrorApi(e);
+      return {
+        'success': false,
+        'message': 'Error: $errorMsg',
+        'noChanges': false,
+      };
+    } finally {
+      _setCuentaLoading(false);
+    }
+  }
+
+  /// Gestiona el proceso de creación de una cuenta de empleado
+  Future<Map<String, dynamic>> gestionarCreacionCuenta({
+    required String empleadoId,
+    required String usuario,
+    required String clave,
+    required int rolCuentaEmpleadoId,
+  }) async {
+    _setCuentaLoading(true);
+    clearError();
+
+    try {
+      // Validar datos
+      _empleadoRepository.validarDatosCuenta(
+        usuario: usuario,
+        clave: clave,
+        rolCuentaEmpleadoId: rolCuentaEmpleadoId,
+        esCreacion: true,
+      );
+
+      // Realizar la creación
+      final bool success = await crearCuentaEmpleado(
+        empleadoId: empleadoId,
+        usuario: usuario,
+        clave: clave,
+        rolCuentaEmpleadoId: rolCuentaEmpleadoId,
+      );
+
+      return {
+        'success': success,
+        'message': success
+            ? 'Cuenta creada correctamente'
+            : 'Error al crear la cuenta: $_errorMessage',
+      };
+    } catch (e) {
+      final String errorMsg = _procesarErrorApi(e);
+      return {
+        'success': false,
+        'message': 'Error: $errorMsg',
+      };
+    } finally {
+      _setCuentaLoading(false);
+    }
+  }
+
+  /// Gestiona el proceso de eliminación de una cuenta de empleado
+  Future<Map<String, dynamic>> gestionarEliminacionCuenta({
+    required Empleado empleado,
+  }) async {
+    _setCuentaLoading(true);
+    clearError();
+
+    try {
+      // Validar ID de cuenta
+      _empleadoRepository.validarIdCuenta(empleado.cuentaEmpleadoId);
+      final int cuentaId = int.parse(empleado.cuentaEmpleadoId!);
+
+      // Realizar la eliminación
+      final bool success = await eliminarCuentaEmpleado(cuentaId);
+
+      return {
+        'success': success,
+        'message': success
+            ? 'Cuenta eliminada correctamente'
+            : 'Error al eliminar la cuenta: $_errorMessage',
+      };
+    } catch (e) {
+      final String errorMsg = _procesarErrorApi(e);
+      return {
+        'success': false,
+        'message': 'Error: $errorMsg',
+      };
+    } finally {
+      _setCuentaLoading(false);
+    }
   }
 
   // Métodos privados para gestionar el estado

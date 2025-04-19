@@ -783,8 +783,7 @@ class TokenService {
   }
 
   /// Crea una excepción a partir de la respuesta HTTP
-  ApiException _createExceptionFromResponse(
-      int statusCode, dynamic responseBody) {
+  ApiException _createExceptionFromResponse(int statusCode, responseBody) {
     try {
       // Intentar parsear el cuerpo para obtener mensaje de error
       String message = 'Error en la solicitud HTTP';
