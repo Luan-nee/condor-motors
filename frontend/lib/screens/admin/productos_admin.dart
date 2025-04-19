@@ -48,7 +48,6 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   }
 
   void _showProductDialog(Producto? producto) {
-    final bool esNuevo = producto == null;
     final ProductoProvider productoProvider =
         Provider.of<ProductoProvider>(context, listen: false);
 
@@ -63,7 +62,12 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         sucursales: productoProvider.sucursales,
         sucursalSeleccionada: productoProvider.sucursalSeleccionada,
         onSave: (Map<String, dynamic> productoData) {
-          _guardarProducto(productoData, esNuevo);
+          // No llamamos a _guardarProducto aquí ya que el formulario ya lo hace internamente
+          // Solo actualizamos la UI para reflejar los cambios
+          setState(() {
+            _productosKey.value =
+                'productos_${productoProvider.sucursalSeleccionada?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
+          });
           return Future<void>.value();
         },
       ),
@@ -79,11 +83,12 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       producto: producto,
       sucursales: productoProvider.sucursales,
       onSave: (Producto productoActualizado) {
-        _guardarProducto(<String, dynamic>{
-          'id': productoActualizado.id,
-          'precioOferta': productoActualizado.precioOferta,
-          'liquidacion': productoActualizado.liquidacion,
-        }, false);
+        // Solo actualizamos la UI para reflejar los cambios
+        // El formulario ya guardó los cambios internamente
+        setState(() {
+          _productosKey.value =
+              'productos_${productoProvider.sucursalSeleccionada?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
+        });
         return Future<void>.value();
       },
     );

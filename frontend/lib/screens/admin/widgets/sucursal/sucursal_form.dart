@@ -693,7 +693,7 @@ class _SucursalFormState extends State<SucursalForm>
       }
     } else {
       // Para series de factura y boleta
-      if (value.isNotEmpty && !value.startsWith(prefix) && value.length > 0) {
+      if (value.isNotEmpty && !value.startsWith(prefix)) {
         return 'Debe comenzar con $prefix';
       }
 

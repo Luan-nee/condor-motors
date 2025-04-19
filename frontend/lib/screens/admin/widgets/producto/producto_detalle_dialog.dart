@@ -24,26 +24,18 @@ class ProductoDetalleDialog extends StatefulWidget {
     required BuildContext context,
     required Producto producto,
     required List<Sucursal> sucursales,
-    Function(Producto)? onSave,
+    required Future<void> Function(Producto) onSave,
   }) async {
-    await showDialog(
+    return showDialog<void>(
       context: context,
-      builder: (BuildContext context) {
-        // Asegurarse de que el ProductoProvider esté disponible
-        Provider.of<ProductoProvider>(context, listen: false);
-
-        return Dialog(
-          insetPadding: const EdgeInsets.all(24),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          backgroundColor: const Color(0xFF222222),
-          child: ProductoDetalleDialog(
-            producto: producto,
-            sucursales: sucursales,
-            onSave: onSave,
-          ),
-        );
-      },
+      builder: (BuildContext dialogContext) => ProductoDetalleDialog(
+        producto: producto,
+        sucursales: sucursales,
+        onSave: (Producto productoActualizado) {
+          // Solo notificamos que se actualizó el producto sin volver a guardarlo
+          onSave(productoActualizado);
+        },
+      ),
     );
   }
 

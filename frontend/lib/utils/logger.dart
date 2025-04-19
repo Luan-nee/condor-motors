@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
 
 /// Constantes para colores ANSI en terminal
 class ConsoleColor {
@@ -239,5 +240,40 @@ void logCustom(String prefix, String message) {
   if (kDebugMode) {
     // ignore: avoid_print
     print('$prefix $message');
+  }
+}
+
+/// Registra de manera formateada un objeto JSON
+void logJson(String label, dynamic jsonData) {
+  if (kDebugMode) {
+    try {
+      // Convertir a string si es un mapa o lista
+      String jsonString;
+      if (jsonData is String) {
+        jsonString = jsonData;
+      } else if (jsonData is Map || jsonData is List) {
+        const encoder = JsonEncoder.withIndent('  ');
+        jsonString = encoder.convert(jsonData);
+      } else {
+        jsonString = jsonData.toString();
+      }
+
+      // Si el JSON es demasiado largo, limitarlo
+      if (jsonString.length > 2000) {
+        jsonString = '${jsonString.substring(0, 1997)}...';
+      }
+
+      // Colorear el label y mostrar el JSON
+      final coloredLabel =
+          ConsoleColor.colorize(label, ConsoleColor.brightCyan);
+      // ignore: avoid_print
+      print('$coloredLabel:');
+      // ignore: avoid_print
+      print(jsonString);
+    } catch (e) {
+      Logger.error('Error al formatear JSON: $e');
+      // ignore: avoid_print
+      print('$label: [No se pudo formatear - ${jsonData.runtimeType}]');
+    }
   }
 }

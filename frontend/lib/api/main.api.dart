@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:dio/dio.dart';
@@ -230,6 +231,21 @@ class ApiClient {
           options.method,
           '${options.baseUrl}${options.path}',
         );
+
+        // Añadir logging del cuerpo de la solicitud
+        if (options.data != null) {
+          try {
+            if (options.data is Map || options.data is List) {
+              logJson('Request Body', options.data);
+            } else {
+              logDebug('Request Body: ${options.data}');
+            }
+          } catch (e) {
+            logDebug(
+                'Request Body: [No se pudo serializar - ${options.data.runtimeType}]');
+          }
+        }
+
         return handler.next(options);
       },
       onResponse: (response, handler) {
@@ -240,7 +256,16 @@ class ApiClient {
         );
 
         if (response.data != null) {
-          logDebug(response.data.toString());
+          try {
+            if (response.data is Map || response.data is List) {
+              logJson('Response Body', response.data);
+            } else {
+              logDebug('Response Body: ${response.data}');
+            }
+          } catch (e) {
+            logDebug(
+                'Response Body: [No se pudo serializar - ${response.data.runtimeType}]');
+          }
         }
         return handler.next(response);
       },
@@ -250,6 +275,20 @@ class ApiClient {
           error,
           error.stackTrace,
         );
+
+        // Añadir detalles adicionales del error cuando sea posible
+        if (error.response?.data != null) {
+          try {
+            if (error.response!.data is Map || error.response!.data is List) {
+              logJson('Error Response', error.response!.data);
+            } else {
+              logDebug('Error Response Body: ${error.response!.data}');
+            }
+          } catch (e) {
+            logDebug('Error Response Body: [No se pudo serializar]');
+          }
+        }
+
         return handler.next(error);
       },
     );
@@ -302,6 +341,19 @@ class ApiClient {
         validateStatus: (status) => true,
       );
 
+      // Log detallado de la solicitud
+      logInfo('Enviando solicitud $method a $endpoint');
+      if (body != null) {
+        try {
+          logJson('Request Body', body);
+        } catch (e) {
+          logInfo('Body: [No se pudo serializar body]');
+        }
+      }
+      if (queryParams != null) {
+        logJson('Query Params', queryParams);
+      }
+
       final Response response = await _dio.request(
         endpoint,
         data: body,
@@ -316,7 +368,7 @@ class ApiClient {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString(TokenConstants.accessTokenKey, token);
         logDebug(
-            'Token actualizado desde headers: ${token.substring(0, 10)}...');
+            'Token actualizado desde headers: ${token.substring(0, min(10, token.length))}...');
       }
 
       // Procesar refresh token si existe en las cookies

@@ -62,7 +62,7 @@ class FastCache {
       timestamp: DateTime.now(),
       lastAccessed: DateTime.now(),
     );
-    
+
     logCache('Dato guardado en caché: $key');
   }
 
@@ -79,7 +79,7 @@ class FastCache {
     final int initialSize = _cache.length;
     _cache.removeWhere((String key, _) => key.startsWith(pattern));
     final int removed = initialSize - _cache.length;
-    
+
     if (removed > 0) {
       logCache('$removed entradas invalidadas por patrón: $pattern');
     }
@@ -102,7 +102,8 @@ class FastCache {
     DateTime? oldestAccess;
 
     for (MapEntry<String, _CacheEntry> entry in _cache.entries) {
-      if (oldestAccess == null || entry.value.lastAccessed.isBefore(oldestAccess)) {
+      if (oldestAccess == null ||
+          entry.value.lastAccessed.isBefore(oldestAccess)) {
         oldestAccess = entry.value.lastAccessed;
         oldestKey = entry.key;
       }
@@ -113,10 +114,10 @@ class FastCache {
       logCache('Eliminada entrada más antigua del caché: $oldestKey');
     }
   }
-  
+
   /// Devuelve el número de entradas en el caché
   int get size => _cache.length;
-  
+
   /// Devuelve todas las claves en el caché
   List<String> get keys => _cache.keys.toList();
 }
@@ -132,4 +133,4 @@ class _CacheEntry {
     required this.timestamp,
     required this.lastAccessed,
   });
-} 
+}
