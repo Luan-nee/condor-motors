@@ -677,6 +677,32 @@ class ProductosApi {
     }
   }
 
+  /// Descarga un reporte Excel con todos los productos y su stock en todas las sucursales
+  ///
+  /// El reporte incluye una hoja principal con todos los productos y su stock por sucursal,
+  /// y hojas adicionales con el detalle de cada sucursal.
+  ///
+  /// Este método devuelve directamente los bytes del archivo Excel que se pueden guardar en disco
+  /// o mostrar para descarga en la aplicación.
+  Future<List<int>> getReporteExcel() async {
+    try {
+      Logger.debug('Solicitando reporte Excel de productos');
+
+      // Esta solicitud es diferente porque devuelve directamente los bytes del archivo
+      // No usamos el método authenticatedRequest estándar
+      final response = await _api.authenticatedRequestRaw(
+        endpoint: '/productos/reporte',
+        method: 'GET',
+      );
+
+      Logger.debug('Reporte Excel obtenido: ${response.length} bytes');
+      return response;
+    } catch (e) {
+      Logger.debug('Error al obtener reporte Excel: $e');
+      rethrow;
+    }
+  }
+
   // Método helper para generar claves de caché consistentes - OBSOLETA: usar PaginacionUtils
   String _generateCacheKey(
     String base, {

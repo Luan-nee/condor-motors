@@ -491,4 +491,19 @@ class ProductoRepository implements BaseRepository {
   void invalidateCache([String? sucursalId]) {
     _productosApi.invalidateCache(sucursalId);
   }
+
+  /// Descarga un reporte Excel con todos los productos y su stock en todas las sucursales
+  ///
+  /// El reporte incluye una hoja principal con todos los productos y su stock por sucursal,
+  /// y hojas adicionales con el detalle de cada sucursal.
+  ///
+  /// @returns bytes del archivo Excel para guardar o mostrar en la interfaz
+  Future<List<int>?> getReporteExcel() async {
+    try {
+      return await _productosApi.getReporteExcel();
+    } catch (e) {
+      debugPrint('Error en ProductoRepository.getReporteExcel: $e');
+      return null;
+    }
+  }
 }

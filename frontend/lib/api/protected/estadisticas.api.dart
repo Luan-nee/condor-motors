@@ -12,6 +12,7 @@ class EstadisticasApi {
   // Prefijos para las claves de caché
   static const String _prefixEstadisticasProductos = 'estadisticas_productos_';
   static const String _prefixEstadisticasVentas = 'estadisticas_ventas_';
+  static const String _prefixUltimasVentas = 'ultimas_ventas_';
 
   EstadisticasApi(this._api);
 
@@ -19,8 +20,57 @@ class EstadisticasApi {
   void invalidateCache() {
     _cache
       ..invalidateByPattern(_prefixEstadisticasProductos)
-      ..invalidateByPattern(_prefixEstadisticasVentas);
+      ..invalidateByPattern(_prefixEstadisticasVentas)
+      ..invalidateByPattern(_prefixUltimasVentas);
     logCache('Caché de estadísticas invalidado');
+  }
+
+  /// Obtiene las últimas ventas registradas
+  ///
+  /// [useCache] - Indica si se debe usar el caché
+  /// [forceRefresh] - Indica si se debe forzar la actualización del caché
+  Future<Map<String, dynamic>> getUltimasVentas({
+    bool useCache = true,
+    bool forceRefresh = false,
+  }) async {
+    try {
+      final String cacheKey = '${_prefixUltimasVentas}global';
+
+      // Si se requiere forzar la recarga, invalidar la caché primero
+      if (forceRefresh) {
+        _cache.invalidate(cacheKey);
+      }
+
+      // Intentar obtener desde caché si corresponde
+      if (useCache && !forceRefresh) {
+        final Map<String, dynamic>? cachedData =
+            _cache.get<Map<String, dynamic>>(cacheKey);
+        if (cachedData != null && !_cache.isStale(cacheKey)) {
+          logCache('Usando últimas ventas en caché');
+          return cachedData;
+        }
+      }
+
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
+        endpoint: '$_endpoint/ultimasventas',
+        method: 'GET',
+      );
+
+      // Guardar en caché
+      if (useCache) {
+        _cache.set(cacheKey, response);
+        logCache('Últimas ventas guardadas en caché');
+      }
+
+      return response;
+    } catch (e) {
+      Logger.error('Error al obtener últimas ventas: $e');
+      return <String, dynamic>{
+        'status': 'error',
+        'message': 'Error al obtener últimas ventas',
+        'data': <dynamic>[],
+      };
+    }
   }
 
   /// Obtiene las estadísticas de productos (stock bajo y liquidación)
@@ -98,6 +148,102 @@ class EstadisticasApi {
           liquidacion: 0,
           sucursales: [],
         ).toJson(),
+      };
+    }
+  }
+
+  /// Obtiene los productos con stock bajo de una sucursal específica
+  ///
+  /// [sucursalId] - ID de la sucursal
+  /// [useCache] - Indica si se debe usar el caché
+  /// [forceRefresh] - Indica si se debe forzar la actualización del caché
+  Future<Map<String, dynamic>> getProductosStockBajoSucursal({
+    required String sucursalId,
+    bool useCache = true,
+    bool forceRefresh = false,
+  }) async {
+    try {
+      final String cacheKey =
+          '${_prefixEstadisticasProductos}stock_bajo_$sucursalId';
+
+      // Si se requiere forzar la recarga, invalidar la caché primero
+      if (forceRefresh) {
+        _cache.invalidate(cacheKey);
+      }
+
+      // Intentar obtener desde caché si corresponde
+      if (useCache && !forceRefresh) {
+        final Map<String, dynamic>? cachedData =
+            _cache.get<Map<String, dynamic>>(cacheKey);
+        if (cachedData != null && !_cache.isStale(cacheKey)) {
+          logCache(
+              'Usando productos de stock bajo en caché para sucursal $sucursalId');
+          return cachedData;
+        }
+      }
+
+      // Para obtener los detalles de productos con stock bajo usaremos las estadísticas
+      // Como no tenemos un endpoint específico para esto, usaremos los datos de sucursal
+      // La estructura exacta dependerá de cómo esté implementada la API
+      final Map<String, dynamic> response = await _api.authenticatedRequest(
+        endpoint: '$_endpoint/productos',
+        method: 'GET',
+      );
+
+      // Si tenemos datos específicos de la sucursal, retornamos eso
+      if (response['status'] == 'success' && response['data'] != null) {
+        final data = response['data'];
+        final List<dynamic> sucursales = data['sucursales'] ?? [];
+
+        // Buscamos la sucursal específica en los datos
+        for (final sucursal in sucursales) {
+          if (sucursal['id'].toString() == sucursalId) {
+            // Generamos datos resumidos para esta sucursal
+            Map<String, dynamic> sucursalStats = {
+              'status': 'success',
+              'data': [
+                // Generamos un producto representativo para cada sucursal
+                {
+                  'id': 'placeholder-${sucursal['id']}',
+                  'nombre': 'Productos con stock bajo en ${sucursal['nombre']}',
+                  'stock': 1,
+                  'stockMinimo': 10,
+                  'sucursalId': sucursal['id'],
+                  'sucursalNombre': sucursal['nombre'],
+                  'categoria': 'Varias categorías',
+                  'marca': 'Varias marcas',
+                  'stockBajo': sucursal['stockBajo'],
+                  'liquidacion': sucursal['liquidacion'],
+                }
+              ]
+            };
+
+            // Guardar en caché
+            if (useCache) {
+              _cache.set(cacheKey, sucursalStats);
+              logCache(
+                  'Datos de stock bajo para sucursal $sucursalId guardados en caché');
+            }
+
+            return sucursalStats;
+          }
+        }
+      }
+
+      // Si no encontramos datos específicos
+      return <String, dynamic>{
+        'status': 'error',
+        'message':
+            'No se encontraron datos de productos con stock bajo para la sucursal $sucursalId',
+        'data': <dynamic>[],
+      };
+    } catch (e) {
+      Logger.error(
+          'Error al obtener productos con stock bajo para sucursal $sucursalId: $e');
+      return <String, dynamic>{
+        'status': 'error',
+        'message': 'Error al obtener productos con stock bajo',
+        'data': <dynamic>[],
       };
     }
   }

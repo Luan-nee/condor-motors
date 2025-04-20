@@ -175,6 +175,16 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                     _selectedSubIndex = 0;
                   }),
                 ),
+                // Sección de Configuración
+                _buildMenuItem(
+                  icon: FontAwesomeIcons.gear,
+                  text: 'Configuración',
+                  isSelected: _selectedIndex == 5,
+                  onTap: () => setState(() {
+                    _selectedIndex = 5;
+                    _selectedSubIndex = 0;
+                  }),
+                ),
 
                 const Spacer(),
                 // Botón de salir
@@ -229,7 +239,11 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                 const ColaboradoresAdminScreen(),
                 // Sección de Sucursales
                 const SucursalAdminScreen(),
-                const SettingsAdminScreen(),
+                // Sección de Configuración
+                ChangeNotifierProvider(
+                  create: (_) => ConfiguracionesProvider(),
+                  child: const SettingsAdminScreen(),
+                ),
               ],
             ),
           ),

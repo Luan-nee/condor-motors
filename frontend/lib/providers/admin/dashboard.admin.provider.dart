@@ -205,34 +205,6 @@ class DashboardProvider extends ChangeNotifier {
   /// Carga estadísticas de ventas y productos
   Future<void> _loadEstadisticas() async {
     try {
-      // Cargar productos con stock bajo para cada sucursal
-      _productosStockBajoDetalle = [];
-      for (final sucursal in _sucursales) {
-        try {
-          final stockBajoResponse =
-              await _productoRepository.getProductosConStockBajo(
-            sucursalId: sucursal.id.toString(),
-            pageSize: 100,
-            useCache: false,
-          );
-
-          for (final producto in stockBajoResponse.items) {
-            _productosStockBajoDetalle.add({
-              'sucursalId': sucursal.id.toString(),
-              'sucursalNombre': sucursal.nombre,
-              'productoId': producto.id,
-              'productoNombre': producto.nombre,
-              'stock': producto.stock,
-              'stockMinimo': producto.stockMinimo,
-            });
-          }
-        } catch (e) {
-          debugPrint(
-              'Error al cargar productos con stock bajo para sucursal ${sucursal.id}: $e');
-        }
-      }
-
-      // Usar el repositorio de estadísticas con modelos tipados
       try {
         final ResumenEstadisticas resumen =
             await _estadisticaRepository.getResumenEstadisticasTyped();
@@ -245,11 +217,16 @@ class DashboardProvider extends ChangeNotifier {
         _productosLiquidacion = resumen.productos.liquidacion;
 
         // Procesar estadísticas de ventas usando los métodos seguros
-        _totalVentas = resumen.ventas.getVentasValue('esteMes');
-        _ventasHoy = resumen.ventas.getVentasValue('hoy');
+        final ventasHoy = resumen.ventas.getVentasValue('hoy');
+        final ventasEsteMes = resumen.ventas.getVentasValue('esteMes');
+        final totalVentasHoy = resumen.ventas.getTotalVentasValue('hoy');
+        final totalVentasEsteMes =
+            resumen.ventas.getTotalVentasValue('esteMes');
 
-        _totalGanancias = _totalVentas * 0.30; // 30% de margen
-        _ingresosHoy = _ventasHoy * 0.30;
+        _ventasHoy = ventasHoy;
+        _totalVentas = ventasEsteMes;
+        _ingresosHoy = totalVentasHoy;
+        _totalGanancias = totalVentasEsteMes;
 
         // Procesar estadísticas por sucursal (productos)
         for (final sucursalStat in resumen.productos.sucursales) {
@@ -259,10 +236,52 @@ class DashboardProvider extends ChangeNotifier {
           };
         }
 
-        // Si hay ventas recientes en los datos, procesarlas
-        // Este es un ejemplo - si no se incluyen en la respuesta actual,
-        // puede que necesites otro endpoint para obtenerlas
-        _ventasRecientes = [];
+        // Para productos con stock bajo simplemente cargaremos los datos resumidos
+        // No necesitamos cargar detalles específicos ya que usaremos directamente el resumen
+        debugPrint("Cargando datos resumidos de productos con stock bajo");
+        _productosStockBajoDetalle = []; // Limpiamos detalles anteriores
+
+        // Cargar las últimas ventas
+        try {
+          debugPrint("Cargando últimas ventas...");
+          final ultimasVentas = await _estadisticaRepository.getUltimasVentas();
+          debugPrint("Últimas ventas cargadas: ${ultimasVentas.length}");
+
+          if (ultimasVentas.isNotEmpty) {
+            // Convertir las últimas ventas al formato necesario para el widget
+            _ventasRecientes = ultimasVentas.map((venta) {
+              // Formatear la fecha y hora
+              final fechaFormateada =
+                  venta.fechaEmision != null && venta.horaEmision != null
+                      ? "${venta.fechaEmision} ${venta.horaEmision}"
+                      : "Fecha no disponible";
+
+              // Formatear la factura
+              final facturaFormateada =
+                  venta.serieDocumento != null && venta.numeroDocumento != null
+                      ? "${venta.serieDocumento}-${venta.numeroDocumento}"
+                      : "Doc. sin número";
+
+              return VentaReciente(
+                fecha: fechaFormateada,
+                factura: facturaFormateada,
+                tipoDocumento: venta.tipoDocumento,
+                sucursalNombre: venta.sucursal.nombre,
+                monto: venta.totalesVenta.totalVenta,
+                estado: venta.estado.nombre,
+              );
+            }).toList();
+
+            debugPrint(
+                "Ventas recientes procesadas: ${_ventasRecientes.length}");
+          } else {
+            debugPrint("No se encontraron últimas ventas");
+            _ventasRecientes = [];
+          }
+        } catch (e) {
+          debugPrint('Error al cargar últimas ventas: $e');
+          _ventasRecientes = [];
+        }
 
         notifyListeners();
       } catch (e) {
@@ -270,6 +289,88 @@ class DashboardProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error al cargar estadísticas: $e');
+    }
+  }
+
+  /// Carga los detalles de productos con stock bajo para mostrar en la tabla
+  Future<void> _loadProductosStockBajoDetalle() async {
+    try {
+      debugPrint("Cargando detalles de productos con stock bajo...");
+      _productosStockBajoDetalle = [];
+
+      // Obtener productos con stock bajo
+      final stockBajoResponse =
+          await _estadisticaRepository.getProductosStockBajo(
+        forceRefresh: true,
+      );
+
+      if (stockBajoResponse['status'] == 'success' &&
+          stockBajoResponse['data'] != null) {
+        final productosData = stockBajoResponse['data'];
+
+        // Actualizar contadores globales
+        _productosStockBajo = productosData['stockBajo'] is int
+            ? productosData['stockBajo']
+            : int.tryParse(productosData['stockBajo'].toString()) ?? 0;
+
+        _productosLiquidacion = productosData['liquidacion'] is int
+            ? productosData['liquidacion']
+            : int.tryParse(productosData['liquidacion'].toString()) ?? 0;
+
+        // Obtener detalles de productos con stock bajo usando el nuevo método
+        final detallesProductos =
+            await _estadisticaRepository.getDetallesProductosStockBajo(
+          forceRefresh: true,
+        );
+
+        if (detallesProductos.isNotEmpty) {
+          _productosStockBajoDetalle = detallesProductos;
+          debugPrint(
+              "Productos con stock bajo encontrados: ${_productosStockBajoDetalle.length}");
+        } else {
+          debugPrint(
+              "No se encontraron detalles de productos, generando datos basados en estadísticas");
+
+          // Si no hay detalles, generar datos a partir de las estadísticas generales
+          if (productosData['sucursales'] != null &&
+              productosData['sucursales'] is List) {
+            for (final sucursal in productosData['sucursales']) {
+              final String sucursalId = sucursal['id'].toString();
+              final String sucursalNombre = sucursal['nombre'] ?? 'Sucursal';
+              final int stockBajo = sucursal['stockBajo'] is int
+                  ? sucursal['stockBajo']
+                  : int.tryParse(sucursal['stockBajo'].toString()) ?? 0;
+
+              // Si hay productos con stock bajo en esta sucursal
+              if (stockBajo > 0) {
+                _productosStockBajoDetalle.add({
+                  'productoId': 'placeholder-$sucursalId',
+                  'productoNombre': '$stockBajo producto(s) con stock bajo',
+                  'stock': 1,
+                  'stockMinimo': 10,
+                  'sucursalId': sucursalId,
+                  'sucursalNombre': sucursalNombre,
+                  'categoria': 'Variadas',
+                  'marca': 'Varias marcas',
+                });
+              }
+            }
+          }
+        }
+      } else {
+        debugPrint("Error al obtener datos de productos con stock bajo");
+      }
+
+      // Ordenar por stock (menor primero)
+      if (_productosStockBajoDetalle.isNotEmpty) {
+        _productosStockBajoDetalle
+            .sort((a, b) => (a['stock'] as int).compareTo(b['stock'] as int));
+      }
+
+      debugPrint(
+          "Productos con stock bajo cargados: ${_productosStockBajoDetalle.length}");
+    } catch (e) {
+      debugPrint('Error al cargar detalles de productos con stock bajo: $e');
     }
   }
 
@@ -375,14 +476,16 @@ class DashboardItemInfo {
 class VentaReciente {
   final String fecha;
   final String factura;
-  final String cliente;
+  final String? tipoDocumento;
+  final String? sucursalNombre;
   final double monto;
   final String estado;
 
   VentaReciente({
     required this.fecha,
     required this.factura,
-    required this.cliente,
+    this.tipoDocumento,
+    this.sucursalNombre,
     required this.monto,
     required this.estado,
   });
@@ -391,7 +494,8 @@ class VentaReciente {
     return VentaReciente(
       fecha: json['fecha'] ?? '',
       factura: json['factura'] ?? '',
-      cliente: json['cliente'] ?? '',
+      tipoDocumento: json['tipoDocumento'],
+      sucursalNombre: json['sucursalNombre'],
       monto: (json['monto'] ?? 0).toDouble(),
       estado: json['estado'] ?? 'Pendiente',
     );

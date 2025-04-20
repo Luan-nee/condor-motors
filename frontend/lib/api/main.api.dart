@@ -432,6 +432,68 @@ class ApiClient {
     );
   }
 
+  /// Realiza una solicitud autenticada que devuelve datos binarios como Uint8List
+  ///
+  /// Útil para descarga de archivos como Excel, PDF, imágenes, etc.
+  ///
+  /// [endpoint] La ruta relativa del endpoint (sin la baseUrl)
+  /// [method] Método HTTP (GET, POST, etc.)
+  /// [body] Cuerpo de la solicitud para POST, PUT, PATCH (opcional)
+  /// [queryParams] Parámetros de consulta para la URL (opcional)
+  /// [responseType] Tipo esperado de respuesta (normalmente 'arraybuffer' o 'blob')
+  Future<List<int>> authenticatedRequestRaw({
+    required String endpoint,
+    required String method,
+    Map<String, dynamic>? body,
+    Map<String, String>? queryParams,
+    String responseType = 'arraybuffer',
+  }) async {
+    try {
+      final String? token = await _tokenManager.getAccessToken();
+
+      final Options options = Options(
+        method: method,
+        headers: <String, String>{
+          'Accept': '*/*', // Aceptar cualquier tipo de contenido
+          if (body != null) 'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        responseType:
+            ResponseType.bytes, // Importante: indicar que esperamos bytes
+        validateStatus: (status) => status != null && status < 500,
+      );
+
+      logInfo(
+          'Enviando solicitud $method a $endpoint para descarga de archivo');
+
+      final Response<List<int>> response = await _dio.request<List<int>>(
+        endpoint,
+        data: body,
+        queryParameters: queryParams,
+        options: options,
+      );
+
+      if (response.statusCode != 200 || response.data == null) {
+        throw ApiException(
+          statusCode: response.statusCode ?? 500,
+          message: 'Error al descargar archivo',
+          errorCode: ApiConstants.errorCodes[response.statusCode] ??
+              ApiConstants.unknownError,
+        );
+      }
+
+      return response.data!;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    } catch (e) {
+      throw ApiException(
+        statusCode: 0,
+        message: 'Error inesperado: $e',
+        errorCode: ApiConstants.unknownError,
+      );
+    }
+  }
+
   /// Limpia el estado del cliente API
   Future<void> clearState() async {
     try {

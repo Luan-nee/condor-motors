@@ -14,7 +14,7 @@ class SucursalEstadisticaProducto {
 
   factory SucursalEstadisticaProducto.fromJson(Map<String, dynamic> json) {
     return SucursalEstadisticaProducto(
-      id: json['id'] is String ? int.parse(json['id']) : json['id'],
+      id: json['id'] is String ? int.parse(json['id']) : json['id'] ?? 0,
       nombre: json['nombre'] ?? '',
       stockBajo: json['stockBajo'] is String
           ? int.parse(json['stockBajo'])
@@ -238,6 +238,159 @@ class ResumenEstadisticas {
     return {
       'productos': productos.toJson(),
       'ventas': ventas.toJson(),
+    };
+  }
+}
+
+/// Modelo para representar una sucursal en el contexto de una venta
+class SucursalVenta {
+  final int id;
+  final bool sucursalCentral;
+  final String nombre;
+
+  SucursalVenta({
+    required this.id,
+    required this.sucursalCentral,
+    required this.nombre,
+  });
+
+  factory SucursalVenta.fromJson(Map<String, dynamic> json) {
+    return SucursalVenta(
+      id: json['id'] is String ? int.parse(json['id']) : json['id'] ?? 0,
+      sucursalCentral: json['sucursalCentral'] ?? false,
+      nombre: json['nombre'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'sucursalCentral': sucursalCentral,
+      'nombre': nombre,
+    };
+  }
+}
+
+/// Modelo para representar el estado de un documento de facturación
+class EstadoDocumentoFacturacion {
+  final String codigo;
+  final String nombre;
+
+  EstadoDocumentoFacturacion({
+    required this.codigo,
+    required this.nombre,
+  });
+
+  factory EstadoDocumentoFacturacion.fromJson(Map<String, dynamic> json) {
+    return EstadoDocumentoFacturacion(
+      codigo: json['codigo'] ?? '',
+      nombre: json['nombre'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'codigo': codigo,
+      'nombre': nombre,
+    };
+  }
+}
+
+/// Modelo para los totales de una venta
+class TotalesVenta {
+  final double totalVenta;
+
+  TotalesVenta({
+    required this.totalVenta,
+  });
+
+  factory TotalesVenta.fromJson(Map<String, dynamic> json) {
+    var total = json['totalVenta'];
+    if (total is String) {
+      try {
+        total = double.parse(total);
+      } catch (e) {
+        total = 0.0;
+      }
+    } else if (total is num) {
+      total = total.toDouble();
+    } else {
+      total = 0.0;
+    }
+
+    return TotalesVenta(
+      totalVenta: total,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'totalVenta': totalVenta,
+    };
+  }
+}
+
+/// Modelo para representar una venta reciente
+class UltimaVenta {
+  final String id;
+  final bool declarada;
+  final bool anulada;
+  final bool cancelada;
+  final String? serieDocumento;
+  final String? numeroDocumento;
+  final String? tipoDocumento;
+  final String? fechaEmision;
+  final String? horaEmision;
+  final SucursalVenta sucursal;
+  final TotalesVenta totalesVenta;
+  final EstadoDocumentoFacturacion estado;
+
+  UltimaVenta({
+    required this.id,
+    required this.declarada,
+    required this.anulada,
+    required this.cancelada,
+    this.serieDocumento,
+    this.numeroDocumento,
+    this.tipoDocumento,
+    this.fechaEmision,
+    this.horaEmision,
+    required this.sucursal,
+    required this.totalesVenta,
+    required this.estado,
+  });
+
+  factory UltimaVenta.fromJson(Map<String, dynamic> json) {
+    return UltimaVenta(
+      id: json['id']?.toString() ?? '',
+      declarada: json['declarada'] ?? false,
+      anulada: json['anulada'] ?? false,
+      cancelada: json['cancelada'] ?? false,
+      serieDocumento: json['serieDocumento'],
+      numeroDocumento: json['numeroDocumento'],
+      tipoDocumento: json['tipoDocumento'],
+      fechaEmision: json['fechaEmision'],
+      horaEmision: json['horaEmision'],
+      sucursal: SucursalVenta.fromJson(json['sucursal'] ?? {}),
+      totalesVenta: TotalesVenta.fromJson(json['totalesVenta'] ?? {}),
+      estado: EstadoDocumentoFacturacion.fromJson(json['estado'] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'declarada': declarada,
+      'anulada': anulada,
+      'cancelada': cancelada,
+      'serieDocumento': serieDocumento,
+      'numeroDocumento': numeroDocumento,
+      'tipoDocumento': tipoDocumento,
+      'fechaEmision': fechaEmision,
+      'horaEmision': horaEmision,
+      'sucursal': sucursal.toJson(),
+      'totalesVenta': totalesVenta.toJson(),
+      'estado': estado.toJson(),
     };
   }
 }

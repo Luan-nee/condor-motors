@@ -1,7 +1,9 @@
 import 'package:condorsmotors/providers/admin/dashboard.admin.provider.dart';
+import 'package:condorsmotors/models/estadisticas.model.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 // Un modelo básico para el widget de estadísticas del Dashboard
@@ -49,6 +51,11 @@ class DashboardAdminScreen extends StatefulWidget {
 class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   late DashboardProvider _dashboardProvider;
   bool _isInitialized = false;
+  final NumberFormat _formatoMoneda = NumberFormat.currency(
+    locale: 'es_PE',
+    symbol: 'S/',
+    decimalDigits: 2,
+  );
 
   @override
   void initState() {
@@ -128,20 +135,31 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }
 
   Widget _buildSummaryCards(DashboardProvider provider) {
+    // Obtener valores de ventas desde el provider
+    final ventasHoy =
+        provider.resumenEstadisticas?.ventas.getVentasValue('hoy') ?? 0;
+    final ventasEsteMes =
+        provider.resumenEstadisticas?.ventas.getVentasValue('esteMes') ?? 0;
+    final totalVentasHoy =
+        provider.resumenEstadisticas?.ventas.getTotalVentasValue('hoy') ?? 0;
+    final totalVentasEsteMes =
+        provider.resumenEstadisticas?.ventas.getTotalVentasValue('esteMes') ??
+            0;
+
     return Row(
       children: [
         Expanded(
           child: _buildSummaryCard(
             'Ventas Hoy',
-            'S/ ${provider.ventasHoy.toStringAsFixed(2)}',
+            '${ventasHoy.toInt()}', // Mostrar cantidad
             const FaIcon(FontAwesomeIcons.chartLine, color: Color(0xFFE31E24)),
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: _buildSummaryCard(
-            'Ventas Totales',
-            'S/ ${provider.totalVentas.toStringAsFixed(2)}',
+            'Ventas del Mes',
+            '${ventasEsteMes.toInt()}', // Mostrar cantidad
             const FaIcon(FontAwesomeIcons.chartBar, color: Color(0xFFE31E24)),
           ),
         ),
@@ -149,16 +167,16 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
         Expanded(
           child: _buildSummaryCard(
             'Ingresos Hoy',
-            'S/ ${provider.ingresosHoy.toStringAsFixed(2)}',
-            const FaIcon(FontAwesomeIcons.chartArea, color: Color(0xFFE31E24)),
+            _formatoMoneda.format(totalVentasHoy),
+            const FaIcon(FontAwesomeIcons.moneyBill, color: Color(0xFFE31E24)),
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: _buildSummaryCard(
-            'Ingresos Totales',
-            'S/ ${provider.totalGanancias.toStringAsFixed(2)}',
-            const FaIcon(FontAwesomeIcons.chartPie, color: Color(0xFFE31E24)),
+            'Ingresos del Mes',
+            _formatoMoneda.format(totalVentasEsteMes),
+            const FaIcon(FontAwesomeIcons.sackDollar, color: Color(0xFFE31E24)),
           ),
         ),
       ],
@@ -207,13 +225,35 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
 
   Widget _buildCharts(DashboardProvider provider) {
     final titlesData = FlTitlesData(
-      leftTitles: const AxisTitles(),
+      leftTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          getTitlesWidget: (value, meta) {
+            // Solo mostrar números enteros para el eje Y
+            if (value == value.roundToDouble()) {
+              return SideTitleWidget(
+                axisSide: meta.axisSide,
+                child: Text(
+                  value.toInt().toString(),
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 10,
+                  ),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+          reservedSize: 30,
+        ),
+      ),
       rightTitles: const AxisTitles(),
       topTitles: const AxisTitles(),
       bottomTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: true,
-          getTitlesWidget: _getBottomTitles,
+          getTitlesWidget: (value, meta) =>
+              _getBottomTitles(value, meta, provider),
         ),
       ),
     );
@@ -227,25 +267,26 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Ventas por Sucursal',
+              const Text(
+                'Número de Ventas por Sucursal',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Text(
-                'Ver Todo',
-                style: TextStyle(
-                  color: Color(0xFFE31E24),
-                  fontSize: 14,
-                ),
-              ),
             ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Cantidad de ventas realizadas por cada sucursal',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 12,
+            ),
           ),
           const SizedBox(height: 20),
           SizedBox(
@@ -260,11 +301,52 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                 : BarChart(
                     BarChartData(
                       alignment: BarChartAlignment.spaceAround,
-                      maxY: provider.totalVentas * 1.2,
-                      barTouchData: BarTouchData(enabled: true),
+                      maxY: _getMaxChartValue(provider),
+                      barTouchData: BarTouchData(
+                        enabled: true,
+                        touchTooltipData: BarTouchTooltipData(
+                          tooltipBgColor: const Color(0xFF222222),
+                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                            final sucursalData =
+                                provider.resumenEstadisticas?.ventas.sucursales;
+                            if (sucursalData == null ||
+                                sucursalData.isEmpty ||
+                                groupIndex >= sucursalData.length) {
+                              return null;
+                            }
+                            final sucursal = sucursalData[groupIndex];
+
+                            return BarTooltipItem(
+                              '${sucursal.nombre}\n'
+                              'Número de ventas: ${sucursal.ventas}',
+                              const TextStyle(
+                                  color: Colors.white, fontSize: 12),
+                            );
+                          },
+                        ),
+                      ),
                       titlesData: titlesData,
-                      gridData: const FlGridData(show: false),
-                      borderData: FlBorderData(show: false),
+                      gridData: FlGridData(
+                        drawVerticalLine: false,
+                        horizontalInterval: 1,
+                        getDrawingHorizontalLine: (value) {
+                          return FlLine(
+                            color: Colors.grey.withOpacity(0.2),
+                            strokeWidth: 1,
+                          );
+                        },
+                      ),
+                      borderData: FlBorderData(
+                        show: true,
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Colors.grey.withOpacity(0.2),
+                          ),
+                          left: BorderSide(
+                            color: Colors.grey.withOpacity(0.2),
+                          ),
+                        ),
+                      ),
                       barGroups: _createBarGroups(provider),
                     ),
                   ),
@@ -274,12 +356,49 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     );
   }
 
-  Widget _getBottomTitles(double value, TitleMeta meta) {
+  double _getMaxChartValue(DashboardProvider provider) {
+    final ventasSucursales =
+        provider.resumenEstadisticas?.ventas.sucursales ?? [];
+    if (ventasSucursales.isEmpty) {
+      return 10; // Valor por defecto
+    }
+
+    // Encontrar el valor máximo de ventas entre todas las sucursales
+    double maxValue = 0;
+    for (var sucursal in ventasSucursales) {
+      if (sucursal.ventas > maxValue) {
+        maxValue = sucursal.ventas.toDouble();
+      }
+    }
+
+    // Si todas las ventas son 0, usar un valor mínimo para que se vea el gráfico
+    if (maxValue == 0) {
+      return 10;
+    }
+
+    // Añadir un margen para que las barras no lleguen al tope
+    // Redondear al siguiente entero para tener una escala limpia
+    return (maxValue * 1.2).ceilToDouble();
+  }
+
+  Widget _getBottomTitles(
+      double value, TitleMeta meta, DashboardProvider provider) {
     const style = TextStyle(
       color: Colors.grey,
       fontSize: 12,
     );
-    String text = value.toInt().toString();
+
+    final sucursales = provider.resumenEstadisticas?.ventas.sucursales ?? [];
+    if (sucursales.isEmpty || value.toInt() >= sucursales.length) {
+      return const SizedBox.shrink();
+    }
+
+    // Mostrar solo las primeras letras del nombre de la sucursal para evitar solapamiento
+    String text = sucursales[value.toInt()].nombre;
+    if (text.length > 8) {
+      text = '${text.substring(0, 7)}...';
+    }
+
     return SideTitleWidget(
       axisSide: meta.axisSide,
       child: Text(text, style: style),
@@ -320,7 +439,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
         x: index,
         barRods: [
           BarChartRodData(
-            toY: sucursalEstadistica.totalVentas,
+            // Usar cantidad de ventas para el gráfico
+            toY: sucursalEstadistica.ventas.toDouble(),
             color: const Color(0xFFE31E24),
             width: 16,
             borderRadius: const BorderRadius.vertical(
@@ -333,6 +453,10 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }
 
   Widget _buildStockBajoSection(DashboardProvider provider) {
+    // Verificar si tenemos datos de estadísticas
+    final estadisticasProductos = provider.resumenEstadisticas?.productos;
+    final bool tieneDatos = estadisticasProductos != null;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -343,110 +467,333 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Productos con Stock Bajo',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: provider.productosStockBajoDetalle.isEmpty
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20.0),
-                      child: Text(
-                        'No hay productos con stock bajo',
-                        style: TextStyle(color: Colors.grey),
-                      ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Productos con Stock Bajo',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                  )
-                : ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: 650),
-                    child: DataTable(
-                      headingRowColor:
-                          WidgetStateProperty.all(const Color(0xFF222222)),
-                      columnSpacing: 20,
-                      horizontalMargin: 12,
-                      columns: const [
-                        DataColumn(
-                          label: Text(
-                            'Sucursal',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        DataColumn(
-                          label: Text(
-                            'Producto',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        DataColumn(
-                          label: Text(
-                            'Stock',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        DataColumn(
-                          label: Text(
-                            'Estado',
-                            style: TextStyle(color: Colors.white),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded,
+                            color: Colors.redAccent, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Total: ${tieneDatos ? estadisticasProductos.stockBajo : provider.productosStockBajo}',
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
-                      rows: provider.productosStockBajoDetalle
-                          .take(5)
-                          .map((producto) {
-                        final bool stockCritico = producto['stock'] <=
-                            (producto['stockMinimo'] != null
-                                ? producto['stockMinimo'] / 2
-                                : 1);
-                        return DataRow(
-                          cells: [
-                            DataCell(Text(
-                              producto['sucursalNombre'] ?? 'Desconocida',
-                              style: const TextStyle(color: Colors.grey),
-                            )),
-                            DataCell(Text(
-                              producto['productoNombre'] ??
-                                  'Producto sin nombre',
-                              style: const TextStyle(color: Colors.grey),
-                              overflow: TextOverflow.ellipsis,
-                            )),
-                            DataCell(Text(
-                              '${producto['stock'] ?? 0}/${producto['stockMinimo'] ?? "N/A"}',
-                              style: const TextStyle(color: Colors.grey),
-                            )),
-                            DataCell(Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: stockCritico
-                                    ? Colors.red.withOpacity(0.2)
-                                    : Colors.orange.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                stockCritico ? 'Crítico' : 'Bajo',
-                                style: TextStyle(
-                                  color:
-                                      stockCritico ? Colors.red : Colors.orange,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            )),
-                          ],
-                        );
-                      }).toList(),
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.orangeAccent.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.local_offer_outlined,
+                            color: Colors.orangeAccent, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Liquidación: ${tieneDatos ? estadisticasProductos.liquidacion : provider.productosLiquidacion}',
+                          style: const TextStyle(
+                            color: Colors.orangeAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
+          const SizedBox(height: 8),
+          const Text(
+            'Productos que requieren reabastecimiento inmediato',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildStockBajoContent(
+              provider, tieneDatos ? estadisticasProductos : null),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStockBajoContent(
+      DashboardProvider provider, EstadisticasProductos? estadisticas) {
+    // Si tenemos datos de estadísticas, mostrar el resumen por sucursal
+    if (estadisticas != null &&
+        (estadisticas.stockBajo > 0 || estadisticas.liquidacion > 0) &&
+        !estadisticas.sucursales.isEmpty) {
+      return _buildStockBajoSucursales(estadisticas);
+    } else if (provider.productosStockBajoDetalle.isNotEmpty) {
+      // Fallback: Si tenemos detalles específicos (aunque esto no debería ocurrir con la estructura actual del API)
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 650),
+          child: DataTable(
+            headingRowColor: WidgetStateProperty.all(const Color(0xFF222222)),
+            columnSpacing: 20,
+            horizontalMargin: 12,
+            columns: const [
+              DataColumn(
+                label: Text(
+                  'Sucursal',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Producto',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Stock',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              DataColumn(
+                label: Text(
+                  'Estado',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+            rows: provider.productosStockBajoDetalle.take(5).map((producto) {
+              final bool stockCritico = producto['stock'] <=
+                  (producto['stockMinimo'] != null
+                      ? producto['stockMinimo'] / 2
+                      : 1);
+              return DataRow(
+                cells: [
+                  DataCell(Text(
+                    producto['sucursalNombre'] ?? 'Desconocida',
+                    style: const TextStyle(color: Colors.grey),
+                  )),
+                  DataCell(Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        producto['productoNombre'] ?? 'Producto sin nombre',
+                        style: const TextStyle(color: Colors.grey),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (producto['categoria'] != null ||
+                          producto['marca'] != null)
+                        Text(
+                          '${producto['categoria'] ?? ''} ${producto['marca'] != null ? '- ${producto['marca']}' : ''}',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 10,
+                          ),
+                        ),
+                    ],
+                  )),
+                  DataCell(Text(
+                    '${producto['stock'] ?? 0}/${producto['stockMinimo'] ?? "N/A"}',
+                    style: const TextStyle(color: Colors.grey),
+                  )),
+                  DataCell(Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: stockCritico
+                          ? Colors.red.withOpacity(0.2)
+                          : Colors.orange.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      stockCritico ? 'Crítico' : 'Bajo',
+                      style: TextStyle(
+                        color: stockCritico ? Colors.red : Colors.orange,
+                        fontSize: 12,
+                      ),
+                    ),
+                  )),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      );
+    } else {
+      // No hay datos en ningún lado
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                color: Colors.grey,
+                size: 48,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'No hay productos con stock bajo',
+                style: TextStyle(color: Colors.grey),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Todos los inventarios están bien abastecidos',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildStockBajoSucursales(EstadisticasProductos estadisticas) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 650),
+        child: DataTable(
+          headingRowColor: WidgetStateProperty.all(const Color(0xFF222222)),
+          columnSpacing: 20,
+          horizontalMargin: 12,
+          columns: const [
+            DataColumn(
+              label: Text(
+                'Sucursal',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Stock Bajo',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Liquidación',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Estado',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+          rows: estadisticas.sucursales
+              .where((sucursal) =>
+                  sucursal.stockBajo > 0 || sucursal.liquidacion > 0)
+              .take(5)
+              .map((sucursal) {
+            return DataRow(
+              cells: [
+                DataCell(Text(
+                  sucursal.nombre,
+                  style: const TextStyle(color: Colors.grey),
+                )),
+                DataCell(Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${sucursal.stockBajo}',
+                        style: const TextStyle(
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'productos',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                )),
+                DataCell(Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${sucursal.liquidacion}',
+                        style: const TextStyle(
+                          color: Colors.orangeAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'productos',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                )),
+                DataCell(Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: sucursal.stockBajo > 2
+                        ? Colors.red.withOpacity(0.2)
+                        : Colors.orange.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    sucursal.stockBajo > 2 ? 'Urgente' : 'Revisar',
+                    style: TextStyle(
+                      color:
+                          sucursal.stockBajo > 2 ? Colors.red : Colors.orange,
+                      fontSize: 12,
+                    ),
+                  ),
+                )),
+              ],
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -463,11 +810,19 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Ventas Recientes',
+            'Últimas Ventas',
             style: TextStyle(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Documentos de venta registrados recientemente',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 12,
             ),
           ),
           const SizedBox(height: 20),
@@ -488,18 +843,24 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                     child: DataTable(
                       headingRowColor:
                           WidgetStateProperty.all(const Color(0xFF222222)),
-                      columnSpacing: 20,
+                      columnSpacing: 16,
                       horizontalMargin: 12,
                       columns: const [
                         DataColumn(
                           label: Text(
-                            'Fecha',
+                            'Fecha/Hora',
                             style: TextStyle(color: Colors.white),
                           ),
                         ),
                         DataColumn(
                           label: Text(
-                            'Cliente',
+                            'Documento',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        DataColumn(
+                          label: Text(
+                            'Sucursal',
                             style: TextStyle(color: Colors.white),
                           ),
                         ),
@@ -517,19 +878,44 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                         ),
                       ],
                       rows: provider.ventasRecientes.take(5).map((venta) {
+                        final esAceptado =
+                            venta.estado.toLowerCase().contains('aceptado');
+
                         return DataRow(
                           cells: [
                             DataCell(Text(
                               venta.fecha,
                               style: const TextStyle(color: Colors.grey),
                             )),
+                            DataCell(Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  venta.factura,
+                                  style: const TextStyle(color: Colors.grey),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (venta.tipoDocumento != null &&
+                                    venta.tipoDocumento!.isNotEmpty)
+                                  Text(
+                                    venta.tipoDocumento!,
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 10,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
+                            )),
                             DataCell(Text(
-                              venta.cliente,
+                              venta.sucursalNombre ?? 'No especificada',
                               style: const TextStyle(color: Colors.grey),
                               overflow: TextOverflow.ellipsis,
                             )),
                             DataCell(Text(
-                              'S/ ${venta.monto.toStringAsFixed(2)}',
+                              _formatoMoneda.format(venta.monto),
                               style: const TextStyle(color: Colors.grey),
                             )),
                             DataCell(Container(
@@ -538,7 +924,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: venta.estado == 'Pagado'
+                                color: esAceptado
                                     ? Colors.green.withOpacity(0.2)
                                     : Colors.orange.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(4),
@@ -546,9 +932,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                               child: Text(
                                 venta.estado,
                                 style: TextStyle(
-                                  color: venta.estado == 'Pagado'
-                                      ? Colors.green
-                                      : Colors.orange,
+                                  color:
+                                      esAceptado ? Colors.green : Colors.orange,
                                   fontSize: 12,
                                 ),
                               ),
@@ -568,14 +953,16 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
 class VentaReciente {
   final String fecha;
   final String factura;
-  final String cliente;
+  final String? tipoDocumento;
+  final String? sucursalNombre;
   final double monto;
   final String estado;
 
   VentaReciente({
     required this.fecha,
     required this.factura,
-    required this.cliente,
+    this.tipoDocumento,
+    this.sucursalNombre,
     required this.monto,
     required this.estado,
   });
@@ -584,7 +971,8 @@ class VentaReciente {
     return VentaReciente(
       fecha: json['fecha'] ?? '',
       factura: json['factura'] ?? '',
-      cliente: json['cliente'] ?? '',
+      tipoDocumento: json['tipoDocumento'],
+      sucursalNombre: json['sucursalNombre'],
       monto: (json['monto'] ?? 0).toDouble(),
       estado: json['estado'] ?? 'Pendiente',
     );

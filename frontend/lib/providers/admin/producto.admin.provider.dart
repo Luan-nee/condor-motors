@@ -662,20 +662,27 @@ class ProductoProvider extends ChangeNotifier {
     return productoData;
   }
 
-  /// Exporta los productos de la sucursal actual (implementación pendiente)
-  Future<bool> exportarProductos() async {
-    if (_sucursalSeleccionada == null) {
-      return false;
-    }
+  /// Exporta los productos en formato Excel
+  Future<List<int>?> exportarProductos() async {
+    _errorMessage = null;
+    notifyListeners();
 
     try {
-      // TODO: Implementar la exportación real
-      await Future<void>.delayed(const Duration(seconds: 2));
-      return true;
+      // Llamar al repositorio para obtener los bytes del reporte Excel
+      final List<int>? excelBytes = await _productoRepository.getReporteExcel();
+
+      if (excelBytes == null || excelBytes.isEmpty) {
+        _errorMessage = 'No se pudo generar el reporte de productos';
+        notifyListeners();
+        return null;
+      }
+
+      return excelBytes;
     } catch (e) {
+      debugPrint('Error al exportar productos: $e');
       _errorMessage = 'Error al exportar productos: $e';
       notifyListeners();
-      return false;
+      return null;
     }
   }
 

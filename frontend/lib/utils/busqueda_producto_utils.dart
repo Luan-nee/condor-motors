@@ -68,7 +68,13 @@ class BusquedaProductoUtils {
               sku: p['codigo']?.toString() ?? '',
               nombre: p['nombre']?.toString() ?? '',
               categoria: p['categoria']?.toString() ?? '',
+              categoriaId: p['categoriaId'] is int
+                  ? p['categoriaId']
+                  : int.tryParse(p['categoriaId']?.toString() ?? '0') ?? 0,
               marca: p['marca']?.toString() ?? '',
+              marcaId: p['marcaId'] is int
+                  ? p['marcaId']
+                  : int.tryParse(p['marcaId']?.toString() ?? '0') ?? 0,
               fechaCreacion: DateTime.now(),
               precioCompra: 0, // No es relevante para filtrado
               precioVenta:

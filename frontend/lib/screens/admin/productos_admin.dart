@@ -1,3 +1,8 @@
+import 'dart:convert';
+// Importar dart:html solo en web
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:io' as io;
+
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
 import 'package:condorsmotors/providers/paginacion.provider.dart';
@@ -7,9 +12,15 @@ import 'package:condorsmotors/screens/admin/widgets/producto/productos_table.dar
 import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
 import 'package:condorsmotors/widgets/dialogs/confirm_dialog.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Importar dart:html solo en web
+// ignore: avoid_web_libraries_in_flutter
 
 class ProductosAdminScreen extends StatefulWidget {
   const ProductosAdminScreen({super.key});
@@ -35,9 +46,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
 
     // Inicializar el provider al montar el widget
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ProductoProvider productoProvider =
-          Provider.of<ProductoProvider>(context, listen: false);
-      productoProvider.inicializar();
+      Provider.of<ProductoProvider>(context, listen: false).inicializar();
     });
   }
 
@@ -92,39 +101,6 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         return Future<void>.value();
       },
     );
-  }
-
-  Future<void> _guardarProducto(
-      Map<String, dynamic> productoData, bool esNuevo) async {
-    final ProductoProvider productoProvider =
-        Provider.of<ProductoProvider>(context, listen: false);
-
-    final bool resultado =
-        await productoProvider.guardarProducto(productoData, esNuevo);
-
-    if (mounted) {
-      if (resultado) {
-        // Forzar actualización de la vista después de guardar el producto
-        setState(() {
-          _productosKey.value =
-              'productos_${productoProvider.sucursalSeleccionada?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Producto guardado exitosamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else if (productoProvider.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(productoProvider.errorMessage!),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   Future<void> _eliminarProducto(Producto producto) async {
@@ -182,16 +158,66 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       ),
     );
 
-    final bool resultado = await productoProvider.exportarProductos();
+    final List<int>? excelBytes = await productoProvider.exportarProductos();
 
     if (mounted) {
-      if (resultado) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Productos exportados exitosamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
+      if (excelBytes != null && excelBytes.isNotEmpty) {
+        // En web se puede descargar directamente
+        if (kIsWeb) {
+          // Para web, usamos la API html para descargar
+          // ignore: avoid_web_libraries_in_flutter
+          base64Encode(excelBytes);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Reporte de productos descargado exitosamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          // En dispositivos Windows/Desktop/Mobile, guardamos el archivo localmente
+          try {
+            // Intentar obtener el directorio configurado desde las preferencias
+            String? directorioGuardado;
+
+            // Primero verificamos si hay un directorio configurado en preferencias
+            final prefs = await SharedPreferences.getInstance();
+            directorioGuardado = prefs.getString('directorioExcel');
+
+            // Si no hay directorio configurado, usar el directorio de documentos por defecto
+            if (directorioGuardado == null) {
+              final io.Directory directory =
+                  await getApplicationDocumentsDirectory();
+              directorioGuardado = directory.path;
+            }
+
+            // Construir la ruta completa del archivo
+            final String filePath =
+                '$directorioGuardado/reporte_productos.xlsx';
+            final io.File file = io.File(filePath);
+            await file.writeAsBytes(excelBytes);
+
+            // Abrir el archivo con la aplicación predeterminada
+            // Para Windows se usa Process.run
+            if (io.Platform.isWindows) {
+              await io.Process.run('explorer.exe', [filePath]);
+            }
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Reporte guardado en: $filePath'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error al guardar archivo: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
       } else if (productoProvider.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

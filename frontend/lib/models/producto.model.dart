@@ -1,11 +1,11 @@
 class ReglaDescuento {
-  final int quantity;
+  final int cantidad;
   final double discountPercentage;
   final int? daysWithoutSale;
   final double? timeDiscount;
 
   ReglaDescuento({
-    required this.quantity,
+    required this.cantidad,
     required this.discountPercentage,
     this.daysWithoutSale,
     this.timeDiscount,
@@ -13,7 +13,7 @@ class ReglaDescuento {
 
   factory ReglaDescuento.fromJson(Map<String, dynamic> json) {
     return ReglaDescuento(
-      quantity: json['cantidad'] as int,
+      cantidad: json['cantidad'] as int,
       discountPercentage: (json['porcentaje_descuento'] as num).toDouble(),
       daysWithoutSale: json['dias_sin_venta'] as int?,
       timeDiscount: (json['descuento_tiempo'] as num?)?.toDouble(),
@@ -21,7 +21,7 @@ class ReglaDescuento {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'cantidad': quantity,
+        'cantidad': cantidad,
         'porcentaje_descuento': discountPercentage,
         if (daysWithoutSale != null) 'dias_sin_venta': daysWithoutSale,
         if (timeDiscount != null) 'descuento_tiempo': timeDiscount,
@@ -39,8 +39,11 @@ class Producto {
   final int? cantidadGratisDescuento;
   final int? porcentajeDescuento;
   final String? color;
+  final int? colorId;
   final String categoria;
+  final int categoriaId;
   final String marca;
+  final int marcaId;
   final DateTime fechaCreacion;
   final int? detalleProductoId;
   final double precioCompra;
@@ -61,8 +64,11 @@ class Producto {
     this.cantidadGratisDescuento,
     this.porcentajeDescuento,
     this.color,
+    this.colorId,
     required this.categoria,
+    required this.categoriaId,
     required this.marca,
+    required this.marcaId,
     required this.fechaCreacion,
     this.detalleProductoId,
     required this.precioCompra,
@@ -94,8 +100,11 @@ class Producto {
           ? _parseInt(json['porcentajeDescuento'])
           : null,
       color: json['color'] as String?,
+      colorId: json['colorId'] != null ? _parseInt(json['colorId']) : null,
       categoria: json['categoria'] as String? ?? '',
+      categoriaId: _parseInt(json['categoriaId'] ?? 0),
       marca: json['marca'] as String? ?? '',
+      marcaId: _parseInt(json['marcaId'] ?? 0),
       fechaCreacion: DateTime.parse(
           json['fechaCreacion'] as String? ?? DateTime.now().toIso8601String()),
       detalleProductoId: json['detalleProductoId'] != null
@@ -127,8 +136,11 @@ class Producto {
         if (porcentajeDescuento != null)
           'porcentajeDescuento': porcentajeDescuento,
         if (color != null) 'color': color,
+        if (colorId != null) 'colorId': colorId,
         'categoria': categoria,
+        'categoriaId': categoriaId,
         'marca': marca,
+        'marcaId': marcaId,
         'fechaCreacion': fechaCreacion.toIso8601String(),
         if (detalleProductoId != null) 'detalleProductoId': detalleProductoId,
         'precioCompra': precioCompra,
@@ -260,6 +272,45 @@ class Producto {
     return (getGananciaActual() / precioCompra) * 100;
   }
 
+  /// Calcula el precio con descuento según cantidad
+  Map<String, dynamic> calcularPrecioConDescuento(int cantidad) {
+    double precio = getPrecioActual();
+    int cantidadGratis = 0;
+    double descuentoPorcentaje = 0;
+
+    if (cantidadMinimaDescuento == null ||
+        cantidad < cantidadMinimaDescuento!) {
+      return {
+        'precio': precio,
+        'cantidadGratis': cantidadGratis,
+        'descuentoPorcentaje': descuentoPorcentaje
+      };
+    }
+
+    if (cantidadGratisDescuento != null && cantidadGratisDescuento! > 0) {
+      cantidadGratis = cantidadGratisDescuento!;
+      return {
+        'precio': precio,
+        'cantidadGratis': cantidadGratis,
+        'descuentoPorcentaje': descuentoPorcentaje
+      };
+    } else if (porcentajeDescuento != null && porcentajeDescuento! > 0) {
+      descuentoPorcentaje = porcentajeDescuento!.toDouble();
+      precio = precio * (1 - descuentoPorcentaje / 100);
+      return {
+        'precio': precio,
+        'cantidadGratis': cantidadGratis,
+        'descuentoPorcentaje': descuentoPorcentaje
+      };
+    }
+
+    return {
+      'precio': precio,
+      'cantidadGratis': cantidadGratis,
+      'descuentoPorcentaje': descuentoPorcentaje
+    };
+  }
+
   /// Create a new instance with updated fields
   Producto copyWith({
     int? id,
@@ -272,8 +323,11 @@ class Producto {
     int? cantidadGratisDescuento,
     int? porcentajeDescuento,
     String? color,
+    int? colorId,
     String? categoria,
+    int? categoriaId,
     String? marca,
+    int? marcaId,
     DateTime? fechaCreacion,
     int? detalleProductoId,
     double? precioCompra,
@@ -297,8 +351,11 @@ class Producto {
           cantidadGratisDescuento ?? this.cantidadGratisDescuento,
       porcentajeDescuento: porcentajeDescuento ?? this.porcentajeDescuento,
       color: color ?? this.color,
+      colorId: colorId ?? this.colorId,
       categoria: categoria ?? this.categoria,
+      categoriaId: categoriaId ?? this.categoriaId,
       marca: marca ?? this.marca,
+      marcaId: marcaId ?? this.marcaId,
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
       detalleProductoId: detalleProductoId ?? this.detalleProductoId,
       precioCompra: precioCompra ?? this.precioCompra,
