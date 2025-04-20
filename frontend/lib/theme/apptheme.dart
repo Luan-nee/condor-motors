@@ -212,7 +212,7 @@ abstract class AppTheme {
   static SnackBar getStyledSnackBar({
     required String message,
     required bool isError,
-    Duration duration = const Duration(seconds: 4),
+    Duration duration = const Duration(seconds: 2),
     SnackBarAction? action,
   }) {
     return SnackBar(
@@ -260,7 +260,7 @@ abstract class AppTheme {
   static void showSuccessSnackBar(
     BuildContext context, {
     required String message,
-    Duration duration = const Duration(seconds: 4),
+    Duration duration = const Duration(seconds: 2),
     SnackBarAction? action,
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -277,7 +277,7 @@ abstract class AppTheme {
   static void showErrorSnackBar(
     BuildContext context, {
     required String message,
-    Duration duration = const Duration(seconds: 4),
+    Duration duration = const Duration(seconds: 2),
     SnackBarAction? action,
   }) {
     ScaffoldMessenger.of(context).showSnackBar(

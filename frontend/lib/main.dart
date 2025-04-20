@@ -175,76 +175,24 @@ class CondorMotorsApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Crear la aplicación base
-    final MaterialApp app = MaterialApp(
-      navigatorKey: navigatorKey,
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      debugShowCheckedModeBanner: false,
-      title: 'Condor Motors',
-      theme: AppTheme.theme,
-      // Forzar el uso de Material 3 para mejor soporte de temas
-      themeMode: ThemeMode.dark,
-      darkTheme: AppTheme.theme,
-      onGenerateRoute: (RouteSettings settings) {
-        return routes.generateRoute(
-          settings,
-          initialRoute: initialRoute,
-          userData: userData,
-        );
-      },
-      initialRoute: initialRoute,
-    );
-
-    // Envolver la aplicación con MultiProvider para gestionar los estados
-    // y después con el widget de estado de conexión
-    return MultiProvider(
-      providers: [
-        // Provider para paginación global
-        ChangeNotifierProvider<PaginacionProvider>(
-          create: (_) => PaginacionProvider(),
-        ),
-        // Providers de administración
-        ChangeNotifierProvider<CategoriasProvider>(
-          create: (_) => CategoriasProvider(),
-        ),
-        ChangeNotifierProvider<MarcasProvider>(
-          create: (_) => MarcasProvider(),
-        ),
-        ChangeNotifierProvider<EmpleadoProvider>(
-          create: (_) => EmpleadoProvider(),
-        ),
-        ChangeNotifierProvider<TransferenciasProvider>(
-          create: (_) => TransferenciasProvider(),
-        ),
-        ChangeNotifierProvider<ProductoProvider>(
-          create: (_) => ProductoProvider(),
-        ),
-        ChangeNotifierProvider<StockProvider>(
-          create: (_) => StockProvider(),
-        ),
-        ChangeNotifierProvider<VentasComputerProvider>(
-          create: (_) =>
-              VentasComputerProvider()..messengerKey = scaffoldMessengerKey,
-        ),
-        ChangeNotifierProvider<SucursalProvider>(
-          create: (_) => SucursalProvider(),
-        ),
-        ChangeNotifierProvider<DashboardProvider>(
-          create: (_) => DashboardProvider(),
-        ),
-        // Providers para módulo de computadora
-        ChangeNotifierProvider<ProformaComputerProvider>(
-          create: (context) => ProformaComputerProvider(
-            Provider.of<VentasComputerProvider>(context, listen: false),
-          ),
-        ),
-        // Provider para transferencias de colaboradores
-        ChangeNotifierProvider<TransferenciasColabProvider>(
-          create: (_) => TransferenciasColabProvider(),
-        ),
-        // Aquí puedes agregar más providers según sea necesario
-      ],
-      child: ConnectionStatusWidget(
-        child: app,
+    return ConnectionStatusWidget(
+      child: MaterialApp(
+        navigatorKey: navigatorKey,
+        scaffoldMessengerKey: scaffoldMessengerKey,
+        debugShowCheckedModeBanner: false,
+        title: 'Condor Motors',
+        theme: AppTheme.theme,
+        // Forzar el uso de Material 3 para mejor soporte de temas
+        themeMode: ThemeMode.dark,
+        darkTheme: AppTheme.theme,
+        onGenerateRoute: (RouteSettings settings) {
+          return routes.generateRoute(
+            settings,
+            initialRoute: initialRoute,
+            userData: userData,
+          );
+        },
+        initialRoute: initialRoute,
       ),
     );
   }
