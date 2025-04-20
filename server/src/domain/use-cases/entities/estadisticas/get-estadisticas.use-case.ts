@@ -59,7 +59,12 @@ export class GetReporteVentas {
         totalesVentaTable,
         eq(ventasTable.id, totalesVentaTable.ventaId)
       )
-      .where(or(isNull(ventasTable.id), gte(ventasTable.fechaCreacion, today)))
+      .where(
+        or(
+          isNull(ventasTable.id),
+          gte(ventasTable.fechaCreacion, firstDayThisMonth)
+        )
+      )
       .groupBy(sucursalesTable.id)
 
     return {
