@@ -31,6 +31,16 @@ class ProductoProvider extends ChangeNotifier {
   int _pageSize = 10;
   String _sortBy = '';
   String _order = 'desc';
+  Map<String, dynamic>? _stockFilter;
+
+  // Objeto de paginación para acceso directo
+  Paginacion _paginacion = Paginacion(
+    totalItems: 0,
+    totalPages: 1,
+    currentPage: 1,
+    hasNext: false,
+    hasPrev: false,
+  );
 
   // Estados
   bool _isLoadingSucursales = false;
@@ -52,6 +62,11 @@ class ProductoProvider extends ChangeNotifier {
   int get pageSize => _pageSize;
   String get sortBy => _sortBy;
   String get order => _order;
+  Map<String, dynamic>? get stockFilter => _stockFilter;
+
+  // Getter para paginación
+  Paginacion get paginacion => _paginatedProductos?.paginacion ?? _paginacion;
+  int get itemsPerPage => _pageSize;
 
   bool get isLoadingSucursales => _isLoadingSucursales;
   bool get isLoadingProductos => _isLoadingProductos;
@@ -120,12 +135,32 @@ class ProductoProvider extends ChangeNotifier {
       return;
     }
 
-    _productosFiltrados = ProductosUtils.filtrarProductos(
+    final nuevosFiltrados = ProductosUtils.filtrarProductos(
       productos: _paginatedProductos!.items,
       searchQuery: _searchQuery,
       selectedCategory: _selectedCategory,
     );
-    notifyListeners();
+
+    // Solo notificar si realmente cambiaron los productos filtrados
+    if (!_sonListasIguales(_productosFiltrados, nuevosFiltrados)) {
+      _productosFiltrados = nuevosFiltrados;
+      notifyListeners();
+    }
+  }
+
+  /// Compara dos listas de productos para determinar si son iguales
+  bool _sonListasIguales(List<Producto> lista1, List<Producto> lista2) {
+    if (lista1.length != lista2.length) {
+      return false;
+    }
+
+    for (int i = 0; i < lista1.length; i++) {
+      if (lista1[i].id != lista2[i].id) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /// Carga las categorías disponibles
@@ -221,6 +256,7 @@ class ProductoProvider extends ChangeNotifier {
         pageSize: _pageSize,
         sortBy: _sortBy.isNotEmpty ? _sortBy : null,
         order: _order,
+        stock: _stockFilter,
         // Forzar bypass de caché después de operaciones de escritura
         useCache: false,
         forceRefresh: true, // Forzar refresco ignorando completamente la caché
@@ -228,6 +264,9 @@ class ProductoProvider extends ChangeNotifier {
 
       _paginatedProductos = paginatedProductos;
       _productosFiltrados = paginatedProductos.items;
+
+      // Actualizar la paginación local desde la respuesta del servidor
+      _paginacion = paginatedProductos.paginacion;
 
       // Si hay una búsqueda local (menos de 3 caracteres) o filtro por categoría, se aplica
       if ((_searchQuery.isNotEmpty && _searchQuery.length < 3) ||
@@ -248,20 +287,39 @@ class ProductoProvider extends ChangeNotifier {
   }
 
   /// Cambia la página actual de la paginación
-  void cambiarPagina(int pagina) {
-    if (_currentPage != pagina) {
-      _currentPage = pagina;
-      cargarProductos();
+  Future<void> cambiarPagina(int pagina) async {
+    if (pagina < 1 || pagina > _paginacion.totalPages) {
+      return; // No hacer nada si la página solicitada está fuera de rango
     }
+
+    _currentPage = pagina;
+    notifyListeners();
+
+    // Recargar los datos con la nueva página
+    await cargarProductos();
+
+    // Notificar explícitamente el cambio, incluso si los datos son los mismos
+    // para forzar la actualización de la UI
+    notifyListeners();
   }
 
   /// Cambia el número de items por página
-  void cambiarTamanioPagina(int tamanio) {
-    if (_pageSize != tamanio) {
-      _pageSize = tamanio;
-      _currentPage = 1; // Volvemos a la primera página al cambiar el tamaño
-      cargarProductos();
+  Future<void> cambiarTamanioPagina(int tamanio) async {
+    if (tamanio < 1 || tamanio > 200) {
+      return; // Validar límites razonables
     }
+
+    _pageSize = tamanio;
+    _currentPage = 1; // Volvemos a la primera página al cambiar el tamaño
+
+    notifyListeners();
+
+    // Recargar los datos con el nuevo tamaño de página
+    await cargarProductos();
+
+    // Notificar explícitamente el cambio, incluso si los datos son los mismos
+    // para forzar la actualización de la UI
+    notifyListeners();
   }
 
   /// Cambia el campo de ordenamiento y la dirección
@@ -686,68 +744,142 @@ class ProductoProvider extends ChangeNotifier {
     }
   }
 
-  /// Recarga los datos de productos forzando una limpieza completa del caché
-  Future<void> recargarDatosProductos() async {
-    if (_sucursalSeleccionada == null) {
+  /// Filtra productos por stock con un tipo de filtro específico
+  ///
+  /// [valorStock] Valor de stock para la comparación
+  /// [tipoFiltro] Tipo de filtro: 'eq' (igual), 'gte' (mayor o igual), 'lte' (menor o igual), 'ne' (diferente)
+  Future<void> filtrarPorStock(int valorStock, String tipoFiltro) async {
+    // Validar que el tipo de filtro sea válido
+    if (!['eq', 'gte', 'lte', 'ne'].contains(tipoFiltro)) {
+      _errorMessage =
+          'Tipo de filtro inválido. Debe ser uno de: eq, gte, lte, ne';
+      notifyListeners();
       return;
     }
 
-    _errorMessage = null;
-    _isLoadingProductos = true;
+    // Si el valor es negativo, no aplicar filtro
+    if (valorStock < 0) {
+      _errorMessage = 'El valor de stock no puede ser negativo';
+      notifyListeners();
+      return;
+    }
+
+    // Configurar el filtro de stock
+    _stockFilter = {
+      'value': valorStock,
+      'filterType': tipoFiltro,
+    };
+
+    // Reiniciar a la primera página al cambiar el filtro
+    _currentPage = 1;
+
+    // Notificar y cargar productos con el nuevo filtro
     notifyListeners();
 
-    try {
-      final String sucursalId = _sucursalSeleccionada!.id.toString();
+    // Usar el repositorio para obtener productos filtrados
+    if (_sucursalSeleccionada != null) {
+      _isLoadingProductos = true;
+      notifyListeners();
 
-      // Forzar limpieza de caché para los productos de esta sucursal
-      debugPrint(
-          'ProductosAdmin: Forzando limpieza de caché para productos de sucursal $sucursalId');
-      _productoRepository.invalidateCache(sucursalId);
+      try {
+        final sucursalId = _sucursalSeleccionada!.id.toString();
+        // Usar StockRepository directamente para aprovechar el método consolidado
+        final stockRepository = StockRepository.instance;
 
-      // Resetear a la primera página y limpiar los filtros actuales
-      _currentPage = 1;
+        final PaginatedResponse<Producto> paginatedProductos =
+            await stockRepository.getProductosFiltrados(
+          sucursalId: sucursalId,
+          filtroStock: _stockFilter,
+          options: {
+            'page': _currentPage,
+            'pageSize': _pageSize,
+            'sortBy': _sortBy.isNotEmpty ? _sortBy : 'nombre',
+            'order': _order,
+            'search': _searchQuery.length >= 3 ? _searchQuery : null,
+          },
+        );
 
-      // Forzar una recarga completa de datos desde el servidor
-      debugPrint(
-          'ProductosAdmin: Forzando recarga de productos desde el servidor');
+        _paginatedProductos = paginatedProductos;
+        _productosFiltrados = paginatedProductos.items;
 
-      // Aplicar la búsqueda del servidor sólo si la búsqueda es mayor a 3 caracteres
-      final String? searchQuery =
-          _searchQuery.length >= 3 ? _searchQuery : null;
-
-      // Hacer una solicitud completamente nueva al servidor
-      final PaginatedResponse<Producto> paginatedProductos =
-          await _productoRepository.getProductos(
-        sucursalId: sucursalId,
-        search: searchQuery,
-        page: _currentPage,
-        pageSize: _pageSize,
-        sortBy: _sortBy.isNotEmpty ? _sortBy : null,
-        order: _order,
-        // Forzar bypass de caché completamente
-        useCache: false,
-        forceRefresh: true,
-      );
-
-      // Actualizar los datos en el provider
-      _paginatedProductos = paginatedProductos;
-      _productosFiltrados = paginatedProductos.items;
-
-      // Si hay una búsqueda local o filtro por categoría, se aplica
-      if ((_searchQuery.isNotEmpty && _searchQuery.length < 3) ||
-          _selectedCategory != 'Todos') {
-        _filtrarProductos();
+        _isLoadingProductos = false;
+        notifyListeners();
+      } catch (e) {
+        debugPrint('Error al filtrar productos: $e');
+        _errorMessage = 'Error al filtrar productos: $e';
+        _isLoadingProductos = false;
+        notifyListeners();
       }
+    }
+  }
 
-      _isLoadingProductos = false;
-      debugPrint(
-          'ProductosAdmin: Recarga de datos completada exitosamente con ${_productosFiltrados.length} productos');
+  /// Filtra productos con stock igual a un valor específico
+  ///
+  /// [valorStock] Valor exacto de stock a buscar
+  Future<void> filtrarPorStockIgualA(int valorStock) async {
+    await filtrarPorStock(valorStock, 'eq');
+  }
+
+  /// Filtra productos con stock mayor o igual a un valor
+  ///
+  /// [valorStock] Valor mínimo de stock
+  Future<void> filtrarPorStockMayorIgualA(int valorStock) async {
+    await filtrarPorStock(valorStock, 'gte');
+  }
+
+  /// Filtra productos con stock menor o igual a un valor
+  ///
+  /// [valorStock] Valor máximo de stock
+  Future<void> filtrarPorStockMenorIgualA(int valorStock) async {
+    await filtrarPorStock(valorStock, 'lte');
+  }
+
+  /// Filtra productos con stock diferente a un valor
+  ///
+  /// [valorStock] Valor de stock a excluir
+  Future<void> filtrarPorStockDiferenteA(int valorStock) async {
+    await filtrarPorStock(valorStock, 'ne');
+  }
+
+  /// Limpia el filtro de stock
+  Future<void> limpiarFiltroStock() async {
+    _stockFilter = null;
+    _currentPage = 1;
+    notifyListeners();
+
+    // Recargar productos sin filtro de stock
+    if (_sucursalSeleccionada != null) {
+      _isLoadingProductos = true;
       notifyListeners();
-    } catch (e) {
-      debugPrint('ProductosAdmin: ERROR en recargarDatosProductos: $e');
-      _errorMessage = 'Error al recargar datos de productos: $e';
-      _isLoadingProductos = false;
-      notifyListeners();
+
+      try {
+        final sucursalId = _sucursalSeleccionada!.id.toString();
+        // Usar StockRepository directamente para aprovechar el método consolidado
+        final stockRepository = StockRepository.instance;
+
+        final PaginatedResponse<Producto> paginatedProductos =
+            await stockRepository.getProductosFiltrados(
+          sucursalId: sucursalId,
+          options: {
+            'page': _currentPage,
+            'pageSize': _pageSize,
+            'sortBy': _sortBy.isNotEmpty ? _sortBy : 'nombre',
+            'order': _order,
+            'search': _searchQuery.length >= 3 ? _searchQuery : null,
+          },
+        );
+
+        _paginatedProductos = paginatedProductos;
+        _productosFiltrados = paginatedProductos.items;
+
+        _isLoadingProductos = false;
+        notifyListeners();
+      } catch (e) {
+        debugPrint('Error al cargar productos: $e');
+        _errorMessage = 'Error al cargar productos: $e';
+        _isLoadingProductos = false;
+        notifyListeners();
+      }
     }
   }
 }

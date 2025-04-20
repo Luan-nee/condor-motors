@@ -5,9 +5,9 @@ import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalle_sucursal.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalles_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_list.dart';
-
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +25,9 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   // Estado del drawer
   final bool _drawerOpen = true;
   bool _isInitialized = false;
+
+  // Clave para el valor de la tabla de productos
+  final ValueNotifier<Object> _stocksKey = ValueNotifier<Object>(Object());
 
   @override
   void initState() {
@@ -47,10 +50,9 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
           // Intentar encontrar la sucursal principal primero
           final sucursalPrincipal = _stockProvider.sucursales.firstWhere(
             (sucursal) => sucursal.nombre.toLowerCase().contains('principal'),
-            orElse: () => _stockProvider
-                .sucursales.first, // Si no hay principal, usar la primera
+            orElse: () => _stockProvider.sucursales.first,
           );
-          _stockProvider.seleccionarSucursal(sucursalPrincipal);
+          await _stockProvider.seleccionarSucursal(sucursalPrincipal);
         }
       });
       _isInitialized = true;
@@ -61,6 +63,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   void dispose() {
     // Liberar recursos
     _searchController.dispose();
+    _stocksKey.dispose();
     super.dispose();
   }
 
@@ -74,9 +77,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       ),
     ).then((_) {
       // Recargar productos al cerrar el diálogo para reflejar posibles cambios
-      if (_stockProvider.mostrarVistaConsolidada) {
-        _stockProvider.cargarProductosTodasSucursales();
-      } else if (_stockProvider.selectedSucursalId.isNotEmpty) {
+      if (_stockProvider.selectedSucursalId.isNotEmpty) {
         _stockProvider.cargarProductos(_stockProvider.selectedSucursalId);
       }
     });
@@ -96,9 +97,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       ),
     ).then((_) {
       // Recargar productos al cerrar el diálogo para reflejar cambios
-      if (_stockProvider.mostrarVistaConsolidada) {
-        _stockProvider.cargarProductosTodasSucursales();
-      } else if (_stockProvider.selectedSucursalId.isNotEmpty) {
+      if (_stockProvider.selectedSucursalId.isNotEmpty) {
         _stockProvider.cargarProductos(_stockProvider.selectedSucursalId);
       }
     });
@@ -110,11 +109,29 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   Widget build(BuildContext context) {
     return Consumer<stock_provider.StockProvider>(
         builder: (context, stockProvider, child) {
-      // Determinar qué productos usar según la vista activa
-      final List<Producto> productosAMostrar =
-          stockProvider.mostrarVistaConsolidada
-              ? stockProvider.productosBajoStock
-              : stockProvider.productosFiltrados;
+      // Actualizar la clave del stock cuando cambian datos relevantes
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final currentPage = stockProvider.currentPage;
+          final pageSize = stockProvider.pageSize;
+          final filtroEstado =
+              stockProvider.filtroEstadoStock?.toString() ?? '';
+          final searchQuery = stockProvider.searchQuery;
+          final sortBy = stockProvider.sortBy;
+          final order = stockProvider.order;
+
+          _stocksKey.value = Object.hash(
+              stockProvider.selectedSucursalId,
+              currentPage,
+              pageSize,
+              filtroEstado,
+              searchQuery,
+              sortBy,
+              order,
+              stockProvider.productosFiltrados.length,
+              DateTime.now().millisecondsSinceEpoch);
+        }
+      });
 
       return Scaffold(
         backgroundColor: const Color(0xFF121212),
@@ -239,6 +256,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                           );
                                         }
 
+                                        // Recargar todos los datos
                                         await stockProvider.recargarDatos();
 
                                         // Verificar si el widget aún está montado
@@ -269,9 +287,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           // Barra de búsqueda mejorada
-                          if (stockProvider.selectedSucursalId.isNotEmpty &&
-                              !stockProvider
-                                  .mostrarVistaConsolidada) ...<Widget>[
+                          if (stockProvider
+                              .selectedSucursalId.isNotEmpty) ...<Widget>[
                             Container(
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Row(
@@ -503,9 +520,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                           ],
 
                           // Filtros rápidos para el estado del stock
-                          if (stockProvider.selectedSucursalId.isNotEmpty &&
-                              !stockProvider
-                                  .mostrarVistaConsolidada) ...<Widget>[
+                          if (stockProvider
+                              .selectedSucursalId.isNotEmpty) ...<Widget>[
                             SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: Row(
@@ -534,8 +550,14 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                     const Color(0xFFE31E24),
                                     stockProvider.filtroEstadoStock ==
                                         stock_provider.StockStatus.stockBajo,
-                                    () => stockProvider.filtrarPorEstadoStock(
-                                        stock_provider.StockStatus.stockBajo),
+                                    () {
+                                      debugPrint(
+                                          '🔍 Presionado filtro: Stock Bajo');
+                                      debugPrint(
+                                          'Estado actual del filtro: ${stockProvider.filtroEstadoStock}');
+                                      stockProvider.filtrarPorEstadoStock(
+                                          stock_provider.StockStatus.stockBajo);
+                                    },
                                   ),
                                   const SizedBox(width: 8),
                                   _buildFilterChip(
@@ -544,8 +566,14 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                     Colors.red.shade800,
                                     stockProvider.filtroEstadoStock ==
                                         stock_provider.StockStatus.agotado,
-                                    () => stockProvider.filtrarPorEstadoStock(
-                                        stock_provider.StockStatus.agotado),
+                                    () {
+                                      debugPrint(
+                                          '🔍 Presionado filtro: Agotados');
+                                      debugPrint(
+                                          'Estado actual del filtro: ${stockProvider.filtroEstadoStock}');
+                                      stockProvider.filtrarPorEstadoStock(
+                                          stock_provider.StockStatus.agotado);
+                                    },
                                   ),
                                   const SizedBox(width: 16),
                                   if (stockProvider.filtroEstadoStock != null)
@@ -555,24 +583,14 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                         color: Colors.white70,
                                         size: 16,
                                       ),
-                                      onPressed: () => stockProvider
-                                          .filtrarPorEstadoStock(null),
+                                      onPressed: () {
+                                        stockProvider
+                                            .filtrarPorEstadoStock(null);
+                                      },
                                       tooltip: 'Limpiar filtros',
                                     ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-
-                          // Resumen del inventario
-                          if (productosAMostrar.isNotEmpty) ...<Widget>[
-                            InventarioResumen(
-                              productos: productosAMostrar,
-                              sucursalNombre:
-                                  stockProvider.mostrarVistaConsolidada
-                                      ? 'Todas las Sucursales'
-                                      : stockProvider.selectedSucursalNombre,
                             ),
                             const SizedBox(height: 16),
                           ],
@@ -582,24 +600,11 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                             child: Column(
                               children: <Widget>[
                                 Expanded(
-                                  child: stockProvider.mostrarVistaConsolidada
-                                      ? TableProducts(
-                                          selectedSucursalId: 'todas',
-                                          productos:
-                                              stockProvider.productosBajoStock,
-                                          isLoading:
-                                              stockProvider.isLoadingProductos,
-                                          error: stockProvider.errorProductos,
-                                          onRetry: stockProvider.limpiarFiltros,
-                                          onVerDetalles: _verDetallesProducto,
-                                          onVerStockDetalles: _verStockDetalles,
-                                          stockPorSucursal:
-                                              stockProvider.stockPorSucursal,
-                                          sucursales: stockProvider.sucursales,
-                                          esVistaGlobal: true,
-                                          filtrosActivos: true,
-                                        )
-                                      : TableProducts(
+                                  child: ValueListenableBuilder<Object>(
+                                      valueListenable: _stocksKey,
+                                      builder: (context, key, _) {
+                                        return TableProducts(
+                                          key: ValueKey<Object>(key),
                                           selectedSucursalId:
                                               stockProvider.selectedSucursalId,
                                           productos:
@@ -607,11 +612,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                           isLoading:
                                               stockProvider.isLoadingProductos,
                                           error: stockProvider.errorProductos,
-                                          onRetry: stockProvider
-                                                  .selectedSucursalId.isNotEmpty
-                                              ? stockProvider.limpiarFiltros
-                                              : null,
-                                          onEditProducto: _editarProducto,
+                                          onRetry: stockProvider.limpiarFiltros,
                                           onVerDetalles: _verDetallesProducto,
                                           onVerStockDetalles: _verStockDetalles,
                                           onSort: stockProvider.ordenarPor,
@@ -621,12 +622,12 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                                   .searchQuery.isNotEmpty ||
                                               stockProvider.filtroEstadoStock !=
                                                   null,
-                                        ),
+                                        );
+                                      }),
                                 ),
 
                                 // Paginador
-                                if (!stockProvider.mostrarVistaConsolidada &&
-                                    stockProvider.paginatedProductos != null &&
+                                if (stockProvider.paginatedProductos != null &&
                                     stockProvider.paginatedProductos!.paginacion
                                             .totalPages >
                                         0)
@@ -697,7 +698,12 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
   Widget _buildFilterChip(String label, IconData icon, Color color,
       bool selected, VoidCallback onTap) {
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        debugPrint('🔍 Iniciando tap en filtro: $label');
+        debugPrint('Estado de selección actual: $selected');
+        onTap();
+        debugPrint('🔍 Tap completado en filtro: $label');
+      },
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

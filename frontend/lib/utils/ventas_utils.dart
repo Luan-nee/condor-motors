@@ -195,26 +195,38 @@ class VentasUtils {
     return formatearMonto(venta.calcularTotal());
   }
 
-  /// Genera un texto descriptivo del estado de declaración SUNAT
+  /// Obtiene el mensaje descriptivo del estado SUNAT basado en el código
+  static String getEstadoSunatMensaje(String? codigoEstadoSunat) {
+    switch (codigoEstadoSunat) {
+      case '05':
+        return 'Documento aceptado por SUNAT';
+      case '03':
+        return 'Documento enviado a SUNAT';
+      case '04':
+        return 'Documento con observaciones';
+      case '07':
+        return 'Documento observado por SUNAT';
+      case '09':
+        return 'Documento rechazado por SUNAT';
+      case '11':
+        return 'Documento dado de baja';
+      case '13':
+        return 'Documento con error de comunicación';
+      default:
+        return 'Estado no especificado';
+    }
+  }
+
+  /// Obtiene el mensaje descriptivo del estado de declaración de una venta
   static String getEstadoDeclaracionTexto(Venta venta) {
-    if (!venta.declarada) {
-      return 'No declarada';
+    if (venta.documentoFacturacion?.codigoEstadoSunat != null) {
+      return getEstadoSunatMensaje(
+          venta.documentoFacturacion!.codigoEstadoSunat);
+    } else if (venta.declarada) {
+      return 'Documento declarado correctamente';
+    } else {
+      return 'Documento pendiente de declaración';
     }
-
-    if (venta.documentoFacturacion == null) {
-      return 'Declarada (sin detalles)';
-    }
-
-    final doc = venta.documentoFacturacion!;
-    if (doc.descripcionEstado != null && doc.descripcionEstado!.isNotEmpty) {
-      return doc.descripcionEstado!;
-    }
-
-    if (doc.codigoEstadoSunat != null && doc.codigoEstadoSunat!.isNotEmpty) {
-      return 'Estado SUNAT: ${doc.codigoEstadoSunat}';
-    }
-
-    return 'Declarada';
   }
 
   /// Determina si se debe mostrar el botón de declaración SUNAT

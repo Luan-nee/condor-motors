@@ -2079,7 +2079,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             // IMPORTANTE: Forzamos una recarga completa de datos del servidor
             // para asegurar que tengamos la información más actualizada, incluyendo
             // nuevas categorías o marcas que puedan haberse creado automáticamente
-            await productoProvider.recargarDatosProductos();
+            await productoProvider.recargarDatos();
 
             debugPrint('ProductosForm: Datos actualizados correctamente');
 

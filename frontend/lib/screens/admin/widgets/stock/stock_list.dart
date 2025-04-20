@@ -12,11 +12,13 @@ export 'stock_table.dart' show TableProducts, InventarioResumen;
 class InventarioResumen extends StatefulWidget {
   final List<Producto> productos;
   final String? sucursalNombre;
+  final VoidCallback? onRefresh;
 
   const InventarioResumen({
     super.key,
     required this.productos,
     this.sucursalNombre,
+    this.onRefresh,
   });
 
   @override
@@ -43,14 +45,14 @@ class _InventarioResumenState extends State<InventarioResumen> {
       return const SizedBox.shrink();
     }
 
-    // Agrupar productos por disponibilidad usando el StockProvider
+    // Usar el método optimizado para agrupar productos
     final Map<StockStatus, List<Producto>> agrupados =
         stockProvider.agruparProductosPorEstadoStock(widget.productos);
 
     // Obtener contadores
-    final int agotadosCount = agrupados[StockStatus.agotado]!.length;
-    final int stockBajoCount = agrupados[StockStatus.stockBajo]!.length;
     final int disponiblesCount = agrupados[StockStatus.disponible]!.length;
+    final int stockBajoCount = agrupados[StockStatus.stockBajo]!.length;
+    final int agotadosCount = agrupados[StockStatus.agotado]!.length;
 
     return Container(
       padding: const EdgeInsets.all(6),
@@ -64,15 +66,31 @@ class _InventarioResumenState extends State<InventarioResumen> {
         ),
         child: ExpansionTile(
           tilePadding: EdgeInsets.zero, // Elimina el padding interno
-          title: Text(
-            widget.sucursalNombre != null
-                ? 'Resumen de ${widget.sucursalNombre}'
-                : 'Resumen del Inventario',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.sucursalNombre != null
+                      ? 'Resumen de ${widget.sucursalNombre}'
+                      : 'Resumen del Inventario',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              if (widget.onRefresh != null)
+                IconButton(
+                  icon: const Icon(
+                    Icons.refresh,
+                    color: Colors.white70,
+                    size: 18,
+                  ),
+                  tooltip: 'Actualizar resumen',
+                  onPressed: widget.onRefresh,
+                ),
+            ],
           ),
           initiallyExpanded: _isExpanded,
           onExpansionChanged: (bool expanded) {

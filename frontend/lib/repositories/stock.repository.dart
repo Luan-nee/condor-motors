@@ -90,14 +90,21 @@ class StockRepository implements BaseRepository {
     String? sortBy,
   }) async {
     try {
-      return await _productosApi.getProductosConStockBajo(
+      debugPrint('🌐 [StockRepository] Solicitando productos con stock bajo');
+      debugPrint(
+          '🌐 Parámetros: sucursalId=$sucursalId, page=$page, pageSize=$pageSize, sortBy=$sortBy');
+
+      // Usar el endpoint con stockBajo=true
+      return await _productosApi.getProductos(
         sucursalId: sucursalId,
         page: page,
         pageSize: pageSize,
-        sortBy: sortBy,
+        sortBy: sortBy ?? 'nombre',
+        order: 'asc',
+        stockBajo: true,
       );
     } catch (e) {
-      debugPrint('Error en StockRepository.getProductosConStockBajo: $e');
+      debugPrint('❌ [StockRepository] Error en getProductosConStockBajo: $e');
       rethrow;
     }
   }
@@ -115,14 +122,21 @@ class StockRepository implements BaseRepository {
     String? sortBy,
   }) async {
     try {
-      return await _productosApi.getProductosAgotados(
+      debugPrint('🌐 [StockRepository] Solicitando productos agotados');
+      debugPrint(
+          '🌐 Parámetros: sucursalId=$sucursalId, page=$page, pageSize=$pageSize, sortBy=$sortBy');
+
+      // Usar el endpoint con stock=0
+      return await _productosApi.getProductos(
         sucursalId: sucursalId,
         page: page,
         pageSize: pageSize,
-        sortBy: sortBy,
+        sortBy: sortBy ?? 'nombre',
+        order: 'asc',
+        stock: {'value': 0, 'filterType': 'eq'}, // stock igual a 0
       );
     } catch (e) {
-      debugPrint('Error en StockRepository.getProductosAgotados: $e');
+      debugPrint('❌ [StockRepository] Error en getProductosAgotados: $e');
       rethrow;
     }
   }
@@ -140,14 +154,21 @@ class StockRepository implements BaseRepository {
     String? sortBy,
   }) async {
     try {
-      return await _productosApi.getProductosDisponibles(
+      debugPrint('🌐 [StockRepository] Solicitando productos disponibles');
+      debugPrint(
+          '🌐 Parámetros: sucursalId=$sucursalId, page=$page, pageSize=$pageSize, sortBy=$sortBy');
+
+      // Usar el endpoint con stock>=1 para obtener todos los productos con al menos 1 unidad
+      return await _productosApi.getProductos(
         sucursalId: sucursalId,
         page: page,
         pageSize: pageSize,
-        sortBy: sortBy,
+        sortBy: sortBy ?? 'nombre',
+        order: 'asc',
+        stock: {'value': 1, 'filterType': 'gte'}, // stock mayor o igual a 1
       );
     } catch (e) {
-      debugPrint('Error en StockRepository.getProductosDisponibles: $e');
+      debugPrint('❌ [StockRepository] Error en getProductosDisponibles: $e');
       rethrow;
     }
   }
@@ -169,10 +190,15 @@ class StockRepository implements BaseRepository {
     String? sortBy,
     String? order,
     bool? stockBajo,
+    Map<String, dynamic>? stock,
     bool useCache = true,
     bool forceRefresh = false,
   }) async {
     try {
+      debugPrint('🌐 [StockRepository] Solicitando productos');
+      debugPrint(
+          '🌐 Parámetros: sucursalId=$sucursalId, page=$page, pageSize=$pageSize, search=$search, sortBy=$sortBy, order=$order, stockBajo=$stockBajo, stock=$stock');
+
       return await _productosApi.getProductos(
         sucursalId: sucursalId,
         page: page,
@@ -181,11 +207,12 @@ class StockRepository implements BaseRepository {
         sortBy: sortBy,
         order: order,
         stockBajo: stockBajo,
+        stock: stock,
         useCache: useCache,
         forceRefresh: forceRefresh,
       );
     } catch (e) {
-      debugPrint('Error en StockRepository.getProductos: $e');
+      debugPrint('❌ [StockRepository] Error en getProductos: $e');
       rethrow;
     }
   }
@@ -217,10 +244,10 @@ class StockRepository implements BaseRepository {
     }
   }
 
-  /// Invalida la caché de productos para una sucursal específica
-  ///
-  /// [sucursalId] ID de la sucursal. Si es null, invalida toda la caché.
+  /// Método para invalidar la caché de productos
   void invalidateCache(String? sucursalId) {
+    debugPrint(
+        '🌐 [StockRepository] Invalidando caché para sucursal: $sucursalId');
     _productosApi.invalidateCache(sucursalId);
   }
 
@@ -373,6 +400,130 @@ class StockRepository implements BaseRepository {
       return await _stocksApi.generarReporteStock(sucursalId, formato);
     } catch (e) {
       debugPrint('Error en StockRepository.generarReporteStock: $e');
+      rethrow;
+    }
+  }
+
+  /// Método para obtener productos por stock con soporte para null
+  Future<PaginatedResponse<Producto>> getProductosPorStock({
+    required String sucursalId,
+    required stockValue, // Cambiado a dynamic para soportar null
+    required String filterType,
+    int page = 1,
+    int pageSize = 20,
+    String? sortBy,
+    String? order,
+    bool useCache = true,
+  }) async {
+    try {
+      // Validar que filterType sea uno de los valores permitidos
+      if (!['eq', 'gte', 'lte', 'ne'].contains(filterType)) {
+        throw ArgumentError(
+            'filterType debe ser uno de los siguientes valores: eq, gte, lte, ne');
+      }
+
+      // Crear el filtro de stock
+      final Map<String, dynamic> stock = {
+        'value': stockValue,
+        'filterType': filterType,
+      };
+
+      debugPrint('🌐 [StockRepository] Solicitando productos por stock');
+      debugPrint('🌐 Filtro de stock: $stock');
+
+      // Usar el método general de obtención de productos con el filtro de stock
+      return await getProductos(
+        sucursalId: sucursalId,
+        page: page,
+        pageSize: pageSize,
+        sortBy: sortBy ?? 'nombre',
+        order: order ?? 'asc',
+        stock: stock,
+        useCache: useCache,
+      );
+    } catch (e) {
+      debugPrint('❌ [StockRepository] Error en getProductosPorStock: $e');
+      rethrow;
+    }
+  }
+
+  /// Obtiene productos filtrados por cantidad de stock con tipo de filtro y opciones adicionales
+  ///
+  /// [sucursalId] ID de la sucursal
+  /// [filtroStock] Configuración del filtro de stock {valor: int, tipo: 'eq'|'gte'|'lte'|'ne'}
+  /// [options] Opciones adicionales (paginación, ordenamiento, búsqueda)
+  Future<PaginatedResponse<Producto>> getProductosFiltrados({
+    required String sucursalId,
+    Map<String, dynamic>? filtroStock,
+    Map<String, dynamic>? options,
+  }) async {
+    try {
+      // Valores por defecto para opciones
+      final page = options?['page'] ?? 1;
+      final pageSize = options?['pageSize'] ?? 20;
+      final sortBy = options?['sortBy'] ?? 'nombre';
+      final order = options?['order'] ?? 'asc';
+      final search = options?['search'];
+      final bool useCache = options?['useCache'] ?? true;
+
+      // Si tiene filtro de stock, usar el método especializado
+      if (filtroStock != null) {
+        final stockValue = filtroStock['value'] as int;
+        final filterType = filtroStock['filterType'] as String;
+
+        return await getProductosPorStock(
+          sucursalId: sucursalId,
+          stockValue: stockValue,
+          filterType: filterType,
+          page: page,
+          pageSize: pageSize,
+          sortBy: sortBy,
+          order: order,
+          useCache: useCache,
+        );
+      }
+
+      // Si tiene filtro de estado (stockBajo, agotado, etc.)
+      if (options?['estado'] != null) {
+        final estado = options?['estado'] as String;
+
+        switch (estado) {
+          case 'stockBajo':
+            return await getProductosConStockBajo(
+              sucursalId: sucursalId,
+              page: page,
+              pageSize: pageSize,
+              sortBy: sortBy,
+            );
+          case 'agotado':
+            return await getProductosAgotados(
+              sucursalId: sucursalId,
+              page: page,
+              pageSize: pageSize,
+              sortBy: sortBy,
+            );
+          case 'disponible':
+            return await getProductosDisponibles(
+              sucursalId: sucursalId,
+              page: page,
+              pageSize: pageSize,
+              sortBy: sortBy,
+            );
+        }
+      }
+
+      // Caso general: obtener productos con posibles filtros de búsqueda
+      return await getProductos(
+        sucursalId: sucursalId,
+        page: page,
+        pageSize: pageSize,
+        search: search,
+        sortBy: sortBy,
+        order: order,
+        useCache: useCache,
+      );
+    } catch (e) {
+      debugPrint('Error en StockRepository.getProductosFiltrados: $e');
       rethrow;
     }
   }

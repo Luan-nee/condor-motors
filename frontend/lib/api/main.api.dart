@@ -227,9 +227,16 @@ class ApiClient {
   Interceptor _createLogInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) {
+        // Construir URL completa incluyendo query parameters
+        String fullUrl = '${options.baseUrl}${options.path}';
+        if (options.queryParameters.isNotEmpty) {
+          fullUrl +=
+              '?${Uri(queryParameters: options.queryParameters.map((key, value) => MapEntry(key, value.toString()))).query}';
+        }
+
         logHttp(
           options.method,
-          '${options.baseUrl}${options.path}',
+          fullUrl,
         );
 
         // Añadir logging del cuerpo de la solicitud sin formateo
@@ -250,9 +257,17 @@ class ApiClient {
         return handler.next(options);
       },
       onResponse: (response, handler) {
+        // Construir URL completa incluyendo query parameters para la respuesta
+        String fullUrl =
+            '${response.requestOptions.baseUrl}${response.requestOptions.path}';
+        if (response.requestOptions.queryParameters.isNotEmpty) {
+          fullUrl +=
+              '?${Uri(queryParameters: response.requestOptions.queryParameters.map((key, value) => MapEntry(key, value.toString()))).query}';
+        }
+
         logHttp(
           response.requestOptions.method,
-          '${response.requestOptions.baseUrl}${response.requestOptions.path}',
+          fullUrl,
           response.statusCode,
         );
 

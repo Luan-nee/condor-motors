@@ -25,6 +25,7 @@ class ProductosApi {
   /// [filterType] Tipo de filtro a aplicar (opcional)
   /// [stockBajo] Filtrar productos con stock bajo (opcional)
   /// [liquidacion] Filtrar productos en liquidación (opcional)
+  /// [stock] Filtrar productos por cantidad de stock, formato: {value: número, filterType: 'eq'|'gte'|'lte'|'ne'} (opcional)
   /// [useCache] Indica si se debe usar el caché (default: true)
   /// [forceRefresh] Si es true, invalida la caché antes de obtener los datos
   Future<PaginatedResponse<Producto>> getProductos({
@@ -39,6 +40,7 @@ class ProductosApi {
     String? filterType,
     bool? stockBajo,
     bool? liquidacion,
+    Map<String, dynamic>? stock,
     bool useCache = true,
     bool forceRefresh = false,
   }) async {
@@ -62,6 +64,8 @@ class ProductosApi {
         extraParams: <String, String>{
           if (stockBajo != null) 'stockBajo': stockBajo.toString(),
           if (liquidacion != null) 'liquidacion': liquidacion.toString(),
+          if (stock != null && stock['value'] != null)
+            'stock': '${stock['value']},${stock['filterType'] ?? 'eq'}',
         },
       );
 
@@ -155,22 +159,14 @@ class ProductosApi {
     String? sortBy,
     bool useCache = true,
   }) async {
-    // Usamos el método general y filtramos manualmente
-    // porque el backend no tiene un endpoint específico para agotados
-    final PaginatedResponse<Producto> response = await getProductos(
+    return getProductos(
       sucursalId: sucursalId,
       page: page ?? 1,
-      pageSize: pageSize ??
-          50, // Tamaño grande para tener suficientes después de filtrar
+      pageSize: pageSize ?? 20,
       sortBy: sortBy ?? 'nombre',
       order: 'asc',
+      stock: {'value': 0, 'filterType': 'eq'},
       useCache: useCache,
-    );
-
-    // Usar la nueva funcionalidad de filtrado de PaginatedResponse
-    return response.where(
-      (Producto p) => p.stock <= 0,
-      pageSize: pageSize ?? 20,
     );
   }
 
@@ -188,22 +184,14 @@ class ProductosApi {
     String? sortBy,
     bool useCache = true,
   }) async {
-    // Usamos el método general y filtramos manualmente
-    // porque el backend no tiene un endpoint específico para disponibles
-    final PaginatedResponse<Producto> response = await getProductos(
+    return getProductos(
       sucursalId: sucursalId,
       page: page ?? 1,
-      pageSize: pageSize ??
-          50, // Tamaño grande para tener suficientes después de filtrar
+      pageSize: pageSize ?? 20,
       sortBy: sortBy ?? 'nombre',
       order: 'asc',
+      stock: {'value': 0, 'filterType': 'gt'}, // stock > 0
       useCache: useCache,
-    );
-
-    // Usar la nueva funcionalidad de filtrado de PaginatedResponse
-    return response.where(
-      (Producto p) => p.stock > 0,
-      pageSize: pageSize ?? 20,
     );
   }
 

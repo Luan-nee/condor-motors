@@ -480,9 +480,12 @@ class _ProductosTableState extends State<ProductosTable>
                     width: 8,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: (stockBajo || agotado)
-                          ? const Color(0xFFE31E24)
-                          : const Color(0xFF4CAF50),
+                      color: agotado
+                          ? const Color(0xFF4A4A4A) // Gris oscuro para agotados
+                          : stockBajo
+                              ? const Color(0xFFE31E24) // Rojo para stock bajo
+                              : const Color(
+                                  0xFF4CAF50), // Verde para disponibles
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -494,9 +497,7 @@ class _ProductosTableState extends State<ProductosTable>
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
-                        decoration: stockBajo
-                            ? TextDecoration.none
-                            : TextDecoration.none,
+                        decoration: TextDecoration.none,
                       ),
                     ),
                   ),
@@ -545,9 +546,14 @@ class _ProductosTableState extends State<ProductosTable>
                   Text(
                     '${producto.stock}',
                     style: TextStyle(
-                      color: stockBajo ? const Color(0xFFE31E24) : Colors.white,
-                      fontWeight:
-                          stockBajo ? FontWeight.bold : FontWeight.normal,
+                      color: agotado
+                          ? const Color(0xFF4A4A4A) // Gris oscuro para agotados
+                          : stockBajo
+                              ? const Color(0xFFE31E24) // Rojo para stock bajo
+                              : Colors.white, // Normal para disponibles
+                      fontWeight: (stockBajo || agotado)
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                   if (stockBajo) ...<Widget>[
@@ -558,6 +564,17 @@ class _ProductosTableState extends State<ProductosTable>
                       child: const Icon(
                         Icons.warning_amber_rounded,
                         color: Color(0xFFE31E24),
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                  if (agotado) ...<Widget>[
+                    const SizedBox(width: 4),
+                    Tooltip(
+                      message: 'Producto agotado',
+                      child: const Icon(
+                        FontAwesomeIcons.ban,
+                        color: Color(0xFF4A4A4A),
                         size: 16,
                       ),
                     ),

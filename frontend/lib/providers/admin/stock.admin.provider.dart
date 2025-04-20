@@ -2,7 +2,6 @@ import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
-import 'package:condorsmotors/utils/stock_utils.dart' as stock_utils;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -29,12 +28,6 @@ class StockProvider extends ChangeNotifier {
   bool _isLoadingProductos = false;
   String? _errorProductos;
 
-  // Nuevo: Productos consolidados de todas las sucursales
-  final Map<int, Map<String, int>> _stockPorSucursal =
-      <int, Map<String, int>>{}; // productoId -> {sucursalId -> stock}
-  List<Producto> _productosBajoStock =
-      <Producto>[]; // Productos con problemas en cualquier sucursal
-
   // Parámetros de paginación y filtrado
   String _searchQuery = '';
   int _currentPage = 1;
@@ -44,9 +37,6 @@ class StockProvider extends ChangeNotifier {
 
   // Filtro de estado de stock
   StockStatus? _filtroEstadoStock;
-
-  // Flag para mostrar vista consolidada de todas las sucursales
-  bool _mostrarVistaConsolidada = false;
 
   // Getters
   String get selectedSucursalId => _selectedSucursalId;
@@ -59,25 +49,16 @@ class StockProvider extends ChangeNotifier {
   bool get isLoadingProductos => _isLoadingProductos;
   String? get errorProductos => _errorProductos;
 
-  Map<int, Map<String, int>> get stockPorSucursal => _stockPorSucursal;
-  List<Producto> get productosBajoStock => _productosBajoStock;
-
   String get searchQuery => _searchQuery;
   int get currentPage => _currentPage;
   int get pageSize => _pageSize;
   String get sortBy => _sortBy;
   String get order => _order;
-
   StockStatus? get filtroEstadoStock => _filtroEstadoStock;
-  bool get mostrarVistaConsolidada => _mostrarVistaConsolidada;
 
   /// Inicializar el provider
   Future<void> inicializar() async {
-    // Establecer stock bajo como filtro predeterminado
-    _filtroEstadoStock = StockStatus.stockBajo;
-    await Future.wait([
-      cargarSucursales(),
-    ]);
+    await cargarSucursales();
   }
 
   /// Recarga todos los datos forzando actualización desde el servidor
@@ -86,20 +67,11 @@ class StockProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Forzar recarga de sucursales
       await cargarSucursales();
-
-      // Si estamos en vista consolidada, recargar todos los productos
-      if (_mostrarVistaConsolidada) {
-        await cargarProductosTodasSucursales();
-      }
-      // Si hay una sucursal seleccionada, recargar sus productos
-      else if (_selectedSucursalId.isNotEmpty) {
-        // Invalidar caché antes de recargar
+      if (_selectedSucursalId.isNotEmpty) {
         _stockRepository.invalidateCache(_selectedSucursalId);
         await cargarProductos(_selectedSucursalId);
       }
-
       notifyListeners();
     } catch (e) {
       debugPrint('Error al recargar datos de stock: $e');
@@ -116,18 +88,6 @@ class StockProvider extends ChangeNotifier {
       return StockStatus.stockBajo;
     } else {
       return StockStatus.disponible;
-    }
-  }
-
-  /// Convertir entre StockStatus del provider y StockStatus de utils
-  stock_utils.StockStatus convertToUtilsStockStatus(StockStatus status) {
-    switch (status) {
-      case StockStatus.agotado:
-        return stock_utils.StockStatus.agotado;
-      case StockStatus.stockBajo:
-        return stock_utils.StockStatus.stockBajo;
-      case StockStatus.disponible:
-        return stock_utils.StockStatus.disponible;
     }
   }
 
@@ -193,263 +153,74 @@ class StockProvider extends ChangeNotifier {
       _selectedSucursalId = sucursal.id.toString();
       _selectedSucursalNombre = sucursal.nombre;
       notifyListeners();
-
-      // Cargar productos de la sucursal seleccionada
       await cargarProductos(_selectedSucursalId);
     }
   }
 
-  /// Método para cargar productos de la sucursal seleccionada (vista individual)
+  /// Método para cargar productos de una sucursal específica
   Future<void> cargarProductos(String sucursalId) async {
     if (sucursalId.isEmpty) {
-      _paginatedProductos = null;
-      _productosFiltrados = <Producto>[];
-      notifyListeners();
       return;
     }
+
+    debugPrint('Iniciando carga de productos para sucursal: $sucursalId');
+    debugPrint('Filtro actual: $_filtroEstadoStock');
 
     _isLoadingProductos = true;
     _errorProductos = null;
     notifyListeners();
 
     try {
-      // Aplicar la búsqueda del servidor sólo si la búsqueda es mayor a 3 caracteres
-      final String? searchQuery =
-          _searchQuery.length >= 3 ? _searchQuery : null;
+      Map<String, dynamic> queryParams = {
+        'sucursalId': sucursalId,
+        'page': _currentPage,
+        'pageSize': _pageSize,
+        'sortBy': _sortBy.isNotEmpty ? _sortBy : 'nombre',
+        'order': _order,
+      };
 
-      // Si está seleccionado el filtro de stock bajo, usar el método específico
-      if (_filtroEstadoStock == StockStatus.stockBajo) {
-        final PaginatedResponse<Producto> paginatedProductos =
-            await _stockRepository.getProductosConStockBajo(
-          sucursalId: sucursalId,
-          page: _currentPage,
-          pageSize: _pageSize,
-          sortBy: _sortBy.isNotEmpty ? _sortBy : 'nombre',
-        );
-
-        _paginatedProductos = paginatedProductos;
-        _productosFiltrados = paginatedProductos.items;
-        _isLoadingProductos = false;
-        notifyListeners();
-        return;
+      // TODO: Considerar implementar cache para optimizar rendimiento
+      if (_filtroEstadoStock != null) {
+        debugPrint(
+            'Usando endpoint específico para filtro: $_filtroEstadoStock');
+        switch (_filtroEstadoStock!) {
+          case StockStatus.stockBajo:
+            queryParams['stockBajo'] = true;
+            break;
+          case StockStatus.agotado:
+            queryParams['stock'] = {'value': 0, 'filterType': 'eq'};
+            break;
+          case StockStatus.disponible:
+            queryParams['stock'] = {'value': 1, 'filterType': 'gte'};
+            break;
+        }
       }
 
-      // Si está seleccionado el filtro de agotados, usamos el método específico
-      if (_filtroEstadoStock == StockStatus.agotado) {
-        final PaginatedResponse<Producto> paginatedProductos =
-            await _stockRepository.getProductosAgotados(
-          sucursalId: sucursalId,
-          page: _currentPage,
-          pageSize: _pageSize,
-          sortBy: _sortBy.isNotEmpty ? _sortBy : 'nombre',
-        );
-
-        _paginatedProductos = paginatedProductos;
-        _productosFiltrados = paginatedProductos.items;
-        _isLoadingProductos = false;
-        notifyListeners();
-        return;
+      if (_searchQuery.length >= 3) {
+        queryParams['search'] = _searchQuery;
       }
 
-      // Si está seleccionado el filtro de disponible, usamos el método específico
-      if (_filtroEstadoStock == StockStatus.disponible) {
-        final PaginatedResponse<Producto> paginatedProductos =
-            await _stockRepository.getProductosDisponibles(
-          sucursalId: sucursalId,
-          page: _currentPage,
-          pageSize: _pageSize,
-          sortBy: _sortBy.isNotEmpty ? _sortBy : 'nombre',
-        );
-
-        _paginatedProductos = paginatedProductos;
-        _productosFiltrados = paginatedProductos.items;
-        _isLoadingProductos = false;
-        notifyListeners();
-        return;
-      }
-
-      // Para otros casos, usar el método general
-      final PaginatedResponse<Producto> paginatedProductos =
-          await _stockRepository.getProductos(
-        sucursalId: sucursalId,
-        search: searchQuery,
-        page: _currentPage,
-        pageSize: _pageSize,
-        sortBy: _sortBy.isNotEmpty ? _sortBy : null,
-        order: _order,
-        // Si filtro es disponible, enviamos stockBajo=false
-        stockBajo: _filtroEstadoStock == null,
+      _paginatedProductos = await _stockRepository.getProductos(
+        sucursalId: queryParams['sucursalId'],
+        page: queryParams['page'],
+        pageSize: queryParams['pageSize'],
+        sortBy: queryParams['sortBy'],
+        order: queryParams['order'],
+        search: queryParams['search'],
+        stock: queryParams['stock'],
+        stockBajo: queryParams['stockBajo'],
       );
 
-      // Reorganizar los productos según la prioridad de stock
-      final List<Producto> productosReorganizados =
-          stock_utils.StockUtils.reorganizarProductosPorPrioridad(
-              paginatedProductos.items);
+      debugPrint('Productos recibidos: ${_paginatedProductos?.items.length}');
+      _productosFiltrados = _paginatedProductos?.items ?? [];
 
-      _paginatedProductos = paginatedProductos;
-      // Actualizamos los productos filtrados con la nueva organización
-      _productosFiltrados = productosReorganizados;
       _isLoadingProductos = false;
       notifyListeners();
     } catch (e) {
-      _errorProductos = e.toString();
+      debugPrint('Error al cargar productos: $e');
+      _errorProductos = 'Error al cargar productos: $e';
       _isLoadingProductos = false;
       notifyListeners();
-    }
-  }
-
-  /// Método para cargar productos con problemas de stock de todas las sucursales
-  Future<void> cargarProductosTodasSucursales() async {
-    if (_sucursales.isEmpty) {
-      _productosBajoStock = <Producto>[];
-      notifyListeners();
-      return;
-    }
-
-    _isLoadingProductos = true;
-    _errorProductos = null;
-    _stockPorSucursal.clear(); // Reiniciar el mapa para evitar datos antiguos
-    notifyListeners();
-
-    try {
-      final List<Producto> todosProductos = <Producto>[];
-
-      // Cargar productos de cada sucursal utilizando el nuevo método getProductosConStockBajo
-      final List<Future> futures = <Future>[];
-
-      for (final Sucursal sucursal in _sucursales) {
-        futures.add(
-            _cargarProductosConBajoStockDeSucursal(sucursal, todosProductos));
-      }
-
-      // Esperar a que todas las peticiones terminen
-      await Future.wait(futures);
-
-      // Consolidar productos para evitar duplicados
-      final List<Producto> productosUnicos =
-          stock_utils.StockUtils.consolidarProductosUnicos(todosProductos);
-
-      // Priorizar productos con problemas más graves
-      final List<Producto> productosPrioritarios =
-          stock_utils.StockUtils.reorganizarProductosPorPrioridad(
-        productosUnicos,
-        stockPorSucursal: _stockPorSucursal,
-        sucursales: _sucursales,
-      );
-
-      _productosBajoStock = productosPrioritarios;
-      _isLoadingProductos = false;
-      notifyListeners();
-    } catch (e) {
-      _errorProductos = e.toString();
-      _isLoadingProductos = false;
-      notifyListeners();
-    }
-  }
-
-  /// Método auxiliar para cargar productos con stock bajo de una sucursal
-  Future<void> _cargarProductosConBajoStockDeSucursal(
-      Sucursal sucursal, List<Producto> todosProductos) async {
-    try {
-      // Cargar productos con stock bajo usando paginación completa
-      await _cargarTodosProductosConCondicion(
-          sucursal: sucursal,
-          todosProductos: todosProductos,
-          condicion: 'stockBajo',
-          mensaje: 'con stock bajo');
-
-      // Cargar productos agotados (pueden solaparse con los de stock bajo)
-      await _cargarTodosProductosConCondicion(
-          sucursal: sucursal,
-          todosProductos: todosProductos,
-          condicion: 'agotados',
-          mensaje: 'agotados');
-    } catch (e) {
-      debugPrint(
-          'Error al cargar productos de sucursal ${sucursal.nombre}: $e');
-    }
-  }
-
-  /// Método para cargar todos los productos de una sucursal que cumplan una condición específica
-  Future<void> _cargarTodosProductosConCondicion({
-    required Sucursal sucursal,
-    required List<Producto> todosProductos,
-    required String condicion,
-    required String mensaje,
-  }) async {
-    // Configuración inicial de paginación
-    int paginaActual = 1;
-    const int tamanioPagina = 100;
-    bool hayMasPaginas = true;
-    final List<Producto> productosObtenidos = <Producto>[];
-
-    try {
-      // Iteramos mientras haya más páginas
-      while (hayMasPaginas) {
-        PaginatedResponse<Producto> respuesta;
-
-        // Según la condición, usamos el método API correspondiente
-        if (condicion == 'stockBajo') {
-          respuesta = await _stockRepository.getProductosConStockBajo(
-            sucursalId: sucursal.id,
-            page: paginaActual,
-            pageSize: tamanioPagina,
-          );
-        } else if (condicion == 'agotados') {
-          // Para los agotados ahora usamos el método específico
-          respuesta = await _stockRepository.getProductosAgotados(
-            sucursalId: sucursal.id,
-            page: paginaActual,
-            pageSize: tamanioPagina,
-          );
-        } else {
-          // Por defecto, traemos todos los productos
-          respuesta = await _stockRepository.getProductos(
-            sucursalId: sucursal.id,
-            page: paginaActual,
-            pageSize: tamanioPagina,
-          );
-        }
-
-        // Guardamos los productos obtenidos
-        productosObtenidos.addAll(respuesta.items);
-
-        // Procesamos los productos de esta página
-        if (respuesta.items.isNotEmpty) {
-          _procesarProductosPorSucursal(respuesta.items, sucursal);
-          todosProductos.addAll(respuesta.items);
-        }
-
-        // Verificamos si hay más páginas
-        hayMasPaginas = paginaActual < respuesta.paginacion.totalPages;
-
-        // Si hay más páginas, incrementamos la página actual
-        if (hayMasPaginas) {
-          paginaActual++;
-        } else {
-          break;
-        }
-      }
-
-      debugPrint(
-          'Cargados ${productosObtenidos.length} productos $mensaje de ${sucursal.nombre}');
-    } catch (e) {
-      debugPrint(
-          'Error al cargar productos $mensaje de sucursal ${sucursal.nombre}: $e');
-    }
-  }
-
-  /// Procesar productos por sucursal y almacenar en mapa consolidado
-  void _procesarProductosPorSucursal(
-      List<Producto> productos, Sucursal sucursal) {
-    for (final Producto producto in productos) {
-      // Si es la primera vez que vemos este producto, inicializamos su mapa
-      if (!_stockPorSucursal.containsKey(producto.id)) {
-        _stockPorSucursal[producto.id] = <String, int>{};
-      }
-
-      // Guardamos el stock de este producto en esta sucursal
-      _stockPorSucursal[producto.id]![sucursal.id] = producto.stock;
     }
   }
 
@@ -466,7 +237,7 @@ class StockProvider extends ChangeNotifier {
   void cambiarTamanioPagina(int tamanio) {
     if (_pageSize != tamanio) {
       _pageSize = tamanio;
-      _currentPage = 1; // Volvemos a la primera página al cambiar el tamaño
+      _currentPage = 1;
       notifyListeners();
       cargarProductos(_selectedSucursalId);
     }
@@ -475,150 +246,72 @@ class StockProvider extends ChangeNotifier {
   /// Método para ordenar por un campo
   void ordenarPor(String campo) {
     if (_sortBy == campo) {
-      // Si ya estamos ordenando por este campo, cambiamos la dirección
       _order = _order == 'asc' ? 'desc' : 'asc';
     } else {
       _sortBy = campo;
-      _order = 'desc'; // Por defecto ordenamos descendente
+      _order = 'desc';
     }
-    _currentPage = 1; // Volvemos a la primera página al cambiar el orden
+    _currentPage = 1;
     notifyListeners();
     cargarProductos(_selectedSucursalId);
   }
 
   /// Método para filtrar por estado de stock
-  void filtrarPorEstadoStock(StockStatus? estado) {
+  Future<void> filtrarPorEstadoStock(StockStatus? estado) async {
+    debugPrint('Iniciando filtrado por estado: $estado');
+
     if (_filtroEstadoStock == estado) {
-      // Si hacemos clic en el mismo filtro, lo quitamos
+      debugPrint('Desactivando filtro actual: $_filtroEstadoStock');
       _filtroEstadoStock = null;
     } else {
+      debugPrint('Cambiando filtro de $_filtroEstadoStock a $estado');
       _filtroEstadoStock = estado;
     }
-    _currentPage = 1; // Volvemos a la primera página al cambiar el filtro
-    notifyListeners();
-    cargarProductos(_selectedSucursalId);
-  }
-
-  /// Activar/desactivar vista consolidada
-  void toggleVistaConsolidada() {
-    _mostrarVistaConsolidada = !_mostrarVistaConsolidada;
+    _currentPage = 1;
     notifyListeners();
 
-    if (_mostrarVistaConsolidada) {
-      cargarProductosTodasSucursales();
-    } else {
-      cargarSucursales();
-      if (_selectedSucursalId.isNotEmpty) {
-        cargarProductos(_selectedSucursalId);
-      }
+    if (_selectedSucursalId.isNotEmpty) {
+      debugPrint(
+          'Cargando productos con nuevo filtro para sucursal: $_selectedSucursalId');
+      await cargarProductos(_selectedSucursalId);
     }
-  }
-
-  /// Filtrar los productos en la vista consolidada por estado
-  void filtrarConsolidadoPorEstado(StockStatus estado) {
-    // Si ya tenemos todos los productos cargados, convertimos nuestro StockStatus al de StockUtils
-    final stock_utils.StockStatus estadoUtils =
-        convertToUtilsStockStatus(estado);
-    _productosBajoStock = stock_utils.StockUtils.filtrarPorEstadoStock(
-        _productosBajoStock, estadoUtils);
-    notifyListeners();
-  }
-
-  /// Reiniciar filtros en la vista consolidada
-  void reiniciarFiltrosConsolidados() {
-    cargarProductosTodasSucursales(); // Volver a cargar todos los productos
   }
 
   /// Actualizar término de búsqueda
-  void actualizarBusqueda(String value) async {
+  Future<void> actualizarBusqueda(String value) async {
     _searchQuery = value;
-    _isLoadingProductos = true;
+    _currentPage = 1;
     notifyListeners();
 
-    try {
-      if (value.isEmpty) {
-        // Si la búsqueda está vacía, cargar productos normales
-        await cargarProductos(_selectedSucursalId);
-      } else if (value.length >= 3) {
-        // Si tenemos 3 o más caracteres, realizar búsqueda
-        final PaginatedResponse<Producto> resultados =
-            await _stockRepository.buscarProductosPorNombre(
-          sucursalId: _selectedSucursalId,
-          nombre: value,
-          page: _currentPage,
-          pageSize: _pageSize,
-        );
-
-        _paginatedProductos = resultados;
-        _productosFiltrados = resultados.items;
-
-        // Si hay un filtro de estado activo, aplicarlo a los resultados
-        if (_filtroEstadoStock != null) {
-          _productosFiltrados = _productosFiltrados.where((Producto p) {
-            final StockStatus status =
-                getStockStatus(p.stock, p.stockMinimo ?? 0);
-            return status == _filtroEstadoStock;
-          }).toList();
-        }
-
-        // Reorganizar por prioridad si es necesario
-        _productosFiltrados =
-            stock_utils.StockUtils.reorganizarProductosPorPrioridad(
-          _productosFiltrados,
-          stockPorSucursal: _stockPorSucursal,
-          sucursales: _sucursales,
-        );
-      }
-    } catch (e) {
-      _errorProductos = 'Error al buscar productos: $e';
-      debugPrint(_errorProductos);
-    } finally {
-      _isLoadingProductos = false;
-      notifyListeners();
+    if (_selectedSucursalId.isNotEmpty && value.length >= 3) {
+      await cargarProductos(_selectedSucursalId);
     }
   }
 
   /// Limpiar todos los filtros aplicados
-  void limpiarFiltros() async {
+  Future<void> limpiarFiltros() async {
     _searchQuery = '';
     _filtroEstadoStock = null;
     _currentPage = 1;
-    _isLoadingProductos = true;
     notifyListeners();
 
-    try {
-      // Recargar productos sin filtros
-      if (_mostrarVistaConsolidada) {
-        await cargarProductosTodasSucursales();
-      } else if (_selectedSucursalId.isNotEmpty) {
-        // Forzar recarga desde el servidor
-        _stockRepository.invalidateCache(_selectedSucursalId);
-        await cargarProductos(_selectedSucursalId);
-      }
-    } catch (e) {
-      _errorProductos = 'Error al limpiar filtros: $e';
-      debugPrint(_errorProductos);
-    } finally {
-      _isLoadingProductos = false;
-      notifyListeners();
+    if (_selectedSucursalId.isNotEmpty) {
+      await cargarProductos(_selectedSucursalId);
     }
   }
 
-  /// Agrupa los productos por su estado de stock (agotado, stock bajo, disponible)
+  /// Agrupa los productos por su estado de stock
   Map<StockStatus, List<Producto>> agruparProductosPorEstadoStock(
       List<Producto> productos) {
-    // Inicializar mapa con listas vacías
     final Map<StockStatus, List<Producto>> agrupados = {
       StockStatus.agotado: [],
       StockStatus.stockBajo: [],
       StockStatus.disponible: [],
     };
 
-    // Clasificar cada producto según su estado
     for (final Producto producto in productos) {
-      final int stockActual = producto.stock;
-      final int stockMinimo = producto.stockMinimo ?? 0;
-      final StockStatus status = getStockStatus(stockActual, stockMinimo);
+      final StockStatus status =
+          getStockStatus(producto.stock, producto.stockMinimo ?? 0);
       agrupados[status]!.add(producto);
     }
 

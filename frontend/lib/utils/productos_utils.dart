@@ -312,4 +312,56 @@ class ProductosUtils {
     }
     return resultado;
   }
+
+  /// Obtiene la lista de tipos de filtro disponibles para stock
+  static Map<String, String> obtenerTiposFiltroStock() {
+    return <String, String>{
+      'eq': 'Igual a',
+      'gte': 'Mayor o igual a',
+      'lte': 'Menor o igual a',
+      'ne': 'Diferente a',
+    };
+  }
+
+  /// Crea un parámetro de filtro para stock con el formato requerido por la API
+  ///
+  /// [valorStock] Valor numérico para la comparación
+  /// [tipoFiltro] Tipo de filtro: 'eq', 'gte', 'lte', 'ne'
+  /// Retorna un Map con 'value' y 'filterType' o null si los parámetros son inválidos
+  static Map<String, dynamic>? crearFiltroStock(
+      int valorStock, String tipoFiltro) {
+    // Validar que el tipo de filtro sea válido
+    final Map<String, String> tiposValidos = obtenerTiposFiltroStock();
+    if (!tiposValidos.containsKey(tipoFiltro)) {
+      debugPrint('Tipo de filtro inválido: $tipoFiltro');
+      return null;
+    }
+
+    // Si el valor es negativo, no crear filtro
+    if (valorStock < 0) {
+      debugPrint('Valor de stock inválido: $valorStock');
+      return null;
+    }
+
+    return <String, dynamic>{
+      'value': valorStock,
+      'filterType': tipoFiltro,
+    };
+  }
+
+  /// Genera una descripción legible del filtro de stock aplicado
+  ///
+  /// [filtroStock] Parámetro de filtro generado con crearFiltroStock
+  static String describeFiltroStock(Map<String, dynamic>? filtroStock) {
+    if (filtroStock == null) {
+      return 'Sin filtro de stock';
+    }
+
+    final Map<String, String> tiposFiltro = obtenerTiposFiltroStock();
+    final int valor = filtroStock['value'] as int? ?? 0;
+    final String tipo = filtroStock['filterType'] as String? ?? 'eq';
+    final String descripcionTipo = tiposFiltro[tipo] ?? 'Igual a';
+
+    return 'Stock $descripcionTipo $valor';
+  }
 }

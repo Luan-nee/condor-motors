@@ -5,7 +5,6 @@ import 'dart:io' as io;
 
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
-import 'package:condorsmotors/providers/paginacion.provider.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/producto_detalle_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/productos_form.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/productos_table.dart';
@@ -36,9 +35,6 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
 
   // Estado del drawer
   final bool _drawerOpen = true;
-
-  // Provider para paginación
-  final PaginacionProvider _paginacionProvider = PaginacionProvider();
 
   @override
   void initState() {
@@ -233,11 +229,13 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   Widget build(BuildContext context) {
     return Consumer<ProductoProvider>(
       builder: (context, productoProvider, child) {
-        // Actualizar paginación desde el provider de productos
-        if (productoProvider.paginatedProductos != null) {
-          _paginacionProvider.actualizarPaginacion(
-              productoProvider.paginatedProductos!.paginacion);
-        }
+        // Actualizar la clave de la tabla cuando los productos cambian
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _productosKey.value =
+                'productos_${productoProvider.sucursalSeleccionada?.id}_page_${productoProvider.currentPage}_${DateTime.now().millisecondsSinceEpoch}';
+          }
+        });
 
         return Scaffold(
           body: Row(
@@ -291,35 +289,18 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                 ),
 
                                 // Paginador
-                                if (productoProvider.paginatedProductos !=
-                                        null &&
-                                    productoProvider.paginatedProductos!
-                                            .paginacion.totalPages >
-                                        0)
+                                if (productoProvider.paginacion.totalPages > 0)
                                   Padding(
                                     padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: <Widget>[
-                                        // Paginador con provider
-                                        ChangeNotifierProvider.value(
-                                          value: _paginacionProvider,
-                                          child: Paginador(
-                                            paginacion: productoProvider
-                                                .paginatedProductos!.paginacion,
-                                            onPageChanged:
-                                                productoProvider.cambiarPagina,
-                                            onPageSizeChanged: productoProvider
-                                                .cambiarTamanioPagina,
-                                            backgroundColor:
-                                                const Color(0xFF2D2D2D),
-                                            textColor: Colors.white,
-                                            accentColor:
-                                                const Color(0xFFE31E24),
-                                          ),
-                                        ),
-                                      ],
+                                    child: Paginador(
+                                      paginacion: productoProvider.paginacion,
+                                      onPageChanged:
+                                          productoProvider.cambiarPagina,
+                                      onPageSizeChanged:
+                                          productoProvider.cambiarTamanioPagina,
+                                      backgroundColor: const Color(0xFF2D2D2D),
+                                      textColor: Colors.white,
+                                      accentColor: const Color(0xFFE31E24),
                                     ),
                                   ),
                               ],
