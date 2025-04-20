@@ -15,7 +15,8 @@ export const QueriesProductoSchema = z.object({
   filter_value: queriesBaseSchema.filter_value,
   filter_type: queriesBaseSchema.filter_type,
   stockBajo: queriesProductoSchema.stockBajo,
-  activo: queriesProductoSchema.activo
+  activo: queriesProductoSchema.activo,
+  stock: queriesProductoSchema.stock
 })
 
 export const queriesProductoValidator = (object: unknown) =>

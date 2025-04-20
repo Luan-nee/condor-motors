@@ -20,10 +20,13 @@ import {
   desc,
   eq,
   gt,
+  gte,
   ilike,
   isNotNull,
   isNull,
   lt,
+  lte,
+  ne,
   or,
   type SQL
 } from 'drizzle-orm'
@@ -162,9 +165,28 @@ export class GetProductos {
     }
   }
 
+  private getStockFilterCondition(stock: {
+    value: number
+    filterType?: string
+  }) {
+    if (stock.filterType === 'gte') {
+      return gte(detallesProductoTable.stock, stock.value)
+    }
+
+    if (stock.filterType === 'lte') {
+      return lte(detallesProductoTable.stock, stock.value)
+    }
+
+    if (stock.filterType === 'ne') {
+      return ne(detallesProductoTable.stock, stock.value)
+    }
+
+    return eq(detallesProductoTable.stock, stock.value)
+  }
+
   // eslint-disable-next-line complexity
   private getFilterCondition(queriesProductoDto: QueriesProductoDto) {
-    const { stockBajo, activo } = queriesProductoDto
+    const { stockBajo, activo, stock } = queriesProductoDto
     const conditions: SQL[] = []
 
     if (stockBajo !== undefined) {
@@ -173,6 +195,10 @@ export class GetProductos {
       if (stockBajoBoolean !== undefined) {
         conditions.push(eq(detallesProductoTable.stockBajo, stockBajoBoolean))
       }
+    }
+
+    if (stock !== undefined) {
+      conditions.push(this.getStockFilterCondition(stock))
     }
 
     if (activo !== undefined) {

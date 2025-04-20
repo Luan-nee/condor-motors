@@ -51,5 +51,21 @@ export const productoSchema = {
 
 export const queriesProductoSchema = {
   stockBajo: z.coerce.string().optional(),
-  activo: z.coerce.string().optional()
+  activo: z.coerce.string().optional(),
+  stock: z.coerce
+    .string()
+    .transform((val) => {
+      const [num, filterType] = val.split(',')
+      const isValidValue = Validator.isOnlyNumbers(num)
+
+      if (!isValidValue) {
+        return undefined
+      }
+
+      return {
+        value: Number(num),
+        filterType
+      }
+    })
+    .optional()
 }
