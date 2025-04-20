@@ -120,6 +120,14 @@ export const parseBoolString = (str: string) => {
   return undefined
 }
 
+export const parseNullString = (str: string) => {
+  if (/null/i.test(str)) {
+    return null
+  }
+
+  return undefined
+}
+
 export const getFileNameFromPath = (filePath: string) => {
   if (filePath.trim() === '') {
     throw new Error(

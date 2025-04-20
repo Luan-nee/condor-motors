@@ -181,13 +181,20 @@ export class GetProductos {
       return ne(detallesProductoTable.stock, stock.value)
     }
 
+    if (stock.value === 0) {
+      return or(
+        eq(detallesProductoTable.stock, stock.value),
+        isNull(detallesProductoTable.stock)
+      )
+    }
+
     return eq(detallesProductoTable.stock, stock.value)
   }
 
   // eslint-disable-next-line complexity
   private getFilterCondition(queriesProductoDto: QueriesProductoDto) {
     const { stockBajo, activo, stock } = queriesProductoDto
-    const conditions: SQL[] = []
+    const conditions: Array<SQL | undefined> = []
 
     if (stockBajo !== undefined) {
       const stockBajoBoolean = parseBoolString(stockBajo)

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
 import { Validator } from '@/domain/validators/validator'
+import { parseNullString } from '@/core/lib/utils'
 
 export const productoSchema = {
   nombre: z
@@ -57,13 +58,16 @@ export const queriesProductoSchema = {
     .transform((val) => {
       const [num, filterType] = val.split(',')
       const isValidValue = Validator.isOnlyNumbers(num)
+      const nullValue = parseNullString(num)
 
-      if (!isValidValue) {
+      if (!isValidValue && nullValue !== null) {
         return undefined
       }
 
+      const value = isValidValue ? Number(num) : 0
+
       return {
-        value: Number(num),
+        value,
         filterType
       }
     })
