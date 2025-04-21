@@ -16,9 +16,8 @@ export const productoSchema = {
   descripcion: z
     .string()
     .trim()
-    .min(2)
     .max(1023)
-    .refine((val) => Validator.isValidDescription(val), {
+    .refine((val) => val === '' || Validator.isValidDescription(val), {
       message:
         'La descripción solo puede contener este set de caracteres: a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ.,¡!¿?-()[]{}$%&*\'_"@#+'
     })

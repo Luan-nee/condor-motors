@@ -23,7 +23,7 @@ export class UpdateEmpleado {
     updateEmpleadoDto: UpdateEmpleadoDto,
     numericIdDto: NumericIdDto
   ) {
-    if (updateEmpleadoDto.activo != null) {
+    if (updateEmpleadoDto.activo != null && !updateEmpleadoDto.activo) {
       const empleados = await db
         .select({
           id: empleadosTable.id,
