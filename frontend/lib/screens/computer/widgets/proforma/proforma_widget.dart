@@ -2,7 +2,7 @@ import 'dart:math' show min;
 
 import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/providers/computer/proforma.computer.provider.dart';
-import 'package:condorsmotors/screens/computer/widgets/proforma/form_proforma.dart';
+import 'package:condorsmotors/screens/computer/widgets/proforma/form_proforma_keynum.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
 import 'package:condorsmotors/utils/documento_utils.dart';
 import 'package:condorsmotors/utils/logger.dart';
