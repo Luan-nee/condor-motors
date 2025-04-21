@@ -5,6 +5,7 @@ import 'dart:io' as io;
 
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
+import 'package:condorsmotors/screens/admin/widgets/producto/producto_agregar_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/producto_detalle_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/productos_form.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/productos_table.dart';
@@ -66,7 +67,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         producto: producto,
         sucursales: productoProvider.sucursales,
         sucursalSeleccionada: productoProvider.sucursalSeleccionada,
-        onSave: (Map<String, dynamic> productoData) {
+        onSave: (Map<String, dynamic> productoData) async {
           // No llamamos a _guardarProducto aquí ya que el formulario ya lo hace internamente
           // Solo actualizamos la UI para reflejar los cambios
           setState(() {
@@ -283,6 +284,41 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                         sortOrder: productoProvider.order,
                                         isLoading:
                                             productoProvider.isLoadingProductos,
+                                        onEnable: (producto) async {
+                                          await ProductoAgregarDialog.show(
+                                            context,
+                                            producto: producto,
+                                            onSave: (Map<String, dynamic>
+                                                productoData) async {
+                                              await productoProvider
+                                                  .habilitarProducto(
+                                                      producto, productoData);
+                                              // Limpiar caché de productos para la sucursal actual
+                                              final sucursalId =
+                                                  productoProvider
+                                                      .sucursalSeleccionada?.id
+                                                      .toString();
+                                              if (sucursalId != null) {
+                                                productoProvider
+                                                    .invalidateCacheSucursal(
+                                                        sucursalId);
+                                              }
+                                              if (!mounted) return;
+                                              setState(() {
+                                                _productosKey.value =
+                                                    'productos_${productoProvider.sucursalSeleccionada?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
+                                              });
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                      'Producto habilitado exitosamente'),
+                                                  backgroundColor: Colors.green,
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        },
                                       );
                                     },
                                   ),

@@ -15,6 +15,7 @@ class ProductosTable extends StatefulWidget {
   final String? sortBy;
   final String? sortOrder;
   final bool isLoading;
+  final Function(Producto)? onEnable;
 
   const ProductosTable({
     super.key,
@@ -27,6 +28,7 @@ class ProductosTable extends StatefulWidget {
     this.sortBy,
     this.sortOrder,
     this.isLoading = false,
+    this.onEnable,
   });
 
   @override
@@ -613,6 +615,17 @@ class _ProductosTableState extends State<ProductosTable>
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
+                  if (producto.stock == 0 &&
+                      (producto.precioVenta == 0 ||
+                          producto.precioVenta == 0.0))
+                    IconButton(
+                      icon: const FaIcon(FontAwesomeIcons.boxOpen,
+                          color: Colors.green, size: 22),
+                      tooltip: 'Habilitar producto',
+                      onPressed: widget.onEnable != null
+                          ? () => widget.onEnable!(producto)
+                          : null,
+                    ),
                   IconButton(
                     icon: const Icon(
                       FontAwesomeIcons.eye,

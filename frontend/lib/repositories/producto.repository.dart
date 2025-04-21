@@ -696,4 +696,22 @@ class ProductoRepository implements BaseRepository {
       rethrow;
     }
   }
+
+  /// Añade un producto existente a una sucursal (POST)
+  Future<Producto?> addProducto({
+    required String sucursalId,
+    required int productoId,
+    required Map<String, dynamic> productoData,
+  }) async {
+    try {
+      return await _productosApi.addProducto(
+        sucursalId: sucursalId,
+        productoId: productoId,
+        productoData: productoData,
+      );
+    } catch (e) {
+      debugPrint('Error en ProductoRepository.addProducto: $e');
+      return null;
+    }
+  }
 }

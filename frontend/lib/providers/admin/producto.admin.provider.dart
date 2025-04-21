@@ -882,4 +882,45 @@ class ProductoProvider extends ChangeNotifier {
       }
     }
   }
+
+  /// Habilita un producto en una sucursal usando POST (addProducto)
+  Future<bool> habilitarProducto(
+      Producto producto, Map<String, dynamic> productoData) async {
+    if (_sucursalSeleccionada == null) {
+      _errorMessage = 'No hay sucursal seleccionada';
+      notifyListeners();
+      return false;
+    }
+    final String sucursalId = _sucursalSeleccionada!.id.toString();
+    _isLoadingProductos = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final resultado = await _productoRepository.addProducto(
+        sucursalId: sucursalId,
+        productoId: producto.id,
+        productoData: productoData,
+      );
+      if (resultado == null) {
+        _errorMessage = 'No se pudo habilitar el producto. Inténtelo de nuevo.';
+        _isLoadingProductos = false;
+        notifyListeners();
+        return false;
+      }
+      await cargarProductos();
+      _isLoadingProductos = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Error al habilitar producto: $e';
+      _isLoadingProductos = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Invalida la caché de productos para una sucursal específica
+  void invalidateCacheSucursal(String sucursalId) {
+    _productoRepository.invalidateCache(sucursalId);
+  }
 }
