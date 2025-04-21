@@ -17,6 +17,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 // Configuración global de API
 // Nota: La variable api ahora se define en index.api.dart
@@ -137,6 +138,9 @@ void main() async {
         ChangeNotifierProvider<SucursalProvider>(
           create: (_) => SucursalProvider(),
         ),
+        ChangeNotifierProvider<PedidoAdminProvider>(
+          create: (_) => PedidoAdminProvider(),
+        ),
         ChangeNotifierProvider<DashboardProvider>(
           create: (_) => DashboardProvider(),
         ),
@@ -185,6 +189,16 @@ class CondorMotorsApp extends StatelessWidget {
         // Forzar el uso de Material 3 para mejor soporte de temas
         themeMode: ThemeMode.dark,
         darkTheme: AppTheme.theme,
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('es', ''), // Español
+          Locale('en', ''), // Inglés (opcional)
+        ],
+        locale: Locale('es', ''), // Fuerza español
         onGenerateRoute: (RouteSettings settings) {
           return routes.generateRoute(
             settings,

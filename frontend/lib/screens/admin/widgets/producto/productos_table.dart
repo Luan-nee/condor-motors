@@ -47,7 +47,9 @@ class ProductosTable extends StatefulWidget {
       ..add(ObjectFlagProperty<Function(String)?>.has('onSort', onSort))
       ..add(StringProperty('sortBy', sortBy))
       ..add(StringProperty('sortOrder', sortOrder))
-      ..add(DiagnosticsProperty<bool>('isLoading', isLoading));
+      ..add(DiagnosticsProperty<bool>('isLoading', isLoading))
+      ..add(
+          ObjectFlagProperty<Function(Producto p1)?>.has('onEnable', onEnable));
   }
 }
 

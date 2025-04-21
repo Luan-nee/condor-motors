@@ -7,6 +7,8 @@ class ClienteRepository {
 
   ClienteRepository(this._api);
 
+  static final ClienteRepository instance = ClienteRepository(api.clientes);
+
   /// Busca datos de un cliente por su número de documento
   Future<Map<String, dynamic>?> buscarClientePorDoc(
       String numeroDocumento) async {
@@ -63,5 +65,10 @@ class ClienteRepository {
       debugPrint('❌ Error al obtener cliente por documento: $e');
       rethrow;
     }
+  }
+
+  /// Obtiene la lista de clientes
+  Future<List<Cliente>> getClientes({int? pageSize, String? sortBy}) async {
+    return await _api.getClientes(pageSize: pageSize, sortBy: sortBy);
   }
 }

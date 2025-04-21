@@ -133,6 +133,7 @@ class CondorMotorsApi {
   late final DocumentoApi documentos;
   late final EstadisticasApi estadisticas;
   late final FacturacionApi facturacion;
+  late final PedidosApi pedidos;
 
   /// Inicializa todas las APIs con la URL base
   CondorMotorsApi({required String baseUrl}) {
@@ -162,7 +163,7 @@ class CondorMotorsApi {
       documentos = DocumentoApi(_apiClient);
       estadisticas = EstadisticasApi(_apiClient);
       facturacion = FacturacionApi(_apiClient);
-
+      pedidos = PedidosApi(_apiClient);
       logInfo('APIs inicializadas correctamente');
     } catch (e) {
       logError('Error al inicializar APIs', e);

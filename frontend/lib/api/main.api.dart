@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:condorsmotors/utils/logger.dart';
-import 'package:dio/dio.dart';
 import 'package:condorsmotors/utils/secure_storage_utils.dart';
+import 'package:dio/dio.dart';
 
 // Constantes de error y estado
 class ApiConstants {
@@ -271,15 +271,21 @@ class ApiClient {
 
         if (response.data != null) {
           try {
-            if (response.data is Map || response.data is List) {
-              // Imprimir JSON sin formato para ahorrar espacio
-              logDebug('Response Body: ${response.data}');
+            // Si la respuesta es un Map y tiene una lista grande en 'data', resumirla
+            if (response.data is Map<String, dynamic> &&
+                response.data['data'] is List &&
+                (response.data['data'] as List).length > 10) {
+              final Map<String, dynamic> logMap =
+                  Map<String, dynamic>.from(response.data);
+              logMap['data'] = '...';
+              logDebug('Response Body (resumido): $logMap');
             } else {
+              // Imprimir JSON sin formato para ahorrar espacio
               logDebug('Response Body: ${response.data}');
             }
           } catch (e) {
             logDebug(
-                'Response Body: [No se pudo serializar - ${response.data.runtimeType}]');
+                'Response Body: [No se pudo serializar - [1m${response.data.runtimeType}]');
           }
         }
         return handler.next(response);

@@ -29,7 +29,8 @@ class InventarioResumen extends StatefulWidget {
     super.debugFillProperties(properties);
     properties
       ..add(IterableProperty<Producto>('productos', productos))
-      ..add(StringProperty('sucursalNombre', sucursalNombre));
+      ..add(StringProperty('sucursalNombre', sucursalNombre))
+      ..add(ObjectFlagProperty<VoidCallback?>.has('onRefresh', onRefresh));
   }
 }
 

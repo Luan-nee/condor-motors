@@ -1,5 +1,5 @@
-import 'package:condorsmotors/providers/admin/dashboard.admin.provider.dart';
 import 'package:condorsmotors/models/estadisticas.model.dart';
+import 'package:condorsmotors/providers/admin/dashboard.admin.provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -269,8 +269,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
+            children: const [
+              Text(
                 'Número de Ventas por Sucursal',
                 style: TextStyle(
                   color: Colors.white,
@@ -550,7 +550,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     // Si tenemos datos de estadísticas, mostrar el resumen por sucursal
     if (estadisticas != null &&
         (estadisticas.stockBajo > 0 || estadisticas.liquidacion > 0) &&
-        !estadisticas.sucursales.isEmpty) {
+        estadisticas.sucursales.isNotEmpty) {
       return _buildStockBajoSucursales(estadisticas);
     } else if (provider.productosStockBajoDetalle.isNotEmpty) {
       // Fallback: Si tenemos detalles específicos (aunque esto no debería ocurrir con la estructura actual del API)

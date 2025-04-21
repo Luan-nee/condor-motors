@@ -7,6 +7,7 @@ export 'empleados.api.dart';
 export 'estadisticas.api.dart';
 export 'facturacion.api.dart';
 export 'marcas.api.dart';
+export 'pedidos.api.dart';
 export 'productos.api.dart';
 export 'proforma.api.dart';
 export 'stocks.api.dart';

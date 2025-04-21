@@ -4,6 +4,7 @@ import 'package:condorsmotors/screens/admin/categorias_admin.dart';
 import 'package:condorsmotors/screens/admin/dashboard_admin.dart';
 import 'package:condorsmotors/screens/admin/empleados_admin.dart';
 import 'package:condorsmotors/screens/admin/marcas_admin.dart';
+import 'package:condorsmotors/screens/admin/pedido_admin.dart';
 import 'package:condorsmotors/screens/admin/productos_admin.dart';
 import 'package:condorsmotors/screens/admin/settings_admin.dart';
 import 'package:condorsmotors/screens/admin/stocks_admin.dart';
@@ -23,7 +24,7 @@ class SlidesAdminScreen extends StatefulWidget {
 
 class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
   // Índices para las secciones principales y subsecciones
-  // 0: Dashboard, 1: Ventas, 2: Inventario, 3: Colaboradores, 4: Sucursales, 5: Configuración
+  // 0: Dashboard, 1: Ventas, 2: Inventario, 3: Colaboradores, 4: Sucursales, 5: Configuración, 6: Pedidos Exclusivos
   int _selectedIndex = 0;
   int _selectedSubIndex = 0;
 
@@ -155,6 +156,16 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                     _selectedSubIndex = 1;
                   }),
                 ),
+                // Pedidos Exclusivos justo después de Inventario
+                _buildMenuItem(
+                  icon: FontAwesomeIcons.cartShopping,
+                  text: 'Pedidos Exclusivos',
+                  isSelected: _selectedIndex == 6,
+                  onTap: () => setState(() {
+                    _selectedIndex = 6;
+                    _selectedSubIndex = 0;
+                  }),
+                ),
                 _buildMenuItem(
                   icon: FontAwesomeIcons.users,
                   text: 'Colaboradores',
@@ -243,6 +254,8 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                   create: (_) => ConfiguracionesProvider(),
                   child: const SettingsAdminScreen(),
                 ),
+                // Sección de Pedidos Exclusivos
+                const PedidoAdminScreen(),
               ],
             ),
           ),

@@ -6,6 +6,7 @@ export 'categorias.admin.provider.dart';
 export 'dashboard.admin.provider.dart';
 export 'empleado.admin.provider.dart';
 export 'marcas.admin.provider.dart';
+export 'pedido.admin.provider.dart';
 export 'producto.admin.provider.dart';
 export 'stock.admin.provider.dart';
 export 'sucursal.admin.provider.dart';
