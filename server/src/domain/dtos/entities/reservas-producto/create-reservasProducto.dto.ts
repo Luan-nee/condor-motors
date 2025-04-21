@@ -2,13 +2,13 @@ import { CreateReservasProductoValidator } from '@/domain/validators/entities/re
 
 export class CreateReservasProductoDto {
   public descripcion: string
-  public detallesReserva: {
+  public detallesReserva: Array<{
     nombreProducto: string
     precioCompra: number
     precioVenta: number
     cantidad: number
     total: number
-  }
+  }>
   public montoAdelantado: number
   public fechaRecojo: string
   public clienteId: number

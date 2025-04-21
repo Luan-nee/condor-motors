@@ -25,7 +25,7 @@ export class EntitiesRoutes {
     router.use('/categorias', CategoriasRoutes.routes)
     router.use('/rolescuentas', RolesCuentasRoutes.routes)
     router.use('/clientes', ClientesRoutes.routes)
-    router.use('/reservasproductos', ReservasProductoRoutes.routes)
+    router.use('/pedidosexclusivos', ReservasProductoRoutes.routes)
     router.use('/cuentasempleados', CuentasEmpleadosRoutes.routes)
     router.use('/colores', ColoresRoutes.routes)
     router.use('/estadisticas', EstadisticaRouter.routes)

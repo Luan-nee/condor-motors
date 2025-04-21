@@ -2,13 +2,13 @@ import { updateReservasProductosValidator } from '@/domain/validators/entities/r
 
 export class UpdateReservasProductosDto {
   public descripcion?: string
-  public detallesReserva?: {
+  public detallesReserva?: Array<{
     nombreProducto: string
     precioCompra: number
     precioVenta: number
     cantidad: number
     total: number
-  }
+  }>
   public montoAdelantado?: number
   public fechaRecojo?: string
   public sucursalId?: number

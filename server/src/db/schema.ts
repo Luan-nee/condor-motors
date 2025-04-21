@@ -479,13 +479,15 @@ export const proformasVentaTable = pgTable('proformas_venta', {
 export const reservasProductosTable = pgTable('reservas_productos', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   descripcion: text('descripcion'),
-  detallesReserva: jsonb('detalles_reserva').notNull().$type<{
-    nombreProducto: string
-    precioCompra: number
-    precioVenta: number
-    cantidad: number
-    total: number
-  }>(),
+  detallesReserva: jsonb('detalles_reserva').notNull().$type<
+    Array<{
+      nombreProducto: string
+      precioCompra: number
+      precioVenta: number
+      cantidad: number
+      total: number
+    }>
+  >(),
   montoAdelantado: numeric('monto_adelantado', {
     precision: 12,
     scale: 2
