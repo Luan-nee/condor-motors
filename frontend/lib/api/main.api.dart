@@ -3,7 +3,7 @@ import 'dart:math';
 
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:condorsmotors/utils/secure_storage_utils.dart';
 
 // Constantes de error y estado
 class ApiConstants {
@@ -139,13 +139,11 @@ class TokenManager {
   TokenManager(this._dio);
 
   Future<String?> getAccessToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(TokenConstants.accessTokenKey);
+    return await SecureStorageUtils.read(TokenConstants.accessTokenKey);
   }
 
   Future<void> setAccessToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(TokenConstants.accessTokenKey, token);
+    await SecureStorageUtils.write(TokenConstants.accessTokenKey, token);
   }
 
   Future<bool> refreshToken() async {
@@ -156,8 +154,8 @@ class TokenManager {
 
     try {
       Logger.info('Renovando token de acceso...');
-      final prefs = await SharedPreferences.getInstance();
-      final refreshToken = prefs.getString(TokenConstants.refreshTokenKey);
+      final refreshToken =
+          await SecureStorageUtils.read(TokenConstants.refreshTokenKey);
 
       if (refreshToken == null) {
         Logger.error('No hay refresh token disponible');
@@ -379,17 +377,15 @@ class ApiClient {
       final String? authHeader = response.headers.value('authorization');
       if (authHeader != null && authHeader.startsWith('Bearer ')) {
         final String token = authHeader.substring(7);
-        final SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString(TokenConstants.accessTokenKey, token);
+        await SecureStorageUtils.write(TokenConstants.accessTokenKey, token);
         logDebug(
-            'Token actualizado desde headers: ${token.substring(0, min(10, token.length))}...');
+            'Token actualizado desde headers: [1m${token.substring(0, min(10, token.length))}...');
       }
 
       // Procesar refresh token si existe en las cookies
       final String? cookie = response.headers.value('set-cookie');
       if (cookie != null && cookie.isNotEmpty) {
-        final SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString(TokenConstants.refreshTokenKey, cookie);
+        await SecureStorageUtils.write(TokenConstants.refreshTokenKey, cookie);
         logDebug('Refresh token actualizado desde cookies');
       }
 

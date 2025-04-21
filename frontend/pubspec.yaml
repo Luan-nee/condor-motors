@@ -103,7 +103,6 @@ flutter:
 
   assets:
     - assets/images/condor-motors-logo.webp
-    - assets/json/inventario_admin/stockProducts.json
     - assets/fonts/source_sans_3/
     # ... otros assets ...
 
