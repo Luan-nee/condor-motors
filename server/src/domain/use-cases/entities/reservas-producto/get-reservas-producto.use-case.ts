@@ -19,8 +19,7 @@ export class GetReservasProductos {
     clienteId: reservasProductosTable.clienteId,
     sucursalId: reservasProductosTable.sucursalId,
     nombre: sucursalesTable.nombre,
-    fechaCreacion: reservasProductosTable.fechaCreacion,
-    fechaActualizacion: reservasProductosTable.fechaActualizacion
+    fechaCreacion: reservasProductosTable.fechaCreacion
   }
 
   private readonly validSortBy = {
