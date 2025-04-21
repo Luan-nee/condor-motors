@@ -620,7 +620,7 @@ class _ProductosTableState extends State<ProductosTable>
                           producto.precioVenta == 0.0))
                     IconButton(
                       icon: const FaIcon(FontAwesomeIcons.boxOpen,
-                          color: Colors.green, size: 22),
+                          color: Color.fromARGB(255, 219, 184, 70), size: 22),
                       tooltip: 'Habilitar producto',
                       onPressed: widget.onEnable != null
                           ? () => widget.onEnable!(producto)
