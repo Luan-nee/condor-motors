@@ -961,35 +961,13 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       empleadoData.removeWhere((String key, Object? value) =>
           value == null || (value is String && value.isEmpty));
 
-      // Guardar empleado
+      // Solo delega la acción, no navega ni recarga aquí
       await widget.onSave(empleadoData);
-
-      // Recargar datos usando el provider
-      if (mounted) {
-        final empleadoProvider =
-            Provider.of<EmpleadoProvider>(context, listen: false);
-        await empleadoProvider.recargarDatos();
-
-        // Mostrar mensaje de éxito
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                widget.empleado == null
-                    ? 'Colaborador creado correctamente'
-                    : 'Colaborador actualizado correctamente',
-              ),
-              backgroundColor: Colors.green,
-            ),
-          );
-          Navigator.pop(context);
-        }
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('Error: [31m"+e.toString()+"\u001b[0m'),
             backgroundColor: Colors.red,
           ),
         );
