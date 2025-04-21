@@ -10,7 +10,6 @@ import 'package:condorsmotors/screens/admin/stocks_admin.dart';
 import 'package:condorsmotors/screens/admin/sucursal_admin.dart';
 import 'package:condorsmotors/screens/admin/transferencias_admin.dart';
 import 'package:condorsmotors/screens/admin/ventas_admin.dart';
-import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
@@ -378,37 +377,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
 
   // Método para manejar el cierre de sesión
   Future<void> _handleLogout(BuildContext context) async {
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await authProvider.logout();
-
-      if (!context.mounted) {
-        return;
-      }
-
-      // Navegar al login y limpiar el stack de navegación
-      await Navigator.of(context).pushNamedAndRemoveUntil(
-        role_utils.login,
-        (Route<dynamic> route) => false,
-      );
-    } catch (e) {
-      if (!context.mounted) {
-        return;
-      }
-
-      // Mostrar error pero igual intentar navegar al login
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Hubo un error, pero la sesión ha sido cerrada'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-
-      // Forzar navegación al login independientemente del error
-      await Navigator.of(context).pushNamedAndRemoveUntil(
-        role_utils.login,
-        (Route<dynamic> route) => false,
-      );
-    }
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.logoutAndRedirectToLogin(context);
   }
 }

@@ -1,6 +1,7 @@
 import 'package:condorsmotors/models/auth.model.dart';
 import 'package:condorsmotors/repositories/auth.repository.dart';
-import 'package:flutter/foundation.dart';
+import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -94,6 +95,35 @@ class AuthProvider extends ChangeNotifier {
       // Asegurar que el estado se resetee incluso si hay errores
       _state = AuthState.initial();
       notifyListeners();
+    }
+  }
+
+  /// Centraliza el proceso de logout y navegación al login
+  Future<void> logoutAndRedirectToLogin(BuildContext context,
+      {String? errorMessage}) async {
+    try {
+      await logout();
+      if (!context.mounted) {
+        return;
+      }
+      await Navigator.of(context).pushNamedAndRemoveUntil(
+        role_utils.login,
+        (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage ??
+                'Hubo un error, pero la sesión ha sido cerrada'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        await Navigator.of(context).pushNamedAndRemoveUntil(
+          role_utils.login,
+          (Route<dynamic> route) => false,
+        );
+      }
     }
   }
 

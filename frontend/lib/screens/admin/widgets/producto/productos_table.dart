@@ -620,15 +620,15 @@ class _ProductosTableState extends State<ProductosTable>
                           producto.precioVenta == 0.0))
                     IconButton(
                       icon: const FaIcon(FontAwesomeIcons.boxOpen,
-                          color: Color.fromARGB(255, 219, 184, 70), size: 22),
+                          color: Color.fromARGB(255, 235, 151, 41), size: 22),
                       tooltip: 'Habilitar producto',
                       onPressed: widget.onEnable != null
                           ? () => widget.onEnable!(producto)
                           : null,
                     ),
                   IconButton(
-                    icon: const Icon(
-                      FontAwesomeIcons.eye,
+                    icon: const FaIcon(
+                      FontAwesomeIcons.magnifyingGlass,
                       color: Colors.blue,
                       size: 20,
                     ),
@@ -643,15 +643,6 @@ class _ProductosTableState extends State<ProductosTable>
                     ),
                     tooltip: 'Editar producto',
                     onPressed: () => widget.onEdit(producto),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.delete,
-                      color: Color(0xFFE31E24),
-                      size: 20,
-                    ),
-                    tooltip: 'Eliminar producto',
-                    onPressed: () => widget.onDelete(producto),
                   ),
                 ],
               ),

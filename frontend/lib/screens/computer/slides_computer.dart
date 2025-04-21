@@ -6,7 +6,6 @@ import 'package:condorsmotors/screens/computer/dashboard_computer.dart';
 import 'package:condorsmotors/screens/computer/proforma_computer.dart';
 import 'package:condorsmotors/screens/computer/settings_computer.dart';
 import 'package:condorsmotors/screens/computer/ventas_computer.dart';
-import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
@@ -459,48 +458,21 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
 
   // Método para manejar el cierre de sesión
   Future<void> _handleLogout(BuildContext context) async {
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final proformaProvider =
-          Provider.of<ProformaComputerProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final proformaProvider =
+        Provider.of<ProformaComputerProvider>(context, listen: false);
 
-      // Detener actualizaciones automáticas de proformas
-      proformaProvider.pausarActualizacionesEnTiempoReal();
+    // Detener actualizaciones automáticas de proformas
+    proformaProvider.pausarActualizacionesEnTiempoReal();
 
-      // Limpiar el estado actual
-      if (mounted) {
-        setState(() {
-          _selectedIndex = 0;
-          _menuItems.clear();
-        });
-      }
-
-      await authProvider.logout();
-
-      if (!context.mounted) {
-        return;
-      }
-
-      await Navigator.of(context).pushNamedAndRemoveUntil(
-        role_utils.login,
-        (Route<dynamic> route) => false,
-      );
-    } catch (e) {
-      if (!context.mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Hubo un error, pero la sesión ha sido cerrada'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-
-      await Navigator.of(context).pushNamedAndRemoveUntil(
-        role_utils.login,
-        (Route<dynamic> route) => false,
-      );
+    // Limpiar el estado actual
+    if (mounted) {
+      setState(() {
+        _selectedIndex = 0;
+        _menuItems.clear();
+      });
     }
+
+    await authProvider.logoutAndRedirectToLogin(context);
   }
 }

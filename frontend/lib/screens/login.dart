@@ -5,6 +5,7 @@ import 'package:condorsmotors/models/auth.model.dart';
 import 'package:condorsmotors/providers/login.provider.dart';
 import 'package:condorsmotors/utils/role_utils.dart'
     as role_utils; // Importar utilidad de roles con alias
+import 'package:condorsmotors/utils/secure_storage_utils.dart';
 import 'package:condorsmotors/widgets/background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Importar para KeyboardListener
@@ -139,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen>
     });
 
     try {
-      // Obtenemos las SharedPreferences
+      // Obtenemos las SharedPreferences para el flag
       final SharedPreferences prefs = await SharedPreferences.getInstance();
 
       // Verificamos si "Permanecer conectado" está activado
@@ -156,9 +157,9 @@ class _LoginScreenState extends State<LoginScreen>
         return;
       }
 
-      // Obtenemos las credenciales guardadas
-      final String? username = prefs.getString('username_auto');
-      final String? password = prefs.getString('password_auto');
+      // Obtenemos las credenciales guardadas de SecureStorage
+      final String? username = await SecureStorageUtils.read('username_auto');
+      final String? password = await SecureStorageUtils.read('password_auto');
 
       if (username == null ||
           password == null ||
@@ -573,8 +574,13 @@ class _LoginScreenState extends State<LoginScreen>
         if (_stayLoggedIn) {
           final SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setBool('stay_logged_in', true);
-          await prefs.setString('username_auto', _usernameController.text);
-          await prefs.setString('password_auto', _passwordController.text);
+          await SecureStorageUtils.write(
+              'username_auto', _usernameController.text);
+          await SecureStorageUtils.write(
+              'password_auto', _passwordController.text);
+        } else {
+          await SecureStorageUtils.delete('username_auto');
+          await SecureStorageUtils.delete('password_auto');
         }
 
         // Extraer el código del rol del formato correcto

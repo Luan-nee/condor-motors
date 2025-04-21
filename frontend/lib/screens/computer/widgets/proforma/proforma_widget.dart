@@ -1076,14 +1076,14 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
       child: Container(
         padding: const EdgeInsets.all(24),
         constraints: BoxConstraints(
-          maxWidth: isLargeScreen ? 1100 : 900,
-          maxHeight: isLargeScreen ? 700 : 600,
+          maxWidth: isLargeScreen ? 1400 : 1100,
+          maxHeight: isLargeScreen ? 900 : 700,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Detalles de la proforma (lado izquierdo)
-            Expanded(
+            Flexible(
               flex: 5,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1120,7 +1120,8 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                   const SizedBox(height: 16),
 
                   // Resumen de la proforma
-                  Expanded(
+                  SizedBox(
+                    height: isLargeScreen ? 700 : 500,
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -1158,7 +1159,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                           const SizedBox(height: 8),
 
                           // Lista de productos (con scroll)
-                          Expanded(
+                          Flexible(
                             child: ListView.builder(
                                 itemCount: widget.proforma.detalles.length,
                                 itemBuilder: (context, index) {
@@ -1382,19 +1383,17 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                 ],
               ),
             ),
-
             // Separador vertical
             const SizedBox(width: 20),
             Container(width: 1, height: double.infinity, color: Colors.white24),
             const SizedBox(width: 20),
 
             // Teclado numérico para cálculo de vuelto (lado derecho)
-            Expanded(
+            Flexible(
               flex: 4,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Mensaje de validación del tipo de documento
                   if (_documentoValidado)
                     Container(
                       margin: const EdgeInsets.only(bottom: 8),
@@ -1426,92 +1425,129 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                         ],
                       ),
                     ),
-
                   Expanded(
-                    child: NumericKeypad(
-                      onKeyPressed: (value) {
-                        setState(() {
-                          _paymentAmount = value;
-                        });
-                      },
-                      onClear: () {
-                        setState(() {
-                          _paymentAmount = '';
-                        });
-                      },
-                      onSubmit: () {
-                        // Método vacío, la acción se maneja en onCharge
-                      },
-                      currentAmount: widget.proforma.total.toString(),
-                      paymentAmount: _paymentAmount,
-                      customerName: _customerName,
-                      documentType:
-                          _tipoDocumento == 'BOLETA' ? 'Boleta' : 'Factura',
-                      onCustomerNameChanged: (String value) {
-                        setState(() {
-                          _customerName = value;
-                        });
-                      },
-                      onDocumentTypeChanged: (String value) {
-                        // Si el tipo seleccionado no es válido para este cliente, no permitirlo
-                        final String nuevoTipo =
-                            value == 'Boleta' ? 'BOLETA' : 'FACTURA';
-
-                        if (nuevoTipo == 'BOLETA' && !_puedeEmitirBoleta) {
-                          // No permitir cambiar a boleta si el cliente no puede recibirla
-                          return;
-                        }
-
-                        if (nuevoTipo == 'FACTURA' && !_puedeEmitirFactura) {
-                          // No permitir cambiar a factura si el cliente no puede recibirla
-                          return;
-                        }
-
-                        setState(() {
-                          _tipoDocumento = nuevoTipo;
-                        });
-                      },
-                      isProcessing: _isProcessing,
-                      minAmount: widget.proforma.total,
-                      puedeEmitirBoleta: _puedeEmitirBoleta,
-                      puedeEmitirFactura: _puedeEmitirFactura,
-                      onCharge: (montoRecibido) {
-                        // Validar que el tipo de documento sea correcto para este cliente
-                        if (_documentoValidado &&
-                            !DocumentoUtils.esComprobanteValidoParaCliente(
-                                _numeroDocumentoCliente, _tipoDocumento)) {
-                          // No permitir cobrar con una combinación inválida
-                          // Esto no debería ocurrir debido a las restricciones en la UI
-                          return;
-                        }
-
-                        // Crear los datos de venta y llamar a onConfirm
-                        final Map<String, dynamic> ventaData = {
-                          'tipoDocumento': _tipoDocumento,
-                          'productos': widget.proforma.detalles
-                              .map((detalle) => {
-                                    'productoId': detalle.productoId,
-                                    'cantidad': detalle.cantidad,
-                                    'precio': detalle.precioUnitario,
-                                    'subtotal': detalle.subtotal,
-                                  })
-                              .toList(),
-                          'cliente': widget.proforma.cliente ??
-                              {'nombre': _customerName},
-                          'metodoPago': 'EFECTIVO', // Por defecto
-                          'total': widget.proforma.total,
-                          'montoRecibido': montoRecibido,
-                          'vuelto': montoRecibido - widget.proforma.total,
-                        };
-
-                        // Iniciar procesamiento
-                        setState(() {
-                          _isProcessing = true;
-                        });
-
-                        // Invocar callback con los datos de venta
-                        widget.onConfirm(ventaData);
-                      },
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: NumericKeypad(
+                            onKeyPressed: (value) {
+                              setState(() {
+                                _paymentAmount = value;
+                              });
+                            },
+                            onClear: () {
+                              setState(() {
+                                _paymentAmount = '';
+                              });
+                            },
+                            onSubmit: () {},
+                            currentAmount: widget.proforma.total.toString(),
+                            paymentAmount: _paymentAmount,
+                            customerName: _customerName,
+                            documentType: _tipoDocumento == 'BOLETA'
+                                ? 'Boleta'
+                                : 'Factura',
+                            onCustomerNameChanged: (String value) {
+                              setState(() {
+                                _customerName = value;
+                              });
+                            },
+                            onDocumentTypeChanged: (String value) {
+                              final String nuevoTipo =
+                                  value == 'Boleta' ? 'BOLETA' : 'FACTURA';
+                              if (nuevoTipo == 'BOLETA' &&
+                                  !_puedeEmitirBoleta) {
+                                return;
+                              }
+                              if (nuevoTipo == 'FACTURA' &&
+                                  !_puedeEmitirFactura) {
+                                return;
+                              }
+                              setState(() {
+                                _tipoDocumento = nuevoTipo;
+                              });
+                            },
+                            isProcessing: _isProcessing,
+                            minAmount: widget.proforma.total,
+                            puedeEmitirBoleta: _puedeEmitirBoleta,
+                            puedeEmitirFactura: _puedeEmitirFactura,
+                            onCharge: (_) {},
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 64,
+                          child: ElevatedButton.icon(
+                            icon: _isProcessing
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                    ),
+                                  )
+                                : const Icon(Icons.payment, size: 28),
+                            label: Text(
+                              _isProcessing ? 'Procesando...' : 'Cobrar',
+                              style: const TextStyle(
+                                  fontSize: 22, fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              textStyle:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            onPressed: (_paymentAmount.isNotEmpty &&
+                                    (double.tryParse(_paymentAmount) ?? 0) >=
+                                        widget.proforma.total &&
+                                    !_isProcessing)
+                                ? () {
+                                    if (_documentoValidado &&
+                                        !DocumentoUtils
+                                            .esComprobanteValidoParaCliente(
+                                                _numeroDocumentoCliente,
+                                                _tipoDocumento)) {
+                                      return;
+                                    }
+                                    final double montoRecibido =
+                                        double.tryParse(_paymentAmount) ?? 0;
+                                    final Map<String, dynamic> ventaData = {
+                                      'tipoDocumento': _tipoDocumento,
+                                      'productos': widget.proforma.detalles
+                                          .map((detalle) => {
+                                                'productoId':
+                                                    detalle.productoId,
+                                                'cantidad': detalle.cantidad,
+                                                'precio':
+                                                    detalle.precioUnitario,
+                                                'subtotal': detalle.subtotal,
+                                              })
+                                          .toList(),
+                                      'cliente': widget.proforma.cliente ??
+                                          {'nombre': _customerName},
+                                      'metodoPago': 'EFECTIVO',
+                                      'total': widget.proforma.total,
+                                      'montoRecibido': montoRecibido,
+                                      'vuelto':
+                                          montoRecibido - widget.proforma.total,
+                                    };
+                                    setState(() {
+                                      _isProcessing = true;
+                                    });
+                                    widget.onConfirm(ventaData);
+                                  }
+                                : null,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

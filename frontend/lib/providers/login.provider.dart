@@ -2,6 +2,7 @@ import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/models/auth.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
+import 'package:condorsmotors/utils/secure_storage_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -87,11 +88,11 @@ class LoginProvider extends ChangeNotifier {
       await prefs.setBool('stay_logged_in', _stayLoggedIn);
 
       if (_stayLoggedIn) {
-        await prefs.setString('username_auto', username);
-        await prefs.setString('password_auto', password);
+        await SecureStorageUtils.write('username_auto', username);
+        await SecureStorageUtils.write('password_auto', password);
       } else {
-        await prefs.remove('username_auto');
-        await prefs.remove('password_auto');
+        await SecureStorageUtils.delete('username_auto');
+        await SecureStorageUtils.delete('password_auto');
       }
     } catch (e) {
       debugPrint('Error al guardar credenciales: $e');
@@ -104,9 +105,8 @@ class LoginProvider extends ChangeNotifier {
       _status = LoginStatus.authenticating;
       notifyListeners();
 
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? username = prefs.getString('username_auto');
-      final String? password = prefs.getString('password_auto');
+      final String? username = await SecureStorageUtils.read('username_auto');
+      final String? password = await SecureStorageUtils.read('password_auto');
 
       if (username == null || password == null) {
         _status = LoginStatus.initial;

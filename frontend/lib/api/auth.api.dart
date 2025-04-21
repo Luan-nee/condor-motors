@@ -6,6 +6,7 @@ import 'package:condorsmotors/utils/logger.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:condorsmotors/utils/secure_storage_utils.dart';
 
 /// Servicio para gestionar tokens de autenticación
 ///
@@ -232,14 +233,14 @@ class TokenService {
     }
   }
 
-  /// Guarda los tokens en SharedPreferences
+  /// Guarda los tokens en almacenamiento seguro
   Future<void> saveTokens({
     required String accessToken,
     String? refreshToken,
     int expiryInSeconds = 3600, // 1 hora por defecto
   }) async {
     try {
-      logInfo('TokenService: Guardando tokens en SharedPreferences');
+      logInfo('TokenService: Guardando tokens en SecureStorage');
 
       // Actualizar variables en memoria primero
       _accessToken = accessToken;
@@ -250,16 +251,15 @@ class TokenService {
       // Calcular tiempo de expiración
       _expiryTime = DateTime.now().add(Duration(seconds: expiryInSeconds));
 
-      // Guardar en SharedPreferences
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-      await prefs.setString(_accessTokenKey, accessToken);
+      // Guardar en SecureStorage
+      await SecureStorageUtils.write(_accessTokenKey, accessToken);
       if (refreshToken != null) {
-        await prefs.setString(_refreshTokenKey, refreshToken);
+        await SecureStorageUtils.write(_refreshTokenKey, refreshToken);
       }
-      await prefs.setString(_expiryTimeKey, _expiryTime!.toIso8601String());
+      await SecureStorageUtils.write(
+          _expiryTimeKey, _expiryTime!.toIso8601String());
 
-      logInfo('TokenService: Tokens guardados correctamente');
+      logInfo('TokenService: Tokens guardados correctamente en SecureStorage');
     } catch (e) {
       logError('TokenService: ERROR al guardar tokens', e);
     }
@@ -268,21 +268,20 @@ class TokenService {
   /// Guarda las credenciales del usuario para futuros login automáticos
   Future<void> saveCredentials(String username, String password) async {
     try {
-      logInfo('TokenService: Guardando credenciales para login automático');
-
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_lastUsernameKey, username);
-      await prefs.setString(_lastPasswordKey, password);
-
-      logInfo('TokenService: Credenciales guardadas correctamente');
+      logInfo(
+          'TokenService: Guardando credenciales para login automático en SecureStorage');
+      await SecureStorageUtils.write(_lastUsernameKey, username);
+      await SecureStorageUtils.write(_lastPasswordKey, password);
+      logInfo(
+          'TokenService: Credenciales guardadas correctamente en SecureStorage');
     } catch (e) {
       logError('TokenService: ERROR al guardar credenciales', e);
     }
   }
 
-  /// Elimina los tokens del almacenamiento
+  /// Elimina los tokens del almacenamiento seguro
   Future<void> clearTokens() async {
-    logInfo('TokenService: Delegando limpieza de tokens al repositorio');
+    logInfo('TokenService: Limpiando tokens de SecureStorage');
     try {
       // Limpiar variables en memoria
       _accessToken = null;
@@ -290,16 +289,15 @@ class TokenService {
       _expiryTime = null;
 
       // Limpiar solo los tokens específicos que gestiona esta clase
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
       await Future.wait([
-        prefs.remove(_accessTokenKey),
-        prefs.remove(_refreshTokenKey),
-        prefs.remove(_expiryTimeKey),
-        prefs.remove(_lastUsernameKey),
-        prefs.remove(_lastPasswordKey),
+        SecureStorageUtils.delete(_accessTokenKey),
+        SecureStorageUtils.delete(_refreshTokenKey),
+        SecureStorageUtils.delete(_expiryTimeKey),
+        SecureStorageUtils.delete(_lastUsernameKey),
+        SecureStorageUtils.delete(_lastPasswordKey),
       ]);
 
-      logInfo('TokenService: Tokens limpiados correctamente');
+      logInfo('TokenService: Tokens limpiados correctamente de SecureStorage');
     } catch (e) {
       logError('TokenService: ERROR al limpiar tokens', e);
       rethrow;
@@ -857,8 +855,8 @@ class AuthApi {
   /// Obtiene los datos del usuario almacenados localmente
   Future<Map<String, dynamic>?> getUserData() async {
     try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? userData = prefs.getString(_getKey('userData'));
+      final String? userData =
+          await SecureStorageUtils.read(_getKey('userData'));
       if (userData == null) {
         return null;
       }
@@ -872,9 +870,9 @@ class AuthApi {
   /// Guarda los datos del usuario localmente
   Future<void> saveUserData(Map<String, dynamic> userData) async {
     try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_getKey('userData'), json.encode(userData));
-      logInfo('Datos del usuario guardados correctamente');
+      await SecureStorageUtils.write(
+          _getKey('userData'), json.encode(userData));
+      logInfo('Datos del usuario guardados correctamente en SecureStorage');
     } catch (e) {
       logError('Error al guardar datos del usuario', e);
       rethrow;
@@ -885,27 +883,26 @@ class AuthApi {
   Future<void> clearTokens() async {
     logInfo('AuthApi: Limpiando tokens y datos específicos...');
     try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-
       // Limpiar solo las claves específicas que gestiona esta clase
       await Future.wait([
         // Tokens de autenticación
-        prefs.remove(_getKey('token')),
-        prefs.remove(_getKey('refresh')),
+        SecureStorageUtils.delete(_getKey('token')),
+        SecureStorageUtils.delete(_getKey('refresh')),
         // Datos de usuario
-        prefs.remove(_getKey('userData')),
-        prefs.remove(_getKey('sucursal')),
-        prefs.remove(_getKey('sucursalId')),
+        SecureStorageUtils.delete(_getKey('userData')),
+        SecureStorageUtils.delete(_getKey('sucursal')),
+        SecureStorageUtils.delete(_getKey('sucursalId')),
         // Datos de sesión
-        prefs.remove(_getKey('remember')),
-        prefs.remove(_getKey('username')),
-        prefs.remove(_getKey('password')),
-        prefs.remove(_getKey('usernameAuto')),
-        prefs.remove(_getKey('passwordAuto')),
-        prefs.setBool(_getKey('stayLogged'), false),
+        SecureStorageUtils.delete(_getKey('remember')),
+        SecureStorageUtils.delete(_getKey('username')),
+        SecureStorageUtils.delete(_getKey('password')),
+        SecureStorageUtils.delete(_getKey('usernameAuto')),
+        SecureStorageUtils.delete(_getKey('passwordAuto')),
+        // El flag stay_logged_in puede quedarse en SharedPreferences
       ]);
 
-      logInfo('AuthApi: Tokens y datos específicos limpiados correctamente');
+      logInfo(
+          'AuthApi: Tokens y datos específicos limpiados correctamente de SecureStorage');
     } catch (e) {
       logError('AuthApi: Error al limpiar tokens y datos', e);
       rethrow;
@@ -1075,8 +1072,8 @@ class AuthApi {
       // Guardar datos del usuario
       final Map<String, dynamic> userData =
           response['data'] as Map<String, dynamic>;
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_getKey('userData'), json.encode(userData));
+      await SecureStorageUtils.write(
+          _getKey('userData'), json.encode(userData));
 
       // Crear instancia de AuthUser con los datos recibidos
       final AuthUser usuarioAutenticado = AuthUser.fromJson(userData);

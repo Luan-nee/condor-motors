@@ -244,78 +244,78 @@ class _NumericKeypadState extends State<NumericKeypad> {
     );
   }
 
-  Widget _buildAmountCard(
-      {required String label,
-      required String value,
-      Color? color,
-      IconData? icon}) {
-    return Expanded(
-      child: Card(
-        color: color?.withOpacity(0.12) ?? const Color(0xFF232323),
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, color: color ?? Colors.white54, size: 18),
-                const SizedBox(height: 2),
-              ],
-              Text(label,
-                  style:
-                      TextStyle(color: color ?? Colors.white54, fontSize: 12)),
+  Widget _buildAmountCard({
+    required String label,
+    required String value,
+    Color? color,
+    IconData? icon,
+  }) {
+    return Card(
+      color: color?.withOpacity(0.13) ?? const Color(0xFF232323),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: color ?? Colors.white54, size: 22),
               const SizedBox(height: 2),
-              Text(value,
-                  style: TextStyle(
-                      color: color ?? Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20)),
             ],
-          ),
+            Text(label,
+                style: TextStyle(
+                    color: color ?? Colors.white54,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(height: 2),
+            Text(value,
+                style: TextStyle(
+                    color: color ?? Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20)),
+          ],
         ),
       ),
     );
   }
 
+  String _formatearMoneda(double monto) {
+    // Siempre anteponer 'S/' al número
+    return 'S/ ${VentasUtils.formatearMonto(monto)}';
+  }
+
   Widget _buildSummaryRow() {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildAmountCard(
-          label: 'Total',
-          value: VentasUtils.formatearMontoTexto(
-              double.tryParse(widget.currentAmount) ?? 0),
-          color: Colors.blue,
-          icon: Icons.attach_money,
-        ),
-        const SizedBox(width: 8),
         Expanded(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeInOut,
-            decoration: BoxDecoration(
-              color: _isClearingAll
-                  ? Colors.red.withOpacity(0.18)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: _buildAmountCard(
-              label: 'Recibido',
-              value: VentasUtils.formatearMontoTexto(double.tryParse(
-                      _enteredAmount.isEmpty ? '0' : _enteredAmount) ??
-                  0),
-              color: isSufficient ? Colors.green : Colors.white70,
-              icon: Icons.payments,
-            ),
+          child: _buildAmountCard(
+            label: 'Total',
+            value: _formatearMoneda(double.tryParse(widget.currentAmount) ?? 0),
+            color: Colors.blue,
+            icon: Icons.attach_money,
           ),
         ),
-        const SizedBox(width: 8),
-        _buildAmountCard(
-          label: 'Cambio',
-          value: isSufficient ? VentasUtils.formatearMonto(change) : '--',
-          color: isSufficient ? Colors.green : Colors.white38,
-          icon: Icons.change_circle,
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildAmountCard(
+            label: 'Recibido',
+            value: _formatearMoneda(double.tryParse(
+                    _enteredAmount.isEmpty ? '0' : _enteredAmount) ??
+                0),
+            color: Colors.orange,
+            icon: Icons.payments,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildAmountCard(
+            label: 'Vuelto',
+            value: isSufficient ? _formatearMoneda(change) : '--',
+            color: isSufficient ? Colors.green : Colors.white38,
+            icon: Icons.change_circle,
+          ),
         ),
       ],
     );
@@ -327,48 +327,45 @@ class _NumericKeypadState extends State<NumericKeypad> {
       bool filled = false,
       bool enabled = true,
       IconData? icon}) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          decoration: BoxDecoration(
-            color: filled
-                ? (enabled
-                    ? (color ?? Colors.blue).withOpacity(0.15)
-                    : Colors.grey.withOpacity(0.08))
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: enabled
-                  ? (color ?? Colors.white24)
-                  : Colors.grey.withOpacity(0.2),
-              width: 1.2,
-            ),
+    return Padding(
+      padding: const EdgeInsets.all(4.0),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        decoration: BoxDecoration(
+          color: filled
+              ? (enabled
+                  ? (color ?? Colors.blue).withOpacity(0.15)
+                  : Colors.grey.withOpacity(0.08))
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: enabled
+                ? (color ?? Colors.white24)
+                : Colors.grey.withOpacity(0.2),
+            width: 1.2,
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: enabled ? onTap : null,
-              child: SizedBox(
-                height: 56,
-                child: Center(
-                  child: icon != null
-                      ? Icon(icon,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: enabled ? onTap : null,
+            child: SizedBox(
+              height: 56,
+              child: Center(
+                child: icon != null
+                    ? Icon(icon,
+                        color: enabled ? (color ?? Colors.white) : Colors.grey,
+                        size: 26)
+                    : Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 24,
                           color:
                               enabled ? (color ?? Colors.white) : Colors.grey,
-                          size: 26)
-                      : Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 24,
-                            color:
-                                enabled ? (color ?? Colors.white) : Colors.grey,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          fontWeight: FontWeight.w600,
                         ),
-                ),
+                      ),
               ),
             ),
           ),
@@ -382,52 +379,63 @@ class _NumericKeypadState extends State<NumericKeypad> {
       children: [
         Row(
           children: [
-            _buildKeypadButton('1', onTap: () => _handleKeyEvent('1')),
-            _buildKeypadButton('2', onTap: () => _handleKeyEvent('2')),
-            _buildKeypadButton('3', onTap: () => _handleKeyEvent('3')),
+            Flexible(
+                child:
+                    _buildKeypadButton('1', onTap: () => _handleKeyEvent('1'))),
+            Flexible(
+                child:
+                    _buildKeypadButton('2', onTap: () => _handleKeyEvent('2'))),
+            Flexible(
+                child:
+                    _buildKeypadButton('3', onTap: () => _handleKeyEvent('3'))),
           ],
         ),
         Row(
           children: [
-            _buildKeypadButton('4', onTap: () => _handleKeyEvent('4')),
-            _buildKeypadButton('5', onTap: () => _handleKeyEvent('5')),
-            _buildKeypadButton('6', onTap: () => _handleKeyEvent('6')),
+            Flexible(
+                child:
+                    _buildKeypadButton('4', onTap: () => _handleKeyEvent('4'))),
+            Flexible(
+                child:
+                    _buildKeypadButton('5', onTap: () => _handleKeyEvent('5'))),
+            Flexible(
+                child:
+                    _buildKeypadButton('6', onTap: () => _handleKeyEvent('6'))),
           ],
         ),
         Row(
           children: [
-            _buildKeypadButton('7', onTap: () => _handleKeyEvent('7')),
-            _buildKeypadButton('8', onTap: () => _handleKeyEvent('8')),
-            _buildKeypadButton('9', onTap: () => _handleKeyEvent('9')),
+            Flexible(
+                child:
+                    _buildKeypadButton('7', onTap: () => _handleKeyEvent('7'))),
+            Flexible(
+                child:
+                    _buildKeypadButton('8', onTap: () => _handleKeyEvent('8'))),
+            Flexible(
+                child:
+                    _buildKeypadButton('9', onTap: () => _handleKeyEvent('9'))),
           ],
         ),
         Row(
           children: [
-            _buildKeypadButton('.', onTap: () => _handleKeyEvent('.')),
-            _buildKeypadButton('0', onTap: () => _handleKeyEvent('0')),
-            _buildKeypadButton(
+            Flexible(
+                child:
+                    _buildKeypadButton('.', onTap: () => _handleKeyEvent('.'))),
+            Flexible(
+                child:
+                    _buildKeypadButton('0', onTap: () => _handleKeyEvent('0'))),
+            Flexible(
+                child: _buildKeypadButton(
               '',
               icon: Icons.backspace,
               color: Colors.orange,
               onTap: _handleClearClick,
               filled: true,
               enabled: _enteredAmount.isNotEmpty,
-            ),
+            )),
           ],
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            _buildKeypadButton(
-              'Cobrar',
-              color: Colors.green,
-              filled: true,
-              enabled: isSufficient && !widget.isProcessing,
-              icon: widget.isProcessing ? Icons.hourglass_top : Icons.payment,
-              onTap: () => _handleKeyEvent('Enter'),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -533,7 +541,8 @@ class _NumericKeypadState extends State<NumericKeypad> {
             const SizedBox(height: 16),
             _buildSummaryRow(),
             const SizedBox(height: 16),
-            Expanded(child: _buildKeypad()),
+            Spacer(),
+            _buildKeypad(),
           ],
         ),
       ),
