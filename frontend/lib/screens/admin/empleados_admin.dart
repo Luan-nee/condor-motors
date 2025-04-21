@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
+import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_cuenta_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_detalles_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_form.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleados_table.dart';
@@ -144,6 +145,20 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
         nombresSucursales: _empleadoProvider.nombresSucursales,
         obtenerRolDeEmpleado: _empleadoProvider.obtenerRolDeEmpleado,
         onEdit: _mostrarFormularioEmpleado,
+      ),
+    );
+  }
+
+  void _mostrarDialogoCuentaUsuario(Empleado empleado) {
+    if (!mounted) {
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => EmpleadoCuentaDialog(
+        empleado: empleado,
+        roles: _empleadoProvider.rolesCuentas,
+        esNuevaCuenta: empleado.cuentaEmpleadoUsuario == null,
       ),
     );
   }
@@ -307,6 +322,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                     onEdit: _mostrarFormularioEmpleado,
                     onDelete: _eliminarEmpleado,
                     onViewDetails: _mostrarDetallesEmpleado,
+                    onEditCuenta: _mostrarDialogoCuentaUsuario,
                     isLoading: isLoading,
                     hasMorePages: false,
                     onLoadMore: () {},

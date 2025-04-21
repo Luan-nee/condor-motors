@@ -13,6 +13,7 @@ class EmpleadosTable extends StatefulWidget {
   final Function(Empleado) onEdit;
   final Function(Empleado) onDelete;
   final Function(Empleado) onViewDetails;
+  final Function(Empleado) onEditCuenta;
   final bool isLoading;
   final bool hasMorePages;
   final VoidCallback onLoadMore;
@@ -26,6 +27,7 @@ class EmpleadosTable extends StatefulWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onViewDetails,
+    required this.onEditCuenta,
     required this.isLoading,
     required this.hasMorePages,
     required this.onLoadMore,
@@ -47,6 +49,8 @@ class EmpleadosTable extends StatefulWidget {
       ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onDelete', onDelete))
       ..add(ObjectFlagProperty<Function(Empleado p1)>.has(
           'onViewDetails', onViewDetails))
+      ..add(ObjectFlagProperty<Function(Empleado p1)>.has(
+          'onEditCuenta', onEditCuenta))
       ..add(DiagnosticsProperty<bool>('isLoading', isLoading))
       ..add(DiagnosticsProperty<bool>('hasMorePages', hasMorePages))
       ..add(ObjectFlagProperty<VoidCallback>.has('onLoadMore', onLoadMore))
@@ -224,6 +228,7 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                                       onEdit: widget.onEdit,
                                       onDelete: widget.onDelete,
                                       onViewDetails: widget.onViewDetails,
+                                      onEditCuenta: widget.onEditCuenta,
                                     )),
                           ],
 
@@ -277,6 +282,7 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                                           onEdit: widget.onEdit,
                                           onDelete: widget.onDelete,
                                           onViewDetails: widget.onViewDetails,
+                                          onEditCuenta: widget.onEditCuenta,
                                         ))
                                     .toList(),
                               ),

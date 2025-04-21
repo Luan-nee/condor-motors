@@ -12,6 +12,7 @@ class EmpleadoListItem extends StatefulWidget {
   final Function(Empleado) onEdit;
   final Function(Empleado) onDelete;
   final Function(Empleado) onViewDetails;
+  final Function(Empleado) onEditCuenta;
 
   const EmpleadoListItem({
     super.key,
@@ -20,6 +21,7 @@ class EmpleadoListItem extends StatefulWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onViewDetails,
+    required this.onEditCuenta,
   });
 
   @override
@@ -35,7 +37,9 @@ class EmpleadoListItem extends StatefulWidget {
       ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onEdit', onEdit))
       ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onDelete', onDelete))
       ..add(ObjectFlagProperty<Function(Empleado p1)>.has(
-          'onViewDetails', onViewDetails));
+          'onViewDetails', onViewDetails))
+      ..add(ObjectFlagProperty<Function(Empleado p1)>.has(
+          'onEditCuenta', onEditCuenta));
   }
 }
 
@@ -368,6 +372,27 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                       ),
                       onPressed: () => widget.onEdit(widget.empleado),
                       tooltip: 'Editar',
+                      splashRadius: 18,
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
+                    ),
+                    // Botón para editar cuenta de usuario
+                    IconButton(
+                      icon: FaIcon(
+                        widget.empleado.cuentaEmpleadoUsuario != null
+                            ? FontAwesomeIcons.userGear
+                            : FontAwesomeIcons.userPlus,
+                        size: 16,
+                        color: esInactivo
+                            ? Colors.white38
+                            : (widget.empleado.cuentaEmpleadoUsuario != null
+                                ? Colors.amber
+                                : const Color(0xFFB9FF3A)),
+                      ),
+                      onPressed: () => widget.onEditCuenta(widget.empleado),
+                      tooltip: widget.empleado.cuentaEmpleadoUsuario != null
+                          ? 'Editar cuenta de usuario'
+                          : 'Crear cuenta de usuario',
                       splashRadius: 18,
                       padding: const EdgeInsets.all(4),
                       constraints: const BoxConstraints(),

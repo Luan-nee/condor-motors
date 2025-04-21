@@ -1,6 +1,5 @@
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/providers/admin/empleado.admin.provider.dart';
-import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_cuenta_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_horario_dialog.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
@@ -828,7 +827,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
 
     // Si no se encontró una cuenta y hay un empleado existente
     if (_cuentaNoEncontrada && widget.empleado != null) {
-      return _buildCrearCuentaContainer();
+      // FIX: Ya no mostramos el bloque de crear cuenta aquí, la gestión de cuenta se hace desde la tabla
+      return const SizedBox();
     }
 
     // Si hay una cuenta existente
@@ -837,7 +837,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
         isLoading: false,
         usuarioActual: _usuarioActual,
         rolCuentaActual: _rolCuentaActual,
-        onGestionarCuenta: () => _gestionarCuenta(context),
       );
     }
 
@@ -872,59 +871,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   }
 
   Widget _buildCrearCuentaContainer() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.amber.withOpacity(0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: const <Widget>[
-              FaIcon(
-                FontAwesomeIcons.triangleExclamation,
-                color: Colors.amber,
-                size: 18,
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Este colaborador no tiene una cuenta para acceder al sistema',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Para permitir que este colaborador inicie sesión en el sistema, necesita crear una cuenta de usuario con un rol asignado.',
-            style: TextStyle(color: Colors.white70),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: ElevatedButton.icon(
-              onPressed: () => _gestionarCuenta(context),
-              label: const Text('Crear Cuenta de Usuario'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
-                foregroundColor: Colors.black87,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    // FIX: Este widget ya no se usa, gestión de cuenta se hace desde la tabla
+    return const SizedBox();
   }
 
   void _guardar() async {
@@ -977,207 +925,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  Future<void> _gestionarCuenta(BuildContext context) async {
-    if (widget.empleado == null || !mounted) {
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      // Obtener el provider
-      final empleadoProvider =
-          Provider.of<EmpleadoProvider>(context, listen: false);
-
-      // Obtener datos para gestionar la cuenta
-      final Map<String, dynamic> datosCuenta =
-          await empleadoProvider.prepararDatosGestionCuenta(widget.empleado!);
-
-      // Si el widget ya no está montado, salir temprano
-      if (!mounted || !context.mounted) {
-        return;
-      }
-
-      // Mostrar diálogo de gestión de cuenta
-      final bool cuentaActualizada = await showDialog<bool>(
-            context: context,
-            builder: (BuildContext dialogContext) => Dialog(
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: EmpleadoCuentaDialog(
-                  empleado: widget.empleado!,
-                  roles: datosCuenta['roles'],
-                  esNuevaCuenta: datosCuenta['esNuevaCuenta'],
-                ),
-              ),
-            ),
-          ) ??
-          false;
-
-      // Si el widget ya no está montado, salir temprano
-      if (!mounted) {
-        return;
-      }
-
-      if (cuentaActualizada && context.mounted) {
-        EmpleadosUtils.mostrarMensaje(
-          context,
-          mensaje: 'Cuenta actualizada correctamente',
-          esError: false,
-        );
-
-        // Recargar información de cuenta
-        await _cargarInformacionCuenta();
-
-        if (mounted) {
-          setState(() => _cuentaNoEncontrada = false);
-        }
-      }
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-
-      // Actualizar estado de carga
-      setState(() => _isLoading = false);
-
-      if (!context.mounted) {
-        return;
-      }
-
-      // Mostrar mensaje de error
-      final String errorMsg = e.toString().replaceAll('Exception: ', '');
-      EmpleadosUtils.mostrarMensaje(
-        context,
-        mensaje: 'Error al gestionar cuenta: $errorMsg',
-        esError: true,
-      );
-    } finally {
-      // Asegurarse de actualizar el estado solo si el widget sigue montado
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  // Método para construir campos de entrada de hora/minuto
-  Widget _buildTimeInputRow({
-    required TextEditingController horaController,
-    required TextEditingController minutoController,
-  }) {
-    return Row(
-      children: <Widget>[
-        // Horas
-        Expanded(
-          child: TextFormField(
-            controller: horaController,
-            style: const TextStyle(color: Colors.white),
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              hintText: 'HH',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            validator: (String? value) {
-              if (value == null || value.isEmpty) {
-                return 'Requerido';
-              }
-              final int? hora = int.tryParse(value);
-              if (hora == null || hora < 0 || hora > 23) {
-                return 'Inválido';
-              }
-              return null;
-            },
-            onChanged: (String value) {
-              // Formatear a 2 dígitos
-              if (value.length > 2) {
-                horaController
-                  ..text = value.substring(0, 2)
-                  ..selection = TextSelection.fromPosition(
-                    const TextPosition(offset: 2),
-                  );
-              }
-
-              // Validar rango
-              final int? hora = int.tryParse(value);
-              if (hora != null && (hora < 0 || hora > 23)) {
-                horaController.text = '00';
-              }
-
-              // Avanzar al siguiente campo si se ingresaron 2 dígitos
-              if (value.length == 2) {
-                FocusScope.of(context).nextFocus();
-              }
-            },
-          ),
-        ),
-
-        // Separador
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8),
-          child: Text(
-            ':',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-
-        // Minutos
-        Expanded(
-          child: TextFormField(
-            controller: minutoController,
-            style: const TextStyle(color: Colors.white),
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              hintText: 'MM',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            validator: (String? value) {
-              if (value == null || value.isEmpty) {
-                return 'Requerido';
-              }
-              final int? minuto = int.tryParse(value);
-              if (minuto == null || minuto < 0 || minuto > 59) {
-                return 'Inválido';
-              }
-              return null;
-            },
-            onChanged: (String value) {
-              // Formatear a 2 dígitos
-              if (value.length > 2) {
-                minutoController
-                  ..text = value.substring(0, 2)
-                  ..selection = TextSelection.fromPosition(
-                    const TextPosition(offset: 2),
-                  );
-              }
-
-              // Validar rango
-              final int? minuto = int.tryParse(value);
-              if (minuto != null && (minuto < 0 || minuto > 59)) {
-                minutoController.text = '00';
-              }
-            },
-          ),
-        ),
-      ],
-    );
   }
 
   void _editarHorario() {
@@ -1300,6 +1047,124 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
           ),
         ),
       ),
+    );
+  }
+
+  // Método para construir campos de entrada de hora/minuto
+  Widget _buildTimeInputRow({
+    required TextEditingController horaController,
+    required TextEditingController minutoController,
+  }) {
+    return Row(
+      children: <Widget>[
+        // Horas
+        Expanded(
+          child: TextFormField(
+            controller: horaController,
+            style: const TextStyle(color: Colors.white),
+            textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: 'HH',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            validator: (String? value) {
+              if (value == null || value.isEmpty) {
+                return 'Requerido';
+              }
+              final int? hora = int.tryParse(value);
+              if (hora == null || hora < 0 || hora > 23) {
+                return 'Inválido';
+              }
+              return null;
+            },
+            onChanged: (String value) {
+              // Formatear a 2 dígitos
+              if (value.length > 2) {
+                horaController
+                  ..text = value.substring(0, 2)
+                  ..selection = TextSelection.fromPosition(
+                    const TextPosition(offset: 2),
+                  );
+              }
+
+              // Validar rango
+              final int? hora = int.tryParse(value);
+              if (hora != null && (hora < 0 || hora > 23)) {
+                horaController.text = '00';
+              }
+
+              // Avanzar al siguiente campo si se ingresaron 2 dígitos
+              if (value.length == 2) {
+                FocusScope.of(context).nextFocus();
+              }
+            },
+          ),
+        ),
+
+        // Separador
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            ':',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+
+        // Minutos
+        Expanded(
+          child: TextFormField(
+            controller: minutoController,
+            style: const TextStyle(color: Colors.white),
+            textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: 'MM',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            validator: (String? value) {
+              if (value == null || value.isEmpty) {
+                return 'Requerido';
+              }
+              final int? minuto = int.tryParse(value);
+              if (minuto == null || minuto < 0 || minuto > 59) {
+                return 'Inválido';
+              }
+              return null;
+            },
+            onChanged: (String value) {
+              // Formatear a 2 dígitos
+              if (value.length > 2) {
+                minutoController
+                  ..text = value.substring(0, 2)
+                  ..selection = TextSelection.fromPosition(
+                    const TextPosition(offset: 2),
+                  );
+              }
+
+              // Validar rango
+              final int? minuto = int.tryParse(value);
+              if (minuto != null && (minuto < 0 || minuto > 59)) {
+                minutoController.text = '00';
+              }
+            },
+          ),
+        ),
+      ],
     );
   }
 }
