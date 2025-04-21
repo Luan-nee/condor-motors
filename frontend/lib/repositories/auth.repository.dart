@@ -3,6 +3,7 @@ import 'package:condorsmotors/models/auth.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:condorsmotors/utils/secure_storage_utils.dart';
 
 /// Repositorio para gestionar la autenticación
 ///
@@ -117,29 +118,32 @@ class AuthRepository implements BaseRepository {
           .map((key) => prefs.remove(key))
           .toList();
 
-      // Ejecutar todas las operaciones de borrado
+      // Ejecutar todas las operaciones de borrado en SharedPreferences (solo flags y configuraciones no sensibles)
       await Future.wait([
         ...deleteFutures,
-        // Asegurar que estas claves críticas se borren
-        prefs.remove('access_token'),
-        prefs.remove('refresh_token'),
-        prefs.remove('expiry_time'),
-        prefs.remove('last_username'),
-        prefs.remove('last_password'),
-        prefs.remove('remember_me'),
-        prefs.remove('username'),
-        prefs.remove('password'),
-        prefs.remove('username_auto'),
-        prefs.remove('password_auto'),
-        prefs.remove('user_data'),
-        prefs.remove('current_sucursal_id'),
-        prefs.remove('current_sucursal_data'),
         prefs.setBool('stay_logged_in', false),
         // Limpiar caches específicos
         prefs.remove('ventas_cache'),
         prefs.remove('productos_cache'),
         prefs.remove('proformas_cache'),
         prefs.remove('dashboard_cache'),
+      ]);
+
+      // Limpiar datos sensibles en SecureStorage
+      await Future.wait([
+        SecureStorageUtils.delete('access_token'),
+        SecureStorageUtils.delete('refresh_token'),
+        SecureStorageUtils.delete('expiry_time'),
+        SecureStorageUtils.delete('last_username'),
+        SecureStorageUtils.delete('last_password'),
+        SecureStorageUtils.delete('remember_me'),
+        SecureStorageUtils.delete('username'),
+        SecureStorageUtils.delete('password'),
+        SecureStorageUtils.delete('username_auto'),
+        SecureStorageUtils.delete('password_auto'),
+        SecureStorageUtils.delete('user_data'),
+        SecureStorageUtils.delete('current_sucursal_id'),
+        SecureStorageUtils.delete('current_sucursal_data'),
       ]);
 
       debugPrint(
