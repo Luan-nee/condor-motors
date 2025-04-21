@@ -2,7 +2,7 @@ import z from 'zod'
 import { idTypeBaseSchema } from '../../id-type.schema'
 
 export const ReservasProductoSchema = {
-  descripcion: z.string().trim().min(2),
+  descripcion: z.string().trim().optional().nullable(),
   detallesReserva: z
     .object({
       nombreProducto: z.string(),
@@ -14,7 +14,7 @@ export const ReservasProductoSchema = {
     .array()
     .min(1),
   montoAdelantado: z.number().positive(),
-  fechaRecojo: z.string().date(),
+  fechaRecojo: z.string().date().optional().nullable(),
   clienteId: idTypeBaseSchema.numericId,
-  sucursalId: idTypeBaseSchema.numericId
+  sucursalId: idTypeBaseSchema.numericId.optional().nullable()
 }

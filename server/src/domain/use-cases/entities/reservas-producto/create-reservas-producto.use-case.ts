@@ -23,15 +23,17 @@ export class CreateReservasProducto {
       )
     }
 
-    const sucursalId = await db
-      .select()
-      .from(sucursalesTable)
-      .where(eq(sucursalesTable.id, createReservasProductoDto.sucursalId))
+    if (createReservasProductoDto.sucursalId != null) {
+      const sucursalId = await db
+        .select()
+        .from(sucursalesTable)
+        .where(eq(sucursalesTable.id, createReservasProductoDto.sucursalId))
 
-    if (sucursalId.length <= 0) {
-      throw CustomError.badRequest(
-        `No existe la sucursal ${createReservasProductoDto.sucursalId}`
-      )
+      if (sucursalId.length <= 0) {
+        throw CustomError.badRequest(
+          `No existe la sucursal ${createReservasProductoDto.sucursalId}`
+        )
+      }
     }
 
     const insertReservaProductos = await db
