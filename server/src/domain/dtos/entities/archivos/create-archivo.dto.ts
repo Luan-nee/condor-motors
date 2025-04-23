@@ -28,7 +28,7 @@ export class CreateArchivoDto {
 
     if (!this.isValidFileType(data.tipo)) {
       return [
-        'El tipo de archivo es inválido solo se permiten estos tipos (apk | desktop-app)',
+        'El tipo de archivo es inválido solo se permiten estos tipos (apk | desktop-app | certificate)',
         undefined
       ]
     }

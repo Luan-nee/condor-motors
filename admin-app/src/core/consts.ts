@@ -8,7 +8,8 @@ export const fileFieldName = 'app_file' as const
 
 export const fileTypeValues = {
   apk: 'apk',
-  desktopApp: 'desktop-app'
+  desktopApp: 'desktop-app',
+  certificate: 'certificate'
 } as const
 
 const maxFileSizeMB = import.meta.env.MAX_UPLOAD_FILE_SIZE_MB

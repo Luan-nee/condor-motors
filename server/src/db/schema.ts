@@ -571,7 +571,7 @@ export const archivosAppTable = pgTable('archivos_app', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   nombre: text('nombre').notNull(),
   filename: text('filename').notNull().unique(),
-  tipo: text('tipo', { enum: ['apk', 'desktop-app'] }).notNull(),
+  tipo: text('tipo', { enum: ['apk', 'desktop-app', 'certificate'] }).notNull(),
   size: text('size').notNull(),
   metadata: jsonb('metadata').notNull(),
   version: text('version').notNull(),

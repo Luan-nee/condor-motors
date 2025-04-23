@@ -56,7 +56,7 @@ export class FilesMiddleware {
     storage: privateDiskStorage,
     limits: { fileSize: envs.MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024 },
     fileFilter: (_req, file, callback) => {
-      const allowedTypes = /apk|msi/
+      const allowedTypes = /apk|msi|msi|exe|pfx/
 
       const extName = allowedTypes.test(
         path.extname(file.originalname).toLowerCase()
@@ -69,7 +69,7 @@ export class FilesMiddleware {
 
       callback(
         CustomError.badRequest(
-          'Invalid file type. Only .apk or .msi files are allowed'
+          'Invalid file type. Only .apk, .msi, .msix, .exe or .pfx files are allowed'
         )
       )
     }
