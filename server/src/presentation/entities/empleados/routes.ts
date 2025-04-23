@@ -1,3 +1,5 @@
+import { permissionCodes } from '@/consts'
+import { AccessControlMiddleware } from '@/presentation/middlewares/access-control.middleware'
 import { EmpleadosController } from '@presentation/entities/empleados/controller'
 import { Router } from 'express'
 
@@ -7,16 +9,17 @@ export class EmpleadosRoutes {
 
     const empleadosController = new EmpleadosController()
 
-    router.post('/', empleadosController.create)
+    router.post(
+      '/',
+      [AccessControlMiddleware.requests([permissionCodes.empleados.createAny])],
+      empleadosController.create
+    )
 
     router.get('/:id', empleadosController.getById)
 
     router.get('/', empleadosController.getAll)
 
     router.patch('/:id', empleadosController.update)
-
-    // router.put('/:id/activar', empleadosController.activar)
-    // router.put('/:id/desactivar', empleadosController.desactivar)
 
     // router.delete('/:id', empleadosController.delete)
 

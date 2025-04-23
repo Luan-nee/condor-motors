@@ -1,5 +1,3 @@
-import { permissionCodes } from '@/consts'
-import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { empleadosTable, sucursalesTable } from '@/db/schema'
 import type { CreateEmpleadoDto } from '@/domain/dtos/entities/empleados/create-empleado.dto'
@@ -7,12 +5,12 @@ import { db } from '@db/connection'
 import { eq } from 'drizzle-orm'
 
 export class CreateEmpleado {
-  private readonly authPayload: AuthPayload
-  private readonly permissionAny = permissionCodes.empleados.createAny
+  // private readonly authPayload: AuthPayload
+  // private readonly permissionAny = permissionCodes.empleados.createAny
 
-  constructor(authPayload: AuthPayload) {
-    this.authPayload = authPayload
-  }
+  // constructor(authPayload: AuthPayload) {
+  //   this.authPayload = authPayload
+  // }
 
   private async validateRelated(createEmpleadoDto: CreateEmpleadoDto) {
     const results = await db
@@ -61,23 +59,23 @@ export class CreateEmpleado {
     return insertedEmpleadoResult
   }
 
-  private async validatePermissions() {
-    const validPermissions = await AccessControl.verifyPermissions(
-      this.authPayload,
-      [this.permissionAny]
-    )
+  // private async validatePermissions() {
+  //   const validPermissions = await AccessControl.verifyPermissions(
+  //     this.authPayload,
+  //     [this.permissionAny]
+  //   )
 
-    const hasPermissionAny = validPermissions.some(
-      (permission) => permission.codigoPermiso === this.permissionAny
-    )
+  //   const hasPermissionAny = validPermissions.some(
+  //     (permission) => permission.codigoPermiso === this.permissionAny
+  //   )
 
-    if (!hasPermissionAny) {
-      throw CustomError.forbidden()
-    }
-  }
+  //   if (!hasPermissionAny) {
+  //     throw CustomError.forbidden()
+  //   }
+  // }
 
   async execute(createEmpleadoDto: CreateEmpleadoDto) {
-    await this.validatePermissions()
+    // await this.validatePermissions()
 
     const empleado = await this.createEmpleado(createEmpleadoDto)
 
