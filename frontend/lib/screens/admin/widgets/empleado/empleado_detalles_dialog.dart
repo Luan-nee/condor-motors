@@ -55,9 +55,9 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
   @override
   void initState() {
     super.initState();
-
-    // Cargar información de cuenta del empleado al iniciar
-    _cargarInformacionCuenta();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarInformacionCuenta();
+    });
   }
 
   Future<void> _cargarInformacionCuenta() async {
