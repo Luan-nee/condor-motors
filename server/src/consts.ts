@@ -189,5 +189,6 @@ export const logsDestination = {
 
 export const fileTypeValues = {
   apk: 'apk',
-  desktopApp: 'desktop-app'
+  desktopApp: 'desktop-app',
+  certificate: 'certificate'
 } as const
