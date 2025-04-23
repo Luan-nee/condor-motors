@@ -7,7 +7,6 @@ import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalles_dialog.
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_list.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 

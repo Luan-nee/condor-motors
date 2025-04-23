@@ -1134,6 +1134,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                     final result = await printProvider.imprimirDocumentoPdf(
                       localPdfLink,
                       localNombreCompleto,
+                      // ignore: use_build_context_synchronously
                       currentContext,
                     );
 

@@ -660,4 +660,11 @@ class VentasColabProvider extends ChangeNotifier {
       return <String, dynamic>{};
     }
   }
+
+  /// Invalida el caché de clientes y recarga desde la API
+  Future<void> invalidateClientesCache() async {
+    _clientesLoaded = false;
+    _clientes = <Cliente>[];
+    await cargarClientes();
+  }
 }

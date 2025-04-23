@@ -8,6 +8,7 @@ class BusquedaClienteWidget extends StatefulWidget {
   final List<Cliente> clientes;
   final Function(Cliente) onClienteSeleccionado;
   final Function() onNuevoCliente;
+  final VoidCallback? onRefrescarClientes;
   final bool isLoading;
 
   const BusquedaClienteWidget({
@@ -15,6 +16,7 @@ class BusquedaClienteWidget extends StatefulWidget {
     required this.clientes,
     required this.onClienteSeleccionado,
     required this.onNuevoCliente,
+    this.onRefrescarClientes,
     this.isLoading = false,
   });
 
@@ -31,6 +33,8 @@ class BusquedaClienteWidget extends StatefulWidget {
       ..add(
           ObjectFlagProperty<Function()>.has('onNuevoCliente', onNuevoCliente))
       ..add(DiagnosticsProperty<bool>('isLoading', isLoading));
+    properties.add(ObjectFlagProperty<VoidCallback?>.has(
+        'onRefrescarClientes', onRefrescarClientes));
   }
 }
 

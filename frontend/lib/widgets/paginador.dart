@@ -88,14 +88,14 @@ class Paginador extends StatelessWidget {
     return IntrinsicHeight(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(radius),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(radius),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+            children: [
             // Selector de items por página
             if (!forceCompactMode)
               Container(
@@ -147,8 +147,8 @@ class Paginador extends StatelessWidget {
               icon: Icons.first_page,
               onPressed:
                   paginacionData.hasPrev && paginacionData.currentPage > 1
-                      ? () => _cambiarPagina(provider, 1)
-                      : null,
+                  ? () => _cambiarPagina(provider, 1)
+                  : null,
               bgColor: bgColor,
               txtColor: txtColor,
               accentColor: accent,
@@ -169,14 +169,14 @@ class Paginador extends StatelessWidget {
                 .getVisiblePages(maxVisiblePages: maxVisiblePages)
                 .map(
                   (pageNum) => _buildNumberButton(
-                    pageNum: pageNum,
-                    isSelected: pageNum == paginacionData.currentPage,
-                    onPressed: () => _cambiarPagina(provider, pageNum),
-                    bgColor: bgColor,
-                    txtColor: txtColor,
+                pageNum: pageNum,
+                isSelected: pageNum == paginacionData.currentPage,
+                onPressed: () => _cambiarPagina(provider, pageNum),
+                bgColor: bgColor,
+                txtColor: txtColor,
                     accentColor: accent,
-                  ),
-                ),
+              ),
+            ),
 
             _buildPageButton(
               icon: Icons.chevron_right,
@@ -212,11 +212,11 @@ class Paginador extends StatelessWidget {
                 child: Center(
                   child: Text(
                     '${paginacionData.totalItems} elementos',
-                    style: TextStyle(
-                      color: txtColor.withOpacity(0.8),
-                      fontSize: 14,
-                    ),
-                  ),
+          style: TextStyle(
+            color: txtColor.withOpacity(0.8),
+            fontSize: 14,
+          ),
+        ),
                 ),
               ),
             ],
@@ -285,11 +285,11 @@ class Paginador extends StatelessWidget {
             width: 28,
             height: 28,
             alignment: Alignment.center,
-            child: Text(
-              pageNum.toString(),
-              style: TextStyle(
-                color: isSelected ? Colors.white : txtColor,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              child: Text(
+                pageNum.toString(),
+                style: TextStyle(
+                  color: isSelected ? Colors.white : txtColor,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 14,
               ),
             ),

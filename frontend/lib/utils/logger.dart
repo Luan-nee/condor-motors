@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 
 /// Constantes para colores ANSI en terminal
 class ConsoleColor {
@@ -244,7 +245,7 @@ void logCustom(String prefix, String message) {
 }
 
 /// Registra de manera formateada un objeto JSON
-void logJson(String label, dynamic jsonData) {
+void logJson(String label, jsonData) {
   if (kDebugMode) {
     try {
       // Convertir a string si es un mapa o lista

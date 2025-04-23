@@ -405,7 +405,7 @@ class PrintProvider extends ChangeNotifier {
         }
       } else {
         debugPrint(
-            '✅ Impresora seleccionada (${_impresoraSeleccionada}) sigue disponible');
+            '✅ Impresora seleccionada ($_impresoraSeleccionada) sigue disponible');
       }
 
       notifyListeners();

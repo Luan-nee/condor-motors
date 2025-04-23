@@ -1,6 +1,5 @@
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/providers/admin/empleado.admin.provider.dart';
-import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_horario_dialog.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -704,68 +703,23 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                 ),
                 const SizedBox(height: 16),
 
-                // Si es un empleado existente, mostrar el widget de horario
-                // Si es un nuevo empleado, mostrar campos de entrada de tiempo
-                if (widget.empleado != null)
-                  // Usar EmpleadoHorarioViewer para un empleado existente
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      EmpleadoHorarioViewer(
-                        empleado: widget.empleado!,
-                        showTitle: false,
-                      ),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton.icon(
-                          icon: const FaIcon(
-                            FontAwesomeIcons.penToSquare,
-                            size: 14,
-                            color: Colors.white70,
-                          ),
-                          label: const Text(
-                            'Editar horario',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                          onPressed: _editarHorario,
-                          style: TextButton.styleFrom(
-                            backgroundColor: const Color(0xFF3D3D3D),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  // Campos de entrada de tiempo para un nuevo empleado
-                  Column(
-                    children: <Widget>[
-                      // Horario de inicio
-                      _buildHorarioInputRow(
-                        label: 'Hora inicio:',
-                        icon: Icons.access_time,
-                        horaController: _horaInicioHoraController,
-                        minutoController: _horaInicioMinutoController,
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Horario de fin
-                      _buildHorarioInputRow(
-                        label: 'Hora fin:',
-                        icon: Icons.access_time_filled,
-                        horaController: _horaFinHoraController,
-                        minutoController: _horaFinMinutoController,
-                      ),
-                    ],
-                  ),
+                Column(
+                  children: <Widget>[
+                    _buildHorarioInputRow(
+                      label: 'Hora inicio:',
+                      icon: Icons.access_time,
+                      horaController: _horaInicioHoraController,
+                      minutoController: _horaInicioMinutoController,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildHorarioInputRow(
+                      label: 'Hora fin:',
+                      icon: Icons.access_time_filled,
+                      horaController: _horaFinHoraController,
+                      minutoController: _horaFinMinutoController,
+                    ),
+                  ],
+                ),
 
                 const SizedBox(height: 24),
 
@@ -870,11 +824,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     );
   }
 
-  Widget _buildCrearCuentaContainer() {
-    // FIX: Este widget ya no se usa, gestión de cuenta se hace desde la tabla
-    return const SizedBox();
-  }
-
   void _guardar() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -925,129 +874,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  void _editarHorario() {
-    // Guardar los valores actuales por si el usuario cancela
-    final String horaInicioHoraOriginal = _horaInicioHoraController.text;
-    final String horaInicioMinutoOriginal = _horaInicioMinutoController.text;
-    final String horaFinHoraOriginal = _horaFinHoraController.text;
-    final String horaFinMinutoOriginal = _horaFinMinutoController.text;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) => Dialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Container(
-          width: 500,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: const <Widget>[
-                  FaIcon(
-                    FontAwesomeIcons.clock,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    'Editar Horario',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Horario de inicio y fin usando widgets reutilizables
-              _buildHorarioInputRow(
-                label: 'Hora inicio:',
-                icon: Icons.access_time,
-                horaController: _horaInicioHoraController,
-                minutoController: _horaInicioMinutoController,
-              ),
-
-              const SizedBox(height: 16),
-
-              _buildHorarioInputRow(
-                label: 'Hora fin:',
-                icon: Icons.access_time_filled,
-                horaController: _horaFinHoraController,
-                minutoController: _horaFinMinutoController,
-              ),
-
-              const SizedBox(height: 24),
-
-              // Botones de acción
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: <Widget>[
-                  TextButton(
-                    onPressed: () {
-                      // Restaurar valores originales si cancela
-                      _horaInicioHoraController.text = horaInicioHoraOriginal;
-                      _horaInicioMinutoController.text =
-                          horaInicioMinutoOriginal;
-                      _horaFinHoraController.text = horaFinHoraOriginal;
-                      _horaFinMinutoController.text = horaFinMinutoOriginal;
-                      Navigator.pop(context);
-                    },
-                    child: const Text(
-                      'Cancelar',
-                      style: TextStyle(color: Colors.white54),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE31E24),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                    ),
-                    onPressed: () {
-                      // Validar con el método reutilizable
-                      if (!_validarHorarioInput(
-                        horaInicioText: _horaInicioHoraController.text,
-                        minutoInicioText: _horaInicioMinutoController.text,
-                        horaFinText: _horaFinHoraController.text,
-                        minutoFinText: _horaFinMinutoController.text,
-                        contexto: context,
-                      )) {
-                        return;
-                      }
-
-                      // Todo válido, cerrar diálogo
-                      Navigator.pop(context);
-
-                      // Mostrar mensaje de confirmación
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Horario actualizado'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    },
-                    child: const Text('Guardar'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   // Método para construir campos de entrada de hora/minuto

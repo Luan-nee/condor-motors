@@ -596,6 +596,7 @@ class ProformaWidget extends StatelessWidget {
       if (confirmar == true) {
         // Mostrar diálogo de carga
         showDialog(
+          // ignore: use_build_context_synchronously
           context: context,
           barrierDismissible: false,
           builder: (BuildContext context) => const Dialog(
@@ -716,6 +717,7 @@ class ProformaWidget extends StatelessWidget {
 
               // Cerrar el diálogo de procesamiento si aún está abierto
               if (processingDialogContext != null &&
+                  processingDialogContext!.mounted &&
                   Navigator.of(processingDialogContext!).canPop()) {
                 Navigator.of(processingDialogContext!).pop();
               }
@@ -736,6 +738,7 @@ class ProformaWidget extends StatelessWidget {
             } catch (e) {
               // Cerrar el diálogo de procesamiento en caso de error
               if (processingDialogContext != null &&
+                  processingDialogContext!.mounted &&
                   Navigator.of(processingDialogContext!).canPop()) {
                 Navigator.of(processingDialogContext!).pop();
               }

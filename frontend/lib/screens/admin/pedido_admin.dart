@@ -130,16 +130,16 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
                     Row(
-                      children: <Widget>[
-                        const FaIcon(
+                      children: const <Widget>[
+                        FaIcon(
                           FontAwesomeIcons.truckFast,
                           color: Colors.white,
                           size: 24,
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: 16),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const <Widget>[
+                          children: <Widget>[
                             Text(
                               'PEDIDOS',
                               style: TextStyle(

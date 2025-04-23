@@ -8,11 +8,13 @@ import 'package:flutter/services.dart';
 class BusquedaClienteForm extends StatefulWidget {
   final Function(Cliente) onClienteCreado;
   final VoidCallback onCancel;
+  final VoidCallback? onRefrescarClientes;
 
   const BusquedaClienteForm({
     super.key,
     required this.onClienteCreado,
     required this.onCancel,
+    this.onRefrescarClientes,
   });
 
   @override
@@ -24,7 +26,9 @@ class BusquedaClienteForm extends StatefulWidget {
     properties
       ..add(ObjectFlagProperty<Function(Cliente p1)>.has(
           'onClienteCreado', onClienteCreado))
-      ..add(ObjectFlagProperty<VoidCallback>.has('onCancel', onCancel));
+      ..add(ObjectFlagProperty<VoidCallback>.has('onCancel', onCancel))
+      ..add(ObjectFlagProperty<VoidCallback?>.has(
+          'onRefrescarClientes', onRefrescarClientes));
   }
 }
 
@@ -478,6 +482,11 @@ class _BusquedaClienteFormState extends State<BusquedaClienteForm> {
 
                         // Notificar al padre sobre el cliente creado
                         widget.onClienteCreado(nuevoCliente);
+
+                        // Si se provee, refresca la lista global de clientes
+                        if (widget.onRefrescarClientes != null) {
+                          widget.onRefrescarClientes!();
+                        }
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

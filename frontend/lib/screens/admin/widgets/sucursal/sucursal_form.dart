@@ -713,20 +713,22 @@ class _SucursalFormState extends State<SucursalForm>
     if (prefix == 'E') {
       final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
       if (digitsOnly != value) {
-        controller.text = digitsOnly;
-        controller.selection = TextSelection.fromPosition(
-          TextPosition(offset: controller.text.length),
-        );
+        controller
+          ..text = digitsOnly
+          ..selection = TextSelection.fromPosition(
+            TextPosition(offset: controller.text.length),
+          );
       }
       return;
     }
 
     // Si es el primer carácter que se escribe, asignar el prefijo correspondiente
     if (value.length == 1 && !value.startsWith(prefix)) {
-      controller.text = prefix;
-      controller.selection = TextSelection.fromPosition(
-        TextPosition(offset: controller.text.length),
-      );
+      controller
+        ..text = prefix
+        ..selection = TextSelection.fromPosition(
+          TextPosition(offset: controller.text.length),
+        );
       return;
     }
 
@@ -771,10 +773,11 @@ class _SucursalFormState extends State<SucursalForm>
 
     // Si el usuario intentó ingresar algo que no son dígitos, corregirlo
     if (digitsOnly != value) {
-      _codigoEstablecimientoController.text = digitsOnly;
-      _codigoEstablecimientoController.selection = TextSelection.fromPosition(
-        TextPosition(offset: digitsOnly.length),
-      );
+      _codigoEstablecimientoController
+        ..text = digitsOnly
+        ..selection = TextSelection.fromPosition(
+          TextPosition(offset: digitsOnly.length),
+        );
     }
   }
 
