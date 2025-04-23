@@ -10,6 +10,7 @@ import type { FileEntity } from '@/types/archivos'
 import { QuestionMarkCircleIcon } from './icons/QuestionMarkCircleIcon'
 import { fileTypeValues } from '@/core/consts'
 import { ShareIcon } from './icons/ShareIcon'
+import { CertificateIcon } from './icons/CertificateIcon'
 
 interface Props {
   file: FileEntity
@@ -25,6 +26,57 @@ const CardButton = (props: JSX.ButtonHTMLAttributes<HTMLButtonElement>) => {
     >
       {props.children}
     </button>
+  )
+}
+
+interface FileHeaderHeaderProps {
+  file: FileEntity
+  children?: JSX.Element
+}
+
+const FileCardHeader = ({ file, children }: FileHeaderHeaderProps) => {
+  return (
+    <div class="flex flex-wrap gap-2">
+      <Switch
+        fallback={
+          <span class="bg-gray-500/10 p-2 inline-block rounded border border-gray-600">
+            <QuestionMarkCircleIcon class="w-6 h-6 text-gray-300" />
+          </span>
+        }
+      >
+        <Match when={file.tipo === fileTypeValues.apk}>
+          <span class="bg-emerald-500/10 p-2 inline-block rounded border border-emerald-900">
+            <AndroidIcon class="w-6 h-6" />
+          </span>
+        </Match>
+        <Match when={file.tipo === fileTypeValues.desktopApp}>
+          <span class="bg-cyan-500/15 p-2 inline-block rounded border border-cyan-900">
+            <WindowsIcon class="w-6 h-6" />
+          </span>
+        </Match>
+        <Match when={file.tipo === fileTypeValues.certificate}>
+          <span class="bg-yellow-500/15 p-1 inline-block rounded border border-yellow-900">
+            <CertificateIcon class="w-8 h-8 text-yellow-200" />
+          </span>
+        </Match>
+      </Switch>
+      <div>
+        <div>
+          <span class="text-gray-200 font-semibold">
+            <Switch fallback={'Desconocido'}>
+              <Match when={file.tipo === fileTypeValues.apk}>Android App</Match>
+              <Match when={file.tipo === fileTypeValues.desktopApp}>
+                Aplicación para Windows
+              </Match>
+              <Match when={file.tipo === fileTypeValues.certificate}>
+                Certificado para instalación
+              </Match>
+            </Switch>
+          </span>
+        </div>
+        <div>{children}</div>
+      </div>
+    </div>
   )
 }
 
@@ -88,44 +140,10 @@ export const FileCard = ({ file, deleteItem, shareFile }: Props) => {
         <p class="font-medium text-cyan-300">{message()}</p>
       </Show>
 
-      <div class="flex flex-wrap gap-2">
-        <Switch
-          fallback={
-            <span class="bg-gray-500/10 p-2 inline-block rounded border border-gray-600">
-              <QuestionMarkCircleIcon class="w-6 h-6 text-gray-300" />
-            </span>
-          }
-        >
-          <Match when={file.tipo === fileTypeValues.apk}>
-            <span class="bg-emerald-500/10 p-2 inline-block rounded border border-emerald-900">
-              <AndroidIcon class="w-6 h-6" />
-            </span>
-          </Match>
-          <Match when={file.tipo === fileTypeValues.desktopApp}>
-            <span class="bg-cyan-500/15 p-2 inline-block rounded border border-cyan-900">
-              <WindowsIcon class="w-6 h-6" />
-            </span>
-          </Match>
-        </Switch>
-        <div>
-          <div>
-            <span class="text-gray-200 font-semibold">
-              <Switch fallback={'Desconocido'}>
-                <Match when={file.tipo === fileTypeValues.apk}>
-                  Android App
-                </Match>
-                <Match when={file.tipo === fileTypeValues.desktopApp}>
-                  Aplicación para Windows
-                </Match>
-              </Switch>
-            </span>
-          </div>
-          <div>
-            <span class="text-gray-500 mr-1">Tamaño:</span>
-            <span>{getFileSize(Number(file.size))}</span>
-          </div>
-        </div>
-      </div>
+      <FileCardHeader file={file}>
+        <span class="text-gray-500 mr-1">Tamaño:</span>
+        <span>{getFileSize(Number(file.size))}</span>
+      </FileCardHeader>
 
       <div>
         <p class="text-gray-500 block">Nombre:</p>
