@@ -32,8 +32,6 @@ export const uploadApk: uploadFile = async (uploadFileDto: UploadFileDto) => {
     })
   )
 
-  console.log(data)
-
   if (error != null) {
     return { error }
   }

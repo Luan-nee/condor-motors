@@ -87,7 +87,7 @@ import LoadingIcon from '@/components/icons/LoadingIcon.astro'
                     id="app-file-input"
                     name="app_file"
                     type="file"
-                    accept=".apk,.msi"
+                    accept=".apk,.msi,.msix,.exe"
                     hidden
                   />
                 </label>
@@ -199,12 +199,16 @@ import LoadingIcon from '@/components/icons/LoadingIcon.astro'
         } else if (file.name.endsWith('.apk')) {
           selectedFile = file
           fileType = fileTypeValues.apk
-        } else if (file.name.endsWith('.msi')) {
+        } else if (
+          file.name.endsWith('.msi') ||
+          file.name.endsWith('.msix') ||
+          file.name.endsWith('.exe')
+        ) {
           selectedFile = file
           fileType = fileTypeValues.desktopApp
         } else {
           $errorMessage.innerText =
-            'Tipo de archivo no permitido, solo se admiten estos tipos (.apk | .msi)'
+            'Tipo de archivo no permitido, solo se admiten estos tipos (.apk | .msi | .msix | .exe)'
           tryRemoveSpinner()
           return
         }
@@ -309,7 +313,6 @@ import LoadingIcon from '@/components/icons/LoadingIcon.astro'
       $uploadingFileMessage.classList.add('hidden')
 
       if (uploadError) {
-        console.log(error)
         $errorMessage.innerText = uploadError.message
         return
       }
