@@ -26,10 +26,12 @@ export class EmpleadosController {
       return
     }
 
-    const createEmpleado = new CreateEmpleado()
+    const { file } = req
+
+    const createEmpleado = new CreateEmpleado(this.publicStoragePath)
 
     createEmpleado
-      .execute(createEmpleadoDto)
+      .execute(createEmpleadoDto, file)
       .then((empleado) => {
         CustomResponse.success({ res, data: empleado })
       })

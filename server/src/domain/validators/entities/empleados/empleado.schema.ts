@@ -29,7 +29,8 @@ export const empleadoSchema = {
     .refine((val) => Validator.isOnlyNumbers(val), {
       message: 'El dni del empleado solo puede contener números'
     })
-    .optional(),
+    .optional()
+    .nullable(),
   celular: z
     .string()
     .trim()
@@ -37,23 +38,27 @@ export const empleadoSchema = {
     .refine((val) => Validator.isOnlyNumbers(val), {
       message: 'El celular del empleado solo puede contener números'
     })
-    .optional(),
+    .optional()
+    .nullable(),
   horaInicioJornada: z
     .string()
     .time({
       message: 'El formato esperado es el siguiente: hh:mm:ss'
     })
-    .optional(),
+    .optional()
+    .nullable(),
   horaFinJornada: z
     .string()
     .time({
       message: 'El formato esperado es el siguiente: hh:mm:ss'
     })
-    .optional(),
+    .optional()
+    .nullable(),
   fechaContratacion: z
     .string()
     .date('El formato esperado es el siguiente: yyyy-mm-dd')
-    .optional(),
-  sueldo: z.number().min(0).max(20000).optional(),
+    .optional()
+    .nullable(),
+  sueldo: z.coerce.number().min(0).max(20000).optional().nullable(),
   sucursalId: idTypeBaseSchema.numericId
 }

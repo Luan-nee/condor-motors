@@ -4,12 +4,12 @@ export class CreateEmpleadoDto {
   public nombre: string
   public apellidos: string
   public activo: boolean
-  public dni?: string
-  public celular?: string
-  public horaInicioJornada?: string
-  public horaFinJornada?: string
-  public fechaContratacion?: string
-  public sueldo?: number
+  public dni?: string | null
+  public celular?: string | null
+  public horaInicioJornada?: string | null
+  public horaFinJornada?: string | null
+  public fechaContratacion?: string | null
+  public sueldo?: number | null
   public sucursalId: number
 
   private constructor({

@@ -3,6 +3,8 @@ import { empleadosTable, sucursalesTable } from '@/db/schema'
 import type { CreateEmpleadoDto } from '@/domain/dtos/entities/empleados/create-empleado.dto'
 import { db } from '@db/connection'
 import { eq } from 'drizzle-orm'
+import path from 'node:path'
+import sharp from 'sharp'
 
 export class CreateEmpleado {
   // private readonly authPayload: AuthPayload
@@ -12,22 +14,13 @@ export class CreateEmpleado {
   //   this.authPayload = authPayload
   // }
 
-  private async validateRelated(createEmpleadoDto: CreateEmpleadoDto) {
-    const results = await db
-      .select({
-        sucursalId: sucursalesTable.id
-      })
-      .from(sucursalesTable)
-      .where(eq(sucursalesTable.id, createEmpleadoDto.sucursalId))
+  constructor(private readonly publicStoragePath: string) {}
 
-    if (results.length < 1) {
-      throw CustomError.badRequest('La sucursal ingresada no existe')
-    }
-  }
-
-  private async createEmpleado(createEmpleadoDto: CreateEmpleadoDto) {
-    await this.validateRelated(createEmpleadoDto)
-
+  private async createEmpleado(
+    createEmpleadoDto: CreateEmpleadoDto,
+    file: Express.Multer.File | undefined
+  ) {
+    const pathFoto = file !== undefined ? await this.saveFoto(file) : undefined
     const sueldoString = createEmpleadoDto.sueldo?.toFixed(2)
 
     const insertedEmpleadoResult = await db
@@ -37,7 +30,7 @@ export class CreateEmpleado {
         apellidos: createEmpleadoDto.apellidos,
         activo: createEmpleadoDto.activo,
         dni: createEmpleadoDto.dni,
-        // pathFoto: createEmpleadoDto.pathFoto,
+        pathFoto,
         celular: createEmpleadoDto.celular,
         horaInicioJornada: createEmpleadoDto.horaInicioJornada,
         horaFinJornada: createEmpleadoDto.horaFinJornada,
@@ -56,6 +49,53 @@ export class CreateEmpleado {
     return insertedEmpleadoResult
   }
 
+  private async validateRelated(createEmpleadoDto: CreateEmpleadoDto) {
+    const results = await db
+      .select({
+        sucursalId: sucursalesTable.id
+      })
+      .from(sucursalesTable)
+      .where(eq(sucursalesTable.id, createEmpleadoDto.sucursalId))
+
+    if (results.length < 1) {
+      throw CustomError.badRequest('La sucursal ingresada no existe')
+    }
+  }
+
+  async saveFoto(file: Express.Multer.File) {
+    try {
+      const metadata = await sharp(file.buffer).metadata()
+
+      if (
+        metadata.width == null ||
+        metadata.height == null ||
+        metadata.width > 2400 ||
+        metadata.height > 2400
+      ) {
+        throw CustomError.badRequest('Image is too large')
+      }
+
+      const uuid = crypto.randomUUID()
+      const name = `${uuid}.webp`
+
+      const filepath = path.join(this.publicStoragePath, 'static', name)
+
+      await sharp(file.buffer)
+        .resize(800, 800)
+        .toFormat('webp')
+        .webp({ quality: 80 })
+        .toFile(filepath)
+
+      return `/static/${name}`
+    } catch (error) {
+      if (error instanceof CustomError) {
+        throw error
+      }
+
+      throw CustomError.internalServer()
+    }
+  }
+
   // private async validatePermissions() {
   //   const validPermissions = await AccessControl.verifyPermissions(
   //     this.authPayload,
@@ -71,10 +111,14 @@ export class CreateEmpleado {
   //   }
   // }
 
-  async execute(createEmpleadoDto: CreateEmpleadoDto) {
+  async execute(
+    createEmpleadoDto: CreateEmpleadoDto,
+    file: Express.Multer.File | undefined
+  ) {
     // await this.validatePermissions()
 
-    const empleado = await this.createEmpleado(createEmpleadoDto)
+    await this.validateRelated(createEmpleadoDto)
+    const empleado = await this.createEmpleado(createEmpleadoDto, file)
 
     return empleado
   }
