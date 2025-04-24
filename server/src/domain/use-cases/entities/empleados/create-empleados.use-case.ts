@@ -28,10 +28,7 @@ export class CreateEmpleado {
   private async createEmpleado(createEmpleadoDto: CreateEmpleadoDto) {
     await this.validateRelated(createEmpleadoDto)
 
-    const sueldoString =
-      createEmpleadoDto.sueldo === undefined
-        ? undefined
-        : createEmpleadoDto.sueldo.toFixed(2)
+    const sueldoString = createEmpleadoDto.sueldo?.toFixed(2)
 
     const insertedEmpleadoResult = await db
       .insert(empleadosTable)

@@ -12,6 +12,8 @@ import { UpdateEmpleado } from '@/domain/use-cases/entities/empleados/update-emp
 import type { Request, Response } from 'express'
 
 export class EmpleadosController {
+  constructor(private readonly publicStoragePath: string) {}
+
   create = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
       CustomResponse.invalidAccessToken({ res })

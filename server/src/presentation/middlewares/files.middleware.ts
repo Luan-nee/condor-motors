@@ -37,16 +37,16 @@ export class FilesMiddleware {
         path.extname(file.originalname).toLowerCase()
       )
 
-      const mimeType = allowedTypes.test(file.mimetype)
+      const validMimeType = allowedTypes.test(file.mimetype)
 
-      if (extName && mimeType) {
+      if (extName && validMimeType) {
         callback(null, true)
         return
       }
 
       callback(
         CustomError.badRequest(
-          'Invalid file type. Only JPEG, JPG, and PNG are allowed'
+          'Tipo de archivo inválido. Solo se permiten JPEG, JPG, PNG y WEBP'
         )
       )
     }
