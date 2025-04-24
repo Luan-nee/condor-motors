@@ -4,12 +4,12 @@ export class UpdateEmpleadoDto {
   public nombre?: string
   public apellidos?: string
   public activo?: boolean
-  public dni?: string
-  public celular?: string
-  public horaInicioJornada?: string
-  public horaFinJornada?: string
-  public fechaContratacion?: string
-  public sueldo?: number
+  public dni?: string | null
+  public celular?: string | null
+  public horaInicioJornada?: string | null
+  public horaFinJornada?: string | null
+  public fechaContratacion?: string | null
+  public sueldo?: number | null
   public sucursalId?: number
 
   private constructor({
@@ -42,14 +42,17 @@ export class UpdateEmpleadoDto {
     return Object.values(data).every((value) => value === undefined)
   }
 
-  static create(input: any): [string?, UpdateEmpleadoDto?] {
+  static create(
+    input: any,
+    fileSize: number | undefined
+  ): [string?, UpdateEmpleadoDto?] {
     const result = updateEmpleadoValidator(input)
 
     if (!result.success) {
       return [result.error.message, undefined]
     }
 
-    if (this.isEmptyUpdate(result.data)) {
+    if (this.isEmptyUpdate(result.data) && fileSize == null) {
       return ['No se recibio informacion para actualizar', undefined]
     }
 

@@ -28,7 +28,14 @@ export class EmpleadosRoutes {
 
     router.get('/', empleadosController.getAll)
 
-    router.patch('/:id', empleadosController.update)
+    router.patch(
+      '/:id',
+      [
+        AccessControlMiddleware.requests([permissionCodes.empleados.updateAny]),
+        FilesMiddleware.image.single(EmpleadosRoutes.fileFieldName)
+      ],
+      empleadosController.update
+    )
 
     // router.delete('/:id', empleadosController.delete)
 

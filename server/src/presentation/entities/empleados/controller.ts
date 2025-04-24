@@ -109,18 +109,21 @@ export class EmpleadosController {
       return
     }
 
-    const [error, updateEmpleadoDto] = UpdateEmpleadoDto.create(req.body)
+    const { file } = req
+
+    const [error, updateEmpleadoDto] = UpdateEmpleadoDto.create(
+      req.body,
+      file?.size
+    )
     if (error !== undefined || updateEmpleadoDto === undefined) {
       CustomResponse.badRequest({ res, error })
       return
     }
 
-    const { authPayload } = req
-
-    const updateEmpleado = new UpdateEmpleado(authPayload)
+    const updateEmpleado = new UpdateEmpleado(this.publicStoragePath)
 
     updateEmpleado
-      .execute(updateEmpleadoDto, numericIdDto)
+      .execute(updateEmpleadoDto, numericIdDto, file)
       .then((empleado) => {
         CustomResponse.success({ res, data: empleado })
       })
