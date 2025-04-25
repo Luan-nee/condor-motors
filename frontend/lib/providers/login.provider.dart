@@ -217,35 +217,14 @@ class LoginProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     try {
-      await _authRepository.logout();
+      await _authRepository.clearSession();
       _status = LoginStatus.initial;
       _errorMessage = '';
-
-      // Limpiar todas las preferencias
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await Future.wait([
-        prefs.clear(), // Limpiar todas las preferencias
-        _authRepository.clearTokens(), // Limpiar tokens
-      ]);
-
       notifyListeners();
     } catch (e) {
       debugPrint('Error durante logout: $e');
-      // Asegurar que se limpie el estado incluso si hay error
       _status = LoginStatus.initial;
       _errorMessage = '';
-
-      // Intentar limpiar datos incluso si hubo error
-      try {
-        final SharedPreferences prefs = await SharedPreferences.getInstance();
-        await Future.wait([
-          prefs.clear(),
-          _authRepository.clearTokens(),
-        ]);
-      } catch (cleanupError) {
-        debugPrint('Error adicional durante limpieza de datos: $cleanupError');
-      }
-
       notifyListeners();
     }
   }

@@ -1,3 +1,5 @@
+import 'package:condorsmotors/api/index.api.dart';
+
 /// Modelo para representar el rol de un empleado
 class EmpleadoRol {
   final String codigo;
@@ -199,6 +201,17 @@ class Empleado {
   @override
   String toString() {
     return 'Empleado{id: $id, nombre: $nombre $apellidos, activo: $activo}';
+  }
+
+  String? get fotoUrl {
+    if (ubicacionFoto == null || ubicacionFoto!.isEmpty) {
+      return null;
+    }
+    final String baseUrl = api.getBaseUrlSinApi();
+    if (ubicacionFoto!.startsWith('http')) {
+      return ubicacionFoto;
+    }
+    return baseUrl + ubicacionFoto!;
   }
 }
 

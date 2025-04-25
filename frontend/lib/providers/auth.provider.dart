@@ -2,7 +2,6 @@ import 'package:condorsmotors/models/auth.model.dart';
 import 'package:condorsmotors/repositories/auth.repository.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthRepository _authRepository;
@@ -63,36 +62,14 @@ class AuthProvider extends ChangeNotifier {
 
       debugPrint('Iniciando proceso de cierre de sesión...');
 
-      try {
-        // 1. Intentar hacer logout usando el repository
-        await _authRepository.logout();
-      } catch (serverError) {
-        // Si hay error de conexión, solo lo registramos pero continuamos con la limpieza local
-        debugPrint('Error al contactar servidor para logout: $serverError');
-      }
+      await _authRepository.clearSession();
 
-      // 2. Limpiar tokens y estado independientemente de la respuesta del servidor
-      await Future.wait([
-        _authRepository.clearTokens(),
-        _clearLocalData(),
-      ]);
-
-      // 3. Resetear el estado del provider
       _state = AuthState.initial();
       notifyListeners();
 
       debugPrint('Sesión cerrada exitosamente');
     } catch (e) {
       debugPrint('Error durante proceso de logout: $e');
-
-      // Intentar limpieza de emergencia
-      try {
-        await _clearLocalData(emergencyCleanup: true);
-      } catch (cleanupError) {
-        debugPrint('Error en limpieza de emergencia: $cleanupError');
-      }
-
-      // Asegurar que el estado se resetee incluso si hay errores
       _state = AuthState.initial();
       notifyListeners();
     }
@@ -124,68 +101,6 @@ class AuthProvider extends ChangeNotifier {
           (Route<dynamic> route) => false,
         );
       }
-    }
-  }
-
-  /// Limpia los datos locales manteniendo configuraciones críticas
-  Future<void> _clearLocalData({bool emergencyCleanup = false}) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Configuraciones que siempre se deben mantener
-    final keysToKeep = {'theme_mode', 'language', 'server_url'};
-
-    if (emergencyCleanup) {
-      // En caso de limpieza de emergencia, solo limpiar datos críticos
-      await Future.wait([
-        prefs.setBool('stay_logged_in', false),
-        prefs.remove('username_auto'),
-        prefs.remove('password_auto'),
-        prefs.remove('remember_me'),
-        prefs.remove('username'),
-        prefs.remove('password'),
-        prefs.remove('access_token'),
-        prefs.remove('refresh_token'),
-        prefs.remove('expiry_time'),
-        prefs.remove('last_username'),
-        prefs.remove('last_password'),
-        prefs.remove('last_sucursal'),
-        prefs.remove('user_data'),
-        prefs.remove('current_sucursal_id'),
-        prefs.remove('current_sucursal_data'),
-      ]);
-    } else {
-      // Limpieza completa normal
-      final keys = prefs.getKeys();
-
-      // Crear lista de futures para borrar todo excepto las claves a conservar
-      final List<Future<bool>> deleteFutures = keys
-          .where((key) => !keysToKeep.contains(key))
-          .map((key) => prefs.remove(key))
-          .toList();
-
-      await Future.wait([
-        ...deleteFutures,
-        // Asegurar que estas claves críticas se borren
-        prefs.remove('access_token'),
-        prefs.remove('refresh_token'),
-        prefs.remove('expiry_time'),
-        prefs.remove('last_username'),
-        prefs.remove('last_password'),
-        prefs.remove('remember_me'),
-        prefs.remove('username'),
-        prefs.remove('password'),
-        prefs.remove('username_auto'),
-        prefs.remove('password_auto'),
-        prefs.remove('user_data'),
-        prefs.remove('current_sucursal_id'),
-        prefs.remove('current_sucursal_data'),
-        prefs.setBool('stay_logged_in', false),
-        // Limpiar caches específicos
-        prefs.remove('ventas_cache'),
-        prefs.remove('productos_cache'),
-        prefs.remove('proformas_cache'),
-        prefs.remove('dashboard_cache'),
-      ]);
     }
   }
 

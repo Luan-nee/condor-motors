@@ -349,7 +349,7 @@ class ApiClient {
   Future<Map<String, dynamic>> request({
     required String endpoint,
     required String method,
-    Map<String, dynamic>? body,
+    Object? body,
     Map<String, String>? queryParams,
     bool requiresAuth = false,
   }) async {
@@ -436,7 +436,7 @@ class ApiClient {
   Future<Map<String, dynamic>> authenticatedRequest({
     required String endpoint,
     required String method,
-    Map<String, dynamic>? body,
+    Object? body,
     Map<String, String>? queryParams,
     Map<String, String>? headers,
   }) async {

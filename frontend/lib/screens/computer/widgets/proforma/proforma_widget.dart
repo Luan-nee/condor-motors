@@ -352,70 +352,59 @@ class ProformaWidget extends StatelessWidget {
           ),
 
           // Lista de productos
+          const SizedBox(height: 8),
           Expanded(
-            child: proforma.detalles.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No hay productos en esta proforma',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  )
-                : ListView.separated(
-                    itemCount: proforma.detalles.length,
-                    separatorBuilder: (context, index) => Divider(
-                      color: Colors.white.withOpacity(0.05),
-                      height: 1,
-                    ),
-                    itemBuilder: (context, index) {
-                      final detalle = proforma.detalles[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        child: Row(
-                          children: [
-                            // Descripción del producto
-                            Expanded(
-                              flex: 5,
-                              child: Text(
-                                detalle.nombre,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-
-                            // Información de cantidad
-                            Expanded(
-                              child: _buildCantidadColumn(detalle),
-                            ),
-
-                            // Información de precio
-                            Expanded(
-                              flex: 2,
-                              child: _buildPrecioColumn(detalle),
-                            ),
-
-                            // Subtotal
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                VentasUtils.formatearMontoTexto(
-                                    detalle.subtotal),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.right,
-                              ),
-                            ),
-                          ],
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: proforma.detalles.length,
+              itemBuilder: (context, index) {
+                final detalle = proforma.detalles[index];
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      // Descripción del producto
+                      Expanded(
+                        flex: 5,
+                        child: Text(
+                          detalle.nombre,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
                         ),
-                      );
-                    },
+                      ),
+
+                      // Información de cantidad
+                      Expanded(
+                        child: _buildCantidadColumn(detalle),
+                      ),
+
+                      // Información de precio
+                      Expanded(
+                        flex: 2,
+                        child: _buildPrecioColumn(detalle),
+                      ),
+
+                      // Subtotal
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          VentasUtils.formatearMontoTexto(detalle.subtotal),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                    ],
                   ),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -501,7 +490,7 @@ class ProformaWidget extends StatelessWidget {
                 child: Text(
                   VentasUtils.formatearMontoTexto(proforma.total),
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.green,
                   ),
@@ -870,6 +859,7 @@ class ProformaWidget extends StatelessWidget {
           '${detalle.cantidad}',
           style: const TextStyle(
             color: Colors.white,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -882,7 +872,7 @@ class ProformaWidget extends StatelessWidget {
               '($cantidadPagada + $cantidadGratis)',
               style: TextStyle(
                 color: Colors.green.shade300,
-                fontSize: 11,
+                fontSize: 14,
               ),
             ),
           ),
@@ -905,7 +895,7 @@ class ProformaWidget extends StatelessWidget {
             VentasUtils.formatearMontoTexto(precioOriginal),
             style: const TextStyle(
               color: Colors.white54,
-              fontSize: 11,
+              fontSize: 14,
               decoration: TextDecoration.lineThrough,
             ),
           ),
@@ -916,6 +906,7 @@ class ProformaWidget extends StatelessWidget {
           style: TextStyle(
             color: tieneDescuento ? Colors.green : Colors.white,
             fontWeight: tieneDescuento ? FontWeight.bold : FontWeight.normal,
+            fontSize: 14,
           ),
         ),
 
@@ -937,7 +928,7 @@ class ProformaWidget extends StatelessWidget {
                   '$descuento% OFF',
                   style: TextStyle(
                     color: Colors.orange.shade300,
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1123,8 +1114,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                   const SizedBox(height: 16),
 
                   // Resumen de la proforma
-                  SizedBox(
-                    height: isLargeScreen ? 700 : 500,
+                  Expanded(
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -1134,250 +1124,203 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Row(
-                            children: <Widget>[
-                              const Text(
-                                'Cliente:',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                widget.proforma.getNombreCliente(),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
                           const Text(
                             'Detalles:',
                             style: TextStyle(
                               color: Colors.white70,
+                              fontSize: 20,
                             ),
                           ),
                           const SizedBox(height: 8),
-
-                          // Lista de productos (con scroll)
-                          Flexible(
+                          // Lista de productos scrollable que ocupa todo el espacio disponible
+                          Expanded(
                             child: ListView.builder(
-                                itemCount: widget.proforma.detalles.length,
-                                itemBuilder: (context, index) {
-                                  final detalle =
-                                      widget.proforma.detalles[index];
+                              itemCount: widget.proforma.detalles.length,
+                              itemBuilder: (context, index) {
+                                final detalle = widget.proforma.detalles[index];
+                                // Verificar si tiene descuentos o unidades gratis
+                                final bool tieneDescuento =
+                                    _tieneDescuento(detalle);
+                                final bool tieneUnidadesGratis =
+                                    _tieneUnidadesGratis(detalle);
+                                final double? precioOriginal =
+                                    _getPrecioOriginal(detalle);
+                                final String descuento = _getDescuento(detalle);
+                                final int cantidadGratis =
+                                    _getCantidadGratis(detalle);
 
-                                  // Verificar si tiene descuentos o unidades gratis
-                                  final bool tieneDescuento =
-                                      _tieneDescuento(detalle);
-                                  final bool tieneUnidadesGratis =
-                                      _tieneUnidadesGratis(detalle);
-                                  final double? precioOriginal =
-                                      _getPrecioOriginal(detalle);
-                                  final String descuento =
-                                      _getDescuento(detalle);
-                                  final int cantidadGratis =
-                                      _getCantidadGratis(detalle);
-
-                                  return Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 4),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: <Widget>[
-                                            Expanded(
-                                              flex: 5,
-                                              child: Row(
-                                                children: [
-                                                  Text(
-                                                    detalle.nombre,
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                  if (tieneDescuento ||
-                                                      tieneUnidadesGratis) ...[
-                                                    const SizedBox(width: 8),
-                                                    Icon(
-                                                      tieneDescuento
-                                                          ? Icons.discount
-                                                          : Icons.card_giftcard,
-                                                      size: 14,
-                                                      color: tieneDescuento
-                                                          ? Colors.orange
-                                                          : Colors.green,
-                                                    ),
-                                                  ],
-                                                ],
-                                              ),
-                                            ),
-                                            Expanded(
-                                              child: Text(
-                                                '${detalle.cantidad}x',
-                                                style: const TextStyle(
-                                                  color: Colors.white70,
-                                                ),
-                                                textAlign: TextAlign.right,
-                                              ),
-                                            ),
-                                            Expanded(
-                                              flex: 2,
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.end,
-                                                children: [
-                                                  if (tieneDescuento &&
-                                                      precioOriginal != null)
-                                                    Text(
-                                                      VentasUtils
-                                                          .formatearMontoTexto(
-                                                              precioOriginal),
-                                                      style: const TextStyle(
-                                                        color: Colors.white38,
-                                                        fontSize: 10,
-                                                        decoration:
-                                                            TextDecoration
-                                                                .lineThrough,
-                                                      ),
-                                                    ),
-                                                  Text(
-                                                    VentasUtils
-                                                        .formatearMontoTexto(
-                                                            detalle
-                                                                .precioUnitario),
-                                                    style: TextStyle(
-                                                      color: tieneDescuento
-                                                          ? Colors
-                                                              .orange.shade200
-                                                          : Colors.white70,
-                                                      fontWeight: tieneDescuento
-                                                          ? FontWeight.bold
-                                                          : FontWeight.normal,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Expanded(
-                                              flex: 2,
-                                              child: Text(
-                                                VentasUtils.formatearMontoTexto(
-                                                    detalle.subtotal),
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                                textAlign: TextAlign.right,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-
-                                        // Mostrar información de promociones
-                                        if (tieneDescuento ||
-                                            tieneUnidadesGratis)
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                left: 16, top: 2, bottom: 4),
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: <Widget>[
+                                          Expanded(
+                                            flex: 5,
                                             child: Row(
                                               children: [
-                                                if (tieneDescuento)
-                                                  Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 6,
-                                                        vertical: 1),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.orange
-                                                          .withOpacity(0.1),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              4),
-                                                      border: Border.all(
-                                                          color: Colors.orange
-                                                              .withOpacity(
-                                                                  0.3)),
-                                                    ),
-                                                    child: Text(
-                                                      'Descuento $descuento%',
-                                                      style: TextStyle(
-                                                        fontSize: 10,
-                                                        color: Colors
-                                                            .orange.shade300,
-                                                      ),
-                                                    ),
+                                                Text(
+                                                  detalle.nombre,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 16,
                                                   ),
-                                                if (tieneDescuento &&
-                                                    tieneUnidadesGratis)
+                                                ),
+                                                if (tieneDescuento ||
+                                                    tieneUnidadesGratis) ...[
                                                   const SizedBox(width: 8),
-                                                if (tieneUnidadesGratis)
-                                                  Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 6,
-                                                        vertical: 1),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.green
-                                                          .withOpacity(0.1),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              4),
-                                                      border: Border.all(
-                                                          color: Colors.green
-                                                              .withOpacity(
-                                                                  0.3)),
-                                                    ),
-                                                    child: Text(
-                                                      '$cantidadGratis unidades gratis',
-                                                      style: TextStyle(
-                                                        fontSize: 10,
-                                                        color: Colors
-                                                            .green.shade300,
-                                                      ),
-                                                    ),
+                                                  Icon(
+                                                    tieneDescuento
+                                                        ? Icons.discount
+                                                        : Icons.card_giftcard,
+                                                    size: 14,
+                                                    color: tieneDescuento
+                                                        ? Colors.orange
+                                                        : Colors.green,
                                                   ),
+                                                ],
                                               ],
                                             ),
                                           ),
+                                          Expanded(
+                                            child: Text(
+                                              '${detalle.cantidad}x',
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 14,
+                                              ),
+                                              textAlign: TextAlign.right,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            flex: 2,
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.end,
+                                              children: [
+                                                if (tieneDescuento &&
+                                                    precioOriginal != null)
+                                                  Text(
+                                                    VentasUtils
+                                                        .formatearMontoTexto(
+                                                            precioOriginal),
+                                                    style: const TextStyle(
+                                                      color: Colors.white38,
+                                                      fontSize: 12,
+                                                      decoration: TextDecoration
+                                                          .lineThrough,
+                                                    ),
+                                                  ),
+                                                Text(
+                                                  VentasUtils
+                                                      .formatearMontoTexto(
+                                                          detalle
+                                                              .precioUnitario),
+                                                  style: TextStyle(
+                                                    color: tieneDescuento
+                                                        ? Colors.orange.shade200
+                                                        : Colors.white70,
+                                                    fontWeight: tieneDescuento
+                                                        ? FontWeight.bold
+                                                        : FontWeight.normal,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Expanded(
+                                            flex: 2,
+                                            child: Text(
+                                              VentasUtils.formatearMontoTexto(
+                                                  detalle.subtotal),
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              textAlign: TextAlign.right,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
 
-                                        if (index <
-                                            widget.proforma.detalles.length - 1)
-                                          const Divider(
-                                              height: 8, color: Colors.white12),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                          ),
+                                      // Mostrar información de promociones
+                                      if (tieneDescuento || tieneUnidadesGratis)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: 16, top: 2, bottom: 4),
+                                          child: Row(
+                                            children: [
+                                              if (tieneDescuento)
+                                                Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 1),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.orange
+                                                        .withOpacity(0.1),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            4),
+                                                    border: Border.all(
+                                                        color: Colors.orange
+                                                            .withOpacity(0.3)),
+                                                  ),
+                                                  child: Text(
+                                                    'Descuento $descuento%',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors
+                                                          .orange.shade300,
+                                                    ),
+                                                  ),
+                                                ),
+                                              if (tieneDescuento &&
+                                                  tieneUnidadesGratis)
+                                                const SizedBox(width: 8),
+                                              if (tieneUnidadesGratis)
+                                                Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 1),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.green
+                                                        .withOpacity(0.1),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            4),
+                                                    border: Border.all(
+                                                        color: Colors.green
+                                                            .withOpacity(0.3)),
+                                                  ),
+                                                  child: Text(
+                                                    '$cantidadGratis unidades gratis',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color:
+                                                          Colors.green.shade300,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
 
-                          const Divider(color: Colors.white24),
-                          Row(
-                            children: <Widget>[
-                              const Spacer(),
-                              const Text(
-                                'Total:',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Text(
-                                VentasUtils.formatearMontoTexto(
-                                    widget.proforma.total),
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF4CAF50),
-                                ),
-                              ),
-                            ],
+                                      if (index <
+                                          widget.proforma.detalles.length - 1)
+                                        const Divider(
+                                            height: 8, color: Colors.white12),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         ],
                       ),
@@ -1421,7 +1364,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                               _mensajeValidacion,
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 12,
+                                fontSize: 14,
                               ),
                             ),
                           ),

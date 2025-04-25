@@ -173,4 +173,23 @@ class AuthRepository implements BaseRepository {
       rethrow;
     }
   }
+
+  /// Centraliza la limpieza profunda de sesión (tokens, datos, preferencias)
+  /// Mantiene solo configuraciones críticas (theme_mode, language, server_url)
+  Future<void> clearSession() async {
+    try {
+      // Cerrar sesión remota y limpiar tokens/datos locales
+      await logout();
+      debugPrint('AuthRepository: Sesión completamente limpiada');
+    } catch (e) {
+      debugPrint('AuthRepository: Error en clearSession: $e');
+      // Intentar limpieza de emergencia
+      try {
+        await clearTokens();
+      } catch (cleanupError) {
+        debugPrint(
+            'AuthRepository: Error adicional en limpieza: $cleanupError');
+      }
+    }
+  }
 }

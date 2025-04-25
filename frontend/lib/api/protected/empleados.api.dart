@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/utils/logger.dart';
+import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 
 class EmpleadosApi {
   final ApiClient _api;
@@ -169,7 +173,8 @@ class EmpleadosApi {
   }
 
   /// Crea un nuevo empleado
-  Future<Empleado> createEmpleado(Map<String, dynamic> empleadoData) async {
+  Future<Empleado> createEmpleado(Map<String, dynamic> empleadoData,
+      {File? fotoFile}) async {
     try {
       // Validar datos mínimos requeridos
       if (!empleadoData.containsKey('nombre') ||
@@ -181,7 +186,6 @@ class EmpleadosApi {
         );
       }
 
-      // Formatear las horas correctamente si están presentes
       final Map<String, dynamic> formattedData = Map.from(empleadoData);
 
       // Asegurar que horaInicioJornada tenga el formato correcto (hh:mm:ss)
@@ -198,12 +202,65 @@ class EmpleadosApi {
             _formatTimeString(formattedData['horaFinJornada']);
       }
 
+      dynamic bodyToSend;
+      Options? options;
+      if (fotoFile != null) {
+        final String fileName =
+            fotoFile.path.split(Platform.pathSeparator).last;
+        final String fileExtension = fileName.contains('.')
+            ? fileName.split('.').last.toLowerCase()
+            : '';
+        final int fileSize = await fotoFile.length();
+        Logger.debug('[empleados.api] Imagen a enviar:');
+        Logger.debug('  Path: \\${fotoFile.path}');
+        Logger.debug('  Nombre: $fileName');
+        Logger.debug('  Extensión: $fileExtension');
+        Logger.debug('  Tamaño: $fileSize bytes');
+        // Forzar el tipo MIME correcto
+        String mimeType = 'jpeg';
+        switch (fileExtension) {
+          case 'jpg':
+          case 'jpeg':
+            mimeType = 'jpeg';
+            break;
+          case 'png':
+            mimeType = 'png';
+            break;
+          case 'webp':
+            mimeType = 'webp';
+            break;
+          default:
+            mimeType = 'jpeg';
+        }
+        // Convertir 'activo' a string si existe
+        if (formattedData.containsKey('activo')) {
+          formattedData['activo'] =
+              formattedData['activo'] == true ? 'true' : 'false';
+        }
+        final formData = FormData.fromMap({
+          ...formattedData,
+          'foto': await MultipartFile.fromFile(
+            fotoFile.path,
+            filename: fileName,
+            contentType: MediaType('image', mimeType),
+          ),
+        });
+        Logger.debug('[empleados.api] FormData campos: ${formattedData.keys}');
+        Logger.debug(
+            '[empleados.api] Archivo: ${fotoFile.path.split(Platform.pathSeparator).last}');
+        bodyToSend = formData;
+        options = Options(contentType: 'multipart/form-data');
+      } else {
+        bodyToSend = formattedData;
+      }
+
       Logger.debug(
           'Creando nuevo empleado: ${formattedData['nombre']} ${formattedData['apellidos']}');
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/empleados',
         method: 'POST',
-        body: formattedData,
+        body: bodyToSend,
+        headers: options?.headers?.cast<String, String>(),
       );
 
       Logger.debug('Respuesta de createEmpleado recibida');
@@ -216,7 +273,6 @@ class EmpleadosApi {
       } else if (response['data'] is Map) {
         data = response['data'];
       } else if (response['data'] is List && response['data'].isNotEmpty) {
-        // Si es una lista, tomar el primer elemento como el empleado creado
         data = response['data'][0] as Map<String, dynamic>;
       } else {
         data = null;
@@ -232,7 +288,6 @@ class EmpleadosApi {
         );
       }
 
-      // Invalidar caché de listas de empleados
       _invalidateListCache();
 
       Logger.debug('está a punto de retornar el empleado creado');
@@ -247,9 +302,9 @@ class EmpleadosApi {
   ///
   /// El ID debe ser un string, aunque represente un número
   Future<Empleado> updateEmpleado(
-      String empleadoId, Map<String, dynamic> empleadoData) async {
+      String empleadoId, Map<String, dynamic> empleadoData,
+      {File? fotoFile}) async {
     try {
-      // Validar que empleadoId no sea nulo o vacío
       if (empleadoId.isEmpty) {
         throw ApiException(
           statusCode: 400,
@@ -260,34 +315,82 @@ class EmpleadosApi {
 
       Logger.debug('Actualizando empleado con ID: $empleadoId');
 
-      // Formatear las horas correctamente si están presentes
       final Map<String, dynamic> formattedData = Map.from(empleadoData);
 
-      // Asegurar que horaInicioJornada tenga el formato correcto (hh:mm:ss)
       if (formattedData.containsKey('horaInicioJornada') &&
           formattedData['horaInicioJornada'] != null) {
         formattedData['horaInicioJornada'] =
             _formatTimeString(formattedData['horaInicioJornada']);
       }
 
-      // Asegurar que horaFinJornada tenga el formato correcto (hh:mm:ss)
       if (formattedData.containsKey('horaFinJornada') &&
           formattedData['horaFinJornada'] != null) {
         formattedData['horaFinJornada'] =
             _formatTimeString(formattedData['horaFinJornada']);
       }
 
-      // Usar PATCH para actualizar el empleado
+      dynamic bodyToSend;
+      Options? options;
+      if (fotoFile != null) {
+        final String fileName =
+            fotoFile.path.split(Platform.pathSeparator).last;
+        final String fileExtension = fileName.contains('.')
+            ? fileName.split('.').last.toLowerCase()
+            : '';
+        final int fileSize = await fotoFile.length();
+        Logger.debug('[empleados.api] Imagen a enviar:');
+        Logger.debug('  Path: \\${fotoFile.path}');
+        Logger.debug('  Nombre: $fileName');
+        Logger.debug('  Extensión: $fileExtension');
+        Logger.debug('  Tamaño: $fileSize bytes');
+        // Forzar el tipo MIME correcto
+        String mimeType = 'jpeg';
+        switch (fileExtension) {
+          case 'jpg':
+          case 'jpeg':
+            mimeType = 'jpeg';
+            break;
+          case 'png':
+            mimeType = 'png';
+            break;
+          case 'webp':
+            mimeType = 'webp';
+            break;
+          default:
+            mimeType = 'jpeg';
+        }
+        // Convertir 'activo' a string si existe
+        if (formattedData.containsKey('activo')) {
+          formattedData['activo'] =
+              formattedData['activo'] == true ? 'true' : 'false';
+        }
+        final formData = FormData.fromMap({
+          ...formattedData,
+          'foto': await MultipartFile.fromFile(
+            fotoFile.path,
+            filename: fileName,
+            contentType: MediaType('image', mimeType),
+          ),
+        });
+        Logger.debug('[empleados.api] FormData campos: ${formattedData.keys}');
+        Logger.debug(
+            '[empleados.api] Archivo: ${fotoFile.path.split(Platform.pathSeparator).last}');
+        bodyToSend = formData;
+        options = Options(contentType: 'multipart/form-data');
+      } else {
+        bodyToSend = formattedData;
+      }
+
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/empleados/$empleadoId',
         method: 'PATCH',
-        body: formattedData,
+        body: bodyToSend,
+        headers: options?.headers?.cast<String, String>(),
       );
 
       Logger.debug('Respuesta de updateEmpleado recibida');
       final Map<String, dynamic> data = _processResponse(response);
 
-      // Invalidar caché del empleado específico y listas
       _cache.invalidate('empleado_$empleadoId');
       _invalidateListCache();
 

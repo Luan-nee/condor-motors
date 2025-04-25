@@ -147,11 +147,12 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
-                  child: widget.empleado.ubicacionFoto != null
+                  child: (widget.empleado.fotoUrl != null &&
+                          widget.empleado.fotoUrl!.isNotEmpty)
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: Image.network(
-                            widget.empleado.ubicacionFoto!,
+                            widget.empleado.fotoUrl!,
                             width: 64,
                             height: 64,
                             fit: BoxFit.cover,

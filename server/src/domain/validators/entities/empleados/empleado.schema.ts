@@ -21,7 +21,15 @@ export const empleadoSchema = {
       message:
         'El apellido del empleado solo puede contener letras (mayúsculas o minúsculas)'
     }),
-  activo: z.boolean().default(true),
+  activo: z
+    .preprocess((val) => {
+      if (typeof val === 'string') {
+        if (val === 'true') return true
+        if (val === 'false') return false
+      }
+      return val
+    }, z.boolean())
+    .default(true),
   dni: z
     .string()
     .trim()

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:condorsmotors/api/main.api.dart' show ApiException;
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
@@ -16,6 +18,7 @@ class EmpleadoProvider extends ChangeNotifier {
   List<Empleado> _empleados = <Empleado>[];
   Map<String, String> _nombresSucursales = <String, String>{};
   List<Map<String, dynamic>> _rolesCuentas = <Map<String, dynamic>>[];
+  File? _fotoFile;
 
   // Lista de roles disponibles
   final List<String> _roles = <String>[
@@ -41,6 +44,7 @@ class EmpleadoProvider extends ChangeNotifier {
   Map<String, String> get nombresSucursales => _nombresSucursales;
   List<String> get roles => _roles;
   List<Map<String, dynamic>> get rolesCuentas => _rolesCuentas;
+  File? get fotoFile => _fotoFile;
 
   // Constructor
   EmpleadoProvider({EmpleadoRepository? empleadoRepository})
@@ -208,19 +212,35 @@ class EmpleadoProvider extends ChangeNotifier {
     clearError();
 
     try {
+      // Log de la imagen si existe
+      if (_fotoFile != null) {
+        final String fileName =
+            _fotoFile!.path.split(Platform.pathSeparator).last;
+        final String fileExtension =
+            fileName.contains('.') ? fileName.split('.').last : '';
+        final int fileSize = await _fotoFile!.length();
+        debugPrint('[empleado_provider] Imagen a enviar:');
+        debugPrint('  Path: \\${_fotoFile!.path}');
+        debugPrint('  Nombre: $fileName');
+        debugPrint('  Extensión: $fileExtension');
+        debugPrint('  Tamaño: $fileSize bytes');
+      }
+
       if (empleadoExistente != null) {
         // Actualizar empleado existente
         await _empleadoRepository.updateEmpleado(
-            empleadoExistente.id, empleadoData);
+            empleadoExistente.id, empleadoData,
+            fotoFile: _fotoFile);
 
         // Actualizar localmente sin recargar todo
         _actualizarEmpleadoLocal(empleadoExistente.id, empleadoData);
       } else {
         // Crear nuevo empleado - aquí sí necesitamos recargar para obtener el nuevo ID
-        await _empleadoRepository.createEmpleado(empleadoData);
+        await _empleadoRepository.createEmpleado(empleadoData,
+            fotoFile: _fotoFile);
         await cargarDatos();
       }
-
+      clearFotoFile();
       return true;
     } catch (e) {
       debugPrint('Error al guardar empleado: $e');
@@ -684,5 +704,15 @@ class EmpleadoProvider extends ChangeNotifier {
       return 'Las contraseñas no coinciden';
     }
     return null;
+  }
+
+  void setFotoFile(File? file) {
+    _fotoFile = file;
+    notifyListeners();
+  }
+
+  void clearFotoFile() {
+    _fotoFile = null;
+    notifyListeners();
   }
 }

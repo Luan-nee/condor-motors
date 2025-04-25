@@ -291,7 +291,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                 icon: Icons.attach_money,
                 color: Colors.green,
                 titulo: 'Precio Regular',
-                subtitulo: '\$${producto['precio']}',
+                subtitulo: 'S/ ${producto['precio']}',
               ),
 
               if (enLiquidacion) ...[

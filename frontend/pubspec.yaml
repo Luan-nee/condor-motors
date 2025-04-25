@@ -33,6 +33,9 @@ dependencies:
   open_file: ^3.5.10
   flutter_localizations:
     sdk: flutter
+  image_picker: ^1.1.2
+  file_picker: ^10.1.2
+  
 
 dev_dependencies:
   flutter_test:

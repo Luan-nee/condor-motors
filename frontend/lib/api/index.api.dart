@@ -230,4 +230,9 @@ class CondorMotorsApi {
       rethrow;
     }
   }
+
+  /// Devuelve la baseUrl sin el sufijo /api para construir URLs absolutas de imágenes
+  String getBaseUrlSinApi() {
+    return _apiClient.baseUrl.replaceFirst(RegExp(r'/api/?'), '');
+  }
 }

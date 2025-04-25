@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/providers/admin/empleado.admin.provider.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
@@ -5,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class EmpleadoForm extends StatefulWidget {
@@ -66,17 +69,22 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   // Variable para controlar el estado activo/inactivo del empleado
   bool _isEmpleadoActivo = true;
 
+  File? _fotoFile;
+  ImageProvider? _previewImage;
+
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
     _inicializarFormulario();
-
-    // Si hay un empleado existente, obtener su información de cuenta
-    // usando addPostFrameCallback para evitar setState durante el build
     if (widget.empleado != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _cargarInformacionCuenta();
       });
+      if (widget.empleado!.fotoUrl != null) {
+        _previewImage = NetworkImage(widget.empleado!.fotoUrl!);
+      }
     }
   }
 
@@ -301,6 +309,42 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     );
   }
 
+  void _pickImage() async {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1200,
+    );
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      // DebugPrint para loggear información relevante del archivo
+      final String fileName = file.path.split(Platform.pathSeparator).last;
+      final String fileExtension =
+          fileName.contains('.') ? fileName.split('.').last : '';
+      final int fileSize = await file.length();
+      debugPrint('[empleado_form] Imagen seleccionada:');
+      debugPrint('  Path: \\${file.path}');
+      debugPrint('  Nombre: $fileName');
+      debugPrint('  Extensión: $fileExtension');
+      debugPrint('  Tamaño: $fileSize bytes');
+      setState(() {
+        _fotoFile = file;
+        _previewImage = FileImage(_fotoFile!);
+      });
+      final provider = Provider.of<EmpleadoProvider>(context, listen: false);
+      provider.setFotoFile(_fotoFile);
+    }
+  }
+
+  void _clearImage() {
+    setState(() {
+      _fotoFile = null;
+      _previewImage = null;
+    });
+    final provider = Provider.of<EmpleadoProvider>(context, listen: false);
+    provider.clearFotoFile();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -339,6 +383,43 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Imagen de empleado
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 48,
+                      backgroundColor: Colors.grey[800],
+                      backgroundImage: _previewImage,
+                      child: _previewImage == null
+                          ? const Icon(Icons.person,
+                              size: 48, color: Colors.white54)
+                          : null,
+                    ),
+                    const SizedBox(width: 24),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _pickImage,
+                          icon: const Icon(Icons.upload_file),
+                          label: const Text('Seleccionar Foto'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE31E24),
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                        if (_previewImage != null)
+                          TextButton(
+                            onPressed: _clearImage,
+                            child: const Text('Quitar Foto',
+                                style: TextStyle(color: Colors.white54)),
+                          ),
+                      ],
                     ),
                   ],
                 ),
@@ -832,13 +913,11 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     setState(() => _isLoading = true);
 
     try {
-      // Formatear horarios en formato hh:mm:ss
       final String horaInicio =
           '${_horaInicioHoraController.text.padLeft(2, '0')}:${_horaInicioMinutoController.text.padLeft(2, '0')}:00';
       final String horaFin =
           '${_horaFinHoraController.text.padLeft(2, '0')}:${_horaFinMinutoController.text.padLeft(2, '0')}:00';
 
-      // Construir datos del empleado
       final Map<String, Object?> empleadoData = <String, Object?>{
         'nombre': _nombreController.text,
         'apellidos': _apellidosController.text,
@@ -854,17 +933,20 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
         'activo': _isEmpleadoActivo,
       };
 
-      // Remover valores nulos
       empleadoData.removeWhere((String key, Object? value) =>
           value == null || (value is String && value.isEmpty));
 
-      // Solo delega la acción, no navega ni recarga aquí
       await widget.onSave(empleadoData);
+      // Limpiar la caché de empleados y recargar datos
+      final empleadoProvider =
+          Provider.of<EmpleadoProvider>(context, listen: false);
+      await empleadoProvider.recargarDatos();
+      _clearImage();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: [31m"+e.toString()+"\u001b[0m'),
+            content: Text('Error: \u001b[31m' + e.toString() + '\u001b[0m'),
             backgroundColor: Colors.red,
           ),
         );

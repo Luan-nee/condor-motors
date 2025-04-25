@@ -3,6 +3,8 @@ import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'dart:io';
 
 /// Repositorio para gestionar empleados
 ///
@@ -107,9 +109,23 @@ class EmpleadoRepository implements BaseRepository {
   /// Crea un nuevo empleado
   ///
   /// [empleadoData] Datos del empleado a crear
-  Future<Empleado> createEmpleado(Map<String, dynamic> empleadoData) async {
+  Future<Empleado> createEmpleado(Map<String, dynamic> empleadoData,
+      {File? fotoFile}) async {
     try {
-      return await _empleadosApi.createEmpleado(empleadoData);
+      if (fotoFile != null) {
+        final String fileName =
+            fotoFile.path.split(Platform.pathSeparator).last;
+        final String fileExtension =
+            fileName.contains('.') ? fileName.split('.').last : '';
+        final int fileSize = await fotoFile.length();
+        debugPrint('[empleado_repository] Imagen a enviar:');
+        debugPrint('  Path: \\${fotoFile.path}');
+        debugPrint('  Nombre: $fileName');
+        debugPrint('  Extensión: $fileExtension');
+        debugPrint('  Tamaño: $fileSize bytes');
+      }
+      return await _empleadosApi.createEmpleado(empleadoData,
+          fotoFile: fotoFile);
     } catch (e) {
       debugPrint('Error en EmpleadoRepository.createEmpleado: $e');
       rethrow;
@@ -120,10 +136,23 @@ class EmpleadoRepository implements BaseRepository {
   ///
   /// [id] ID del empleado a actualizar
   /// [empleadoData] Datos actualizados del empleado
-  Future<Empleado> updateEmpleado(
-      String id, Map<String, dynamic> empleadoData) async {
+  Future<Empleado> updateEmpleado(String id, Map<String, dynamic> empleadoData,
+      {File? fotoFile}) async {
     try {
-      return await _empleadosApi.updateEmpleado(id, empleadoData);
+      if (fotoFile != null) {
+        final String fileName =
+            fotoFile.path.split(Platform.pathSeparator).last;
+        final String fileExtension =
+            fileName.contains('.') ? fileName.split('.').last : '';
+        final int fileSize = await fotoFile.length();
+        debugPrint('[empleado_repository] Imagen a enviar:');
+        debugPrint('  Path: \\${fotoFile.path}');
+        debugPrint('  Nombre: $fileName');
+        debugPrint('  Extensión: $fileExtension');
+        debugPrint('  Tamaño: $fileSize bytes');
+      }
+      return await _empleadosApi.updateEmpleado(id, empleadoData,
+          fotoFile: fotoFile);
     } catch (e) {
       debugPrint('Error en EmpleadoRepository.updateEmpleado: $e');
       rethrow;
