@@ -17,7 +17,29 @@ export class LoggerMiddleware {
     const resource = `${protocol}://${host}${baseUrl}${url}`
     const startTime = Date.now()
 
+    // eslint-disable-next-line complexity
     res.on('finish', () => {
+      let files =
+        req.file !== undefined
+          ? [
+              {
+                originalName: req.file.originalname,
+                mimetype: req.file.mimetype,
+                fieldName: req.file.fieldname
+              }
+            ]
+          : undefined
+
+      if (files === undefined) {
+        const listOfFiles = Array.isArray(req.files) ? req.files : undefined
+
+        files = listOfFiles?.map((f) => ({
+          originalName: f.originalname,
+          mimetype: f.mimetype,
+          fieldName: f.fieldname
+        }))
+      }
+
       const duration = Date.now() - startTime
       if (!isProduction) {
         console.log('==================================================')
@@ -43,6 +65,7 @@ export class LoggerMiddleware {
         console.log('cookies:', req.cookies)
         console.log('params:', req.params)
         console.log('query:', req.query)
+        console.log('files:', files)
         console.log('-- - - - - - - - - - - - - - - - - - - - - - - END')
         console.log('==================================================')
       }
