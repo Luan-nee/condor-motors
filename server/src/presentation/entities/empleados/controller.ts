@@ -12,7 +12,10 @@ import { UpdateEmpleado } from '@/domain/use-cases/entities/empleados/update-emp
 import type { Request, Response } from 'express'
 
 export class EmpleadosController {
-  constructor(private readonly publicStoragePath: string) {}
+  constructor(
+    private readonly publicStoragePath: string,
+    private readonly photosDirectory?: string
+  ) {}
 
   create = (req: Request, res: Response) => {
     if (req.authPayload === undefined) {
@@ -28,7 +31,10 @@ export class EmpleadosController {
 
     const { file } = req
 
-    const createEmpleado = new CreateEmpleado(this.publicStoragePath)
+    const createEmpleado = new CreateEmpleado(
+      this.publicStoragePath,
+      this.photosDirectory
+    )
 
     createEmpleado
       .execute(createEmpleadoDto, file)
@@ -120,7 +126,10 @@ export class EmpleadosController {
       return
     }
 
-    const updateEmpleado = new UpdateEmpleado(this.publicStoragePath)
+    const updateEmpleado = new UpdateEmpleado(
+      this.publicStoragePath,
+      this.photosDirectory
+    )
 
     updateEmpleado
       .execute(updateEmpleadoDto, numericIdDto, file)

@@ -12,7 +12,8 @@ export class EmpleadosRoutes {
     const router = Router()
 
     const empleadosController = new EmpleadosController(
-      envs.PUBLIC_STORAGE_PATH
+      envs.PUBLIC_STORAGE_PATH,
+      '/static/img'
     )
 
     router.post(
