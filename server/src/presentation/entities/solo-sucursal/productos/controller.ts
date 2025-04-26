@@ -158,7 +158,7 @@ export class ProductosController {
   }
 
   update = (req: Request, res: Response) => {
-    if (req.authPayload === undefined) {
+    if (req.authPayload === undefined || req.permissions === undefined) {
       CustomResponse.unauthorized({ res })
       return
     }
@@ -174,18 +174,24 @@ export class ProductosController {
       return
     }
 
-    const [error, updateProductoDto] = UpdateProductoDto.create(req.body)
+    const { sucursalId, permissions, file } = req
+
+    const [error, updateProductoDto] = UpdateProductoDto.create(
+      req.body,
+      file?.size
+    )
     if (error !== undefined || updateProductoDto === undefined) {
       CustomResponse.badRequest({ res, error })
       return
     }
 
-    const { authPayload, sucursalId } = req
-
-    const updateProducto = new UpdateProducto(authPayload)
+    const updateProducto = new UpdateProducto(
+      permissions,
+      this.publicStoragePath
+    )
 
     updateProducto
-      .execute(numericIdDto, updateProductoDto, sucursalId)
+      .execute(numericIdDto, updateProductoDto, sucursalId, file)
       .then((producto) => {
         const message = `El producto con el id ${producto.id} ha sido actualizado`
 

@@ -1,5 +1,4 @@
 import { permissionCodes } from '@/consts'
-import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import { detallesProductoTable, productosTable } from '@/db/schema'
@@ -7,27 +6,70 @@ import type { UpdateProductoDto } from '@/domain/dtos/entities/productos/update-
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import type { SucursalIdType } from '@/types/schemas'
 import { and, eq } from 'drizzle-orm'
+import { stat, unlink } from 'node:fs/promises'
+import path from 'node:path'
+import sharp from 'sharp'
 
 export class UpdateProducto {
-  private readonly authPayload: AuthPayload
-  private readonly permissionUpdateAny = permissionCodes.productos.updateAny
-  private readonly permissionUpdateRelated =
-    permissionCodes.productos.updateRelated
+  private readonly permissionAny = permissionCodes.productos.updateAny
+  private readonly permissionRelated = permissionCodes.productos.updateRelated
 
-  constructor(authPayload: AuthPayload) {
-    this.authPayload = authPayload
-  }
+  constructor(
+    // private readonly authPayload: AuthPayload,
+    private readonly permissions: Permission[],
+    private readonly publicStoragePath: string
+  ) {}
 
+  // eslint-disable-next-line complexity
   private async updateProducto(
     numericIdDto: NumericIdDto,
     updateProductoDto: UpdateProductoDto,
-    sucursalId: SucursalIdType
+    sucursalId: SucursalIdType,
+    file: Express.Multer.File | undefined
   ) {
     const now = new Date()
     const mappedPrices = {
       precioCompra: updateProductoDto.precioCompra?.toFixed(2),
       precioVenta: updateProductoDto.precioVenta?.toFixed(2),
       precioOferta: updateProductoDto.precioOferta?.toFixed(2)
+    }
+
+    const productos = await db
+      .select({ id: productosTable.id, pathFoto: productosTable.pathFoto })
+      .from(productosTable)
+      .where(eq(productosTable.id, numericIdDto.id))
+
+    if (productos.length < 1) {
+      throw CustomError.notFound('El producto no existe')
+    }
+
+    const [currentProducto] = productos
+
+    const pathFoto = file !== undefined ? await this.saveFoto(file) : undefined
+
+    if (file !== undefined && currentProducto.pathFoto != null) {
+      const filePath = path.join(
+        this.publicStoragePath,
+        currentProducto.pathFoto
+      )
+
+      let fileExists = true
+
+      try {
+        await stat(filePath)
+      } catch {
+        fileExists = false
+      }
+
+      if (fileExists) {
+        await unlink(filePath)
+          .then()
+          .catch(() => {
+            throw CustomError.internalServer(
+              `Ha ocurrido un error al intentar actualizar la foto del producto: ${JSON.stringify(currentProducto)}`
+            )
+          })
+      }
     }
 
     try {
@@ -42,6 +84,7 @@ export class UpdateProducto {
             cantidadMinimaDescuento: updateProductoDto.cantidadMinimaDescuento,
             cantidadGratisDescuento: updateProductoDto.cantidadGratisDescuento,
             porcentajeDescuento: updateProductoDto.porcentajeDescuento,
+            pathFoto,
             colorId: updateProductoDto.colorId,
             categoriaId: updateProductoDto.categoriaId,
             marcaId: updateProductoDto.marcaId,
@@ -68,7 +111,9 @@ export class UpdateProducto {
           .returning({ id: detallesProductoTable.id })
 
         if (updatedDetallesProducto.length < 1 && updatedProductos.length < 1) {
-          tx.rollback()
+          throw CustomError.badRequest(
+            'Ha ocurrido un error al intentar actualizar el producto'
+          )
         }
       })
 
@@ -80,46 +125,77 @@ export class UpdateProducto {
     }
   }
 
-  private async validatePermissions(sucursalId: SucursalIdType) {
-    const validPermissions = await AccessControl.verifyPermissions(
-      this.authPayload,
-      [this.permissionUpdateAny, this.permissionUpdateRelated]
-    )
+  async saveFoto(file: Express.Multer.File) {
+    try {
+      const metadata = await sharp(file.buffer).metadata()
 
-    const hasPermissionAny = validPermissions.some(
-      (permission) => permission.codigoPermiso === this.permissionUpdateAny
-    )
+      if (
+        metadata.width == null ||
+        metadata.height == null ||
+        metadata.width > 2400 ||
+        metadata.height > 2400
+      ) {
+        throw CustomError.badRequest('Image is too large')
+      }
 
-    if (
-      !hasPermissionAny &&
-      !validPermissions.some(
-        (permission) =>
-          permission.codigoPermiso === this.permissionUpdateRelated
-      )
-    ) {
-      throw CustomError.forbidden()
+      const uuid = crypto.randomUUID()
+      const name = `${uuid}.webp`
+
+      const filepath = path.join(this.publicStoragePath, 'static', name)
+
+      await sharp(file.buffer)
+        .resize(800, 800)
+        .toFormat('webp')
+        .webp({ quality: 80 })
+        .toFile(filepath)
+
+      return `/static/${name}`
+    } catch (error) {
+      if (error instanceof CustomError) {
+        throw error
+      }
+
+      throw CustomError.internalServer()
+    }
+  }
+
+  private validatePermissions(sucursalId: SucursalIdType) {
+    let hasPermissionAny = false
+    let hasPermissionRelated = false
+    let isSameSucursal = false
+
+    for (const permission of this.permissions) {
+      if (permission.codigoPermiso === this.permissionAny) {
+        hasPermissionAny = true
+      }
+      if (permission.codigoPermiso === this.permissionRelated) {
+        hasPermissionRelated = true
+      }
+      if (permission.sucursalId === sucursalId) {
+        isSameSucursal = true
+      }
+
+      if (hasPermissionAny || (hasPermissionRelated && isSameSucursal)) {
+        return
+      }
     }
 
-    const isSameSucursal = validPermissions.some(
-      (permission) => permission.sucursalId === sucursalId
-    )
-
-    if (!hasPermissionAny && !isSameSucursal) {
-      throw CustomError.forbidden()
-    }
+    throw CustomError.forbidden()
   }
 
   async execute(
     numericIdDto: NumericIdDto,
     updateProductoDto: UpdateProductoDto,
-    sucursalId: SucursalIdType
+    sucursalId: SucursalIdType,
+    file: Express.Multer.File | undefined
   ) {
-    await this.validatePermissions(sucursalId)
+    this.validatePermissions(sucursalId)
 
     const producto = await this.updateProducto(
       numericIdDto,
       updateProductoDto,
-      sucursalId
+      sucursalId,
+      file
     )
 
     return producto

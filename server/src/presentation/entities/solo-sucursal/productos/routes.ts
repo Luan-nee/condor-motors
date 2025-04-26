@@ -33,7 +33,17 @@ export class ProductosRoutes {
 
     router.get('/', productosController.getAll)
 
-    router.patch('/:id', productosController.update)
+    router.patch(
+      '/:id',
+      [
+        AccessControlMiddleware.requests([
+          permissionCodes.productos.updateAny,
+          permissionCodes.productos.updateRelated
+        ]),
+        FilesMiddleware.image.single(ProductosRoutes.fileFieldName)
+      ],
+      productosController.update
+    )
 
     // router.delete('/:id', productosController.delete)
 

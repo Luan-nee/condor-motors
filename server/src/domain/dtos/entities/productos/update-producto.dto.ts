@@ -54,14 +54,17 @@ export class UpdateProductoDto {
     return Object.values(data).every((value) => value === undefined)
   }
 
-  static create(input: any): [string?, UpdateProductoDto?] {
+  static create(
+    input: any,
+    fileSize: number | undefined
+  ): [string?, UpdateProductoDto?] {
     const result = updateProductoValidator(input)
 
     if (!result.success) {
       return [result.error.message, undefined]
     }
 
-    if (this.isEmptyUpdate(result.data)) {
+    if (this.isEmptyUpdate(result.data) && fileSize == null) {
       return ['No se recibio informacion para actualizar', undefined]
     }
 
