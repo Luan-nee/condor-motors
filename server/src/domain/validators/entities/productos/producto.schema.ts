@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
 import { Validator } from '@/domain/validators/validator'
-import { parseNullString } from '@/core/lib/utils'
+import { parseBoolString, parseNullString } from '@/core/lib/utils'
 
 export const productoSchema = {
   nombre: z
@@ -23,16 +23,16 @@ export const productoSchema = {
     })
     .optional()
     .nullable(),
-  maxDiasSinReabastecer: z.number().positive().optional().nullable(),
-  stockMinimo: z.number().min(0).optional().nullable(),
-  cantidadMinimaDescuento: z.number().min(1).optional().nullable(),
-  cantidadGratisDescuento: z
+  maxDiasSinReabastecer: z.coerce.number().positive().optional().nullable(),
+  stockMinimo: z.coerce.number().min(0).optional().nullable(),
+  cantidadMinimaDescuento: z.coerce.number().min(1).optional().nullable(),
+  cantidadGratisDescuento: z.coerce
     .number()
     .min(0)
     .transform((val) => (val < 1 ? null : val))
     .optional()
     .nullable(),
-  porcentajeDescuento: z
+  porcentajeDescuento: z.coerce
     .number()
     .min(0)
     .max(100)
@@ -42,11 +42,17 @@ export const productoSchema = {
   colorId: idTypeBaseSchema.numericId,
   categoriaId: idTypeBaseSchema.numericId,
   marcaId: idTypeBaseSchema.numericId,
-  precioCompra: z.number().min(0),
-  precioVenta: z.number().min(0),
-  precioOferta: z.number().min(0).optional().nullable(),
-  stock: z.number().min(0).default(0),
-  liquidacion: z.boolean().default(false)
+  precioCompra: z.coerce.number().min(0),
+  precioVenta: z.coerce.number().min(0),
+  precioOferta: z.coerce.number().min(0).optional().nullable(),
+  stock: z.coerce.number().min(0).default(0),
+  liquidacion: z
+    .preprocess((val) => {
+      if (typeof val === 'boolean') return val
+
+      return typeof val === 'string' ? parseBoolString(val) : undefined
+    }, z.boolean())
+    .default(false)
 }
 
 export const queriesProductoSchema = {
