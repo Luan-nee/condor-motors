@@ -49,6 +49,7 @@ interface TestUserSuccess {
     activo: boolean
     nombres: string
     apellidos: string
+    pathFoto: string | null
   }
   fechaCreacion: string
   fechaActualizacion: string

@@ -1,11 +1,21 @@
 <div class="text-sm space-y-2">
-  <div class="flex items-center gap-1">
-    <span class="font-semibold text-gray-300">Usuario:</span>
-    <span data-id="nombre-usuario"></span>
-  </div>
-  <div class="flex items-center gap-1">
-    <span class="font-semibold text-gray-300">Rol:</span>
-    <span data-id="rol-usuario"></span>
+  <div class="flex flex-wrap gap-2 items-center">
+    <img
+      class="object-cover w-12 h-12 rounded shrink-0 hidden"
+      src=""
+      alt="avatar"
+      data-id="avatar-usuario"
+    />
+    <div>
+      <div class="flex items-center gap-1">
+        <span class="font-semibold text-gray-300">Usuario:</span>
+        <span data-id="nombre-usuario"></span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="font-semibold text-gray-300">Rol:</span>
+        <span data-id="rol-usuario"></span>
+      </div>
+    </div>
   </div>
   <div class="mt-3">
     <button
@@ -20,6 +30,7 @@
 
 <script>
   import { selectWith } from '@/core/lib/utils'
+  import { assetsBaseUrl } from '@/core/consts'
   import { testSession, logout } from '@/core/controllers/auth'
   ;(async () => {
     const { data, error } = await testSession()
@@ -34,6 +45,12 @@
 
     $username.innerText = data.usuario
     $rol.innerText = data.rolCuentaEmpleadoCodigo
+
+    if (data.empleado.pathFoto != null) {
+      const $avatar = selectWith<HTMLImageElement>('[data-id="avatar-usuario"]')
+      $avatar.src = (assetsBaseUrl ?? '') + data.empleado.pathFoto
+      $avatar.classList.remove('hidden')
+    }
 
     selectWith<HTMLButtonElement>('#logout').addEventListener(
       'click',
