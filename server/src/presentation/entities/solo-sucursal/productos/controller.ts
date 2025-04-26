@@ -15,7 +15,10 @@ import { UpdateProducto } from '@/domain/use-cases/entities/productos/update-pro
 import type { Request, Response } from 'express'
 
 export class ProductosController {
-  constructor(private readonly publicStoragePath: string) {}
+  constructor(
+    private readonly publicStoragePath: string,
+    private readonly photosDirectory?: string
+  ) {}
 
   create = (req: Request, res: Response) => {
     if (req.authPayload === undefined || req.permissions == null) {
@@ -39,7 +42,8 @@ export class ProductosController {
 
     const createProducto = new CreateProducto(
       permissions,
-      this.publicStoragePath
+      this.publicStoragePath,
+      this.photosDirectory
     )
 
     createProducto
@@ -187,7 +191,8 @@ export class ProductosController {
 
     const updateProducto = new UpdateProducto(
       permissions,
-      this.publicStoragePath
+      this.publicStoragePath,
+      this.photosDirectory
     )
 
     updateProducto

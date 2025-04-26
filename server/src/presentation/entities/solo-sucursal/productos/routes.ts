@@ -12,7 +12,8 @@ export class ProductosRoutes {
     const router = Router()
 
     const productosController = new ProductosController(
-      envs.PUBLIC_STORAGE_PATH
+      envs.PUBLIC_STORAGE_PATH,
+      '/static/img'
     )
 
     router.post(

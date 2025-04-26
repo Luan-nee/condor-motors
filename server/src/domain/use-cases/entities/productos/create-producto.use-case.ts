@@ -22,7 +22,8 @@ export class CreateProducto {
   constructor(
     // private readonly authPayload: AuthPayload,
     private readonly permissions: Permission[],
-    private readonly publicStoragePath: string
+    private readonly publicStoragePath: string,
+    private readonly photosDirectory?: string
   ) {}
 
   private async createProducto(
@@ -139,13 +140,20 @@ export class CreateProducto {
         metadata.width > 2400 ||
         metadata.height > 2400
       ) {
-        throw CustomError.badRequest('Image is too large')
+        throw CustomError.badRequest(
+          'La imagen es demasiado grande, la imagen puede tener como máximo 2400 píxeles de ancho y 2400 píxeles de alto'
+        )
       }
 
       const uuid = crypto.randomUUID()
       const name = `${uuid}.webp`
 
-      const filepath = path.join(this.publicStoragePath, 'static', name)
+      const basePath =
+        this.photosDirectory != null
+          ? path.join(this.publicStoragePath, this.photosDirectory)
+          : this.publicStoragePath
+
+      const filepath = path.join(basePath, name)
 
       await sharp(file.buffer)
         .resize(800, 800)
@@ -153,7 +161,9 @@ export class CreateProducto {
         .webp({ quality: 80 })
         .toFile(filepath)
 
-      return `/static/${name}`
+      return this.photosDirectory != null
+        ? path.join(this.photosDirectory, name)
+        : '/' + name
     } catch (error) {
       if (error instanceof CustomError) {
         throw error
