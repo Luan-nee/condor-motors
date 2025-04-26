@@ -20,6 +20,7 @@ export class GetByIdData {
     cantidadMinimaDescuento: productosTable.cantidadMinimaDescuento,
     cantidadGratisDescuento: productosTable.cantidadGratisDescuento,
     porcentajeDescuento: productosTable.porcentajeDescuento,
+    pathFoto: productosTable.pathFoto,
     color: coloresTable.nombre,
     categoria: categoriasTable.id,
     marca: marcasTable.nombre

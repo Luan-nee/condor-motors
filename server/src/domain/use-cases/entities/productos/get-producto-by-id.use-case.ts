@@ -28,6 +28,7 @@ export class GetProductoById {
     cantidadMinimaDescuento: productosTable.cantidadMinimaDescuento,
     cantidadGratisDescuento: productosTable.cantidadGratisDescuento,
     porcentajeDescuento: productosTable.porcentajeDescuento,
+    pathFoto: productosTable.pathFoto,
     color: coloresTable.nombre,
     categoria: categoriasTable.nombre,
     marca: marcasTable.nombre,

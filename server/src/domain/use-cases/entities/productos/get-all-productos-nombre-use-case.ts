@@ -22,6 +22,7 @@ export class GetProductosNombre {
     porcentajeDescuento: productosTable.porcentajeDescuento,
     cantidadMinimaDescuento: productosTable.cantidadMinimaDescuento,
     cantidadGratisDescuento: productosTable.cantidadGratisDescuento,
+    pathFoto: productosTable.pathFoto,
     marca: marcasTable.nombre,
     color: coloresTable.nombre,
     categoria: categoriasTable.nombre
