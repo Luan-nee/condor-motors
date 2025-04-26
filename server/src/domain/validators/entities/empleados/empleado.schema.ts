@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { Validator } from '@domain/validators/validator'
 import { idTypeBaseSchema } from '@/domain/validators/id-type.schema'
+import { parseBoolString } from '@/core/lib/utils'
 
 export const empleadoSchema = {
   nombre: z
@@ -23,11 +24,9 @@ export const empleadoSchema = {
     }),
   activo: z
     .preprocess((val) => {
-      if (typeof val === 'string') {
-        if (val === 'true') return true
-        if (val === 'false') return false
-      }
-      return val
+      if (typeof val === 'boolean') return val
+
+      return typeof val === 'string' ? parseBoolString(val) : undefined
     }, z.boolean())
     .default(true),
   dni: z
