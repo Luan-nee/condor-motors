@@ -15,8 +15,10 @@ import { UpdateProducto } from '@/domain/use-cases/entities/productos/update-pro
 import type { Request, Response } from 'express'
 
 export class ProductosController {
+  constructor(private readonly publicStoragePath: string) {}
+
   create = (req: Request, res: Response) => {
-    if (req.authPayload === undefined) {
+    if (req.authPayload === undefined || req.permissions == null) {
       CustomResponse.unauthorized({ res })
       return
     }
@@ -33,12 +35,15 @@ export class ProductosController {
       return
     }
 
-    const { authPayload, sucursalId } = req
+    const { sucursalId, file, permissions } = req
 
-    const createProducto = new CreateProducto(authPayload)
+    const createProducto = new CreateProducto(
+      permissions,
+      this.publicStoragePath
+    )
 
     createProducto
-      .execute(createProductoDto, sucursalId)
+      .execute(createProductoDto, sucursalId, file)
       .then((producto) => {
         CustomResponse.success({ res, data: producto })
       })

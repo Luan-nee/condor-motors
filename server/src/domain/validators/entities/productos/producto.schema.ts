@@ -25,7 +25,11 @@ export const productoSchema = {
     .nullable(),
   maxDiasSinReabastecer: z.coerce.number().positive().optional().nullable(),
   stockMinimo: z.coerce.number().min(0).optional().nullable(),
-  cantidadMinimaDescuento: z.coerce.number().min(1).optional().nullable(),
+  cantidadMinimaDescuento: z.coerce
+    .number()
+    .transform((val) => (val < 1 ? null : val))
+    .optional()
+    .nullable(),
   cantidadGratisDescuento: z.coerce
     .number()
     .min(0)

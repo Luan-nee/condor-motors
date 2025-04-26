@@ -82,6 +82,7 @@ export const productosTable = pgTable(
     cantidadMinimaDescuento: integer('cantidad_minima_descuento'),
     cantidadGratisDescuento: integer('cantidad_gratis_descuento'),
     porcentajeDescuento: integer('porcentaje_descuento'),
+    pathFoto: text('path_foto'),
     colorId: integer('color_id')
       .notNull()
       .references(() => coloresTable.id),

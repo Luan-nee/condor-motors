@@ -1,13 +1,31 @@
 import { Router } from 'express'
 import { ProductosController } from '@/presentation/entities/solo-sucursal/productos/controller'
+import { envs } from '@/config/envs'
+import { AccessControlMiddleware } from '@/presentation/middlewares/access-control.middleware'
+import { permissionCodes } from '@/consts'
+import { FilesMiddleware } from '@/presentation/middlewares/files.middleware'
 
 export class ProductosRoutes {
+  private static readonly fileFieldName = 'foto'
+
   static get routes() {
     const router = Router()
 
-    const productosController = new ProductosController()
+    const productosController = new ProductosController(
+      envs.PUBLIC_STORAGE_PATH
+    )
 
-    router.post('/', productosController.create)
+    router.post(
+      '/',
+      [
+        AccessControlMiddleware.requests([
+          permissionCodes.productos.createAny,
+          permissionCodes.productos.createRelated
+        ]),
+        FilesMiddleware.image.single(ProductosRoutes.fileFieldName)
+      ],
+      productosController.create
+    )
 
     router.post('/:id', productosController.add)
 

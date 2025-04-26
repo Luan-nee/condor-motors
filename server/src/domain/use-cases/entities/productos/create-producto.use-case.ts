@@ -1,5 +1,4 @@
 import { permissionCodes } from '@/consts'
-import { AccessControl } from '@/core/access-control/access-control'
 import { CustomError } from '@/core/errors/custom.error'
 import { db } from '@/db/connection'
 import {
@@ -13,20 +12,23 @@ import {
 import type { CreateProductoDto } from '@/domain/dtos/entities/productos/create-producto.dto'
 import type { SucursalIdType } from '@/types/schemas'
 import { eq } from 'drizzle-orm'
+import path from 'node:path'
+import sharp from 'sharp'
 
 export class CreateProducto {
-  private readonly authPayload: AuthPayload
-  private readonly permissionCreateAny = permissionCodes.productos.createAny
-  private readonly permissionCreateRelated =
-    permissionCodes.productos.createRelated
+  private readonly permissionAny = permissionCodes.productos.createAny
+  private readonly permissionRelated = permissionCodes.productos.createRelated
 
-  constructor(authPayload: AuthPayload) {
-    this.authPayload = authPayload
-  }
+  constructor(
+    // private readonly authPayload: AuthPayload,
+    private readonly permissions: Permission[],
+    private readonly publicStoragePath: string
+  ) {}
 
   private async createProducto(
     createProductoDto: CreateProductoDto,
-    sucursalId: SucursalIdType
+    sucursalId: SucursalIdType,
+    file: Express.Multer.File | undefined
   ) {
     const mappedPrices = {
       precioCompra: createProductoDto.precioCompra.toFixed(2),
@@ -37,6 +39,8 @@ export class CreateProducto {
     const detalleProductoStockBajo =
       createProductoDto.stockMinimo != null &&
       createProductoDto.stock < createProductoDto.stockMinimo
+
+    const pathFoto = file !== undefined ? await this.saveFoto(file) : undefined
 
     const insertedProductResult = await db.transaction(async (tx) => {
       const [producto] = await tx
@@ -49,6 +53,7 @@ export class CreateProducto {
           cantidadMinimaDescuento: createProductoDto.cantidadMinimaDescuento,
           cantidadGratisDescuento: createProductoDto.cantidadGratisDescuento,
           porcentajeDescuento: createProductoDto.porcentajeDescuento,
+          pathFoto,
           colorId: createProductoDto.colorId,
           categoriaId: createProductoDto.categoriaId,
           marcaId: createProductoDto.marcaId
@@ -124,44 +129,78 @@ export class CreateProducto {
     // }
   }
 
-  private async validatePermissions(sucursalId: SucursalIdType) {
-    const validPermissions = await AccessControl.verifyPermissions(
-      this.authPayload,
-      [this.permissionCreateAny, this.permissionCreateRelated]
-    )
+  async saveFoto(file: Express.Multer.File) {
+    try {
+      const metadata = await sharp(file.buffer).metadata()
 
-    const hasPermissionCreateAny = validPermissions.some(
-      (permission) => permission.codigoPermiso === this.permissionCreateAny
-    )
+      if (
+        metadata.width == null ||
+        metadata.height == null ||
+        metadata.width > 2400 ||
+        metadata.height > 2400
+      ) {
+        throw CustomError.badRequest('Image is too large')
+      }
 
-    if (
-      !hasPermissionCreateAny &&
-      !validPermissions.some(
-        (permission) =>
-          permission.codigoPermiso === this.permissionCreateRelated
-      )
-    ) {
-      throw CustomError.forbidden()
+      const uuid = crypto.randomUUID()
+      const name = `${uuid}.webp`
+
+      const filepath = path.join(this.publicStoragePath, 'static', name)
+
+      await sharp(file.buffer)
+        .resize(800, 800)
+        .toFormat('webp')
+        .webp({ quality: 80 })
+        .toFile(filepath)
+
+      return `/static/${name}`
+    } catch (error) {
+      if (error instanceof CustomError) {
+        throw error
+      }
+
+      throw CustomError.internalServer()
+    }
+  }
+
+  private validatePermissions(sucursalId: SucursalIdType) {
+    let hasPermissionAny = false
+    let hasPermissionRelated = false
+    let isSameSucursal = false
+
+    for (const permission of this.permissions) {
+      if (permission.codigoPermiso === this.permissionAny) {
+        hasPermissionAny = true
+      }
+      if (permission.codigoPermiso === this.permissionRelated) {
+        hasPermissionRelated = true
+      }
+      if (permission.sucursalId === sucursalId) {
+        isSameSucursal = true
+      }
+
+      if (hasPermissionAny || (hasPermissionRelated && isSameSucursal)) {
+        return
+      }
     }
 
-    const isSameSucursal = validPermissions.some(
-      (permission) => permission.sucursalId === sucursalId
-    )
-
-    if (!hasPermissionCreateAny && !isSameSucursal) {
-      throw CustomError.forbidden()
-    }
+    throw CustomError.forbidden()
   }
 
   async execute(
     createProductoDto: CreateProductoDto,
-    sucursalId: SucursalIdType
+    sucursalId: SucursalIdType,
+    file: Express.Multer.File | undefined
   ) {
-    await this.validatePermissions(sucursalId)
+    this.validatePermissions(sucursalId)
 
     await this.validateRelacionados(createProductoDto, sucursalId)
 
-    const producto = await this.createProducto(createProductoDto, sucursalId)
+    const producto = await this.createProducto(
+      createProductoDto,
+      sucursalId,
+      file
+    )
 
     return producto
   }
