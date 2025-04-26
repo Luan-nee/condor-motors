@@ -18,7 +18,8 @@ export class TestSession {
     empleado: {
       activo: empleadosTable.activo,
       nombres: empleadosTable.nombre,
-      apellidos: empleadosTable.apellidos
+      apellidos: empleadosTable.apellidos,
+      pathFoto: empleadosTable.pathFoto
     },
     fechaCreacion: cuentasEmpleadosTable.fechaCreacion,
     fechaActualizacion: cuentasEmpleadosTable.fechaActualizacion,

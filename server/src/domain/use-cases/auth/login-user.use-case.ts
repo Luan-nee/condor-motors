@@ -23,7 +23,8 @@ export class LoginUser {
     empleado: {
       activo: empleadosTable.activo,
       nombres: empleadosTable.nombre,
-      apellidos: empleadosTable.apellidos
+      apellidos: empleadosTable.apellidos,
+      pathFoto: empleadosTable.pathFoto
     },
     fechaCreacion: cuentasEmpleadosTable.fechaCreacion,
     fechaActualizacion: cuentasEmpleadosTable.fechaActualizacion,
@@ -115,7 +116,8 @@ export class LoginUser {
         empleado: {
           activo: user.empleado.activo,
           nombres: user.empleado.nombres,
-          apellidos: user.empleado.apellidos
+          apellidos: user.empleado.apellidos,
+          pathFoto: user.empleado.pathFoto
         },
         fechaCreacion: user.fechaCreacion,
         fechaActualizacion: user.fechaActualizacion,
