@@ -1,7 +1,7 @@
 import { updateReservasProductosValidator } from '@/domain/validators/entities/reservas-productos/reservasProductos.validator'
 
 export class UpdateReservasProductosDto {
-  public descripcion?: string
+  public descripcion?: string | null
   public detallesReserva?: Array<{
     nombreProducto: string
     precioCompra: number
@@ -9,9 +9,9 @@ export class UpdateReservasProductosDto {
     cantidad: number
     total: number
   }>
-  public montoAdelantado?: number
-  public fechaRecojo?: string
-  public sucursalId?: number
+  public montoAdelantado?: number | null
+  public fechaRecojo?: string | null
+  public sucursalId?: number | null
 
   private constructor({
     descripcion,
