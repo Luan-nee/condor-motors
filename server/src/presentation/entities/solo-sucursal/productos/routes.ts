@@ -4,17 +4,27 @@ import { envs } from '@/config/envs'
 import { AccessControlMiddleware } from '@/presentation/middlewares/access-control.middleware'
 import { permissionCodes } from '@/consts'
 import { FilesMiddleware } from '@/presentation/middlewares/files.middleware'
+import { createDirIfNotExists } from '@/core/lib/filesystem'
 
 export class ProductosRoutes {
   private static readonly fileFieldName = 'foto'
+  private static readonly filesDirectory = '/static/img'
 
   static get routes() {
-    const router = Router()
+    createDirIfNotExists(envs.PUBLIC_STORAGE_PATH, this.filesDirectory)
+      .then()
+      .catch((error: unknown) => {
+        if (error instanceof Error) {
+          throw error
+        }
+      })
 
     const productosController = new ProductosController(
       envs.PUBLIC_STORAGE_PATH,
-      '/static/img'
+      this.filesDirectory
     )
+
+    const router = Router()
 
     router.post(
       '/',

@@ -1,5 +1,6 @@
 import { envs } from '@/config/envs'
 import { permissionCodes } from '@/consts'
+import { createDirIfNotExists } from '@/core/lib/filesystem'
 import { AccessControlMiddleware } from '@/presentation/middlewares/access-control.middleware'
 import { FilesMiddleware } from '@/presentation/middlewares/files.middleware'
 import { EmpleadosController } from '@presentation/entities/empleados/controller'
@@ -7,14 +8,23 @@ import { Router } from 'express'
 
 export class EmpleadosRoutes {
   private static readonly fileFieldName = 'foto'
+  private static readonly filesDirectory = '/static/img'
 
   static get routes() {
-    const router = Router()
+    createDirIfNotExists(envs.PUBLIC_STORAGE_PATH, this.filesDirectory)
+      .then()
+      .catch((error: unknown) => {
+        if (error instanceof Error) {
+          throw error
+        }
+      })
 
     const empleadosController = new EmpleadosController(
       envs.PUBLIC_STORAGE_PATH,
-      '/static/img'
+      this.filesDirectory
     )
+
+    const router = Router()
 
     router.post(
       '/',
