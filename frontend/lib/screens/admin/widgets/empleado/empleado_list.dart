@@ -108,13 +108,14 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                             : null,
                       ),
                       child: Center(
-                        child: widget.empleado.ubicacionFoto != null
+                        child: widget.empleado.fotoUrl != null &&
+                                widget.empleado.fotoUrl!.isNotEmpty
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: Stack(
                                   children: <Widget>[
                                     Image.network(
-                                      widget.empleado.ubicacionFoto!,
+                                      widget.empleado.fotoUrl!,
                                       width: 36,
                                       height: 36,
                                       fit: BoxFit.cover,

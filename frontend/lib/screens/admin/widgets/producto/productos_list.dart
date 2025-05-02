@@ -1,5 +1,7 @@
+import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/utils/sucursal_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +27,16 @@ class ProductosList extends StatelessWidget {
     return Consumer<ProductoProvider>(
       builder: (BuildContext context, ProductoProvider productoProvider,
           Widget? child) {
+        // Obtener el primer producto para mostrar la imagen
+        final productos = productoProvider.productosFiltrados;
+        Producto? productoConImagen = productos.isNotEmpty
+            ? productos.firstWhere(
+                (p) =>
+                    ProductoRepository.getProductoImageUrl(p) != null &&
+                    ProductoRepository.getProductoImageUrl(p)!.isNotEmpty,
+                orElse: () => productos.first,
+              )
+            : null;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -138,6 +150,48 @@ class ProductosList extends StatelessWidget {
                           ),
                           child: Row(
                             children: <Widget>[
+                              // Miniatura de imagen de producto
+                              if (productoConImagen != null &&
+                                  ProductoRepository.getProductoImageUrl(
+                                          productoConImagen) !=
+                                      null &&
+                                  ProductoRepository.getProductoImageUrl(
+                                          productoConImagen)!
+                                      .isNotEmpty)
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  margin: const EdgeInsets.only(right: 10),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(6),
+                                    color: Colors.black26,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Image.network(
+                                      ProductoRepository.getProductoImageUrl(
+                                          productoConImagen)!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              const Icon(Icons.image,
+                                                  color: Colors.white24,
+                                                  size: 18),
+                                    ),
+                                  ),
+                                )
+                              else
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  margin: const EdgeInsets.only(right: 10),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(6),
+                                    color: Colors.black26,
+                                  ),
+                                  child: const Icon(Icons.image,
+                                      color: Colors.white24, size: 18),
+                                ),
                               // Icono con animación de carga
                               Stack(
                                 alignment: Alignment.center,

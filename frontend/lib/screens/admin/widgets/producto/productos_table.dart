@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/utils/productos_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -480,6 +481,43 @@ class _ProductosTableState extends State<ProductosTable>
             DataCell(
               Row(
                 children: <Widget>[
+                  // Miniatura de imagen de producto
+                  if (ProductoRepository.getProductoImageUrl(producto) !=
+                          null &&
+                      ProductoRepository.getProductoImageUrl(producto)!
+                          .isNotEmpty)
+                    Container(
+                      width: 32,
+                      height: 32,
+                      margin: const EdgeInsets.only(right: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        color: Colors.black26,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Image.network(
+                          ProductoRepository.getProductoImageUrl(producto)!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.image,
+                                  color: Colors.white24, size: 18),
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      width: 32,
+                      height: 32,
+                      margin: const EdgeInsets.only(right: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        color: Colors.black26,
+                      ),
+                      child: const Icon(Icons.image,
+                          color: Colors.white24, size: 18),
+                    ),
+                  // Indicador de estado
                   Container(
                     width: 8,
                     height: 32,

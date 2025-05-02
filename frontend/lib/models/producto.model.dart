@@ -1,3 +1,5 @@
+import 'package:condorsmotors/api/index.api.dart';
+
 class ReglaDescuento {
   final int cantidad;
   final double discountPercentage;
@@ -52,6 +54,7 @@ class Producto {
   final int stock;
   final bool stockBajo;
   final bool liquidacion;
+  final String? ubicacionFoto;
 
   Producto({
     required this.id,
@@ -77,6 +80,7 @@ class Producto {
     required this.stock,
     this.stockBajo = false,
     this.liquidacion = false,
+    this.ubicacionFoto,
   });
 
   factory Producto.fromJson(Map<String, dynamic> json) {
@@ -118,6 +122,8 @@ class Producto {
       stock: _parseInt(json['stock']),
       stockBajo: json['stockBajo'] as bool? ?? false,
       liquidacion: json['liquidacion'] as bool? ?? false,
+      ubicacionFoto:
+          json['ubicacionFoto'] ?? json['pathFoto'] ?? json['fotoUrl'],
     );
   }
 
@@ -149,6 +155,7 @@ class Producto {
         'stock': stock,
         'stockBajo': stockBajo,
         'liquidacion': liquidacion,
+        if (ubicacionFoto != null) 'ubicacionFoto': ubicacionFoto,
       };
 
   /// Helper para convertir valores numéricos a double
@@ -336,6 +343,7 @@ class Producto {
     int? stock,
     bool? stockBajo,
     bool? liquidacion,
+    String? ubicacionFoto,
   }) {
     return Producto(
       id: id ?? this.id,
@@ -364,6 +372,19 @@ class Producto {
       stock: stock ?? this.stock,
       stockBajo: stockBajo ?? this.stockBajo,
       liquidacion: liquidacion ?? this.liquidacion,
+      ubicacionFoto: ubicacionFoto ?? this.ubicacionFoto,
     );
+  }
+
+  String? get fotoUrl {
+    if (ubicacionFoto == null || ubicacionFoto!.isEmpty) {
+      return null;
+    }
+    // Suponiendo que tienes acceso a api.getBaseUrlSinApi() igual que en empleado
+    final String baseUrl = api.getBaseUrlSinApi();
+    if (ubicacionFoto!.startsWith('http')) {
+      return ubicacionFoto;
+    }
+    return baseUrl + ubicacionFoto!;
   }
 }

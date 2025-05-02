@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
 import 'package:condorsmotors/api/protected/paginacion.api.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/utils/logger.dart';
+import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 
 class ProductosApi {
   final ApiClient _api;
@@ -305,17 +309,64 @@ class ProductosApi {
   ///
   /// [sucursalId] ID de la sucursal
   /// [productoData] Datos del producto a crear
+  /// [fotoFile] Archivo de foto del producto (opcional)
   Future<Producto> createProducto({
     required String sucursalId,
     required Map<String, dynamic> productoData,
+    File? fotoFile,
   }) async {
     try {
       Logger.debug('Creando nuevo producto en sucursal $sucursalId');
 
+      dynamic bodyToSend = productoData;
+      Options? options;
+      if (fotoFile != null) {
+        final String fileName =
+            fotoFile.path.split(Platform.pathSeparator).last;
+        final String fileExtension = fileName.contains('.')
+            ? fileName.split('.').last.toLowerCase()
+            : '';
+        final int fileSize = await fotoFile.length();
+        Logger.debug('[productos.api] Imagen a enviar:');
+        Logger.debug('  Path: \\${fotoFile.path}');
+        Logger.debug('  Nombre: $fileName');
+        Logger.debug('  Extensión: $fileExtension');
+        Logger.debug('  Tamaño: $fileSize bytes');
+        // Forzar el tipo MIME correcto
+        String mimeType = 'jpeg';
+        switch (fileExtension) {
+          case 'jpg':
+          case 'jpeg':
+            mimeType = 'jpeg';
+            break;
+          case 'png':
+            mimeType = 'png';
+            break;
+          case 'webp':
+            mimeType = 'webp';
+            break;
+          default:
+            mimeType = 'jpeg';
+        }
+        final formData = FormData.fromMap({
+          ...productoData,
+          'foto': await MultipartFile.fromFile(
+            fotoFile.path,
+            filename: fileName,
+            contentType: MediaType('image', mimeType),
+          ),
+        });
+        Logger.debug('[productos.api] FormData campos: ${productoData.keys}');
+        Logger.debug('[productos.api] Archivo: $fileName');
+        bodyToSend = formData;
+        options = Options(contentType: 'multipart/form-data');
+      }
+
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos',
         method: 'POST',
-        body: productoData,
+        body: bodyToSend,
+        headers: options?.headers?.cast<String, String>(),
       );
 
       // Invalidar caché relacionada de manera más agresiva
@@ -361,10 +412,12 @@ class ProductosApi {
   /// [sucursalId] ID de la sucursal
   /// [productoId] ID del producto
   /// [productoData] Datos actualizados del producto
+  /// [fotoFile] Archivo de foto del producto (opcional)
   Future<Producto> updateProducto({
     required String sucursalId,
     required int productoId,
     required Map<String, dynamic> productoData,
+    File? fotoFile,
   }) async {
     try {
       // Validaciones
@@ -386,18 +439,57 @@ class ProductosApi {
 
       // Eliminar el ID del producto de los datos para evitar conflictos
       final Map<String, dynamic> dataToSend =
-          Map<String, dynamic>.from(productoData)
-            ..remove('id'); // Usar cascade para remover el ID
+          Map<String, dynamic>.from(productoData)..remove('id');
 
-      Logger.debug('Actualizando producto $productoId en sucursal $sucursalId');
-      Logger.debug('Endpoint: /$sucursalId/productos/$productoId');
-      Logger.debug('Método: PATCH');
-      Logger.debug('Datos a enviar: $dataToSend');
+      dynamic bodyToSend = dataToSend;
+      Options? options;
+      if (fotoFile != null) {
+        final String fileName =
+            fotoFile.path.split(Platform.pathSeparator).last;
+        final String fileExtension = fileName.contains('.')
+            ? fileName.split('.').last.toLowerCase()
+            : '';
+        final int fileSize = await fotoFile.length();
+        Logger.debug('[productos.api] Imagen a enviar:');
+        Logger.debug('  Path: \\${fotoFile.path}');
+        Logger.debug('  Nombre: $fileName');
+        Logger.debug('  Extensión: $fileExtension');
+        Logger.debug('  Tamaño: $fileSize bytes');
+        // Forzar el tipo MIME correcto
+        String mimeType = 'jpeg';
+        switch (fileExtension) {
+          case 'jpg':
+          case 'jpeg':
+            mimeType = 'jpeg';
+            break;
+          case 'png':
+            mimeType = 'png';
+            break;
+          case 'webp':
+            mimeType = 'webp';
+            break;
+          default:
+            mimeType = 'jpeg';
+        }
+        final formData = FormData.fromMap({
+          ...dataToSend,
+          'foto': await MultipartFile.fromFile(
+            fotoFile.path,
+            filename: fileName,
+            contentType: MediaType('image', mimeType),
+          ),
+        });
+        Logger.debug('[productos.api] FormData campos: ${dataToSend.keys}');
+        Logger.debug('[productos.api] Archivo: $fileName');
+        bodyToSend = formData;
+        options = Options(contentType: 'multipart/form-data');
+      }
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/productos/$productoId',
         method: 'PATCH',
-        body: dataToSend,
+        body: bodyToSend,
+        headers: options?.headers?.cast<String, String>(),
       );
 
       Logger.debug('Respuesta recibida para la actualización del producto');

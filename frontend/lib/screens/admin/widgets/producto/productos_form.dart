@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
 import 'package:condorsmotors/utils/productos_utils.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -75,6 +78,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   List<String> _marcas = <String>[];
   List<ColorApp> _colores = <ColorApp>[];
 
+  File? _selectedImageFile;
+  String? _previewImageUrl;
+
   @override
   void initState() {
     super.initState();
@@ -133,6 +139,12 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
     // Obtener el provider e inicializar datos
     _initProvider();
+
+    // Inicializar preview de imagen si el producto tiene foto
+    if (widget.producto?.fotoUrl != null &&
+        widget.producto!.fotoUrl!.isNotEmpty) {
+      _previewImageUrl = widget.producto!.fotoUrl;
+    }
   }
 
   Future<void> _initProvider() async {
@@ -475,6 +487,51 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         _buildSectionTitle('Información Básica', FontAwesomeIcons.circleInfo),
+        const SizedBox(height: 16),
+        // Imagen de producto
+        Row(
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: const Color(0xFF2D2D2D),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: _selectedImageFile != null
+                    ? Image.file(_selectedImageFile!, fit: BoxFit.cover)
+                    : (_previewImageUrl != null && _previewImageUrl!.isNotEmpty)
+                        ? Image.network(_previewImageUrl!, fit: BoxFit.cover)
+                        : const Icon(Icons.image,
+                            color: Colors.white24, size: 40),
+              ),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton.icon(
+              onPressed: _pickImage,
+              icon: const Icon(Icons.upload, size: 18),
+              label: const Text('Seleccionar imagen'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE31E24),
+                foregroundColor: Colors.white,
+              ),
+            ),
+            if (_selectedImageFile != null || _previewImageUrl != null)
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.white54),
+                tooltip: 'Quitar imagen',
+                onPressed: () {
+                  setState(() {
+                    _selectedImageFile = null;
+                    _previewImageUrl = null;
+                  });
+                },
+              ),
+          ],
+        ),
         const SizedBox(height: 16),
         TextFormField(
           controller: _nombreController,
@@ -2069,7 +2126,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
           // Guardar el producto
           final bool resultado = await productoProvider.guardarProducto(
-              productoData, esNuevoProducto);
+            productoData,
+            esNuevoProducto,
+            fotoFile: _selectedImageFile,
+          );
 
           if (resultado) {
             // Mensaje de depuración al limpiar la caché
@@ -2133,6 +2193,18 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
       // Iniciar el proceso de guardado
       saveProducto();
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+    );
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        _selectedImageFile = File(result.files.single.path!);
+        _previewImageUrl = null;
+      });
     }
   }
 

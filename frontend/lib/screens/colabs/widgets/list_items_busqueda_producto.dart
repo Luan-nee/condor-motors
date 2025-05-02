@@ -1,7 +1,9 @@
 import 'package:condorsmotors/models/color.model.dart';
+import 'package:condorsmotors/models/producto.model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
 
 /// Widget que representa un ítem individual de producto en la lista de búsqueda
 class ListItemBusquedaProducto extends StatelessWidget {
@@ -37,13 +39,14 @@ class ListItemBusquedaProducto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Convertir el Map a Producto para usar la lógica robusta del modelo
+    final productoObj = Producto.fromJson(producto);
     // Verificar las promociones del producto
     final bool enLiquidacion = producto['enLiquidacion'] ?? false;
     final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
     final bool tieneDescuentoPorcentual =
         producto['tieneDescuentoPorcentual'] ?? false;
     final bool tieneStock = producto['stock'] > 0;
-
     // Verificar si el producto tiene alguna promoción
     final bool tienePromocion =
         enLiquidacion || tienePromocionGratis || tieneDescuentoPorcentual;
@@ -63,7 +66,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
           child: Row(
             children: <Widget>[
               _buildProductIcon(context, tienePromocion, tieneStock,
-                  tienePromocionGratis, tieneDescuentoPorcentual),
+                  tienePromocionGratis, tieneDescuentoPorcentual, productoObj),
               SizedBox(width: isMobile ? 12 : 16),
               Expanded(
                 child: _buildProductInfo(tienePromocion, enLiquidacion,
@@ -81,7 +84,9 @@ class ListItemBusquedaProducto extends StatelessWidget {
       bool tienePromocion,
       bool tieneStock,
       bool tienePromocionGratis,
-      bool tieneDescuentoPorcentual) {
+      bool tieneDescuentoPorcentual,
+      Producto productoObj) {
+    final String? fotoUrl = ProductoRepository.getProductoImageUrl(productoObj);
     return Stack(
       alignment: Alignment.bottomRight,
       children: <Widget>[
@@ -103,15 +108,26 @@ class ListItemBusquedaProducto extends StatelessWidget {
                       )
                     : null,
               ),
-              child: Center(
-                child: FaIcon(
-                  FontAwesomeIcons.box,
-                  size: isMobile ? 22 : 26,
-                  color: tieneStock
-                      ? (tienePromocion ? Colors.amber : Colors.green)
-                      : Colors.red,
-                ),
-              ),
+              child: fotoUrl != null && fotoUrl.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        fotoUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.image,
+                                color: Colors.white24, size: 28),
+                      ),
+                    )
+                  : Center(
+                      child: FaIcon(
+                        FontAwesomeIcons.box,
+                        size: isMobile ? 22 : 26,
+                        color: tieneStock
+                            ? (tienePromocion ? Colors.amber : Colors.green)
+                            : Colors.red,
+                      ),
+                    ),
             ),
           ),
         ),

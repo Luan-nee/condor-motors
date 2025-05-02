@@ -212,7 +212,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            // Ícono del producto
+            // Imagen del producto o ícono
             Container(
               width: 80,
               height: 80,
@@ -220,15 +220,27 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                 color: const Color(0xFF1A1A1A),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Center(
-                child: FaIcon(
-                  FontAwesomeIcons.box,
-                  size: 32,
-                  color: widget.producto.tieneStockBajo()
-                      ? const Color(0xFFE31E24).withOpacity(0.7)
-                      : Colors.white.withOpacity(0.7),
-                ),
-              ),
+              child: widget.producto.fotoUrl != null &&
+                      widget.producto.fotoUrl!.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        widget.producto.fotoUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(FontAwesomeIcons.box,
+                                size: 32, color: Colors.white24),
+                      ),
+                    )
+                  : Center(
+                      child: FaIcon(
+                        FontAwesomeIcons.box,
+                        size: 32,
+                        color: widget.producto.tieneStockBajo()
+                            ? const Color(0xFFE31E24).withOpacity(0.7)
+                            : Colors.white.withOpacity(0.7),
+                      ),
+                    ),
             ),
             const SizedBox(width: 16),
             // Información principal

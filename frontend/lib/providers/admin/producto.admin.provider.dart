@@ -8,6 +8,7 @@ import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/utils/productos_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'dart:io';
 
 /// Provider para gestionar productos
 class ProductoProvider extends ChangeNotifier {
@@ -336,8 +337,8 @@ class ProductoProvider extends ChangeNotifier {
   }
 
   /// Guarda un producto (nuevo o existente)
-  Future<bool> guardarProducto(
-      Map<String, dynamic> productoData, bool esNuevo) async {
+  Future<bool> guardarProducto(Map<String, dynamic> productoData, bool esNuevo,
+      {File? fotoFile}) async {
     if (_sucursalSeleccionada == null) {
       _errorMessage = 'No hay sucursal seleccionada';
       notifyListeners();
@@ -360,6 +361,7 @@ class ProductoProvider extends ChangeNotifier {
         resultado = await _productoRepository.createProducto(
           sucursalId: sucursalId,
           productoData: productoData,
+          fotoFile: fotoFile,
         );
         debugPrint('ProductosAdmin: Producto creado correctamente');
       } else {
@@ -383,6 +385,7 @@ class ProductoProvider extends ChangeNotifier {
           sucursalId: sucursalId,
           productoId: productoId,
           productoData: productoData,
+          fotoFile: fotoFile,
         );
 
         debugPrint('ProductosAdmin: Producto actualizado correctamente');

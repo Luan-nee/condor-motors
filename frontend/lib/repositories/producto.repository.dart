@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
@@ -217,14 +219,17 @@ class ProductoRepository implements BaseRepository {
   ///
   /// [sucursalId] ID de la sucursal
   /// [productoData] Datos del producto
+  /// [fotoFile] Archivo de foto del producto
   Future<Producto?> createProducto({
     required String sucursalId,
     required Map<String, dynamic> productoData,
+    File? fotoFile,
   }) async {
     try {
       return await _productosApi.createProducto(
         sucursalId: sucursalId,
         productoData: productoData,
+        fotoFile: fotoFile,
       );
     } catch (e) {
       debugPrint('Error en ProductoRepository.createProducto: $e');
@@ -237,16 +242,19 @@ class ProductoRepository implements BaseRepository {
   /// [sucursalId] ID de la sucursal
   /// [productoId] ID del producto
   /// [productoData] Datos actualizados
+  /// [fotoFile] Archivo de foto del producto
   Future<Producto?> updateProducto({
     required String sucursalId,
     required int productoId,
     required Map<String, dynamic> productoData,
+    File? fotoFile,
   }) async {
     try {
       return await _productosApi.updateProducto(
         sucursalId: sucursalId,
         productoId: productoId,
         productoData: productoData,
+        fotoFile: fotoFile,
       );
     } catch (e) {
       debugPrint('Error en ProductoRepository.updateProducto: $e');
@@ -713,5 +721,16 @@ class ProductoRepository implements BaseRepository {
       debugPrint('Error en ProductoRepository.addProducto: $e');
       return null;
     }
+  }
+
+  /// Obtiene la URL de la imagen de un producto de forma centralizada
+  ///
+  /// Usa la lógica del getter fotoUrl del modelo Producto. Si no hay imagen, retorna el placeholder si se provee.
+  static String? getProductoImageUrl(Producto producto, {String? placeholder}) {
+    if (producto.fotoUrl != null && producto.fotoUrl!.isNotEmpty) {
+      return producto.fotoUrl;
+    }
+    // Puedes agregar aquí lógica para imágenes alternativas o logging
+    return placeholder;
   }
 }
