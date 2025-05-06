@@ -946,7 +946,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: \u001b[31m' + e.toString() + '\u001b[0m'),
+            content: Text('Error: \u001b[31m$e\u001b[0m'),
             backgroundColor: Colors.red,
           ),
         );

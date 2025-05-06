@@ -1,9 +1,9 @@
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:condorsmotors/repositories/producto.repository.dart';
 
 /// Widget que representa un ítem individual de producto en la lista de búsqueda
 class ListItemBusquedaProducto extends StatelessWidget {
