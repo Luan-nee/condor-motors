@@ -16,35 +16,13 @@ class FacturacionRepository implements BaseRepository {
 
   /// Obtiene datos del usuario desde la API centralizada
   @override
-  Future<Map<String, dynamic>?> getUserData() async {
-    try {
-      return await api.getUserData();
-    } catch (e) {
-      debugPrint('Error en FacturacionRepository.getUserData: $e');
-      return null;
-    }
-  }
+  Future<Map<String, dynamic>?> getUserData() =>
+      AuthRepository.instance.getUserData();
 
   /// Obtiene el ID de la sucursal del usuario actual
   @override
-  Future<String?> getCurrentSucursalId() async {
-    try {
-      final userData = await getUserData();
-      if (userData == null) {
-        return null;
-      }
-
-      final sucursalId = userData['sucursalId'];
-      if (sucursalId == null) {
-        return null;
-      }
-
-      return sucursalId.toString();
-    } catch (e) {
-      debugPrint('Error en FacturacionRepository.getCurrentSucursalId: $e');
-      return null;
-    }
-  }
+  Future<String?> getCurrentSucursalId() =>
+      AuthRepository.instance.getCurrentSucursalId();
 
   /// Declara una venta a SUNAT
   ///

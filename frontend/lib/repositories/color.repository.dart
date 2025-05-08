@@ -29,36 +29,6 @@ class ColorRepository implements BaseRepository {
     }
   }
 
-  /// Obtiene datos del usuario desde la API centralizada
-  ///
-  /// Ayuda a los providers a acceder a la información del usuario autenticado
-  @override
-  Future<Map<String, dynamic>?> getUserData() async {
-    try {
-      return await api.getUserData();
-    } catch (e) {
-      debugPrint('Error en ColorRepository.getUserData: $e');
-      return null;
-    }
-  }
-
-  /// Obtiene el ID de la sucursal del usuario actual
-  ///
-  /// Útil para operaciones que requieren el ID de sucursal automáticamente
-  @override
-  Future<String?> getCurrentSucursalId() async {
-    try {
-      final userData = await getUserData();
-      if (userData == null) {
-        return null;
-      }
-      return userData['sucursalId']?.toString();
-    } catch (e) {
-      debugPrint('Error en ColorRepository.getCurrentSucursalId: $e');
-      return null;
-    }
-  }
-
   /// Obtiene todos los colores disponibles
   ///
   /// [useCache] Indica si se debe usar la caché
@@ -135,4 +105,12 @@ class ColorRepository implements BaseRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<Map<String, dynamic>?> getUserData() =>
+      AuthRepository.instance.getUserData();
+
+  @override
+  Future<String?> getCurrentSucursalId() =>
+      AuthRepository.instance.getCurrentSucursalId();
 }

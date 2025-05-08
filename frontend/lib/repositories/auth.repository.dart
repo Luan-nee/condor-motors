@@ -1,9 +1,7 @@
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/models/auth.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
-import 'package:condorsmotors/utils/secure_storage_utils.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Repositorio para gestionar la autenticación
 ///
@@ -33,7 +31,7 @@ class AuthRepository implements BaseRepository {
   @override
   Future<Map<String, dynamic>?> getUserData() async {
     try {
-      return await api.getUserData();
+      return await _authApi.getUserData();
     } catch (e) {
       debugPrint('Error en AuthRepository.getUserData: $e');
       return null;
@@ -66,90 +64,10 @@ class AuthRepository implements BaseRepository {
   Future<void> logout() async {
     try {
       debugPrint('AuthRepository: Iniciando proceso de logout');
-
-      try {
-        // Intentar hacer logout en el servidor si es posible
-        await _authApi.logout();
-        debugPrint('AuthRepository: Logout en servidor exitoso');
-      } catch (serverError) {
-        // Si hay error de comunicación con el servidor, solo lo registramos
-        // pero continuamos con la limpieza local
-        debugPrint(
-            'AuthRepository: Error al contactar servidor para logout: $serverError');
-      }
-
-      // Limpiar tokens y datos independientemente del resultado del servidor
-      await clearTokens();
-
-      debugPrint('AuthRepository: Proceso de logout completado');
+      await _authApi.logout();
+      debugPrint('AuthRepository: Logout en servidor exitoso');
     } catch (e) {
-      debugPrint('AuthRepository: Error durante proceso de logout: $e');
-
-      // Intentar limpiar tokens incluso si hay errores
-      try {
-        await clearTokens();
-      } catch (cleanupError) {
-        debugPrint(
-            'AuthRepository: Error adicional durante limpieza: $cleanupError');
-      }
-
-      rethrow;
-    }
-  }
-
-  /// Limpia los tokens y datos de usuario almacenados
-  Future<void> clearTokens() async {
-    try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-      // Lista de claves específicas que queremos conservar
-      final Set<String> keysToKeep = {
-        'theme_mode',
-        'language',
-        'server_url',
-      };
-
-      // Obtener todas las claves almacenadas
-      final Set<String> keys = prefs.getKeys();
-
-      // Crear lista de futures para borrar todo excepto las claves a conservar
-      final List<Future<bool>> deleteFutures = keys
-          .where((key) => !keysToKeep.contains(key))
-          .map((key) => prefs.remove(key))
-          .toList();
-
-      // Ejecutar todas las operaciones de borrado en SharedPreferences (solo flags y configuraciones no sensibles)
-      await Future.wait([
-        ...deleteFutures,
-        prefs.setBool('stay_logged_in', false),
-        // Limpiar caches específicos
-        prefs.remove('ventas_cache'),
-        prefs.remove('productos_cache'),
-        prefs.remove('proformas_cache'),
-        prefs.remove('dashboard_cache'),
-      ]);
-
-      // Limpiar datos sensibles en SecureStorage
-      await Future.wait([
-        SecureStorageUtils.delete('access_token'),
-        SecureStorageUtils.delete('refresh_token'),
-        SecureStorageUtils.delete('expiry_time'),
-        SecureStorageUtils.delete('last_username'),
-        SecureStorageUtils.delete('last_password'),
-        SecureStorageUtils.delete('remember_me'),
-        SecureStorageUtils.delete('username'),
-        SecureStorageUtils.delete('password'),
-        SecureStorageUtils.delete('username_auto'),
-        SecureStorageUtils.delete('password_auto'),
-        SecureStorageUtils.delete('user_data'),
-        SecureStorageUtils.delete('current_sucursal_id'),
-        SecureStorageUtils.delete('current_sucursal_data'),
-      ]);
-
-      debugPrint(
-          'AuthRepository: Tokens y datos de usuario limpiados correctamente');
-    } catch (e) {
-      debugPrint('AuthRepository: Error al limpiar tokens y datos: $e');
+      debugPrint('AuthRepository: Error al hacer logout: $e');
       rethrow;
     }
   }
@@ -164,28 +82,36 @@ class AuthRepository implements BaseRepository {
     }
   }
 
+  /// Verifica si el token actual es válido con el backend
+  Future<bool> verificarToken() async {
+    try {
+      return await _authApi.verificarToken();
+    } catch (e) {
+      debugPrint('Error en AuthRepository.verificarToken: $e');
+      return false;
+    }
+  }
+
   /// Guarda los datos del usuario
   Future<void> saveUserData(AuthUser usuario) async {
     try {
-      await api.authService.saveUserData(usuario);
+      await _authApi.saveUserData(usuario.toMap());
     } catch (e) {
       debugPrint('Error en AuthRepository.saveUserData: $e');
       rethrow;
     }
   }
 
-  /// Centraliza la limpieza profunda de sesión (tokens, datos, preferencias)
-  /// Mantiene solo configuraciones críticas (theme_mode, language, server_url)
+  /// Limpieza profunda de sesión (tokens, datos, preferencias)
   Future<void> clearSession() async {
     try {
-      // Cerrar sesión remota y limpiar tokens/datos locales
-      await logout();
+      await _authApi.clearTokens();
       debugPrint('AuthRepository: Sesión completamente limpiada');
     } catch (e) {
       debugPrint('AuthRepository: Error en clearSession: $e');
       // Intentar limpieza de emergencia
       try {
-        await clearTokens();
+        await _authApi.clearTokens();
       } catch (cleanupError) {
         debugPrint(
             'AuthRepository: Error adicional en limpieza: $cleanupError');

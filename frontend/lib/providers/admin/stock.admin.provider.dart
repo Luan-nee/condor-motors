@@ -179,7 +179,6 @@ class StockProvider extends ChangeNotifier {
         'order': _order,
       };
 
-      // TODO: Considerar implementar cache para optimizar rendimiento
       if (_filtroEstadoStock != null) {
         debugPrint(
             'Usando endpoint específico para filtro: $_filtroEstadoStock');

@@ -278,3 +278,8 @@ void logJson(String label, jsonData) {
     }
   }
 }
+
+/// Registra un mensaje destacado para eventos de refresh token
+void logRefresh(String message) {
+  Logger.info(ConsoleColor.colorize(message, ConsoleColor.brightMagenta));
+}

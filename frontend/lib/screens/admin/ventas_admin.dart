@@ -197,23 +197,27 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                 ? null
                 : () async {
                     await ventasProvider.cargarVentas();
-                    if (mounted) {
-                      // Mostrar mensaje de éxito o error
-                      if (ventasProvider.ventasErrorMessage.isNotEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(ventasProvider.ventasErrorMessage),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Ventas recargadas exitosamente'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
+                    // Mostrar mensaje de éxito o error
+                    if (ventasProvider.ventasErrorMessage.isNotEmpty) {
+                      if (!mounted) {
+                        return;
                       }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(ventasProvider.ventasErrorMessage),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    } else {
+                      if (!mounted) {
+                        return;
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Ventas recargadas exitosamente'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
                     }
                   },
           ),
@@ -405,14 +409,15 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                       ),
                       onPressed: () {
                         ventasProvider.limpiarFiltros();
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Filtros eliminados'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
+                        if (!mounted) {
+                          return;
                         }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Filtros eliminados'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
                       },
                     ),
                   ],

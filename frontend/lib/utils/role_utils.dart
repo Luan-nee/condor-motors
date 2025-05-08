@@ -76,3 +76,19 @@ String getInitialRoute(rol) {
   final normalizedRole = normalizeRole(rol);
   return roles[normalizedRole] ?? login;
 }
+
+/// Centraliza la obtención del rol normalizado y la ruta inicial a partir de los datos de usuario
+Map<String, String> getRoleAndInitialRoute(userData) {
+  String rolCodigo = '';
+  if (userData == null) {
+    return {'rol': '', 'route': login};
+  }
+  if (userData['rol'] is Map) {
+    rolCodigo = userData['rol']['codigo']?.toString() ?? '';
+  } else {
+    rolCodigo = userData['rol']?.toString() ?? '';
+  }
+  final String rolNormalizado = normalizeRole(rolCodigo);
+  final String initialRoute = getInitialRoute(rolNormalizado);
+  return {'rol': rolNormalizado, 'route': initialRoute};
+}

@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io'; // Necesario para HttpHeaders
 import 'dart:math';
 
+import 'package:condorsmotors/api/index.api.dart' show getCurrentBaseUrl;
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:condorsmotors/utils/secure_storage_utils.dart';
 import 'package:dio/dio.dart';
@@ -132,67 +134,9 @@ class TokenConstants {
   static const String refreshTokenKey = 'refresh_token';
 }
 
-class TokenManager {
-  final Dio _dio;
-  bool _isRefreshing = false;
-
-  TokenManager(this._dio);
-
-  Future<String?> getAccessToken() async {
-    return await SecureStorageUtils.read(TokenConstants.accessTokenKey);
-  }
-
-  Future<void> setAccessToken(String token) async {
-    await SecureStorageUtils.write(TokenConstants.accessTokenKey, token);
-  }
-
-  Future<bool> refreshToken() async {
-    if (_isRefreshing) {
-      return false;
-    }
-    _isRefreshing = true;
-
-    try {
-      Logger.info('Renovando token de acceso...');
-      final refreshToken =
-          await SecureStorageUtils.read(TokenConstants.refreshTokenKey);
-
-      if (refreshToken == null) {
-        Logger.error('No hay refresh token disponible');
-        return false;
-      }
-
-      final response = await _dio.post(
-        '/auth/refresh',
-        options: Options(headers: {'Cookie': refreshToken}),
-      );
-
-      final newToken = _extractTokenFromResponse(response);
-      if (newToken != null) {
-        await setAccessToken(newToken);
-        Logger.info('Token renovado exitosamente');
-        return true;
-      }
-
-      return false;
-    } catch (e) {
-      Logger.error('Error al renovar token: $e');
-      return false;
-    } finally {
-      _isRefreshing = false;
-    }
-  }
-
-  String? _extractTokenFromResponse(Response response) {
-    return response.headers.value('authorization')?.replaceAll('Bearer ', '') ??
-        response.data?['authorization']?.toString().replaceAll('Bearer ', '');
-  }
-}
-
 class ApiClient {
   String baseUrl;
   late Dio _dio;
-  late TokenManager _tokenManager;
   final Map<String, dynamic> _cache = {};
 
   static const _defaultHeaders = {
@@ -200,9 +144,21 @@ class ApiClient {
     'Accept': 'application/json',
   };
 
+  // Singleton global para acceso centralizado
+  static late final ApiClient instance;
+  static bool _initialized = false;
+
+  /// Inicializa el singleton global. Debe llamarse una sola vez al inicio de la app.
+  static void initialize({required String baseUrl}) {
+    if (_initialized) {
+      return;
+    }
+    instance = ApiClient(baseUrl: baseUrl);
+    _initialized = true;
+  }
+
   ApiClient({required this.baseUrl}) {
     _initializeDio();
-    _tokenManager = TokenManager(_dio);
   }
 
   void _initializeDio() {
@@ -210,7 +166,7 @@ class ApiClient {
       ..options = BaseOptions(
         baseUrl: baseUrl,
         headers: Map<String, String>.from(_defaultHeaders),
-        validateStatus: (status) => status != null && status < 500,
+        validateStatus: (status) => status != null && status < 300,
         followRedirects: true,
         receiveTimeout: const Duration(seconds: 30),
         sendTimeout: const Duration(seconds: 30),
@@ -319,31 +275,157 @@ class ApiClient {
   Interceptor _createAuthInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await _tokenManager.getAccessToken();
+        final token = await RefreshTokenManager.getAccessToken(
+            baseUrl: getCurrentBaseUrl());
+        logDebug(
+            'Interceptor onRequest: accessToken=${token != null ? token.substring(0, min(10, token.length)) : 'null'}');
         if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
+          options.headers[HttpHeaders.authorizationHeader] =
+              'Bearer $token'; // Usar HttpHeaders.authorizationHeader
           logDebug(
-              'Token agregado a la solicitud: ${token.substring(0, 10)}...');
+              'Token agregado a la solicitud: ${token.substring(0, min(10, token.length))}...');
+        } else {
+          logWarning('No se agregó accessToken a la solicitud porque es null');
         }
         return handler.next(options);
       },
       onError: (error, handler) async {
-        if (error.response?.statusCode == 401 &&
-            await _tokenManager.refreshToken()) {
-          logInfo('Token renovado, reintentando solicitud...');
-          return handler.resolve(await _retryRequest(error.requestOptions));
+        final status = error.response?.statusCode;
+        final path = error.requestOptions.path;
+        final queryParams = error.requestOptions.queryParameters;
+        logDebug(
+            'Interceptor onError: type=${error.runtimeType}, status=$status, path=$path');
+        logDebug('Interceptor onError: responseBody=${error.response?.data}');
+
+        if ((status == 401 || status == 403) &&
+            !path.contains('/auth/refresh') &&
+            !path.contains('/logout') &&
+            queryParams['x-no-retry-on-401'] != 'true') {
+          final currentBaseUrl = getCurrentBaseUrl();
+          final accessToken =
+              await RefreshTokenManager.getAccessToken(baseUrl: currentBaseUrl);
+          if (currentBaseUrl.isEmpty) {
+            logError(
+                'AuthInterceptor: No se puede intentar refresh porque baseUrl es nulo o vacío.');
+            return handler.next(error);
+          }
+          if (accessToken == null) {
+            logInfo(
+                'AuthInterceptor: No hay access token, no se intenta refresh automático.');
+            return handler.next(error);
+          }
+          Logger.info(
+              '🔄 🔄 🔄 ACTIVANDO REFRESH TOKEN AUTOMÁTICO PARA ERROR $status EN $path 🔄 🔄 🔄');
+
+          try {
+            final refreshResult =
+                await RefreshTokenManager.refreshToken(baseUrl: currentBaseUrl);
+            if (!refreshResult) {
+              // Si el refresh falla, limpiar tokens y forzar logout
+              await RefreshTokenManager.clearAccessToken();
+              await RefreshTokenManager.clearRefreshToken();
+              // TODO: Forzar logout desde aquí si tienes acceso al contexto
+              Logger.error('❌ REFRESH TOKEN FALLÓ. Se eliminaron los tokens.');
+              return handler.next(error);
+            }
+            Logger.info(
+                '✅ REFRESH TOKEN EXITOSO - Reintentando solicitud original a $path');
+
+            // Si el refresh fue exitoso, reintenta la petición original
+            final newResponse = await _retryRequest(error.requestOptions);
+            // Si el backend responde 401 tras el refresh, limpiar tokens y forzar logout
+            if (newResponse.statusCode == 401 ||
+                newResponse.statusCode == 403) {
+              await RefreshTokenManager.clearAccessToken();
+              await RefreshTokenManager.clearRefreshToken();
+              // TODO: Forzar logout desde aquí si tienes acceso al contexto
+              Logger.error(
+                  '❌ BACKEND RESPONDIÓ 401/403 TRAS REFRESH. Se eliminaron los tokens.');
+              return handler.next(error);
+            }
+            return handler.resolve(newResponse);
+          } catch (e) {
+            // Si el refresh falla, el provider hará logout y la UI reaccionará
+            Logger.error(
+                '❌ ERROR EN REFRESH TOKEN: ${e.toString()}. Se procederá con logout.');
+            await RefreshTokenManager.clearAccessToken();
+            await RefreshTokenManager.clearRefreshToken();
+            // TODO: Forzar logout desde aquí si tienes acceso al contexto
+            return handler.next(error);
+          }
+        } else {
+          logDebug(
+              'NO entra a la condición de refresh: status=$status, path=$path, x-no-retry-on-401=${queryParams['x-no-retry-on-401']}');
         }
+        logInfo(
+            'AuthInterceptor: El error no es 401/403 manejable por refresh o es de /auth/refresh/logout. Propagando error. Path: $path');
         return handler.next(error);
       },
     );
   }
 
-  Future<Response<dynamic>> _retryRequest(RequestOptions options) async {
-    final token = await _tokenManager.getAccessToken();
-    options.headers['Authorization'] = 'Bearer $token';
-    logDebug(
-        'Reintentando solicitud con nuevo token: ${token?.substring(0, 10)}...');
-    return _dio.fetch(options);
+  Future<Response<dynamic>> _retryRequest(RequestOptions requestOptions) async {
+    // Clonar las opciones y actualizar el token.
+    final newOptions = Options(
+      method: requestOptions.method,
+      headers:
+          Map<String, dynamic>.from(requestOptions.headers), // Clonar headers
+      responseType: requestOptions.responseType,
+      contentType: requestOptions.contentType,
+      validateStatus: requestOptions.validateStatus,
+      receiveTimeout: requestOptions.receiveTimeout,
+      sendTimeout: requestOptions.sendTimeout,
+      extra: requestOptions.extra,
+    );
+
+    final newAccessToken =
+        await RefreshTokenManager.getAccessToken(baseUrl: baseUrl);
+    if (newAccessToken != null) {
+      newOptions.headers![HttpHeaders.authorizationHeader] =
+          'Bearer $newAccessToken';
+    } else {
+      // Esto no debería suceder si refreshToken() fue exitoso, pero como salvaguarda:
+      logError(
+          'RetryRequest: No se pudo obtener el nuevo access token para el reintento.');
+      // Se podría lanzar un error aquí o proceder sin token, lo que probablemente fallará.
+      // Por ahora, se procede, y si falla, el ciclo no debería repetirse si el path es el mismo.
+    }
+
+    logInfo(
+        'RetryRequest: Reintentando solicitud a ${requestOptions.path} con nuevo token.');
+    // Usar el cliente _dio principal para el reintento, ya que los interceptores (como el de log) aún son útiles.
+    // El interceptor de Auth no debería causar un bucle aquí si el token es ahora válido.
+    return _dio.request(
+      requestOptions.path,
+      data: requestOptions.data,
+      queryParameters: requestOptions.queryParameters,
+      cancelToken: requestOptions.cancelToken,
+      onReceiveProgress: requestOptions.onReceiveProgress,
+      onSendProgress: requestOptions.onSendProgress,
+      options: newOptions,
+    );
+  }
+
+  // Helper function para parsear el valor del refresh_token desde la cabecera set-cookie
+  String? _parseRefreshTokenFromSetCookieHeader(String? setCookieValue) {
+    if (setCookieValue == null || setCookieValue.isEmpty) {
+      return null;
+    }
+    // Buscamos "refresh_token=valor"
+    final parts = setCookieValue.split(';');
+    for (final part in parts) {
+      final keyValue = part.trim().split('=');
+      if (keyValue.length == 2) {
+        final key = keyValue[0].trim();
+        final value = keyValue[1].trim();
+        if (key == TokenConstants.refreshTokenKey) {
+          // refreshTokenKey es 'refresh_token'
+          // Asegurarse de que el valor no esté vacío
+          return value.isNotEmpty ? value : null;
+        }
+      }
+    }
+    return null;
   }
 
   Future<Map<String, dynamic>> request({
@@ -356,14 +438,9 @@ class ApiClient {
     try {
       final Options options = Options(
         method: method,
-        headers: <String, String>{
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        validateStatus: (status) => true,
+        headers: Map<String, String>.from(_defaultHeaders),
       );
 
-      // Log simple de la solicitud sin formateo JSON
       logInfo('Enviando solicitud $method a $endpoint');
       if (body != null) {
         logDebug('Body: $body');
@@ -379,55 +456,61 @@ class ApiClient {
         options: options,
       );
 
-      // Procesar token de autorización si existe en los headers
+      // Procesar token de autorización (access_token) si existe en los headers de la respuesta
       final String? authHeader = response.headers.value('authorization');
       if (authHeader != null && authHeader.startsWith('Bearer ')) {
         final String token = authHeader.substring(7);
-        await SecureStorageUtils.write(TokenConstants.accessTokenKey, token);
+        // En lugar de guardarlo directamente, usar TokenManager si centraliza la lógica de tokens
+        await RefreshTokenManager.setAccessToken(
+            baseUrl: baseUrl, token: token);
         logDebug(
-            'Token actualizado desde headers: [1m${token.substring(0, min(10, token.length))}...');
+            'Access token actualizado desde headers de respuesta: ${token.substring(0, min(10, token.length))}...');
       }
 
-      // Procesar refresh token si existe en las cookies
-      final String? cookie = response.headers.value('set-cookie');
-      if (cookie != null && cookie.isNotEmpty) {
-        await SecureStorageUtils.write(TokenConstants.refreshTokenKey, cookie);
-        logDebug('Refresh token actualizado desde cookies');
+      // Procesar refresh token si existe en las cookies de la respuesta
+      // Dio devuelve los headers 'set-cookie' como una lista si hay múltiples.
+      final List<String>? setCookieValues =
+          response.headers[HttpHeaders.setCookieHeader];
+      if (setCookieValues != null && setCookieValues.isNotEmpty) {
+        for (final setCookieValue in setCookieValues) {
+          final String? parsedRefreshToken =
+              _parseRefreshTokenFromSetCookieHeader(setCookieValue);
+          if (parsedRefreshToken != null) {
+            await SecureStorageUtils.write(
+                TokenConstants.refreshTokenKey, parsedRefreshToken);
+            logDebug(
+                'Refresh token (${TokenConstants.refreshTokenKey}) actualizado desde set-cookie header: ${parsedRefreshToken.substring(0, min(10, parsedRefreshToken.length))}...');
+            break; // Asumimos que solo hay un refresh_token relevante
+          }
+        }
       }
 
       // Procesar la respuesta
-      if (response.statusCode == null || response.statusCode! >= 400) {
-        throw DioException(
-          response: response,
-          requestOptions: response.requestOptions,
-          error: response.statusMessage,
-        );
-      }
+      // Nota: con validateStatus global, 401/403 provoca DioException y pasa por interceptor
 
       if (response.data == null) {
         return <String, dynamic>{'status': 'success'};
       }
 
       if (response.data is Map<String, dynamic>) {
-        // Agregar el token a la respuesta si existe en los headers
         final Map<String, dynamic> responseData =
             Map<String, dynamic>.from(response.data);
-        if (authHeader != null) {
-          responseData['authorization'] = authHeader;
-        }
-        if (cookie != null) {
-          responseData['cookie'] = cookie;
-        }
         return responseData;
       }
 
       return <String, dynamic>{'data': response.data};
     } on DioException catch (e) {
+      // El interceptor debería haber manejado 401/403 y reintentado. Si termina aquí,
+      // convertir a excepción de API
+      logError(
+          'DioException en ApiClient.request: ${e.message}, Tipo: ${e.type}, Endpoint: $endpoint');
       throw ApiException.fromDioError(e);
     } catch (e) {
+      logError(
+          'Error inesperado en ApiClient.request: $e, Endpoint: $endpoint');
       throw ApiException(
-        statusCode: 0,
-        message: 'Error inesperado: $e',
+        statusCode: 0, // genérico
+        message: 'Error inesperado en la solicitud: $e',
         errorCode: ApiConstants.unknownError,
       );
     }
@@ -466,7 +549,8 @@ class ApiClient {
     String responseType = 'arraybuffer',
   }) async {
     try {
-      final String? token = await _tokenManager.getAccessToken();
+      final String? token =
+          await RefreshTokenManager.getAccessToken(baseUrl: baseUrl);
 
       final Options options = Options(
         method: method,
@@ -546,6 +630,145 @@ class ApiClient {
     } catch (e) {
       logError('Error al limpiar estado del cliente API', e);
       // No relanzar el error ya que no es crítico
+    }
+  }
+
+  /// Refresca el token de acceso usando la clase centralizada.
+  /// Retorna true si el refresh fue exitoso, false si falló (por ejemplo, refresh token inválido).
+  Future<bool> refreshToken() async {
+    return await RefreshTokenManager.refreshToken(baseUrl: baseUrl);
+  }
+}
+
+// FIX: Métodos de acceso al access token centralizados aquí para compatibilidad con main.api.dart
+class RefreshTokenManager {
+  static const String _refreshTokenKey = 'refresh_token';
+  static const String _accessTokenKey = 'access_token';
+  static bool _isRefreshing = false;
+  static Completer<bool>? _refreshCompleter;
+
+  /// Lee el refresh token desde almacenamiento seguro
+  static Future<String?> getRefreshToken() async {
+    return await SecureStorageUtils.read(_refreshTokenKey);
+  }
+
+  /// Guarda o actualiza el refresh token en almacenamiento seguro
+  static Future<void> setRefreshToken(String token) async {
+    await SecureStorageUtils.write(_refreshTokenKey, token);
+  }
+
+  /// Elimina el refresh token del almacenamiento seguro
+  static Future<void> clearRefreshToken() async {
+    await SecureStorageUtils.delete(_refreshTokenKey);
+  }
+
+  /// Elimina el access token del almacenamiento seguro
+  static Future<void> clearAccessToken() async {
+    await SecureStorageUtils.delete(_accessTokenKey);
+  }
+
+  /// Lee el access token desde almacenamiento seguro
+  static Future<String?> getAccessToken({String? baseUrl}) async {
+    final token = await SecureStorageUtils.read(_accessTokenKey);
+    logDebug('[getAccessToken] Token leído: '
+        '${token != null ? token.substring(0, token.length > 10 ? 10 : token.length) : 'null'}');
+    return token;
+  }
+
+  /// Guarda o actualiza el access token en almacenamiento seguro
+  static Future<void> setAccessToken(
+      {String? baseUrl, required String token}) async {
+    await SecureStorageUtils.write(_accessTokenKey, token);
+  }
+
+  /// Refresca el access token usando el refresh token actual
+  /// Devuelve true si el refresh fue exitoso, false si falló
+  static Future<bool> refreshToken({required String baseUrl}) async {
+    if (baseUrl.isEmpty) {
+      logError(
+          'RefreshTokenManager: baseUrl no puede estar vacío al refrescar el token.');
+      return false;
+    }
+    if (_isRefreshing) {
+      // Esperar a que termine el refresh en curso
+      return _refreshCompleter?.future ?? false;
+    }
+    _isRefreshing = true;
+    _refreshCompleter = Completer<bool>();
+    try {
+      final refreshTokenValue = await getRefreshToken();
+      if (refreshTokenValue == null || refreshTokenValue.isEmpty) {
+        logError('RefreshTokenManager: No hay refresh token disponible.');
+        await clearAccessToken();
+        await clearRefreshToken();
+        _isRefreshing = false;
+        _refreshCompleter?.complete(false);
+        _refreshCompleter = null;
+        return false;
+      }
+      final Dio dio = Dio(BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        sendTimeout: const Duration(seconds: 30),
+      ));
+      final response = await dio.post(
+        '/auth/refresh',
+        options: Options(
+          headers: {
+            'Cookie': '$_refreshTokenKey=$refreshTokenValue',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final authHeader = response.headers.value('authorization');
+        logDebug(
+            '[refreshToken] Header authorization recibido: ${authHeader ?? 'null'}');
+        if (authHeader != null && authHeader.startsWith('Bearer ')) {
+          final newAccessToken = authHeader.substring(7);
+          logDebug('[refreshToken] Nuevo access token extraído: '
+              '${newAccessToken.substring(0, newAccessToken.length > 10 ? 10 : newAccessToken.length)}');
+          if (newAccessToken.isNotEmpty) {
+            await setAccessToken(token: newAccessToken);
+            logDebug('[refreshToken] Nuevo access token guardado.');
+            // Leer inmediatamente después de guardar para verificar
+            final checkToken = await getAccessToken();
+            logDebug('[refreshToken] Token leído tras guardar: '
+                '${checkToken != null ? checkToken.substring(0, checkToken.length > 10 ? 10 : checkToken.length) : 'null'}');
+            _isRefreshing = false;
+            _refreshCompleter?.complete(true);
+            _refreshCompleter = null;
+            return true;
+          }
+        }
+        logError(
+            'RefreshTokenManager: No se pudo extraer el nuevo access token.');
+        await clearAccessToken();
+        await clearRefreshToken();
+        _isRefreshing = false;
+        _refreshCompleter?.complete(false);
+        _refreshCompleter = null;
+        return false;
+      } else {
+        logError(
+            'RefreshTokenManager: Error al refrescar token. Status: ${response.statusCode}');
+        await clearAccessToken();
+        await clearRefreshToken();
+        _isRefreshing = false;
+        _refreshCompleter?.complete(false);
+        _refreshCompleter = null;
+        return false;
+      }
+    } catch (e) {
+      logError('RefreshTokenManager: Excepción durante el refresh', e);
+      await clearAccessToken();
+      await clearRefreshToken();
+      _isRefreshing = false;
+      _refreshCompleter?.complete(false);
+      _refreshCompleter = null;
+      return false;
     }
   }
 }

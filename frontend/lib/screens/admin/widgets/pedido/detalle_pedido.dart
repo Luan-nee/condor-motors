@@ -27,9 +27,18 @@ class DetallePedidoWidget extends StatefulWidget {
 }
 
 class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
+  late final ScrollController _tableScrollController;
+
   @override
   void initState() {
     super.initState();
+    _tableScrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _tableScrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -37,7 +46,7 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
     return Dialog(
       backgroundColor: const Color(0xFF1A1A1A),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 900, maxHeight: 800),
+        constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 800),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -74,7 +83,14 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildInfoGeneral(context),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: _buildInfoGeneral(context)),
+                          const SizedBox(width: 24),
+                          Expanded(child: _buildDatosCliente(context)),
+                        ],
+                      ),
                       const SizedBox(height: 24),
                       _buildDetallesReservaTable(context),
                     ],
@@ -103,8 +119,6 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
   }
 
   Widget _buildInfoGeneral(BuildContext context) {
-    final cliente = Provider.of<PedidoAdminProvider>(context, listen: false)
-        .getCliente(widget.pedido.clienteId);
     return Card(
       color: const Color(0xFF232323),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -132,7 +146,33 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
                 Icons.attach_money),
             _infoRow('Fecha de Recojo', widget.pedido.fechaRecojo,
                 Icons.calendar_today),
-            const Divider(color: Colors.white24),
+            _infoRow('ID Sucursal', widget.pedido.sucursalId.toString(),
+                Icons.store),
+            _infoRow('Nombre Sucursal', widget.pedido.nombre, Icons.storefront),
+            _infoRow(
+                'Fecha de creación',
+                '${widget.pedido.fechaCreacion.day.toString().padLeft(2, '0')}/'
+                    '${widget.pedido.fechaCreacion.month.toString().padLeft(2, '0')}/'
+                    '${widget.pedido.fechaCreacion.year} '
+                    '${widget.pedido.fechaCreacion.hour.toString().padLeft(2, '0')}:${widget.pedido.fechaCreacion.minute.toString().padLeft(2, '0')}',
+                Icons.calendar_today),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDatosCliente(BuildContext context) {
+    final cliente = Provider.of<PedidoAdminProvider>(context, listen: false)
+        .getCliente(widget.pedido.clienteId);
+    return Card(
+      color: const Color(0xFF232323),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Row(
               children: const [
                 Icon(Icons.person, color: Colors.red, size: 18),
@@ -163,16 +203,6 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
                 cliente.direccion != null &&
                 cliente.direccion!.isNotEmpty)
               _infoRow('Dirección', cliente.direccion!, Icons.location_on),
-            _infoRow('ID Sucursal', widget.pedido.sucursalId.toString(),
-                Icons.store),
-            _infoRow('Nombre Sucursal', widget.pedido.nombre, Icons.storefront),
-            _infoRow(
-                'Fecha de creación',
-                '${widget.pedido.fechaCreacion.day.toString().padLeft(2, '0')}/'
-                    '${widget.pedido.fechaCreacion.month.toString().padLeft(2, '0')}/'
-                    '${widget.pedido.fechaCreacion.year} '
-                    '${widget.pedido.fechaCreacion.hour.toString().padLeft(2, '0')}:${widget.pedido.fechaCreacion.minute.toString().padLeft(2, '0')}',
-                Icons.calendar_today),
           ],
         ),
       ),
@@ -203,8 +233,10 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
             SizedBox(
               width: double.infinity,
               child: Scrollbar(
+                controller: _tableScrollController,
                 thumbVisibility: true,
                 child: SingleChildScrollView(
+                  controller: _tableScrollController,
                   child: DataTable(
                     headingRowColor:
                         WidgetStateProperty.all(const Color(0xFF1A1A1A)),
@@ -250,9 +282,31 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
                 ),
               ),
             ),
+            // Total debajo de la tabla
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16, right: 8),
+                child: Text(
+                  'Total: S/ ${_calcularTotalPedido().toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  double _calcularTotalPedido() {
+    return widget.pedido.detallesReserva.fold(
+      0.0,
+      (sum, item) => sum + (item.total),
     );
   }
 

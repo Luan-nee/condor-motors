@@ -326,7 +326,7 @@ class ProformaConversionManager {
         try {
           Logger.debug(
               'Obteniendo información del empleado asociado a la cuenta...');
-          final userData = await api.getUserData();
+          final userData = await api.auth.getUserData();
 
           if (userData == null) {
             Logger.error('No se pudo obtener información del usuario actual');

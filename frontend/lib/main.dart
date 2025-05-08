@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 
 // Configuración global de API
 // Nota: La variable api ahora se define en index.api.dart
@@ -31,6 +32,9 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 // Clave global para el ScaffoldMessenger
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
+
+// Instancia global para acceso desde interceptores (ej: main.api.dart)
+late AuthProvider globalAuthProvider;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,170 +56,270 @@ void main() async {
   }
 
   // Inicializar API usando la función centralizada en index.api.dart
-  await initializeApi();
+  await ApiInitializer.instance.initializeApiIfNeeded();
 
-  // Verificar autenticación del usuario
-  debugPrint('Verificando autenticación del usuario...');
-  final bool isAuthenticated = await api.auth.isAuthenticated();
-  String initialRoute = role_utils.login;
-  Map<String, dynamic>? userData;
+  // Inicializar globalAuthProvider ANTES de cualquier petición protegida
+  globalAuthProvider = AuthProvider(AuthRepository.instance);
 
-  if (isAuthenticated) {
-    try {
-      debugPrint('Validando token con el servidor...');
-      final bool isTokenValid = await api.auth.verificarToken();
+  // Agrupación de providers por dominio
+  final List<SingleChildWidget> globalProviders = [
+    ChangeNotifierProvider(
+      create: (_) => LoginProvider(),
+    ),
+    ChangeNotifierProvider<AuthProvider>.value(
+      value: globalAuthProvider,
+    ),
+    ChangeNotifierProvider(create: (_) => PaginacionProvider()),
+  ];
 
-      if (!isTokenValid) {
-        debugPrint('Token no validado por el servidor, redirigiendo a login');
-        await api.auth.clearTokens();
-        initialRoute = role_utils.login;
-      } else {
-        debugPrint('Token validado correctamente con el servidor');
-        userData = await api.authService.getUserData();
+  final List<SingleChildWidget> adminProviders = [
+    ChangeNotifierProvider<CategoriasProvider>(
+      create: (_) => CategoriasProvider(),
+    ),
+    ChangeNotifierProvider<MarcasProvider>(
+      create: (_) => MarcasProvider(),
+    ),
+    ChangeNotifierProvider<EmpleadoProvider>(
+      create: (_) => EmpleadoProvider(),
+    ),
+    ChangeNotifierProvider<TransferenciasProvider>(
+      create: (_) => TransferenciasProvider(),
+    ),
+    ChangeNotifierProvider<ProductoProvider>(
+      create: (_) => ProductoProvider(),
+    ),
+    ChangeNotifierProvider<StockProvider>(
+      create: (_) => StockProvider(),
+    ),
+    ChangeNotifierProvider<SucursalProvider>(
+      create: (_) => SucursalProvider(),
+    ),
+    ChangeNotifierProvider<PedidoAdminProvider>(
+      create: (_) => PedidoAdminProvider(),
+    ),
+    ChangeNotifierProvider<DashboardProvider>(
+      create: (_) => DashboardProvider(),
+    ),
+  ];
 
-        if (userData != null && userData['rol'] != null) {
-          // Extraer el código del rol correctamente
-          String rolCodigo;
-          if (userData['rol'] is Map) {
-            rolCodigo = userData['rol']['codigo']?.toString() ?? '';
-          } else {
-            rolCodigo = userData['rol'].toString();
-          }
+  final List<SingleChildWidget> computerProviders = [
+    ChangeNotifierProvider<VentasComputerProvider>(
+      create: (_) => VentasComputerProvider(),
+    ),
+    ChangeNotifierProvider<ProformaComputerProvider>(
+      create: (context) => ProformaComputerProvider(
+        Provider.of<VentasComputerProvider>(context, listen: false),
+      ),
+    ),
+  ];
 
-          // Normalizar y obtener la ruta inicial
-          final String rolNormalizado = role_utils.normalizeRole(rolCodigo);
-          initialRoute = role_utils.getInitialRoute(rolNormalizado);
-
-          debugPrint(
-              'Usuario autenticado con rol: $rolCodigo, redirigiendo a $initialRoute');
-        } else {
-          debugPrint('No se encontraron datos de usuario válidos');
-          initialRoute = role_utils.login;
-        }
-      }
-    } catch (e) {
-      debugPrint('Error al validar token: $e');
-      await api.auth.clearTokens();
-      initialRoute = role_utils.login;
-    }
-  } else {
-    debugPrint('No se encontró un token válido, redirigiendo a login');
-  }
+  final List<SingleChildWidget> colabProviders = [
+    ChangeNotifierProvider<TransferenciasColabProvider>(
+      create: (_) => TransferenciasColabProvider(),
+    ),
+  ];
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => LoginProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(AuthRepository.instance),
-        ),
-        ChangeNotifierProvider(create: (_) => VentasComputerProvider()),
-        // Provider para paginación global
-        ChangeNotifierProvider<PaginacionProvider>(
-          create: (_) => PaginacionProvider(),
-        ),
-        // Providers de administración
-        ChangeNotifierProvider<CategoriasProvider>(
-          create: (_) => CategoriasProvider(),
-        ),
-        ChangeNotifierProvider<MarcasProvider>(
-          create: (_) => MarcasProvider(),
-        ),
-        ChangeNotifierProvider<EmpleadoProvider>(
-          create: (_) => EmpleadoProvider(),
-        ),
-        ChangeNotifierProvider<TransferenciasProvider>(
-          create: (_) => TransferenciasProvider(),
-        ),
-        ChangeNotifierProvider<ProductoProvider>(
-          create: (_) => ProductoProvider(),
-        ),
-        ChangeNotifierProvider<StockProvider>(
-          create: (_) => StockProvider(),
-        ),
-        ChangeNotifierProvider<SucursalProvider>(
-          create: (_) => SucursalProvider(),
-        ),
-        ChangeNotifierProvider<PedidoAdminProvider>(
-          create: (_) => PedidoAdminProvider(),
-        ),
-        ChangeNotifierProvider<DashboardProvider>(
-          create: (_) => DashboardProvider(),
-        ),
-        // Providers para módulo de computadora
-        ChangeNotifierProvider<ProformaComputerProvider>(
-          create: (context) => ProformaComputerProvider(
-            Provider.of<VentasComputerProvider>(context, listen: false),
-          ),
-        ),
-        // Provider para transferencias de colaboradores
-        ChangeNotifierProvider<TransferenciasColabProvider>(
-          create: (_) => TransferenciasColabProvider(),
-        ),
-        // Aquí puedes agregar más providers según sea necesario
+        ...globalProviders,
+        ...adminProviders,
+        ...computerProviders,
+        ...colabProviders,
+        // Aquí puedes agregar más grupos de providers según sea necesario
       ],
       child: ConnectionStatusWidget(
-        child: CondorMotorsApp(
-          initialRoute: initialRoute,
-          userData: userData,
-        ),
+        child: CondorMotorsApp(),
       ),
     ),
   );
 }
 
 class CondorMotorsApp extends StatelessWidget {
-  final String initialRoute;
-  final Map<String, dynamic>? userData;
-
-  const CondorMotorsApp({
-    super.key,
-    required this.initialRoute,
-    this.userData,
-  });
+  const CondorMotorsApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Crear la aplicación base
-    return ConnectionStatusWidget(
-      child: MaterialApp(
-        navigatorKey: navigatorKey,
-        scaffoldMessengerKey: scaffoldMessengerKey,
-        debugShowCheckedModeBanner: false,
-        title: 'Condor Motors',
-        theme: AppTheme.theme,
-        // Forzar el uso de Material 3 para mejor soporte de temas
-        themeMode: ThemeMode.dark,
-        darkTheme: AppTheme.theme,
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [
-          Locale('es', ''), // Español
-          Locale('en', ''), // Inglés (opcional)
-        ],
-        locale: Locale('es', ''), // Fuerza español
-        onGenerateRoute: (RouteSettings settings) {
-          return routes.generateRoute(
-            settings,
-            initialRoute: initialRoute,
-            userData: userData,
-          );
-        },
-        initialRoute: initialRoute,
-      ),
+    return MaterialApp(
+      navigatorKey: navigatorKey,
+      scaffoldMessengerKey: scaffoldMessengerKey,
+      debugShowCheckedModeBanner: false,
+      title: 'Condor Motors',
+      theme: AppTheme.theme,
+      themeMode: ThemeMode.dark,
+      darkTheme: AppTheme.theme,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('es', ''),
+        Locale('en', ''),
+      ],
+      locale: const Locale('es', ''),
+      onGenerateRoute: routes.generateRoute,
+      home: const SplashScreen(),
     );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  String? _errorMessage;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthAndRedirect();
+  }
+
+  Future<void> _checkAuthAndRedirect() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      // Timeout de 10 segundos para autenticación
+      final result = await _tryAuthWithTimeout(const Duration(seconds: 10));
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pushReplacementNamed(
+        result['route'],
+        arguments: result['userData'],
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  Future<Map<String, dynamic>> _tryAuthWithTimeout(Duration timeout) async {
+    return await (() async {
+      debugPrint('Verificando autenticación del usuario (SplashScreen)...');
+      final bool isAuthenticated = await api.auth.isAuthenticated();
+      String initialRoute = role_utils.login;
+      Map<String, dynamic>? userData;
+
+      if (isAuthenticated) {
+        try {
+          debugPrint('Validando token con el servidor (centralizado)...');
+          final bool isTokenValid =
+              await globalAuthProvider.verifySessionOnce();
+
+          if (!isTokenValid) {
+            debugPrint(
+                'Token no validado por el servidor, redirigiendo a login');
+            await api.auth.clearTokens();
+            initialRoute = role_utils.login;
+          } else {
+            debugPrint('Token validado correctamente con el servidor');
+            userData = await api.authService.getUserData();
+
+            if (userData != null && userData['rol'] != null) {
+              final result = role_utils.getRoleAndInitialRoute(userData);
+              final String rolNormalizado = result['rol']!;
+              initialRoute = result['route']!;
+              debugPrint(
+                  'Usuario autenticado con rol: $rolNormalizado, redirigiendo a $initialRoute');
+            } else {
+              debugPrint('No se encontraron datos de usuario válidos');
+              initialRoute = role_utils.login;
+            }
+          }
+        } catch (e) {
+          debugPrint('Error al validar token: $e');
+          await api.auth.clearTokens();
+          initialRoute = role_utils.login;
+        }
+      } else {
+        debugPrint('No se encontró un token válido, redirigiendo a login');
+      }
+      return {'route': initialRoute, 'userData': userData};
+    })()
+        .timeout(timeout, onTimeout: () {
+      throw Exception(
+          'Tiempo de espera agotado al verificar autenticación. Verifica tu conexión o reintenta.');
+    });
   }
 
   @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties
-      ..add(StringProperty('initialRoute', initialRoute))
-      ..add(DiagnosticsProperty<Map<String, dynamic>?>('userData', userData));
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF1A1A1A),
+      body: Center(
+        child: _isLoading
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                    child: Image.asset(
+                      'assets/images/condor-motors-logo.webp',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  const CircularProgressIndicator(
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Verificando autenticación...',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    _errorMessage ?? 'Error desconocido',
+                    style: const TextStyle(color: Colors.red, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: _checkAuthAndRedirect,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE31E24),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                    ),
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+      ),
+    );
   }
 }

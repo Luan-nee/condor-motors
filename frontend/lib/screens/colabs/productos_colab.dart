@@ -2,6 +2,7 @@ import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/screens/colabs/selector_colab.dart';
+import 'package:condorsmotors/utils/busqueda_producto_utils.dart';
 import 'package:condorsmotors/utils/stock_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -16,6 +17,8 @@ class ProductosColabScreen extends StatefulWidget {
 class _ProductosColabScreenState extends State<ProductosColabScreen> {
   String _searchQuery = '';
   String _selectedCategory = 'Todos';
+  String _selectedBrand = 'Todas';
+  String _selectedPromotion = 'Todas';
   bool _isLoading = true;
   String? _error;
 
@@ -28,11 +31,28 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
   // Categorías disponibles (se cargarán desde la API)
   List<String> _categorias = <String>['Todos'];
 
+  // Marcas disponibles (se cargarán desde la API)
+  List<String> _marcas = <String>['Todas'];
+
+  // Promociones disponibles (se cargarán desde la API)
+  final List<String> _promociones = <String>[
+    'Todas',
+    'Liquidación',
+    'Descuento',
+    'Promo Gratis'
+  ];
+
   // Tamaño de página para la paginación
   static const int _pageSize = 20;
 
   // Repositorio de productos
   final ProductoRepository _productoRepository = ProductoRepository.instance;
+
+  // Estados para filtros desplegables
+  bool _isCategoriaExpanded = false;
+  bool _isMarcaExpanded = false;
+  bool _isPromocionExpanded = false;
+  bool _isSearchExpanded = false;
 
   @override
   void initState() {
@@ -71,11 +91,24 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         order: 'asc',
       );
 
-      // Extraer categorías únicas de los productos
-      final Set<String> categoriasSet = response.items
-          .map((Producto p) => p.categoria)
-          .where((String c) => c.isNotEmpty)
+      // Extraer categorías únicas y normalizadas usando BusquedaProductoUtils
+      final List<Map<String, dynamic>> productosMap = response.items
+          .map((p) => {
+                'categoria': p.categoria,
+                'marca': p.marca,
+              })
+          .toList();
+      final List<String> categoriasProcesadas =
+          BusquedaProductoUtils.extraerCategorias(productosMap);
+      // Extraer marcas únicas y normalizadas
+      final Set<String> marcasSet = response.items
+          .map((p) => (p.marca).trim())
+          .where((m) => m.isNotEmpty)
           .toSet();
+      final List<String> marcasProcesadas = <String>[
+        'Todas',
+        ...marcasSet.toList()..sort()
+      ];
 
       if (!mounted) {
         return;
@@ -84,7 +117,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
       setState(() {
         _productos = response.items;
         _paginacion = response.paginacion;
-        _categorias = <String>['Todos', ...categoriasSet];
+        _categorias = categoriasProcesadas;
+        _marcas = marcasProcesadas;
         _isLoading = false;
       });
     } catch (e) {
@@ -96,6 +130,28 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         _error = e.toString();
         _isLoading = false;
       });
+
+      final String errorStr = e.toString().toLowerCase();
+      final bool isAuthError =
+          errorStr.contains('401') || errorStr.contains('authorization');
+      final bool isRefreshFailed = errorStr.contains('refresh failed') ||
+          errorStr.contains('invalid_grant') ||
+          errorStr.contains('refresh_token');
+
+      // Solo mostrar el mensaje si el refresh también falló
+      if (isAuthError && !isRefreshFailed) {
+        // No mostrar nada, el refresh token se encargará
+        return;
+      }
+
+      // Si el refresh también falló, mostrar el mensaje
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('Error de autorización. Por favor, inicia sesión de nuevo.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -137,18 +193,56 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         return;
       }
 
-      // Mostrar error al cargar más productos
+      final String errorStr = e.toString().toLowerCase();
+      final bool isAuthError =
+          errorStr.contains('401') || errorStr.contains('authorization');
+      final bool isRefreshFailed = errorStr.contains('refresh failed') ||
+          errorStr.contains('invalid_grant') ||
+          errorStr.contains('refresh_token');
+
+      // Solo mostrar el mensaje si el refresh también falló
+      if (isAuthError && !isRefreshFailed) {
+        // No mostrar nada, el refresh token se encargará
+        return;
+      }
+
+      // Si el refresh también falló, mostrar el mensaje
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al cargar más productos: $e'),
+          content:
+              Text('Error de autorización. Por favor, inicia sesión de nuevo.'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
+  // NUEVO: Filtrado avanzado combinando todos los filtros
   List<Producto> _getProductosFiltrados() {
-    return _productos;
+    return _productos.where((producto) {
+      final bool coincideCategoria = _selectedCategory == 'Todos' ||
+          (producto.categoria).trim().toLowerCase() ==
+              _selectedCategory.toLowerCase();
+      final bool coincideMarca = _selectedBrand == 'Todas' ||
+          (producto.marca).trim().toLowerCase() == _selectedBrand.toLowerCase();
+      final bool coincideTexto = _searchQuery.isEmpty ||
+          producto.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          producto.sku.toLowerCase().contains(_searchQuery.toLowerCase());
+      bool coincidePromocion = true;
+      if (_selectedPromotion != 'Todas') {
+        if (_selectedPromotion == 'Liquidación') {
+          coincidePromocion = producto.liquidacion == true;
+        } else if (_selectedPromotion == 'Descuento') {
+          coincidePromocion = (producto.porcentajeDescuento ?? 0) > 0;
+        } else if (_selectedPromotion == 'Promo Gratis') {
+          coincidePromocion = (producto.cantidadGratisDescuento ?? 0) > 0;
+        }
+      }
+      return coincideCategoria &&
+          coincideMarca &&
+          coincideTexto &&
+          coincidePromocion;
+    }).toList();
   }
 
   Color _getEstadoColor(StockStatus estado) {
@@ -159,17 +253,6 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         return Colors.orange;
       case StockStatus.agotado:
         return Colors.red;
-    }
-  }
-
-  IconData _getEstadoIcon(StockStatus estado) {
-    switch (estado) {
-      case StockStatus.disponible:
-        return FontAwesomeIcons.check;
-      case StockStatus.stockBajo:
-        return FontAwesomeIcons.exclamation;
-      case StockStatus.agotado:
-        return FontAwesomeIcons.xmark;
     }
   }
 
@@ -184,10 +267,516 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     }
   }
 
+  // Métodos para alternar filtros desplegables
+  void _toggleCategoria() {
+    setState(() {
+      _isCategoriaExpanded = !_isCategoriaExpanded;
+      if (_isCategoriaExpanded) {
+        _isMarcaExpanded = false;
+        _isPromocionExpanded = false;
+        _isSearchExpanded = false;
+      }
+    });
+  }
+
+  void _toggleMarca() {
+    setState(() {
+      _isMarcaExpanded = !_isMarcaExpanded;
+      if (_isMarcaExpanded) {
+        _isCategoriaExpanded = false;
+        _isPromocionExpanded = false;
+        _isSearchExpanded = false;
+      }
+    });
+  }
+
+  void _togglePromocion() {
+    setState(() {
+      _isPromocionExpanded = !_isPromocionExpanded;
+      if (_isPromocionExpanded) {
+        _isCategoriaExpanded = false;
+        _isMarcaExpanded = false;
+        _isSearchExpanded = false;
+      }
+    });
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _isSearchExpanded = !_isSearchExpanded;
+      if (_isSearchExpanded) {
+        _isCategoriaExpanded = false;
+        _isMarcaExpanded = false;
+        _isPromocionExpanded = false;
+      }
+    });
+  }
+
+  void _clearAllFilters() {
+    setState(() {
+      _searchQuery = '';
+      _selectedCategory = 'Todos';
+      _selectedBrand = 'Todas';
+      _selectedPromotion = 'Todas';
+      _isCategoriaExpanded = false;
+      _isMarcaExpanded = false;
+      _isPromocionExpanded = false;
+      _isSearchExpanded = false;
+    });
+    _cargarDatos();
+  }
+
+  // NUEVO: Barra de filtros móvil compacta y desplegable
+  Widget _buildCompactFilterBar() {
+    final bool hayFiltrosActivos = _selectedCategory != 'Todos' ||
+        _selectedBrand != 'Todas' ||
+        _selectedPromotion != 'Todas' ||
+        _searchQuery.isNotEmpty;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double iconSize =
+        screenWidth < 400 ? 22 : (screenWidth < 700 ? 26 : 32);
+    final double chipFontSize =
+        screenWidth < 400 ? 10 : (screenWidth < 700 ? 12 : 14);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          children: [
+            _buildFilterButton(
+              icon: Icons.category,
+              color: _isCategoriaExpanded || _selectedCategory != 'Todos'
+                  ? Colors.blue
+                  : Colors.white70,
+              active: _isCategoriaExpanded || _selectedCategory != 'Todos',
+              onTap: _toggleCategoria,
+              selectedLabel: _selectedCategory,
+              iconSize: iconSize,
+              chipFontSize: chipFontSize,
+            ),
+            _buildFilterButton(
+              icon: Icons.local_offer,
+              color: _isMarcaExpanded || _selectedBrand != 'Todas'
+                  ? Colors.green
+                  : Colors.white70,
+              active: _isMarcaExpanded || _selectedBrand != 'Todas',
+              onTap: _toggleMarca,
+              selectedLabel: _selectedBrand,
+              iconSize: iconSize,
+              chipFontSize: chipFontSize,
+            ),
+            _buildFilterButton(
+              icon: Icons.percent,
+              color: _isPromocionExpanded || _selectedPromotion != 'Todas'
+                  ? Colors.purple
+                  : Colors.white70,
+              active: _isPromocionExpanded || _selectedPromotion != 'Todas',
+              onTap: _togglePromocion,
+              selectedLabel: _selectedPromotion,
+              iconSize: iconSize,
+              chipFontSize: chipFontSize,
+            ),
+            _buildFilterButton(
+              icon: Icons.search,
+              color: _isSearchExpanded || _searchQuery.isNotEmpty
+                  ? Colors.orange
+                  : Colors.white70,
+              active: _isSearchExpanded || _searchQuery.isNotEmpty,
+              onTap: _toggleSearch,
+              selectedLabel: _searchQuery.isNotEmpty ? _searchQuery : null,
+              iconSize: iconSize,
+              chipFontSize: chipFontSize,
+            ),
+            _buildFilterButton(
+              icon: Icons.filter_list_off,
+              color: hayFiltrosActivos ? Colors.red : Colors.white38,
+              active: hayFiltrosActivos,
+              onTap: hayFiltrosActivos ? _clearAllFilters : null,
+              iconSize: iconSize,
+              chipFontSize: chipFontSize,
+            ),
+          ],
+        ),
+        if (_isCategoriaExpanded) _buildCategoriaDropdown(),
+        if (_isMarcaExpanded) _buildMarcaDropdown(),
+        if (_isPromocionExpanded) _buildPromocionDropdown(),
+        if (_isSearchExpanded) _buildSearchField(),
+        if (hayFiltrosActivos)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Wrap(
+              spacing: 8,
+              children: <Widget>[
+                if (_selectedCategory != 'Todos')
+                  _buildActiveFilter(
+                    icon: Icons.category,
+                    label: 'Categoría: $_selectedCategory',
+                    color: Colors.blue,
+                    onClear: () {
+                      setState(() {
+                        _selectedCategory = 'Todos';
+                      });
+                      _cargarDatos();
+                    },
+                  ),
+                if (_selectedBrand != 'Todas')
+                  _buildActiveFilter(
+                    icon: Icons.local_offer,
+                    label: 'Marca: $_selectedBrand',
+                    color: Colors.green,
+                    onClear: () {
+                      setState(() {
+                        _selectedBrand = 'Todas';
+                      });
+                      _cargarDatos();
+                    },
+                  ),
+                if (_selectedPromotion != 'Todas')
+                  _buildActiveFilter(
+                    icon: Icons.percent,
+                    label: 'Promo: $_selectedPromotion',
+                    color: Colors.purple,
+                    onClear: () {
+                      setState(() {
+                        _selectedPromotion = 'Todas';
+                      });
+                      _cargarDatos();
+                    },
+                  ),
+                if (_searchQuery.isNotEmpty)
+                  _buildActiveFilter(
+                    icon: Icons.search,
+                    label: 'Búsqueda: "$_searchQuery"',
+                    color: Colors.orange,
+                    onClear: () {
+                      setState(() {
+                        _searchQuery = '';
+                      });
+                      _cargarDatos();
+                    },
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFilterButton({
+    required IconData icon,
+    required Color color,
+    required bool active,
+    required VoidCallback? onTap,
+    String? selectedLabel,
+    double? iconSize,
+    double? chipFontSize,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: active ? color.withOpacity(0.2) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(icon, color: color, size: iconSize ?? 24),
+            onPressed: onTap,
+            tooltip: selectedLabel ?? '',
+          ),
+          if (selectedLabel != null &&
+              selectedLabel != 'Todos' &&
+              selectedLabel != 'Todas')
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Chip(
+                label: Text(
+                  selectedLabel,
+                  style: TextStyle(fontSize: chipFontSize ?? 12, color: color),
+                ),
+                backgroundColor: color.withOpacity(0.15),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.symmetric(horizontal: 4),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoriaDropdown() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedCategory,
+          isExpanded: true,
+          items: _categorias.map((String categoria) {
+            final int count = categoria == 'Todos'
+                ? _productos.length
+                : _productos
+                    .where((p) =>
+                        (p.categoria).trim().toLowerCase() ==
+                        categoria.toLowerCase())
+                    .length;
+            return DropdownMenuItem<String>(
+              value: categoria,
+              child: Row(
+                children: [
+                  Text(categoria),
+                  if (count > 0)
+                    Container(
+                      margin: const EdgeInsets.only(left: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              setState(() {
+                _selectedCategory = newValue;
+                _isCategoriaExpanded = false;
+              });
+              _cargarDatos();
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMarcaDropdown() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green.withOpacity(0.3)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedBrand,
+          isExpanded: true,
+          items: _marcas.map((String marca) {
+            final int count = marca == 'Todas'
+                ? _productos.length
+                : _productos
+                    .where((p) =>
+                        (p.marca).trim().toLowerCase() == marca.toLowerCase())
+                    .length;
+            return DropdownMenuItem<String>(
+              value: marca,
+              child: Row(
+                children: [
+                  Text(marca),
+                  if (count > 0)
+                    Container(
+                      margin: const EdgeInsets.only(left: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              setState(() {
+                _selectedBrand = newValue;
+                _isMarcaExpanded = false;
+              });
+              _cargarDatos();
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPromocionDropdown() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.purple.withOpacity(0.3)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedPromotion,
+          isExpanded: true,
+          items: _promociones.map((String promo) {
+            final int count = promo == 'Todas'
+                ? _productos.length
+                : _productos.where((p) {
+                    if (promo == 'Liquidación') {
+                      return p.liquidacion == true;
+                    }
+                    if (promo == 'Descuento') {
+                      return (p.porcentajeDescuento ?? 0) > 0;
+                    }
+                    if (promo == 'Promo Gratis') {
+                      return (p.cantidadGratisDescuento ?? 0) > 0;
+                    }
+                    return true;
+                  }).length;
+            return DropdownMenuItem<String>(
+              value: promo,
+              child: Row(
+                children: [
+                  Text(promo),
+                  if (count > 0)
+                    Container(
+                      margin: const EdgeInsets.only(left: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.purple,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              setState(() {
+                _selectedPromotion = newValue;
+                _isPromocionExpanded = false;
+              });
+              _cargarDatos();
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: 'Buscar por código, nombre o marca...',
+          prefixIcon: const Icon(Icons.search),
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        onChanged: (String value) {
+          setState(() {
+            _searchQuery = value;
+          });
+          _cargarDatos();
+        },
+      ),
+    );
+  }
+
+  // NUEVO: Cálculo de cuánto falta para stock mínimo
+  String _getStockFaltanteText(Producto producto) {
+    if (producto.stockMinimo != null &&
+        producto.stock < producto.stockMinimo!) {
+      final int faltan = producto.stockMinimo! - producto.stock;
+      return 'Faltan $faltan para stock mínimo';
+    }
+    return '';
+  }
+
+  // NUEVO: Progreso de stock para barra de progreso
+  double _getStockProgress(Producto producto) {
+    if (producto.stockMinimo == null || producto.stockMinimo == 0) {
+      return 1.0;
+    }
+    final progress = producto.stock / producto.stockMinimo!;
+    return progress.clamp(0.0, 1.0);
+  }
+
+  Color _getStockProgressColor(Producto producto) {
+    if (producto.stock == 0) {
+      return Colors.red;
+    }
+    if (producto.stockMinimo != null &&
+        producto.stock < producto.stockMinimo!) {
+      return Colors.orange;
+    }
+    return Colors.green;
+  }
+
+  Widget _buildActiveFilter({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onClear,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(fontSize: 12, color: color)),
+          const SizedBox(width: 4),
+          InkWell(
+            onTap: onClear,
+            child: const Icon(Icons.close, size: 14, color: Colors.black54),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Producto> productosFiltrados = _getProductosFiltrados();
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF2D2D2D),
@@ -226,7 +815,6 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
           ],
         ),
         actions: <Widget>[
-          // Botón para recargar datos
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _cargarDatos,
@@ -236,59 +824,10 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
       ),
       body: Column(
         children: <Widget>[
-          // Barra de búsqueda y filtros
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
-              children: <Widget>[
-                // Buscador
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Buscar por código, nombre o marca...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                    onChanged: (String value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                      // Recargar datos con el nuevo filtro
-                      _cargarDatos();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Filtro de categorías
-                DropdownButton<String>(
-                  value: _selectedCategory,
-                  items: _categorias.map((String categoria) {
-                    return DropdownMenuItem<String>(
-                      value: categoria,
-                      child: Text(categoria),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _selectedCategory = newValue;
-                      });
-                      // Recargar datos con el nuevo filtro
-                      _cargarDatos();
-                    }
-                  },
-                ),
-              ],
-            ),
+            child: _buildCompactFilterBar(),
           ),
-
-          // Indicador de carga o error
           if (_isLoading)
             const Expanded(
               child: Center(
@@ -322,7 +861,6 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
               ),
             )
           else
-            // Lista de productos
             Expanded(
               child: NotificationListener<ScrollNotification>(
                 onNotification: (ScrollNotification scrollInfo) {
@@ -341,80 +879,113 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                       producto.stock,
                       producto.stockMinimo ?? 0,
                     );
-
+                    final String stockFaltante =
+                        _getStockFaltanteText(producto);
                     return Card(
                       margin: const EdgeInsets.only(bottom: 16),
                       child: ExpansionTile(
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: _getEstadoColor(estado).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: FaIcon(
-                            _getEstadoIcon(estado),
-                            color: _getEstadoColor(estado),
-                            size: 24,
-                          ),
-                        ),
-                        title: Row(
-                          children: <Widget>[
-                            Text(
-                              producto.sku,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                        title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: <Widget>[
+                                Text(
+                                  producto.sku,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Text(
+                                    producto.nombre,
+                                    style: producto.liquidacion
+                                        ? const TextStyle(
+                                            color: Colors.amber,
+                                            fontWeight: FontWeight.bold)
+                                        : null,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                producto.nombre,
-                                // Aplicar estilo condicional para liquidación
-                                style: producto.liquidacion
-                                    ? const TextStyle(
-                                        color: Colors.amber,
-                                        fontWeight: FontWeight.bold)
-                                    : null,
-                                overflow: TextOverflow.ellipsis,
+                            const SizedBox(height: 4),
+                            // Barra de progreso central
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  LinearProgressIndicator(
+                                    value: _getStockProgress(producto),
+                                    backgroundColor: Colors.grey[300],
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        _getStockProgressColor(producto)),
+                                    minHeight: 12,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Stock: ${producto.stock} / ${producto.stockMinimo ?? "-"}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: _getStockProgressColor(producto),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                        subtitle: Row(
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .primaryColor
-                                    .withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                producto.categoria,
-                                style: TextStyle(
-                                  color: Theme.of(context).primaryColor,
-                                  fontSize: 12,
+                            Row(
+                              children: <Widget>[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .primaryColor
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    producto.categoria,
+                                    style: TextStyle(
+                                      color: Theme.of(context).primaryColor,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    producto.marca,
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (stockFaltante.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  stockFaltante,
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            // Envolver el texto de la marca con Flexible para evitar overflow
-                            Flexible(
-                              child: Text(
-                                producto.marca,
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
-                                overflow: TextOverflow
-                                    .ellipsis, // Añadir ellipsis si es muy largo
-                              ),
-                            ),
-                            // Chip de liquidación eliminado de aquí
                           ],
                         ),
                         trailing: Column(
@@ -450,133 +1021,145 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                           ],
                         ),
                         children: <Widget>[
-                          // Detalles del producto
                           Container(
                             padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                const Text(
-                                  'Detalles del Producto',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  const Text(
+                                    'Detalles del Producto',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(producto.descripcion ?? 'Sin descripción'),
-                                const SizedBox(height: 16),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: <Widget>[
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: <Widget>[
-                                        if (producto.liquidacion &&
-                                            producto.precioOferta !=
-                                                null) ...<Widget>[
+                                  const SizedBox(height: 8),
+                                  Text(producto.descripcion ??
+                                      'Sin descripción'),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: <Widget>[
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          if (producto.liquidacion &&
+                                              producto.precioOferta !=
+                                                  null) ...<Widget>[
+                                            Text(
+                                              'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                decoration:
+                                                    TextDecoration.lineThrough,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Precio Liquidación: S/ ${producto.precioOferta!.toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                color: Colors.amber,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ] else
+                                            Text(
+                                              'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                           Text(
-                                            'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
-                                            style: const TextStyle(
-                                              decoration:
-                                                  TextDecoration.lineThrough,
-                                              color: Colors.grey,
+                                            'Precio Compra: S/ ${producto.precioCompra.toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
                                             ),
                                           ),
+                                        ],
+                                      ),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children: <Widget>[
                                           Text(
-                                            'Precio Liquidación: S/ ${producto.precioOferta!.toStringAsFixed(2)}',
-                                            style: const TextStyle(
-                                              color: Colors.amber,
+                                            'Stock Actual: ${producto.stock}',
+                                            style: TextStyle(
+                                              color: _getEstadoColor(estado),
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                        ] else
                                           Text(
-                                            'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
-                                            style: const TextStyle(
+                                            'Stock Mínimo: ${producto.stockMinimo ?? 0}',
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                          Text(
+                                            'Estado: ${_getEstadoText(estado)}',
+                                            style: TextStyle(
+                                              color: _getEstadoColor(estado),
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                        Text(
-                                          'Precio Compra: S/ ${producto.precioCompra.toStringAsFixed(2)}',
-                                          style: TextStyle(
-                                            color: Colors.grey[600],
-                                          ),
+                                          if (stockFaltante.isNotEmpty)
+                                            Text(
+                                              stockFaltante,
+                                              style: const TextStyle(
+                                                color: Colors.red,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  if (producto.cantidadGratisDescuento !=
+                                          null ||
+                                      producto.porcentajeDescuento != null)
+                                    Container(
+                                      margin: const EdgeInsets.only(top: 16),
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Colors.blue.withOpacity(0.3),
                                         ),
-                                      ],
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: <Widget>[
-                                        Text(
-                                          'Stock Actual: ${producto.stock}',
-                                          style: TextStyle(
-                                            color: _getEstadoColor(estado),
-                                            fontWeight: FontWeight.bold,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          const Text(
+                                            'Promociones Activas:',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.blue,
+                                            ),
                                           ),
-                                        ),
-                                        Text(
-                                          'Stock Mínimo: ${producto.stockMinimo ?? 0}',
-                                          style: TextStyle(
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                        Text(
-                                          'Estado: ${_getEstadoText(estado)}',
-                                          style: TextStyle(
-                                            color: _getEstadoColor(estado),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                if (producto.cantidadGratisDescuento != null ||
-                                    producto.porcentajeDescuento != null)
-                                  Container(
-                                    margin: const EdgeInsets.only(top: 16),
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: Colors.blue.withOpacity(0.3),
+                                          const SizedBox(height: 8),
+                                          if (producto
+                                                  .cantidadGratisDescuento !=
+                                              null)
+                                            Text(
+                                              '• Lleva ${producto.cantidadMinimaDescuento}, paga ${producto.cantidadMinimaDescuento! - producto.cantidadGratisDescuento!}',
+                                              style: const TextStyle(
+                                                  color: Colors.blue),
+                                            ),
+                                          if (producto.porcentajeDescuento !=
+                                              null)
+                                            Text(
+                                              '• ${producto.porcentajeDescuento}% de descuento por ${producto.cantidadMinimaDescuento}+ unidades',
+                                              style: const TextStyle(
+                                                  color: Colors.blue),
+                                            ),
+                                        ],
                                       ),
                                     ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: <Widget>[
-                                        const Text(
-                                          'Promociones Activas:',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blue,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        if (producto.cantidadGratisDescuento !=
-                                            null)
-                                          Text(
-                                            '• Lleva ${producto.cantidadMinimaDescuento}, paga ${producto.cantidadMinimaDescuento! - producto.cantidadGratisDescuento!}',
-                                            style: const TextStyle(
-                                                color: Colors.blue),
-                                          ),
-                                        if (producto.porcentajeDescuento !=
-                                            null)
-                                          Text(
-                                            '• ${producto.porcentajeDescuento}% de descuento por ${producto.cantidadMinimaDescuento}+ unidades',
-                                            style: const TextStyle(
-                                                color: Colors.blue),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ],

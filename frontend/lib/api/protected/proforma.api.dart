@@ -424,11 +424,29 @@ class ProformaVentaApi {
         body: body,
       );
 
+      // Manejo explícito de error de token de facturación inválido
+      if (response['status'] == 'fail' &&
+          response['error'] != null &&
+          response['error']
+              .toString()
+              .toLowerCase()
+              .contains('token de facturación inválido')) {
+        throw Exception(
+            'Token de facturación inválido. Por favor, vuelve a iniciar sesión o contacta a soporte.');
+      }
+
       // Invalidar caché después de crear
       invalidateCache(sucursalId);
 
       return response;
     } catch (e) {
+      // Manejo explícito de error de token de facturación inválido en excepciones
+      final errorMsg = e.toString().toLowerCase();
+      if (errorMsg.contains('token de facturación inválido')) {
+        // Aquí podrías lanzar una excepción personalizada o retornar un resultado especial
+        throw Exception(
+            'Token de facturación inválido. Por favor, vuelve a iniciar sesión o contacta a soporte.');
+      }
       Logger.error('❌ Error al crear proforma de venta: $e');
       rethrow;
     }

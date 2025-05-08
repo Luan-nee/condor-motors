@@ -82,10 +82,6 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
     });
   }
 
-  void _editarProducto(Producto producto) {
-    debugPrint('Editar producto: ${producto.nombre}');
-  }
-
   void _verStockDetalles(Producto producto) {
     showDialog(
       context: context,

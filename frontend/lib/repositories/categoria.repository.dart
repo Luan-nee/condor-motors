@@ -34,31 +34,15 @@ class CategoriaRepository implements BaseRepository {
   ///
   /// Ayuda a los providers a acceder a la información del usuario autenticado
   @override
-  Future<Map<String, dynamic>?> getUserData() async {
-    try {
-      return await api.getUserData();
-    } catch (e) {
-      debugPrint('Error en CategoriaRepository.getUserData: $e');
-      return null;
-    }
-  }
+  Future<Map<String, dynamic>?> getUserData() =>
+      AuthRepository.instance.getUserData();
 
   /// Obtiene el ID de la sucursal del usuario actual
   ///
   /// Útil para operaciones que requieren el ID de sucursal automáticamente
   @override
-  Future<String?> getCurrentSucursalId() async {
-    try {
-      final userData = await getUserData();
-      if (userData == null) {
-        return null;
-      }
-      return userData['sucursalId']?.toString();
-    } catch (e) {
-      debugPrint('Error en CategoriaRepository.getCurrentSucursalId: $e');
-      return null;
-    }
-  }
+  Future<String?> getCurrentSucursalId() =>
+      AuthRepository.instance.getCurrentSucursalId();
 
   /// Obtiene todas las categorías como objetos
   ///

@@ -1,7 +1,8 @@
 import 'dart:async';
 
-import 'package:condorsmotors/api/index.api.dart' show CondorMotorsApi, api;
-import 'package:condorsmotors/models/auth.model.dart';
+import 'package:condorsmotors/api/index.api.dart'
+    show updateBaseUrl, serverConfigs;
+import 'package:condorsmotors/providers/auth.provider.dart';
 import 'package:condorsmotors/providers/login.provider.dart';
 import 'package:condorsmotors/utils/role_utils.dart'
     as role_utils; // Importar utilidad de roles con alias
@@ -57,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen>
   String _errorMessage = '';
   String _serverIp = 'localhost'; // IP local para el servidor
   late final LifecycleObserver _lifecycleObserver;
-  bool _isCheckingAutoLogin = true; // Flag para controlar el auto-login
+// Flag para controlar el auto-login
 
   @override
   void initState() {
@@ -75,14 +76,12 @@ class _LoginScreenState extends State<LoginScreen>
     _animationController.repeat();
 
     _loadServerIp();
+    _loadRememberedCredentials();
 
-    // Intentamos auto-login antes de cargar las credenciales normales
-    _tryAutoLogin().then((_) {
-      // Si no hubo auto-login exitoso, cargamos las credenciales guardadas
-      if (mounted && !_isCheckingAutoLogin) {
-        _loadSavedCredentials();
-        _loadStayLoggedInPreference();
-      }
+    // Llamar al auto-login centralizado en el provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      authProvider.tryAutoLogin();
     });
 
     // Reducir la velocidad de la animación cuando la app está en segundo plano
@@ -106,180 +105,47 @@ class _LoginScreenState extends State<LoginScreen>
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       final String? serverUrl = prefs.getString('server_url');
 
+      if (!mounted) {
+        return;
+      }
+
       if (serverUrl != null && serverUrl.isNotEmpty) {
         final Uri uri = Uri.parse(serverUrl);
+        if (!mounted) {
+          return;
+        }
         setState(() {
           _serverIp = uri.host;
         });
-        // Actualizar la URL base de la API global
-        await _updateApiBaseUrl(serverUrl);
       } else {
-        // Si no hay URL guardada, usar localhost
+        if (!mounted) {
+          return;
+        }
         setState(() {
           _serverIp = 'localhost';
         });
-        // Actualizar la URL base de la API global con localhost
-        await _updateApiBaseUrl('http://localhost:3000/api');
       }
     } catch (e) {
       debugPrint('Error al cargar la URL del servidor: $e');
-      // En caso de error, asegurar que se use localhost
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _serverIp = 'localhost';
       });
-      // Actualizar la URL base de la API global
-      await _updateApiBaseUrl('http://localhost:3000/api');
-    }
-  }
-
-  // Método para intentar iniciar sesión automáticamente
-  Future<void> _tryAutoLogin() async {
-    setState(() {
-      _isCheckingAutoLogin = true;
-      _isLoading = true;
-    });
-
-    try {
-      // Obtenemos las SharedPreferences para el flag
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-      // Verificamos si "Permanecer conectado" está activado
-      final bool stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
-      debugPrint(
-          'Auto-login: Permanecer conectado está ${stayLoggedIn ? 'activado' : 'desactivado'}');
-
-      if (!stayLoggedIn) {
-        debugPrint('Auto-login: No está activado "Permanecer conectado"');
-        setState(() {
-          _isCheckingAutoLogin = false;
-          _isLoading = false;
-        });
-        return;
-      }
-
-      // Obtenemos las credenciales guardadas de SecureStorage
-      final String? username = await SecureStorageUtils.read('username_auto');
-      final String? password = await SecureStorageUtils.read('password_auto');
-
-      if (username == null ||
-          password == null ||
-          username.isEmpty ||
-          password.isEmpty) {
-        debugPrint('Auto-login: No hay credenciales guardadas');
-        setState(() {
-          _isCheckingAutoLogin = false;
-          _isLoading = false;
-        });
-        return;
-      }
-
-      debugPrint(
-          'Auto-login: Intentando iniciar sesión automáticamente con usuario: $username');
-
-      // Intentamos el login
-      final AuthUser usuarioAutenticado = await api.auth.login(
-        username,
-        password,
-      );
-
-      debugPrint(
-          'Auto-login: Login exitoso, usuario autenticado: $usuarioAutenticado');
-
-      // Guardar los datos del usuario en el servicio global de autenticación
-      try {
-        await api.authService.saveUserData(usuarioAutenticado);
-        debugPrint(
-            'Auto-login: Datos de usuario guardados correctamente en el servicio global');
-      } catch (e) {
-        debugPrint(
-            'Auto-login: Error al guardar datos en el servicio global: $e');
-      }
-
-      // Si llegamos hasta aquí, el login fue exitoso, navegamos a la pantalla correspondiente
-      if (!mounted) {
-        return;
-      }
-
-      // Determinamos la ruta inicial basada en el rol normalizado
-      final String rolCodigo = usuarioAutenticado.rolCuentaEmpleadoCodigo;
-      final String rolNormalizado = role_utils.normalizeRole(rolCodigo);
-      final String initialRoute = role_utils.getInitialRoute(rolNormalizado);
-
-      debugPrint('Auto-login: Navegando a la ruta inicial: $initialRoute');
-
-      // Navegamos a la pantalla correspondiente
-      if (!mounted) {
-        return;
-      }
-
-      await Navigator.pushReplacementNamed(
-        context,
-        initialRoute,
-        arguments: usuarioAutenticado.toMap(),
-      );
-    } catch (e) {
-      // Si hay un error en el auto-login, simplemente mostramos la pantalla de login normal
-      debugPrint(
-          'Auto-login: Error durante el inicio de sesión automático: $e');
-      if (mounted) {
-        setState(() {
-          _isCheckingAutoLogin = false;
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  // Método para actualizar la URL base de la API global
-  Future<void> _updateApiBaseUrl(String serverUrl) async {
-    debugPrint('Actualizando URL base de la API a: $serverUrl');
-    try {
-      // Reinicializar la API global con la nueva URL base
-      api = CondorMotorsApi(
-        baseUrl: serverUrl,
-      );
-
-      // Verificar conectividad con el servidor
-      final bool isConnected = await api.checkConnectivity();
-      if (!isConnected) {
-        debugPrint('No se pudo establecer conexión con el servidor');
-        throw Exception('No se pudo establecer conexión con el servidor');
-      }
-
-      debugPrint('API inicializada correctamente con nueva URL base');
-    } catch (e) {
-      debugPrint('Error al inicializar API con nueva URL base: $e');
-      rethrow;
     }
   }
 
   Future<void> _saveServerIp(String serverIp, {int? port}) async {
     try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-      // Construir la URL completa usando la función del main.dart
-      String fullUrl = serverIp;
-      if (!serverIp.startsWith('http://') && !serverIp.startsWith('https://')) {
-        fullUrl = 'http://$serverIp${port != null ? ':$port' : ':3000'}/api';
-      } else if (!serverIp.contains(':') && !serverIp.startsWith('https://')) {
-        // Si es http pero no tiene puerto
-        fullUrl = '$serverIp${port != null ? ':$port' : ':3000'}/api';
+      await updateBaseUrl(serverIp, port: port);
+      if (!mounted) {
+        return;
       }
-
-      // Guardar la URL completa y el puerto
-      await prefs.setString('server_url', fullUrl);
-      if (port != null) {
-        await prefs.setInt('server_port', port);
-      }
-
       setState(() {
         _serverIp = serverIp;
       });
-
-      // Actualizar la URL base de la API global
-      await _updateApiBaseUrl(fullUrl);
-
-      debugPrint('URL del servidor guardada: $fullUrl');
+      debugPrint('URL del servidor guardada: $serverIp');
     } catch (e) {
       debugPrint('Error al guardar la URL del servidor: $e');
       rethrow;
@@ -291,15 +157,6 @@ class _LoginScreenState extends State<LoginScreen>
         TextEditingController(text: _serverIp);
     final TextEditingController portController =
         TextEditingController(text: '3000');
-
-    // Lista de servidores disponibles
-    final List<Map<String, dynamic>> serverConfigs = <Map<String, dynamic>>[
-      {'url': 'http://192.168.1.42', 'port': 3000},
-      {'url': 'http://localhost', 'port': 3000},
-      {'url': 'http://127.0.0.1', 'port': 3000},
-      {'url': 'http://10.0.2.2', 'port': 3000},
-      {'url': 'https://fseh2hb1d1h2ra5822cdvo.top/api', 'port': null},
-    ];
 
     showDialog(
       context: context,
@@ -504,62 +361,27 @@ class _LoginScreenState extends State<LoginScreen>
     return false;
   }
 
-  // Método para cargar la preferencia de "Permanecer conectado"
-  Future<void> _loadStayLoggedInPreference() async {
-    try {
-      // Cambiamos a SharedPreferences
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      setState(() {
-        _stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
-      });
-      debugPrint(
-          'Cargada preferencia de permanencia de sesión: $_stayLoggedIn');
-    } catch (e) {
-      debugPrint('Error al cargar preferencia de permanencia de sesión: $e');
-    }
-  }
-
-  Future<void> _loadSavedCredentials() async {
-    try {
-      // Mantenemos FlutterSecureStorage para las credenciales "Recordar" normal
-      // ya que son menos sensibles que el auto-login
-      final String? username = await _storage.read(key: 'username');
-      final String? password = await _storage.read(key: 'password');
-      final String? shouldRemember = await _storage.read(key: 'remember_me');
-
-      if (username != null && password != null && shouldRemember == 'true') {
-        setState(() {
-          _usernameController.text = username;
-          _passwordController.text = password;
-          _rememberMe = true;
-        });
-      }
-    } catch (e) {
-      // Ignorar errores al cargar credenciales
-      debugPrint('Error al cargar credenciales: $e');
-    }
-  }
-
   Future<void> _handleLogin() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.isAutoLoggingIn) {
+      // Bloquear login manual mientras auto-login está en progreso
+      return;
+    }
     if (!_formKey.currentState!.validate()) {
       return;
     }
-
     setState(() {
       _isLoading = true;
     });
-
     try {
       final loginProvider = Provider.of<LoginProvider>(context, listen: false);
       final usuario = await loginProvider.login(
         _usernameController.text,
         _passwordController.text,
       );
-
       if (!mounted) {
         return;
       }
-
       if (usuario != null) {
         // Guardar credenciales si "Recordar me" está activado
         if (_rememberMe) {
@@ -568,55 +390,52 @@ class _LoginScreenState extends State<LoginScreen>
           await _storage.write(
               key: 'password', value: _passwordController.text);
           await _storage.write(key: 'remember_me', value: 'true');
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('username', _usernameController.text);
+          await prefs.setString('password', _passwordController.text);
+          await prefs.setBool('remember_me', true);
         }
-
         // Guardar credenciales para auto-login si "Permanecer conectado" está activado
         if (_stayLoggedIn) {
-          final SharedPreferences prefs = await SharedPreferences.getInstance();
+          final prefs = await SharedPreferences.getInstance();
           await prefs.setBool('stay_logged_in', true);
+          await prefs.setString('username_auto', _usernameController.text);
+          await prefs.setString('password_auto', _passwordController.text);
           await SecureStorageUtils.write(
               'username_auto', _usernameController.text);
           await SecureStorageUtils.write(
               'password_auto', _passwordController.text);
         } else {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('username_auto');
+          await prefs.remove('password_auto');
           await SecureStorageUtils.delete('username_auto');
           await SecureStorageUtils.delete('password_auto');
         }
-
-        // Extraer el código del rol del formato correcto
-        String rolCodigo = '';
-        final Map<String, dynamic> userData = usuario.toMap();
-
-        if (userData['rol'] is Map) {
-          rolCodigo = (userData['rol'] as Map)['codigo']?.toString() ?? '';
-        } else {
-          rolCodigo = userData['rol']?.toString() ?? '';
+        // Procesar navegación solo si no está en auto-login
+        if (!authProvider.isAutoLoggingIn) {
+          // Centralizar obtención de rol y ruta inicial
+          final result = role_utils.getRoleAndInitialRoute(usuario.toMap());
+          final String initialRoute = result['route']!;
+          final String rolNormalizado = result['rol']!;
+          debugPrint(
+              'Login exitoso, navegando a ruta: $initialRoute para rol: $rolNormalizado');
+          if (!mounted) {
+            return;
+          }
+          await Navigator.pushReplacementNamed(
+            context,
+            initialRoute,
+            arguments: usuario.toMap(),
+          );
         }
-
-        rolCodigo = rolCodigo.toLowerCase();
-        final String initialRoute = role_utils.getInitialRoute(rolCodigo);
-
-        debugPrint(
-            'Login exitoso, navegando a ruta: $initialRoute para rol: $rolCodigo');
-
-        if (!mounted) {
-          return;
-        }
-
-        await Navigator.pushReplacementNamed(
-          context,
-          initialRoute,
-          arguments: userData,
-        );
       }
     } catch (e) {
       if (!mounted) {
         return;
       }
-
       setState(() {
         _isLoading = false;
-        // Actualizar el mensaje de error para mostrarlo en el formulario
         if (e.toString().contains('usuario o contraseña incorrectos') ||
             e.toString().toLowerCase().contains('incorrect')) {
           _errorMessage = 'Usuario o contraseña incorrectos';
@@ -624,7 +443,6 @@ class _LoginScreenState extends State<LoginScreen>
           _errorMessage = 'Error al iniciar sesión: ${e.toString()}';
         }
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_errorMessage),
@@ -644,17 +462,53 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  Future<void> _loadRememberedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rememberMe = prefs.getBool('remember_me') ?? false;
+    final stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
+    final username = prefs.getString('username') ?? '';
+    final password = prefs.getString('password') ?? '';
+    setState(() {
+      _rememberMe = rememberMe;
+      _stayLoggedIn = stayLoggedIn;
+      _usernameController.text = username;
+      _passwordController.text = password;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Si estamos verificando el auto-login, mostrar pantalla de carga
-    if (_isCheckingAutoLogin) {
+    final authProvider = Provider.of<AuthProvider>(context);
+
+    // Si el usuario ya está autenticado, navegar automáticamente
+    if (authProvider.isAuthenticated && !authProvider.isAutoLoggingIn) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final user = authProvider.user;
+        if (user != null) {
+          // Centralizar obtención de rol y ruta inicial
+          final result = role_utils.getRoleAndInitialRoute(user.toMap());
+          final String initialRoute = result['route']!;
+          await Navigator.pushReplacementNamed(
+            context,
+            initialRoute,
+            arguments: user.toMap(),
+          );
+        }
+      });
+      // Mientras navega, muestra un loading
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Si el provider está haciendo auto-login, mostrar pantalla de carga
+    if (authProvider.isAutoLoggingIn) {
       return Scaffold(
         backgroundColor: const Color(0xFF1A1A1A),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              // Logo
               Container(
                 width: 120,
                 height: 120,
@@ -684,6 +538,18 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
       );
+    }
+    // Si el auto-login falló, mostrar mensaje de error
+    if (authProvider.autoLoginError != null && !authProvider.isAutoLoggingIn) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text('Error en auto-login: ${authProvider.autoLoginError}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      });
     }
 
     // Pantalla normal de login

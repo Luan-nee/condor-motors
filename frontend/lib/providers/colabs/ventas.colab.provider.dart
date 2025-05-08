@@ -74,7 +74,7 @@ class VentasColabProvider extends ChangeNotifier {
   Future<void> _configurarDatosIniciales() async {
     try {
       // Obtener datos del usuario autenticado
-      final Map<String, dynamic>? userData = await api.getUserData();
+      final Map<String, dynamic>? userData = await api.auth.getUserData();
       if (userData != null && userData['sucursalId'] != null) {
         _sucursalId = userData['sucursalId'].toString();
         debugPrint('Usando sucursal del usuario autenticado: $_sucursalId');
