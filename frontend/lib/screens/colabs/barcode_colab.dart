@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+import 'package:condorsmotors/models/producto.model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -70,8 +72,8 @@ class CornersPainter extends CustomPainter {
 }
 
 class BarcodeColabScreen extends StatefulWidget {
-  final List<Map<String, dynamic>> productos;
-  final Function(Map<String, dynamic>) onProductoSeleccionado;
+  final List<Producto> productos;
+  final Function(Producto) onProductoSeleccionado;
   final bool isLoading;
 
   const BarcodeColabScreen({
@@ -88,8 +90,8 @@ class BarcodeColabScreen extends StatefulWidget {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties
-      ..add(IterableProperty<Map<String, dynamic>>('productos', productos))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has(
+      ..add(IterableProperty<Producto>('productos', productos))
+      ..add(ObjectFlagProperty<Function(Producto)>.has(
           'onProductoSeleccionado', onProductoSeleccionado))
       ..add(DiagnosticsProperty<bool>('isLoading', isLoading));
   }
@@ -99,14 +101,14 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
     with SingleTickerProviderStateMixin {
   bool _isLoading = false;
   String? _lastScannedCode;
-  Map<String, dynamic>? _foundProduct;
+  Producto? _foundProduct;
   bool _quickAdd = false;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
   // Nuevas variables para control de múltiples escaneos
   final Set<String> _scannedCodes = <String>{};
-  final List<Map<String, dynamic>> _foundProducts = <Map<String, dynamic>>[];
+  final List<Producto> _foundProducts = <Producto>[];
   DateTime? _lastScanTime;
   static const Duration _scanCooldown = Duration(milliseconds: 1500);
   bool _isProcessingMultiple = false;
@@ -335,12 +337,11 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
         continue;
       }
 
-      final Map<String, dynamic> producto = widget.productos.firstWhere(
-        (Map<String, dynamic> p) => p['codigo'] == code,
-        orElse: () => <String, dynamic>{},
+      final Producto? producto = widget.productos.firstWhereOrNull(
+        (Producto p) => p.sku == code,
       );
 
-      if (producto.isNotEmpty) {
+      if (producto != null) {
         _foundProducts.add(producto);
         _scannedCodes.add(code);
       }
@@ -400,7 +401,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
     );
   }
 
-  void _showMultipleProductsDialog(List<Map<String, dynamic>> products) {
+  void _showMultipleProductsDialog(List<Producto> products) {
     showDialog(
       context: context,
       builder: (BuildContext context) => AlertDialog(
@@ -422,7 +423,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
             itemCount: products.length,
             itemBuilder: (context, index) {
               final producto = products[index];
-              final bool tieneStock = producto['stock'] > 0;
+              final bool tieneStock = producto.stock > 0;
 
               return ListTile(
                 leading: Container(
@@ -437,7 +438,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                   ),
                 ),
                 title: Text(
-                  producto['nombre'],
+                  producto.nombre,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -447,11 +448,11 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'SKU: ${producto['codigo']}',
+                      'SKU: ${producto.sku}',
                       style: const TextStyle(color: Colors.white70),
                     ),
                     Text(
-                      'Stock: ${producto['stock']}',
+                      'Stock: ${producto.stock}',
                       style: TextStyle(
                         color:
                             tieneStock ? const Color(0xFF4CAF50) : Colors.red,
@@ -460,7 +461,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                   ],
                 ),
                 trailing: Text(
-                  'S/ ${producto['precio'].toStringAsFixed(2)}',
+                  'S/ ${producto.precioVenta.toStringAsFixed(2)}',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -484,7 +485,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
               Navigator.pop(context);
               // Agregar solo los productos con stock
               for (final producto in products) {
-                if (producto['stock'] > 0) {
+                if (producto.stock > 0) {
                   widget.onProductoSeleccionado(producto);
                 }
               }
@@ -508,27 +509,24 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
     setState(() => _isLoading = true);
 
     // Buscar en la lista de productos proporcionada
-    final Map<String, dynamic> producto = widget.productos.firstWhere(
-      (Map<String, dynamic> p) => p['codigo'] == code,
-      orElse: () => <String, dynamic>{},
+    final Producto? producto = widget.productos.firstWhereOrNull(
+      (Producto p) => p.sku == code,
     );
 
     setState(() {
-      _foundProduct = producto.isNotEmpty ? producto : null;
+      _foundProduct = producto;
       _isLoading = false;
     });
 
     if (_foundProduct != null) {
-      if (_quickAdd && _foundProduct!['stock'] > 0) {
+      if (_quickAdd && _foundProduct!.stock > 0) {
         // Modo de agregado rápido
         widget.onProductoSeleccionado(_foundProduct!);
-
         // Determinar el tipo de promoción
-        final bool enLiquidacion = _foundProduct!['enLiquidacion'] ?? false;
-        final bool tienePromocionGratis =
-            _foundProduct!['tienePromocionGratis'] ?? false;
+        final bool enLiquidacion = _foundProduct!.estaEnLiquidacion;
+        final bool tienePromocionGratis = _foundProduct!.tienePromocionGratis;
         final bool tieneDescuentoPorcentual =
-            _foundProduct!['tieneDescuentoPorcentual'] ?? false;
+            _foundProduct!.tieneDescuentoPorcentual;
 
         // Construir el mensaje de promoción
         String mensajePromocion = '';
@@ -536,10 +534,9 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
         IconData iconoPromocion = Icons.bolt;
 
         if (enLiquidacion) {
-          final double precioOriginal =
-              (_foundProduct!['precio'] as num).toDouble();
+          final double precioOriginal = _foundProduct!.precioVenta;
           final double precioLiquidacion =
-              (_foundProduct!['precioLiquidacion'] as num).toDouble();
+              _foundProduct!.precioOferta ?? _foundProduct!.precioVenta;
           final int porcentajeDescuento =
               ((precioOriginal - precioLiquidacion) / precioOriginal * 100)
                   .round();
@@ -548,15 +545,18 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
           colorPromocion = Colors.amber;
           iconoPromocion = Icons.local_fire_department;
         } else if (tienePromocionGratis) {
-          final int cantidadMinima = _foundProduct!['cantidadMinima'] ?? 0;
-          final int cantidadGratis = _foundProduct!['cantidadGratis'] ?? 0;
+          final int cantidadMinima =
+              _foundProduct!.cantidadMinimaDescuento ?? 0;
+          final int cantidadGratis =
+              _foundProduct!.cantidadGratisDescuento ?? 0;
           mensajePromocion =
-              'Lleva $cantidadMinima y paga ${cantidadMinima - cantidadGratis}';
+              'Lleva $cantidadMinima y paga ${(cantidadMinima) - (cantidadGratis)}';
           colorPromocion = const Color(0xFF4CAF50);
           iconoPromocion = Icons.card_giftcard;
         } else if (tieneDescuentoPorcentual) {
-          final int porcentaje = _foundProduct!['descuentoPorcentaje'] ?? 0;
-          final int cantidadMinima = _foundProduct!['cantidadMinima'] ?? 0;
+          final int porcentaje = _foundProduct!.porcentajeDescuento ?? 0;
+          final int cantidadMinima =
+              _foundProduct!.cantidadMinimaDescuento ?? 0;
           mensajePromocion = '$porcentaje% al llevar $cantidadMinima o más';
           colorPromocion = Colors.purple;
           iconoPromocion = Icons.percent;
@@ -574,7 +574,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Agregado: ${_foundProduct!['nombre']}',
+                        'Agregado: ${_foundProduct!.nombre}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                         ),
@@ -582,7 +582,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                       Row(
                         children: [
                           Text(
-                            'S/ ${_foundProduct!['precio'].toStringAsFixed(2)}',
+                            'S/ ${_foundProduct!.precioVenta.toStringAsFixed(2)}',
                             style: const TextStyle(
                               fontSize: 12,
                             ),
@@ -632,13 +632,12 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
     }
   }
 
-  void _showProductDialog(Map<String, dynamic> producto) {
+  void _showProductDialog(Producto producto) {
     // Determinar el tipo de promoción
-    final bool enLiquidacion = producto['enLiquidacion'] ?? false;
-    final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
-    final bool tieneDescuentoPorcentual =
-        producto['tieneDescuentoPorcentual'] ?? false;
-    final bool tieneStock = producto['stock'] > 0;
+    final bool enLiquidacion = producto.estaEnLiquidacion;
+    final bool tienePromocionGratis = producto.tienePromocionGratis;
+    final bool tieneDescuentoPorcentual = producto.tieneDescuentoPorcentual;
+    final bool tieneStock = producto.stock > 0;
 
     // Determinar el color y el icono según el tipo de promoción
     Color colorPromocion = const Color(0xFF4CAF50);
@@ -707,7 +706,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        producto['nombre'],
+                        producto.nombre,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -715,7 +714,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                         ),
                       ),
                       Text(
-                        'SKU: ${producto['codigo']}',
+                        'SKU: ${producto.sku}',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[400],
@@ -742,10 +741,9 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                         fontSize: 14,
                       ),
                     ),
-                    if (enLiquidacion &&
-                        producto['precioLiquidacion'] != null) ...[
+                    if (enLiquidacion && producto.precioOferta != null) ...[
                       Text(
-                        'S/ ${producto['precio'].toStringAsFixed(2)}',
+                        'S/ ${producto.precioVenta.toStringAsFixed(2)}',
                         style: const TextStyle(
                           decoration: TextDecoration.lineThrough,
                           color: Colors.grey,
@@ -753,7 +751,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                         ),
                       ),
                       Text(
-                        'S/ ${producto['precioLiquidacion'].toStringAsFixed(2)}',
+                        'S/ ${producto.precioOferta!.toStringAsFixed(2)}',
                         style: const TextStyle(
                           color: Colors.amber,
                           fontWeight: FontWeight.bold,
@@ -762,7 +760,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                       ),
                     ] else ...[
                       Text(
-                        'S/ ${producto['precio'].toStringAsFixed(2)}',
+                        'S/ ${producto.precioVenta.toStringAsFixed(2)}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -787,7 +785,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                     ),
                   ),
                   child: Text(
-                    'Stock: ${producto['stock']}',
+                    'Stock: ${producto.stock}',
                     style: TextStyle(
                       color: tieneStock ? Colors.green : Colors.red,
                       fontWeight: FontWeight.bold,
@@ -814,7 +812,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                 Icons.card_giftcard,
                 const Color(0xFF4CAF50),
                 'Promoción "Lleva y Paga"',
-                'Lleva ${producto['cantidadMinima']} y paga ${producto['cantidadMinima'] - producto['cantidadGratis']}',
+                'Lleva ${producto.cantidadMinimaDescuento ?? 0} y paga ${(producto.cantidadMinimaDescuento ?? 0) - (producto.cantidadGratisDescuento ?? 0)}',
               ),
             ],
 
@@ -825,7 +823,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                 Icons.percent,
                 Colors.purple,
                 'Descuento por Cantidad',
-                '${producto['descuentoPorcentaje']}% al llevar ${producto['cantidadMinima']} o más',
+                '${producto.porcentajeDescuento}% al llevar ${producto.cantidadMinimaDescuento ?? 0} o más',
               ),
             ],
 
@@ -840,7 +838,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  producto['categoria'],
+                  producto.categoria,
                   style: TextStyle(
                     color: Colors.grey[400],
                     fontSize: 14,
@@ -854,7 +852,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  producto['marca'],
+                  producto.marca,
                   style: TextStyle(
                     color: Colors.grey[400],
                     fontSize: 14,

@@ -774,6 +774,52 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     );
   }
 
+  // Widget para mostrar la imagen del producto
+  Widget _buildProductoImagen(Producto producto, {double size = 56}) {
+    final String? url = ProductoRepository.getProductoImageUrl(producto);
+    if (url == null || url.isEmpty) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child:
+            const Icon(Icons.image_not_supported, color: Colors.grey, size: 32),
+      );
+    }
+    return GestureDetector(
+      onTap: () {
+        // TODO: Mostrar imagen ampliada en un dialog
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          url,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Container(
+            width: size,
+            height: size,
+            color: Colors.grey[200],
+            child: const Icon(Icons.broken_image, color: Colors.grey, size: 32),
+          ),
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return Container(
+              width: size,
+              height: size,
+              alignment: Alignment.center,
+              child: const CircularProgressIndicator(strokeWidth: 2),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Producto> productosFiltrados = _getProductosFiltrados();
@@ -889,13 +935,15 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                           children: [
                             Row(
                               children: <Widget>[
+                                _buildProductoImagen(producto, size: 48),
+                                const SizedBox(width: 12),
                                 Text(
                                   producto.sku,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(width: 16),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     producto.nombre,

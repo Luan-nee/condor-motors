@@ -1,5 +1,6 @@
 import 'dart:io' as io;
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -248,6 +249,38 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                                     configuracionesProvider.directorioExcel!;
                                 _esDirectorioValido = true;
                               });
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.folder_open, size: 16),
+                          label:
+                              const Text('Seleccionar carpeta personalizada'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2D2D2D),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                          ),
+                          onPressed: () async {
+                            String? selectedDirectory =
+                                await FilePicker.platform.getDirectoryPath();
+                            if (selectedDirectory != null) {
+                              await configuracionesProvider
+                                  .actualizarDirectorioExcel(selectedDirectory);
+                              setState(() {
+                                _directorioController.text = selectedDirectory;
+                                _esDirectorioValido = true;
+                              });
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Carpeta personalizada seleccionada correctamente'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
                             }
                           },
                         ),

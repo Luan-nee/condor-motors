@@ -1,38 +1,39 @@
 import 'package:condorsmotors/models/color.model.dart';
+import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/screens/colabs/widgets/list_items_busqueda_producto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Widget que muestra una lista de productos con su información detallada
-/// 
+///
 /// Este widget es parte de la refactorización de BusquedaProductoWidget
 /// y se encarga específicamente de la visualización de los productos.
 class ListBusquedaProducto extends StatelessWidget {
   /// Lista de productos a mostrar (ya filtrados)
-  final List<Map<String, dynamic>> productos;
-  
+  final List<Producto> productos;
+
   /// Callback que se llama cuando un producto es seleccionado
-  final Function(Map<String, dynamic>) onProductoSeleccionado;
-  
+  final Function(Producto) onProductoSeleccionado;
+
   /// Indica si los productos están cargando
   final bool isLoading;
-  
+
   /// Filtro de categoría actual (para mostrar mensaje apropiado cuando no hay resultados)
   final String filtroCategoria;
-  
+
   /// Lista de colores disponibles para mostrar la información del color
   final List<ColorApp> colores;
-  
+
   /// Colores para el tema oscuro
   final Color darkBackground;
   final Color darkSurface;
-  
+
   /// Mensaje personalizado cuando no hay productos
   final String? mensajeVacio;
-  
+
   /// Callback opcional para cuando se quiere restablecer el filtro
   final VoidCallback? onRestablecerFiltro;
-  
+
   /// Indica si hay algún filtro activo (categoría, búsqueda o promoción)
   final bool tieneAlgunFiltroActivo;
 
@@ -54,29 +55,30 @@ class ListBusquedaProducto extends StatelessWidget {
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
-    
+
     // Si está cargando, mostrar un indicador de progreso
     if (isLoading) {
       return _buildLoadingIndicator();
     }
-    
+
     // Si no hay productos filtrados, mostrar un mensaje con detalles
     if (productos.isEmpty) {
       return _buildEmptyState();
     }
-    
+
     // Mostrar la lista de productos con todos los detalles
     return ListView.builder(
       itemCount: productos.length,
       itemBuilder: (BuildContext context, int index) {
-        final Map<String, dynamic> producto = productos[index];
-        
+        final Producto producto = productos[index];
+
         // Depuración: Mostrar la categoría del producto si estamos filtrando
         if (filtroCategoria != 'Todos') {
-          final String categoriaProducto = producto['categoria']?.toString() ?? 'sin categoría';
-          debugPrint('📦 Producto #$index - Categoría: "$categoriaProducto" (Filtro: "$filtroCategoria")');
+          final String categoriaProducto = producto.categoria;
+          debugPrint(
+              '�� Producto #$index - Categoría: "$categoriaProducto" (Filtro: "$filtroCategoria")');
         }
-        
+
         return ListItemBusquedaProducto(
           producto: producto,
           onProductoSeleccionado: onProductoSeleccionado,
@@ -89,7 +91,7 @@ class ListBusquedaProducto extends StatelessWidget {
       },
     );
   }
-  
+
   Widget _buildLoadingIndicator() {
     return const Center(
       child: Column(
@@ -105,17 +107,20 @@ class ListBusquedaProducto extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildEmptyState() {
     // Depuración: Mostrar el filtro de categoría actual en la consola
-    debugPrint('🔍 No hay productos para mostrar con filtro: "$filtroCategoria"');
-    
+    debugPrint(
+        '🔍 No hay productos para mostrar con filtro: "$filtroCategoria"');
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           Icon(
-            filtroCategoria == 'Todos' ? Icons.search_off : Icons.category_outlined,
+            filtroCategoria == 'Todos'
+                ? Icons.search_off
+                : Icons.category_outlined,
             size: 48,
             color: Colors.grey.shade600,
           ),
@@ -130,21 +135,20 @@ class ListBusquedaProducto extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             filtroCategoria != 'Todos'
-              ? 'No hay productos en la categoría "$filtroCategoria"'
-              : mensajeVacio ?? 'Intenta con otra búsqueda o filtro',
+                ? 'No hay productos en la categoría "$filtroCategoria"'
+                : mensajeVacio ?? 'Intenta con otra búsqueda o filtro',
             style: TextStyle(
               color: Colors.grey.shade500,
               fontSize: 14,
             ),
             textAlign: TextAlign.center,
           ),
-          if (tieneAlgunFiltroActivo)
-            _buildResetFiltersButton(),
+          if (tieneAlgunFiltroActivo) _buildResetFiltersButton(),
         ],
       ),
     );
   }
-  
+
   Widget _buildResetFiltersButton() {
     return Padding(
       padding: const EdgeInsets.only(top: 16.0),
@@ -176,15 +180,18 @@ class ListBusquedaProducto extends StatelessWidget {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties
-      ..add(IterableProperty<Map<String, dynamic>>('productos', productos))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has('onProductoSeleccionado', onProductoSeleccionado))
+      ..add(IterableProperty<Producto>('productos', productos))
+      ..add(ObjectFlagProperty<Function(Producto)>.has(
+          'onProductoSeleccionado', onProductoSeleccionado))
       ..add(DiagnosticsProperty<bool>('isLoading', isLoading))
       ..add(StringProperty('filtroCategoria', filtroCategoria))
       ..add(IterableProperty<ColorApp>('colores', colores))
       ..add(ColorProperty('darkBackground', darkBackground))
       ..add(ColorProperty('darkSurface', darkSurface))
       ..add(StringProperty('mensajeVacio', mensajeVacio))
-      ..add(ObjectFlagProperty<VoidCallback?>.has('onRestablecerFiltro', onRestablecerFiltro))
-      ..add(DiagnosticsProperty<bool>('tieneAlgunFiltroActivo', tieneAlgunFiltroActivo));
+      ..add(ObjectFlagProperty<VoidCallback?>.has(
+          'onRestablecerFiltro', onRestablecerFiltro))
+      ..add(DiagnosticsProperty<bool>(
+          'tieneAlgunFiltroActivo', tieneAlgunFiltroActivo));
   }
 }

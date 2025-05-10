@@ -1,5 +1,3 @@
-import 'package:condorsmotors/api/index.api.dart';
-
 class ReglaDescuento {
   final int cantidad;
   final double discountPercentage;
@@ -54,7 +52,7 @@ class Producto {
   final int stock;
   final bool stockBajo;
   final bool liquidacion;
-  final String? ubicacionFoto;
+  final String? pathFoto;
 
   Producto({
     required this.id,
@@ -80,7 +78,7 @@ class Producto {
     required this.stock,
     this.stockBajo = false,
     this.liquidacion = false,
-    this.ubicacionFoto,
+    this.pathFoto,
   });
 
   factory Producto.fromJson(Map<String, dynamic> json) {
@@ -122,8 +120,7 @@ class Producto {
       stock: _parseInt(json['stock']),
       stockBajo: json['stockBajo'] as bool? ?? false,
       liquidacion: json['liquidacion'] as bool? ?? false,
-      ubicacionFoto:
-          json['ubicacionFoto'] ?? json['pathFoto'] ?? json['fotoUrl'],
+      pathFoto: json['pathFoto'] as String?,
     );
   }
 
@@ -155,7 +152,7 @@ class Producto {
         'stock': stock,
         'stockBajo': stockBajo,
         'liquidacion': liquidacion,
-        if (ubicacionFoto != null) 'ubicacionFoto': ubicacionFoto,
+        if (pathFoto != null) 'pathFoto': pathFoto,
       };
 
   /// Helper para convertir valores numéricos a double
@@ -245,10 +242,12 @@ class Producto {
     return porcentaje != null ? '${porcentaje.toStringAsFixed(0)}%' : null;
   }
 
-  /// Verifica si el producto está en liquidación
-  bool estaEnLiquidacion() {
-    return liquidacion;
-  }
+  /// Indica si el producto está en liquidación
+  bool get estaEnLiquidacion => liquidacion;
+
+  /// Indica si el producto tiene alguna promoción (liquidación, gratis, o porcentual)
+  bool get tienePromocion =>
+      estaEnLiquidacion || tienePromocionGratis || tieneDescuentoPorcentual;
 
   /// Obtiene el precio actual considerando si está en liquidación o oferta
   double getPrecioActual() {
@@ -343,7 +342,7 @@ class Producto {
     int? stock,
     bool? stockBajo,
     bool? liquidacion,
-    String? ubicacionFoto,
+    String? pathFoto,
   }) {
     return Producto(
       id: id ?? this.id,
@@ -372,19 +371,65 @@ class Producto {
       stock: stock ?? this.stock,
       stockBajo: stockBajo ?? this.stockBajo,
       liquidacion: liquidacion ?? this.liquidacion,
-      ubicacionFoto: ubicacionFoto ?? this.ubicacionFoto,
+      pathFoto: pathFoto ?? this.pathFoto,
     );
   }
 
-  String? get fotoUrl {
-    if (ubicacionFoto == null || ubicacionFoto!.isEmpty) {
-      return null;
+  /// Devuelve la url de la foto del producto, o un placeholder si es null
+  String get fotoUrl => pathFoto ?? 'https://via.placeholder.com/150';
+
+  /// Indica si el producto tiene promoción de productos gratis
+  bool get tienePromocionGratis =>
+      cantidadGratisDescuento != null && cantidadGratisDescuento! > 0;
+
+  /// Indica si el producto tiene descuento porcentual
+  bool get tieneDescuentoPorcentual {
+    if (porcentajeDescuento != null && cantidadMinimaDescuento != null) {
+      return porcentajeDescuento! > 0 && cantidadMinimaDescuento! > 0;
     }
-    // Suponiendo que tienes acceso a api.getBaseUrlSinApi() igual que en empleado
-    final String baseUrl = api.getBaseUrlSinApi();
-    if (ubicacionFoto!.startsWith('http')) {
-      return ubicacionFoto;
+    return false;
+  }
+
+  /// Calcula el precio con descuento según la cantidad
+  double getPrecioConDescuento(int cantidad) {
+    if (estaEnLiquidacion && precioOferta != null) {
+      return precioOferta!;
+    } else if (tieneDescuentoPorcentual &&
+        cantidad >= (cantidadMinimaDescuento ?? 0)) {
+      final descuento = (precioVenta * (porcentajeDescuento ?? 0)) / 100;
+      return precioVenta - descuento;
+    } else {
+      return precioVenta;
     }
-    return baseUrl + ubicacionFoto!;
+  }
+
+  /// Calcula la cantidad de productos gratis según la cantidad comprada
+  int getProductosGratis(int cantidad) {
+    if (tienePromocionGratis &&
+        cantidadMinimaDescuento != null &&
+        cantidadGratisDescuento != null &&
+        cantidad >= cantidadMinimaDescuento!) {
+      final gruposCompletos = cantidad ~/ cantidadMinimaDescuento!;
+      return gruposCompletos * cantidadGratisDescuento!;
+    }
+    return 0;
+  }
+
+  /// Devuelve la url completa de la foto del producto, o un placeholder si no hay imagen
+  String getFotoUrlCompleta(String baseUrl) {
+    if (pathFoto == null || pathFoto!.isEmpty) {
+      return 'https://via.placeholder.com/150';
+    }
+    String normalized = pathFoto!.replaceAll('\\', '/');
+    if (normalized.startsWith('http')) {
+      return normalized;
+    }
+    // Elimina barra final de baseUrl y barra inicial de normalized
+    String cleanBase = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
+    String cleanPath =
+        normalized.startsWith('/') ? normalized.substring(1) : normalized;
+    return '$cleanBase/$cleanPath';
   }
 }

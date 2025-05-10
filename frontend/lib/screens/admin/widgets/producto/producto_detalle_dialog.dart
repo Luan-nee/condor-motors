@@ -220,12 +220,12 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                 color: const Color(0xFF1A1A1A),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: widget.producto.fotoUrl != null &&
-                      widget.producto.fotoUrl!.isNotEmpty
+              child: widget.producto.pathFoto != null &&
+                      widget.producto.pathFoto!.isNotEmpty
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        widget.producto.fotoUrl!,
+                        widget.producto.pathFoto!,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) =>
                             const Icon(FontAwesomeIcons.box,

@@ -1,7 +1,6 @@
 import 'package:condorsmotors/models/categoria.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
-import 'package:condorsmotors/utils/productos_utils.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 /// Tipos de descuento disponibles para filtrar productos
 enum TipoDescuento {
@@ -60,50 +59,7 @@ class BusquedaProductoUtils {
   /// Convierte de Map<String, dynamic> a Producto para usar ProductosUtils
   static List<Producto> convertirAProductos(
       List<Map<String, dynamic>> productos) {
-    return productos
-        .map((Map<String, dynamic> p) => Producto(
-              id: p['id'] is int
-                  ? p['id']
-                  : int.tryParse(p['id']?.toString() ?? '0') ?? 0,
-              sku: p['codigo']?.toString() ?? '',
-              nombre: p['nombre']?.toString() ?? '',
-              categoria: p['categoria']?.toString() ?? '',
-              categoriaId: p['categoriaId'] is int
-                  ? p['categoriaId']
-                  : int.tryParse(p['categoriaId']?.toString() ?? '0') ?? 0,
-              marca: p['marca']?.toString() ?? '',
-              marcaId: p['marcaId'] is int
-                  ? p['marcaId']
-                  : int.tryParse(p['marcaId']?.toString() ?? '0') ?? 0,
-              fechaCreacion: DateTime.now(),
-              precioCompra: 0, // No es relevante para filtrado
-              precioVenta:
-                  (p['precio'] is num) ? (p['precio'] as num).toDouble() : 0,
-              stock: p['stock'] is int
-                  ? p['stock']
-                  : int.tryParse(p['stock']?.toString() ?? '0') ?? 0,
-              stockMinimo: p['stockMinimo'] is int ? p['stockMinimo'] : null,
-              // Añadir precio de liquidación y estado de liquidación
-              precioOferta: p['precioLiquidacion'] is num
-                  ? (p['precioLiquidacion'] as num).toDouble()
-                  : null,
-              liquidacion:
-                  p['enLiquidacion'] == true || p['liquidacion'] == true,
-              // Añadir información sobre promociones de descuento
-              cantidadMinimaDescuento:
-                  p['cantidadMinima'] is int ? p['cantidadMinima'] : null,
-              cantidadGratisDescuento:
-                  p['cantidadGratis'] is int ? p['cantidadGratis'] : null,
-              porcentajeDescuento: p['descuentoPorcentaje'] is int
-                  ? p['descuentoPorcentaje']
-                  : null,
-              // Campos opcionales
-              stockBajo: p['stock'] != null && p['stockMinimo'] != null
-                  ? p['stock'] < p['stockMinimo']
-                  : false,
-              descripcion: p['descripcion']?.toString(),
-            ))
-        .toList();
+    return productos.map((p) => mapToProductoFlexible(p)).toList();
   }
 
   /// Convierte de Producto a Map<String, dynamic> para la UI
@@ -120,34 +76,26 @@ class BusquedaProductoUtils {
               'stockMinimo': p.stockMinimo,
               // Añadir precio de liquidación y estado de liquidación
               'precioLiquidacion': p.precioOferta,
-              'enLiquidacion': p.liquidacion,
-              'liquidacion': p.liquidacion,
-              // Agregar información de promociones
+              'enLiquidacion': p.estaEnLiquidacion,
+              'liquidacion': p.estaEnLiquidacion,
+              // Agregar información de promociones usando getters del modelo
               'cantidadMinima': p.cantidadMinimaDescuento,
               'cantidadGratis': p.cantidadGratisDescuento,
               'descuentoPorcentaje': p.porcentajeDescuento,
-              // Determinar si tiene promociones basado en los datos del modelo
-              'tienePromocionGratis': p.cantidadGratisDescuento != null &&
-                  p.cantidadGratisDescuento! > 0,
-              'tieneDescuentoPorcentual': p.porcentajeDescuento != null &&
-                  p.porcentajeDescuento! > 0 &&
-                  p.cantidadMinimaDescuento != null &&
-                  p.cantidadMinimaDescuento! > 0,
-              // Agregar flag de promoción general para facilitar filtrado
-              'tienePromocion': p.liquidacion ||
-                  (p.cantidadGratisDescuento != null &&
-                      p.cantidadGratisDescuento! > 0) ||
-                  (p.porcentajeDescuento != null &&
-                      p.porcentajeDescuento! > 0 &&
-                      p.cantidadMinimaDescuento != null &&
-                      p.cantidadMinimaDescuento! > 0),
+              'tienePromocionGratis': p.tienePromocionGratis,
+              'tieneDescuentoPorcentual': p.tieneDescuentoPorcentual,
+              'tienePromocion': p.estaEnLiquidacion ||
+                  p.tienePromocionGratis ||
+                  p.tieneDescuentoPorcentual,
+              // Agregar la URL de la foto usando el getter y el campo real
+              'pathFoto': p.pathFoto,
             })
         .toList();
   }
 
   /// Filtra productos por tipo de descuento
-  static List<Map<String, dynamic>> filtrarPorTipoDescuento(
-      List<Map<String, dynamic>> productos, TipoDescuento tipoDescuento,
+  static List<Producto> filtrarPorTipoDescuento(
+      List<Producto> productos, TipoDescuento tipoDescuento,
       {bool debugMode = false}) {
     if (tipoDescuento == TipoDescuento.todos) {
       return productos; // No aplicar filtro
@@ -164,14 +112,14 @@ class BusquedaProductoUtils {
       int conPromoGratis = 0;
       int conDescuentoPorcentual = 0;
 
-      for (final Map<String, dynamic> producto in productos) {
-        if (producto['enLiquidacion'] == true) {
+      for (final Producto producto in productos) {
+        if (producto.estaEnLiquidacion) {
           conLiquidacion++;
         }
-        if (producto['tienePromocionGratis'] == true) {
+        if (producto.tienePromocionGratis) {
           conPromoGratis++;
         }
-        if (producto['tieneDescuentoPorcentual'] == true) {
+        if (producto.tieneDescuentoPorcentual) {
           conDescuentoPorcentual++;
         }
       }
@@ -183,35 +131,35 @@ class BusquedaProductoUtils {
     }
 
     // Filtrar los productos según el tipo de descuento
-    final List<Map<String, dynamic>> productosFiltrados =
-        productos.where((Map<String, dynamic> producto) {
+    final List<Producto> productosFiltrados =
+        productos.where((Producto producto) {
       bool cumpleFiltro = false;
 
       switch (tipoDescuento) {
         case TipoDescuento.liquidacion:
-          cumpleFiltro = producto['enLiquidacion'] == true;
+          cumpleFiltro = producto.estaEnLiquidacion;
           break;
         case TipoDescuento.promoGratis:
-          cumpleFiltro = producto['tienePromocionGratis'] == true;
+          cumpleFiltro = producto.tienePromocionGratis;
 
           if (debugMode && !cumpleFiltro) {
             // Revisar por qué no cumple para posible diagnóstico
-            if (producto['cantidadMinima'] != null &&
-                producto['cantidadGratis'] != null) {
+            if (producto.cantidadMinimaDescuento != null &&
+                producto.cantidadGratisDescuento != null) {
               debugPrint(
-                  '⚠️ Producto ${producto['nombre']} tiene cantidadMinima=${producto['cantidadMinima']} y cantidadGratis=${producto['cantidadGratis']} pero tienePromocionGratis=${producto['tienePromocionGratis']}');
+                  '⚠️ Producto ${producto.nombre} tiene cantidadMinima=${producto.cantidadMinimaDescuento} y cantidadGratis=${producto.cantidadGratisDescuento} pero tienePromocionGratis=${producto.tienePromocionGratis}');
             }
           }
           break;
         case TipoDescuento.descuentoPorcentual:
-          cumpleFiltro = producto['tieneDescuentoPorcentual'] == true;
+          cumpleFiltro = producto.tieneDescuentoPorcentual;
 
           if (debugMode && !cumpleFiltro) {
             // Revisar por qué no cumple para posible diagnóstico
-            if (producto['cantidadMinima'] != null &&
-                producto['descuentoPorcentaje'] != null) {
+            if (producto.cantidadMinimaDescuento != null &&
+                producto.porcentajeDescuento != null) {
               debugPrint(
-                  '⚠️ Producto ${producto['nombre']} tiene cantidadMinima=${producto['cantidadMinima']} y descuentoPorcentaje=${producto['descuentoPorcentaje']} pero tieneDescuentoPorcentual=${producto['tieneDescuentoPorcentual']}');
+                  '⚠️ Producto ${producto.nombre} tiene cantidadMinima=${producto.cantidadMinimaDescuento} y descuentoPorcentaje=${producto.porcentajeDescuento} pero tieneDescuentoPorcentual=${producto.tieneDescuentoPorcentual}');
             }
           }
           break;
@@ -231,65 +179,35 @@ class BusquedaProductoUtils {
     return productosFiltrados;
   }
 
-  /// Filtra productos usando el método más apropiado según el formato
-  static List<Map<String, dynamic>> filtrarProductos({
+  /// Filtra productos usando el modelo Producto de forma centralizada
+  static List<Producto> filtrarProductos({
     required List<Map<String, dynamic>> productos,
     required String filtroTexto,
     required String filtroCategoria,
     required TipoDescuento tipoDescuento,
     bool debugMode = false,
   }) {
-    // NUEVO: Utilizar ProductosUtils cuando sea posible
-    if (esFormatoCompatible(productos)) {
-      try {
-        // Convertir los datos al formato esperado por ProductosUtils
-        final List<Producto> productosFormateados =
-            convertirAProductos(productos);
+    // 1. Convertir la lista de Map a lista de Producto al inicio
+    final List<Producto> listaProductos = convertirAProductos(productos);
 
-        // Usar la función centralizada de filtrado
-        final List<Producto> productosFiltrados =
-            ProductosUtils.filtrarProductos(
-          productos: productosFormateados,
-          searchQuery: filtroTexto,
-          selectedCategory: filtroCategoria,
-          debugMode: debugMode,
-        );
-
-        if (debugMode) {
-          debugPrint(
-              '✅ Filtrado usando ProductosUtils: ${productosFiltrados.length} resultados');
-        }
-
-        // Convertir de nuevo al formato de mapa esperado por la UI
-        final List<Map<String, dynamic>> resultadosFiltrados =
-            convertirAMapas(productosFiltrados);
-
-        // Aplicar filtrado adicional por tipo de descuento
-        return filtrarPorTipoDescuento(resultadosFiltrados, tipoDescuento,
-            debugMode: debugMode);
-      } catch (e) {
-        // Si hay algún error, caer al método de filtrado original
-        if (debugMode) {
-          debugPrint(
-              '⚠️ Error al usar ProductosUtils, usando filtrado alternativo: $e');
-        }
-      }
+    if (debugMode) {
+      debugPrint(
+          '⚙️ Filtrando ${listaProductos.length} productos (después de convertir de Map)');
     }
 
-    // Si no podemos usar ProductosUtils, usamos el filtrado mejorado:
-    final List<Map<String, dynamic>> resultadosFiltrados =
-        productos.where((Map<String, dynamic> producto) {
-      // Filtrar por texto (nombre o código)
+    // 2. Aplicar filtrado por texto y categoría sobre List<Producto>
+    final List<Producto> filtradoTextoCategoria =
+        listaProductos.where((Producto producto) {
+      // Filtrar por texto (nombre o sku)
       final bool coincideTexto = filtroTexto.isEmpty ||
-          producto['nombre'].toString().toLowerCase().contains(filtroTexto) ||
-          producto['codigo'].toString().toLowerCase().contains(filtroTexto);
+          producto.nombre.toLowerCase().contains(filtroTexto.toLowerCase()) ||
+          producto.sku.toLowerCase().contains(filtroTexto.toLowerCase());
 
       // Filtrar por categoría (verificación exhaustiva)
       bool coincideCategoria = esCategoriaTodos(filtroCategoria);
 
-      if (!coincideCategoria && producto['categoria'] != null) {
-        final String categoriaProducto =
-            producto['categoria'].toString().trim();
+      if (!coincideCategoria && producto.categoria.isNotEmpty) {
+        final String categoriaProducto = producto.categoria.trim();
         final String categoriaProductoNormalizada =
             categoriaProducto.toLowerCase();
         final String filtroCategoriaNormalizadoLC =
@@ -316,32 +234,39 @@ class BusquedaProductoUtils {
       return coincideTexto && coincideCategoria;
     }).toList();
 
-    // Aplicar filtrado por tipo de descuento
-    final List<Map<String, dynamic>> resultadosConDescuentoFiltrado =
-        filtrarPorTipoDescuento(resultadosFiltrados, tipoDescuento);
+    if (debugMode) {
+      debugPrint(
+          '🔍 Filtrado por texto/categoría: ${filtradoTextoCategoria.length} resultados');
+    }
 
-    // Ordenar: primero los que tienen promociones, luego por nombre
-    return resultadosConDescuentoFiltrado
-      ..sort((Map<String, dynamic> a, Map<String, dynamic> b) {
-        // Primero ordenar por si tiene alguna promoción
-        final bool aPromo = (a['enLiquidacion'] == true) ||
-            (a['tienePromocionGratis'] == true) ||
-            (a['tieneDescuentoPorcentual'] == true);
+    // 3. Aplicar filtrado por tipo de descuento sobre la lista de Producto ya filtrada
+    final List<Producto> resultadosFinales = filtrarPorTipoDescuento(
+        filtradoTextoCategoria, tipoDescuento,
+        debugMode: debugMode);
 
-        final bool bPromo = (b['enLiquidacion'] == true) ||
-            (b['tienePromocionGratis'] == true) ||
-            (b['tieneDescuentoPorcentual'] == true);
+    // 4. Ordenar: primero los que tienen promociones, luego por nombre
+    resultadosFinales.sort((Producto a, Producto b) {
+      // Primero ordenar por si tiene alguna promoción (usar el getter del modelo)
+      final bool aPromo = a.tienePromocion;
+      final bool bPromo = b.tienePromocion;
 
-        if (aPromo && !bPromo) {
-          return -1;
-        }
-        if (!aPromo && bPromo) {
-          return 1;
-        }
+      if (aPromo && !bPromo) {
+        return -1;
+      }
+      if (!aPromo && bPromo) {
+        return 1;
+      }
 
-        // Si ambos tienen o no tienen promoción, ordenar por nombre
-        return a['nombre'].toString().compareTo(b['nombre'].toString());
-      });
+      // Si ambos tienen o no tienen promoción, ordenar por nombre
+      return a.nombre.compareTo(b.nombre);
+    });
+
+    if (debugMode) {
+      debugPrint(
+          '✅ Filtrado completo y ordenado. Resultado: ${resultadosFinales.length} productos');
+    }
+
+    return resultadosFinales;
   }
 
   /// Extrae categorías únicas de una lista de productos
@@ -388,5 +313,61 @@ class BusquedaProductoUtils {
 
     // 4. Si todo lo demás falla, retornar lista básica
     return <String>['Todos', 'Repuestos', 'Accesorios', 'Lubricantes'];
+  }
+
+  static Color getPromocionColor(
+      bool tienePromocionGratis, bool tieneDescuentoPorcentual) {
+    if (tienePromocionGratis) {
+      return Colors.green;
+    } else if (tieneDescuentoPorcentual) {
+      return Colors.purple;
+    }
+    return Colors.blue;
+  }
+
+  /// Conversión flexible de Map a Producto, manejando alias de campos
+  ///
+  /// RECOMENDACIÓN: Siempre que sea posible, usa 'precioVenta' en los Maps en vez de 'precio'.
+  /// Esto evita confusiones y asegura compatibilidad con el modelo Producto.
+  static Producto mapToProductoFlexible(Map<String, dynamic> map) {
+    final Map<String, dynamic> normalized = Map<String, dynamic>.from(map);
+    // Alias para sku
+    if (normalized['sku'] == null && normalized['codigo'] != null) {
+      normalized['sku'] = normalized['codigo'];
+    }
+    // Alias para precioOferta
+    if (normalized['precioOferta'] == null &&
+        normalized['precioLiquidacion'] != null) {
+      normalized['precioOferta'] = normalized['precioLiquidacion'];
+    }
+    // Alias para liquidacion
+    if (normalized['liquidacion'] == null &&
+        normalized['enLiquidacion'] != null) {
+      normalized['liquidacion'] = normalized['enLiquidacion'];
+    }
+    // Alias para cantidadMinimaDescuento
+    if (normalized['cantidadMinimaDescuento'] == null &&
+        normalized['cantidadMinima'] != null) {
+      normalized['cantidadMinimaDescuento'] = normalized['cantidadMinima'];
+    }
+    // Alias para cantidadGratisDescuento
+    if (normalized['cantidadGratisDescuento'] == null &&
+        normalized['cantidadGratis'] != null) {
+      normalized['cantidadGratisDescuento'] = normalized['cantidadGratis'];
+    }
+    // Alias para porcentajeDescuento
+    if (normalized['porcentajeDescuento'] == null &&
+        normalized['descuentoPorcentaje'] != null) {
+      normalized['porcentajeDescuento'] = normalized['descuentoPorcentaje'];
+    }
+    // Alias para precioVenta (FIX: bug de precio 0 en carrito)
+    if (normalized['precioVenta'] == null && normalized['precio'] != null) {
+      normalized['precioVenta'] = normalized['precio'];
+    }
+    // Alias para pathFoto si solo viene fotoUrl
+    if (normalized['pathFoto'] == null && normalized['fotoUrl'] != null) {
+      normalized['pathFoto'] = normalized['fotoUrl'];
+    }
+    return Producto.fromJson(normalized);
   }
 }

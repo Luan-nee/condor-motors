@@ -708,13 +708,11 @@ class ProductoRepository implements BaseRepository {
   }
 
   /// Obtiene la URL de la imagen de un producto de forma centralizada
-  ///
-  /// Usa la lógica del getter fotoUrl del modelo Producto. Si no hay imagen, retorna el placeholder si se provee.
-  static String? getProductoImageUrl(Producto producto, {String? placeholder}) {
-    if (producto.fotoUrl != null && producto.fotoUrl!.isNotEmpty) {
-      return producto.fotoUrl;
-    }
-    // Puedes agregar aquí lógica para imágenes alternativas o logging
-    return placeholder;
+  /// Usa la lógica del getter getFotoUrlCompleta del modelo Producto. Si no hay imagen, retorna null.
+  static String? getProductoImageUrl(Producto producto) {
+    // Obtener baseUrl sin /api usando index.api.dart
+    // Importa correctamente: import 'package:condorsmotors/api/index.api.dart' show api;
+    final String baseUrl = api.getBaseUrlSinApi();
+    return producto.getFotoUrlCompleta(baseUrl);
   }
 }

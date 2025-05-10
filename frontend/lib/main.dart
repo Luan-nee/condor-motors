@@ -19,6 +19,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Configuración global de API
 // Nota: La variable api ahora se define en index.api.dart
@@ -38,6 +39,9 @@ late AuthProvider globalAuthProvider;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar dependencias críticas antes de runApp
+  final SharedPreferences sharedPrefs = await SharedPreferences.getInstance();
 
   // Configurar UI del sistema
   SystemChrome.setSystemUIOverlayStyle(
@@ -70,6 +74,8 @@ void main() async {
       value: globalAuthProvider,
     ),
     ChangeNotifierProvider(create: (_) => PaginacionProvider()),
+    // Puedes agregar aquí un Provider para sharedPrefs si lo necesitas globalmente
+    Provider<SharedPreferences>.value(value: sharedPrefs),
   ];
 
   final List<SingleChildWidget> adminProviders = [
@@ -128,11 +134,96 @@ void main() async {
         ...colabProviders,
         // Aquí puedes agregar más grupos de providers según sea necesario
       ],
-      child: ConnectionStatusWidget(
-        child: CondorMotorsApp(),
+      child: AppInitializer(
+        child: ConnectionStatusWidget(
+          child: CondorMotorsApp(),
+        ),
       ),
     ),
   );
+}
+
+/// Widget que muestra un splash/loading mientras se inicializan dependencias críticas
+class AppInitializer extends StatefulWidget {
+  final Widget child;
+  const AppInitializer({super.key, required this.child});
+
+  @override
+  State<AppInitializer> createState() => _AppInitializerState();
+}
+
+class _AppInitializerState extends State<AppInitializer> {
+  bool _initialized = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    try {
+      // Aquí podrías inicializar otras dependencias críticas si lo necesitas
+      setState(() => _initialized = true);
+    } catch (e) {
+      setState(() => _error = e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF1A1A1A),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 16),
+              Text(_error!, style: const TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      );
+    }
+    if (!_initialized) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF1A1A1A),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 120,
+                height: 120,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.1),
+                ),
+                child: Image.asset(
+                  'assets/images/condor-motors-logo.webp',
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: 32),
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Inicializando dependencias...',
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return widget.child;
+  }
 }
 
 class CondorMotorsApp extends StatelessWidget {
@@ -192,10 +283,27 @@ class _SplashScreenState extends State<SplashScreen> {
       if (!mounted) {
         return;
       }
-      Navigator.of(context).pushReplacementNamed(
-        result['route'],
-        arguments: result['userData'],
-      );
+      // Navegación robusta: usar navigatorKey global y logs avanzados
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        final String route = result['route'] ?? role_utils.login;
+        final userData = result['userData'];
+        debugPrint('[SplashScreen] (ANTES) Navegando a: $route${userData != null ? ' con userData' : ' sin userData'}');
+        final navState = navigatorKey.currentState;
+        if (navState == null) {
+          debugPrint(
+              '[SplashScreen] ERROR: navigatorKey.currentState es null, no se puede navegar');
+          return;
+        }
+        navState.pushReplacementNamed(
+          route,
+          arguments:
+              userData != null && route != role_utils.login ? userData : null,
+        );
+        debugPrint('[SplashScreen] (DESPUÉS) pushReplacementNamed ejecutado');
+      });
     } catch (e) {
       if (!mounted) {
         return;
@@ -204,6 +312,13 @@ class _SplashScreenState extends State<SplashScreen> {
         _isLoading = false;
         _errorMessage = e.toString();
       });
+      // Muestra feedback de error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_errorMessage ?? 'Error desconocido'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

@@ -1,6 +1,5 @@
 import 'dart:convert';
 // Importar dart:html solo en web
-// ignore: avoid_web_libraries_in_flutter
 import 'dart:io' as io;
 
 import 'package:condorsmotors/models/producto.model.dart';
@@ -197,15 +196,27 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
             // Abrir el archivo con la aplicación predeterminada
             // Para Windows se usa Process.run
             if (io.Platform.isWindows) {
-              await io.Process.run('explorer.exe', [filePath]);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Reporte guardado en: $filePath'),
+                  backgroundColor: Colors.green,
+                  action: SnackBarAction(
+                    label: 'Abrir',
+                    textColor: Colors.white,
+                    onPressed: () async {
+                      await io.Process.run('explorer.exe', [filePath]);
+                    },
+                  ),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Reporte guardado en: $filePath'),
+                  backgroundColor: Colors.green,
+                ),
+              );
             }
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Reporte guardado en: $filePath'),
-                backgroundColor: Colors.green,
-              ),
-            );
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -502,9 +513,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
                   icon: const FaIcon(
-                    FontAwesomeIcons.fileExport,
+                    FontAwesomeIcons.fileExcel,
                     size: 16,
-                    color: Colors.white,
+                    color: Color(0xFF217346), // Verde Excel
                   ),
                   label: const Text('Exportar'),
                   style: ElevatedButton.styleFrom(

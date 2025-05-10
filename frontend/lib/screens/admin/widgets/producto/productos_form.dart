@@ -4,6 +4,7 @@ import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/utils/productos_utils.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -141,9 +142,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     _initProvider();
 
     // Inicializar preview de imagen si el producto tiene foto
-    if (widget.producto?.fotoUrl != null &&
-        widget.producto!.fotoUrl!.isNotEmpty) {
-      _previewImageUrl = widget.producto!.fotoUrl;
+    if (widget.producto?.pathFoto != null &&
+        widget.producto!.pathFoto!.isNotEmpty) {
+      _previewImageUrl = widget.producto!.pathFoto;
     }
   }
 
@@ -503,10 +504,18 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 borderRadius: BorderRadius.circular(12),
                 child: _selectedImageFile != null
                     ? Image.file(_selectedImageFile!, fit: BoxFit.cover)
-                    : (_previewImageUrl != null && _previewImageUrl!.isNotEmpty)
-                        ? Image.network(_previewImageUrl!, fit: BoxFit.cover)
-                        : const Icon(Icons.image,
-                            color: Colors.white24, size: 40),
+                    : (() {
+                        final producto = widget.producto;
+                        final fotoUrl = producto != null
+                            ? ProductoRepository.getProductoImageUrl(producto)
+                            : null;
+                        if (fotoUrl != null && fotoUrl.isNotEmpty) {
+                          return Image.network(fotoUrl, fit: BoxFit.cover);
+                        } else {
+                          return const FaIcon(FontAwesomeIcons.boxOpen,
+                              color: Colors.white24, size: 40);
+                        }
+                      })(),
               ),
             ),
             const SizedBox(width: 16),

@@ -6,11 +6,9 @@ import 'package:condorsmotors/providers/auth.provider.dart';
 import 'package:condorsmotors/providers/login.provider.dart';
 import 'package:condorsmotors/utils/role_utils.dart'
     as role_utils; // Importar utilidad de roles con alias
-import 'package:condorsmotors/utils/secure_storage_utils.dart';
 import 'package:condorsmotors/widgets/background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Importar para KeyboardListener
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Importamos SharedPreferences
 
@@ -48,7 +46,6 @@ class _LoginScreenState extends State<LoginScreen>
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _usernameFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
   bool _isLoading = false;
   bool _capsLockOn = false;
   bool _obscurePassword = true;
@@ -58,33 +55,23 @@ class _LoginScreenState extends State<LoginScreen>
   String _errorMessage = '';
   String _serverIp = 'localhost'; // IP local para el servidor
   late final LifecycleObserver _lifecycleObserver;
-// Flag para controlar el auto-login
+  bool _hasNavigated = false;
+
+  Future<bool>? _autoLoginFuture;
 
   @override
   void initState() {
     super.initState();
     HardwareKeyboard.instance.addHandler(_handleKeyEvent);
-    // Configuramos una animación con una curva más suave y una duración más larga
-    // para que el loop sea menos perceptible
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(
-          seconds: 10), // Aumentamos la duración para un ciclo más largo
+      duration: const Duration(seconds: 10),
     );
-
-    // Iniciamos con una curva de animación suave
     _animationController.repeat();
-
     _loadServerIp();
     _loadRememberedCredentials();
-
-    // Llamar al auto-login centralizado en el provider
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      authProvider.tryAutoLogin();
-    });
-
-    // Reducir la velocidad de la animación cuando la app está en segundo plano
+    _autoLoginFuture =
+        Provider.of<AuthProvider>(context, listen: false).autoLogin();
     _lifecycleObserver = LifecycleObserver(
       resumeCallBack: () {
         if (!_animationController.isAnimating) {
@@ -374,61 +361,35 @@ class _LoginScreenState extends State<LoginScreen>
       _isLoading = true;
     });
     try {
-      final loginProvider = Provider.of<LoginProvider>(context, listen: false);
-      final usuario = await loginProvider.login(
+      Provider.of<LoginProvider>(context, listen: false);
+      final bool loginSuccess = await authProvider.login(
         _usernameController.text,
         _passwordController.text,
+        saveAutoLogin: _stayLoggedIn,
       );
       if (!mounted) {
         return;
       }
-      if (usuario != null) {
-        // Guardar credenciales si "Recordar me" está activado
-        if (_rememberMe) {
-          await _storage.write(
-              key: 'username', value: _usernameController.text);
-          await _storage.write(
-              key: 'password', value: _passwordController.text);
-          await _storage.write(key: 'remember_me', value: 'true');
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('username', _usernameController.text);
-          await prefs.setString('password', _passwordController.text);
-          await prefs.setBool('remember_me', true);
-        }
-        // Guardar credenciales para auto-login si "Permanecer conectado" está activado
-        if (_stayLoggedIn) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('stay_logged_in', true);
-          await prefs.setString('username_auto', _usernameController.text);
-          await prefs.setString('password_auto', _passwordController.text);
-          await SecureStorageUtils.write(
-              'username_auto', _usernameController.text);
-          await SecureStorageUtils.write(
-              'password_auto', _passwordController.text);
-        } else {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.remove('username_auto');
-          await prefs.remove('password_auto');
-          await SecureStorageUtils.delete('username_auto');
-          await SecureStorageUtils.delete('password_auto');
-        }
-        // Procesar navegación solo si no está en auto-login
-        if (!authProvider.isAutoLoggingIn) {
-          // Centralizar obtención de rol y ruta inicial
-          final result = role_utils.getRoleAndInitialRoute(usuario.toMap());
+      setState(() => _isLoading = false);
+      if (loginSuccess && !authProvider.isAutoLoggingIn) {
+        final user = authProvider.user;
+        if (user != null) {
+          final result = role_utils.getRoleAndInitialRoute(user.toMap());
           final String initialRoute = result['route']!;
           final String rolNormalizado = result['rol']!;
           debugPrint(
               'Login exitoso, navegando a ruta: $initialRoute para rol: $rolNormalizado');
-          if (!mounted) {
-            return;
-          }
           await Navigator.pushReplacementNamed(
             context,
             initialRoute,
-            arguments: usuario.toMap(),
+            arguments: user.toMap(),
           );
         }
+      } else if (!loginSuccess) {
+        // Muestra error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al iniciar sesión')),
+        );
       }
     } catch (e) {
       if (!mounted) {
@@ -440,7 +401,7 @@ class _LoginScreenState extends State<LoginScreen>
             e.toString().toLowerCase().contains('incorrect')) {
           _errorMessage = 'Usuario o contraseña incorrectos';
         } else {
-          _errorMessage = 'Error al iniciar sesión: ${e.toString()}';
+          _errorMessage = 'Error al iniciar sesión: e.toString()}';
         }
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -466,93 +427,97 @@ class _LoginScreenState extends State<LoginScreen>
     final prefs = await SharedPreferences.getInstance();
     final rememberMe = prefs.getBool('remember_me') ?? false;
     final stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
-    final username = prefs.getString('username') ?? '';
-    final password = prefs.getString('password') ?? '';
     setState(() {
       _rememberMe = rememberMe;
       _stayLoggedIn = stayLoggedIn;
-      _usernameController.text = username;
-      _passwordController.text = password;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-
-    // Si el usuario ya está autenticado, navegar automáticamente
-    if (authProvider.isAuthenticated && !authProvider.isAutoLoggingIn) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        final user = authProvider.user;
-        if (user != null) {
-          // Centralizar obtención de rol y ruta inicial
-          final result = role_utils.getRoleAndInitialRoute(user.toMap());
-          final String initialRoute = result['route']!;
-          await Navigator.pushReplacementNamed(
-            context,
-            initialRoute,
-            arguments: user.toMap(),
+    debugPrint('[LoginScreen] build ejecutado');
+    return FutureBuilder<bool>(
+      future: _autoLoginFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // Loading de auto-login
+          return Scaffold(
+            backgroundColor: const Color(0xFF1A1A1A),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Container(
+                    width: 120,
+                    height: 120,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                    child: Image.asset(
+                      'assets/images/condor-motors-logo.webp',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  const CircularProgressIndicator(
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Iniciando sesión automáticamente...',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
+        } else if (snapshot.hasError) {
+          // Error de auto-login
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error en auto-login: ${snapshot.error}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          });
+          return _buildLoginForm(context);
+        } else if (snapshot.data == true) {
+          // Auto-login exitoso, navegar automáticamente
+          if (!_hasNavigated) {
+            _hasNavigated = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              final user =
+                  Provider.of<AuthProvider>(context, listen: false).user;
+              if (user != null) {
+                final result = role_utils.getRoleAndInitialRoute(user.toMap());
+                final String initialRoute = result['route']!;
+                await Navigator.pushReplacementNamed(
+                  context,
+                  initialRoute,
+                  arguments: user.toMap(),
+                );
+              }
+            });
+          }
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        } else {
+          // Mostrar formulario de login normal
+          return _buildLoginForm(context);
         }
-      });
-      // Mientras navega, muestra un loading
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+      },
+    );
+  }
 
-    // Si el provider está haciendo auto-login, mostrar pantalla de carga
-    if (authProvider.isAutoLoggingIn) {
-      return Scaffold(
-        backgroundColor: const Color(0xFF1A1A1A),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Container(
-                width: 120,
-                height: 120,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
-                ),
-                child: Image.asset(
-                  'assets/images/condor-motors-logo.webp',
-                  fit: BoxFit.contain,
-                ),
-              ),
-              const SizedBox(height: 32),
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Iniciando sesión automáticamente...',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    // Si el auto-login falló, mostrar mensaje de error
-    if (authProvider.autoLoginError != null && !authProvider.isAutoLoggingIn) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text('Error en auto-login: ${authProvider.autoLoginError}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      });
-    }
-
-    // Pantalla normal de login
+  Widget _buildLoginForm(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       body: Stack(
@@ -761,10 +726,14 @@ class _LoginScreenState extends State<LoginScreen>
                               children: <Widget>[
                                 Checkbox(
                                   value: _rememberMe,
-                                  onChanged: (bool? value) {
+                                  onChanged: (bool? value) async {
                                     setState(() {
                                       _rememberMe = value ?? false;
                                     });
+                                    final prefs =
+                                        await SharedPreferences.getInstance();
+                                    await prefs.setBool(
+                                        'remember_me', _rememberMe);
                                   },
                                   fillColor:
                                       WidgetStateProperty.resolveWith<Color>(
@@ -792,10 +761,14 @@ class _LoginScreenState extends State<LoginScreen>
                               children: <Widget>[
                                 Checkbox(
                                   value: _stayLoggedIn,
-                                  onChanged: (bool? value) {
+                                  onChanged: (bool? value) async {
                                     setState(() {
                                       _stayLoggedIn = value ?? false;
                                     });
+                                    final prefs =
+                                        await SharedPreferences.getInstance();
+                                    await prefs.setBool(
+                                        'stay_logged_in', _stayLoggedIn);
                                   },
                                   fillColor:
                                       WidgetStateProperty.resolveWith<Color>(

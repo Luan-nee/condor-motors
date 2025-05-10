@@ -1,6 +1,7 @@
 import 'package:condorsmotors/models/categoria.model.dart';
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
+import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/categoria.repository.dart';
 import 'package:condorsmotors/repositories/color.repository.dart';
 import 'package:condorsmotors/screens/colabs/widgets/list_busqueda_producto.dart';
@@ -11,9 +12,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class BusquedaProductoWidget extends StatefulWidget {
-  final List<Map<String, dynamic>> productos;
+  final List<Producto> productos;
   final List<String> categorias; // Esta será una lista de fallback
-  final Function(Map<String, dynamic>) onProductoSeleccionado;
+  final Function(Producto) onProductoSeleccionado;
   final bool isLoading;
   // Mantener sucursalId solo para información/referencia
   final String? sucursalId;
@@ -34,9 +35,9 @@ class BusquedaProductoWidget extends StatefulWidget {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties
-      ..add(IterableProperty<Map<String, dynamic>>('productos', productos))
+      ..add(IterableProperty<Producto>('productos', productos))
       ..add(IterableProperty<String>('categorias', categorias))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has(
+      ..add(ObjectFlagProperty<Function(Producto)>.has(
           'onProductoSeleccionado', onProductoSeleccionado))
       ..add(DiagnosticsProperty<bool>('isLoading', isLoading))
       ..add(StringProperty('sucursalId', sucursalId));
@@ -57,7 +58,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
   bool _isPromocionExpanded = false;
 
   String _filtroCategoria = 'Todos';
-  List<Map<String, dynamic>> _productosFiltrados = <Map<String, dynamic>>[];
+  List<Producto> _productosFiltrados = <Producto>[];
 
   // Lista de categorías cargadas desde la API
   List<Categoria> _categoriasFromApi = <Categoria>[];
@@ -107,7 +108,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
     );
 
     // Inicializar productos filtrados con los productos proporcionados
-    _productosFiltrados = List<Map<String, dynamic>>.from(widget.productos);
+    _productosFiltrados = List<Producto>.from(widget.productos);
 
     // Configuramos los ítems por página después de que el widget esté renderizado
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -125,7 +126,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
     if (oldWidget.productos != widget.productos) {
       debugPrint(
           '📦 Actualizando productos: ${widget.productos.length} productos recibidos');
-      _productosFiltrados = List<Map<String, dynamic>>.from(widget.productos);
+      _productosFiltrados = List<Producto>.from(widget.productos);
       _filtrarProductos();
     }
   }
@@ -144,7 +145,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       // Usar el método de utilidades para combinar categorías
       final List<String> categoriasCombinadas =
           BusquedaProductoUtils.combinarCategorias(
-        productos: widget.productos,
+        productos: widget.productos.map((p) => p.toJson()).toList(),
         categoriasFallback: widget.categorias,
         categoriasApi: categoriasApi,
       );
@@ -187,34 +188,23 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
     });
 
     debugPrint('🔍 Iniciando filtrado de productos...');
-    debugPrint(
-        '📊 Total productos antes de filtrar: ${widget.productos.length}');
 
-    final List<Map<String, dynamic>> resultados =
-        BusquedaProductoUtils.filtrarProductos(
-      productos: widget.productos,
-      filtroTexto: _searchController.text.toLowerCase(),
+    final List<Producto> resultados = BusquedaProductoUtils.filtrarProductos(
+      productos: BusquedaProductoUtils.convertirAMapas(widget.productos),
+      filtroTexto: _searchController.text,
       filtroCategoria: _filtroCategoria,
       tipoDescuento: _tipoDescuentoSeleccionado,
-      debugMode: true,
+      debugMode: kDebugMode,
     );
 
     debugPrint('✅ Productos filtrados: ${resultados.length}');
 
     setState(() {
       _productosFiltrados = resultados;
-      _paginaActual = 0; // Reiniciar a primera página
+      _paginaActual = 0; // Reiniciar a la primera página
       _calcularTotalPaginas();
       _isLoadingLocal = false;
     });
-
-    // Depuración detallada del resultado
-    debugPrint('📊 Resumen de filtrado:');
-    debugPrint('- Productos totales: ${widget.productos.length}');
-    debugPrint('- Productos filtrados: ${_productosFiltrados.length}');
-    debugPrint('- Filtro categoría: $_filtroCategoria');
-    debugPrint('- Filtro texto: "${_searchController.text}"');
-    debugPrint('- Tipo descuento: $_tipoDescuentoSeleccionado');
   }
 
   void _calcularTotalPaginas() {
@@ -227,10 +217,10 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
         '📊 Total páginas calculadas: $_totalPaginas (total productos: $totalProductos, items por página: $_itemsPorPagina)');
   }
 
-  List<Map<String, dynamic>> _getProductosPaginaActual() {
+  List<Producto> _getProductosPaginaActual() {
     if (_productosFiltrados.isEmpty) {
       debugPrint('⚠️ No hay productos filtrados disponibles');
-      return <Map<String, dynamic>>[];
+      return <Producto>[];
     }
 
     final int inicio = _paginaActual * _itemsPorPagina;
@@ -251,7 +241,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
         '📄 Obteniendo productos página $_paginaActual: $inicio-$fin de ${_productosFiltrados.length}');
 
     try {
-      final List<Map<String, dynamic>> productosEnPagina =
+      final List<Producto> productosEnPagina =
           _productosFiltrados.sublist(inicio, fin);
       debugPrint('✅ Productos en página actual: ${productosEnPagina.length}');
       return productosEnPagina;
@@ -265,7 +255,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
             _productosFiltrados.length > 5 ? 5 : _productosFiltrados.length;
         return _productosFiltrados.sublist(0, elementosAMostrar);
       }
-      return <Map<String, dynamic>>[];
+      return <Producto>[];
     }
   }
 

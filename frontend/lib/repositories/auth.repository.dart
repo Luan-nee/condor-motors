@@ -51,9 +51,10 @@ class AuthRepository implements BaseRepository {
   }
 
   /// Inicia sesión con usuario y contraseña
-  Future<AuthUser> login(String usuario, String clave) async {
+  Future<AuthUser> login(String usuario, String clave,
+      {bool saveAutoLogin = false}) async {
     try {
-      return await _authApi.login(usuario, clave);
+      return await _authApi.login(usuario, clave, saveAutoLogin: saveAutoLogin);
     } catch (e) {
       debugPrint('Error en AuthRepository.login: $e');
       rethrow;

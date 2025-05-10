@@ -1,6 +1,7 @@
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
+import 'package:condorsmotors/utils/busqueda_producto_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -8,10 +9,10 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 /// Widget que representa un ítem individual de producto en la lista de búsqueda
 class ListItemBusquedaProducto extends StatelessWidget {
   /// El producto a mostrar
-  final Map<String, dynamic> producto;
+  final Producto producto;
 
   /// Callback cuando se selecciona el producto
-  final Function(Map<String, dynamic>) onProductoSeleccionado;
+  final Function(Producto) onProductoSeleccionado;
 
   /// Lista de colores disponibles para mostrar la información del color
   final List<ColorApp> colores;
@@ -39,17 +40,13 @@ class ListItemBusquedaProducto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Convertir el Map a Producto para usar la lógica robusta del modelo
-    final productoObj = Producto.fromJson(producto);
-    // Verificar las promociones del producto
-    final bool enLiquidacion = producto['enLiquidacion'] ?? false;
-    final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
-    final bool tieneDescuentoPorcentual =
-        producto['tieneDescuentoPorcentual'] ?? false;
-    final bool tieneStock = producto['stock'] > 0;
-    // Verificar si el producto tiene alguna promoción
-    final bool tienePromocion =
-        enLiquidacion || tienePromocionGratis || tieneDescuentoPorcentual;
+    // Usar directamente el modelo Producto
+    debugPrint('Producto \\${producto.id} pathFoto: \\${producto.pathFoto}');
+    final bool enLiquidacion = producto.estaEnLiquidacion;
+    final bool tienePromocionGratis = producto.tienePromocionGratis;
+    final bool tieneDescuentoPorcentual = producto.tieneDescuentoPorcentual;
+    final bool tieneStock = producto.stock > 0;
+    final bool tienePromocion = producto.tienePromocion;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -66,7 +63,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
           child: Row(
             children: <Widget>[
               _buildProductIcon(context, tienePromocion, tieneStock,
-                  tienePromocionGratis, tieneDescuentoPorcentual, productoObj),
+                  tienePromocionGratis, tieneDescuentoPorcentual, producto),
               SizedBox(width: isMobile ? 12 : 16),
               Expanded(
                 child: _buildProductInfo(tienePromocion, enLiquidacion,
@@ -85,15 +82,16 @@ class ListItemBusquedaProducto extends StatelessWidget {
       bool tieneStock,
       bool tienePromocionGratis,
       bool tieneDescuentoPorcentual,
-      Producto productoObj) {
-    final String? fotoUrl = ProductoRepository.getProductoImageUrl(productoObj);
+      Producto producto) {
+    final String url = ProductoRepository.getProductoImageUrl(producto) ?? '';
+    debugPrint('URL imagen (repo) producto \\${producto.id}: \\$url');
     return Stack(
       alignment: Alignment.bottomRight,
       children: <Widget>[
         GestureDetector(
           onTap: () => _mostrarDetallesProducto(context),
           child: Hero(
-            tag: 'producto_${producto['id']}',
+            tag: 'producto_${producto.id}',
             child: Container(
               width: isMobile ? 50 : 60,
               height: isMobile ? 50 : 60,
@@ -102,21 +100,31 @@ class ListItemBusquedaProducto extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 border: tienePromocion
                     ? Border.all(
-                        color: _getPromocionColor(
+                        color: BusquedaProductoUtils.getPromocionColor(
                             tienePromocionGratis, tieneDescuentoPorcentual),
                         width: 2,
                       )
                     : null,
               ),
-              child: fotoUrl != null && fotoUrl.isNotEmpty
+              child: url.isNotEmpty
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: Image.network(
-                        fotoUrl,
+                        url,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.image,
-                                color: Colors.white24, size: 28),
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.broken_image,
+                              color: Colors.grey, size: 32),
+                        ),
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) {
+                            return child;
+                          }
+                          return Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          );
+                        },
                       ),
                     )
                   : Center(
@@ -193,7 +201,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
       children: <Widget>[
         Expanded(
           child: Text(
-            producto['nombre'],
+            producto.nombre,
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: isMobile ? 16 : 18,
@@ -208,13 +216,13 @@ class ListItemBusquedaProducto extends StatelessWidget {
   }
 
   void _mostrarDetallesProducto(BuildContext context) {
-    final bool enLiquidacion = producto['enLiquidacion'] ?? false;
-    final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
-    final bool tieneDescuentoPorcentual =
-        producto['tieneDescuentoPorcentual'] ?? false;
-    final bool tieneStock = producto['stock'] > 0;
-    final Color colorPromocion =
-        _getPromocionColor(tienePromocionGratis, tieneDescuentoPorcentual);
+    final bool enLiquidacion = producto.estaEnLiquidacion;
+    final bool tienePromocionGratis = producto.tienePromocionGratis;
+    final bool tieneDescuentoPorcentual = producto.tieneDescuentoPorcentual;
+    final bool tieneStock = producto.stock > 0;
+    final bool tienePromocion = producto.tienePromocion;
+    final Color colorPromocion = BusquedaProductoUtils.getPromocionColor(
+        tienePromocionGratis, tieneDescuentoPorcentual);
 
     showDialog(
       context: context,
@@ -234,7 +242,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
               Row(
                 children: <Widget>[
                   Hero(
-                    tag: 'producto_${producto['id']}',
+                    tag: 'producto_${producto.id}',
                     child: Container(
                       width: 60,
                       height: 60,
@@ -246,19 +254,40 @@ class ListItemBusquedaProducto extends StatelessWidget {
                           width: 2,
                         ),
                       ),
-                      child: Center(
-                        child: FaIcon(
-                          FontAwesomeIcons.box,
-                          size: 28,
-                          color: tieneStock
-                              ? (enLiquidacion ||
-                                      tienePromocionGratis ||
-                                      tieneDescuentoPorcentual
-                                  ? Colors.amber
-                                  : Colors.green)
-                              : Colors.red,
-                        ),
-                      ),
+                      child: (() {
+                        final String url =
+                            ProductoRepository.getProductoImageUrl(producto) ??
+                                '';
+                        if (url.isNotEmpty) {
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              url,
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                color: Colors.grey[200],
+                                child: const Icon(Icons.broken_image,
+                                    color: Colors.grey, size: 32),
+                              ),
+                            ),
+                          );
+                        } else {
+                          return Center(
+                            child: FaIcon(
+                              FontAwesomeIcons.box,
+                              size: 28,
+                              color: tieneStock
+                                  ? (tienePromocion
+                                      ? Colors.amber
+                                      : Colors.green)
+                                  : Colors.red,
+                            ),
+                          );
+                        }
+                      })(),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -267,7 +296,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          producto['nombre'],
+                          producto.nombre,
                           style: TextStyle(
                             color: colorPromocion,
                             fontSize: 18,
@@ -276,7 +305,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Código: ${producto['codigo']}',
+                          'Código: ${producto.sku}',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.7),
                             fontSize: 12,
@@ -298,7 +327,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                 icon: Icons.inventory_2,
                 color: tieneStock ? Colors.green : Colors.red,
                 titulo: 'Stock Disponible',
-                subtitulo: '${producto['stock']} unidades',
+                subtitulo: '${producto.stock} unidades',
                 small: true,
               ),
               const SizedBox(height: 16),
@@ -307,7 +336,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                 icon: Icons.attach_money,
                 color: Colors.green,
                 titulo: 'Precio Regular',
-                subtitulo: 'S/ ${producto['precio']}',
+                subtitulo: 'S/ ${producto.precioVenta}',
               ),
 
               if (enLiquidacion) ...[
@@ -316,7 +345,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                   icon: Icons.local_fire_department,
                   color: Colors.amber,
                   titulo: 'Precio Liquidación',
-                  subtitulo: '\$${producto['precioLiquidacion']}',
+                  subtitulo: 'S/ ${producto.precioOferta ?? ''}',
                 ),
               ],
 
@@ -328,7 +357,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                   color: Colors.green,
                   titulo: 'Promoción "Lleva y Paga"',
                   subtitulo:
-                      'Lleva ${producto['cantidadMinima']} y paga ${producto['cantidadMinima'] - producto['cantidadGratis']}',
+                      'Lleva ${producto.cantidadMinimaDescuento ?? ''} y paga ${(producto.cantidadMinimaDescuento ?? 0) - (producto.cantidadGratisDescuento ?? 0)}',
                 ),
               ],
 
@@ -339,7 +368,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                   color: Colors.purple,
                   titulo: 'Descuento por Cantidad',
                   subtitulo:
-                      '${producto['descuentoPorcentaje']}% al llevar ${producto['cantidadMinima']} o más',
+                      '${producto.porcentajeDescuento ?? ''}% al llevar ${producto.cantidadMinimaDescuento ?? ''} o más',
                 ),
               ],
 
@@ -352,19 +381,18 @@ class ListItemBusquedaProducto extends StatelessWidget {
                       icon: Icons.category,
                       color: Colors.blue,
                       titulo: 'Categoría',
-                      subtitulo: producto['categoria'] ?? 'Sin categoría',
+                      subtitulo: producto.categoria,
                       small: true,
                     ),
                   ),
-                  if (producto['marca'] != null &&
-                      producto['marca'].toString().isNotEmpty) ...[
+                  if (producto.marca.isNotEmpty) ...[
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildDetalleItem(
                         icon: Icons.business,
                         color: Colors.orange,
                         titulo: 'Marca',
-                        subtitulo: producto['marca'],
+                        subtitulo: producto.marca,
                         small: true,
                       ),
                     ),
@@ -451,12 +479,12 @@ class ListItemBusquedaProducto extends StatelessWidget {
   }
 
   Widget _buildProductDetails() {
-    final bool tieneStock = producto['stock'] > 0;
+    final bool tieneStock = producto.stock > 0;
     return Row(
       children: <Widget>[
         Expanded(
           child: Text(
-            'Código: ${producto['codigo']}',
+            'Código: ${producto.sku}',
             style: const TextStyle(
               fontSize: 13,
               color: Colors.white70,
@@ -466,7 +494,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Text(
-          'Stock: ${producto['stock']}',
+          'Stock: ${producto.stock}',
           style: TextStyle(
             fontSize: 13,
             color: tieneStock ? Colors.green : Colors.red,
@@ -480,10 +508,10 @@ class ListItemBusquedaProducto extends StatelessWidget {
   Widget _buildCategoryAndColor() {
     return Row(
       children: <Widget>[
-        if (producto['categoria'] != null)
+        if (producto.categoria.isNotEmpty)
           Expanded(
             child: Text(
-              'Categoría: ${producto['categoria']}',
+              'Categoría: ${producto.categoria}',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: _isCategoriaHighlighted()
@@ -495,7 +523,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
             ),
           ),
         const SizedBox(width: 8),
-        if (producto['color'] != null) _buildColorInfo(producto['color']),
+        if (producto.color != null) _buildColorInfo(producto.color),
       ],
     );
   }
@@ -503,9 +531,9 @@ class ListItemBusquedaProducto extends StatelessWidget {
   Widget _buildPrice(bool enLiquidacion) {
     return Row(
       children: <Widget>[
-        if (enLiquidacion && producto['precioLiquidacion'] != null) ...<Widget>[
+        if (enLiquidacion && producto.precioOferta != null) ...<Widget>[
           Text(
-            'S/ ${producto['precio'].toStringAsFixed(2)}',
+            'S/ ${producto.precioVenta.toStringAsFixed(2)}',
             style: const TextStyle(
               decoration: TextDecoration.lineThrough,
               color: Colors.white54,
@@ -516,7 +544,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
           Row(
             children: <Widget>[
               Text(
-                'S/ ${producto['precioLiquidacion'].toStringAsFixed(2)}',
+                'S/ ${producto.precioOferta!.toStringAsFixed(2)}',
                 style: TextStyle(
                   color: Colors.amber,
                   fontWeight: FontWeight.bold,
@@ -531,7 +559,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  '-${_calcularDescuentoPorcentaje(producto['precio'], producto['precioLiquidacion'])}%',
+                  '-${_calcularDescuentoPorcentaje(producto.precioVenta, producto.precioOferta!)}%',
                   style: const TextStyle(
                     color: Colors.amber,
                     fontSize: 12,
@@ -543,7 +571,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
           ),
         ] else ...<Widget>[
           Text(
-            'S/ ${producto['precio'].toStringAsFixed(2)}',
+            'S/ ${producto.precioVenta.toStringAsFixed(2)}',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: isMobile ? 18 : 20,
@@ -563,11 +591,11 @@ class ListItemBusquedaProducto extends StatelessWidget {
       children: <Widget>[
         if (tienePromocionGratis)
           _buildPromoChip(
-              'Lleva ${producto['cantidadMinima']}, paga ${producto['cantidadMinima'] - producto['cantidadGratis']}',
+              'Lleva ${producto.cantidadMinimaDescuento ?? ''}, paga ${(producto.cantidadMinimaDescuento ?? 0) - (producto.cantidadGratisDescuento ?? 0)}',
               Colors.green),
         if (tieneDescuentoPorcentual)
           _buildPromoChip(
-              '${producto['descuentoPorcentaje']}% x ${producto['cantidadMinima']}+',
+              '${producto.porcentajeDescuento ?? ''}% x ${producto.cantidadMinimaDescuento ?? ''}+',
               Colors.purple),
       ],
     );
@@ -658,28 +686,17 @@ class ListItemBusquedaProducto extends StatelessWidget {
     return descuento.round();
   }
 
-  Color _getPromocionColor(
-      bool tienePromocionGratis, bool tieneDescuentoPorcentual) {
-    if (tienePromocionGratis) {
-      return Colors.green;
-    } else if (tieneDescuentoPorcentual) {
-      return Colors.purple;
-    }
-    return Colors.blue;
-  }
-
   bool _isCategoriaHighlighted() {
     return filtroCategoria != 'Todos' &&
-        producto['categoria'].toString().toLowerCase() ==
-            filtroCategoria.toLowerCase();
+        producto.categoria.toLowerCase() == filtroCategoria.toLowerCase();
   }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties
-      ..add(DiagnosticsProperty<Map<String, dynamic>>('producto', producto))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has(
+      ..add(DiagnosticsProperty<Producto>('producto', producto))
+      ..add(ObjectFlagProperty<Function(Producto)>.has(
           'onProductoSeleccionado', onProductoSeleccionado))
       ..add(IterableProperty<ColorApp>('colores', colores))
       ..add(ColorProperty('darkBackground', darkBackground))

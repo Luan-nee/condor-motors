@@ -210,20 +210,6 @@ class TokenService {
     }
   }
 
-  /// Guarda las credenciales del usuario para futuros login automáticos
-  Future<void> saveCredentials(String username, String password) async {
-    try {
-      logInfo(
-          'TokenService: Guardando credenciales para login automático en SecureStorage');
-      await SecureStorageUtils.write(_lastUsernameKey, username);
-      await SecureStorageUtils.write(_lastPasswordKey, password);
-      logInfo(
-          'TokenService: Credenciales guardadas correctamente en SecureStorage');
-    } catch (e) {
-      logError('TokenService: ERROR al guardar credenciales', e);
-    }
-  }
-
   /// Elimina los tokens del almacenamiento seguro
   Future<void> clearTokens({void Function()? onLogout}) async {
     logInfo('TokenService: Limpiando tokens de SecureStorage y memoria');
@@ -319,7 +305,7 @@ class TokenService {
 class AuthApi {
   final ApiClient _api;
 
-  // Claves de almacenamiento
+  // Claves para almacenamiento
   static const Map<String, String> _keys = {
     'token': 'access_token',
     'refresh': 'refresh_token',
@@ -523,7 +509,8 @@ class AuthApi {
   }
 
   /// Inicia sesión con usuario y contraseña
-  Future<AuthUser> login(String usuario, String clave) async {
+  Future<AuthUser> login(String usuario, String clave,
+      {bool saveAutoLogin = false}) async {
     try {
       final Map<String, dynamic> response = await _api.request(
         endpoint: '/auth/login',
@@ -565,6 +552,11 @@ class AuthApi {
       await SecureStorageUtils.write(
           _getKey('userData'), json.encode(userData));
 
+      // Guardar credenciales para auto-login si corresponde
+      if (saveAutoLogin) {
+        await saveAutoLoginCredentials(usuario, clave);
+      }
+
       // Crear instancia de AuthUser con los datos recibidos
       final AuthUser usuarioAutenticado = AuthUser.fromJson(userData);
       logInfo('Login exitoso para usuario: ${usuarioAutenticado.usuario}');
@@ -595,6 +587,13 @@ class AuthApi {
 
       rethrow;
     }
+  }
+
+  /// Guarda las credenciales del usuario para futuros login automáticos
+  Future<void> saveAutoLoginCredentials(
+      String username, String password) async {
+    await SecureStorageUtils.write(_getKey('usernameAuto'), username);
+    await SecureStorageUtils.write(_getKey('passwordAuto'), password);
   }
 }
 

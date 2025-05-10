@@ -4,6 +4,7 @@ import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' hide DetalleProforma;
 import 'package:condorsmotors/providers/colabs/ventas.colab.provider.dart';
 import 'package:condorsmotors/screens/colabs/barcode_colab.dart';
+import 'package:condorsmotors/screens/colabs/ventas/producto_venta_item.widget.dart';
 import 'package:condorsmotors/screens/colabs/widgets/busqueda_producto.dart';
 import 'package:condorsmotors/screens/colabs/widgets/cliente/busqueda_cliente.dart';
 import 'package:condorsmotors/screens/colabs/widgets/cliente/busqueda_cliente_form.dart';
@@ -34,8 +35,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       TextEditingController();
 
   // Accesos directos a propiedades del provider con manejo de nulos
-  List<Map<String, dynamic>> get _productos => _provider.productos;
-  List<Map<String, dynamic>> get _productosVenta => _provider.productosVenta;
+  List<Producto> get _productos => _provider.productos;
+  List<Producto> get _productosVenta => _provider.productosVenta;
   Cliente? get _clienteSeleccionado => _provider.clienteSeleccionado;
   bool get _isLoading => _provider.isLoading;
   String get _loadingMessage => _provider.loadingMessage;
@@ -289,10 +290,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                     categorias: _provider.categorias,
                     isLoading: _provider.isLoadingProductos,
                     sucursalId: _provider.sucursalId,
-                    onProductoSeleccionado: (Map<String, dynamic> producto) {
-                      debugPrint(
-                          '✅ Producto seleccionado: ${producto['nombre']}');
-                      // Mostrar detalles de promoción antes de agregar
+                    onProductoSeleccionado: (Producto producto) {
+                      debugPrint('✅ Producto seleccionado: ${producto.nombre}');
                       _mostrarDetallesPromocion(producto);
                     },
                   ),
@@ -306,37 +305,23 @@ class _VentasColabScreenState extends State<VentasColabScreen>
   }
 
   // Mostrar detalles de promoción
-  void _mostrarDetallesPromocion(Map<String, dynamic> producto) {
-    debugPrint('🔍 Verificando promociones para: ${producto['nombre']}');
+  void _mostrarDetallesPromocion(Producto producto) {
+    debugPrint('🔍 Verificando promociones para: ${producto.nombre}');
     Navigator.pop(context); // Cerrar diálogo de búsqueda
     _agregarProductoConVerificacion(producto);
   }
 
   // Nuevo método para verificar y agregar producto
-  void _agregarProductoConVerificacion(Map<String, dynamic> producto) {
-    debugPrint('🛒 Intentando agregar producto: ${producto['nombre']}');
-
-    // Verificar que el producto tenga los campos necesarios
-    if (!producto.containsKey('id') ||
-        !producto.containsKey('nombre') ||
-        !producto.containsKey('precio')) {
-      debugPrint('❌ Error: Producto no tiene los campos requeridos');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: Producto inválido'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+  void _agregarProductoConVerificacion(Producto producto) {
+    debugPrint('🛒 Intentando agregar producto: ${producto.nombre}');
 
     // Verificar stock disponible
-    final int stockDisponible = producto['stock'] ?? 0;
+    final int stockDisponible = producto.stock;
     if (stockDisponible <= 0) {
       debugPrint('❌ Error: Producto sin stock disponible');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${producto['nombre']} no tiene stock disponible'),
+          content: Text('${producto.nombre} no tiene stock disponible'),
           backgroundColor: Colors.red,
         ),
       );
@@ -350,7 +335,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       debugPrint('✅ Producto agregado exitosamente');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${producto['nombre']} agregado al carrito'),
+          content: Text('${producto.nombre} agregado al carrito'),
           backgroundColor: Colors.green,
         ),
       );
@@ -366,11 +351,9 @@ class _VentasColabScreenState extends State<VentasColabScreen>
   }
 
   // Métodos para delegar al provider
-  bool _agregarProducto(Map<String, dynamic> producto) {
-    debugPrint(
-        '➡️ Delegando agregar producto al provider: ${producto['nombre']}');
+  bool _agregarProducto(Producto producto) {
+    debugPrint('➡️ Delegando agregar producto al provider: ${producto.nombre}');
     final bool resultado = _provider.agregarProducto(producto);
-
     // Mostrar mensaje de promoción si existe
     if (resultado && _provider.mensajePromocion.isNotEmpty) {
       debugPrint('🎉 Mostrando mensaje de promoción');
@@ -379,7 +362,6 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         _provider.mensajePromocion,
       );
     }
-
     return resultado;
   }
 
@@ -409,342 +391,6 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         }
       });
     });
-  }
-
-  // Método para construir cada elemento de producto en la venta
-  Widget _buildProductoVentaItem(Map<String, dynamic> producto, int index) {
-    final int cantidad = producto['cantidad'];
-    final double precioOriginal = (producto['precio'] as num).toDouble();
-    final int? porcentajeDescuento = producto['descuentoPorcentaje'] as int?;
-    final int? cantidadMinima = producto['cantidadMinima'] as int?;
-    final int? cantidadGratis = producto['cantidadGratis'] as int?;
-    final int stockDisponible =
-        producto['stockDisponible'] ?? producto['stock'] ?? 0;
-    final bool stockLimitado = cantidad >= stockDisponible;
-    final bool promocionActivada = producto['promocionActivada'] == true;
-    final bool tienePromocionGratis = producto['tienePromocionGratis'] ?? false;
-    final bool tieneDescuentoPorcentual =
-        producto['tieneDescuentoPorcentual'] ?? false;
-    final bool enLiquidacion = producto['enLiquidacion'] ?? false;
-
-    // Calcular el precio con descuento si aplica
-    double precio;
-    if (producto['enLiquidacion'] == true &&
-        producto['precioLiquidacion'] != null) {
-      precio = (producto['precioLiquidacion'] as num).toDouble();
-    } else if (porcentajeDescuento != null &&
-        cantidad >= (cantidadMinima ?? 0)) {
-      // Aplicar el descuento porcentual
-      final double descuento = (precioOriginal * porcentajeDescuento) / 100;
-      precio = precioOriginal - descuento;
-    } else {
-      precio = producto['precioVenta'] ?? precioOriginal;
-    }
-
-    // Calcular el subtotal
-    final double subtotal = precio * cantidad;
-
-    // Calcular productos gratis si aplica
-    int productosGratis = 0;
-    if (tienePromocionGratis &&
-        cantidadMinima != null &&
-        cantidadGratis != null &&
-        cantidad >= cantidadMinima) {
-      final int gruposCompletos = cantidad ~/ cantidadMinima;
-      productosGratis = gruposCompletos * cantidadGratis;
-    }
-
-    // Determinar el color del borde según el tipo de promoción
-    Color? borderColor;
-    Color? backgroundColor;
-    IconData? promocionIcon;
-    String? promocionTooltip;
-
-    if (promocionActivada) {
-      if (tienePromocionGratis) {
-        borderColor = const Color(0xFF2E7D32); // Verde oscuro
-        backgroundColor = const Color(0xFF2E7D32).withOpacity(0.1);
-        promocionIcon = Icons.card_giftcard;
-        promocionTooltip = 'Promoción "Lleva y Paga" activada';
-      } else if (tieneDescuentoPorcentual &&
-          cantidad >= (cantidadMinima ?? 0)) {
-        borderColor = Colors.purple;
-        backgroundColor = Colors.purple.withOpacity(0.1);
-        promocionIcon = Icons.percent;
-        promocionTooltip = 'Descuento del $porcentajeDescuento% aplicado';
-      }
-    } else if (enLiquidacion) {
-      borderColor = Colors.amber;
-      backgroundColor = Colors.amber.withOpacity(0.1);
-      promocionIcon = Icons.local_offer;
-      promocionTooltip = 'Producto en liquidación';
-    }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: borderColor != null
-            ? BorderSide(color: borderColor, width: 1.5)
-            : (stockLimitado
-                ? const BorderSide(color: Colors.orange)
-                : BorderSide.none),
-      ),
-      color: backgroundColor ?? Theme.of(context).cardColor,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                // Icono de promoción
-                if (promocionIcon != null)
-                  Tooltip(
-                    message: promocionTooltip ?? '',
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          color: borderColor?.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Icon(
-                          promocionIcon,
-                          size: 14,
-                          color: borderColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                Expanded(
-                  child: Text(
-                    producto['nombre'],
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: borderColor,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _eliminarProducto(index),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            if (promocionActivada)
-              Padding(
-                padding: const EdgeInsets.only(top: 4.0),
-                child: Row(
-                  children: <Widget>[
-                    Icon(
-                      Icons.info_outline,
-                      size: 12,
-                      color: borderColor,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        tienePromocionGratis &&
-                                cantidadMinima != null &&
-                                cantidadGratis != null
-                            ? 'Por cada $cantidadMinima unidades, recibirás $cantidadGratis gratis'
-                            : (tieneDescuentoPorcentual &&
-                                    cantidad >= (cantidadMinima ?? 0)
-                                ? 'Descuento del $porcentajeDescuento% aplicado por comprar $cantidad o más unidades'
-                                : 'Promoción aplicada automáticamente por el servidor'),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                          color: borderColor?.withOpacity(0.7),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 8),
-            Row(
-              children: <Widget>[
-                // Mostrar precios con descuento si aplica
-                if (tieneDescuentoPorcentual &&
-                    porcentajeDescuento != null &&
-                    cantidad >= (cantidadMinima ?? 0))
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'S/ ${precioOriginal.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                decoration: TextDecoration.lineThrough,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 4, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.purple.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                '-$porcentajeDescuento%',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.purple,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'S/ ${precio.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: borderColor,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Subtotal: S/ ${subtotal.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: borderColor?.withOpacity(0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'S/ ${precio.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight:
-                                promocionActivada ? FontWeight.bold : null,
-                            color: borderColor,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Subtotal: S/ ${subtotal.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: borderColor?.withOpacity(0.8),
-                          ),
-                        ),
-                        if (tienePromocionGratis && productosGratis > 0) ...[
-                          const SizedBox(height: 2),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 4, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2E7D32).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: const Color(0xFF2E7D32).withOpacity(0.3),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.card_giftcard,
-                                  size: 12,
-                                  color: Color(0xFF2E7D32),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Recibirás $productosGratis unidades gratis',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF2E7D32),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
-                  decoration: BoxDecoration(
-                    color: stockLimitado
-                        ? Colors.orange.withOpacity(0.2)
-                        : (borderColor?.withOpacity(0.1) ??
-                            Colors.blue.withOpacity(0.1)),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      IconButton(
-                        icon: const Icon(Icons.remove, size: 16),
-                        onPressed: () => _cambiarCantidad(index, cantidad - 1),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Text(
-                          '$cantidad',
-                          style: TextStyle(
-                            color: stockLimitado ? Colors.orange : borderColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.add,
-                          size: 16,
-                          color: stockLimitado
-                              ? Colors.orange.withOpacity(0.5)
-                              : null,
-                        ),
-                        onPressed: stockLimitado
-                            ? null
-                            : () => _cambiarCantidad(index, cantidad + 1),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Disponible: $stockDisponible',
-              style: TextStyle(
-                fontSize: 12,
-                color: stockLimitado ? Colors.orange : Colors.green,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   // Método para finalizar venta (verificar stock y crear proforma)
@@ -778,56 +424,28 @@ class _VentasColabScreenState extends State<VentasColabScreen>
           loading: true, message: 'Verificando disponibilidad de stock...');
 
       // Verificar stock de cada producto
-      for (final Map<String, dynamic> producto in _productosVenta) {
+      for (int i = 0; i < _productosVenta.length; i++) {
+        final producto = _productosVenta[i];
+        final cantidad = _provider.cantidades[i];
         // Validar ID de producto
-        final dynamic productoIdDynamic = producto['id'];
-        int productoId;
-
-        if (productoIdDynamic is int) {
-          productoId = productoIdDynamic;
-        } else if (productoIdDynamic is String) {
-          productoId = int.parse(productoIdDynamic);
-        } else {
-          // Si hay un error con el formato de ID, mostrar error y salir
-          _provider.setLoading(loading: false);
-
-          if (!mounted) {
-            return;
-          }
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content:
-                  Text('Error con el ID del producto ${producto['nombre']}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-
-        final int cantidad = producto['cantidad'];
-
+        final int productoId = producto.id;
         // Actualizar mensaje de loading
         if (mounted) {
           _provider.setLoading(
               loading: true,
-              message: 'Verificando stock de ${producto['nombre']}...');
+              message: 'Verificando stock de ${producto.nombre}...');
         }
-
         // Obtener producto actualizado para verificar stock
         final Producto productoActual = await _productosApi.getProducto(
           sucursalId: _sucursalId,
           productoId: productoId,
-          useCache: false, // No usar caché para obtener datos actualizados
+          useCache: false,
         );
-
         if (!mounted) {
           return;
         }
-
         if (productoActual.stock < cantidad) {
           _provider.setLoading(loading: false);
-
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -874,29 +492,11 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
       // Convertir los productos de la venta al formato esperado por la API
       final List<DetalleProforma> detalles =
-          _productosVenta.map((Map<String, dynamic> producto) {
-        // Manejar caso donde id puede ser entero o cadena
-        final int productoId = producto['id'] is int
-            ? producto['id']
-            : int.parse(producto['id'].toString());
-
-        // Usar el precio con descuentos aplicados si existe
-        final double precioUnitario = producto['precioVenta'] ??
-            (producto['enLiquidacion'] == true &&
-                    producto['precioLiquidacion'] != null
-                ? (producto['precioLiquidacion'] as num).toDouble()
-                : (producto['precio'] as num).toDouble());
-
-        final double subtotal = precioUnitario * producto['cantidad'];
-
-        return DetalleProforma(
-          productoId: productoId,
-          nombre: producto['nombre'],
-          cantidad: producto['cantidad'],
-          subtotal: subtotal,
-          precioUnitario: precioUnitario,
-        );
-      }).toList();
+          List.generate(_productosVenta.length, (i) {
+        final producto = _productosVenta[i];
+        final cantidad = _provider.cantidades[i];
+        return DetalleProforma.fromProducto(producto, cantidad: cantidad);
+      });
 
       // Actualizar mensaje para proporcionar retroalimentación del progreso
       if (mounted) {
@@ -1121,9 +721,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       MaterialPageRoute<void>(
         builder: (BuildContext context) => BarcodeColabScreen(
           productos: _productos,
-          onProductoSeleccionado: (Map<String, dynamic> producto) {
-            debugPrint('✅ Producto escaneado: ${producto['nombre']}');
-            // Agregar el producto directamente al carrito
+          onProductoSeleccionado: (Producto producto) {
+            debugPrint('✅ Producto escaneado: ${producto.nombre}');
             _agregarProductoConVerificacion(producto);
           },
           isLoading: _isLoading,
@@ -1140,8 +739,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
   }
 
   bool _cambiarCantidad(int index, int cantidad) {
-    bool resultado = _provider.cambiarCantidad(index, cantidad);
-    // Actualizar mensaje de promoción si existe
+    final bool resultado = _provider.cambiarCantidad(index, cantidad);
     if (_provider.mensajePromocion.isNotEmpty) {
       _mostrarMensajePromocionConAnimacion(
         _provider.nombreProductoPromocion,
@@ -1386,9 +984,16 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                                       100), // Espacio para el botón de finalizar
                               itemCount: provider.productosVenta.length,
                               itemBuilder: (BuildContext context, int index) {
-                                final Map<String, dynamic> producto =
-                                    provider.productosVenta[index];
-                                return _buildProductoVentaItem(producto, index);
+                                final producto = provider.productosVenta[index];
+                                final cantidad = provider.cantidades[index];
+                                return ProductoVentaItemWidget(
+                                  producto: producto,
+                                  cantidad: cantidad,
+                                  onEliminar: () => _eliminarProducto(index),
+                                  onCambiarCantidad: (nuevaCantidad) {
+                                    _cambiarCantidad(index, nuevaCantidad);
+                                  },
+                                );
                               },
                             ),
 

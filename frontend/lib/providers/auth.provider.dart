@@ -25,6 +25,10 @@ class AuthProvider extends ChangeNotifier {
   bool _lastVerifyResult = false;
   Completer<bool>? _verifyCompleter;
 
+  // Flag para inicialización centralizada
+  bool _isInitializing = true;
+  bool get isInitializing => _isInitializing;
+
   // Flags y estado para auto-login
   bool _autoLoginAttempted = false;
   bool _isAutoLoggingIn = false;
@@ -33,11 +37,36 @@ class AuthProvider extends ChangeNotifier {
   bool get isAutoLoggingIn => _isAutoLoggingIn;
   String? get autoLoginError => _autoLoginError;
 
+  // Setters privados para flags de auto-login
+  void _setAutoLoginAttempted(bool value) {
+    if (_autoLoginAttempted != value) {
+      _autoLoginAttempted = value;
+      notifyListeners();
+    }
+  }
+
+  void _setIsAutoLoggingIn(bool value) {
+    if (_isAutoLoggingIn != value) {
+      _isAutoLoggingIn = value;
+      notifyListeners();
+    }
+  }
+
+  void _setAutoLoginError(String? value) {
+    if (_autoLoginError != value) {
+      _autoLoginError = value;
+      notifyListeners();
+    }
+  }
+
   AuthProvider(this._authRepository) {
+    debugPrint('[AuthProvider] Constructor ejecutado');
     _init();
   }
 
   Future<void> _init() async {
+    _isInitializing = true;
+    notifyListeners();
     try {
       final userData = await _authRepository.getUserData();
       if (userData != null) {
@@ -49,15 +78,20 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error al inicializar AuthProvider: $e');
+    } finally {
+      _isInitializing = false;
+      notifyListeners();
     }
   }
 
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String username, String password,
+      {bool saveAutoLogin = false}) async {
     try {
       _state = AuthState.loading();
       notifyListeners();
 
-      final usuario = await _authRepository.login(username, password);
+      final usuario = await _authRepository.login(username, password,
+          saveAutoLogin: saveAutoLogin);
 
       _state = AuthState.authenticated(
         usuario,
@@ -83,15 +117,24 @@ class AuthProvider extends ChangeNotifier {
       await _authRepository.logout();
 
       _state = AuthState.initial();
+      _autoLoginAttempted = false;
+      _isAutoLoggingIn = false;
+      _autoLoginError = null;
       notifyListeners();
 
       debugPrint('Sesión cerrada exitosamente');
       resetSessionVerification(); // Limpiar flags al cerrar sesión
+      // Reinicializar para limpiar todo el estado y tokens
+      await _init();
     } catch (e) {
       debugPrint('Error durante proceso de logout: $e');
       _state = AuthState.initial();
+      _autoLoginAttempted = false;
+      _isAutoLoggingIn = false;
+      _autoLoginError = null;
       notifyListeners();
       resetSessionVerification();
+      await _init();
     }
   }
 
@@ -221,23 +264,25 @@ class AuthProvider extends ChangeNotifier {
 
   /// Lógica de auto-login centralizada en el provider
   Future<void> tryAutoLogin() async {
-    if (_autoLoginAttempted) {
+    if (_autoLoginAttempted || _isAutoLoggingIn) {
+      debugPrint(
+          '[AuthProvider] tryAutoLogin: Ya intentado o en progreso, no se repite.');
       return;
     }
-    _autoLoginAttempted = true;
-    _isAutoLoggingIn = true;
-    _autoLoginError = null;
-    notifyListeners();
+    debugPrint(
+        '[AuthProvider] tryAutoLogin: Iniciando intento de auto-login...');
+    _setAutoLoginAttempted(true);
+    _setIsAutoLoggingIn(true);
+    _setAutoLoginError(null);
     try {
       final prefs = await SharedPreferences.getInstance();
       final bool stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
-      debugPrint(
-          '[AuthProvider] Auto-login: Permanecer conectado está ${stayLoggedIn ? 'activado' : 'desactivado'}');
+      debugPrint('[AuthProvider] Auto-login: Permanecer conectado está ' +
+          (stayLoggedIn ? 'activado' : 'desactivado'));
       if (!stayLoggedIn) {
         debugPrint(
             '[AuthProvider] Auto-login: No está activado "Permanecer conectado"');
-        _isAutoLoggingIn = false;
-        notifyListeners();
+        _setIsAutoLoggingIn(false);
         return;
       }
       final String? username = await SecureStorageUtils.read('username_auto');
@@ -247,8 +292,7 @@ class AuthProvider extends ChangeNotifier {
           username.isEmpty ||
           password.isEmpty) {
         debugPrint('[AuthProvider] Auto-login: No hay credenciales guardadas');
-        _isAutoLoggingIn = false;
-        notifyListeners();
+        _setIsAutoLoggingIn(false);
         return;
       }
       debugPrint(
@@ -261,7 +305,6 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       debugPrint(
           '[AuthProvider] Auto-login: Login exitoso, usuario autenticado: $usuario');
-      // Guardar los datos del usuario en el servicio global de autenticación
       try {
         await _authRepository.saveUserData(usuario);
         debugPrint(
@@ -270,14 +313,63 @@ class AuthProvider extends ChangeNotifier {
         debugPrint(
             '[AuthProvider] Auto-login: Error al guardar datos en el servicio global: $e');
       }
-      _isAutoLoggingIn = false;
-      notifyListeners();
+      _setIsAutoLoggingIn(false);
     } catch (e) {
       debugPrint(
           '[AuthProvider] Auto-login: Error durante el inicio de sesión automático: $e');
-      _autoLoginError = e.toString();
-      _isAutoLoggingIn = false;
-      notifyListeners();
+      _setAutoLoginError(e.toString());
+      _setIsAutoLoggingIn(false);
     }
+  }
+
+  /// Nuevo método determinista para auto-login
+  Future<bool> autoLogin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final bool stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
+      debugPrint('[AuthProvider] autoLogin: Permanecer conectado está ' +
+          (stayLoggedIn ? 'activado' : 'desactivado'));
+      if (!stayLoggedIn) {
+        debugPrint(
+            '[AuthProvider] autoLogin: No está activado "Permanecer conectado"');
+        return false;
+      }
+      final String? username = await SecureStorageUtils.read('username_auto');
+      final String? password = await SecureStorageUtils.read('password_auto');
+      if (username == null ||
+          password == null ||
+          username.isEmpty ||
+          password.isEmpty) {
+        debugPrint('[AuthProvider] autoLogin: No hay credenciales guardadas');
+        return false;
+      }
+      debugPrint(
+          '[AuthProvider] autoLogin: Intentando iniciar sesión automáticamente con usuario: $username');
+      final usuario = await _authRepository.login(username, password);
+      _state = AuthState.authenticated(
+        usuario,
+        usuario.toMap()['token'] ?? '',
+      );
+      notifyListeners();
+      try {
+        await _authRepository.saveUserData(usuario);
+        debugPrint(
+            '[AuthProvider] autoLogin: Datos de usuario guardados correctamente en el servicio global');
+      } catch (e) {
+        debugPrint(
+            '[AuthProvider] autoLogin: Error al guardar datos en el servicio global: $e');
+      }
+      return true;
+    } catch (e) {
+      debugPrint(
+          '[AuthProvider] autoLogin: Error durante el inicio de sesión automático: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  void notifyListeners() {
+    debugPrint('[AuthProvider] notifyListeners() llamado');
+    super.notifyListeners();
   }
 }
