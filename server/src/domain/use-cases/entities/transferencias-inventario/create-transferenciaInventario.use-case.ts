@@ -81,12 +81,16 @@ export class CreateTransferenciaInv {
         })
       }
 
+      const now = new Date()
+
       const [transferenciaInventario] = await tx
         .insert(transferenciasInventariosTable)
         .values({
           estadoTransferenciaId: estadoPedido.id,
           sucursalDestinoId: createTransferenciaInvDto.sucursalDestinoId,
-          modificable: true
+          modificable: true,
+          fechaCreacion: now,
+          fechaActualizacion: now
         })
         .returning({ id: transferenciasInventariosTable.id })
 

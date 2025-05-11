@@ -83,6 +83,13 @@ export class UpdateItemTransferenciaInv {
       )
       .returning({ id: itemsTransferenciaInventarioTable.id })
 
+    await db
+      .update(transferenciasInventariosTable)
+      .set({
+        fechaActualizacion: new Date()
+      })
+      .where(eq(transferenciasInventariosTable.id, doubleNumericIdDto.id))
+
     if (itemsTransferenciaInv.length < 1) {
       throw CustomError.badRequest(
         'No se ha podido actualizar la cantidad del item especificado (no encontrado)'
