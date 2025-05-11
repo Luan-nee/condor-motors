@@ -39,7 +39,9 @@ export class GetTransferenciasInventarios {
     },
     modificable: transferenciasInventariosTable.modificable,
     salidaOrigen: transferenciasInventariosTable.salidaOrigen,
-    llegadaDestino: transferenciasInventariosTable.llegadaDestino
+    llegadaDestino: transferenciasInventariosTable.llegadaDestino,
+    fechaCreacion: transferenciasInventariosTable.fechaCreacion,
+    fechaActualizacion: transferenciasInventariosTable.fechaActualizacion
   }
 
   private readonly validSortBy = {
