@@ -783,57 +783,6 @@ class ProductosApi {
     }
   }
 
-  // Método helper para generar claves de caché consistentes - OBSOLETA: usar PaginacionUtils
-  String _generateCacheKey(
-    String base, {
-    String? search,
-    int? page,
-    int? pageSize,
-    String? sortBy,
-    String? order,
-    String? filter,
-    String? filterValue,
-    String? filterType,
-    bool? stockBajo,
-    bool? liquidacion,
-  }) {
-    // Usar PaginacionUtils.generateCacheKey en su lugar
-    final List<String> components = <String>[base];
-
-    if (search != null && search.isNotEmpty) {
-      components.add('s:$search');
-    }
-    if (page != null) {
-      components.add('p:$page');
-    }
-    if (pageSize != null) {
-      components.add('ps:$pageSize');
-    }
-    if (sortBy != null && sortBy.isNotEmpty) {
-      components.add('sb:$sortBy');
-    }
-    if (order != null && order.isNotEmpty) {
-      components.add('o:$order');
-    }
-    if (filter != null && filter.isNotEmpty) {
-      components.add('f:$filter');
-    }
-    if (filterValue != null) {
-      components.add('fv:$filterValue');
-    }
-    if (filterType != null && filterType.isNotEmpty) {
-      components.add('ft:$filterType');
-    }
-    if (stockBajo != null) {
-      components.add('stb:${stockBajo ? 'true' : 'false'}');
-    }
-    if (liquidacion != null) {
-      components.add('liq:${liquidacion ? 'true' : 'false'}');
-    }
-
-    return components.join('_');
-  }
-
   // Método para invalidar caché relacionada
   void _invalidateRelatedCache(String sucursalId, [int? productoId]) {
     if (productoId != null) {
@@ -894,19 +843,23 @@ class ProductosApi {
     String? filterType,
     bool? stockBajo,
   }) {
-    final String cacheKey = _generateCacheKey(
-      'productos_$sucursalId',
+    final filtroParams = FiltroParams(
       search: search,
-      page: page,
-      pageSize: pageSize,
+      page: page ?? 1,
+      pageSize: pageSize ?? 20,
       sortBy: sortBy,
       order: order,
       filter: filter,
       filterValue: filterValue,
       filterType: filterType,
-      stockBajo: stockBajo,
+      extraParams: <String, String>{
+        if (stockBajo != null) 'stockBajo': stockBajo.toString(),
+      },
     );
-
+    final String cacheKey = PaginacionUtils.generateCacheKey(
+      'productos_$sucursalId',
+      filtroParams.toMap(),
+    );
     return _cache.isStale(cacheKey);
   }
 
@@ -936,45 +889,48 @@ class ProductosApi {
     int? pageSize,
     bool useCache = true,
   }) async {
-    // Construir parámetros base
-    final Map<String, String> queryParams = <String, String>{};
-
-    if (categoria != null && categoria.isNotEmpty) {
-      queryParams['filter'] = 'categoria';
-      queryParams['filter_value'] = categoria;
-      queryParams['filter_type'] = 'eq';
-    }
-
-    if (marca != null && marca.isNotEmpty) {
-      // Nota: Este es un caso especial ya que filter solo permite un valor a la vez
-      // Para aplicar múltiples filtros, el backend necesitaría soporte especial
-      // Por ahora, damos prioridad a la categoría sobre la marca si ambos están presentes
-      if (!queryParams.containsKey('filter')) {
-        queryParams['filter'] = 'marca';
-        queryParams['filter_value'] = marca;
-        queryParams['filter_type'] = 'eq';
-      }
-    }
-
-    // Para precio, podemos usar search como alternativa
+    // Construir search term para precios
     String searchTerm = '';
-    if (precioMinimo != null || precioMaximo != null) {
-      if (precioMinimo != null) {
-        searchTerm += 'precio>${precioMinimo.toStringAsFixed(2)} ';
-      }
-      if (precioMaximo != null) {
-        searchTerm += 'precio<${precioMaximo.toStringAsFixed(2)} ';
-      }
+    if (precioMinimo != null) {
+      searchTerm += 'precio>${precioMinimo.toStringAsFixed(2)} ';
+    }
+    if (precioMaximo != null) {
+      searchTerm += 'precio<${precioMaximo.toStringAsFixed(2)} ';
+    }
+    searchTerm = searchTerm.trim();
+
+    // Determinar filtro y valor
+    String? filter;
+    String? filterValue;
+    // FIX: El backend solo permite un filtro a la vez, priorizamos categoría sobre marca
+    if (categoria != null && categoria.isNotEmpty) {
+      filter = 'categoria';
+      filterValue = categoria;
+    } else if (marca != null && marca.isNotEmpty) {
+      filter = 'marca';
+      filterValue = marca;
     }
 
-    // Obtenemos resultados base
-    final PaginatedResponse<Producto> resultados = await getProductos(
-      sucursalId: sucursalId,
+    // Centralizar parámetros con FiltroParams
+    final filtroParams = FiltroParams(
+      search: searchTerm.isNotEmpty ? searchTerm : null,
       page: page ?? 1,
       pageSize: pageSize ?? 20,
-      sortBy: 'nombre', // Default
-      order: 'asc',
-      search: searchTerm.isNotEmpty ? searchTerm : null,
+      sortBy: 'nombre',
+      filter: filter,
+      filterValue: filterValue,
+    );
+
+    // Obtener resultados base
+    final PaginatedResponse<Producto> resultados = await getProductos(
+      sucursalId: sucursalId,
+      page: filtroParams.page,
+      pageSize: filtroParams.pageSize,
+      sortBy: filtroParams.sortBy,
+      order: filtroParams.order,
+      search: filtroParams.search,
+      filter: filtroParams.filter,
+      filterValue: filtroParams.filterValue,
       useCache: useCache,
     );
 
@@ -987,41 +943,48 @@ class ProductosApi {
     // Filtros post-proceso (porque el backend no soporta estos filtros directamente)
     final List<Producto> productosFiltrados =
         resultados.items.where((Producto producto) {
-      // Filtrar por stock positivo
       if (stockPositivo == true && (producto.stock <= 0)) {
         return false;
       }
-
       // Filtrar por promoción activa
       if (conPromocion == true) {
-        final bool tienePromocion = producto.liquidacion || // Liquidación
+        final bool tienePromocion = producto.liquidacion ||
             (producto.cantidadGratisDescuento != null &&
-                producto.cantidadGratisDescuento! > 0) || // Promo gratis
+                producto.cantidadGratisDescuento! > 0) ||
             (producto.cantidadMinimaDescuento != null &&
                 producto.porcentajeDescuento != null &&
                 producto.cantidadMinimaDescuento! > 0 &&
-                producto.porcentajeDescuento! > 0); // Descuento por cantidad
-
+                producto.porcentajeDescuento! > 0);
         if (!tienePromocion) {
           return false;
         }
       }
-
       return true;
     }).toList();
 
     // Ajustar paginación para reflejar los resultados filtrados
+    final int pageNumber = filtroParams.page;
+    final int itemsPerPage = filtroParams.pageSize;
+    final int totalItems = productosFiltrados.length;
+    final int totalPages = (totalItems / itemsPerPage).ceil();
+    final int startIndex = (pageNumber - 1) * itemsPerPage;
+    final int endIndex = startIndex + itemsPerPage < totalItems
+        ? startIndex + itemsPerPage
+        : totalItems;
+    final List<Producto> paginatedResults = startIndex < totalItems
+        ? productosFiltrados.sublist(startIndex, endIndex)
+        : <Producto>[];
+
     final Paginacion paginacionAjustada = Paginacion(
-      currentPage: resultados.paginacion.currentPage,
-      totalPages: (productosFiltrados.length / (pageSize ?? 20)).ceil(),
-      totalItems: productosFiltrados.length,
-      hasNext:
-          (page ?? 1) < ((productosFiltrados.length / (pageSize ?? 20)).ceil()),
-      hasPrev: (page ?? 1) > 1,
+      currentPage: pageNumber,
+      totalPages: totalPages > 0 ? totalPages : 1,
+      totalItems: totalItems,
+      hasNext: pageNumber < totalPages,
+      hasPrev: pageNumber > 1,
     );
 
     return PaginatedResponse<Producto>(
-      items: productosFiltrados,
+      items: paginatedResults,
       paginacion: paginacionAjustada,
       metadata: resultados.metadata,
     );

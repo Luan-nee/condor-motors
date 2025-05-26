@@ -414,7 +414,7 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
     final List<({String label, String value, IconData icon})> infoFields = [
       (
         label: 'Sucursal Origen',
-        value: transferencia.nombreSucursalOrigen ?? 'No asignada',
+        value: transferencia.nombreSucursalOrigenNotificacion,
         icon: FontAwesomeIcons.store
       ),
       (
@@ -422,17 +422,31 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
         value: transferencia.nombreSucursalDestino,
         icon: FontAwesomeIcons.locationDot
       ),
-      if (transferencia.salidaOrigen != null)
+      // FECHA DE CREACIÓN
+      if (transferencia.fechaCreacion != null)
         (
           label: 'Fecha de Creación',
+          value: _formatDateTime(transferencia.fechaCreacion!),
+          icon: FontAwesomeIcons.calendarCheck
+        ),
+      // FECHA DE ACTUALIZACIÓN
+      if (transferencia.fechaActualizacion != null)
+        (
+          label: 'Fecha de Actualización',
+          value: _formatDateTime(transferencia.fechaActualizacion!),
+          icon: FontAwesomeIcons.clockRotateLeft
+        ),
+      if (transferencia.salidaOrigen != null)
+        (
+          label: 'Fecha de Salida',
           value: _formatDateTime(transferencia.salidaOrigen!),
-          icon: FontAwesomeIcons.calendar
+          icon: FontAwesomeIcons.arrowRight
         ),
       if (transferencia.llegadaDestino != null)
         (
           label: 'Fecha de Llegada',
           value: _formatDateTime(transferencia.llegadaDestino!),
-          icon: FontAwesomeIcons.clock
+          icon: FontAwesomeIcons.arrowLeft
         ),
       (
         label: 'Total de Productos',
@@ -520,7 +534,8 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
   }
 
   String _formatDateTime(DateTime dateTime) {
-    final date = '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+    final date =
+        '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year}';
     final time =
         '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     return '$date $time';

@@ -9,7 +9,9 @@ import 'package:condorsmotors/utils/role_utils.dart'
 import 'package:condorsmotors/widgets/background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Importar para KeyboardListener
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
+import 'package:restart_app/restart_app.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Importamos SharedPreferences
 
 // Clase para manejar el ciclo de vida de la aplicación
@@ -65,13 +67,12 @@ class _LoginScreenState extends State<LoginScreen>
     HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10),
+      duration: const Duration(seconds: 40),
     );
     _animationController.repeat();
     _loadServerIp();
     _loadRememberedCredentials();
-    _autoLoginFuture =
-        Provider.of<AuthProvider>(context, listen: false).autoLogin();
+    _autoLoginFuture = _getAutoLoginFuture();
     _lifecycleObserver = LifecycleObserver(
       resumeCallBack: () {
         if (!_animationController.isAnimating) {
@@ -133,6 +134,7 @@ class _LoginScreenState extends State<LoginScreen>
         _serverIp = serverIp;
       });
       debugPrint('URL del servidor guardada: $serverIp');
+      Restart.restartApp();
     } catch (e) {
       debugPrint('Error al guardar la URL del servidor: $e');
       rethrow;
@@ -193,6 +195,7 @@ class _LoginScreenState extends State<LoginScreen>
                             backgroundColor: Colors.green,
                           ),
                         );
+                        Restart.restartApp();
                       } catch (e) {
                         if (!mounted) {
                           return;
@@ -301,6 +304,7 @@ class _LoginScreenState extends State<LoginScreen>
                       backgroundColor: Colors.green,
                     ),
                   );
+                  Restart.restartApp();
                 } catch (e) {
                   if (!mounted) {
                     return;
@@ -348,79 +352,13 @@ class _LoginScreenState extends State<LoginScreen>
     return false;
   }
 
-  Future<void> _handleLogin() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (authProvider.isAutoLoggingIn) {
-      // Bloquear login manual mientras auto-login está en progreso
-      return;
+  Future<bool> _getAutoLoginFuture() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
+    if (stayLoggedIn) {
+      return Provider.of<AuthProvider>(context, listen: false).autoLogin();
     }
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      Provider.of<LoginProvider>(context, listen: false);
-      final bool loginSuccess = await authProvider.login(
-        _usernameController.text,
-        _passwordController.text,
-        saveAutoLogin: _stayLoggedIn,
-      );
-      if (!mounted) {
-        return;
-      }
-      setState(() => _isLoading = false);
-      if (loginSuccess && !authProvider.isAutoLoggingIn) {
-        final user = authProvider.user;
-        if (user != null) {
-          final result = role_utils.getRoleAndInitialRoute(user.toMap());
-          final String initialRoute = result['route']!;
-          final String rolNormalizado = result['rol']!;
-          debugPrint(
-              'Login exitoso, navegando a ruta: $initialRoute para rol: $rolNormalizado');
-          await Navigator.pushReplacementNamed(
-            context,
-            initialRoute,
-            arguments: user.toMap(),
-          );
-        }
-      } else if (!loginSuccess) {
-        // Muestra error
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al iniciar sesión')),
-        );
-      }
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isLoading = false;
-        if (e.toString().contains('usuario o contraseña incorrectos') ||
-            e.toString().toLowerCase().contains('incorrect')) {
-          _errorMessage = 'Usuario o contraseña incorrectos';
-        } else {
-          _errorMessage = 'Error al iniciar sesión: e.toString()}';
-        }
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_errorMessage),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          action: SnackBarAction(
-            label: 'Reintentar',
-            textColor: Colors.white,
-            onPressed: _handleLogin,
-          ),
-        ),
-      );
-    }
+    return false; // No loading, muestra login directo
   }
 
   Future<void> _loadRememberedCredentials() async {
@@ -431,6 +369,19 @@ class _LoginScreenState extends State<LoginScreen>
       _rememberMe = rememberMe;
       _stayLoggedIn = stayLoggedIn;
     });
+
+    if (rememberMe) {
+      // Leer usuario y clave de SecureStorage
+      final storage = const FlutterSecureStorage();
+      final username = await storage.read(key: 'username');
+      final password = await storage.read(key: 'password');
+      if (username != null) {
+        _usernameController.text = username;
+      }
+      if (password != null) {
+        _passwordController.text = password;
+      }
+    }
   }
 
   @override
@@ -440,7 +391,7 @@ class _LoginScreenState extends State<LoginScreen>
       future: _autoLoginFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          // Loading de auto-login
+          // Loading de auto-login (solo si stay_logged_in == true)
           return Scaffold(
             backgroundColor: const Color(0xFF1A1A1A),
             body: Center(
@@ -530,8 +481,6 @@ class _LoginScreenState extends State<LoginScreen>
                 return CustomPaint(
                   painter: BackgroundPainter(
                     animation: _animationController,
-                    speedFactor:
-                        0.25, // Reducir aún más la velocidad de la animación
                   ),
                 );
               },
@@ -840,68 +789,57 @@ class _LoginScreenState extends State<LoginScreen>
                         Center(
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
-                            width: _isLoading ? 50 : 320,
+                            width: _isLoading ? 60 : 320,
                             height: 50,
+                            curve: Curves.easeInOut,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFE31E24),
                                 foregroundColor: Colors.white,
-                                padding: EdgeInsets.symmetric(
-                                  vertical: 16,
-                                  horizontal: _isLoading ? 0 : 24,
-                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(25),
                                 ),
                                 elevation: 2,
+                                padding: EdgeInsets.zero,
                               ),
                               onPressed:
                                   _isLoading ? null : () => _handleLogin(),
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 200),
-                                transitionBuilder: (Widget child,
-                                    Animation<double> animation) {
-                                  return FadeTransition(
-                                    opacity: animation,
-                                    child: ScaleTransition(
-                                      scale: animation,
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                                child: _isLoading
-                                    ? Container(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  if (constraints.maxWidth < 140) {
+                                    // Mostrar solo el loader si el ancho es pequeño
+                                    return const Center(
+                                      child: SizedBox(
                                         width: 24,
                                         height: 24,
-                                        padding: const EdgeInsets.all(2),
-                                        child: const CircularProgressIndicator(
+                                        child: CircularProgressIndicator(
                                           strokeWidth: 2.5,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                            Colors.white,
-                                          ),
-                                        ),
-                                      )
-                                    : Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 12),
-                                        child: const Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.login, size: 20),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              'Iniciar Sesión',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
+                                                  Colors.white),
                                         ),
                                       ),
+                                    );
+                                  } else {
+                                    // Mostrar el contenido normal si hay espacio suficiente
+                                    return Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: const [
+                                        Icon(Icons.login, size: 20),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Iniciar Sesión',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }
+                                },
                               ),
                             ),
                           ),
@@ -916,5 +854,93 @@ class _LoginScreenState extends State<LoginScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _handleLogin() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.isAutoLoggingIn) {
+      // Bloquear login manual mientras auto-login está en progreso
+      return;
+    }
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      Provider.of<LoginProvider>(context, listen: false);
+      final bool loginSuccess = await authProvider.login(
+        _usernameController.text,
+        _passwordController.text,
+        saveAutoLogin: _stayLoggedIn,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() => _isLoading = false);
+      if (loginSuccess && !authProvider.isAutoLoggingIn) {
+        // Guardar credenciales solo si el login fue exitoso y recordar credenciales está activado
+        if (_rememberMe) {
+          final storage = const FlutterSecureStorage();
+          await storage.write(key: 'username', value: _usernameController.text);
+          await storage.write(key: 'password', value: _passwordController.text);
+          await storage.write(key: 'remember_me', value: 'true');
+        } else {
+          final storage = const FlutterSecureStorage();
+          await storage.delete(key: 'username');
+          await storage.delete(key: 'password');
+          await storage.delete(key: 'remember_me');
+        }
+        final user = authProvider.user;
+        if (user != null) {
+          final result = role_utils.getRoleAndInitialRoute(user.toMap());
+          final String initialRoute = result['route']!;
+          final String rolNormalizado = result['rol']!;
+          debugPrint(
+              'Login exitoso, navegando a ruta: $initialRoute para rol: $rolNormalizado');
+          await Navigator.pushReplacementNamed(
+            context,
+            initialRoute,
+            arguments: user.toMap(),
+          );
+        }
+      } else if (!loginSuccess) {
+        // No guardar credenciales si el login falla
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al iniciar sesión')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoading = false;
+        if (e.toString().contains('usuario o contraseña incorrectos') ||
+            e.toString().toLowerCase().contains('incorrect')) {
+          _errorMessage = 'Usuario o contraseña incorrectos';
+        } else {
+          _errorMessage = 'Error al iniciar sesión: $e';
+        }
+      });
+      // No guardar credenciales si hay error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_errorMessage),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          action: SnackBarAction(
+            label: 'Reintentar',
+            textColor: Colors.white,
+            onPressed: _handleLogin,
+          ),
+        ),
+      );
+    }
   }
 }

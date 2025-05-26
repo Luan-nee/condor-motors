@@ -1,11 +1,17 @@
+import 'dart:async';
+
+import 'package:condorsmotors/components/transferencia_notificacion.dart';
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/providers/colabs/transferencias.colab.provider.dart';
+import 'package:condorsmotors/repositories/transferencia.repository.dart';
 import 'package:condorsmotors/screens/colabs/widgets/transferencias/transferencia_detalle_colab.dart';
 import 'package:condorsmotors/screens/colabs/widgets/transferencias/transferencia_form_colab.dart';
 import 'package:condorsmotors/utils/transferencias_utils.dart';
+import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TransferenciasColabScreen extends StatefulWidget {
   const TransferenciasColabScreen({super.key});
@@ -15,30 +21,158 @@ class TransferenciasColabScreen extends StatefulWidget {
       _TransferenciasColabScreenState();
 }
 
-class _TransferenciasColabScreenState extends State<TransferenciasColabScreen> {
+class _TransferenciasColabScreenState extends State<TransferenciasColabScreen>
+    with WidgetsBindingObserver {
   late final TransferenciasColabProvider _provider;
+  Timer? _pollingTimer;
+  int? _ultimoIdTransferenciaRecibida;
+  Duration _pollingInterval = const Duration(minutes: 1);
+
+  final TransferenciaRepository _repository = TransferenciaRepository.instance;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _provider = context.read<TransferenciasColabProvider>();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initData();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _initData();
+      _initPolling();
+      _cargarTransferenciasPaginadas();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _setPollingInterval(const Duration(minutes: 5));
+    } else if (state == AppLifecycleState.resumed) {
+      _setPollingInterval(const Duration(minutes: 1));
+    }
+  }
+
+  void _setPollingInterval(Duration interval) {
+    if (_pollingInterval != interval) {
+      _pollingInterval = interval;
+      _pollingTimer?.cancel();
+      _initPolling();
+    }
   }
 
   Future<void> _initData() async {
     await _provider.inicializar();
+    await TransferenciaNotificacion.initTransferenciaNotifications(
+      onSelect: (payload) {
+        if (payload != null && mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => TransferenciaDetalleColab(
+                transferenciaid:
+                    payload['id'] != null ? payload['id'].toString() : '',
+              ),
+            ),
+          );
+        }
+      },
+    );
+    await _cargarUltimoIdTransferencia();
+    await _cargarUltimoIdTransferenciaEnviada();
+  }
+
+  Future<void> _cargarUltimoIdTransferencia() async {
+    final prefs = await SharedPreferences.getInstance();
+    _ultimoIdTransferenciaRecibida =
+        prefs.getInt('ultimo_id_transferencia_recibida');
+    debugPrint(
+        '[Polling] Cargado último ID de transferencia recibida: \\$_ultimoIdTransferenciaRecibida');
+  }
+
+  Future<void> _cargarUltimoIdTransferenciaEnviada() async {}
+
+  Future<void> _guardarUltimoIdTransferencia(int id) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('ultimo_id_transferencia_recibida', id);
+    _ultimoIdTransferenciaRecibida = id;
+    debugPrint('[Polling] Guardado último ID de transferencia recibida: $id');
+  }
+
+  void _initPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(_pollingInterval, (_) async {
+      debugPrint('--- [Polling] Ejecutando polling de transferencias ---');
+      final prefs = await SharedPreferences.getInstance();
+      final notificacionesActivas =
+          prefs.getBool('notificaciones_transferencias') ?? true;
+      debugPrint('[Polling] Notificaciones activas: $notificacionesActivas');
+      if (!notificacionesActivas) {
+        debugPrint('[Polling] Notificaciones desactivadas, saliendo...');
+        return;
+      }
+      try {
+        await _notificarTransferenciaMasReciente();
+      } catch (e, stack) {
+        debugPrint('[Polling] Error en polling: \\$e');
+        debugPrint('[Polling] Stacktrace: \\$stack');
+      }
+      debugPrint('--- [Polling] Fin de ciclo ---');
+    });
+  }
+
+  /// Notifica la transferencia más reciente según el filtro de estado (o todas si es null)
+  Future<void> _notificarTransferenciaMasReciente({String? estado}) async {
+    final result = await _repository.getTransferencias(
+      estado: estado, // Puede ser null para traer todas
+      sortBy: 'id',
+      order: 'desc',
+      page: 1,
+      pageSize: 1,
+      forceRefresh: true,
+    );
+    final transferencia = result.items.isNotEmpty ? result.items.first : null;
+    if (transferencia != null &&
+        (_ultimoIdTransferenciaRecibida == null ||
+            transferencia.id > _ultimoIdTransferenciaRecibida!)) {
+      final bool esPedido = transferencia.estado == EstadoTransferencia.pedido;
+      final String sucursalSolicitante = esPedido
+          ? (transferencia.nombreSucursalDestino)
+          : (transferencia.nombreSucursalOrigen ?? 'Sucursal desconocida');
+      final int cantidadProductos = transferencia.productos?.length ?? 0;
+      debugPrint(
+          '[Polling] Notificación: $sucursalSolicitante solicita $cantidadProductos producto${cantidadProductos == 1 ? '' : 's'}');
+      if (esPedido) {
+        await TransferenciaNotificacion.showTransferenciaPedido(transferencia,
+            sucursalSolicitante: sucursalSolicitante);
+      } else if (transferencia.estado == EstadoTransferencia.enviado) {
+        await TransferenciaNotificacion.showTransferenciaEnviada(transferencia,
+            sucursalSolicitante: sucursalSolicitante);
+      }
+      await _guardarUltimoIdTransferencia(transferencia.id);
+    }
+  }
+
+  Future<void> _cargarTransferenciasPaginadas() async {
+    try {
+      setState(() {
+        _provider.cargarTransferencias(forceRefresh: true);
+      });
+    } catch (e) {
+      // El manejo de errores lo hace el provider
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<TransferenciasColabProvider>(
       builder: (context, provider, child) {
-        final List<TransferenciaInventario> transferenciasFiltradas =
-            provider.getTransferenciasFiltradas();
-        final double screenWidth = MediaQuery.of(context).size.width;
-        final bool isMobile = screenWidth < 600;
+        final transferencias = provider.getTransferenciasFiltradas();
 
         return Scaffold(
           backgroundColor: const Color(0xFF1A1A1A),
@@ -132,271 +266,59 @@ class _TransferenciasColabScreenState extends State<TransferenciasColabScreen> {
                   FontAwesomeIcons.arrowsRotate,
                   color: Colors.white,
                 ),
-                onPressed: provider.cargarTransferencias,
+                onPressed: () =>
+                    provider.cargarTransferencias(forceRefresh: true),
                 tooltip: 'Recargar',
               ),
             ],
           ),
-          body: _buildBody(provider, transferenciasFiltradas, isMobile),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showCreateTransferenciaDialog(context),
-            icon: const FaIcon(FontAwesomeIcons.plus),
-            label: const Text('Nueva'),
-            backgroundColor: const Color(0xFFE31E24),
+          body: Column(
+            children: [
+              Expanded(
+                child: provider.isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : provider.errorMessage != null
+                        ? Center(child: Text('Error: ${provider.errorMessage}'))
+                        : transferencias.isEmpty
+                            ? Center(
+                                child:
+                                    Text('No hay transferencias disponibles'))
+                            : ListView.builder(
+                                itemCount: transferencias.length,
+                                itemBuilder: (context, index) {
+                                  final transferencia = transferencias[index];
+                                  return _buildTransferenciaCard(
+                                    transferencia,
+                                    MediaQuery.of(context).size.width < 600,
+                                    provider,
+                                  );
+                                },
+                              ),
+              ),
+              if (provider.paginacion != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Paginador(
+                    paginacion: provider.paginacion!,
+                    onPageChanged: (page) => provider.cambiarPagina(page),
+                    onPageSizeChanged: (size) =>
+                        provider.cambiarTamanoPagina(size),
+                  ),
+                ),
+            ],
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          floatingActionButton: Padding(
+            padding: const EdgeInsets.only(bottom: 32.0),
+            child: FloatingActionButton(
+              onPressed: () => _showCreateTransferenciaDialog(context),
+              backgroundColor: const Color(0xFFE31E24),
+              tooltip: 'Nueva transferencia',
+              child: const FaIcon(FontAwesomeIcons.plus),
+            ),
           ),
         );
       },
-    );
-  }
-
-  Widget _buildBody(
-    TransferenciasColabProvider provider,
-    List<TransferenciaInventario> transferenciasFiltradas,
-    bool isMobile,
-  ) {
-    debugPrint(
-        'Construyendo body con ${transferenciasFiltradas.length} transferencias');
-    debugPrint('Estado de carga: ${provider.isLoading}');
-    debugPrint('Filtro seleccionado: ${provider.selectedFilter}');
-
-    return Column(
-      children: <Widget>[
-        Container(
-          padding: EdgeInsets.all(isMobile ? 12 : 16),
-          decoration: const BoxDecoration(
-            color: Color(0xFF2D2D2D),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(16),
-              bottomRight: Radius.circular(16),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      const FaIcon(
-                        FontAwesomeIcons.truck,
-                        size: 20,
-                        color: Color(0xFFE31E24),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          const Text(
-                            'TRANSFERENCIAS',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Text(
-                            'gestión de transferencias',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[400],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  if (provider.selectedFilter != 'Todos')
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _getEstadoColor(
-                            EstadoTransferencia.values.firstWhere(
-                          (e) => e.nombre == provider.selectedFilter,
-                          orElse: () => EstadoTransferencia.pedido,
-                        )).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: _getEstadoColor(
-                              EstadoTransferencia.values.firstWhere(
-                            (e) => e.nombre == provider.selectedFilter,
-                            orElse: () => EstadoTransferencia.pedido,
-                          )),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          FaIcon(
-                            _getEstadoIcon(
-                                EstadoTransferencia.values.firstWhere(
-                              (e) => e.nombre == provider.selectedFilter,
-                              orElse: () => EstadoTransferencia.pedido,
-                            )),
-                            size: 14,
-                            color: _getEstadoColor(
-                                EstadoTransferencia.values.firstWhere(
-                              (e) => e.nombre == provider.selectedFilter,
-                              orElse: () => EstadoTransferencia.pedido,
-                            )),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            provider.selectedFilter,
-                            style: TextStyle(
-                              color: _getEstadoColor(
-                                  EstadoTransferencia.values.firstWhere(
-                                (e) => e.nombre == provider.selectedFilter,
-                                orElse: () => EstadoTransferencia.pedido,
-                              )),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: provider.isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
-                  ),
-                )
-              : transferenciasFiltradas.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          FaIcon(
-                            FontAwesomeIcons.boxOpen,
-                            size: 48,
-                            color: Colors.grey[600],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No hay transferencias ${provider.selectedFilter != 'Todos' ? 'en estado ${provider.selectedFilter.toLowerCase()}' : 'disponibles'}',
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: () => provider.cargarTransferencias(),
-                            icon: const FaIcon(FontAwesomeIcons.arrowsRotate),
-                            label: const Text('Recargar'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE31E24),
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: () => provider.cargarTransferencias(),
-                      color: const Color(0xFFE31E24),
-                      child: ListView.builder(
-                        padding: EdgeInsets.all(isMobile ? 8 : 16),
-                        itemCount: transferenciasFiltradas.length +
-                            (transferenciasFiltradas.any((t) =>
-                                    t.estado == EstadoTransferencia.enviado &&
-                                    provider.sucursalId != null &&
-                                    t.sucursalDestinoId.toString() ==
-                                        provider.sucursalId)
-                                ? 1
-                                : 0),
-                        itemBuilder: (BuildContext context, int index) {
-                          // Obtener las transferencias para validar
-                          final transferenciasParaValidar =
-                              transferenciasFiltradas
-                                  .where((t) =>
-                                      t.estado == EstadoTransferencia.enviado &&
-                                      provider.sucursalId != null &&
-                                      t.sucursalDestinoId.toString() ==
-                                          provider.sucursalId)
-                                  .toList();
-
-                          final transferenciasNormales = transferenciasFiltradas
-                              .where((t) =>
-                                  !(t.estado == EstadoTransferencia.enviado &&
-                                      provider.sucursalId != null &&
-                                      t.sucursalDestinoId.toString() ==
-                                          provider.sucursalId))
-                              .toList();
-
-                          // Si hay transferencias para validar y estamos en el índice del separador
-                          if (transferenciasParaValidar.isNotEmpty &&
-                              index == transferenciasParaValidar.length) {
-                            return Container(
-                              margin: EdgeInsets.symmetric(
-                                  vertical: isMobile ? 8 : 16),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2D2D2D),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  const FaIcon(
-                                    FontAwesomeIcons.clockRotateLeft,
-                                    size: 16,
-                                    color: Color(0xFFE31E24),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'Otras transferencias',
-                                    style: TextStyle(
-                                      color: Colors.grey[400],
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          // Determinar qué transferencia mostrar basado en el índice
-                          final TransferenciaInventario transferencia;
-                          if (index < transferenciasParaValidar.length) {
-                            // Mostrar transferencia para validar
-                            transferencia = transferenciasParaValidar[index];
-                          } else {
-                            // Mostrar transferencia normal, ajustando el índice para saltar el separador
-                            final normalIndex = index -
-                                (transferenciasParaValidar.isEmpty
-                                    ? 0
-                                    : transferenciasParaValidar.length + 1);
-                            if (normalIndex >= 0 &&
-                                normalIndex < transferenciasNormales.length) {
-                              transferencia =
-                                  transferenciasNormales[normalIndex];
-                            } else {
-                              // Este caso no debería ocurrir, pero por seguridad retornamos un widget vacío
-                              return const SizedBox.shrink();
-                            }
-                          }
-
-                          debugPrint(
-                              'Construyendo transferencia #${transferencia.id}');
-                          return _buildTransferenciaCard(
-                              transferencia, isMobile, provider);
-                        },
-                      ),
-                    ),
-        ),
-      ],
     );
   }
 
@@ -494,6 +416,20 @@ class _TransferenciasColabScreenState extends State<TransferenciasColabScreen> {
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
+                                Text(
+                                  'Creado: ${_formatDateTime(transferencia.fechaCreacion)}',
+                                  style: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: isMobile ? 11 : 12,
+                                  ),
+                                ),
+                                Text(
+                                  'Actualizado: ${_formatDateTime(transferencia.fechaActualizacion)}',
+                                  style: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: isMobile ? 11 : 12,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -822,10 +758,6 @@ class _TransferenciasColabScreenState extends State<TransferenciasColabScreen> {
     return TransferenciasUtils.getEstadoColor(estado);
   }
 
-  IconData _getEstadoIcon(EstadoTransferencia estado) {
-    return TransferenciasUtils.getEstadoIcon(estado);
-  }
-
   Future<void> _showCreateTransferenciaDialog(BuildContext context) async {
     if (_provider.sucursalId == null || _provider.empleadoId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -878,5 +810,15 @@ class _TransferenciasColabScreenState extends State<TransferenciasColabScreen> {
         sucursalId: _provider.sucursalId!,
       ),
     );
+  }
+
+  String _formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) {
+      return 'N/A';
+    }
+    return '${dateTime.day.toString().padLeft(2, '0')}/'
+        '${dateTime.month.toString().padLeft(2, '0')}/'
+        '${dateTime.year} '
+        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 }

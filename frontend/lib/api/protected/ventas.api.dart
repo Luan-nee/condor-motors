@@ -1,5 +1,6 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/api/protected/paginacion.api.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/utils/logger.dart';
 
@@ -55,16 +56,20 @@ class VentasApi {
     bool forceRefresh = false,
   }) async {
     try {
-      // Asegurar que sucursalId sea siempre String para uniformidad
-      final String sucursalKey =
-          sucursalId != null ? sucursalId.toString() : 'global';
-      final String fechaInicioStr = fechaInicio?.toIso8601String() ?? '';
-      final String fechaFinStr = fechaFin?.toIso8601String() ?? '';
-      final String searchStr = search ?? '';
-      final String estadoStr = estado ?? '';
-
+      // Centralizar la generación de cacheKey
+      final filtroParams = FiltroParams(
+        page: page,
+        pageSize: pageSize,
+        search: search,
+        extraParams: <String, String>{
+          if (sucursalId != null) 'sucursalId': sucursalId.toString(),
+          if (fechaInicio != null) 'fechaInicio': fechaInicio.toIso8601String(),
+          if (fechaFin != null) 'fechaFin': fechaFin.toIso8601String(),
+          if (estado != null) 'estado': estado,
+        },
+      );
       final String cacheKey =
-          '$_prefixListaVentas${sucursalKey}_p${page}_s${pageSize}_q${searchStr}_f${fechaInicioStr}_t${fechaFinStr}_e$estadoStr';
+          PaginacionUtils.generateCacheKey('ventas', filtroParams.toMap());
 
       // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
@@ -94,26 +99,7 @@ class VentasApi {
         }
       }
 
-      final Map<String, String> queryParams = <String, String>{
-        'page': page.toString(),
-        'page_size': pageSize.toString(),
-      };
-
-      if (search != null && search.isNotEmpty) {
-        queryParams['search'] = search;
-      }
-
-      if (fechaInicio != null) {
-        queryParams['fecha_inicio'] = fechaInicio.toIso8601String();
-      }
-
-      if (fechaFin != null) {
-        queryParams['fecha_fin'] = fechaFin.toIso8601String();
-      }
-
-      if (estado != null && estado.isNotEmpty) {
-        queryParams['estado'] = estado;
-      }
+      final Map<String, String> queryParams = filtroParams.buildQueryParams();
 
       // Construir el endpoint de forma adecuada cuando se especifica la sucursal
       String endpoint = _endpoint;

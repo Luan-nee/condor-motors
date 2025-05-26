@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/api/protected/paginacion.api.dart';
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:dio/dio.dart';
@@ -30,16 +31,17 @@ class EmpleadosApi {
   }) async {
     try {
       // Generar clave única para este conjunto de parámetros
-      final String cacheKey = _generateCacheKey(
-        'empleados',
-        page: page,
-        pageSize: pageSize,
+      final filtroParams = FiltroParams(
+        page: page ?? 1,
+        pageSize: pageSize ?? 20,
         sortBy: sortBy,
         order: order,
         search: search,
         filter: filter,
         filterValue: filterValue,
       );
+      final String cacheKey =
+          PaginacionUtils.generateCacheKey('empleados', filtroParams.toMap());
 
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
@@ -54,30 +56,7 @@ class EmpleadosApi {
       Logger.debug('Obteniendo lista de empleados');
 
       // Construir parámetros de consulta
-      final Map<String, String> queryParams = <String, String>{};
-
-      // Solo agregar parámetros de paginación si se proporcionan explícitamente
-      if (page != null && page > 0) {
-        queryParams['page'] = page.toString();
-      }
-
-      if (pageSize != null && pageSize > 0) {
-        queryParams['page_size'] = pageSize.toString();
-      }
-
-      if (sortBy != null && sortBy.isNotEmpty) {
-        queryParams['sort_by'] = sortBy;
-        queryParams['order'] = order;
-      }
-
-      if (search != null && search.isNotEmpty) {
-        queryParams['search'] = search;
-      }
-
-      if (filter != null && filter.isNotEmpty && filterValue != null) {
-        queryParams['filter'] = filter;
-        queryParams['filter_value'] = filterValue;
-      }
+      final Map<String, String> queryParams = filtroParams.buildQueryParams();
 
       // Usar authenticatedRequest en lugar de request para manejar automáticamente tokens
       final Map<String, dynamic> response = await _api.authenticatedRequest(
@@ -825,44 +804,6 @@ class EmpleadosApi {
       Logger.error('ERROR al obtener cuenta por empleado: $e');
       rethrow;
     }
-  }
-
-  /// Método helper para generar claves de caché consistentes
-  String _generateCacheKey(
-    String base, {
-    int? page,
-    int? pageSize,
-    String? sortBy,
-    String? order,
-    String? search,
-    String? filter,
-    String? filterValue,
-  }) {
-    final List<String> components = <String>[base];
-
-    if (page != null) {
-      components.add('p:$page');
-    }
-    if (pageSize != null) {
-      components.add('ps:$pageSize');
-    }
-    if (sortBy != null && sortBy.isNotEmpty) {
-      components.add('sb:$sortBy');
-    }
-    if (order != null && order != 'asc') {
-      components.add('o:$order');
-    }
-    if (search != null && search.isNotEmpty) {
-      components.add('s:$search');
-    }
-    if (filter != null && filter.isNotEmpty) {
-      components.add('f:$filter');
-    }
-    if (filterValue != null) {
-      components.add('fv:$filterValue');
-    }
-
-    return components.join('_');
   }
 
   /// Invalida las caches relacionadas con listas de empleados

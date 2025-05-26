@@ -392,6 +392,14 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                               'value': 'llegadaDestino',
                               'label': 'Fecha de Llegada'
                             },
+                            {
+                              'value': 'fechaCreacion',
+                              'label': 'Fecha de Creación'
+                            },
+                            {
+                              'value': 'fechaActualizacion',
+                              'label': 'Fecha de Actualización'
+                            },
                             {'value': 'estado', 'label': 'Estado'},
                           ],
                           onPageChange: () async {
@@ -448,9 +456,9 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
       return 'N/A';
     }
     try {
-      return DateFormat('dd/MM/yyyy').format(fecha);
+      return DateFormat('dd/MM/yyyy HH:mm').format(fecha);
     } catch (e) {
-      return 'Fecha inválida';
+      return 'N/A';
     }
   }
 
@@ -470,69 +478,67 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
           // Fechas (25%)
           Expanded(
             flex: 25,
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 28,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2D2D2D),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today,
+                        size: 14, color: Color(0xFFE31E24)),
+                    const SizedBox(width: 4),
+                    Text(_formatFecha(transferencia.fechaCreacion),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 13)),
+                    const SizedBox(width: 4),
+                    const Text('Creado',
+                        style: TextStyle(color: Colors.grey, fontSize: 11)),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    const Icon(Icons.update, size: 14, color: Colors.orange),
+                    const SizedBox(width: 4),
+                    Text(_formatFecha(transferencia.fechaActualizacion),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 13)),
+                    const SizedBox(width: 4),
+                    const Text('Actualizado',
+                        style: TextStyle(color: Colors.grey, fontSize: 11)),
+                  ],
+                ),
+                if (transferencia.salidaOrigen != null) ...[
+                  const SizedBox(height: 2),
+                  Row(
                     children: [
-                      FaIcon(
-                        FontAwesomeIcons.calendar,
-                        color: Color(0xFFE31E24),
-                        size: 14,
-                      ),
+                      const Icon(Icons.arrow_upward,
+                          size: 14, color: Colors.blue),
+                      const SizedBox(width: 4),
+                      Text(_formatFecha(transferencia.salidaOrigen),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 13)),
+                      const SizedBox(width: 4),
+                      const Text('Salida',
+                          style: TextStyle(color: Colors.grey, fontSize: 11)),
                     ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                ],
+                if (transferencia.llegadaDestino != null) ...[
+                  const SizedBox(height: 2),
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          const FaIcon(
-                            FontAwesomeIcons.arrowUp,
-                            size: 10,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _formatFecha(transferencia.salidaOrigen),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const FaIcon(
-                            FontAwesomeIcons.arrowDown,
-                            size: 10,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _formatFecha(transferencia.llegadaDestino),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
+                      const Icon(Icons.arrow_downward,
+                          size: 14, color: Colors.green),
+                      const SizedBox(width: 4),
+                      Text(_formatFecha(transferencia.llegadaDestino),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 13)),
+                      const SizedBox(width: 4),
+                      const Text('Llegada',
+                          style: TextStyle(color: Colors.grey, fontSize: 11)),
                     ],
                   ),
-                ),
+                ],
               ],
             ),
           ),

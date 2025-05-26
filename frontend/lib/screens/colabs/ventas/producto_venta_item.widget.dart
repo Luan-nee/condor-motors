@@ -1,7 +1,7 @@
 import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:condorsmotors/repositories/producto.repository.dart';
 
 class ProductoVentaItemWidget extends StatelessWidget {
   final Producto producto;

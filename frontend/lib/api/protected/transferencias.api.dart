@@ -1,5 +1,6 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/api/protected/paginacion.api.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:flutter/foundation.dart';
@@ -45,16 +46,20 @@ class TransferenciasInventarioApi {
   }) async {
     try {
       // Generar clave de caché
-      final String cacheKey = _generateCacheKey(
-        sucursalId: sucursalId,
-        estado: estado,
-        fechaInicio: fechaInicio,
-        fechaFin: fechaFin,
+      final filtroParams = FiltroParams(
+        page: page ?? 1,
+        pageSize: pageSize ?? 20,
         sortBy: sortBy,
         order: order,
-        page: page,
-        pageSize: pageSize,
+        extraParams: <String, String>{
+          if (sucursalId != null) 'sucursalId': sucursalId,
+          if (estado != null) 'estado': estado,
+          if (fechaInicio != null) 'fechaInicio': fechaInicio.toIso8601String(),
+          if (fechaFin != null) 'fechaFin': fechaFin.toIso8601String(),
+        },
       );
+      final String cacheKey = PaginacionUtils.generateCacheKey(
+          'transferencias', filtroParams.toMap());
 
       // Verificar caché
       if (!forceRefresh && useCache) {
@@ -67,16 +72,7 @@ class TransferenciasInventarioApi {
       }
 
       // Preparar parámetros de consulta
-      final Map<String, String> queryParams = <String, String>{
-        if (sucursalId != null) 'sucursal_id': sucursalId,
-        if (estado != null) 'estado': estado,
-        if (fechaInicio != null) 'fecha_inicio': fechaInicio.toIso8601String(),
-        if (fechaFin != null) 'fecha_fin': fechaFin.toIso8601String(),
-        if (sortBy != null) 'sort_by': sortBy,
-        if (order != null) 'order': order,
-        if (page != null) 'page': page.toString(),
-        if (pageSize != null) 'page_size': pageSize.toString(),
-      };
+      final Map<String, String> queryParams = filtroParams.buildQueryParams();
 
       // Realizar petición
       final Map<String, dynamic> response = await _api
@@ -446,8 +442,8 @@ class TransferenciasInventarioApi {
     }
   }
 
-  // Métodos privados de ayuda
-  String _generateCacheKey({
+  /// Obtiene todas las transferencias de inventario y retorna un Map con data, paginación y metadata
+  Future<Map<String, dynamic>> getTransferenciasMap({
     String? sucursalId,
     String? estado,
     DateTime? fechaInicio,
@@ -456,37 +452,43 @@ class TransferenciasInventarioApi {
     String? order,
     int? page,
     int? pageSize,
-  }) {
-    final List<String> components = <String>[_prefixListaMovimientos];
+    bool useCache = true,
+    bool forceRefresh = false,
+  }) async {
+    try {
+      final paginatedResponse = await getTransferencias(
+        sucursalId: sucursalId,
+        estado: estado,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
+        sortBy: sortBy,
+        order: order,
+        page: page,
+        pageSize: pageSize,
+        useCache: useCache,
+        forceRefresh: forceRefresh,
+      );
 
-    if (sucursalId != null) {
-      components.add('s:$sucursalId');
+      return {
+        'data': paginatedResponse.items,
+        'pagination': paginatedResponse.paginacion,
+        'metadata': paginatedResponse.metadata,
+        'status': 'success',
+        'message': '',
+      };
+    } catch (e) {
+      debugPrint('Error en getTransferenciasMap: $e');
+      return {
+        'data': [],
+        'pagination': null,
+        'metadata': null,
+        'status': 'error',
+        'message': 'Error al obtener transferencias: $e',
+      };
     }
-    if (estado != null) {
-      components.add('e:$estado');
-    }
-    if (fechaInicio != null) {
-      components.add('fi:${fechaInicio.toIso8601String()}');
-    }
-    if (fechaFin != null) {
-      components.add('ff:${fechaFin.toIso8601String()}');
-    }
-    if (sortBy != null) {
-      components.add('sb:$sortBy');
-    }
-    if (order != null) {
-      components.add('o:$order');
-    }
-    if (page != null) {
-      components.add('p:$page');
-    }
-    if (pageSize != null) {
-      components.add('ps:$pageSize');
-    }
-
-    return components.join('_');
   }
 
+  // Métodos privados de ayuda
   void _invalidateRelatedCache(String id) {
     _cache
       ..invalidate('$_prefixMovimiento$id')

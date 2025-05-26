@@ -182,6 +182,8 @@ class TransferenciaInventario {
   final DateTime? llegadaDestino;
   final List<DetalleProducto>? productos;
   final String? observaciones;
+  final DateTime? fechaCreacion;
+  final DateTime? fechaActualizacion;
 
   const TransferenciaInventario({
     required this.id,
@@ -195,6 +197,8 @@ class TransferenciaInventario {
     this.llegadaDestino,
     this.productos,
     this.observaciones,
+    this.fechaCreacion,
+    this.fechaActualizacion,
   });
 
   /// Obtiene la cantidad total de productos
@@ -290,6 +294,12 @@ class TransferenciaInventario {
       llegadaDestino: data['llegadaDestino'] != null
           ? DateTime.parse(data['llegadaDestino'])
           : null,
+      fechaCreacion: data['fechaCreacion'] != null
+          ? DateTime.parse(data['fechaCreacion'])
+          : null,
+      fechaActualizacion: data['fechaActualizacion'] != null
+          ? DateTime.parse(data['fechaActualizacion'])
+          : null,
     );
   }
 
@@ -339,6 +349,10 @@ class TransferenciaInventario {
       'modificable': modificable,
       'salidaOrigen': salidaOrigen?.toIso8601String(),
       'llegadaDestino': llegadaDestino?.toIso8601String(),
+      if (fechaCreacion != null)
+        'fechaCreacion': fechaCreacion!.toIso8601String(),
+      if (fechaActualizacion != null)
+        'fechaActualizacion': fechaActualizacion!.toIso8601String(),
     };
   }
 
@@ -355,6 +369,8 @@ class TransferenciaInventario {
     DateTime? llegadaDestino,
     List<DetalleProducto>? productos,
     String? observaciones,
+    DateTime? fechaCreacion,
+    DateTime? fechaActualizacion,
   }) {
     return TransferenciaInventario(
       id: id ?? this.id,
@@ -369,12 +385,40 @@ class TransferenciaInventario {
       llegadaDestino: llegadaDestino ?? this.llegadaDestino,
       productos: productos ?? this.productos,
       observaciones: observaciones ?? this.observaciones,
+      fechaCreacion: fechaCreacion ?? this.fechaCreacion,
+      fechaActualizacion: fechaActualizacion ?? this.fechaActualizacion,
     );
   }
 
   @override
   String toString() =>
       'TransferenciaInventario{id: $id, estado: ${estado.nombre}, origen: $nombreSucursalOrigen, destino: $nombreSucursalDestino}';
+}
+
+extension TransferenciaInventarioExt on TransferenciaInventario {
+  /// Devuelve el nombre de la sucursal origen para notificaciones y UI
+  String get nombreSucursalOrigenNotificacion {
+    if (estado == EstadoTransferencia.pedido) {
+      // En pedido, la sucursal destino es quien solicita
+      return nombreSucursalDestino;
+    } else if (estado == EstadoTransferencia.enviado ||
+        estado == EstadoTransferencia.recibido) {
+      // En enviado o recibido, la sucursal origen es quien envía
+      return nombreSucursalOrigen ?? 'Sucursal desconocida';
+    }
+    return nombreSucursalDestino;
+  }
+
+  /// Devuelve el mensaje de notificación listo para usar
+  String get mensajeNotificacion {
+    final cantidad = productos?.length ?? 0;
+    if (estado == EstadoTransferencia.pedido) {
+      return '$nombreSucursalOrigenNotificacion solicita $cantidad producto${cantidad == 1 ? '' : 's'} para transferencia.';
+    } else if (estado == EstadoTransferencia.enviado) {
+      return '$nombreSucursalOrigenNotificacion ha enviado $cantidad producto${cantidad == 1 ? '' : 's'} a tu sucursal.';
+    }
+    return '';
+  }
 }
 
 // Extensión de utilidad

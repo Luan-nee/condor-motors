@@ -100,6 +100,8 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Optimizado: calcular lista filtrada una sola vez
+    final List<Producto> filteredProductos = _getFilteredProductos();
     return Dialog(
       backgroundColor: const Color(0xFF1A1A1A),
       shape: RoundedRectangleBorder(
@@ -226,9 +228,9 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
                           )
                         : ListView.builder(
                             shrinkWrap: true,
-                            itemCount: _getFilteredProductos().length,
+                            itemCount: filteredProductos.length,
                             itemBuilder: (context, index) {
-                              final producto = _getFilteredProductos()[index];
+                              final producto = filteredProductos[index];
                               final int cantidad =
                                   _cantidades[producto.id] ?? 0;
                               final bool isSelected = cantidad > 0;

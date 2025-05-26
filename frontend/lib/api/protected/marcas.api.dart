@@ -1,5 +1,6 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/api/protected/paginacion.api.dart';
 import 'package:condorsmotors/models/marca.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/utils/logger.dart';
@@ -37,8 +38,15 @@ class MarcasApi {
         pageSize = 10;
       }
 
-      // Generar clave única para este conjunto de parámetros
-      final String cacheKey = '$_prefixListaMarcas${page}_$pageSize';
+      // Usar FiltroParams y PaginacionUtils
+      final filtroParams = FiltroParams(
+        page: page,
+        pageSize: pageSize,
+      );
+      final String cacheKey = PaginacionUtils.generateCacheKey(
+        _prefixListaMarcas,
+        filtroParams.toMap(),
+      );
 
       // Forzar refresco del caché si es necesario
       if (forceRefresh) {
@@ -50,24 +58,19 @@ class MarcasApi {
         final ResultadoPaginado<Marca>? cachedData =
             _cache.get<ResultadoPaginado<Marca>>(cacheKey);
         if (cachedData != null) {
-          logCache(
-              '[MarcasApi] Marcas paginadas obtenidas desde caché: $cacheKey');
           return cachedData;
         }
       }
 
-      Logger.debug(
-          '[MarcasApi] Obteniendo lista de marcas paginada (página: $page, tamaño: $pageSize)');
+      // Construir parámetros de consulta
+      final Map<String, String> queryParams = filtroParams.buildQueryParams();
+
+      // Realizar petición
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/marcas',
         method: 'GET',
-        queryParams: <String, String>{
-          'page': page.toString(),
-          'pageSize': pageSize.toString(),
-        },
+        queryParams: queryParams,
       );
-
-      Logger.debug('[MarcasApi] Respuesta de getMarcasPaginadas recibida');
 
       // Extraer datos de la respuesta
       final data = response['data'];
@@ -123,12 +126,11 @@ class MarcasApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, resultado);
-        logCache('[MarcasApi] Marcas paginadas guardadas en caché: $cacheKey');
       }
 
       return resultado;
     } catch (e) {
-      Logger.error('[MarcasApi] ERROR al obtener marcas paginadas: $e');
+      Logger.error('Error al obtener marcas paginadas: $e');
       rethrow;
     }
   }

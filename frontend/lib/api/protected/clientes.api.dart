@@ -1,5 +1,6 @@
 import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
+import 'package:condorsmotors/api/protected/paginacion.api.dart';
 import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:flutter/foundation.dart';
 
@@ -25,16 +26,19 @@ class ClientesApi {
     bool forceRefresh = false,
   }) async {
     try {
-      // Generar clave única para este conjunto de parámetros
-      final String cacheKey = _generateCacheKey(
-        'clientes',
-        page: page,
-        pageSize: pageSize,
+      // Generar clave única para este conjunto de parámetros usando PaginacionUtils
+      final filtroParams = FiltroParams(
+        page: page ?? 1,
+        pageSize: pageSize ?? 20,
         sortBy: sortBy,
         order: order,
         search: search,
         filter: filter,
         filterValue: filterValue,
+      );
+      final String cacheKey = PaginacionUtils.generateCacheKey(
+        'clientes',
+        filtroParams.toMap(),
       );
 
       // Intentar obtener desde caché si useCache es true y no se fuerza la actualización
@@ -49,30 +53,7 @@ class ClientesApi {
       debugPrint('ClientesApi: Obteniendo lista de clientes');
 
       // Construir parámetros de consulta
-      final Map<String, String> queryParams = <String, String>{};
-
-      // Solo agregar parámetros de paginación si se proporcionan explícitamente
-      if (page != null && page > 0) {
-        queryParams['page'] = page.toString();
-      }
-
-      if (pageSize != null && pageSize > 0) {
-        queryParams['page_size'] = pageSize.toString();
-      }
-
-      if (sortBy != null && sortBy.isNotEmpty) {
-        queryParams['sort_by'] = sortBy;
-        queryParams['order'] = order;
-      }
-
-      if (search != null && search.isNotEmpty) {
-        queryParams['search'] = search;
-      }
-
-      if (filter != null && filter.isNotEmpty && filterValue != null) {
-        queryParams['filter'] = filter;
-        queryParams['filter_value'] = filterValue;
-      }
+      final Map<String, String> queryParams = filtroParams.buildQueryParams();
 
       // Usar authenticatedRequest en lugar de request para manejar automáticamente tokens
       final Map<String, dynamic> response = await _api.authenticatedRequest(
@@ -438,43 +419,5 @@ class ClientesApi {
     _cache.invalidate('cliente_$clienteId');
     _invalidateListCache(); // También invalidar listas
     debugPrint('🗑️ Caché del cliente #$clienteId invalidada');
-  }
-
-  /// Generar clave única para caché basada en parámetros
-  String _generateCacheKey(
-    String prefix, {
-    int? page,
-    int? pageSize,
-    String? sortBy,
-    String? order,
-    String? search,
-    String? filter,
-    String? filterValue,
-  }) {
-    final List<String> parts = <String>[prefix];
-
-    if (page != null) {
-      parts.add('page=$page');
-    }
-    if (pageSize != null) {
-      parts.add('pageSize=$pageSize');
-    }
-    if (sortBy != null) {
-      parts.add('sort=$sortBy');
-    }
-    if (order != null) {
-      parts.add('order=$order');
-    }
-    if (search != null) {
-      parts.add('search=$search');
-    }
-    if (filter != null) {
-      parts.add('filter=$filter');
-    }
-    if (filterValue != null) {
-      parts.add('filterValue=$filterValue');
-    }
-
-    return parts.join('_');
   }
 }

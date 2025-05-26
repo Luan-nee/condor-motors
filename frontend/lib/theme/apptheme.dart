@@ -210,39 +210,45 @@ abstract class AppTheme {
 
   // Helper method for SnackBar styles
   static SnackBar getStyledSnackBar({
+    required BuildContext context,
     required String message,
     required bool isError,
     Duration duration = const Duration(seconds: 2),
     SnackBarAction? action,
   }) {
     return SnackBar(
-      content: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isError
-                  ? Colors.red.withOpacity(0.1)
-                  : primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(smallRadius),
-            ),
-            child: Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: isError ? Colors.red : primaryColor,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: _baseTextStyle.copyWith(
-                fontSize: 14,
-                color: Colors.white.withOpacity(0.9),
+      content: GestureDetector(
+        onHorizontalDragEnd: (_) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        },
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isError
+                    ? Colors.red.withOpacity(0.1)
+                    : primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(smallRadius),
+              ),
+              child: Icon(
+                isError ? Icons.error_outline : Icons.check_circle_outline,
+                color: isError ? Colors.red : primaryColor,
+                size: 20,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: _baseTextStyle.copyWith(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       backgroundColor: cardColor,
       behavior: SnackBarBehavior.floating,
@@ -265,6 +271,7 @@ abstract class AppTheme {
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
       getStyledSnackBar(
+        context: context,
         message: message,
         isError: false,
         duration: duration,
@@ -282,6 +289,7 @@ abstract class AppTheme {
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
       getStyledSnackBar(
+        context: context,
         message: message,
         isError: true,
         duration: duration,

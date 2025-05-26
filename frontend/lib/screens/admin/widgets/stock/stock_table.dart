@@ -355,7 +355,7 @@ class TableProducts extends StatelessWidget {
   }
 
   Widget _buildProductRow(BuildContext context, Producto producto) {
-    Provider.of<StockProvider>(context, listen: false);
+    final stockProvider = Provider.of<StockProvider>(context, listen: false);
     final int stockActual = producto.stock;
     final int stockMinimo = producto.stockMinimo ?? 0;
 
@@ -380,10 +380,22 @@ class TableProducts extends StatelessWidget {
             flex: 30,
             child: Row(
               children: <Widget>[
-                FaIcon(
-                  FontAwesomeIcons.box,
-                  size: 14,
-                  color: statusColor.withOpacity(0.8),
+                // Imagen del producto
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    stockProvider.getProductoImageUrl(producto),
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: 48,
+                      height: 48,
+                      color: Colors.grey[800],
+                      child: const Icon(Icons.image_not_supported,
+                          color: Colors.white38, size: 24),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(

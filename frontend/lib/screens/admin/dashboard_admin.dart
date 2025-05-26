@@ -529,15 +529,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Productos que requieren reabastecimiento inmediato',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
           _buildStockBajoContent(
               provider, tieneDatos ? estadisticasProductos : null),
         ],
@@ -817,15 +809,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Documentos de venta registrados recientemente',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: provider.ventasRecientes.isEmpty

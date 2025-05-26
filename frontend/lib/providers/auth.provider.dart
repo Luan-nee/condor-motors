@@ -277,8 +277,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final bool stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
-      debugPrint('[AuthProvider] Auto-login: Permanecer conectado está ' +
-          (stayLoggedIn ? 'activado' : 'desactivado'));
+      debugPrint('[AuthProvider] Auto-login: Permanecer conectado está ${stayLoggedIn ? 'activado' : 'desactivado'}');
       if (!stayLoggedIn) {
         debugPrint(
             '[AuthProvider] Auto-login: No está activado "Permanecer conectado"');
@@ -327,8 +326,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final bool stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
-      debugPrint('[AuthProvider] autoLogin: Permanecer conectado está ' +
-          (stayLoggedIn ? 'activado' : 'desactivado'));
+      debugPrint('[AuthProvider] autoLogin: Permanecer conectado está ${stayLoggedIn ? 'activado' : 'desactivado'}');
       if (!stayLoggedIn) {
         debugPrint(
             '[AuthProvider] autoLogin: No está activado "Permanecer conectado"');

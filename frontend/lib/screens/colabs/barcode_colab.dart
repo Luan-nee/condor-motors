@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -424,18 +425,28 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
             itemBuilder: (context, index) {
               final producto = products[index];
               final bool tieneStock = producto.stock > 0;
+              final String url =
+                  ProductoRepository.getProductoImageUrl(producto) ?? '';
 
               return ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2D2D2D),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    FontAwesomeIcons.box,
-                    color: tieneStock ? const Color(0xFF4CAF50) : Colors.red,
-                  ),
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: url.isNotEmpty
+                      ? Image.network(
+                          url,
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Icon(Icons.image, color: Colors.grey, size: 24),
+                        )
+                      : Container(
+                          width: 40,
+                          height: 40,
+                          color: Colors.grey[200],
+                          child: Icon(Icons.image_not_supported,
+                              color: Colors.grey, size: 24),
+                        ),
                 ),
                 title: Text(
                   producto.nombre,
@@ -640,19 +651,13 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
     final bool tieneStock = producto.stock > 0;
 
     // Determinar el color y el icono según el tipo de promoción
-    Color colorPromocion = const Color(0xFF4CAF50);
-    IconData iconoPromocion = FontAwesomeIcons.box;
 
     if (enLiquidacion) {
-      colorPromocion = Colors.amber;
-      iconoPromocion = Icons.local_fire_department;
     } else if (tienePromocionGratis) {
-      colorPromocion = const Color(0xFF4CAF50);
-      iconoPromocion = Icons.card_giftcard;
-    } else if (tieneDescuentoPorcentual) {
-      colorPromocion = Colors.purple;
-      iconoPromocion = Icons.percent;
-    }
+    } else if (tieneDescuentoPorcentual) {}
+
+    // Obtener la URL de la imagen
+    final String url = ProductoRepository.getProductoImageUrl(producto) ?? '';
 
     showDialog(
       context: context,
@@ -680,25 +685,27 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            // Icono y nombre del producto
+            // Imagen y nombre del producto
             Row(
               children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2D2D2D),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: colorPromocion.withOpacity(0.5),
-                      width: 2,
-                    ),
-                  ),
-                  child: Icon(
-                    iconoPromocion,
-                    size: 30,
-                    color: colorPromocion,
-                  ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: url.isNotEmpty
+                      ? Image.network(
+                          url,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Icon(Icons.image, color: Colors.grey, size: 40),
+                        )
+                      : Container(
+                          width: 60,
+                          height: 60,
+                          color: Colors.grey[200],
+                          child: Icon(Icons.image_not_supported,
+                              color: Colors.grey, size: 40),
+                        ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(

@@ -807,7 +807,9 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
             child: const Icon(Icons.broken_image, color: Colors.grey, size: 32),
           ),
           loadingBuilder: (context, child, progress) {
-            if (progress == null) return child;
+            if (progress == null) {
+              return child;
+            }
             return Container(
               width: size,
               height: size,

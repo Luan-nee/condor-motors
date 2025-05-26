@@ -22,14 +22,12 @@ class LoginProvider extends ChangeNotifier {
   String _errorMessage = '';
   bool _rememberMe = false;
   bool _stayLoggedIn = false;
-  bool _isCheckingAutoLogin = true;
 
   // Getters
   LoginStatus get status => _status;
   String get errorMessage => _errorMessage;
   bool get rememberMe => _rememberMe;
   bool get stayLoggedIn => _stayLoggedIn;
-  bool get isCheckingAutoLogin => _isCheckingAutoLogin;
 
   LoginProvider({AuthRepository? authRepository})
       : _authRepository = authRepository ?? AuthRepository.instance {
@@ -43,7 +41,6 @@ class LoginProvider extends ChangeNotifier {
     } else {
       await _loadSavedCredentials();
     }
-    _isCheckingAutoLogin = false;
     notifyListeners();
   }
 

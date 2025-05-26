@@ -316,4 +316,10 @@ class StockProvider extends ChangeNotifier {
 
     return agrupados;
   }
+
+  /// Devuelve la URL completa de la imagen del producto usando el repositorio
+  String getProductoImageUrl(Producto producto) {
+    return ProductoRepository.getProductoImageUrl(producto) ??
+        'https://via.placeholder.com/150';
+  }
 }

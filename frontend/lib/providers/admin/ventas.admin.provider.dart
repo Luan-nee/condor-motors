@@ -214,11 +214,6 @@ class VentasProvider extends ChangeNotifier {
     }
   }
 
-  // --- Métodos Helper Eliminados ---
-  // La lógica de calcularTotalVenta, obtenerNumeroDocumento, tienePdfDisponible,
-  // y obtenerUrlPdf debe residir en el modelo Venta o ser accedida directamente
-  // desde sus propiedades.
-
   /// Obtiene el color según el estado de una venta (se mantiene por ser UI-related)
   Color getEstadoColor(String estado) {
     switch (estado.toUpperCase()) {

@@ -29,7 +29,7 @@ class TransferenciasProvider extends ChangeNotifier {
   String _searchQuery = '';
   DateTime? _fechaInicio;
   DateTime? _fechaFin;
-  String _ordenarPor = 'fecha';
+  String _ordenarPor = 'fechaCreacion';
   String _orden = 'desc';
 
   TransferenciasProvider() {
@@ -127,7 +127,7 @@ class TransferenciasProvider extends ChangeNotifier {
         estado: estadoFiltro,
         fechaInicio: _fechaInicio,
         fechaFin: _fechaFin,
-        sortBy: paginacionProvider.ordenarPor,
+        sortBy: paginacionProvider.ordenarPor ?? 'fechaCreacion',
         order: paginacionProvider.orden,
         page: paginacionProvider.paginacion.currentPage,
         pageSize: paginacionProvider.itemsPerPage,
@@ -266,7 +266,7 @@ class TransferenciasProvider extends ChangeNotifier {
     _selectedFilter = 'Todos';
     _fechaInicio = null;
     _fechaFin = null;
-    _ordenarPor = 'fecha';
+    _ordenarPor = 'fechaCreacion';
     _orden = 'desc';
     notifyListeners();
   }

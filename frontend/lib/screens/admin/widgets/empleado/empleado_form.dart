@@ -224,44 +224,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     return null;
   }
 
-  // Método separado para validar datos de horas y minutos
-  bool _validarHorarioInput({
-    required String horaInicioText,
-    required String minutoInicioText,
-    required String horaFinText,
-    required String minutoFinText,
-    BuildContext? contexto,
-  }) {
-    final int? horaInicio = int.tryParse(horaInicioText);
-    final int? minutoInicio = int.tryParse(minutoInicioText);
-    final int? horaFin = int.tryParse(horaFinText);
-    final int? minutoFin = int.tryParse(minutoFinText);
-
-    final bool esValido = horaInicio != null &&
-        horaInicio >= 0 &&
-        horaInicio <= 23 &&
-        minutoInicio != null &&
-        minutoInicio >= 0 &&
-        minutoInicio <= 59 &&
-        horaFin != null &&
-        horaFin >= 0 &&
-        horaFin <= 23 &&
-        minutoFin != null &&
-        minutoFin >= 0 &&
-        minutoFin <= 59;
-
-    if (!esValido && contexto != null) {
-      ScaffoldMessenger.of(contexto).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor, ingrese horas válidas'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-
-    return esValido;
-  }
-
   // Widget reutilizable para etiqueta de horario
   Widget _buildHorarioLabel(String texto, IconData icono) {
     return SizedBox(

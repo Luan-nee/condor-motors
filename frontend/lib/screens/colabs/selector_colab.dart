@@ -1,6 +1,8 @@
 import 'package:condorsmotors/providers/auth.provider.dart';
+import 'package:condorsmotors/providers/colabs/transferencias.colab.provider.dart';
 import 'package:condorsmotors/providers/colabs/ventas.colab.provider.dart';
 import 'package:condorsmotors/screens/colabs/productos_colab.dart';
+import 'package:condorsmotors/screens/colabs/settings_colab.dart';
 import 'package:condorsmotors/screens/colabs/transferencias_colab.dart';
 import 'package:condorsmotors/screens/colabs/ventas_colab.dart';
 import 'package:flutter/foundation.dart';
@@ -18,6 +20,11 @@ class SelectorColabScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Inicia el polling apenas se construye el selector
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<TransferenciasColabProvider>(context, listen: false)
+          .startPolling();
+    });
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
     final double cardWidth = isMobile ? screenWidth * 0.45 : 300.0;
@@ -180,12 +187,22 @@ class SelectorColabScreen extends StatelessWidget {
                     ),
                     _buildOptionCard(
                       context,
-                      'Movimientos',
+                      'Transferencias',
                       'Solicitar productos',
                       FontAwesomeIcons.truck,
                       const TransferenciasColabScreen(),
                       const Color(0xFFE31E24),
                       'Gestionar traslados entre sucursales',
+                    ),
+                    // Opción de configuración
+                    _buildOptionCard(
+                      context,
+                      'Configuración',
+                      'Preferencias de la app',
+                      FontAwesomeIcons.gear,
+                      const SettingsColabScreen(),
+                      const Color(0xFF757575),
+                      'Ajustes de notificaciones y preferencias',
                     ),
                   ],
                 ),

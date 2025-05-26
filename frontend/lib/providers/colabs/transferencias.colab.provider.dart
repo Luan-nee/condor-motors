@@ -1,8 +1,12 @@
+import 'dart:async';
+
+import 'package:condorsmotors/components/transferencia_notificacion.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TransferenciasColabProvider extends ChangeNotifier {
   // Instancias de repositorios
@@ -67,6 +71,17 @@ class TransferenciasColabProvider extends ChangeNotifier {
     'Recibido',
   ];
 
+  Timer? _pollingTimer;
+  int? _ultimoIdTransferenciaRecibida;
+
+  int _paginaActual = 1;
+  int _tamanoPagina = 20;
+  Paginacion? _paginacion;
+
+  int get paginaActual => _paginaActual;
+  int get tamanoPagina => _tamanoPagina;
+  Paginacion? get paginacion => _paginacion;
+
   // Inicializar provider
   Future<void> inicializar() async {
     await _obtenerDatosUsuario();
@@ -103,27 +118,26 @@ class TransferenciasColabProvider extends ChangeNotifier {
     try {
       debugPrint('Cargando todas las transferencias');
 
-      // Usar método similar a getTransferencias pero con parámetros predeterminados
       final paginatedResponse =
           await _transferenciaRepository.getTransferencias(
-        pageSize:
-            100, // Ajustamos el tamaño de página para obtener más resultados
+        page: _paginaActual,
+        pageSize: _tamanoPagina,
         sortBy: _ordenarPor,
         order: _orden,
         forceRefresh: forceRefresh,
       );
 
       _transferencias = paginatedResponse.items;
+      _paginacion = paginatedResponse.paginacion;
       _errorMessage = null;
       notifyListeners();
 
-      debugPrint('Transferencias cargadas: ${_transferencias.length}');
-      // Debug de los datos recibidos
+      debugPrint('Transferencias cargadas: \\${_transferencias.length}');
       for (var t in _transferencias) {
-        debugPrint('Transferencia #${t.id}:');
-        debugPrint('- Estado: ${t.estado.nombre}');
-        debugPrint('- Destino: ${t.nombreSucursalDestino}');
-        debugPrint('- Origen: ${t.nombreSucursalOrigen}');
+        debugPrint('Transferencia #t.id}:');
+        debugPrint('- Estado: \\${t.estado.nombre}');
+        debugPrint('- Destino: \\${t.nombreSucursalDestino}');
+        debugPrint('- Origen: \\${t.nombreSucursalOrigen}');
       }
     } catch (e) {
       _setError('Error al cargar transferencias: $e');
@@ -232,6 +246,9 @@ class TransferenciasColabProvider extends ChangeNotifier {
         sucursalDestinoId: sucursalDestinoId,
         items: items,
       );
+
+      // Invalidar caché de transferencias para la sucursal actual
+      _transferenciaRepository.invalidateCache(_sucursalId);
 
       _transferencias.insert(0, nuevaTransferencia);
       _limpiarTransferenciaEnProceso();
@@ -585,5 +602,79 @@ class TransferenciasColabProvider extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
     debugPrint('Error: $message');
+  }
+
+  void startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(minutes: 1), (_) async {
+      debugPrint(
+          '--- [Polling] Ejecutando polling de transferencias (Provider) ---');
+      final prefs = await SharedPreferences.getInstance();
+      final notificacionesActivas =
+          prefs.getBool('notificaciones_transferencias') ?? true;
+      debugPrint('[Polling] Notificaciones activas: $notificacionesActivas');
+      if (!notificacionesActivas) {
+        debugPrint('[Polling] Notificaciones desactivadas, saliendo...');
+        return;
+      }
+      try {
+        await cargarTransferencias();
+        debugPrint(
+            '[Polling] Transferencias cargadas: \\${_transferencias.length}');
+        final transferencias = getTransferenciasFiltradas();
+        debugPrint(
+            '[Polling] Transferencias filtradas: \\${transferencias.map((t) => t.id).toList()}');
+        if (transferencias.isNotEmpty) {
+          final nuevaTransferencia = transferencias.first;
+          debugPrint(
+              '[Polling] Último ID recibido: \\$_ultimoIdTransferenciaRecibida');
+          debugPrint(
+              '[Polling] ID de la nueva transferencia: \\${nuevaTransferencia.id}');
+          if (_ultimoIdTransferenciaRecibida == null ||
+              nuevaTransferencia.id > _ultimoIdTransferenciaRecibida!) {
+            debugPrint(
+                '[Polling] ¡Nueva transferencia detectada! Mostrando notificación...');
+            await TransferenciaNotificacion.showTransferenciaNotification(
+              title: 'Nueva transferencia recibida',
+              body:
+                  'Has recibido una nueva transferencia (ID: \\${nuevaTransferencia.id})',
+              id: nuevaTransferencia.id,
+            );
+            await _guardarUltimoIdTransferencia(nuevaTransferencia.id);
+          } else {
+            debugPrint('[Polling] No hay nuevas transferencias.');
+          }
+        } else {
+          debugPrint('[Polling] No hay transferencias para mostrar.');
+        }
+      } catch (e, stack) {
+        debugPrint('[Polling] Error en polling: \\$e');
+        debugPrint('[Polling] Stacktrace: \\$stack');
+      }
+      debugPrint('--- [Polling] Fin de ciclo ---');
+    });
+  }
+
+  Future<void> _guardarUltimoIdTransferencia(int id) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('ultimo_id_transferencia_recibida', id);
+    _ultimoIdTransferenciaRecibida = id;
+  }
+
+  Future<void> cambiarPagina(int nuevaPagina) async {
+    _paginaActual = nuevaPagina;
+    await cargarTransferencias();
+  }
+
+  Future<void> cambiarTamanoPagina(int nuevoTamano) async {
+    _tamanoPagina = nuevoTamano;
+    _paginaActual = 1;
+    await cargarTransferencias();
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
   }
 }
