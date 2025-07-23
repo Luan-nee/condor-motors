@@ -126,7 +126,7 @@ class VentasUtils {
     if (venta.serieDocumento.isNotEmpty && venta.numeroDocumento.isNotEmpty) {
       return '${venta.serieDocumento}-${venta.numeroDocumento}';
     }
-    return venta.id?.toString() ?? '';
+    return venta.id.toString();
   }
 
   /// Formatea el número de documento de venta desde un Map (para compatibilidad)

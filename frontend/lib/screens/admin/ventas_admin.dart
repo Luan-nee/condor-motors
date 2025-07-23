@@ -1,3 +1,4 @@
+import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/admin/ventas.admin.provider.dart';
 import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
@@ -7,6 +8,100 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
+// Clases de data para Selector optimization
+class VentasListData {
+  final List<Venta> ventas;
+  final bool isVentasLoading;
+  final String ventasErrorMessage;
+  final String searchQuery;
+
+  const VentasListData({
+    required this.ventas,
+    required this.isVentasLoading,
+    required this.ventasErrorMessage,
+    required this.searchQuery,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is VentasListData &&
+        other.ventas.length == ventas.length &&
+        other.isVentasLoading == isVentasLoading &&
+        other.ventasErrorMessage == ventasErrorMessage &&
+        other.searchQuery == searchQuery;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      ventas.length,
+      isVentasLoading,
+      ventasErrorMessage,
+      searchQuery,
+    );
+  }
+}
+
+class SucursalData {
+  final List<Sucursal> sucursales;
+  final Sucursal? sucursalSeleccionada;
+  final bool isSucursalesLoading;
+  final String errorMessage;
+
+  const SucursalData({
+    required this.sucursales,
+    required this.sucursalSeleccionada,
+    required this.isSucursalesLoading,
+    required this.errorMessage,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is SucursalData &&
+        other.sucursales.length == sucursales.length &&
+        other.sucursalSeleccionada?.id == sucursalSeleccionada?.id &&
+        other.isSucursalesLoading == isSucursalesLoading &&
+        other.errorMessage == errorMessage;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      sucursales.length,
+      sucursalSeleccionada?.id,
+      isSucursalesLoading,
+      errorMessage,
+    );
+  }
+}
+
+class FiltersData {
+  final String searchQuery;
+
+  const FiltersData({
+    required this.searchQuery,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is FiltersData && other.searchQuery == searchQuery;
+  }
+
+  @override
+  int get hashCode {
+    return searchQuery.hashCode;
+  }
+}
 
 class VentasAdminScreen extends StatefulWidget {
   const VentasAdminScreen({super.key});
@@ -61,49 +156,77 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer<VentasProvider>(
-        builder: (context, ventasProvider, child) {
-          return Row(
-            children: [
-              // Panel izquierdo: Contenido principal (70%)
-              Expanded(
-                flex: 7,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(context, ventasProvider),
-                    Expanded(
-                      child: _buildVentasContent(context, ventasProvider),
-                    ),
-                  ],
+      body: Row(
+        children: [
+          // Panel izquierdo: Contenido principal (70%)
+          Expanded(
+            flex: 7,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header optimizado con Selector
+                Selector<VentasProvider, SucursalData>(
+                  selector: (_, provider) => SucursalData(
+                    sucursales: provider.sucursales,
+                    sucursalSeleccionada: provider.sucursalSeleccionada,
+                    isSucursalesLoading: provider.isSucursalesLoading,
+                    errorMessage: provider.errorMessage,
+                  ),
+                  builder: (context, sucursalData, child) {
+                    return _buildHeader(context, sucursalData);
+                  },
                 ),
-              ),
-
-              // Panel derecho: Selector de sucursales (30%)
-              Container(
-                width: 350,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  border: Border(
-                    left: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
+                // Contenido de ventas optimizado con Selector
+                Expanded(
+                  child: Selector<VentasProvider, VentasListData>(
+                    selector: (_, provider) => VentasListData(
+                      ventas: provider.ventas,
+                      isVentasLoading: provider.isVentasLoading,
+                      ventasErrorMessage: provider.ventasErrorMessage,
+                      searchQuery: provider.searchQuery,
                     ),
+                    builder: (context, ventasData, child) {
+                      return _buildVentasContent(context, ventasData);
+                    },
                   ),
                 ),
-                child: Column(
+              ],
+            ),
+          ),
+
+          // Panel derecho: Selector de sucursales (30%) - Optimizado con Selector
+          Container(
+            width: 350,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              border: Border(
+                left: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+              ),
+            ),
+            child: Selector<VentasProvider, SucursalData>(
+              selector: (_, provider) => SucursalData(
+                sucursales: provider.sucursales,
+                sucursalSeleccionada: provider.sucursalSeleccionada,
+                isSucursalesLoading: provider.isSucursalesLoading,
+                errorMessage: provider.errorMessage,
+              ),
+              builder: (context, sucursalData, child) {
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Mensaje de error para sucursales
-                    if (ventasProvider.errorMessage.isNotEmpty)
+                    if (sucursalData.errorMessage.isNotEmpty)
                       Container(
                         padding: const EdgeInsets.all(8),
                         margin: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
+                          color: Colors.red.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          ventasProvider.errorMessage,
+                          sucursalData.errorMessage,
                           style:
                               const TextStyle(color: Colors.red, fontSize: 12),
                         ),
@@ -112,32 +235,31 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                     // Selector de sucursales
                     Expanded(
                       child: SlideSucursal(
-                        sucursales: ventasProvider.sucursales,
-                        sucursalSeleccionada:
-                            ventasProvider.sucursalSeleccionada,
-                        onSucursalSelected: ventasProvider.cambiarSucursal,
-                        onRecargarSucursales: ventasProvider.cargarSucursales,
-                        isLoading: ventasProvider.isSucursalesLoading,
+                        sucursales: sucursalData.sucursales,
+                        sucursalSeleccionada: sucursalData.sucursalSeleccionada,
+                        onSucursalSelected: _ventasProvider.cambiarSucursal,
+                        onRecargarSucursales: _ventasProvider.cargarSucursales,
+                        isLoading: sucursalData.isSucursalesLoading,
                       ),
                     ),
                   ],
-                ),
-              ),
-            ],
-          );
-        },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, VentasProvider ventasProvider) {
+  Widget _buildHeader(BuildContext context, SucursalData sucursalData) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF2D2D2D),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -152,8 +274,7 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
           ),
           const SizedBox(width: 12),
           Text(
-            ventasProvider.sucursalSeleccionada?.nombre ??
-                'Todas las sucursales',
+            sucursalData.sucursalSeleccionada?.nombre ?? 'Todas las sucursales',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -162,64 +283,191 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
           ),
           const SizedBox(width: 24),
           Expanded(
-            child: _buildSearchField(ventasProvider),
+            child: _buildSearchField(),
           ),
           const SizedBox(width: 16),
-          // Botón de recargar ventas
-          ElevatedButton.icon(
-            icon: ventasProvider.isVentasLoading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const FaIcon(
-                    FontAwesomeIcons.arrowsRotate,
-                    size: 16,
-                    color: Colors.white,
+          // Selector de ordenamiento
+          Selector<VentasProvider, String>(
+            selector: (_, provider) =>
+                '${provider.ordenarPor ?? 'fechaCreacion'}_${provider.orden}',
+            builder: (context, ordenamientoActual, child) {
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
-            label: Text(
-              ventasProvider.isVentasLoading ? 'Recargando...' : 'Recargar',
-              style: const TextStyle(color: Colors.white),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2D2D2D),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-            ),
-            onPressed: ventasProvider.isVentasLoading
-                ? null
-                : () async {
-                    await ventasProvider.cargarVentas();
-                    // Mostrar mensaje de éxito o error
-                    if (ventasProvider.ventasErrorMessage.isNotEmpty) {
-                      if (!mounted) {
-                        return;
-                      }
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(ventasProvider.ventasErrorMessage),
-                          backgroundColor: Colors.red,
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: ordenamientoActual,
+                    dropdownColor: const Color(0xFF1A1A1A),
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    icon: const Icon(Icons.arrow_drop_down,
+                        color: Colors.white70),
+                    isDense: true,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'fechaCreacion_desc',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FaIcon(FontAwesomeIcons.clockRotateLeft,
+                                size: 12, color: Colors.white70),
+                            SizedBox(width: 8),
+                            Text('Más recientes'),
+                          ],
                         ),
-                      );
-                    } else {
-                      if (!mounted) {
-                        return;
-                      }
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Ventas recargadas exitosamente'),
-                          backgroundColor: Colors.green,
+                      ),
+                      DropdownMenuItem(
+                        value: 'fechaCreacion_asc',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FaIcon(FontAwesomeIcons.clock,
+                                size: 12, color: Colors.white70),
+                            SizedBox(width: 8),
+                            Text('Más antiguas'),
+                          ],
                         ),
-                      );
-                    }
-                  },
+                      ),
+                      DropdownMenuItem(
+                        value: 'totalVenta_desc',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FaIcon(FontAwesomeIcons.arrowDownWideShort,
+                                size: 12, color: Colors.white70),
+                            SizedBox(width: 8),
+                            Text('Mayor valor'),
+                          ],
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'totalVenta_asc',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FaIcon(FontAwesomeIcons.arrowUpWideShort,
+                                size: 12, color: Colors.white70),
+                            SizedBox(width: 8),
+                            Text('Menor valor'),
+                          ],
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'declarada_desc',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FaIcon(FontAwesomeIcons.circleCheck,
+                                size: 12, color: Colors.white70),
+                            SizedBox(width: 8),
+                            Text('Declaradas primero'),
+                          ],
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'anulada_desc',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FaIcon(FontAwesomeIcons.ban,
+                                size: 12, color: Colors.white70),
+                            SizedBox(width: 8),
+                            Text('Anuladas primero'),
+                          ],
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'nombreEmpleado_asc',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FaIcon(FontAwesomeIcons.user,
+                                size: 12, color: Colors.white70),
+                            SizedBox(width: 8),
+                            Text('Por empleado'),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onChanged: (String? nuevoOrdenamiento) {
+                      if (nuevoOrdenamiento != null) {
+                        final partes = nuevoOrdenamiento.split('_');
+                        final sortBy = partes[0];
+                        final order = partes[1];
+                        _ventasProvider.actualizarOrdenamiento(sortBy, order);
+                      }
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 16),
+          // Botón de recargar ventas - Optimizado con Selector
+          Selector<VentasProvider, bool>(
+            selector: (_, provider) => provider.isVentasLoading,
+            builder: (context, isVentasLoading, child) {
+              return ElevatedButton.icon(
+                icon: isVentasLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const FaIcon(
+                        FontAwesomeIcons.arrowsRotate,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                label: Text(
+                  isVentasLoading ? 'Recargando...' : 'Recargar',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2D2D2D),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                onPressed: isVentasLoading
+                    ? null
+                    : () async {
+                        final scaffoldMessenger = ScaffoldMessenger.of(context);
+                        await _ventasProvider.cargarVentas();
+                        // Mostrar mensaje de éxito o error
+                        if (!mounted) {
+                          return;
+                        }
+
+                        if (_ventasProvider.ventasErrorMessage.isNotEmpty) {
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(
+                              content: Text(_ventasProvider.ventasErrorMessage),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        } else {
+                          scaffoldMessenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Ventas recargadas exitosamente'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      },
+              );
+            },
           ),
           const SizedBox(width: 16),
           ElevatedButton.icon(
@@ -248,79 +496,83 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     );
   }
 
-  Widget _buildSearchField(VentasProvider ventasProvider) {
+  Widget _buildSearchField() {
     return Container(
       height: 40,
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
         ),
       ),
-      child: TextField(
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          hintText: 'Buscar por cliente, número de documento o serie...',
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-          border: InputBorder.none,
-          prefixIcon: Icon(
-            Icons.search,
-            color: Colors.white.withOpacity(0.5),
-          ),
-          suffixIcon: ventasProvider.searchQuery.isNotEmpty
-              ? IconButton(
-                  icon:
-                      const Icon(Icons.close, color: Colors.white70, size: 18),
-                  onPressed: () {
-                    // Limpiar búsqueda
-                    ventasProvider.actualizarBusqueda('');
-                  },
-                )
-              : null,
-        ),
-        onChanged: (value) {
-          // Actualizar búsqueda después de un pequeño retraso
-          // Verificar que el widget esté montado antes de continuar
-          if (mounted) {
-            Future.delayed(const Duration(milliseconds: 500), () {
-              // Verificar nuevamente que el widget está montado antes de actualizar
+      child: Selector<VentasProvider, String>(
+        selector: (_, provider) => provider.searchQuery,
+        builder: (context, searchQuery, child) {
+          return TextField(
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              hintText: 'Buscar por cliente, número de documento o serie...',
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+              border: InputBorder.none,
+              prefixIcon: Icon(
+                Icons.search,
+                color: Colors.white.withValues(alpha: 0.5),
+              ),
+              suffixIcon: searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.close,
+                          color: Colors.white70, size: 18),
+                      onPressed: () {
+                        // Limpiar búsqueda
+                        _ventasProvider.actualizarBusqueda('');
+                      },
+                    )
+                  : null,
+            ),
+            onChanged: (value) {
+              // Actualizar búsqueda después de un pequeño retraso
+              // Verificar que el widget esté montado antes de continuar
               if (mounted) {
-                ventasProvider.actualizarBusqueda(value);
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  // Verificar nuevamente que el widget está montado antes de actualizar
+                  if (mounted) {
+                    _ventasProvider.actualizarBusqueda(value);
+                  }
+                });
               }
-            });
-          }
+            },
+          );
         },
       ),
     );
   }
 
-  Widget _buildVentasContent(
-      BuildContext context, VentasProvider ventasProvider) {
-    if (ventasProvider.isVentasLoading) {
+  Widget _buildVentasContent(BuildContext context, VentasListData ventasData) {
+    if (ventasData.isVentasLoading) {
       return const Center(
         child: CircularProgressIndicator(),
       );
     }
 
-    if (ventasProvider.ventasErrorMessage.isNotEmpty) {
+    if (ventasData.ventasErrorMessage.isNotEmpty) {
       return Center(
         child: _buildEmptyState(
           icon: FontAwesomeIcons.triangleExclamation,
           title: 'Error al cargar ventas',
-          description: ventasProvider.ventasErrorMessage,
+          description: ventasData.ventasErrorMessage,
           actionText: 'Intentar de nuevo',
-          onAction: () => ventasProvider.cargarVentas(),
+          onAction: () => _ventasProvider.cargarVentas(),
         ),
       );
     }
 
-    if (ventasProvider.ventas.isEmpty) {
+    if (ventasData.ventas.isEmpty) {
       String mensajeVacio = 'Aún no hay ventas registradas para esta sucursal';
-      if (ventasProvider.searchQuery.isNotEmpty) {
+      if (ventasData.searchQuery.isNotEmpty) {
         mensajeVacio =
-            'No se encontraron ventas con el término "${ventasProvider.searchQuery}"';
+            'No se encontraron ventas con el término "${ventasData.searchQuery}"';
       }
 
       return Center(
@@ -329,188 +581,48 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
           title: 'No hay ventas registradas',
           description: mensajeVacio,
           actionText: 'Actualizar',
-          onAction: () => ventasProvider.cargarVentas(),
+          onAction: () => _ventasProvider.cargarVentas(),
         ),
       );
     }
 
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          color: const Color(0xFF222222),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  const Spacer(),
-                  OutlinedButton.icon(
-                    icon: const FaIcon(
-                      FontAwesomeIcons.calendarDays,
-                      size: 14,
-                    ),
-                    label: const Text('Filtrar por fecha'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
-                    onPressed: () {
-                      if (mounted) {
-                        _mostrarSelectorFechas(context, ventasProvider);
-                      }
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    icon: const FaIcon(
-                      FontAwesomeIcons.filter,
-                      size: 14,
-                    ),
-                    label: const Text('Filtrar por estado'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
-                    onPressed: () {
-                      if (mounted) {
-                        _mostrarMenuEstados(context, ventasProvider);
-                      }
-                    },
-                  ),
-                  // Botón para limpiar filtros (visible solo si hay filtros activos)
-                  if (ventasProvider.fechaInicio != null ||
-                      ventasProvider.fechaFin != null ||
-                      ventasProvider.estadoFiltro != null ||
-                      ventasProvider.searchQuery.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      icon: const FaIcon(
-                        FontAwesomeIcons.filterCircleXmark,
-                        size: 14,
-                        color: Color(0xFFE31E24),
-                      ),
-                      label: const Text('Limpiar filtros'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFE31E24),
-                        side: const BorderSide(color: Color(0xFFE31E24)),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                      onPressed: () {
-                        ventasProvider.limpiarFiltros();
-                        if (!mounted) {
-                          return;
-                        }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Filtros eliminados'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ],
-              ),
-
-              // Indicador de filtros activos
-              if (ventasProvider.fechaInicio != null ||
-                  ventasProvider.fechaFin != null ||
-                  ventasProvider.estadoFiltro != null ||
-                  ventasProvider.searchQuery.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.only(top: 8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const FaIcon(
-                        FontAwesomeIcons.filter,
-                        size: 12,
-                        color: Color(0xFFE31E24),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Filtros activos:',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (ventasProvider.searchQuery.isNotEmpty)
-                        _buildFiltroChip(
-                          'Búsqueda: "${ventasProvider.searchQuery}"',
-                          () {
-                            ventasProvider.actualizarBusqueda('');
-                          },
-                        ),
-                      if (ventasProvider.fechaInicio != null &&
-                          ventasProvider.fechaFin != null)
-                        _buildFiltroChip(
-                          'Período: ${DateFormat('dd/MM/yyyy').format(ventasProvider.fechaInicio!)} - ${DateFormat('dd/MM/yyyy').format(ventasProvider.fechaFin!)}',
-                          () {
-                            ventasProvider.actualizarFiltrosFecha(null, null);
-                          },
-                        ),
-                      if (ventasProvider.estadoFiltro != null)
-                        _buildFiltroChip(
-                          'Estado: ${ventasProvider.estadoFiltro}',
-                          () {
-                            ventasProvider.actualizarFiltroEstado(null);
-                          },
-                        ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
         Expanded(
           child: ListView.builder(
-            itemCount: ventasProvider.ventas.length,
+            itemCount: ventasData.ventas.length,
             itemBuilder: (context, index) {
-              final venta = ventasProvider.ventas[index];
-              return _buildVentaItem(context, ventasProvider, venta);
+              final venta = ventasData.ventas[index];
+              return _buildVentaItem(context, _ventasProvider, venta);
             },
           ),
         ),
-        // Paginador al final de la columna
-        if (ventasProvider.paginacion.totalPages > 0)
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Paginador(
-                  paginacion: ventasProvider.paginacion,
-                  backgroundColor: const Color(0xFF2D2D2D),
-                  textColor: Colors.white,
-                  accentColor: const Color(0xFFE31E24),
-                  radius: 8.0,
-                  onPageChanged: ventasProvider.cambiarPagina,
-                  onPageSizeChanged: ventasProvider.cambiarItemsPorPagina,
+        // Paginador al final de la columna - Optimizado con Selector
+        Selector<VentasProvider, dynamic>(
+          selector: (_, provider) => provider.paginacion,
+          builder: (context, paginacion, child) {
+            if (paginacion.totalPages > 0) {
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Paginador(
+                      paginacion: paginacion,
+                      backgroundColor: const Color(0xFF2D2D2D),
+                      textColor: Colors.white,
+                      accentColor: const Color(0xFFE31E24),
+                      radius: 8.0,
+                      onPageChanged: _ventasProvider.cambiarPagina,
+                      onPageSizeChanged: _ventasProvider.cambiarItemsPorPagina,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
       ],
     );
   }
@@ -604,7 +716,7 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                     decoration: BoxDecoration(
                       color: ventasProvider
                           .getEstadoColor(estado)
-                          .withOpacity(0.1),
+                          .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
@@ -690,7 +802,7 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                         decoration: BoxDecoration(
                           color: ventasProvider
                               .getEstadoColor(estado)
-                              .withOpacity(0.1),
+                              .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -832,174 +944,5 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     }
 
     await Provider.of<VentasProvider>(context, listen: false).abrirPdf(url);
-  }
-
-  Future<void> _mostrarSelectorFechas(
-      BuildContext context, VentasProvider ventasProvider) async {
-    if (!mounted) {
-      return;
-    }
-
-    final DateTimeRange? rango = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
-      initialDateRange:
-          ventasProvider.fechaInicio != null && ventasProvider.fechaFin != null
-              ? DateTimeRange(
-                  start: ventasProvider.fechaInicio!,
-                  end: ventasProvider.fechaFin!,
-                )
-              : null,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFFE31E24),
-              onPrimary: Colors.white,
-              surface: Color(0xFF2D2D2D),
-            ),
-            dialogBackgroundColor: const Color(0xFF1A1A1A),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    if (rango != null) {
-      ventasProvider.actualizarFiltrosFecha(
-        rango.start,
-        rango.end,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Filtrando desde ${DateFormat('dd/MM/yyyy').format(rango.start)} hasta ${DateFormat('dd/MM/yyyy').format(rango.end)}',
-            ),
-            backgroundColor: Colors.green,
-            action: SnackBarAction(
-              label: 'Limpiar',
-              textColor: Colors.white,
-              onPressed: () {
-                if (mounted) {
-                  ventasProvider.actualizarFiltrosFecha(null, null);
-                }
-              },
-            ),
-          ),
-        );
-      }
-    }
-  }
-
-  void _mostrarMenuEstados(
-      BuildContext context, VentasProvider ventasProvider) {
-    if (!mounted) {
-      return;
-    }
-
-    final estados = [
-      {'id': null, 'nombre': 'Todos los estados'},
-      {'id': 'PENDIENTE', 'nombre': 'Pendiente'},
-      {'id': 'COMPLETADA', 'nombre': 'Completada'},
-      {'id': 'ANULADA', 'nombre': 'Anulada'},
-      {'id': 'DECLARADA', 'nombre': 'Declarada'},
-      {'id': 'ACEPTADO-SUNAT', 'nombre': 'Aceptado SUNAT'},
-    ];
-
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-    final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero),
-            ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
-    );
-
-    showMenu<String>(
-      context: context,
-      position: position,
-      color: const Color(0xFF2D2D2D),
-      items: estados.map((estado) {
-        final esSeleccionado = ventasProvider.estadoFiltro == estado['id'];
-        return PopupMenuItem<String>(
-          value: estado['id'],
-          child: Row(
-            children: [
-              Container(
-                width: 14,
-                height: 14,
-                margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: esSeleccionado
-                      ? const Color(0xFFE31E24)
-                      : Colors.transparent,
-                  border: Border.all(
-                    color: esSeleccionado
-                        ? const Color(0xFFE31E24)
-                        : Colors.white.withOpacity(0.5),
-                  ),
-                ),
-                child: esSeleccionado
-                    ? const Icon(
-                        Icons.check,
-                        size: 10,
-                        color: Colors.white,
-                      )
-                    : null,
-              ),
-              Text(
-                estado['nombre'] as String,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight:
-                      esSeleccionado ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    ).then((String? seleccionado) {
-      if (!mounted) {
-        return;
-      }
-
-      if (seleccionado != null || seleccionado == null) {
-        ventasProvider.actualizarFiltroEstado(seleccionado);
-
-        if (!mounted) {
-          return;
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Filtrando por estado: ${seleccionado ?? 'Todos'}',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    });
-  }
-
-  Widget _buildFiltroChip(String label, VoidCallback onPressed) {
-    return Chip(
-      label: Text(label),
-      onDeleted: onPressed,
-      deleteIconColor: Colors.white,
-      backgroundColor: const Color(0xFF1A1A1A),
-      labelStyle: const TextStyle(color: Colors.white70),
-    );
   }
 }

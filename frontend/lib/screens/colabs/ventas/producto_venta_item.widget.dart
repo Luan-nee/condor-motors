@@ -47,19 +47,19 @@ class ProductoVentaItemWidget extends StatelessWidget {
     if (promocionActivada) {
       if (tienePromocionGratis) {
         borderColor = const Color(0xFF2E7D32); // Verde oscuro
-        backgroundColor = const Color(0xFF2E7D32).withOpacity(0.1);
+        backgroundColor = const Color(0xFF2E7D32).withValues(alpha: 0.1);
         promocionIcon = Icons.card_giftcard;
         promocionTooltip = 'Promoción "Lleva y Paga" activada';
       } else if (tieneDescuentoPorcentual &&
           cantidad >= (cantidadMinima ?? 0)) {
         borderColor = Colors.purple;
-        backgroundColor = Colors.purple.withOpacity(0.1);
+        backgroundColor = Colors.purple.withValues(alpha: 0.1);
         promocionIcon = Icons.percent;
         promocionTooltip = 'Descuento del $porcentajeDescuento% aplicado';
       }
     } else if (enLiquidacion) {
       borderColor = Colors.amber;
-      backgroundColor = Colors.amber.withOpacity(0.1);
+      backgroundColor = Colors.amber.withValues(alpha: 0.1);
       promocionIcon = Icons.local_offer;
       promocionTooltip = 'Producto en liquidación';
     }
@@ -93,7 +93,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
                       height: 48,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
-                          Icon(Icons.image, color: Colors.grey, size: 32),
+                          const Icon(Icons.image, color: Colors.grey, size: 32),
                     ),
                   )
                 else
@@ -104,7 +104,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.image_not_supported,
+                    child: const Icon(Icons.image_not_supported,
                         color: Colors.grey, size: 32),
                   ),
                 // Icono de promoción
@@ -116,7 +116,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(5),
                         decoration: BoxDecoration(
-                          color: borderColor?.withOpacity(0.2),
+                          color: borderColor?.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Icon(
@@ -169,7 +169,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
-                          color: borderColor?.withOpacity(0.7),
+                          color: borderColor?.withValues(alpha: 0.7),
                         ),
                       ),
                     ),
@@ -202,7 +202,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 4, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.purple.withOpacity(0.2),
+                                color: Colors.purple.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -230,7 +230,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
                           'Subtotal: S/ ${subtotal.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: borderColor?.withOpacity(0.8),
+                            color: borderColor?.withValues(alpha: 0.8),
                           ),
                         ),
                       ],
@@ -255,7 +255,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
                           'Subtotal: S/ ${subtotal.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: borderColor?.withOpacity(0.8),
+                            color: borderColor?.withValues(alpha: 0.8),
                           ),
                         ),
                         if (tienePromocionGratis && productosGratis > 0) ...[
@@ -264,10 +264,10 @@ class ProductoVentaItemWidget extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 4, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2E7D32).withOpacity(0.1),
+                              color: const Color(0xFF2E7D32).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color: const Color(0xFF2E7D32).withOpacity(0.3),
+                                color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
                               ),
                             ),
                             child: Row(
@@ -298,9 +298,9 @@ class ProductoVentaItemWidget extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 3),
                   decoration: BoxDecoration(
                     color: stockLimitado
-                        ? Colors.orange.withOpacity(0.2)
-                        : (borderColor?.withOpacity(0.1) ??
-                            Colors.blue.withOpacity(0.1)),
+                        ? Colors.orange.withValues(alpha: 0.2)
+                        : (borderColor?.withValues(alpha: 0.1) ??
+                            Colors.blue.withValues(alpha: 0.1)),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
@@ -326,7 +326,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
                           Icons.add,
                           size: 16,
                           color: stockLimitado
-                              ? Colors.orange.withOpacity(0.5)
+                              ? Colors.orange.withValues(alpha: 0.5)
                               : null,
                         ),
                         onPressed: stockLimitado

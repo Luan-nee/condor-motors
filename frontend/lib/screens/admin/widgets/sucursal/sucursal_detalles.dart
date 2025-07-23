@@ -52,8 +52,8 @@ class SucursalDetalles extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           side: BorderSide(
             color: sucursal.sucursalCentral
-                ? const Color(0xFFE31E24).withOpacity(0.3)
-                : Colors.white.withOpacity(0.1),
+                ? const Color(0xFFE31E24).withValues(alpha: 0.3)
+                : Colors.white.withValues(alpha: 0.1),
           ),
         ),
         child: IntrinsicHeight(
@@ -67,7 +67,7 @@ class SucursalDetalles extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: sucursal.sucursalCentral
-                      ? const Color(0xFFE31E24).withOpacity(0.1)
+                      ? const Color(0xFFE31E24).withValues(alpha: 0.1)
                       : const Color(0xFF2D2D2D),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(8),
@@ -85,7 +85,7 @@ class SucursalDetalles extends StatelessWidget {
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: sucursal.sucursalCentral
-                                ? const Color(0xFFE31E24).withOpacity(0.2)
+                                ? const Color(0xFFE31E24).withValues(alpha: 0.2)
                                 : Colors.black26,
                             borderRadius: BorderRadius.circular(6),
                           ),
@@ -122,7 +122,7 @@ class SucursalDetalles extends StatelessWidget {
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: sucursal.sucursalCentral
-                                ? const Color(0xFFE31E24).withOpacity(0.2)
+                                ? const Color(0xFFE31E24).withValues(alpha: 0.2)
                                 : Colors.black26,
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -142,7 +142,7 @@ class SucursalDetalles extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 3),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.2),
+                            color: Colors.blue.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
@@ -186,7 +186,7 @@ class SucursalDetalles extends StatelessWidget {
                           color: const Color(0xFF2D2D2D),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: Colors.grey.withOpacity(0.3),
+                            color: Colors.grey.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
@@ -335,12 +335,12 @@ class SucursalDetalles extends StatelessWidget {
       decoration: BoxDecoration(
         color: isConfigured
             ? const Color(0xFF2D2D2D)
-            : Colors.red.withOpacity(0.1),
+            : Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: isConfigured
-              ? Colors.grey.withOpacity(0.3)
-              : Colors.red.withOpacity(0.3),
+              ? Colors.grey.withValues(alpha: 0.3)
+              : Colors.red.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -361,7 +361,7 @@ class SucursalDetalles extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                 ),
               ),
             ],
@@ -392,12 +392,12 @@ class SucursalDetalles extends StatelessWidget {
       decoration: BoxDecoration(
         color: isConfigured
             ? const Color(0xFF2D2D2D)
-            : Colors.red.withOpacity(0.1),
+            : Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: isConfigured
-              ? Colors.grey.withOpacity(0.3)
-              : Colors.red.withOpacity(0.3),
+              ? Colors.grey.withValues(alpha: 0.3)
+              : Colors.red.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -418,7 +418,7 @@ class SucursalDetalles extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                 ),
               ),
             ],
@@ -444,7 +444,7 @@ class SucursalDetalles extends StatelessWidget {
               'No configurado',
               style: TextStyle(
                 fontSize: 15,
-                color: Colors.red.withOpacity(0.7),
+                color: Colors.red.withValues(alpha: 0.7),
                 fontStyle: FontStyle.italic,
               ),
             ),

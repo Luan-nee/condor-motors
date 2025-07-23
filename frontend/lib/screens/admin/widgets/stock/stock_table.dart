@@ -238,7 +238,7 @@ class TableProducts extends StatelessWidget {
                 ? 'Ningún producto coincide con los filtros o criterios de búsqueda aplicados'
                 : 'Considera agregar productos a esta sucursal',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 14,
             ),
             textAlign: TextAlign.center,
@@ -368,7 +368,7 @@ class TableProducts extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
           ),
         ),
       ),
@@ -422,14 +422,15 @@ class TableProducts extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.orange.withOpacity(0.2),
+                                color: Colors.orange.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
-                                    color: Colors.orange.withOpacity(0.5)),
+                                    color:
+                                        Colors.orange.withValues(alpha: 0.5)),
                               ),
-                              child: Row(
+                              child: const Row(
                                 mainAxisSize: MainAxisSize.min,
-                                children: const <Widget>[
+                                children: <Widget>[
                                   FaIcon(
                                     FontAwesomeIcons.fire,
                                     size: 10,
@@ -455,7 +456,7 @@ class TableProducts extends StatelessWidget {
                         Text(
                           producto.descripcion!,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
                           maxLines: 1,
@@ -468,21 +469,27 @@ class TableProducts extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: <Widget>[
-                            Text(
-                              'Precio: ${producto.getPrecioActualFormateado()}',
-                              style: const TextStyle(
-                                color: Colors.orange,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
+                            Flexible(
+                              child: Text(
+                                'Precio: ${producto.getPrecioActualFormateado()}',
+                                style: const TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(width: 4),
-                            Text(
-                              producto.getPrecioVentaFormateado(),
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
-                                fontSize: 11,
-                                decoration: TextDecoration.lineThrough,
+                            Flexible(
+                              child: Text(
+                                producto.getPrecioVentaFormateado(),
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  fontSize: 11,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -543,7 +550,7 @@ class TableProducts extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
+                    color: statusColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -582,9 +589,7 @@ class TableProducts extends StatelessWidget {
                     size: 16,
                   ),
                   onPressed: () {
-                    if (onVerStockDetalles != null) {
-                      onVerStockDetalles!(producto);
-                    }
+                    onVerStockDetalles?.call(producto);
                   },
                   constraints: const BoxConstraints(
                     minWidth: 30,
@@ -804,9 +809,11 @@ class _InventarioResumenState extends State<InventarioResumen> {
     return Container(
       padding: const EdgeInsets.all(7),
       decoration: BoxDecoration(
-        color: highlight ? color.withOpacity(0.15) : const Color(0xFF333333),
+        color:
+            highlight ? color.withValues(alpha: 0.15) : const Color(0xFF333333),
         borderRadius: BorderRadius.circular(8),
-        border: highlight ? Border.all(color: color.withOpacity(0.3)) : null,
+        border:
+            highlight ? Border.all(color: color.withValues(alpha: 0.3)) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -823,7 +830,7 @@ class _InventarioResumenState extends State<InventarioResumen> {
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -844,7 +851,7 @@ class _InventarioResumenState extends State<InventarioResumen> {
           Text(
             subtitle,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
               fontSize: 12,
             ),
           ),

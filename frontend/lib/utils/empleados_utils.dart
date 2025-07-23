@@ -190,10 +190,10 @@ class EmpleadosUtils {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -267,7 +267,7 @@ class EmpleadosUtils {
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.white.withOpacity(0.6),
+            color: Colors.white.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(height: 4),
@@ -419,7 +419,7 @@ class EmpleadosUtils {
           color: const Color(0xFF2D2D2D),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFFE31E24).withOpacity(0.2),
+            color: const Color(0xFFE31E24).withValues(alpha: 0.2),
           ),
         ),
         child: Column(
@@ -521,7 +521,7 @@ class EmpleadosUtils {
           color: const Color(0xFF2D2D2D),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFFE31E24).withOpacity(0.2),
+            color: const Color(0xFFE31E24).withValues(alpha: 0.2),
           ),
         ),
         child: Column(

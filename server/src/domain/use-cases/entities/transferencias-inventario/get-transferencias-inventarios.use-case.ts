@@ -46,7 +46,9 @@ export class GetTransferenciasInventarios {
 
   private readonly validSortBy = {
     salidaOrigen: transferenciasInventariosTable.salidaOrigen,
-    llegadaDestino: transferenciasInventariosTable.llegadaDestino
+    llegadaDestino: transferenciasInventariosTable.llegadaDestino,
+    fechaCreacion: transferenciasInventariosTable.fechaCreacion,
+    fechaActualizacion: transferenciasInventariosTable.fechaActualizacion
   } as const
 
   private readonly validFilter = {
@@ -63,7 +65,7 @@ export class GetTransferenciasInventarios {
     if (this.isValidSortBy(sortBy)) {
       return this.validSortBy[sortBy]
     }
-    return this.validSortBy.salidaOrigen
+    return this.validSortBy.fechaCreacion
   }
 
   private getMetadata() {

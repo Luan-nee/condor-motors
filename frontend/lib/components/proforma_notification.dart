@@ -70,7 +70,7 @@ class ProformaNotification {
       _notificationsEnabled && _isInitialized && _canShowWindowsNotifications;
 
   /// Habilita o deshabilita las notificaciones
-  void setNotificationsEnabled(bool enabled) {
+  void setNotificationsEnabled({required bool enabled}) {
     _notificationsEnabled = enabled;
     Logger.debug(
         'Notificaciones ${enabled ? 'habilitadas' : 'deshabilitadas'}');

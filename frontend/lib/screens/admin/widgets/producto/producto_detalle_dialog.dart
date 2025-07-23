@@ -181,10 +181,10 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        Expanded(
+        const Expanded(
           child: Text(
             'Detalles del Producto en Sucursales',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -237,8 +237,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         FontAwesomeIcons.box,
                         size: 32,
                         color: widget.producto.tieneStockBajo()
-                            ? const Color(0xFFE31E24).withOpacity(0.7)
-                            : Colors.white.withOpacity(0.7),
+                            ? const Color(0xFFE31E24).withValues(alpha: 0.7)
+                            : Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
             ),
@@ -266,7 +266,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.amber.withOpacity(0.2),
+                            color: Colors.amber.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(color: Colors.amber),
                           ),
@@ -353,8 +353,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   // Título "Detalles"
-                  Row(
-                    children: const <Widget>[
+                  const Row(
+                    children: <Widget>[
                       FaIcon(
                         FontAwesomeIcons.circleInfo,
                         color: Colors.white,
@@ -499,7 +499,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -560,15 +560,13 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                   const SizedBox(height: 16),
 
                   // Información adicional que estaba en la tercera pestaña
-                  isPantallaReducida
-                      ? _buildInfoAdicionalWrap()
-                      : _buildInfoAdicionalRow(),
+                  if (isPantallaReducida) _buildInfoAdicionalWrap() else _buildInfoAdicionalRow(),
                 ],
               ),
             ),
@@ -603,9 +601,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isSmall ? 8 : 12, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -628,7 +626,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           Text(
             label,
             style: TextStyle(
-              color: color.withOpacity(0.8),
+              color: color.withValues(alpha: 0.8),
               fontSize: isSmall ? 12 : 14,
             ),
           ),
@@ -675,11 +673,11 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  isPantallaReducida ? _buildPreciosWrap() : _buildPreciosRow(),
+                  if (isPantallaReducida) _buildPreciosWrap() else _buildPreciosRow(),
                 ],
               ),
             ),
@@ -698,11 +696,11 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             const Divider(color: Colors.white24, height: 1),
 
             // Título de sección de precios por sucursal
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(0, 16, 0, 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const <Widget>[
+                children: <Widget>[
                   Text(
                     'Precios por Sucursal',
                     style: TextStyle(
@@ -772,10 +770,10 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             .toList();
 
     if (sucursalesDisponibles.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[
+          children: <Widget>[
             FaIcon(
               FontAwesomeIcons.store,
               size: 48,
@@ -829,7 +827,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               width: 4,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.blue,
+                color: Colors.blue.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             )
@@ -863,7 +861,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 1),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.2),
+                          color: Colors.blue.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(2),
                           border: Border.all(
                             color: Colors.blue,
@@ -925,7 +923,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                       'Ganancia: ',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                     Text(
@@ -944,7 +942,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                       'Margen: ',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                     Text(
@@ -972,10 +970,10 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -995,7 +993,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                 label,
                 style: TextStyle(
                   fontSize: 10,
-                  color: color.withOpacity(0.9),
+                  color: color.withValues(alpha: 0.9),
                 ),
               ),
               Text(
@@ -1064,10 +1062,10 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -1095,7 +1093,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   descripcion,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -1193,12 +1191,12 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                   const SizedBox(height: 16),
                   // Cambiamos a formato similar a precios (en 4 columnas o wrap)
-                  isPantallaReducida ? _buildStockWrap() : _buildStockRow(),
+                  if (isPantallaReducida) _buildStockWrap() else _buildStockRow(),
                 ],
               ),
             ),
@@ -1208,11 +1206,11 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           const Divider(color: Colors.white24, height: 1),
 
           // Título de sección con filtros
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const <Widget>[
+              children: <Widget>[
                 Text(
                   'Stock por Sucursal',
                   style: TextStyle(
@@ -1283,10 +1281,10 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             .toList();
 
     if (sucursalesDisponibles.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[
+          children: <Widget>[
             FaIcon(
               FontAwesomeIcons.store,
               size: 48,
@@ -1391,7 +1389,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 1),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.2),
+                          color: Colors.blue.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(2),
                           border: Border.all(
                             color: Colors.blue,
@@ -1434,10 +1432,10 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: indicadorColor.withOpacity(0.15),
+                        color: indicadorColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: indicadorColor.withOpacity(0.3),
+                          color: indicadorColor.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -1475,7 +1473,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
-                            Text(
+                            const Text(
                               'Stock: ',
                               style: TextStyle(
                                 color: Colors.white60,
@@ -1493,7 +1491,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                             if (producto.stockMinimo != null)
                               Text(
                                 '/${producto.stockMinimo}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: Colors.white54,
                                   fontSize: 12,
                                 ),
@@ -1623,7 +1621,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           label,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
           ),
         ),
         const SizedBox(height: 4),
@@ -1685,7 +1683,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               color: colorVisual,
               borderRadius: BorderRadius.circular(3),
               border: Border.all(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withValues(alpha: 0.3),
               ),
             ),
           ),

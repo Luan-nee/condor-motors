@@ -12,5 +12,3 @@ export 'stock.admin.provider.dart';
 export 'sucursal.admin.provider.dart';
 export 'transferencias.admin.provider.dart';
 export 'ventas.admin.provider.dart';
-
-// TODO: Agregar exportaciones de otros providers cuando se creen

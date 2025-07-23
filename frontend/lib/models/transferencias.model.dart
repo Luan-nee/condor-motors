@@ -1,5 +1,6 @@
 import 'package:condorsmotors/api/protected/productos.api.dart';
 import 'package:condorsmotors/models/producto.model.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 /// Estados posibles de una transferencia de inventario
@@ -21,7 +22,7 @@ enum EstadoTransferencia {
 }
 
 /// Representa un producto incluido en una transferencia de inventario
-class DetalleProducto {
+class DetalleProducto extends Equatable {
   final int id;
   final String nombre;
   final String? codigo;
@@ -35,11 +36,10 @@ class DetalleProducto {
   final bool? stockBajoEnOrigen;
   final Producto? producto;
 
-  DetalleProducto({
+  const DetalleProducto({
     required this.id,
     required this.nombre,
-    this.codigo,
-    required this.cantidad,
+    required this.cantidad, this.codigo,
     this.stockOrigenActual,
     this.stockOrigenResultante,
     this.stockDestinoActual,
@@ -49,6 +49,22 @@ class DetalleProducto {
     this.stockBajoEnOrigen,
     this.producto,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        nombre,
+        codigo,
+        cantidad,
+        stockOrigenActual,
+        stockOrigenResultante,
+        stockDestinoActual,
+        stockMinimo,
+        cantidadSolicitada,
+        stockDisponible,
+        stockBajoEnOrigen,
+        producto,
+      ];
 
   /// Crea una instancia desde un mapa JSON (formato estándar)
   factory DetalleProducto.fromJson(Map<String, dynamic> json) {
@@ -170,7 +186,7 @@ class DetalleProducto {
 }
 
 /// Representa una transferencia de inventario entre sucursales
-class TransferenciaInventario {
+class TransferenciaInventario extends Equatable {
   final int id;
   final EstadoTransferencia estado;
   final String? nombreSucursalOrigen;
@@ -188,11 +204,8 @@ class TransferenciaInventario {
   const TransferenciaInventario({
     required this.id,
     required this.estado,
-    this.nombreSucursalOrigen,
-    required this.nombreSucursalDestino,
-    required this.sucursalDestinoId,
+    required this.nombreSucursalDestino, required this.sucursalDestinoId, required this.modificable, this.nombreSucursalOrigen,
     this.sucursalOrigenId,
-    required this.modificable,
     this.salidaOrigen,
     this.llegadaDestino,
     this.productos,
@@ -200,6 +213,23 @@ class TransferenciaInventario {
     this.fechaCreacion,
     this.fechaActualizacion,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        estado,
+        nombreSucursalOrigen,
+        nombreSucursalDestino,
+        sucursalDestinoId,
+        sucursalOrigenId,
+        modificable,
+        salidaOrigen,
+        llegadaDestino,
+        productos,
+        observaciones,
+        fechaCreacion,
+        fechaActualizacion,
+      ];
 
   /// Obtiene la cantidad total de productos
   int getCantidadTotal() {
@@ -444,7 +474,7 @@ class EstadoStock {
 
   factory EstadoStock.fromJson(Map<String, dynamic>? json) {
     if (json == null) {
-      return EstadoStock(stockActual: 0, stockDespues: 0);
+      return const EstadoStock(stockActual: 0, stockDespues: 0);
     }
 
     return EstadoStock(
@@ -478,9 +508,7 @@ class ComparacionProducto {
     required this.productoId,
     required this.nombre,
     required this.cantidadSolicitada,
-    this.origen,
-    required this.destino,
-    required this.procesable,
+    required this.destino, required this.procesable, this.origen,
   });
 
   factory ComparacionProducto.fromJson(Map<String, dynamic> json) {

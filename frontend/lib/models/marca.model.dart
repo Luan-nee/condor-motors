@@ -1,7 +1,8 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 /// Modelo para las marcas
-class Marca {
+class Marca extends Equatable {
   final int id;
   final String nombre;
   final String? descripcion;
@@ -11,7 +12,7 @@ class Marca {
   final DateTime? fechaActualizacion;
   final int totalProductos;
 
-  Marca({
+  const Marca({
     required this.id,
     required this.nombre,
     this.descripcion,
@@ -21,6 +22,18 @@ class Marca {
     this.fechaActualizacion,
     this.totalProductos = 0,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        nombre,
+        descripcion,
+        logo,
+        activo,
+        fechaCreacion,
+        fechaActualizacion,
+        totalProductos,
+      ];
 
   /// Crea una instancia de [Marca] a partir de un mapa JSON
   factory Marca.fromJson(Map<String, dynamic> json) {
@@ -33,7 +46,8 @@ class Marca {
       id = int.tryParse(rawId) ?? 0; // Usar 0 como fallback
     } else {
       id = 0; // Valor por defecto si no hay ID o no se puede parsear
-      debugPrint('Marca.fromJson: ID no válido: $rawId (${rawId?.runtimeType})');
+      debugPrint(
+          'Marca.fromJson: ID no válido: $rawId (${rawId?.runtimeType})');
     }
 
     // Parseamos totalProductos de manera segura
@@ -52,11 +66,11 @@ class Marca {
       descripcion: json['descripcion'],
       logo: json['logo'],
       activo: json['activo'] ?? true,
-      fechaCreacion: json['fechaCreacion'] != null 
-          ? DateTime.parse(json['fechaCreacion']) 
+      fechaCreacion: json['fechaCreacion'] != null
+          ? DateTime.parse(json['fechaCreacion'])
           : null,
-      fechaActualizacion: json['fechaActualizacion'] != null 
-          ? DateTime.parse(json['fechaActualizacion']) 
+      fechaActualizacion: json['fechaActualizacion'] != null
+          ? DateTime.parse(json['fechaActualizacion'])
           : null,
       totalProductos: totalProductos,
     );
@@ -72,20 +86,17 @@ class Marca {
       'activo': activo,
     };
   }
-  
+
   /// Convierte esta marca a un mapa JSON incluyendo el ID
   Map<String, dynamic> toFullJson() {
     return <String, dynamic>{
       'id': id,
       ...toJson(),
       'totalProductos': totalProductos,
-      if (fechaCreacion != null) 'fechaCreacion': fechaCreacion!.toIso8601String(),
-      if (fechaActualizacion != null) 'fechaActualizacion': fechaActualizacion!.toIso8601String(),
+      if (fechaCreacion != null)
+        'fechaCreacion': fechaCreacion!.toIso8601String(),
+      if (fechaActualizacion != null)
+        'fechaActualizacion': fechaActualizacion!.toIso8601String(),
     };
   }
-  
-  @override
-  String toString() {
-    return 'Marca{id: $id, nombre: $nombre, activo: $activo, totalProductos: $totalProductos}';
-  }
-} 
+}

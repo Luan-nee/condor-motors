@@ -357,9 +357,7 @@ class EmpleadoProvider extends ChangeNotifier {
   /// Determina si un error es debido a recurso no encontrado
   bool _esErrorNotFound(String errorMessage) {
     final String msgLower = errorMessage.toLowerCase();
-    return _errorNotFoundResponses.any((String term) {
-      return msgLower.contains(term);
-    });
+    return _errorNotFoundResponses.any(msgLower.contains);
   }
 
   /// Crea una nueva cuenta de usuario para un empleado

@@ -151,8 +151,6 @@ class VentasListComputer extends StatelessWidget {
       case EstadoVenta.declarada:
         color = Colors.blue;
         break;
-      default:
-        color = Colors.grey;
     }
 
     return Container(
@@ -254,7 +252,7 @@ class _HistorialVentasComputerScreenState
                   color: const Color(0xFF1A1A1A),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withValues(alpha: 0.2),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -276,131 +274,11 @@ class _HistorialVentasComputerScreenState
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(),
+                              contentPadding: EdgeInsets.zero,
                             ),
                           ),
                         ),
                         const SizedBox(width: 16),
-
-                        // Filtro de estado
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String?>(
-                              hint: const Text('Estado'),
-                              value: provider.estadoFiltro,
-                              items: const [
-                                DropdownMenuItem(child: Text('Todos')),
-                                DropdownMenuItem(
-                                    value: 'PENDIENTE',
-                                    child: Text('Pendientes')),
-                                DropdownMenuItem(
-                                    value: 'COMPLETADA',
-                                    child: Text('Completadas')),
-                                DropdownMenuItem(
-                                    value: 'ANULADA', child: Text('Anuladas')),
-                                DropdownMenuItem(
-                                    value: 'DECLARADA',
-                                    child: Text('Declaradas')),
-                              ],
-                              onChanged: provider.actualizarFiltroEstado,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-
-                        // Fecha inicio
-                        InkWell(
-                          onTap: () async {
-                            final DateTime? fecha = await showDatePicker(
-                              context: context,
-                              initialDate:
-                                  provider.fechaInicio ?? DateTime.now(),
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime.now(),
-                            );
-                            if (fecha != null) {
-                              provider.actualizarFiltrosFecha(
-                                  fecha, provider.fechaFin);
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                const FaIcon(FontAwesomeIcons.calendarDay,
-                                    size: 14, color: Colors.grey),
-                                const SizedBox(width: 8),
-                                Text(
-                                  provider.fechaInicio == null
-                                      ? 'Fecha inicio'
-                                      : DateFormat('dd/MM/yyyy')
-                                          .format(provider.fechaInicio!),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-
-                        // Fecha fin
-                        InkWell(
-                          onTap: () async {
-                            final DateTime? fecha = await showDatePicker(
-                              context: context,
-                              initialDate: provider.fechaFin ?? DateTime.now(),
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime.now(),
-                            );
-                            if (fecha != null) {
-                              provider.actualizarFiltrosFecha(
-                                  provider.fechaInicio, fecha);
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                const FaIcon(FontAwesomeIcons.calendarDay,
-                                    size: 14, color: Colors.grey),
-                                const SizedBox(width: 8),
-                                Text(
-                                  provider.fechaFin == null
-                                      ? 'Fecha fin'
-                                      : DateFormat('dd/MM/yyyy')
-                                          .format(provider.fechaFin!),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-
-                        // Botón de limpiar filtros
-                        ElevatedButton.icon(
-                          onPressed: provider.limpiarFiltros,
-                          icon: const FaIcon(FontAwesomeIcons.filterCircleXmark,
-                              size: 14),
-                          label: const Text('Limpiar'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[700],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
 
                         // Botón de refrescar
                         ElevatedButton.icon(
@@ -423,7 +301,7 @@ class _HistorialVentasComputerScreenState
                 child: VentasListComputer(
                   ventas: provider.ventas,
                   isLoading: provider.isVentasLoading,
-                  onAnularVenta: (venta) => _mostrarAnularVentaDialog(venta),
+                  onAnularVenta: _mostrarAnularVentaDialog,
                   onRecargarVentas: () => provider.cargarVentas(),
                 ),
               ),

@@ -35,53 +35,37 @@ class LoginProvider extends ChangeNotifier {
   }
 
   Future<void> _init() async {
-    await _loadStayLoggedInPreference();
+    await _loadPreferences();
     if (_stayLoggedIn) {
       await tryAutoLogin();
-    } else {
-      await _loadSavedCredentials();
     }
     notifyListeners();
   }
 
-  Future<void> _loadStayLoggedInPreference() async {
+  Future<void> _loadPreferences() async {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       _stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
+      _rememberMe = prefs.getBool('remember_me') ?? false;
       notifyListeners();
     } catch (e) {
-      debugPrint('Error al cargar preferencia de permanencia de sesión: $e');
-    }
-  }
-
-  Future<void> _loadSavedCredentials() async {
-    try {
-      final String? username = await _storage.read(key: 'username');
-      final String? password = await _storage.read(key: 'password');
-      final String? shouldRemember = await _storage.read(key: 'remember_me');
-
-      if (username != null && password != null && shouldRemember == 'true') {
-        _rememberMe = true;
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('Error al cargar credenciales: $e');
+      debugPrint('Error al cargar preferencias: $e');
     }
   }
 
   Future<void> saveCredentials(String username, String password) async {
     try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('remember_me', _rememberMe);
+
       if (_rememberMe) {
         await _storage.write(key: 'username', value: username);
         await _storage.write(key: 'password', value: password);
-        await _storage.write(key: 'remember_me', value: 'true');
       } else {
         await _storage.delete(key: 'username');
         await _storage.delete(key: 'password');
-        await _storage.delete(key: 'remember_me');
       }
 
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('stay_logged_in', _stayLoggedIn);
 
       if (_stayLoggedIn) {

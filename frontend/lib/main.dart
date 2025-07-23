@@ -38,6 +38,11 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 // Instancia global para acceso desde interceptores (ej: main.api.dart)
 late AuthProvider globalAuthProvider;
 
+// FIX: Considerar usar un localizador de servicios (como get_it) para evitar
+// variables globales. Esto mejora la predictibilidad y el testing.
+// Ejemplo: `locator.registerSingleton<AuthProvider>(AuthProvider(AuthRepository.instance));`
+// y luego `final authProvider = locator<AuthProvider>();` donde se necesite.
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -113,6 +118,14 @@ void main() async {
     ChangeNotifierProvider<VentasComputerProvider>(
       create: (_) => VentasComputerProvider(),
     ),
+    // FIX: Para dependencias entre providers, `ChangeNotifierProxyProvider` es una
+    // opción más robusta que `Provider.of` en el `create` callback.
+    // Permite que el provider dependiente se actualice si su dependencia cambia.
+    // Ejemplo:
+    // ChangeNotifierProxyProvider<VentasComputerProvider, ProformaComputerProvider>(
+    //   create: (context) => ProformaComputerProvider(context.read<VentasComputerProvider>()),
+    //   update: (context, ventas, proforma) => proforma!..update(ventas),
+    // ),
     ChangeNotifierProvider<ProformaComputerProvider>(
       create: (context) => ProformaComputerProvider(
         Provider.of<VentasComputerProvider>(context, listen: false),
@@ -136,7 +149,7 @@ void main() async {
           ...colabProviders,
           // Aquí puedes agregar más grupos de providers según sea necesario
         ],
-        child: AppInitializer(
+        child: const AppInitializer(
           child: ConnectionStatusWidget(
             child: CondorMotorsApp(),
           ),
@@ -149,7 +162,7 @@ void main() async {
 /// Widget que muestra un splash/loading mientras se inicializan dependencias críticas
 class AppInitializer extends StatefulWidget {
   final Widget child;
-  const AppInitializer({super.key, required this.child});
+  const AppInitializer({required this.child, super.key});
 
   @override
   State<AppInitializer> createState() => _AppInitializerState();
@@ -204,7 +217,7 @@ class _AppInitializerState extends State<AppInitializer> {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withAlpha(25),
                 ),
                 child: Image.asset(
                   'assets/images/condor-motors-logo.webp',

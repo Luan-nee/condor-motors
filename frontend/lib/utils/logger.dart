@@ -88,58 +88,54 @@ enum LogLevel {
 /// Utilidad para centralizar la funcionalidad de registros (logs)
 class Logger {
   /// Nivel mínimo de log para mostrar. En producción, podría configurarse a info o warn
-  static LogLevel _currentLevel = kDebugMode ? LogLevel.debug : LogLevel.info;
-
-  /// Establece el nivel mínimo de log
-  static void setLevel(LogLevel level) {
-    _currentLevel = level;
-  }
+  static LogLevel level = kDebugMode ? LogLevel.debug : LogLevel.info;
 
   /// Registra un mensaje de depuración
   static void debug(String message) {
-    if (_currentLevel.index <= LogLevel.debug.index) {
+    if (level.index <= LogLevel.debug.index) {
       _log('DEBUG', message, ConsoleColor.cyan);
     }
   }
 
   /// Registra un mensaje informativo
   static void info(String message) {
-    if (_currentLevel.index <= LogLevel.info.index) {
+    if (level.index <= LogLevel.info.index) {
       _log('INFO', message, ConsoleColor.blue);
     }
   }
 
   /// Registra una advertencia
   static void warn(String message) {
-    if (_currentLevel.index <= LogLevel.warn.index) {
+    if (level.index <= LogLevel.warn.index) {
       _log('WARN', message, ConsoleColor.yellow);
     }
   }
 
   /// Registra un error
   static void error(String message) {
-    if (_currentLevel.index <= LogLevel.error.index) {
+    if (level.index <= LogLevel.error.index) {
       _log('ERROR', message, ConsoleColor.red);
     }
   }
 
   /// Registra un mensaje relacionado con caché (con color gris y opacidad 50%)
   static void cache(String message) {
-    if (_currentLevel.index <= LogLevel.info.index) {
+    if (level.index <= LogLevel.info.index) {
       _log('CACHE', message, ConsoleColor.cache);
     }
   }
 
   /// Registra una petición HTTP
   static void http(String method, String endpoint, [int? statusCode]) {
-    if (_currentLevel.index <= LogLevel.debug.index) {
+    if (level.index <= LogLevel.debug.index) {
       final String methodColor = ConsoleColor.getHttpMethodColor(method);
 
       // Usar un enfoque alternativo para rellenar el string sin padEnd
-      String paddedMethod = method;
-      while (paddedMethod.length < 6) {
-        paddedMethod += ' ';
+      final StringBuffer buffer = StringBuffer(method);
+      while (buffer.length < 6) {
+        buffer.write(' ');
       }
+      final String paddedMethod = buffer.toString();
 
       final String coloredMethod =
           ConsoleColor.colorize(paddedMethod, methodColor);

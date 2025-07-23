@@ -201,10 +201,10 @@ class StockUtils {
         
         // Retornar el producto y su puntuación
         return (producto: producto, puntuacion: puntuacion);
-      }).toList();
+      }).toList()
       
       // Ordenar por puntuación (mayor a menor)
-      productosConPuntuacion.sort((({Producto producto, int puntuacion}) a, ({Producto producto, int puntuacion}) b) => b.puntuacion.compareTo(a.puntuacion));
+      ..sort((({Producto producto, int puntuacion}) a, ({Producto producto, int puntuacion}) b) => b.puntuacion.compareTo(a.puntuacion));
       
       // Retornar solo los productos, ya ordenados por prioridad
       return productosConPuntuacion.map((({Producto producto, int puntuacion}) p) => p.producto).toList();

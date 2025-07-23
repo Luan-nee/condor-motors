@@ -66,10 +66,10 @@ class BusquedaClienteUtils {
           cliente.denominacion.toLowerCase().contains(filtro) ||
           cliente.numeroDocumento.toLowerCase().contains(filtro) ||
           cliente.nombre.toLowerCase().contains(filtro);
-    }).toList();
+    }).toList()
 
     // Ordenar resultados
-    clientesFiltrados.sort((Cliente a, Cliente b) {
+    ..sort((Cliente a, Cliente b) {
       // Primero por tipo de documento
       final int tipoComparacion = detectarTipoDocumento(a.numeroDocumento)
           .index

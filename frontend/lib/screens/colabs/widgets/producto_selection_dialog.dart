@@ -280,7 +280,7 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFE31E24)
-                                          .withOpacity(0.1),
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const FaIcon(
@@ -308,7 +308,7 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
                                           decoration: BoxDecoration(
                                             color: isSelected
                                                 ? const Color(0xFFE31E24)
-                                                    .withOpacity(0.1)
+                                                    .withValues(alpha: 0.1)
                                                 : Colors.transparent,
                                             borderRadius:
                                                 BorderRadius.circular(8),

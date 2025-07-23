@@ -505,7 +505,7 @@ class ProformaConversionManager {
                     // Mostrar mensaje de reintento
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
+                        const SnackBar(
                           content:
                               Text('Reintentando con cliente alternativo...'),
                           backgroundColor: Colors.orange,

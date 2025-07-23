@@ -252,14 +252,10 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                 });
 
                 // Llamar al callback externo si existe
-                if (widget.onConvertToSale != null) {
-                  widget.onConvertToSale!(proforma);
-                }
+                widget.onConvertToSale?.call(proforma);
 
                 // Recargar datos si hay un método de recarga disponible
-                if (widget.onRefresh != null) {
-                  widget.onRefresh!();
-                }
+                widget.onRefresh?.call();
               },
             );
           } else {
@@ -330,7 +326,7 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(),
+                      contentPadding: EdgeInsets.zero,
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear,
@@ -448,10 +444,10 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.orange.withOpacity(0.2),
+                                color: Colors.orange.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
-                                  color: Colors.orange.withOpacity(0.5),
+                                  color: Colors.orange.withValues(alpha: 0.5),
                                 ),
                               ),
                               child: const Text(
@@ -606,7 +602,7 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Icon(
@@ -951,7 +947,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected
-                ? const Color(0xFF4CAF50).withOpacity(0.1)
+                ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(

@@ -197,7 +197,7 @@ class TokenService {
 
       // Actualizar variables en memoria primero
       _accessToken = accessToken;
-      _expiryTime = DateTime.now().add(Duration(seconds: 3600));
+      _expiryTime = DateTime.now().add(const Duration(seconds: 3600));
 
       // Guardar en Secure Storage
       await SecureStorageUtils.write(_accessTokenKey, accessToken);

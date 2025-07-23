@@ -346,7 +346,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
               Container(
                 decoration: BoxDecoration(
                   color: _isCategoriaExpanded
-                      ? Colors.blue.withOpacity(0.2)
+                      ? Colors.blue.withValues(alpha: 0.2)
                       : darkBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -388,7 +388,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
               Container(
                 decoration: BoxDecoration(
                   color: _isPromocionExpanded
-                      ? Colors.purple.withOpacity(0.2)
+                      ? Colors.purple.withValues(alpha: 0.2)
                       : darkBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -433,7 +433,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
               Container(
                 decoration: BoxDecoration(
                   color: _isSearchExpanded
-                      ? Colors.orange.withOpacity(0.2)
+                      ? Colors.orange.withValues(alpha: 0.2)
                       : darkBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -472,7 +472,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
               Container(
                 decoration: BoxDecoration(
                   color: hayFiltrosActivos
-                      ? Colors.red.withOpacity(0.2)
+                      ? Colors.red.withValues(alpha: 0.2)
                       : darkBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -697,7 +697,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -924,7 +924,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.2),
+                        color: Colors.blue.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -1173,7 +1173,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1181,7 +1181,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
           // Barra con título
           Container(
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.2),
+              color: Colors.blue.withValues(alpha: 0.2),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(7),
                 topRight: Radius.circular(7),
@@ -1232,7 +1232,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.purple.withOpacity(0.3)),
+        border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1240,7 +1240,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
           // Barra con título
           Container(
             decoration: BoxDecoration(
-              color: Colors.purple.withOpacity(0.2),
+              color: Colors.purple.withValues(alpha: 0.2),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(7),
                 topRight: Radius.circular(7),
@@ -1291,7 +1291,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1299,7 +1299,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
           // Barra con título
           Container(
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.2),
+              color: Colors.orange.withValues(alpha: 0.2),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(7),
                 topRight: Radius.circular(7),

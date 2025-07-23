@@ -14,31 +14,13 @@ class DashboardItemInfo {
   final Color color;
   final Color bgColor;
 
-  DashboardItemInfo({
+  const DashboardItemInfo({
     required this.icon,
     required this.title,
     required this.value,
     required this.color,
     required this.bgColor,
   });
-}
-
-// Definición de la clase Stock para manejar los datos
-class Stock {
-  final int productoId;
-  final int cantidad;
-
-  Stock({
-    required this.productoId,
-    required this.cantidad,
-  });
-
-  factory Stock.fromJson(Map<String, dynamic> json) {
-    return Stock(
-      productoId: json['producto_id'] ?? 0,
-      cantidad: json['cantidad'] ?? 0,
-    );
-  }
 }
 
 class DashboardAdminScreen extends StatefulWidget {
@@ -60,26 +42,39 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('[DashboardAdminScreen] initState');
     _dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    debugPrint('[DashboardAdminScreen] didChangeDependencies');
     if (!_isInitialized) {
-      _initializeData();
+      // Usar addPostFrameCallback para evitar errores de "setState during build"
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          debugPrint('[DashboardAdminScreen] Llamando _initializeData');
+          _initializeData();
+        }
+      });
       _isInitialized = true;
     }
   }
 
   Future<void> _initializeData() async {
+    debugPrint('[DashboardAdminScreen] _initializeData INICIO');
     await _dashboardProvider.inicializar();
+    debugPrint('[DashboardAdminScreen] _initializeData FIN');
   }
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[DashboardAdminScreen] build ejecutado');
     return Consumer<DashboardProvider>(
       builder: (context, dashboardProvider, child) {
+        debugPrint(
+            '[DashboardAdminScreen] Consumer ejecutado, isLoading:  dashboardProvider.isLoading');
         return Scaffold(
           appBar: AppBar(
             title: const Text(
@@ -135,6 +130,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }
 
   Widget _buildSummaryCards(DashboardProvider provider) {
+    debugPrint('[DashboardAdminScreen] _buildSummaryCards ejecutado');
     // Obtener valores de ventas desde el provider
     final ventasHoy =
         provider.resumenEstadisticas?.ventas.getVentasValue('hoy') ?? 0;
@@ -184,6 +180,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }
 
   Widget _buildSummaryCard(String title, String value, Widget icon) {
+    debugPrint('[DashboardAdminScreen] _buildSummaryCard ejecutado: $title');
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -224,6 +221,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }
 
   Widget _buildCharts(DashboardProvider provider) {
+    debugPrint('[DashboardAdminScreen] _buildCharts ejecutado');
     final titlesData = FlTitlesData(
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
@@ -232,7 +230,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
             // Solo mostrar números enteros para el eje Y
             if (value == value.roundToDouble()) {
               return SideTitleWidget(
-                axisSide: meta.axisSide,
+                meta: meta,
                 child: Text(
                   value.toInt().toString(),
                   style: const TextStyle(
@@ -267,9 +265,9 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text(
                 'Número de Ventas por Sucursal',
                 style: TextStyle(
@@ -291,7 +289,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
           const SizedBox(height: 20),
           SizedBox(
             height: 300,
-            child: provider.sucursales.isEmpty
+            child: (provider.resumenEstadisticas?.ventas.sucursales.isEmpty ??
+                    true)
                 ? const Center(
                     child: Text(
                       'No hay datos disponibles',
@@ -305,7 +304,6 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                       barTouchData: BarTouchData(
                         enabled: true,
                         touchTooltipData: BarTouchTooltipData(
-                          tooltipBgColor: const Color(0xFF222222),
                           getTooltipItem: (group, groupIndex, rod, rodIndex) {
                             final sucursalData =
                                 provider.resumenEstadisticas?.ventas.sucursales;
@@ -331,7 +329,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                         horizontalInterval: 1,
                         getDrawingHorizontalLine: (value) {
                           return FlLine(
-                            color: Colors.grey.withOpacity(0.2),
+                            color: Colors.grey.withAlpha(51),
                             strokeWidth: 1,
                           );
                         },
@@ -340,10 +338,10 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                         show: true,
                         border: Border(
                           bottom: BorderSide(
-                            color: Colors.grey.withOpacity(0.2),
+                            color: Colors.grey.withAlpha(51),
                           ),
                           left: BorderSide(
-                            color: Colors.grey.withOpacity(0.2),
+                            color: Colors.grey.withAlpha(51),
                           ),
                         ),
                       ),
@@ -400,7 +398,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     }
 
     return SideTitleWidget(
-      axisSide: meta.axisSide,
+      meta: meta,
       child: Text(text, style: style),
     );
   }
@@ -453,9 +451,9 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }
 
   Widget _buildStockBajoSection(DashboardProvider provider) {
+    debugPrint('[DashboardAdminScreen] _buildStockBajoSection ejecutado');
     // Verificar si tenemos datos de estadísticas
     final estadisticasProductos = provider.resumenEstadisticas?.productos;
-    final bool tieneDatos = estadisticasProductos != null;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -484,7 +482,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.redAccent.withOpacity(0.2),
+                      color: Colors.redAccent.withAlpha(51),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
@@ -493,7 +491,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                             color: Colors.redAccent, size: 16),
                         const SizedBox(width: 6),
                         Text(
-                          'Total: ${tieneDatos ? estadisticasProductos.stockBajo : provider.productosStockBajo}',
+                          'Total: ${estadisticasProductos?.stockBajo ?? 0}',
                           style: const TextStyle(
                             color: Colors.redAccent,
                             fontWeight: FontWeight.bold,
@@ -507,7 +505,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.orangeAccent.withOpacity(0.2),
+                      color: Colors.orangeAccent.withAlpha(51),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
@@ -516,7 +514,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                             color: Colors.orangeAccent, size: 16),
                         const SizedBox(width: 6),
                         Text(
-                          'Liquidación: ${tieneDatos ? estadisticasProductos.liquidacion : provider.productosLiquidacion}',
+                          'Liquidación: ${estadisticasProductos?.liquidacion ?? 0}',
                           style: const TextStyle(
                             color: Colors.orangeAccent,
                             fontWeight: FontWeight.bold,
@@ -530,8 +528,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          _buildStockBajoContent(
-              provider, tieneDatos ? estadisticasProductos : null),
+          _buildStockBajoContent(provider, estadisticasProductos),
         ],
       ),
     );
@@ -539,107 +536,12 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
 
   Widget _buildStockBajoContent(
       DashboardProvider provider, EstadisticasProductos? estadisticas) {
+    debugPrint('[DashboardAdminScreen] _buildStockBajoContent ejecutado');
     // Si tenemos datos de estadísticas, mostrar el resumen por sucursal
     if (estadisticas != null &&
         (estadisticas.stockBajo > 0 || estadisticas.liquidacion > 0) &&
         estadisticas.sucursales.isNotEmpty) {
       return _buildStockBajoSucursales(estadisticas);
-    } else if (provider.productosStockBajoDetalle.isNotEmpty) {
-      // Fallback: Si tenemos detalles específicos (aunque esto no debería ocurrir con la estructura actual del API)
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 650),
-          child: DataTable(
-            headingRowColor: WidgetStateProperty.all(const Color(0xFF222222)),
-            columnSpacing: 20,
-            horizontalMargin: 12,
-            columns: const [
-              DataColumn(
-                label: Text(
-                  'Sucursal',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              DataColumn(
-                label: Text(
-                  'Producto',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              DataColumn(
-                label: Text(
-                  'Stock',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              DataColumn(
-                label: Text(
-                  'Estado',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
-            rows: provider.productosStockBajoDetalle.take(5).map((producto) {
-              final bool stockCritico = producto['stock'] <=
-                  (producto['stockMinimo'] != null
-                      ? producto['stockMinimo'] / 2
-                      : 1);
-              return DataRow(
-                cells: [
-                  DataCell(Text(
-                    producto['sucursalNombre'] ?? 'Desconocida',
-                    style: const TextStyle(color: Colors.grey),
-                  )),
-                  DataCell(Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        producto['productoNombre'] ?? 'Producto sin nombre',
-                        style: const TextStyle(color: Colors.grey),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (producto['categoria'] != null ||
-                          producto['marca'] != null)
-                        Text(
-                          '${producto['categoria'] ?? ''} ${producto['marca'] != null ? '- ${producto['marca']}' : ''}',
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 10,
-                          ),
-                        ),
-                    ],
-                  )),
-                  DataCell(Text(
-                    '${producto['stock'] ?? 0}/${producto['stockMinimo'] ?? "N/A"}',
-                    style: const TextStyle(color: Colors.grey),
-                  )),
-                  DataCell(Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: stockCritico
-                          ? Colors.red.withOpacity(0.2)
-                          : Colors.orange.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      stockCritico ? 'Crítico' : 'Bajo',
-                      style: TextStyle(
-                        color: stockCritico ? Colors.red : Colors.orange,
-                        fontSize: 12,
-                      ),
-                    ),
-                  )),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      );
     } else {
       // No hay datos en ningún lado
       return const Center(
@@ -671,6 +573,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }
 
   Widget _buildStockBajoSucursales(EstadisticasProductos estadisticas) {
+    debugPrint('[DashboardAdminScreen] _buildStockBajoSucursales ejecutado');
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: ConstrainedBox(
@@ -721,7 +624,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
+                        color: Colors.red.withAlpha(26),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -744,7 +647,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
+                        color: Colors.orange.withAlpha(26),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -769,8 +672,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: sucursal.stockBajo > 2
-                        ? Colors.red.withOpacity(0.2)
-                        : Colors.orange.withOpacity(0.2),
+                        ? Colors.red.withAlpha(51)
+                        : Colors.orange.withAlpha(51),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -791,6 +694,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }
 
   Widget _buildRecentSales(DashboardProvider provider) {
+    debugPrint('[DashboardAdminScreen] _buildRecentSales ejecutado');
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -854,17 +758,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                             style: TextStyle(color: Colors.white),
                           ),
                         ),
-                        DataColumn(
-                          label: Text(
-                            'Estado',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
                       ],
                       rows: provider.ventasRecientes.take(5).map((venta) {
-                        final esAceptado =
-                            venta.estado.toLowerCase().contains('aceptado');
-
                         return DataRow(
                           cells: [
                             DataCell(Text(
@@ -902,26 +797,6 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                               _formatoMoneda.format(venta.monto),
                               style: const TextStyle(color: Colors.grey),
                             )),
-                            DataCell(Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: esAceptado
-                                    ? Colors.green.withOpacity(0.2)
-                                    : Colors.orange.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                venta.estado,
-                                style: TextStyle(
-                                  color:
-                                      esAceptado ? Colors.green : Colors.orange,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            )),
                           ],
                         );
                       }).toList(),
@@ -930,35 +805,6 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class VentaReciente {
-  final String fecha;
-  final String factura;
-  final String? tipoDocumento;
-  final String? sucursalNombre;
-  final double monto;
-  final String estado;
-
-  VentaReciente({
-    required this.fecha,
-    required this.factura,
-    this.tipoDocumento,
-    this.sucursalNombre,
-    required this.monto,
-    required this.estado,
-  });
-
-  factory VentaReciente.fromJson(Map<String, dynamic> json) {
-    return VentaReciente(
-      fecha: json['fecha'] ?? '',
-      factura: json['factura'] ?? '',
-      tipoDocumento: json['tipoDocumento'],
-      sucursalNombre: json['sucursalNombre'],
-      monto: (json['monto'] ?? 0).toDouble(),
-      estado: json['estado'] ?? 'Pendiente',
     );
   }
 }

@@ -49,9 +49,6 @@ class VentaRepository implements BaseRepository {
   /// [page] Número de página actual
   /// [pageSize] Tamaño de página
   /// [search] Texto para buscar ventas
-  /// [fechaInicio] Fecha de inicio para filtrar
-  /// [fechaFin] Fecha de fin para filtrar
-  /// [estado] Estado de la venta para filtrar
   /// [sortBy] Campo por el cual ordenar
   /// [order] Tipo de ordenamiento (asc/desc)
   Future<Map<String, dynamic>> getVentas({
@@ -59,9 +56,6 @@ class VentaRepository implements BaseRepository {
     int page = 1,
     int pageSize = 10,
     String? search,
-    DateTime? fechaInicio,
-    DateTime? fechaFin,
-    String? estado,
     String? sortBy,
     String? order,
     bool useCache = true,
@@ -73,9 +67,8 @@ class VentaRepository implements BaseRepository {
         page: page,
         pageSize: pageSize,
         search: search,
-        fechaInicio: fechaInicio,
-        fechaFin: fechaFin,
-        estado: estado,
+        sortBy: sortBy,
+        order: order,
         useCache: useCache,
         forceRefresh: forceRefresh,
       );
@@ -173,63 +166,6 @@ class VentaRepository implements BaseRepository {
     } catch (e) {
       debugPrint('Error en VentaRepository.cancelarVenta: $e');
       return false;
-    }
-  }
-
-  /// Obtiene ventas por rango de fechas
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [fechaInicio] Fecha de inicio
-  /// [fechaFin] Fecha de fin
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
-  Future<Map<String, dynamic>> getVentasPorFecha({
-    required sucursalId,
-    required DateTime fechaInicio,
-    required DateTime fechaFin,
-    int page = 1,
-    int pageSize = 10,
-    bool useCache = false,
-  }) async {
-    try {
-      return await _ventasApi.getVentas(
-        sucursalId: sucursalId,
-        fechaInicio: fechaInicio,
-        fechaFin: fechaFin,
-        page: page,
-        pageSize: pageSize,
-        useCache: useCache,
-      );
-    } catch (e) {
-      debugPrint('Error en VentaRepository.getVentasPorFecha: $e');
-      rethrow;
-    }
-  }
-
-  /// Obtiene ventas por estado
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [estado] Estado de la venta
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
-  Future<Map<String, dynamic>> getVentasPorEstado({
-    required sucursalId,
-    required String estado,
-    int page = 1,
-    int pageSize = 10,
-    bool useCache = false,
-  }) async {
-    try {
-      return await _ventasApi.getVentas(
-        sucursalId: sucursalId,
-        estado: estado,
-        page: page,
-        pageSize: pageSize,
-        useCache: useCache,
-      );
-    } catch (e) {
-      debugPrint('Error en VentaRepository.getVentasPorEstado: $e');
-      rethrow;
     }
   }
 

@@ -173,7 +173,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
               labelStyle: TextStyle(color: Colors.white54),
               border: InputBorder.none,
               isDense: true,
-              contentPadding: EdgeInsets.symmetric(),
+              contentPadding: EdgeInsets.zero,
             ),
           ),
         ),
@@ -251,7 +251,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
     IconData? icon,
   }) {
     return Card(
-      color: color?.withOpacity(0.13) ?? const Color(0xFF232323),
+      color: color?.withValues(alpha: 0.13) ?? const Color(0xFF232323),
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
@@ -334,14 +334,14 @@ class _NumericKeypadState extends State<NumericKeypad> {
         decoration: BoxDecoration(
           color: filled
               ? (enabled
-                  ? (color ?? Colors.blue).withOpacity(0.15)
-                  : Colors.grey.withOpacity(0.08))
+                  ? (color ?? Colors.blue).withValues(alpha: 0.15)
+                  : Colors.grey.withValues(alpha: 0.08))
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: enabled
                 ? (color ?? Colors.white24)
-                : Colors.grey.withOpacity(0.2),
+                : Colors.grey.withValues(alpha: 0.2),
             width: 1.2,
           ),
         ),
@@ -541,7 +541,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
             const SizedBox(height: 16),
             _buildSummaryRow(),
             const SizedBox(height: 16),
-            Spacer(),
+            const Spacer(),
             _buildKeypad(),
           ],
         ),

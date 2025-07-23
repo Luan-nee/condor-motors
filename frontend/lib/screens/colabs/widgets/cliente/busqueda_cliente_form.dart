@@ -143,7 +143,7 @@ class _BusquedaClienteFormState extends State<BusquedaClienteForm> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
@@ -484,9 +484,7 @@ class _BusquedaClienteFormState extends State<BusquedaClienteForm> {
                         widget.onClienteCreado(nuevoCliente);
 
                         // Si se provee, refresca la lista global de clientes
-                        if (widget.onRefrescarClientes != null) {
-                          widget.onRefrescarClientes!();
-                        }
+                        widget.onRefrescarClientes?.call();
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

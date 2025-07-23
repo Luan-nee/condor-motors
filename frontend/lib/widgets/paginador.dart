@@ -111,7 +111,7 @@ class Paginador extends StatelessWidget {
                   Container(
                     height: 28,
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -125,7 +125,7 @@ class Paginador extends StatelessWidget {
                         ),
                         icon: Icon(
                           Icons.arrow_drop_down,
-                          color: txtColor.withOpacity(0.8),
+                          color: txtColor.withValues(alpha: 0.8),
                           size: 16,
                         ),
                         items: PaginacionProvider.opcionesTamanoPagina
@@ -138,12 +138,8 @@ class Paginador extends StatelessWidget {
                         onChanged: (int? value) {
                           if (value != null) {
                             provider.cambiarItemsPorPagina(value);
-                            if (onPageSizeChanged != null) {
-                              onPageSizeChanged!(value);
-                            }
-                            if (onPageChange != null) {
-                              onPageChange!();
-                            }
+                            onPageSizeChanged?.call(value);
+                            onPageChange?.call();
                           }
                         },
                       ),
@@ -155,7 +151,7 @@ class Paginador extends StatelessWidget {
                     width: 36,
                     margin: const EdgeInsets.only(right: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.15),
+                      color: Colors.black.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: PopupMenuButton<int>(
@@ -163,12 +159,8 @@ class Paginador extends StatelessWidget {
                       tooltip: 'Tamaño de página',
                       onSelected: (int value) {
                         provider.cambiarItemsPorPagina(value);
-                        if (onPageSizeChanged != null) {
-                          onPageSizeChanged!(value);
-                        }
-                        if (onPageChange != null) {
-                          onPageChange!();
-                        }
+                        onPageSizeChanged?.call(value);
+                        onPageChange?.call();
                       },
                       itemBuilder: (context) =>
                           PaginacionProvider.opcionesTamanoPagina
@@ -248,14 +240,14 @@ class Paginador extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Center(
                       child: Text(
                         '${paginacionData.totalItems} elementos',
                         style: TextStyle(
-                          color: txtColor.withOpacity(0.8),
+                          color: txtColor.withValues(alpha: 0.8),
                           fontSize: 14,
                         ),
                       ),
@@ -273,13 +265,8 @@ class Paginador extends StatelessWidget {
   void _cambiarPagina(PaginacionProvider provider, int pagina) {
     provider.cambiarPagina(pagina);
 
-    if (onPageChange != null) {
-      onPageChange!();
-    }
-
-    if (onPageChanged != null) {
-      onPageChanged!(pagina);
-    }
+    onPageChange?.call();
+    onPageChanged?.call(pagina);
   }
 
   Widget _buildPageButton({
@@ -295,7 +282,7 @@ class Paginador extends StatelessWidget {
         icon: Icon(
           icon,
           size: 18,
-          color: onPressed == null ? txtColor.withOpacity(0.3) : txtColor,
+          color: onPressed == null ? txtColor.withValues(alpha: 0.3) : txtColor,
         ),
         onPressed: onPressed,
         splashRadius: 18,

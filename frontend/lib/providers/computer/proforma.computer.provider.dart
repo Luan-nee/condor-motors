@@ -139,9 +139,7 @@ class ProformaComputerProvider extends ChangeNotifier {
       _isLoading = true;
       _errorMessage = null;
       // Usar microtask para evitar llamar a notifyListeners durante el build
-      Future.microtask(() {
-        notifyListeners();
-      });
+      Future.microtask(notifyListeners);
     }
 
     try {
@@ -152,9 +150,7 @@ class ProformaComputerProvider extends ChangeNotifier {
           _errorMessage = 'No se pudo determinar la sucursal del usuario';
           _isLoading = false;
           // Usar microtask para evitar llamar a notifyListeners durante el build
-          Future.microtask(() {
-            notifyListeners();
-          });
+          Future.microtask(notifyListeners);
         }
         return;
       }
@@ -206,17 +202,13 @@ class ProformaComputerProvider extends ChangeNotifier {
         }
 
         // Usar microtask para evitar llamar a notifyListeners durante el build
-        Future.microtask(() {
-          notifyListeners();
-        });
+        Future.microtask(notifyListeners);
       } else {
         if (!silencioso) {
           _errorMessage = 'No se pudo cargar las proformas';
           _isLoading = false;
           // Usar microtask para evitar llamar a notifyListeners durante el build
-          Future.microtask(() {
-            notifyListeners();
-          });
+          Future.microtask(notifyListeners);
         }
       }
     } catch (e) {
@@ -225,9 +217,7 @@ class ProformaComputerProvider extends ChangeNotifier {
         _errorMessage = 'Error: $e';
         _isLoading = false;
         // Usar microtask para evitar llamar a notifyListeners durante el build
-        Future.microtask(() {
-          notifyListeners();
-        });
+        Future.microtask(notifyListeners);
       }
     }
   }
@@ -236,9 +226,7 @@ class ProformaComputerProvider extends ChangeNotifier {
   void setPage(int page, {int? sucursalId}) {
     _currentPage = page;
     // Usar microtask para evitar llamar a notifyListeners durante el build
-    Future.microtask(() {
-      notifyListeners();
-    });
+    Future.microtask(notifyListeners);
     loadProformas(sucursalId: sucursalId);
   }
 
@@ -246,18 +234,14 @@ class ProformaComputerProvider extends ChangeNotifier {
   void selectProforma(Proforma proforma) {
     _selectedProforma = proforma;
     // Usar microtask para evitar llamar a notifyListeners durante el build
-    Future.microtask(() {
-      notifyListeners();
-    });
+    Future.microtask(notifyListeners);
   }
 
   /// Deselecciona la proforma actual
   void clearSelectedProforma() {
     _selectedProforma = null;
     // Usar microtask para evitar llamar a notifyListeners durante el build
-    Future.microtask(() {
-      notifyListeners();
-    });
+    Future.microtask(notifyListeners);
   }
 
   /// Maneja la conversión de una proforma a venta sin necesidad de un BuildContext
@@ -635,9 +619,7 @@ class ProformaComputerProvider extends ChangeNotifier {
       loadProformas(sucursalId: sucursalId, silencioso: true).then((_) {
         // Usar microtask para asegurarnos de que notifyListeners no se llama
         // durante la fase de build
-        Future.microtask(() {
-          notifyListeners();
-        });
+        Future.microtask(notifyListeners);
       });
     }
   }

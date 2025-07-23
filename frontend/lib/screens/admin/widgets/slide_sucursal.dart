@@ -268,13 +268,13 @@ class _SlideSucursalState extends State<SlideSucursal>
         if (grupos['Centrales']!.isNotEmpty) ...<Widget>[
           _buildGrupoHeader('Centrales', grupos['Centrales']!.length),
           ...grupos['Centrales']!
-              .map((Sucursal sucursal) => _buildSucursalItem(sucursal)),
+              .map(_buildSucursalItem),
         ],
         if (grupos['Sucursales']!.isNotEmpty) ...<Widget>[
           if (grupos['Centrales']!.isNotEmpty) const SizedBox(height: 16),
           _buildGrupoHeader('Sucursales', grupos['Sucursales']!.length),
           ...grupos['Sucursales']!
-              .map((Sucursal sucursal) => _buildSucursalItem(sucursal)),
+              .map(_buildSucursalItem),
         ],
       ],
     );
@@ -342,13 +342,13 @@ class _SlideSucursalState extends State<SlideSucursal>
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFFE31E24).withOpacity(0.2)
+                  ? const Color(0xFFE31E24).withValues(alpha: 0.2)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isSelected
                     ? const Color(0xFFE31E24)
-                    : Colors.white.withOpacity(0.1),
+                    : Colors.white.withValues(alpha: 0.1),
                 width: isSelected ? 2 : 1,
               ),
             ),
@@ -383,7 +383,7 @@ class _SlideSucursalState extends State<SlideSucursal>
                               isSelected ? FontWeight.bold : FontWeight.normal,
                           color: isSelected
                               ? Colors.white
-                              : Colors.white.withOpacity(0.8),
+                              : Colors.white.withValues(alpha: 0.8),
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -407,7 +407,7 @@ class _SlideSucursalState extends State<SlideSucursal>
                           sucursal.direccion!,
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withValues(alpha: 0.5),
                           ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 2,

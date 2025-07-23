@@ -1,17 +1,23 @@
-class DetalleReserva {
+import 'package:equatable/equatable.dart';
+
+class DetalleReserva extends Equatable {
   final double total;
   final int cantidad;
   final double precioVenta;
   final double precioCompra;
   final String nombreProducto;
 
-  DetalleReserva({
+  const DetalleReserva({
     required this.total,
     required this.cantidad,
     required this.precioVenta,
     required this.precioCompra,
     required this.nombreProducto,
   });
+
+  @override
+  List<Object?> get props =>
+      [total, cantidad, precioVenta, precioCompra, nombreProducto];
 
   // Convertir de JSON a objeto
   factory DetalleReserva.fromJson(Map<String, dynamic> json) {
@@ -53,7 +59,7 @@ class DetalleReserva {
   }
 }
 
-class PedidoExclusivo {
+class PedidoExclusivo extends Equatable {
   final int? id;
   final String descripcion;
   final List<DetalleReserva> detallesReserva;
@@ -66,19 +72,25 @@ class PedidoExclusivo {
   final DateTime fechaCreacion;
   final DateTime? fechaActualizacion;
 
-  PedidoExclusivo({
-    this.id,
-    required this.descripcion,
-    required this.detallesReserva,
-    required this.montoAdelantado,
-    required this.fechaRecojo,
-    required this.denominacion,
-    required this.clienteId,
-    required this.sucursalId,
-    required this.nombre,
-    required this.fechaCreacion,
+  const PedidoExclusivo({
+    required this.descripcion, required this.detallesReserva, required this.montoAdelantado, required this.fechaRecojo, required this.denominacion, required this.clienteId, required this.sucursalId, required this.nombre, required this.fechaCreacion, this.id,
     this.fechaActualizacion,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        descripcion,
+        detallesReserva,
+        montoAdelantado,
+        fechaRecojo,
+        denominacion,
+        clienteId,
+        sucursalId,
+        nombre,
+        fechaCreacion,
+        fechaActualizacion,
+      ];
 
   // Convertir de JSON a objeto
   factory PedidoExclusivo.fromJson(Map<String, dynamic> json) {

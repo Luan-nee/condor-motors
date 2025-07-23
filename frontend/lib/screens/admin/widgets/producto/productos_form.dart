@@ -269,7 +269,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: Container(
@@ -291,7 +291,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     offset: const Offset(0, 2),
                     blurRadius: 4,
                   ),
@@ -338,9 +338,9 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             // Actions
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF222222),
-                borderRadius: const BorderRadius.vertical(
+              decoration: const BoxDecoration(
+                color: Color(0xFF222222),
+                borderRadius: BorderRadius.vertical(
                   bottom: Radius.circular(12),
                 ),
               ),
@@ -461,16 +461,16 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       {String? prefixText, String? helperText, Widget? suffixIcon}) {
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+      labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
       prefixText: prefixText,
       prefixStyle: const TextStyle(color: Colors.white),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -498,7 +498,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               decoration: BoxDecoration(
                 color: const Color(0xFF2D2D2D),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -559,8 +559,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         const SizedBox(height: 16),
         // Cuando es un producto existente, el SKU es de solo lectura
         // Cuando es un producto nuevo, el campo no aparece (el backend lo generará)
-        widget.producto != null
-            ? TextFormField(
+        if (widget.producto != null) TextFormField(
                 controller: _skuController,
                 decoration: _getInputDecoration('SKU (no editable)').copyWith(
                   filled: true,
@@ -568,16 +567,15 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   prefixIcon: const Icon(Icons.lock_outline,
                       color: Colors.white54, size: 20),
                 ),
-                style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                 enabled: false, // Campo deshabilitado para edición
                 readOnly: true, // Solo lectura
-              )
-            : Container(
+              ) else Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: <Widget>[
@@ -600,7 +598,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                           Text(
                             'El código SKU será asignado por el sistema automáticamente al guardar el producto.',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 12,
                             ),
                           ),
@@ -672,7 +670,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 : null,
           ),
           style: TextStyle(
-            color: esEdicion ? Colors.white.withOpacity(0.6) : Colors.white,
+            color:
+                esEdicion ? Colors.white.withValues(alpha: 0.6) : Colors.white,
           ),
           keyboardType: TextInputType.number,
           readOnly: esEdicion, // Deshabilitar edición para productos existentes
@@ -687,10 +686,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.1),
+              color: Colors.amber.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Colors.amber.withOpacity(0.3),
+                color: Colors.amber.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -716,7 +715,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       Text(
                         'El stock no puede editarse directamente. Para modificar el stock de este producto, por favor use el "Control de stock" desde la pantalla de Inventario.',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 12,
                         ),
                       ),
@@ -758,7 +757,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                       color: const Color(0xFF2D2D2D),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Row(
@@ -893,10 +892,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               : Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: Colors.red.withOpacity(0.5),
+                      color: Colors.red.withValues(alpha: 0.5),
                     ),
                   ),
                   child: Row(
@@ -910,7 +909,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                         child: Text(
                           'No se pudieron cargar las categorías. Por favor, intente nuevamente.',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha: 0.8),
                           ),
                         ),
                       ),
@@ -959,7 +958,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                         color: color.toColor(),
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withValues(alpha: 0.3),
                         ),
                       ),
                     ),
@@ -991,10 +990,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
+              color: Colors.orange.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Colors.orange.withOpacity(0.5),
+                color: Colors.orange.withValues(alpha: 0.5),
               ),
             ),
             child: Row(
@@ -1008,7 +1007,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                   child: Text(
                     'No se pudieron cargar los colores. Se usará el valor manual.',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                     ),
                   ),
                 ),
@@ -1048,13 +1047,13 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           decoration: BoxDecoration(
             color: const Color(0xFF2D2D2D),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Row(
-                children: const <Widget>[
+              const Row(
+                children: <Widget>[
                   FaIcon(
                     FontAwesomeIcons.bullhorn,
                     size: 16,
@@ -1123,13 +1122,13 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _liquidacionActiva
-            ? Colors.amber.withOpacity(0.08)
-            : Colors.grey.withOpacity(0.05),
+            ? Colors.amber.withValues(alpha: 0.08)
+            : Colors.grey.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: _liquidacionActiva
-              ? Colors.amber.withOpacity(0.3)
-              : Colors.white.withOpacity(0.1),
+              ? Colors.amber.withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -1138,8 +1137,8 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              Row(
-                children: const <Widget>[
+              const Row(
+                children: <Widget>[
                   FaIcon(
                     FontAwesomeIcons.tag,
                     size: 16,
@@ -1227,10 +1226,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     return Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.1),
+                        color: Colors.amber.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.amber.withOpacity(0.2),
+                          color: Colors.amber.withValues(alpha: 0.2),
                         ),
                       ),
                       child: Row(
@@ -1242,7 +1241,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                                 Text(
                                   'Precio original: S/ ${precioVenta.toStringAsFixed(2)}',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
+                                    color: Colors.white.withValues(alpha: 0.7),
                                     decoration: TextDecoration.lineThrough,
                                   ),
                                 ),
@@ -1263,7 +1262,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                               vertical: 5,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.amber.withOpacity(0.2),
+                              color: Colors.amber.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -1286,7 +1285,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               'Active esta opción para establecer un precio especial de liquidación. '
               'El producto se mostrará como "En liquidación" en todas las vistas.',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 14,
               ),
             ),
@@ -1324,11 +1323,11 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? color.withOpacity(0.2)
-              : Colors.black.withOpacity(0.2),
+              ? color.withValues(alpha: 0.2)
+              : Colors.black.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? color : Colors.white.withOpacity(0.1),
+            color: isSelected ? color : Colors.white.withValues(alpha: 0.1),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -1383,7 +1382,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     description,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -1399,17 +1398,17 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.08),
+        color: Colors.green.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.green.withOpacity(0.3),
+          color: Colors.green.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            children: const <Widget>[
+          const Row(
+            children: <Widget>[
               FaIcon(
                 FontAwesomeIcons.gift,
                 size: 16,
@@ -1501,10 +1500,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     return Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.green.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border:
-                            Border.all(color: Colors.green.withOpacity(0.3)),
+                        border: Border.all(
+                            color: Colors.green.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: <Widget>[
@@ -1529,7 +1528,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                                 Text(
                                   'El cliente obtendrá $cantidadGratis ${cantidadGratis == 1 ? 'unidad gratis' : 'unidades gratis'} por la compra de $cantidadMinima unidades.',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
+                                    color: Colors.white.withValues(alpha: 0.7),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -1554,17 +1553,17 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.08),
+        color: Colors.blue.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.blue.withOpacity(0.3),
+          color: Colors.blue.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            children: const <Widget>[
+          const Row(
+            children: <Widget>[
               FaIcon(
                 FontAwesomeIcons.percent,
                 size: 16,
@@ -1663,9 +1662,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     return Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
+                        color: Colors.blue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                        border: Border.all(
+                            color: Colors.blue.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: <Widget>[
@@ -1728,7 +1728,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Row(
@@ -1750,7 +1750,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               color: const Color(0xFF2D2D2D),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
               ),
             ),
             child: Column(
@@ -1826,7 +1826,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: FaIcon(
@@ -1848,7 +1848,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 12,
           ),
           textAlign: TextAlign.center,
@@ -1884,13 +1884,13 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isCurrentBranch
-            ? const Color.fromARGB(255, 30, 155, 227).withOpacity(0.1)
+            ? const Color.fromARGB(255, 30, 155, 227).withValues(alpha: 0.1)
             : const Color(0xFF222222),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isCurrentBranch
-              ? const Color.fromARGB(255, 30, 197, 227).withOpacity(0.1)
-              : Colors.white.withOpacity(0.1),
+              ? const Color.fromARGB(255, 30, 197, 227).withValues(alpha: 0.1)
+              : Colors.white.withValues(alpha: 0.1),
           width: isCurrentBranch ? 2 : 1,
         ),
       ),
@@ -1911,7 +1911,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         subtitle: Text(
           item.sucursal.direccion ?? 'Sin dirección registrada',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
             fontSize: 12,
             fontStyle: item.sucursal.direccion != null
                 ? FontStyle.normal
@@ -1924,10 +1924,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: statusColor.withOpacity(0.5),
+                  color: statusColor.withValues(alpha: 0.5),
                 ),
               ),
               child: Row(
@@ -1995,10 +1995,10 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade800.withOpacity(0.1),
+                  color: Colors.red.shade800.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Colors.red.shade800.withOpacity(0.3),
+                    color: Colors.red.shade800.withValues(alpha: 0.3),
                   ),
                 ),
                 child: const Row(
@@ -2036,7 +2036,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         Text(
           '$label:',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 14,
           ),
         ),
@@ -2136,7 +2136,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           // Guardar el producto
           final bool resultado = await productoProvider.guardarProducto(
             productoData,
-            esNuevoProducto,
+            esNuevo: esNuevoProducto,
             fotoFile: _selectedImageFile,
           );
 

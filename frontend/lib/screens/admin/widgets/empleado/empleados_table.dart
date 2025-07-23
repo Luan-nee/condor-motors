@@ -95,7 +95,7 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: widget.isLoading && widget.empleados.isEmpty
@@ -153,7 +153,11 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                         children: <Widget>[
                           // Encabezado de la tabla
                           Container(
-                            color: const Color(0xFF2D2D2D),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF2D2D2D),
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(12)),
+                            ),
                             padding: const EdgeInsets.symmetric(
                                 vertical: 16, horizontal: 20),
                             child: const Row(

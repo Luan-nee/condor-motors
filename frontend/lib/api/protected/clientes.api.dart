@@ -73,9 +73,11 @@ class ClientesApi {
       } else if (response['data'] is List) {
         // Estructura alternativa: { data: [ ... ] }
         items = response['data'] as List<dynamic>;
-      } else if (response['data'] is Map && response['data']['data'] is List) {
+      } else if (response['data'] is Map<String, dynamic> &&
+          (response['data'] as Map<String, dynamic>)['data'] is List) {
         // Estructura anterior anidada: { data: { data: [ ... ] } }
-        items = response['data']['data'] as List<dynamic>;
+        items =
+            (response['data'] as Map<String, dynamic>)['data'] as List<dynamic>;
       }
 
       // Convertir a lista de Cliente
@@ -141,8 +143,10 @@ class ClientesApi {
         data = response['data'] as Map<String, dynamic>;
       } else if (response['data'] is Map<String, dynamic>) {
         data = response['data'] as Map<String, dynamic>;
-      } else if (response['data'] is Map && response['data']['data'] is Map) {
-        data = response['data']['data'] as Map<String, dynamic>;
+      } else if (response['data'] is Map<String, dynamic> &&
+          (response['data'] as Map<String, dynamic>)['data'] is Map) {
+        data = (response['data'] as Map<String, dynamic>)['data']
+            as Map<String, dynamic>;
       }
 
       if (data == null) {
@@ -206,8 +210,10 @@ class ClientesApi {
 
       // Manejar estructura anidada
       Map<String, dynamic>? data;
-      if (response['data'] is Map && response['data'].containsKey('data')) {
-        data = response['data']['data'] as Map<String, dynamic>;
+      if (response['data'] is Map<String, dynamic> &&
+          (response['data'] as Map<String, dynamic>).containsKey('data')) {
+        data = (response['data'] as Map<String, dynamic>)['data']
+            as Map<String, dynamic>;
       } else {
         data = response['data'] as Map<String, dynamic>;
       }
@@ -336,8 +342,10 @@ class ClientesApi {
         data = response['data'] as Map<String, dynamic>;
       } else if (response['data'] is Map<String, dynamic>) {
         data = response['data'] as Map<String, dynamic>;
-      } else if (response['data'] is Map && response['data']['data'] is Map) {
-        data = response['data']['data'] as Map<String, dynamic>;
+      } else if (response['data'] is Map<String, dynamic> &&
+          (response['data'] as Map<String, dynamic>)['data'] is Map) {
+        data = (response['data'] as Map<String, dynamic>)['data']
+            as Map<String, dynamic>;
       }
 
       if (data == null) {
@@ -384,20 +392,13 @@ class ClientesApi {
 
       // Manejar estructura anidada
       Map<String, dynamic>? data;
-      if (response['data'] is Map && response['data'].containsKey('data')) {
-        data = response['data']['data'];
+      if (response['data'] is Map<String, dynamic> &&
+          (response['data'] as Map<String, dynamic>).containsKey('data')) {
+        data = (response['data'] as Map<String, dynamic>)['data']
+            as Map<String, dynamic>;
       } else {
-        data = response['data'];
+        data = response['data'] as Map<String, dynamic>;
       }
-
-      if (data == null) {
-        throw ApiException(
-          statusCode: 500,
-          message: 'Error al actualizar cliente',
-          errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
-        );
-      }
-
       // Invalidar caché de listas de clientes y este cliente específico
       _invalidateClientCache(clienteId);
 

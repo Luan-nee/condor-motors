@@ -30,34 +30,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isInitializing => _isInitializing;
 
   // Flags y estado para auto-login
-  bool _autoLoginAttempted = false;
-  bool _isAutoLoggingIn = false;
-  String? _autoLoginError;
-  bool get isAutoLoginAttempted => _autoLoginAttempted;
-  bool get isAutoLoggingIn => _isAutoLoggingIn;
-  String? get autoLoginError => _autoLoginError;
-
-  // Setters privados para flags de auto-login
-  void _setAutoLoginAttempted(bool value) {
-    if (_autoLoginAttempted != value) {
-      _autoLoginAttempted = value;
-      notifyListeners();
-    }
-  }
-
-  void _setIsAutoLoggingIn(bool value) {
-    if (_isAutoLoggingIn != value) {
-      _isAutoLoggingIn = value;
-      notifyListeners();
-    }
-  }
-
-  void _setAutoLoginError(String? value) {
-    if (_autoLoginError != value) {
-      _autoLoginError = value;
-      notifyListeners();
-    }
-  }
+  bool get isAutoLoggingIn => _state.isLoading;
 
   AuthProvider(this._authRepository) {
     debugPrint('[AuthProvider] Constructor ejecutado');
@@ -117,21 +90,17 @@ class AuthProvider extends ChangeNotifier {
       await _authRepository.logout();
 
       _state = AuthState.initial();
-      _autoLoginAttempted = false;
-      _isAutoLoggingIn = false;
-      _autoLoginError = null;
       notifyListeners();
 
       debugPrint('Sesión cerrada exitosamente');
       resetSessionVerification(); // Limpiar flags al cerrar sesión
       // Reinicializar para limpiar todo el estado y tokens
       await _init();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('stay_logged_in', false);
     } catch (e) {
       debugPrint('Error durante proceso de logout: $e');
       _state = AuthState.initial();
-      _autoLoginAttempted = false;
-      _isAutoLoggingIn = false;
-      _autoLoginError = null;
       notifyListeners();
       resetSessionVerification();
       await _init();
@@ -262,74 +231,21 @@ class AuthProvider extends ChangeNotifier {
     _verifyCompleter = null;
   }
 
-  /// Lógica de auto-login centralizada en el provider
-  Future<void> tryAutoLogin() async {
-    if (_autoLoginAttempted || _isAutoLoggingIn) {
-      debugPrint(
-          '[AuthProvider] tryAutoLogin: Ya intentado o en progreso, no se repite.');
-      return;
-    }
-    debugPrint(
-        '[AuthProvider] tryAutoLogin: Iniciando intento de auto-login...');
-    _setAutoLoginAttempted(true);
-    _setIsAutoLoggingIn(true);
-    _setAutoLoginError(null);
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final bool stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
-      debugPrint('[AuthProvider] Auto-login: Permanecer conectado está ${stayLoggedIn ? 'activado' : 'desactivado'}');
-      if (!stayLoggedIn) {
-        debugPrint(
-            '[AuthProvider] Auto-login: No está activado "Permanecer conectado"');
-        _setIsAutoLoggingIn(false);
-        return;
-      }
-      final String? username = await SecureStorageUtils.read('username_auto');
-      final String? password = await SecureStorageUtils.read('password_auto');
-      if (username == null ||
-          password == null ||
-          username.isEmpty ||
-          password.isEmpty) {
-        debugPrint('[AuthProvider] Auto-login: No hay credenciales guardadas');
-        _setIsAutoLoggingIn(false);
-        return;
-      }
-      debugPrint(
-          '[AuthProvider] Auto-login: Intentando iniciar sesión automáticamente con usuario: $username');
-      final usuario = await _authRepository.login(username, password);
-      _state = AuthState.authenticated(
-        usuario,
-        usuario.toMap()['token'] ?? '',
-      );
-      notifyListeners();
-      debugPrint(
-          '[AuthProvider] Auto-login: Login exitoso, usuario autenticado: $usuario');
-      try {
-        await _authRepository.saveUserData(usuario);
-        debugPrint(
-            '[AuthProvider] Auto-login: Datos de usuario guardados correctamente en el servicio global');
-      } catch (e) {
-        debugPrint(
-            '[AuthProvider] Auto-login: Error al guardar datos en el servicio global: $e');
-      }
-      _setIsAutoLoggingIn(false);
-    } catch (e) {
-      debugPrint(
-          '[AuthProvider] Auto-login: Error durante el inicio de sesión automático: $e');
-      _setAutoLoginError(e.toString());
-      _setIsAutoLoggingIn(false);
-    }
-  }
-
   /// Nuevo método determinista para auto-login
   Future<bool> autoLogin() async {
+    _state = AuthState.loading();
+    notifyListeners();
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final bool stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
-      debugPrint('[AuthProvider] autoLogin: Permanecer conectado está ${stayLoggedIn ? 'activado' : 'desactivado'}');
+      debugPrint(
+          '[AuthProvider] autoLogin: Permanecer conectado está ${stayLoggedIn ? 'activado' : 'desactivado'}');
       if (!stayLoggedIn) {
         debugPrint(
             '[AuthProvider] autoLogin: No está activado "Permanecer conectado"');
+        _state = AuthState.initial();
+        notifyListeners();
         return false;
       }
       final String? username = await SecureStorageUtils.read('username_auto');
@@ -339,6 +255,8 @@ class AuthProvider extends ChangeNotifier {
           username.isEmpty ||
           password.isEmpty) {
         debugPrint('[AuthProvider] autoLogin: No hay credenciales guardadas');
+        _state = AuthState.initial();
+        notifyListeners();
         return false;
       }
       debugPrint(
@@ -361,6 +279,8 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint(
           '[AuthProvider] autoLogin: Error durante el inicio de sesión automático: $e');
+      _state = AuthState.error(e.toString());
+      notifyListeners();
       rethrow;
     }
   }

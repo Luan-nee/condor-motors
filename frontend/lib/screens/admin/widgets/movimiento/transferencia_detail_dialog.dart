@@ -236,7 +236,7 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
           Text(
             'Esto puede tomar unos segundos',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
               fontSize: 14,
             ),
           ),
@@ -256,9 +256,9 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
           children: <Widget>[
             const Icon(Icons.error_outline, color: Colors.red, size: 48),
             const SizedBox(height: 24),
-            Text(
+            const Text(
               'Error al cargar los detalles',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -278,9 +278,10 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
                 padding: const EdgeInsets.all(16),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    border:
+                        Border.all(color: Colors.red.withValues(alpha: 0.3)),
                   ),
                   padding: const EdgeInsets.all(12),
                   constraints: const BoxConstraints(maxWidth: 700),
@@ -478,7 +479,7 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFE31E24).withOpacity(0.2),
+                color: const Color(0xFFE31E24).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const FaIcon(
@@ -525,7 +526,7 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
               Text(
                 label,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                 ),
               ),
@@ -576,7 +577,7 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
           color: estiloEstado['backgroundColor'] as Color,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: (estiloEstado['textColor'] as Color).withOpacity(0.2),
+            color: (estiloEstado['textColor'] as Color).withValues(alpha: 0.2),
           ),
         ),
         child: Row(
@@ -662,7 +663,7 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
           Text(
             transferenciasProvider.obtenerMensajeComparacion(estadoCodigo),
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 13,
             ),
           ),
@@ -675,13 +676,13 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                 ),
               ),
               contentPadding: const EdgeInsets.symmetric(
@@ -709,10 +710,12 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE31E24).withOpacity(0.1),
+                              color: const Color(0xFFE31E24)
+                                  .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0xFFE31E24).withOpacity(0.3),
+                                color: const Color(0xFFE31E24)
+                                    .withValues(alpha: 0.3),
                               ),
                             ),
                             child: const Text(
@@ -820,7 +823,7 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
                         ? Text(
                             'Código: ${producto.codigo}',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 12,
                             ),
                           )
@@ -831,10 +834,10 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withOpacity(0.1),
+                        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: const Color(0xFFE31E24).withOpacity(0.3),
+                          color: const Color(0xFFE31E24).withValues(alpha: 0.3),
                         ),
                       ),
                       child: Text(

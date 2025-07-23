@@ -130,8 +130,10 @@ class EmpleadosApi {
 
       // Manejar estructura anidada
       Map<String, dynamic>? data;
-      if (response['data'] is Map && response['data'].containsKey('data')) {
-        data = response['data']['data'] as Map<String, dynamic>;
+      if (response['data'] is Map<String, dynamic> &&
+          (response['data'] as Map<String, dynamic>).containsKey('data')) {
+        data = (response['data'] as Map<String, dynamic>)['data']
+            as Map<String, dynamic>;
       } else {
         data = response['data'] as Map<String, dynamic>;
       }
@@ -247,12 +249,15 @@ class EmpleadosApi {
 
       // Manejar estructura anidada
       Map<String, dynamic>? data;
-      if (response['data'] is Map && response['data'].containsKey('data')) {
-        data = response['data']['data'];
-      } else if (response['data'] is Map) {
-        data = response['data'];
-      } else if (response['data'] is List && response['data'].isNotEmpty) {
-        data = response['data'][0] as Map<String, dynamic>;
+      if (response['data'] is Map<String, dynamic> &&
+          (response['data'] as Map<String, dynamic>).containsKey('data')) {
+        data = (response['data'] as Map<String, dynamic>)['data']
+            as Map<String, dynamic>;
+      } else if (response['data'] is Map<String, dynamic>) {
+        data = response['data'] as Map<String, dynamic>;
+      } else if (response['data'] is List<dynamic> &&
+          (response['data'] as List<dynamic>).isNotEmpty) {
+        data = (response['data'] as List<dynamic>)[0] as Map<String, dynamic>;
       } else {
         data = null;
       }
@@ -450,20 +455,13 @@ class EmpleadosApi {
   Map<String, dynamic> _processResponse(Map<String, dynamic> response) {
     // Manejar estructura anidada
     Map<String, dynamic>? data;
-    if (response['data'] is Map && response['data'].containsKey('data')) {
-      data = response['data']['data'];
+    if (response['data'] is Map<String, dynamic> &&
+        (response['data'] as Map<String, dynamic>).containsKey('data')) {
+      data = (response['data'] as Map<String, dynamic>)['data']
+          as Map<String, dynamic>;
     } else {
-      data = response['data'];
+      data = response['data'] as Map<String, dynamic>;
     }
-
-    if (data == null) {
-      throw ApiException(
-        statusCode: 500,
-        message: 'Error al procesar respuesta del servidor',
-        errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
-      );
-    }
-
     return data;
   }
 
@@ -579,7 +577,7 @@ class EmpleadosApi {
     _invalidateCacheByPattern('cuentas');
 
     if (response['data'] is Map<String, dynamic>) {
-      return response['data'];
+      return response['data'] as Map<String, dynamic>;
     }
 
     throw ApiException(
@@ -655,10 +653,12 @@ class EmpleadosApi {
 
       // Procesar la respuesta
       List<dynamic> data;
-      if (response['data'] is List) {
-        data = response['data'];
-      } else if (response['data'] is Map && response['data']['data'] is List) {
-        data = response['data']['data'];
+      if (response['data'] is List<dynamic>) {
+        data = response['data'] as List<dynamic>;
+      } else if (response['data'] is Map<String, dynamic> &&
+          (response['data'] as Map<String, dynamic>)['data'] is List<dynamic>) {
+        data =
+            (response['data'] as Map<String, dynamic>)['data'] as List<dynamic>;
       } else {
         data = <dynamic>[];
       }
@@ -723,8 +723,8 @@ class EmpleadosApi {
       );
 
       List<Map<String, dynamic>> roles = <Map<String, dynamic>>[];
-      if (response['data'] is List) {
-        roles = (response['data'] as List)
+      if (response['data'] is List<dynamic>) {
+        roles = (response['data'] as List<dynamic>)
             .map((item) => item as Map<String, dynamic>)
             .toList();
 

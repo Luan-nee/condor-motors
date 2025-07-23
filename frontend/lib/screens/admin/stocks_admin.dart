@@ -145,7 +145,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                       color: const Color(0xFF1A1A1A),
                       border: Border(
                         bottom: BorderSide(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
                       ),
                     ),
@@ -183,7 +183,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                     stockProvider.selectedSucursal!.nombre,
                                     style: TextStyle(
                                       fontSize: 20,
-                                      color: Colors.white.withOpacity(0.7),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.7),
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -311,7 +312,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                               color: stockProvider
                                                       .searchQuery.isNotEmpty
                                                   ? const Color(0xFFE31E24)
-                                                      .withOpacity(0.1)
+                                                      .withValues(alpha: 0.1)
                                                   : const Color(0xFF2D2D2D),
                                               borderRadius:
                                                   const BorderRadius.only(
@@ -359,7 +360,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                                     'Buscar por nombre, SKU, categoría o marca...',
                                                 hintStyle: TextStyle(
                                                   color: Colors.white
-                                                      .withOpacity(0.3),
+                                                      .withValues(alpha: 0.3),
                                                   fontSize: 14,
                                                 ),
                                                 border: InputBorder.none,
@@ -387,10 +388,10 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                             Container(
                                               width: 40,
                                               height: 46,
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF2D2D2D),
+                                              decoration: const BoxDecoration(
+                                                color: Color(0xFF2D2D2D),
                                                 borderRadius:
-                                                    const BorderRadius.only(
+                                                    BorderRadius.only(
                                                   topRight: Radius.circular(6),
                                                   bottomRight:
                                                       Radius.circular(6),
@@ -429,7 +430,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                         borderRadius: BorderRadius.circular(6),
                                         border: Border.all(
                                           color: const Color(0xFFE31E24)
-                                              .withOpacity(0.3),
+                                              .withValues(alpha: 0.3),
                                         ),
                                       ),
                                       child: Row(
@@ -447,8 +448,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                           Text(
                                             'resultados',
                                             style: TextStyle(
-                                              color:
-                                                  Colors.white.withOpacity(0.7),
+                                              color: Colors.white
+                                                  .withValues(alpha: 0.7),
                                               fontSize: 13,
                                             ),
                                           ),
@@ -504,7 +505,8 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                     Text(
                                       'Ingresa al menos 3 caracteres para buscar',
                                       style: TextStyle(
-                                        color: Colors.amber.withOpacity(0.8),
+                                        color:
+                                            Colors.amber.withValues(alpha: 0.8),
                                         fontSize: 12,
                                       ),
                                     ),
@@ -662,12 +664,12 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                 color: const Color(0xFF1A1A1A),
                 border: Border(
                   left: BorderSide(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(-2, 0),
                   ),
@@ -703,17 +705,18 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? color.withOpacity(0.2) : const Color(0xFF2D2D2D),
+          color:
+              selected ? color.withValues(alpha: 0.2) : const Color(0xFF2D2D2D),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? color : Colors.white.withOpacity(0.3),
+            color: selected ? color : Colors.white.withValues(alpha: 0.3),
             width:
                 selected ? 2 : 1, // Borde más grueso cuando está seleccionado
           ),
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.3),
+                    color: color.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),

@@ -26,10 +26,203 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
   // Índices para las secciones principales y subsecciones
   // 0: Dashboard, 1: Ventas, 2: Inventario, 3: Colaboradores, 4: Sucursales, 5: Configuración, 6: Pedidos Exclusivos
   int _selectedIndex = 0;
+
   int _selectedSubIndex = 0;
+
+  DateTime? _transitionStart;
+
+  @override
+  void initState() {
+    super.initState();
+    _transitionStart = DateTime.now();
+  }
+
+  Widget _buildMainContent() {
+    debugPrint(
+        '[SlidesAdminScreen] _buildMainContent ejecutado, _selectedIndex:  $_selectedIndex, _selectedSubIndex:  $_selectedSubIndex');
+    switch (_selectedIndex) {
+      case 0:
+        return const DashboardAdminScreen();
+      case 1:
+        return ChangeNotifierProvider(
+          create: (_) => VentasProvider(),
+          child: const VentasAdminScreen(),
+        );
+      case 2:
+        return _buildInventarioSubContent();
+      case 3:
+        return const ColaboradoresAdminScreen();
+      case 4:
+        return const SucursalAdminScreen();
+      case 5:
+        return ChangeNotifierProvider(
+          create: (_) => ConfiguracionesProvider(),
+          child: const SettingsAdminScreen(),
+        );
+      case 6:
+        return const PedidoAdminScreen();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildInventarioSubContent() {
+    switch (_selectedSubIndex) {
+      case 0:
+        return const CategoriasAdminScreen();
+      case 1:
+        return const InventarioAdminScreen();
+      case 2:
+        return const MovimientosAdminScreen();
+      case 3:
+        return const MarcasAdminScreen();
+      case 4:
+        return const ProductosAdminScreen();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String text,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFFE31E24).withValues(alpha: 0.1)
+              : Colors.transparent,
+          border: Border(
+            left: BorderSide(
+              color: isSelected ? const Color(0xFFE31E24) : Colors.transparent,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Row(
+          children: <Widget>[
+            FaIcon(
+              icon,
+              color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
+              size: 18,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              text,
+              style: TextStyle(
+                color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpandableMenuItem({
+    required IconData icon,
+    required String text,
+    required bool isSelected,
+    required bool isExpanded,
+    required List<Widget> subItems,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        _buildMenuItem(
+          icon: icon,
+          text: text,
+          isSelected: isSelected,
+          onTap: onTap,
+        ),
+        if (isExpanded)
+          Padding(
+            padding: const EdgeInsets.only(left: 48),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: subItems,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSubMenuItem(
+    String text, {
+    required VoidCallback onTap,
+    required bool isSelected,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: 8,
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: isSelected
+                ? const Color(0xFFE31E24)
+                : Colors.white.withValues(alpha: 0.7),
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Método para mostrar el diálogo de confirmación de cierre de sesión
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Cerrar Sesión'),
+        content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => _handleLogout(context),
+            child: const Text('Cerrar Sesión'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Método para manejar el cierre de sesión
+  Future<void> _handleLogout(BuildContext context) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.logoutAndRedirectToLogin(context);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    if (_transitionStart != null) {
+      final diff = now.difference(_transitionStart!).inMilliseconds;
+      debugPrint(
+          '[SlidesAdminScreen] Tiempo de transición hasta build: ${diff}ms');
+      _transitionStart = null;
+    }
+    debugPrint('[SlidesAdminScreen] build ejecutado');
     return Scaffold(
       body: Row(
         children: <Widget>[
@@ -40,12 +233,12 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
               color: const Color(0xFF1A1A1A),
               border: Border(
                 right: BorderSide(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                 ),
               ),
               boxShadow: <BoxShadow>[
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 8,
                   offset: const Offset(2, 0),
                 ),
@@ -225,172 +418,12 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
             ),
           ),
 
-          // Contenido principal
+          // Contenido principal (carga perezosa)
           Expanded(
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: <Widget>[
-                const DashboardAdminScreen(),
-                ChangeNotifierProvider(
-                  create: (_) => VentasProvider(),
-                  child: const VentasAdminScreen(),
-                ),
-                // Sección de Inventario con sus subvistas
-                IndexedStack(
-                  index: _selectedSubIndex,
-                  children: const <Widget>[
-                    CategoriasAdminScreen(),
-                    InventarioAdminScreen(),
-                    MovimientosAdminScreen(),
-                    MarcasAdminScreen(),
-                    ProductosAdminScreen(),
-                  ],
-                ),
-                const ColaboradoresAdminScreen(),
-                // Sección de Sucursales
-                const SucursalAdminScreen(),
-                // Sección de Configuración
-                ChangeNotifierProvider(
-                  create: (_) => ConfiguracionesProvider(),
-                  child: const SettingsAdminScreen(),
-                ),
-                // Sección de Pedidos Exclusivos
-                const PedidoAdminScreen(),
-              ],
-            ),
+            child: _buildMainContent(),
           ),
         ],
       ),
     );
-  }
-
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String text,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFFE31E24).withOpacity(0.1)
-              : Colors.transparent,
-          border: Border(
-            left: BorderSide(
-              color: isSelected ? const Color(0xFFE31E24) : Colors.transparent,
-              width: 3,
-            ),
-          ),
-        ),
-        child: Row(
-          children: <Widget>[
-            FaIcon(
-              icon,
-              color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
-              size: 18,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              text,
-              style: TextStyle(
-                color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExpandableMenuItem({
-    required IconData icon,
-    required String text,
-    required bool isSelected,
-    required bool isExpanded,
-    required List<Widget> subItems,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        _buildMenuItem(
-          icon: icon,
-          text: text,
-          isSelected: isSelected,
-          onTap: onTap,
-        ),
-        if (isExpanded)
-          Padding(
-            padding: const EdgeInsets.only(left: 48),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: subItems,
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildSubMenuItem(
-    String text, {
-    required VoidCallback onTap,
-    required bool isSelected,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: 8,
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isSelected
-                ? const Color(0xFFE31E24)
-                : Colors.white.withOpacity(0.7),
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Método para mostrar el diálogo de confirmación de cierre de sesión
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: const Text('Cerrar Sesión'),
-        content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => _handleLogout(context),
-            child: const Text('Cerrar Sesión'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Método para manejar el cierre de sesión
-  Future<void> _handleLogout(BuildContext context) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.logoutAndRedirectToLogin(context);
   }
 }

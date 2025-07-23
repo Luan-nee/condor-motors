@@ -50,7 +50,7 @@ class SucursalUtils {
   /// Obtiene el color de fondo para el contenedor del icono
   static Color getIconBackgroundColor(Sucursal sucursal) {
     return sucursal.sucursalCentral
-        ? colorCentral.withOpacity(0.1)
+        ? colorCentral.withValues(alpha: 0.1)
         : const Color(0xFF2D2D2D);
   }
 
@@ -68,10 +68,10 @@ class SucursalUtils {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: colorCentral.withOpacity(0.1),
+        color: colorCentral.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(
+      child: const Text(
         'CENTRAL',
         style: TextStyle(
           fontSize: 10,

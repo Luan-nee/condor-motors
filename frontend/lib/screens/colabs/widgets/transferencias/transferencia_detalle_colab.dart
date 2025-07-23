@@ -160,7 +160,7 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE31E24).withOpacity(0.1),
+                  color: const Color(0xFFE31E24).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const FaIcon(
@@ -498,7 +498,7 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFFE31E24).withOpacity(0.1),
+            color: const Color(0xFFE31E24).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: FaIcon(
@@ -630,7 +630,7 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withOpacity(0.1),
+                        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const FaIcon(

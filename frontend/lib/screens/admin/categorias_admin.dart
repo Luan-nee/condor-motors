@@ -240,7 +240,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                               'categorías',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                               ),
                             ),
                           ],
@@ -328,7 +328,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                               vertical: 16,
                             ),
                           ),
-                          onPressed: () => _mostrarFormularioCategoria(),
+                          onPressed: _mostrarFormularioCategoria,
                         ),
                       ],
                     ),
@@ -342,9 +342,10 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      border:
+                          Border.all(color: Colors.red.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: <Widget>[
@@ -373,7 +374,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                       color: const Color(0xFF1A1A1A),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
                     child: isLoading
@@ -405,8 +406,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                         size: 14,
                                       ),
                                       label: const Text('Crear categoría'),
-                                      onPressed: () =>
-                                          _mostrarFormularioCategoria(),
+                                      onPressed: _mostrarFormularioCategoria,
                                     ),
                                   ],
                                 ),
@@ -418,7 +418,11 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                   children: <Widget>[
                                     // Encabezado de la tabla
                                     Container(
-                                      color: const Color(0xFF2D2D2D),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF2D2D2D),
+                                        borderRadius: BorderRadius.vertical(
+                                            top: Radius.circular(12)),
+                                      ),
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 16, horizontal: 20),
                                       child: const Row(
@@ -477,12 +481,14 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                     ...categorias.map((Categoria categoria) =>
                                         Container(
                                           decoration: BoxDecoration(
+                                            color: Colors.transparent,
                                             border: Border(
                                               bottom: BorderSide(
                                                 color: Colors.white
-                                                    .withOpacity(0.1),
+                                                    .withValues(alpha: 0.1),
                                               ),
                                             ),
+                                            borderRadius: BorderRadius.zero,
                                           ),
                                           padding: const EdgeInsets.symmetric(
                                               vertical: 12, horizontal: 20),
@@ -493,25 +499,10 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                                 flex: 30,
                                                 child: Row(
                                                   children: <Widget>[
-                                                    Container(
-                                                      width: 32,
-                                                      height: 32,
-                                                      decoration: BoxDecoration(
-                                                        color: const Color(
-                                                            0xFF2D2D2D),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                      ),
-                                                      child: const Center(
-                                                        child: FaIcon(
-                                                          FontAwesomeIcons
-                                                              .folder,
-                                                          color:
-                                                              Color(0xFFE31E24),
-                                                          size: 14,
-                                                        ),
-                                                      ),
+                                                    const FaIcon(
+                                                      FontAwesomeIcons.folder,
+                                                      color: Color(0xFFE31E24),
+                                                      size: 20,
                                                     ),
                                                     const SizedBox(width: 12),
                                                     Text(
@@ -529,7 +520,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                                   categoria.descripcion ?? '',
                                                   style: TextStyle(
                                                     color: Colors.white
-                                                        .withOpacity(0.7),
+                                                        .withValues(alpha: 0.7),
                                                   ),
                                                 ),
                                               ),
@@ -541,7 +532,8 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                                                     decoration: BoxDecoration(
                                                       color: const Color(
                                                               0xFFE31E24)
-                                                          .withOpacity(0.1),
+                                                          .withValues(
+                                                              alpha: 0.1),
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               8),

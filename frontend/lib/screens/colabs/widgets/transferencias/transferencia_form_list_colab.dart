@@ -221,7 +221,7 @@ class _TransferenciaFormListColabState
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
                                       color: const Color(0xFFE31E24)
-                                          .withOpacity(0.3),
+                                          .withValues(alpha: 0.3),
                                     ),
                                   ),
                                   child: ExpansionTile(
@@ -248,7 +248,7 @@ class _TransferenciaFormListColabState
                                           ),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFE31E24)
-                                                .withOpacity(0.1),
+                                                .withValues(alpha: 0.1),
                                             borderRadius:
                                                 BorderRadius.circular(12),
                                           ),
@@ -356,7 +356,7 @@ class _TransferenciaFormListColabState
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: isExpanded ? color.withOpacity(0.2) : const Color(0xFF1A1A1A),
+        color: isExpanded ? color.withValues(alpha: 0.2) : const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(8),
       ),
       child: IconButton(
@@ -393,14 +393,14 @@ class _TransferenciaFormListColabState
       margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.2),
+              color: Colors.orange.withValues(alpha: 0.2),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(7),
                 topRight: Radius.circular(7),
@@ -474,14 +474,14 @@ class _TransferenciaFormListColabState
       margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.2),
+              color: Colors.blue.withValues(alpha: 0.2),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(7),
                 topRight: Radius.circular(7),
@@ -552,14 +552,14 @@ class _TransferenciaFormListColabState
       margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.purple.withOpacity(0.3)),
+        border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Colors.purple.withOpacity(0.2),
+              color: Colors.purple.withValues(alpha: 0.2),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(7),
                 topRight: Radius.circular(7),
@@ -718,7 +718,7 @@ class _TransferenciaFormListColabState
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -925,7 +925,7 @@ class _TransferenciaFormListColabState
         borderRadius: BorderRadius.circular(8),
         border: isBajoStock
             ? Border.all(
-                color: const Color(0xFFE31E24).withOpacity(0.5),
+                color: const Color(0xFFE31E24).withValues(alpha: 0.5),
               )
             : null,
       ),
@@ -937,7 +937,7 @@ class _TransferenciaFormListColabState
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE31E24).withOpacity(0.1),
+                  color: const Color(0xFFE31E24).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const FaIcon(
@@ -981,7 +981,7 @@ class _TransferenciaFormListColabState
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE31E24).withOpacity(0.1),
+                              color: const Color(0xFFE31E24).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(

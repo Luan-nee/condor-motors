@@ -232,25 +232,25 @@ class TransferenciaRepository implements BaseRepository {
 
     switch (estado.toUpperCase()) {
       case 'RECIBIDO':
-        backgroundColor = const Color(0xFF2D8A3B).withOpacity(0.15);
+        backgroundColor = const Color(0xFF2D8A3B).withValues(alpha: 0.15);
         textColor = const Color(0xFF4CAF50);
         iconData = Icons.check_circle;
         tooltipText = 'Transferencia completada';
         break;
       case 'PEDIDO':
-        backgroundColor = const Color(0xFFFFA000).withOpacity(0.15);
+        backgroundColor = const Color(0xFFFFA000).withValues(alpha: 0.15);
         textColor = const Color(0xFFFFA000);
         iconData = Icons.history;
         tooltipText = 'En proceso';
         break;
       case 'ENVIADO':
-        backgroundColor = const Color(0xFF009688).withOpacity(0.15);
+        backgroundColor = const Color(0xFF009688).withValues(alpha: 0.15);
         textColor = const Color(0xFF009688);
         iconData = Icons.local_shipping;
         tooltipText = 'En tránsito';
         break;
       default:
-        backgroundColor = const Color(0xFF757575).withOpacity(0.15);
+        backgroundColor = const Color(0xFF757575).withValues(alpha: 0.15);
         textColor = const Color(0xFF9E9E9E);
         iconData = Icons.hourglass_empty;
         tooltipText = 'Estado sin definir';

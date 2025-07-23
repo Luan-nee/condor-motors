@@ -60,7 +60,7 @@ class BackgroundPainter extends CustomPainter {
 
     // Efecto de partículas flotantes
     final Paint particlePaint = Paint()
-      ..color = const Color(0xFFE31E24).withOpacity(0.05)
+      ..color = const Color(0xFFE31E24).withValues(alpha: 0.05)
       ..style = PaintingStyle.fill;
 
     for (int i = 0; i < _particlePositions.length; i++) {
@@ -78,10 +78,18 @@ class BackgroundPainter extends CustomPainter {
 
       // --- Implementar Wrapping --- // FIX: Mejorar wrapping si es necesario para efectos más complejos.
       // Asegurar que las partículas se envuelvan al salir de la pantalla
-      if (x > size.width + radius) x -= size.width + 2 * radius;
-      if (x < -radius) x += size.width + 2 * radius;
-      if (y > size.height + radius) y -= size.height + 2 * radius;
-      if (y < -radius) y += size.height + 2 * radius;
+      if (x > size.width + radius) {
+        x -= size.width + 2 * radius;
+      }
+      if (x < -radius) {
+        x += size.width + 2 * radius;
+      }
+      if (y > size.height + radius) {
+        y -= size.height + 2 * radius;
+      }
+      if (y < -radius) {
+        y += size.height + 2 * radius;
+      }
       // --- Fin Implementación Wrapping ---
 
       canvas.drawCircle(
@@ -93,7 +101,7 @@ class BackgroundPainter extends CustomPainter {
 
     // Líneas onduladas decorativas con funciones cíclicas
     final Paint wavePaint = Paint()
-      ..color = const Color(0xFFE31E24).withOpacity(0.03)
+      ..color = const Color(0xFFE31E24).withValues(alpha: 0.03)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
@@ -116,18 +124,18 @@ class BackgroundPainter extends CustomPainter {
     final Paint glowPaint = Paint()
       ..shader = RadialGradient(
         colors: <Color>[
-          const Color(0xFFE31E24).withOpacity(0.1),
-          const Color(0xFFE31E24).withOpacity(0.0),
+          const Color(0xFFE31E24).withValues(alpha: 0.1),
+          const Color(0xFFE31E24).withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromCircle(
-        center: const Offset(0, 0),
+        center: Offset.zero,
         radius: size.width * 0.5,
       ));
 
     // Esquina superior izquierda
     canvas
       ..drawCircle(
-        const Offset(0, 0),
+        Offset.zero,
         size.width * 0.3 * (1 + math.sin(animValue * math.pi * 2 * 2) * 0.1),
         glowPaint,
       )
@@ -141,7 +149,7 @@ class BackgroundPainter extends CustomPainter {
 
     // Efecto de red geométrica con ciclos completos
     final Paint gridPaint = Paint()
-      ..color = const Color(0xFFE31E24).withOpacity(0.02)
+      ..color = const Color(0xFFE31E24).withValues(alpha: 0.02)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
@@ -180,8 +188,8 @@ class BackgroundPainter extends CustomPainter {
     final Paint pulsePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
-      ..color = const Color(0xFFE31E24)
-          .withOpacity(0.12 * (1 + math.cos(animValue * math.pi * 2 * 3)) / 2);
+      ..color = const Color(0xFFE31E24).withValues(
+          alpha: 0.12 * (1 + math.cos(animValue * math.pi * 2 * 3)) / 2);
 
     // Pulso principal con doble círculo
     final double pulseRadius = (size.width * 0.25) *
@@ -207,8 +215,8 @@ class BackgroundPainter extends CustomPainter {
     final Paint smallPulsePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
-      ..color = const Color(0xFFE31E24)
-          .withOpacity(0.08 * (1 + math.sin(animValue * math.pi * 2 * 4)) / 2);
+      ..color = const Color(0xFFE31E24).withValues(
+          alpha: 0.08 * (1 + math.sin(animValue * math.pi * 2 * 4)) / 2);
 
     final Offset smallPulseCenter =
         Offset(size.width * 0.75, size.height * 0.4);

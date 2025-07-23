@@ -22,7 +22,7 @@ class DashboardComputerProvider extends ChangeNotifier {
   String _nombreSucursal = 'Sucursal';
 
   // Estado de paginación
-  Paginacion _paginacion = Paginacion(
+  Paginacion _paginacion = const Paginacion(
     totalItems: 0,
     totalPages: 1,
     currentPage: 1,
@@ -39,7 +39,6 @@ class DashboardComputerProvider extends ChangeNotifier {
   String get nombreSucursal => _nombreSucursal;
   Paginacion get paginacion => _paginacion;
 
-  /// Convierte un Producto a Map<String, dynamic>
   Map<String, dynamic> _productoToMap(Producto producto) {
     return {
       'id': producto.id,
@@ -149,7 +148,7 @@ class DashboardComputerProvider extends ChangeNotifier {
         );
 
         _productosStockBajo = productosResponse.items
-            .map((producto) => _productoToMap(producto))
+            .map(_productoToMap)
             .toList();
         debugPrint(
             '✅ Productos con stock bajo cargados: ${_productosStockBajo.length}');

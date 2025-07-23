@@ -1,15 +1,21 @@
-class ReglaDescuento {
+import 'package:equatable/equatable.dart';
+
+class ReglaDescuento extends Equatable {
   final int cantidad;
   final double discountPercentage;
   final int? daysWithoutSale;
   final double? timeDiscount;
 
-  ReglaDescuento({
+  const ReglaDescuento({
     required this.cantidad,
     required this.discountPercentage,
     this.daysWithoutSale,
     this.timeDiscount,
   });
+
+  @override
+  List<Object?> get props =>
+      [cantidad, discountPercentage, daysWithoutSale, timeDiscount];
 
   factory ReglaDescuento.fromJson(Map<String, dynamic> json) {
     return ReglaDescuento(
@@ -28,7 +34,7 @@ class ReglaDescuento {
       };
 }
 
-class Producto {
+class Producto extends Equatable {
   final int id;
   final String sku;
   final String nombre;
@@ -54,11 +60,11 @@ class Producto {
   final bool liquidacion;
   final String? pathFoto;
 
-  Producto({
+  const Producto({
     required this.id,
     required this.sku,
     required this.nombre,
-    this.descripcion,
+    required this.categoria, required this.categoriaId, required this.marca, required this.marcaId, required this.fechaCreacion, required this.precioCompra, required this.precioVenta, required this.stock, this.descripcion,
     this.maxDiasSinReabastecer,
     this.stockMinimo,
     this.cantidadMinimaDescuento,
@@ -66,20 +72,40 @@ class Producto {
     this.porcentajeDescuento,
     this.color,
     this.colorId,
-    required this.categoria,
-    required this.categoriaId,
-    required this.marca,
-    required this.marcaId,
-    required this.fechaCreacion,
     this.detalleProductoId,
-    required this.precioCompra,
-    required this.precioVenta,
     this.precioOferta,
-    required this.stock,
     this.stockBajo = false,
     this.liquidacion = false,
     this.pathFoto,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        sku,
+        nombre,
+        descripcion,
+        maxDiasSinReabastecer,
+        stockMinimo,
+        cantidadMinimaDescuento,
+        cantidadGratisDescuento,
+        porcentajeDescuento,
+        color,
+        colorId,
+        categoria,
+        categoriaId,
+        marca,
+        marcaId,
+        fechaCreacion,
+        detalleProductoId,
+        precioCompra,
+        precioVenta,
+        precioOferta,
+        stock,
+        stockBajo,
+        liquidacion,
+        pathFoto,
+      ];
 
   factory Producto.fromJson(Map<String, dynamic> json) {
     return Producto(

@@ -348,37 +348,20 @@ class SucursalesApi {
       }
 
       // Validar formato de series y números usando los métodos del modelo
-      if (sucursalData.containsKey('serieFactura') &&
-          !Sucursal.isValidSerieFactura(
-              sucursalData['serieFactura']?.toString())) {
-        throw Exception(
-            'Serie de factura debe empezar con F y tener 4 caracteres');
-      }
-
-      if (sucursalData.containsKey('serieBoleta') &&
-          !Sucursal.isValidSerieBoleta(
-              sucursalData['serieBoleta']?.toString())) {
-        throw Exception(
-            'Serie de boleta debe empezar con B y tener 4 caracteres');
-      }
-
-      if (sucursalData.containsKey('codigoEstablecimiento') &&
-          !Sucursal.isValidCodigoEstablecimiento(
-              sucursalData['codigoEstablecimiento']?.toString())) {
-        throw Exception('Código de establecimiento debe tener 4 caracteres');
-      }
-
-      if (sucursalData.containsKey('numeroFacturaInicial') &&
-          !Sucursal.isValidNumeroInicial(
-              int.tryParse(sucursalData['numeroFacturaInicial'].toString()))) {
-        throw Exception('Número inicial de factura debe ser positivo');
-      }
-
-      if (sucursalData.containsKey('numeroBoletaInicial') &&
-          !Sucursal.isValidNumeroInicial(
-              int.tryParse(sucursalData['numeroBoletaInicial'].toString()))) {
-        throw Exception('Número inicial de boleta debe ser positivo');
-      }
+      Sucursal.validarSerieFactura(sucursalData['serieFactura']?.toString());
+      Sucursal.validarSerieBoleta(sucursalData['serieBoleta']?.toString());
+      Sucursal.validarCodigoEstablecimiento(
+          sucursalData['codigoEstablecimiento']?.toString());
+      Sucursal.validarNumeroInicial(
+          sucursalData['numeroFacturaInicial'] != null
+              ? int.tryParse(sucursalData['numeroFacturaInicial'].toString())
+              : null,
+          'factura');
+      Sucursal.validarNumeroInicial(
+          sucursalData['numeroBoletaInicial'] != null
+              ? int.tryParse(sucursalData['numeroBoletaInicial'].toString())
+              : null,
+          'boleta');
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/sucursales',
@@ -404,37 +387,20 @@ class SucursalesApi {
       logCache('SucursalesApi: Actualizando sucursal con ID: $sucursalId');
 
       // Validar formato de series y números usando los métodos del modelo
-      if (sucursalData.containsKey('serieFactura') &&
-          !Sucursal.isValidSerieFactura(
-              sucursalData['serieFactura']?.toString())) {
-        throw Exception(
-            'Serie de factura debe empezar con F y tener 4 caracteres');
-      }
-
-      if (sucursalData.containsKey('serieBoleta') &&
-          !Sucursal.isValidSerieBoleta(
-              sucursalData['serieBoleta']?.toString())) {
-        throw Exception(
-            'Serie de boleta debe empezar con B y tener 4 caracteres');
-      }
-
-      if (sucursalData.containsKey('codigoEstablecimiento') &&
-          !Sucursal.isValidCodigoEstablecimiento(
-              sucursalData['codigoEstablecimiento']?.toString())) {
-        throw Exception('Código de establecimiento debe tener 4 caracteres');
-      }
-
-      if (sucursalData.containsKey('numeroFacturaInicial') &&
-          !Sucursal.isValidNumeroInicial(
-              int.tryParse(sucursalData['numeroFacturaInicial'].toString()))) {
-        throw Exception('Número inicial de factura debe ser positivo');
-      }
-
-      if (sucursalData.containsKey('numeroBoletaInicial') &&
-          !Sucursal.isValidNumeroInicial(
-              int.tryParse(sucursalData['numeroBoletaInicial'].toString()))) {
-        throw Exception('Número inicial de boleta debe ser positivo');
-      }
+      Sucursal.validarSerieFactura(sucursalData['serieFactura']?.toString());
+      Sucursal.validarSerieBoleta(sucursalData['serieBoleta']?.toString());
+      Sucursal.validarCodigoEstablecimiento(
+          sucursalData['codigoEstablecimiento']?.toString());
+      Sucursal.validarNumeroInicial(
+          sucursalData['numeroFacturaInicial'] != null
+              ? int.tryParse(sucursalData['numeroFacturaInicial'].toString())
+              : null,
+          'factura');
+      Sucursal.validarNumeroInicial(
+          sucursalData['numeroBoletaInicial'] != null
+              ? int.tryParse(sucursalData['numeroBoletaInicial'].toString())
+              : null,
+          'boleta');
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/sucursales/$sucursalId',

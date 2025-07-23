@@ -73,29 +73,43 @@ class MarcasApi {
       );
 
       // Extraer datos de la respuesta
-      final data = response['data'];
-      if (data == null) {
+      final Object? dataObj = response['data'];
+      if (dataObj == null || dataObj is! Map<String, dynamic>) {
         throw ApiException(
           statusCode: 500,
           message: 'Respuesta inesperada del servidor: falta campo "data"',
           errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
         );
       }
+      final Map<String, dynamic> data = dataObj;
 
       // Extraer lista de marcas
-      final List<dynamic> items = data['data'] ?? <dynamic>[];
+      final Object? itemsObj = data['data'];
+      final List<dynamic> items = (itemsObj is List) ? itemsObj : <dynamic>[];
 
       // Extraer información de paginación
-      final paginationData = data['pagination'];
-      if (paginationData == null) {
+      final Object? paginationObj = data['pagination'];
+      Map<String, dynamic>? paginationData;
+      if (paginationObj is Map<String, dynamic>) {
+        paginationData = paginationObj;
+      } else {
         Logger.warn(
             '[MarcasApi] La respuesta no contiene información de paginación');
+        paginationData = null;
       }
 
-      final int totalItems = paginationData?['total'] ?? items.length;
-      final int currentPage = paginationData?['page'] ?? page;
-      final int totalPages = paginationData?['totalPages'] ?? 1;
-      final int actualPageSize = paginationData?['pageSize'] ?? pageSize;
+      final int totalItems = paginationData?['total'] is int
+          ? paginationData!['total'] as int
+          : items.length;
+      final int currentPage = paginationData?['page'] is int
+          ? paginationData!['page'] as int
+          : page;
+      final int totalPages = paginationData?['totalPages'] is int
+          ? paginationData!['totalPages'] as int
+          : 1;
+      final int actualPageSize = paginationData?['pageSize'] is int
+          ? paginationData!['pageSize'] as int
+          : pageSize;
 
       Logger.debug(
           '[MarcasApi] Marcas recuperadas: ${items.length}, total: $totalItems, página: $currentPage de $totalPages');
@@ -108,7 +122,7 @@ class MarcasApi {
             } catch (e) {
               Logger.warn('[MarcasApi] Error al convertir marca: $e');
               // Si hay un error en la conversión, lo ignoramos y continuamos
-              return Marca(id: 0, nombre: 'Error');
+              return const Marca(id: 0, nombre: 'Error');
             }
           })
           .where((Marca marca) => marca.id > 0)
@@ -231,14 +245,15 @@ class MarcasApi {
       Logger.debug('[MarcasApi] Respuesta de getMarca recibida');
 
       // Extraer datos de la respuesta
-      final dynamic data = response['data'];
-      if (data == null) {
+      final Object? dataObj = response['data'];
+      if (dataObj == null || dataObj is! Map<String, dynamic>) {
         throw ApiException(
           statusCode: 404,
           message: 'Marca no encontrada',
           errorCode: ApiConstants.errorCodes[404] ?? ApiConstants.unknownError,
         );
       }
+      final Map<String, dynamic> data = dataObj;
 
       // Convertir a objeto Marca
       final Marca marca = Marca.fromJson(data);
@@ -281,14 +296,15 @@ class MarcasApi {
       Logger.debug('[MarcasApi] Respuesta de createMarca recibida');
 
       // Extraer datos de la respuesta
-      final dynamic data = response['data'];
-      if (data == null) {
+      final Object? dataObj = response['data'];
+      if (dataObj == null || dataObj is! Map<String, dynamic>) {
         throw ApiException(
           statusCode: 500,
           message: 'Error al crear marca: respuesta inesperada del servidor',
           errorCode: ApiConstants.errorCodes[500] ?? ApiConstants.unknownError,
         );
       }
+      final Map<String, dynamic> data = dataObj;
 
       // Convertir a objeto Marca
       final Marca marca = Marca.fromJson(data);
@@ -346,14 +362,15 @@ class MarcasApi {
       Logger.debug('[MarcasApi] Respuesta de updateMarca recibida');
 
       // Extraer datos de la respuesta
-      final dynamic data = response['data'];
-      if (data == null) {
+      final Object? dataObj = response['data'];
+      if (dataObj == null || dataObj is! Map<String, dynamic>) {
         throw ApiException(
           statusCode: 404,
           message: 'Marca no encontrada',
           errorCode: ApiConstants.errorCodes[404] ?? ApiConstants.unknownError,
         );
       }
+      final Map<String, dynamic> data = dataObj;
 
       // Convertir a objeto Marca
       final Marca marca = Marca.fromJson(data);

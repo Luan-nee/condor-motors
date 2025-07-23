@@ -567,9 +567,7 @@ class EmpleadoRepository implements BaseRepository {
       'empleado no tiene cuenta'
     ];
 
-    return errorNotFoundResponses.any((String term) {
-      return msgLower.contains(term);
-    });
+    return errorNotFoundResponses.any(msgLower.contains);
   }
 
   /// Determina si un error es debido a problemas de autenticación
@@ -582,8 +580,6 @@ class EmpleadoRepository implements BaseRepository {
       'token inválido'
     ];
 
-    return errorAuthResponses.any((String term) {
-      return msgLower.contains(term);
-    });
+    return errorAuthResponses.any(msgLower.contains);
   }
 }

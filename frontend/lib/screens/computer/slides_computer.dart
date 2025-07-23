@@ -202,12 +202,12 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                 color: const Color(0xFF1A1A1A),
                 border: Border(
                   right: BorderSide(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(2, 0),
                   ),
@@ -253,7 +253,8 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE31E24).withOpacity(0.1),
+                            color:
+                                const Color(0xFFE31E24).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Row(
@@ -379,7 +380,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFFE31E24).withOpacity(0.1)
+              ? const Color(0xFFE31E24).withValues(alpha: 0.1)
               : Colors.transparent,
           border: Border(
             left: BorderSide(
@@ -411,7 +412,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                   Text(
                     description,
                     style: TextStyle(
-                      color: Colors.white54.withOpacity(0.7),
+                      color: Colors.white54.withValues(alpha: 0.7),
                       fontSize: 12,
                     ),
                   ),
@@ -459,12 +460,6 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
   // Método para manejar el cierre de sesión
   Future<void> _handleLogout(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final proformaProvider =
-        Provider.of<ProformaComputerProvider>(context, listen: false);
-
-    // Detener actualizaciones automáticas de proformas
-    proformaProvider.pausarActualizacionesEnTiempoReal();
-
     // Limpiar el estado actual
     if (mounted) {
       setState(() {

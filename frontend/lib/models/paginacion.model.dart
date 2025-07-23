@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
-class Paginacion {
+import 'package:equatable/equatable.dart';
+
+class Paginacion extends Equatable {
   final int totalItems;
   final int totalPages;
   final int currentPage;
@@ -10,10 +12,8 @@ class Paginacion {
   final int? rangoFin;
 
   // Caché para cálculos costosos
-  List<int>? _cachedVisiblePages;
-  int? _cachedMaxVisiblePages;
 
-  Paginacion({
+  const Paginacion({
     required this.totalItems,
     required this.totalPages,
     required this.currentPage,
@@ -22,6 +22,17 @@ class Paginacion {
     this.rangoInicio,
     this.rangoFin,
   });
+
+  @override
+  List<Object?> get props => [
+        totalItems,
+        totalPages,
+        currentPage,
+        hasNext,
+        hasPrev,
+        rangoInicio,
+        rangoFin,
+      ];
 
   factory Paginacion.fromJson(Map<String, dynamic> json) {
     return Paginacion(
@@ -42,7 +53,7 @@ class Paginacion {
           response['pagination'] as Map<String, dynamic>);
     }
 
-    return Paginacion(
+    return const Paginacion(
       totalItems: 0,
       totalPages: 1,
       currentPage: 1,
@@ -52,7 +63,7 @@ class Paginacion {
   }
 
   /// Crea una Paginación vacía para inicialización
-  static final Paginacion emptyPagination = Paginacion(
+  static final Paginacion emptyPagination = const Paginacion(
     totalItems: 0,
     totalPages: 1,
     currentPage: 1,
@@ -133,17 +144,8 @@ class Paginacion {
 
   // Método para generar un rango de páginas visible (útil para UI)
   List<int> getVisiblePages({int maxVisiblePages = 5}) {
-    // Usar caché para evitar recálculos
-    if (_cachedVisiblePages != null &&
-        _cachedMaxVisiblePages == maxVisiblePages) {
-      return _cachedVisiblePages!;
-    }
-
-    _cachedMaxVisiblePages = maxVisiblePages;
-
     if (totalPages <= maxVisiblePages) {
-      _cachedVisiblePages = List.generate(totalPages, (int i) => i + 1);
-      return _cachedVisiblePages!;
+      return List.generate(totalPages, (int i) => i + 1);
     }
 
     // Calcular el rango de páginas visibles
@@ -157,8 +159,7 @@ class Paginacion {
       start = math.max(1, end - maxVisiblePages + 1);
     }
 
-    _cachedVisiblePages = List.generate(end - start + 1, (int i) => start + i);
-    return _cachedVisiblePages!;
+    return List.generate(end - start + 1, (int i) => start + i);
   }
 
   /// Convierte esta paginación a un mapa JSON
@@ -197,53 +198,27 @@ class Paginacion {
       rangoFin: rangoFin ?? this.rangoFin,
     );
   }
-
-  /// Compara dos objetos de paginación para determinar si son iguales
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) {
-      return true;
-    }
-    return other is Paginacion &&
-        other.totalItems == totalItems &&
-        other.totalPages == totalPages &&
-        other.currentPage == currentPage &&
-        other.hasNext == hasNext &&
-        other.hasPrev == hasPrev &&
-        other.rangoInicio == rangoInicio &&
-        other.rangoFin == rangoFin;
-  }
-
-  @override
-  int get hashCode => Object.hash(
-        totalItems,
-        totalPages,
-        currentPage,
-        hasNext,
-        hasPrev,
-        rangoInicio,
-        rangoFin,
-      );
 }
 
 /// Representa una colección de elementos con paginación y metadatos opcionales.
 ///
 /// Proporciona funcionalidades para manejar fácilmente resultados paginados de la API,
 /// incluyendo opciones de ordenación y filtrado a través de los metadatos.
-class PaginatedResponse<T> {
+class PaginatedResponse<T> extends Equatable {
   final List<T> items;
   final Paginacion paginacion;
   final Map<String, dynamic>? metadata;
 
   // Caché para opciones derivadas de metadatos
-  List<String>? _sortByOptionsCache;
-  List<String>? _filterOptionsCache;
 
-  PaginatedResponse({
+  const PaginatedResponse({
     required this.items,
     required this.paginacion,
     this.metadata,
   });
+
+  @override
+  List<Object?> get props => [items, paginacion, metadata];
 
   /// Crea una respuesta paginada desde la respuesta completa de la API
   /// Requiere un conversor para transformar los items JSON a objetos de tipo T
@@ -269,12 +244,12 @@ class PaginatedResponse<T> {
 
   /// Crea una respuesta paginada vacía
   static final PaginatedResponse<dynamic> emptyResponse = PaginatedResponse(
-    items: [],
+    items: const [],
     paginacion: Paginacion.emptyPagination,
   );
 
   factory PaginatedResponse.empty() => PaginatedResponse<T>(
-        items: [],
+        items: const [],
         paginacion: Paginacion.emptyPagination,
       );
 
@@ -300,39 +275,23 @@ class PaginatedResponse<T> {
   bool get hasPrevPage => paginacion.hasPrev;
 
   /// Obtiene opciones de ordenación desde los metadatos si existen - con caché
-  List<String> get sortByOptions {
-    if (_sortByOptionsCache != null) {
-      return _sortByOptionsCache!;
+  List<String> getSortByOptions() {
+    if (metadata == null ||
+        !metadata!.containsKey('sortByOptions') ||
+        metadata!['sortByOptions'] is! List) {
+      return <String>[];
     }
-
-    if (metadata != null && metadata!.containsKey('sortByOptions')) {
-      final options = metadata!['sortByOptions'];
-      if (options is List) {
-        _sortByOptionsCache =
-            options.map((e) => e.toString()).toList(growable: false);
-        return _sortByOptionsCache!;
-      }
-    }
-    _sortByOptionsCache = const [];
-    return _sortByOptionsCache!;
+    return List<String>.from(metadata!['sortByOptions'] as List);
   }
 
   /// Obtiene opciones de filtros desde los metadatos si existen - con caché
-  List<String> get filterOptions {
-    if (_filterOptionsCache != null) {
-      return _filterOptionsCache!;
+  List<String> getFilterOptions() {
+    if (metadata == null ||
+        !metadata!.containsKey('filterOptions') ||
+        metadata!['filterOptions'] is! List) {
+      return <String>[];
     }
-
-    if (metadata != null && metadata!.containsKey('filterOptions')) {
-      final options = metadata!['filterOptions'];
-      if (options is List) {
-        _filterOptionsCache =
-            options.map((e) => e.toString()).toList(growable: false);
-        return _filterOptionsCache!;
-      }
-    }
-    _filterOptionsCache = const [];
-    return _filterOptionsCache!;
+    return List<String>.from(metadata!['filterOptions'] as List);
   }
 
   /// Obtiene el valor de cualquier metadato por su clave
@@ -390,68 +349,6 @@ class PaginatedResponse<T> {
       paginacion: newPaginacion,
       metadata: metadata,
     );
-  }
-
-  /// Compara dos respuestas paginadas para determinar si son iguales
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) {
-      return true;
-    }
-
-    return other is PaginatedResponse<T> &&
-        _listEquals(other.items, items) &&
-        other.paginacion == paginacion &&
-        _mapEquals(other.metadata, metadata);
-  }
-
-  @override
-  int get hashCode => Object.hash(
-        Object.hashAll(items),
-        paginacion,
-        metadata != null ? Object.hashAll(metadata!.entries) : null,
-      );
-
-  // Método auxiliar para comparar listas
-  bool _listEquals<E>(List<E>? a, List<E>? b) {
-    if (a == null && b == null) {
-      return true;
-    }
-    if (a == null || b == null) {
-      return false;
-    }
-    if (a.length != b.length) {
-      return false;
-    }
-
-    for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  // Método auxiliar para comparar mapas
-  bool _mapEquals<K, V>(Map<K, V>? a, Map<K, V>? b) {
-    if (a == null && b == null) {
-      return true;
-    }
-    if (a == null || b == null) {
-      return false;
-    }
-    if (a.length != b.length) {
-      return false;
-    }
-
-    for (final key in a.keys) {
-      if (!b.containsKey(key) || b[key] != a[key]) {
-        return false;
-      }
-    }
-
-    return true;
   }
 }
 
@@ -517,73 +414,5 @@ class ResultadoPaginado<T> {
       pageSize: pageSize ?? this.pageSize,
       metadata: metadata ?? this.metadata,
     );
-  }
-
-  /// Compara dos resultados paginados para determinar si son iguales
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) {
-      return true;
-    }
-
-    return other is ResultadoPaginado<T> &&
-        _listEquals(other.items, items) &&
-        other.total == total &&
-        other.page == page &&
-        other.totalPages == totalPages &&
-        other.pageSize == pageSize &&
-        _mapEquals(other.metadata, metadata);
-  }
-
-  @override
-  int get hashCode => Object.hash(
-        Object.hashAll(items),
-        total,
-        page,
-        totalPages,
-        pageSize,
-        metadata != null ? Object.hashAll(metadata!.entries) : null,
-      );
-
-  // Método auxiliar para comparar listas
-  bool _listEquals<E>(List<E>? a, List<E>? b) {
-    if (a == null && b == null) {
-      return true;
-    }
-    if (a == null || b == null) {
-      return false;
-    }
-    if (a.length != b.length) {
-      return false;
-    }
-
-    for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  // Método auxiliar para comparar mapas
-  bool _mapEquals<K, V>(Map<K, V>? a, Map<K, V>? b) {
-    if (a == null && b == null) {
-      return true;
-    }
-    if (a == null || b == null) {
-      return false;
-    }
-    if (a.length != b.length) {
-      return false;
-    }
-
-    for (final key in a.keys) {
-      if (!b.containsKey(key) || b[key] != a[key]) {
-        return false;
-      }
-    }
-
-    return true;
   }
 }

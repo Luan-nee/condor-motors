@@ -42,9 +42,7 @@ class VentasPendientesUtils {
   /// Retorna una lista de mapas con el formato necesario para PendingSalesWidget
   static List<Map<String, dynamic>> convertirProformasAVentasPendientes(
       List<model_proforma.Proforma> proformas) {
-    return proformas.map((model_proforma.Proforma proforma) {
-      return convertirProformaAVentaPendiente(proforma);
-    }).toList();
+    return proformas.map(convertirProformaAVentaPendiente).toList();
   }
 
   /// Convierte un objeto Proforma individual a formato compatible con ventasPendientes
@@ -71,7 +69,7 @@ class VentasPendientesUtils {
     // Incluir información sobre promociones en la proforma
     final List<model_proforma.DetalleProforma> detallesConPromociones = proforma
         .detalles
-        .where((model_proforma.DetalleProforma d) => tienePromocion(d))
+        .where(tienePromocion)
         .toList();
 
     // Generar un resumen de promociones para mostrar en la UI

@@ -168,19 +168,19 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                       decoration: InputDecoration(
                         labelText: 'Directorio para guardar archivos Excel',
                         labelStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.7)),
+                            TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                         hintText: 'Ej: C:\\Users\\Usuario\\Documents',
                         hintStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.5)),
+                            TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.3)),
+                              BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.3)),
+                              BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),

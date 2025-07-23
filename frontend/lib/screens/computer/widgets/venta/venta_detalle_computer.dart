@@ -178,8 +178,8 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                             boxShadow: [
                               BoxShadow(
                                 color: widget.isLoadingFullData
-                                    ? Colors.black.withOpacity(0.1)
-                                    : Colors.black.withOpacity(0.2),
+                                    ? Colors.black.withValues(alpha: 0.1)
+                                    : Colors.black.withValues(alpha: 0.2),
                                 blurRadius: widget.isLoadingFullData ? 5 : 10,
                                 offset: const Offset(0, 3),
                               ),
@@ -306,7 +306,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                       tienePdf
                           ? FontAwesomeIcons.filePdf
                           : FontAwesomeIcons.fileInvoice,
-                      color: Color(0xFFE31E24),
+                      color: const Color(0xFFE31E24),
                       size: 16,
                     ),
                   ),
@@ -347,7 +347,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                 Text(
                   _formatoFecha.format(fechaCreacion),
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 14,
                   ),
                 ),
@@ -488,8 +488,8 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: estadoColor.withOpacity(
-                                widget.isLoadingFullData ? 0.1 : 0.2),
+                            color: estadoColor.withValues(
+                                alpha: widget.isLoadingFullData ? 0.1 : 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -765,10 +765,10 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: anulada
-                          ? Colors.red.withOpacity(0.1)
+                          ? Colors.red.withValues(alpha: 0.1)
                           : (cancelada
-                              ? Colors.orange.shade900.withOpacity(0.1)
-                              : Colors.green.withOpacity(0.1)),
+                              ? Colors.orange.shade900.withValues(alpha: 0.1)
+                              : Colors.green.withValues(alpha: 0.1)),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -822,7 +822,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
@@ -1069,9 +1069,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                         onPressed: () {
                           Navigator.of(context).pop();
                           // La llamada es asincrónica, pero el resultado lo maneja el callback
-                          if (widget.onDeclararPressed != null) {
-                            widget.onDeclararPressed!(idVenta);
-                          }
+                          widget.onDeclararPressed?.call(idVenta);
                         },
                         child: const Text('Declarar'),
                       ),
@@ -1178,8 +1176,8 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                   backgroundColor: const Color(0xFF2D2D2D),
                   foregroundColor: Colors.white,
                   disabledBackgroundColor:
-                      const Color(0xFF2D2D2D).withOpacity(0.5),
-                  disabledForegroundColor: Colors.white.withOpacity(0.5),
+                      const Color(0xFF2D2D2D).withValues(alpha: 0.5),
+                  disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
                 ),
                 onPressed: null,
               ),

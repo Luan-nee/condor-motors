@@ -157,9 +157,9 @@ class ProformaWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -296,7 +296,7 @@ class ProformaWidget extends StatelessWidget {
             ),
           ),
           Divider(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
             height: 1,
           ),
 
@@ -538,7 +538,7 @@ class ProformaWidget extends StatelessWidget {
   }
 
   /// Maneja la eliminación de una proforma utilizando el provider
-  void _handleDelete(BuildContext context) async {
+  Future<void> _handleDelete(BuildContext context) async {
     try {
       final proformaProvider = Provider.of<ProformaComputerProvider>(
         context,
@@ -573,7 +573,7 @@ class ProformaWidget extends StatelessWidget {
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: TextButton.styleFrom(
                 foregroundColor: Colors.red,
-                backgroundColor: Colors.red.withOpacity(0.1),
+                backgroundColor: Colors.red.withValues(alpha: 0.1),
               ),
               child: const Text('Eliminar'),
             ),
@@ -698,9 +698,7 @@ class ProformaWidget extends StatelessWidget {
                 null, // Dejar que el provider obtenga el ID de sucursal
                 onSuccess: () {
                   Logger.debug('Callback de éxito ejecutado desde provider');
-                  if (onConvert != null) {
-                    onConvert!(proforma);
-                  }
+                  onConvert?.call(proforma);
                 },
               );
 
@@ -1263,13 +1261,14 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                                                       vertical: 1),
                                                   decoration: BoxDecoration(
                                                     color: Colors.orange
-                                                        .withOpacity(0.1),
+                                                        .withValues(alpha: 0.1),
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                             4),
                                                     border: Border.all(
                                                         color: Colors.orange
-                                                            .withOpacity(0.3)),
+                                                            .withValues(
+                                                                alpha: 0.3)),
                                                   ),
                                                   child: Text(
                                                     'Descuento $descuento%',
@@ -1291,13 +1290,14 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                                                       vertical: 1),
                                                   decoration: BoxDecoration(
                                                     color: Colors.green
-                                                        .withOpacity(0.1),
+                                                        .withValues(alpha: 0.1),
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                             4),
                                                     border: Border.all(
                                                         color: Colors.green
-                                                            .withOpacity(0.3)),
+                                                            .withValues(
+                                                                alpha: 0.3)),
                                                   ),
                                                   child: Text(
                                                     '$cantidadGratis unidades gratis',
@@ -1345,24 +1345,24 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50).withOpacity(0.1),
+                        color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: const Color(0xFF4CAF50).withOpacity(0.3),
+                          color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.info_outline,
-                            color: const Color(0xFF4CAF50),
+                            color: Color(0xFF4CAF50),
                             size: 16,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _mensajeValidacion,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
                               ),

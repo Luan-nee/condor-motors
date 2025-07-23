@@ -45,12 +45,16 @@ class TransferenciasInventarioApi {
     bool forceRefresh = false,
   }) async {
     try {
+      // Establecer valores por defecto para mostrar transferencias más recientes primero
+      final String defaultSortBy = sortBy ?? 'fechaCreacion';
+      final String defaultOrder = order ?? 'desc';
+
       // Generar clave de caché
       final filtroParams = FiltroParams(
         page: page ?? 1,
         pageSize: pageSize ?? 20,
-        sortBy: sortBy,
-        order: order,
+        sortBy: defaultSortBy,
+        order: defaultOrder,
         extraParams: <String, String>{
           if (sucursalId != null) 'sucursalId': sucursalId,
           if (estado != null) 'estado': estado,
@@ -95,7 +99,7 @@ class TransferenciasInventarioApi {
       final PaginatedResponse<TransferenciaInventario> paginatedResponse =
           PaginatedResponse.fromApiResponse(
         response,
-        (Map<String, dynamic> json) => TransferenciaInventario.fromJson(json),
+        TransferenciaInventario.fromJson,
       );
 
       // Guardar en caché si es necesario
@@ -434,7 +438,7 @@ class TransferenciasInventarioApi {
       // Procesar respuesta usando PaginatedResponse
       return PaginatedResponse.fromApiResponse(
         response,
-        (Map<String, dynamic> json) => TransferenciaInventario.fromJson(json),
+        TransferenciaInventario.fromJson,
       );
     } catch (e) {
       debugPrint('Error al obtener todas las transferencias: $e');

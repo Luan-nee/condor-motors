@@ -129,8 +129,8 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
-                    Row(
-                      children: const <Widget>[
+                    const Row(
+                      children: <Widget>[
                         FaIcon(
                           FontAwesomeIcons.truckFast,
                           color: Colors.white,
@@ -204,7 +204,7 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                               vertical: 16,
                             ),
                           ),
-                          onPressed: () => _mostrarFormularioPedido(),
+                          onPressed: _mostrarFormularioPedido,
                         ),
                       ],
                     ),
@@ -217,9 +217,10 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      border:
+                          Border.all(color: Colors.red.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: <Widget>[
@@ -246,7 +247,7 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                       color: const Color(0xFF1A1A1A),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
                     child: isLoading
@@ -276,8 +277,7 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                                         size: 14,
                                       ),
                                       label: const Text('Crear pedido'),
-                                      onPressed: () =>
-                                          _mostrarFormularioPedido(),
+                                      onPressed: _mostrarFormularioPedido,
                                     ),
                                   ],
                                 ),
@@ -289,13 +289,17 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                                   children: <Widget>[
                                     // Encabezado de la tabla
                                     Container(
-                                      color: const Color(0xFF2D2D2D),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF2D2D2D),
+                                        borderRadius: BorderRadius.vertical(
+                                            top: Radius.circular(12)),
+                                      ),
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 16, horizontal: 20),
                                       child: const Row(
                                         children: <Widget>[
                                           Expanded(
-                                            flex: 10,
+                                            flex: 5,
                                             child: Text('ID',
                                                 style: TextStyle(
                                                     color: Colors.white,
@@ -319,7 +323,7 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                                                         FontWeight.bold)),
                                           ),
                                           Expanded(
-                                            flex: 20,
+                                            flex: 15,
                                             child: Text('Cliente',
                                                 style: TextStyle(
                                                     color: Colors.white,
@@ -329,6 +333,7 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                                           Expanded(
                                             flex: 10,
                                             child: Text('Sucursal',
+                                                textAlign: TextAlign.center,
                                                 style: TextStyle(
                                                     color: Colors.white,
                                                     fontWeight:
@@ -361,14 +366,16 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                                           Expanded(
                                             flex: 10,
                                             child: Text('Detalles',
+                                                textAlign: TextAlign.center,
                                                 style: TextStyle(
                                                     color: Colors.white,
                                                     fontWeight:
                                                         FontWeight.bold)),
                                           ),
                                           Expanded(
-                                            flex: 10,
+                                            flex: 15,
                                             child: Text('Acciones',
+                                                textAlign: TextAlign.center,
                                                 style: TextStyle(
                                                     color: Colors.white,
                                                     fontWeight:
@@ -383,7 +390,7 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                                             border: Border(
                                               bottom: BorderSide(
                                                 color: Colors.white
-                                                    .withOpacity(0.1),
+                                                    .withValues(alpha: 0.1),
                                               ),
                                             ),
                                           ),
@@ -392,7 +399,7 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                                           child: Row(
                                             children: <Widget>[
                                               Expanded(
-                                                flex: 10,
+                                                flex: 5,
                                                 child: Text(
                                                     pedido.id?.toString() ??
                                                         '-',
@@ -412,7 +419,7 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                                                         color: Colors.white)),
                                               ),
                                               Expanded(
-                                                flex: 20,
+                                                flex: 15,
                                                 child: Text(
                                                     provider
                                                             .getCliente(pedido
@@ -428,6 +435,7 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                                                 child: Text(
                                                     pedido.sucursalId
                                                         .toString(),
+                                                    textAlign: TextAlign.center,
                                                     style: const TextStyle(
                                                         color: Colors.white)),
                                               ),
@@ -456,6 +464,8 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                                               Expanded(
                                                 flex: 10,
                                                 child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
                                                   children: [
                                                     const FaIcon(
                                                         FontAwesomeIcons.box,
@@ -475,7 +485,7 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                                                 ),
                                               ),
                                               Expanded(
-                                                flex: 10,
+                                                flex: 15,
                                                 child: Row(
                                                   mainAxisAlignment:
                                                       MainAxisAlignment.center,

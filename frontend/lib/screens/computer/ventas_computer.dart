@@ -130,7 +130,7 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
         color: const Color(0xFF2D2D2D),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -191,7 +191,7 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: TextField(
@@ -199,11 +199,11 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           hintText: 'Buscar por cliente, número de documento o serie...',
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
           border: InputBorder.none,
           prefixIcon: Icon(
             Icons.search,
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
           ),
           suffixIcon: ventasProvider.searchQuery.isNotEmpty
               ? IconButton(
@@ -275,146 +275,26 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           color: const Color(0xFF222222),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
             children: [
-              Row(
-                children: [
-                  const Spacer(),
-                  OutlinedButton.icon(
-                    icon: const FaIcon(
-                      FontAwesomeIcons.calendarDays,
-                      size: 14,
-                    ),
-                    label: const Text('Filtrar por fecha'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
-                    onPressed: () {
-                      if (mounted) {
-                        _mostrarSelectorFechas(context, ventasProvider);
-                      }
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    icon: const FaIcon(
-                      FontAwesomeIcons.filter,
-                      size: 14,
-                    ),
-                    label: const Text('Filtrar por estado'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
-                    onPressed: () {
-                      if (mounted) {
-                        _mostrarMenuEstados(context, ventasProvider);
-                      }
-                    },
-                  ),
-                  // Botón para limpiar filtros (visible solo si hay filtros activos)
-                  if (ventasProvider.fechaInicio != null ||
-                      ventasProvider.fechaFin != null ||
-                      ventasProvider.estadoFiltro != null ||
-                      ventasProvider.searchQuery.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      icon: const FaIcon(
-                        FontAwesomeIcons.filterCircleXmark,
-                        size: 14,
-                        color: Color(0xFFE31E24),
-                      ),
-                      label: const Text('Limpiar filtros'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFE31E24),
-                        side: const BorderSide(color: Color(0xFFE31E24)),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                      onPressed: () {
-                        ventasProvider.limpiarFiltros();
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Filtros eliminados'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                ],
-              ),
-
-              // Indicador de filtros activos
-              if (ventasProvider.fechaInicio != null ||
-                  ventasProvider.fechaFin != null ||
-                  ventasProvider.estadoFiltro != null ||
-                  ventasProvider.searchQuery.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.only(top: 8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const FaIcon(
-                        FontAwesomeIcons.filter,
-                        size: 12,
-                        color: Color(0xFFE31E24),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Filtros activos:',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (ventasProvider.searchQuery.isNotEmpty)
-                        _buildFiltroChip(
-                          'Búsqueda: "${ventasProvider.searchQuery}"',
-                          () {
-                            ventasProvider.actualizarBusqueda('');
-                          },
-                        ),
-                      if (ventasProvider.fechaInicio != null &&
-                          ventasProvider.fechaFin != null)
-                        _buildFiltroChip(
-                          'Período: ${DateFormat('dd/MM/yyyy').format(ventasProvider.fechaInicio!)} - ${DateFormat('dd/MM/yyyy').format(ventasProvider.fechaFin!)}',
-                          () {
-                            ventasProvider.actualizarFiltrosFecha(null, null);
-                          },
-                        ),
-                      if (ventasProvider.estadoFiltro != null)
-                        _buildFiltroChip(
-                          'Estado: ${ventasProvider.estadoFiltro}',
-                          () {
-                            ventasProvider.actualizarFiltroEstado(null);
-                          },
-                        ),
-                    ],
+              const Spacer(),
+              // Solo mantener el botón de actualizar
+              ElevatedButton.icon(
+                icon: const FaIcon(
+                  FontAwesomeIcons.arrowsRotate,
+                  size: 14,
+                ),
+                label: const Text('Actualizar'),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: const Color(0xFFE31E24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
                   ),
                 ),
+                onPressed: () => ventasProvider.cargarVentas(),
+              ),
             ],
           ),
         ),
@@ -539,7 +419,7 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
                     decoration: BoxDecoration(
                       color: ventasProvider
                           .getEstadoColor(estado)
-                          .withOpacity(0.1),
+                          .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
@@ -625,7 +505,7 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
                         decoration: BoxDecoration(
                           color: ventasProvider
                               .getEstadoColor(estado)
-                              .withOpacity(0.1),
+                              .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -769,196 +649,5 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
 
     await Provider.of<VentasComputerProvider>(context, listen: false)
         .abrirPdf(url);
-  }
-
-  Future<void> _mostrarSelectorFechas(
-      BuildContext context, VentasComputerProvider ventasProvider) async {
-    // Guardar el contexto en una variable local
-    final BuildContext currentContext = context;
-
-    if (!mounted) {
-      return;
-    }
-
-    // Definir función local para mostrar el SnackBar
-    void showSnackBar(String mensaje,
-        {String? labelAccion, VoidCallback? onAccion}) {
-      ScaffoldMessenger.of(currentContext).showSnackBar(
-        SnackBar(
-          content: Text(mensaje),
-          backgroundColor: Colors.green,
-          action: labelAccion != null && onAccion != null
-              ? SnackBarAction(
-                  label: labelAccion,
-                  textColor: Colors.white,
-                  onPressed: onAccion,
-                )
-              : null,
-        ),
-      );
-    }
-
-    final DateTimeRange? rango = await showDateRangePicker(
-      context: currentContext,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
-      initialDateRange:
-          ventasProvider.fechaInicio != null && ventasProvider.fechaFin != null
-              ? DateTimeRange(
-                  start: ventasProvider.fechaInicio!,
-                  end: ventasProvider.fechaFin!,
-                )
-              : null,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFFE31E24),
-              onPrimary: Colors.white,
-              surface: Color(0xFF2D2D2D),
-            ),
-            dialogBackgroundColor: const Color(0xFF1A1A1A),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    if (rango != null) {
-      ventasProvider.actualizarFiltrosFecha(
-        rango.start,
-        rango.end,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      showSnackBar(
-        'Filtrando desde ${DateFormat('dd/MM/yyyy').format(rango.start)} hasta ${DateFormat('dd/MM/yyyy').format(rango.end)}',
-        labelAccion: 'Limpiar',
-        onAccion: () {
-          if (mounted) {
-            ventasProvider.actualizarFiltrosFecha(null, null);
-          }
-        },
-      );
-    }
-  }
-
-  void _mostrarMenuEstados(
-      BuildContext context, VentasComputerProvider ventasProvider) {
-    // Guardar el contexto en una variable local
-    final BuildContext currentContext = context;
-
-    if (!mounted) {
-      return;
-    }
-
-    // Definir función local para mostrar el SnackBar
-    void showSnackBar(String mensaje) {
-      ScaffoldMessenger.of(currentContext).showSnackBar(
-        SnackBar(
-          content: Text(mensaje),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-
-    final estados = [
-      {'id': null, 'nombre': 'Todos los estados'},
-      {'id': 'PENDIENTE', 'nombre': 'Pendiente'},
-      {'id': 'COMPLETADA', 'nombre': 'Completada'},
-      {'id': 'ANULADA', 'nombre': 'Anulada'},
-      {'id': 'DECLARADA', 'nombre': 'Declarada'},
-      {'id': 'ACEPTADO-SUNAT', 'nombre': 'Aceptado SUNAT'},
-    ];
-
-    final RenderBox button = currentContext.findRenderObject() as RenderBox;
-    final RenderBox overlay =
-        Overlay.of(currentContext).context.findRenderObject() as RenderBox;
-    final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero),
-            ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
-    );
-
-    showMenu<String>(
-      context: currentContext,
-      position: position,
-      color: const Color(0xFF2D2D2D),
-      items: estados.map((estado) {
-        final esSeleccionado = ventasProvider.estadoFiltro == estado['id'];
-        return PopupMenuItem<String>(
-          value: estado['id'],
-          child: Row(
-            children: [
-              Container(
-                width: 14,
-                height: 14,
-                margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: esSeleccionado
-                      ? const Color(0xFFE31E24)
-                      : Colors.transparent,
-                  border: Border.all(
-                    color: esSeleccionado
-                        ? const Color(0xFFE31E24)
-                        : Colors.white.withOpacity(0.5),
-                  ),
-                ),
-                child: esSeleccionado
-                    ? const Icon(
-                        Icons.check,
-                        size: 10,
-                        color: Colors.white,
-                      )
-                    : null,
-              ),
-              Text(
-                estado['nombre'] as String,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight:
-                      esSeleccionado ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    ).then((String? seleccionado) {
-      if (!mounted) {
-        return;
-      }
-
-      if (seleccionado != null || seleccionado == null) {
-        ventasProvider.actualizarFiltroEstado(seleccionado);
-
-        if (!mounted) {
-          return;
-        }
-
-        showSnackBar('Filtrando por estado: ${seleccionado ?? 'Todos'}');
-      }
-    });
-  }
-
-  Widget _buildFiltroChip(String label, VoidCallback onPressed) {
-    return Chip(
-      label: Text(label),
-      onDeleted: onPressed,
-      deleteIconColor: Colors.white,
-      backgroundColor: const Color(0xFF1A1A1A),
-      labelStyle: const TextStyle(color: Colors.white70),
-    );
   }
 }

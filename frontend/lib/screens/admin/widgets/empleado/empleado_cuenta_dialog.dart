@@ -323,7 +323,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.2),
+                  color: Colors.red.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const FaIcon(
@@ -348,7 +348,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
               Text(
                 'La cuenta del colaborador "${EmpleadosUtils.getNombreCompleto(widget.empleado)}" será eliminada permanentemente y no podrá iniciar sesión en el sistema.',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 14,
                   height: 1.4,
                 ),
@@ -364,7 +364,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
                     onPressed: () => Navigator.of(context).pop(false),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withOpacity(0.5)),
+                      side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.5)),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
@@ -467,7 +468,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               blurRadius: 15,
               spreadRadius: 5,
               offset: const Offset(0, 5),
@@ -492,12 +493,12 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          SizedBox(
+          const SizedBox(
             height: 80,
             width: 80,
             child: CircularProgressIndicator(
               strokeWidth: 3,
-              valueColor: const AlwaysStoppedAnimation<Color>(colorPrimario),
+              valueColor: AlwaysStoppedAnimation<Color>(colorPrimario),
             ),
           ),
           const SizedBox(height: 30),
@@ -568,7 +569,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: FaIcon(
@@ -597,7 +598,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
                   subtitle,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white.withOpacity(0.85),
+                    color: Colors.white.withValues(alpha: 0.85),
                   ),
                 ),
               ],
@@ -614,7 +615,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       margin: const EdgeInsets.fromLTRB(24, 12, 24, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.shade900.withOpacity(0.3),
+        color: Colors.red.shade900.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.red.shade700),
       ),
@@ -654,8 +655,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: _esNuevaCuenta
-              ? colorPrimario.withOpacity(0.5)
-              : Colors.blue.withOpacity(0.3),
+              ? colorPrimario.withValues(alpha: 0.5)
+              : Colors.blue.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -775,8 +776,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: const [
+        const Row(
+          children: [
             FaIcon(FontAwesomeIcons.penToSquare, size: 14, color: Colors.blue),
             SizedBox(width: 8),
             Expanded(
@@ -809,7 +810,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           '$label:',
           style: TextStyle(
             fontWeight: FontWeight.w500,
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 14,
           ),
         ),
@@ -833,8 +834,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Row(
-          children: const <Widget>[
+        const Row(
+          children: <Widget>[
             FaIcon(
               FontAwesomeIcons.userPen,
               size: 14,
@@ -948,8 +949,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Row(
-          children: const <Widget>[
+        const Row(
+          children: <Widget>[
             FaIcon(
               FontAwesomeIcons.lock,
               size: 14,
@@ -1063,7 +1064,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
             ),
             onPressed: _eliminarCuenta,
             style: TextButton.styleFrom(
-              backgroundColor: Colors.red.withOpacity(0.1),
+              backgroundColor: Colors.red.withValues(alpha: 0.1),
               padding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 12,

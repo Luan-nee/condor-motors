@@ -628,7 +628,7 @@ class ProformaVentaApi {
           return proforma_model.Proforma(
             id: item['id'] ?? 0,
             total: 0,
-            detalles: <proforma_model.DetalleProforma>[],
+            detalles: const <proforma_model.DetalleProforma>[],
             empleadoId: 0,
             sucursalId: 0,
             fechaCreacion: DateTime.now(),

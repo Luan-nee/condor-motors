@@ -58,9 +58,6 @@ class CategoriasProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error al cargar categorías: $e');
       _setError('Error al cargar categorías: $e');
-
-      // En caso de error, usar datos de ejemplo para desarrollo
-      _cargarCategoriasDePrueba();
     } finally {
       _setLoading(false);
     }
@@ -182,35 +179,5 @@ class CategoriasProvider extends ChangeNotifier {
   // Método privado renombrado para uso interno
   void _clearError() {
     clearError();
-  }
-
-  // Carga datos de prueba en caso de error
-  void _cargarCategoriasDePrueba() {
-    _categorias = [
-      Categoria(
-        id: 1,
-        nombre: 'Cascos',
-        descripcion: 'Cascos de seguridad para motociclistas',
-        totalProductos: 45,
-      ),
-      Categoria(
-        id: 2,
-        nombre: 'Lubricantes',
-        descripcion: 'Aceites y lubricantes para motocicletas',
-        totalProductos: 32,
-      ),
-      Categoria(
-        id: 3,
-        nombre: 'Llantas',
-        descripcion: 'Llantas y neumáticos para motocicletas',
-        totalProductos: 28,
-      ),
-      Categoria(
-        id: 4,
-        nombre: 'Repuestos',
-        descripcion: 'Repuestos y partes para motocicletas',
-        totalProductos: 156,
-      ),
-    ];
   }
 }

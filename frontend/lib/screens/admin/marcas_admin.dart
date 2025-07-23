@@ -237,7 +237,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                               'marcas',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                               ),
                             ),
                           ],
@@ -324,9 +324,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                               vertical: 16,
                             ),
                           ),
-                          onPressed: isLoading
-                              ? null
-                              : () => _mostrarFormularioMarca(),
+                          onPressed: isLoading ? null : _mostrarFormularioMarca,
                         ),
                       ],
                     ),
@@ -340,9 +338,10 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      border:
+                          Border.all(color: Colors.red.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: <Widget>[
@@ -371,7 +370,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                       color: const Color(0xFF1A1A1A),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
                     child: isLoading
@@ -401,8 +400,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                         size: 14,
                                       ),
                                       label: const Text('Crear marca'),
-                                      onPressed: () =>
-                                          _mostrarFormularioMarca(),
+                                      onPressed: _mostrarFormularioMarca,
                                     ),
                                   ],
                                 ),
@@ -414,7 +412,11 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                   children: <Widget>[
                                     // Encabezado de la tabla
                                     Container(
-                                      color: const Color(0xFF2D2D2D),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF2D2D2D),
+                                        borderRadius: BorderRadius.vertical(
+                                            top: Radius.circular(12)),
+                                      ),
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 16, horizontal: 20),
                                       child: const Row(
@@ -475,7 +477,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                             border: Border(
                                               bottom: BorderSide(
                                                 color: Colors.white
-                                                    .withOpacity(0.1),
+                                                    .withValues(alpha: 0.1),
                                               ),
                                             ),
                                           ),
@@ -524,7 +526,7 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                                       'Sin descripción',
                                                   style: TextStyle(
                                                     color: Colors.white
-                                                        .withOpacity(0.7),
+                                                        .withValues(alpha: 0.7),
                                                   ),
                                                 ),
                                               ),
@@ -541,7 +543,8 @@ class _MarcasAdminScreenState extends State<MarcasAdminScreen> {
                                                     decoration: BoxDecoration(
                                                       color: const Color(
                                                               0xFFE31E24)
-                                                          .withOpacity(0.1),
+                                                          .withValues(
+                                                              alpha: 0.1),
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               12),

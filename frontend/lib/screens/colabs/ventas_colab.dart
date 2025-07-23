@@ -90,7 +90,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        insetPadding: EdgeInsets.symmetric(
+        insetPadding: const EdgeInsets.symmetric(
           horizontal: 8,
           vertical: 8,
         ),
@@ -248,7 +248,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          insetPadding: EdgeInsets.symmetric(
+          insetPadding: const EdgeInsets.symmetric(
             horizontal: 8,
             vertical: 8,
           ),
@@ -634,7 +634,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         child,
         if (_isLoading)
           Container(
-            color: Colors.black.withOpacity(0.7),
+            color: Colors.black.withValues(alpha: 0.7),
             width: double.infinity,
             height: double.infinity,
             child: Center(
@@ -785,8 +785,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                           height: 40,
                           decoration: BoxDecoration(
                             color: provider.clienteSeleccionado != null
-                                ? const Color(0xFF1976D2).withOpacity(0.1)
-                                : Colors.grey.withOpacity(0.1),
+                                ? const Color(0xFF1976D2).withValues(alpha: 0.1)
+                                : Colors.grey.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: Center(
@@ -950,11 +950,10 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                 Expanded(
                   child: Stack(
                     children: <Widget>[
-                      provider.productosVenta.isEmpty
-                          ? Center(
+                      if (provider.productosVenta.isEmpty) const Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: const <Widget>[
+                                children: <Widget>[
                                   FaIcon(
                                     FontAwesomeIcons.cartShopping,
                                     size: 64,
@@ -977,8 +976,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                                   ),
                                 ],
                               ),
-                            )
-                          : ListView.builder(
+                            ) else ListView.builder(
                               padding: const EdgeInsets.only(
                                   bottom:
                                       100), // Espacio para el botón de finalizar
@@ -1047,7 +1045,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                     color: Theme.of(context).colorScheme.surface,
                     boxShadow: <BoxShadow>[
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, -2),
                       ),

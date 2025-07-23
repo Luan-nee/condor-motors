@@ -33,7 +33,7 @@ import 'package:condorsmotors/models/empleado.model.dart';
          color: backgroundColor ?? const Color(0xFF2D2D2D),
          borderRadius: BorderRadius.circular(8),
          border: Border.all(
-           color: const Color(0xFFE31E24).withOpacity(0.2),
+           color: const Color(0xFFE31E24).withValues(alpha: 0.2),
          ),
        ),
        child: Column(
@@ -41,8 +41,8 @@ import 'package:condorsmotors/models/empleado.model.dart';
          crossAxisAlignment: CrossAxisAlignment.start,
          children: <Widget>[
            if (showTitle) ...<Widget>[
-             Row(
-               children: const <Widget>[
+             const Row(
+               children: <Widget>[
                  FaIcon(
                    FontAwesomeIcons.clock,
                    color: Color(0xFFE31E24),
@@ -113,7 +113,7 @@ import 'package:condorsmotors/models/empleado.model.dart';
                Text(
                  label,
                  style: TextStyle(
-                   color: Colors.white.withOpacity(0.7),
+                   color: Colors.white.withValues(alpha: 0.7),
                    fontSize: 14,
                  ),
                ),

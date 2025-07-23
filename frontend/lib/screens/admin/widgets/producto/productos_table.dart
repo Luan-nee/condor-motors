@@ -175,7 +175,7 @@ class _ProductosTableState extends State<ProductosTable>
             Text(
               'No hay productos para mostrar',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -191,7 +191,7 @@ class _ProductosTableState extends State<ProductosTable>
             TabBar(
               controller: _tabController,
               labelColor: Colors.white,
-              unselectedLabelColor: Colors.white.withOpacity(0.5),
+              unselectedLabelColor: Colors.white.withValues(alpha: 0.5),
               indicatorColor: const Color(0xFFE31E24),
               indicatorWeight: 4,
               tabs: <Widget>[
@@ -300,7 +300,7 @@ class _ProductosTableState extends State<ProductosTable>
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          const Color(0xFFE31E24).withOpacity(
+                          const Color(0xFFE31E24).withValues(alpha:
                               0.8 + (0.2 * _loadingAnimation.value)),
                         ),
                       ),
@@ -324,7 +324,7 @@ class _ProductosTableState extends State<ProductosTable>
             borderRadius: BorderRadius.circular(8),
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -334,7 +334,7 @@ class _ProductosTableState extends State<ProductosTable>
             borderRadius: BorderRadius.circular(8),
             child: Theme(
               data: Theme.of(context).copyWith(
-                dividerColor: Colors.white.withOpacity(0.1),
+                dividerColor: Colors.white.withValues(alpha: 0.1),
               ),
               child: _buildDataTable(context, productosLista),
             ),
@@ -350,7 +350,7 @@ class _ProductosTableState extends State<ProductosTable>
       dataRowColor: WidgetStateProperty.resolveWith<Color>(
         (Set<WidgetState> states) {
           if (states.contains(WidgetState.selected)) {
-            return const Color(0xFFE31E24).withOpacity(0.1);
+            return const Color(0xFFE31E24).withValues(alpha: 0.1);
           }
           return const Color(0xFF222222);
         },
@@ -536,7 +536,7 @@ class _ProductosTableState extends State<ProductosTable>
                     child: Text(
                       producto.nombre,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         decoration: TextDecoration.none,
@@ -566,7 +566,7 @@ class _ProductosTableState extends State<ProductosTable>
                   color: const Color(0xFF2D2D2D),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
                 child: Text(
@@ -612,9 +612,9 @@ class _ProductosTableState extends State<ProductosTable>
                   ],
                   if (agotado) ...<Widget>[
                     const SizedBox(width: 4),
-                    Tooltip(
+                    const Tooltip(
                       message: 'Producto agotado',
-                      child: const Icon(
+                      child: Icon(
                         FontAwesomeIcons.ban,
                         color: Color(0xFF4A4A4A),
                         size: 16,

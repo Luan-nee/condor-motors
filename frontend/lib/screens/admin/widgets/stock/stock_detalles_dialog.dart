@@ -281,7 +281,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
             const SizedBox(height: 8),
 
-            Divider(color: Colors.white.withOpacity(0.2)),
+            Divider(color: Colors.white.withValues(alpha: 0.2)),
 
             const SizedBox(height: 16),
 
@@ -447,7 +447,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
             child: Text(
               label,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -482,7 +482,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         color: const Color(0xFF2D2D2D),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -500,7 +500,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.2),
+                    color: Colors.orange.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const FaIcon(
@@ -547,10 +547,10 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.1),
+                            color: Colors.orange.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                                color: Colors.orange.withOpacity(0.3)),
+                                color: Colors.orange.withValues(alpha: 0.3)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -579,7 +579,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                                 'Esto aplica un descuento especial para liquidar inventario. '
                                 'El precio de liquidación debe ser menor al precio de venta regular.',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
+                                  color: Colors.white.withValues(alpha: 0.8),
                                   fontSize: 12,
                                 ),
                               ),
@@ -660,7 +660,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                                               'Debe ser menor a S/ ${widget.producto.precioVenta.toStringAsFixed(2)}',
                                           helperStyle: TextStyle(
                                               color: Colors.white
-                                                  .withOpacity(0.6)),
+                                                  .withValues(alpha: 0.6)),
                                         ),
                                       ),
 
@@ -788,7 +788,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
             fontSize: 14,
           ),
         ),
@@ -812,7 +812,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         color: const Color(0xFF2D2D2D),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -1127,7 +1127,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                     child: Text(
                       'Está agregando una cantidad considerable. Verifique antes de confirmar.',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 12,
                       ),
                     ),

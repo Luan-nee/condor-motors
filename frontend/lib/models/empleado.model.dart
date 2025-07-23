@@ -1,14 +1,18 @@
 import 'package:condorsmotors/api/index.api.dart';
+import 'package:equatable/equatable.dart';
 
 /// Modelo para representar el rol de un empleado
-class EmpleadoRol {
+class EmpleadoRol extends Equatable {
   final String codigo;
   final String nombre;
 
-  EmpleadoRol({
+  const EmpleadoRol({
     required this.codigo,
     required this.nombre,
   });
+
+  @override
+  List<Object?> get props => [codigo, nombre];
 
   factory EmpleadoRol.fromJson(Map<String, dynamic> json) {
     return EmpleadoRol(
@@ -28,7 +32,7 @@ class EmpleadoRol {
   String toString() => nombre;
 }
 
-class Empleado {
+class Empleado extends Equatable {
   final String id;
   final String nombre;
   final String apellidos;
@@ -48,7 +52,7 @@ class Empleado {
   final String? cuentaEmpleadoUsuario;
   final EmpleadoRol? rol;
 
-  Empleado({
+  const Empleado({
     required this.id,
     required this.nombre,
     required this.apellidos,
@@ -68,6 +72,28 @@ class Empleado {
     this.cuentaEmpleadoUsuario,
     this.rol,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        nombre,
+        apellidos,
+        ubicacionFoto,
+        dni,
+        horaInicioJornada,
+        horaFinJornada,
+        fechaContratacion,
+        sueldo,
+        fechaRegistro,
+        sucursalId,
+        sucursalNombre,
+        sucursalCentral,
+        activo,
+        celular,
+        cuentaEmpleadoId,
+        cuentaEmpleadoUsuario,
+        rol,
+      ];
 
   /// Crea una instancia de Empleado a partir de un mapa JSON
   factory Empleado.fromJson(Map<String, dynamic> json) {
@@ -216,16 +242,19 @@ class Empleado {
 }
 
 /// Modelo para la respuesta paginada de empleados
-class EmpleadosPaginados {
+class EmpleadosPaginados extends Equatable {
   final List<Empleado> empleados;
   final Map<String, dynamic> paginacion;
   final List<String> sortByOptions;
 
-  EmpleadosPaginados({
+  const EmpleadosPaginados({
     required this.empleados,
     required this.paginacion,
     this.sortByOptions = const <String>[],
   });
+
+  @override
+  List<Object?> get props => [empleados, paginacion, sortByOptions];
 
   /// Crea una instancia de EmpleadosPaginados a partir de una respuesta JSON
   factory EmpleadosPaginados.fromJson(Map<String, dynamic> json) {

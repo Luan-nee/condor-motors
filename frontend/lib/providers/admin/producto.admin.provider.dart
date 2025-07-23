@@ -36,7 +36,7 @@ class ProductoProvider extends ChangeNotifier {
   Map<String, dynamic>? _stockFilter;
 
   // Objeto de paginación para acceso directo
-  Paginacion _paginacion = Paginacion(
+  Paginacion _paginacion = const Paginacion(
     totalItems: 0,
     totalPages: 1,
     currentPage: 1,
@@ -338,8 +338,11 @@ class ProductoProvider extends ChangeNotifier {
   }
 
   /// Guarda un producto (nuevo o existente)
-  Future<bool> guardarProducto(Map<String, dynamic> productoData, bool esNuevo,
-      {File? fotoFile}) async {
+  Future<bool> guardarProducto(
+    Map<String, dynamic> productoData, {
+    required bool esNuevo,
+    File? fotoFile,
+  }) async {
     if (_sucursalSeleccionada == null) {
       _errorMessage = 'No hay sucursal seleccionada';
       notifyListeners();

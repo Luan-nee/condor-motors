@@ -80,8 +80,8 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
           border: Border(
             bottom: BorderSide(
               color: esInactivo
-                  ? Colors.grey.withOpacity(0.2)
-                  : Colors.white.withOpacity(0.1),
+                  ? Colors.grey.withValues(alpha: 0.2)
+                  : Colors.white.withValues(alpha: 0.1),
             ),
           ),
         ),
@@ -103,7 +103,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                         borderRadius: BorderRadius.circular(8),
                         border: esInactivo
                             ? Border.all(
-                                color: Colors.grey.withOpacity(0.4),
+                                color: Colors.grey.withValues(alpha: 0.4),
                               )
                             : null,
                       ),
@@ -132,7 +132,8 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                       Container(
                                         width: 36,
                                         height: 36,
-                                        color: Colors.black.withOpacity(0.5),
+                                        color:
+                                            Colors.black.withValues(alpha: 0.5),
                                       ),
                                   ],
                                 ),
@@ -181,7 +182,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                   '${widget.empleado.nombre} ${widget.empleado.apellidos}',
                                   style: TextStyle(
                                     color: esInactivo
-                                        ? Colors.white.withOpacity(0.6)
+                                        ? Colors.white.withValues(alpha: 0.6)
                                         : Colors.white,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -206,7 +207,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                             Text(
                               '(@${widget.empleado.cuentaEmpleadoUsuario})',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white.withValues(alpha: 0.6),
                                 fontSize: 12,
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -218,10 +219,10 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.grey.withOpacity(0.1),
+                                color: Colors.grey.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
-                                  color: Colors.grey.withOpacity(0.3),
+                                  color: Colors.grey.withValues(alpha: 0.3),
                                 ),
                               ),
                               child: const Text(
@@ -249,7 +250,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                     FaIcon(
                       FontAwesomeIcons.phone,
                       color: esInactivo
-                          ? Colors.grey.withOpacity(0.5)
+                          ? Colors.grey.withValues(alpha: 0.5)
                           : const Color(0xFFE31E24),
                       size: 14,
                     ),
@@ -259,9 +260,9 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                       style: TextStyle(
                         color: widget.empleado.celular != null
                             ? (esInactivo
-                                ? Colors.white.withOpacity(0.4)
+                                ? Colors.white.withValues(alpha: 0.4)
                                 : Colors.white)
-                            : Colors.white.withOpacity(0.3),
+                            : Colors.white.withValues(alpha: 0.3),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -277,7 +278,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                     FaIcon(
                       EmpleadosUtils.getRolIcon(rol),
                       color: esInactivo
-                          ? Colors.grey.withOpacity(0.5)
+                          ? Colors.grey.withValues(alpha: 0.5)
                           : const Color(0xFFE31E24),
                       size: 14,
                     ),
@@ -286,7 +287,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                       rol,
                       style: TextStyle(
                         color: esInactivo
-                            ? Colors.white.withOpacity(0.4)
+                            ? Colors.white.withValues(alpha: 0.4)
                             : Colors.white,
                       ),
                     ),
@@ -310,10 +311,10 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                               widget.nombresSucursales)
                           ? (esInactivo
                               ? const Color.fromARGB(255, 95, 208, 243)
-                                  .withOpacity(0.5)
+                                  .withValues(alpha: 0.5)
                               : const Color.fromARGB(255, 95, 208, 243))
                           : (esInactivo
-                              ? Colors.grey[400]!.withOpacity(0.5)
+                              ? Colors.grey[400]!.withValues(alpha: 0.5)
                               : Colors.grey[400]),
                       size: 14,
                     ),
@@ -327,10 +328,10 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                   widget.nombresSucursales)
                               ? (esInactivo
                                   ? const Color.fromARGB(255, 95, 208, 243)
-                                      .withOpacity(0.5)
+                                      .withValues(alpha: 0.5)
                                   : const Color.fromARGB(255, 95, 208, 243))
                               : (esInactivo
-                                  ? Colors.white.withOpacity(0.4)
+                                  ? Colors.white.withValues(alpha: 0.4)
                                   : Colors.white),
                           fontWeight: EmpleadosUtils.esSucursalCentral(
                                   widget.empleado.sucursalId,

@@ -33,7 +33,7 @@ class TransferenciasUtils {
     final IconData icon = getEstadoIcon(estado);
 
     return {
-      'backgroundColor': color.withOpacity(0.1),
+      'backgroundColor': color.withValues(alpha: 0.1),
       'textColor': color,
       'iconData': icon,
       'tooltipText': _getEstadoTooltip(estado),
@@ -88,10 +88,10 @@ class TransferenciasUtils {
   /// Obtiene el estilo para el badge de cantidad de productos
   static BoxDecoration getProductCountBadgeStyle() {
     return BoxDecoration(
-      color: const Color(0xFFE31E24).withOpacity(0.1),
+      color: const Color(0xFFE31E24).withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(12),
       border: Border.all(
-        color: const Color(0xFFE31E24).withOpacity(0.3),
+        color: const Color(0xFFE31E24).withValues(alpha: 0.3),
       ),
     );
   }
@@ -100,10 +100,10 @@ class TransferenciasUtils {
   static BoxDecoration getEstadoContainerStyle(EstadoTransferencia estado) {
     final Color color = getEstadoColor(estado);
     return BoxDecoration(
-      color: color.withOpacity(0.1),
+      color: color.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(8),
       border: Border.all(
-        color: color.withOpacity(0.3),
+        color: color.withValues(alpha: 0.3),
       ),
     );
   }

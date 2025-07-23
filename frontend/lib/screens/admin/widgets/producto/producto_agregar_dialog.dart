@@ -134,8 +134,8 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: const [
+              const Row(
+                children: [
                   FaIcon(FontAwesomeIcons.boxOpen, color: Color(0xFFE31E24)),
                   SizedBox(width: 8),
                   Text('Habilitar Producto',
@@ -192,7 +192,7 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide:
-                        BorderSide(color: Colors.white.withOpacity(0.2)),
+                        BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -241,7 +241,7 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide:
-                        BorderSide(color: Colors.white.withOpacity(0.2)),
+                        BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -276,7 +276,7 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide:
-                        BorderSide(color: Colors.white.withOpacity(0.2)),
+                        BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -325,8 +325,8 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                         borderRadius: BorderRadius.circular(8)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide:
-                          BorderSide(color: Colors.amber.withOpacity(0.2)),
+                      borderSide: BorderSide(
+                          color: Colors.amber.withValues(alpha: 0.2)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),

@@ -181,8 +181,8 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                             boxShadow: [
                               BoxShadow(
                                 color: widget.isLoadingFullData
-                                    ? Colors.black.withOpacity(0.1)
-                                    : Colors.black.withOpacity(0.2),
+                                    ? Colors.black.withValues(alpha: 0.1)
+                                    : Colors.black.withValues(alpha: 0.2),
                                 blurRadius: widget.isLoadingFullData ? 5 : 10,
                                 offset: const Offset(0, 3),
                               ),
@@ -302,7 +302,7 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                       tienePdf
                           ? FontAwesomeIcons.filePdf
                           : FontAwesomeIcons.fileInvoice,
-                      color: Color(0xFFE31E24),
+                      color: const Color(0xFFE31E24),
                       size: 16,
                     ),
                   ),
@@ -343,7 +343,7 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                 Text(
                   _formatoFecha.format(fechaCreacion),
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 14,
                   ),
                 ),
@@ -484,8 +484,8 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: estadoColor.withOpacity(
-                                widget.isLoadingFullData ? 0.1 : 0.2),
+                            color: estadoColor.withValues(
+                                alpha: widget.isLoadingFullData ? 0.1 : 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -761,10 +761,10 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: anulada
-                          ? Colors.red.withOpacity(0.1)
+                          ? Colors.red.withValues(alpha: 0.1)
                           : (cancelada
-                              ? Colors.orange.shade900.withOpacity(0.1)
-                              : Colors.green.withOpacity(0.1)),
+                              ? Colors.orange.shade900.withValues(alpha: 0.1)
+                              : Colors.green.withValues(alpha: 0.1)),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -818,7 +818,7 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
@@ -1069,131 +1069,172 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
             ),
           ),
 
-        // Botón de impresión con menú desplegable para formatos
-        if (tienePdf)
-          PopupMenuButton<String>(
-            position: PopupMenuPosition.under,
-            tooltip: 'Opciones de impresión',
-            onSelected: (String value) {
-              switch (value) {
-                case 'imprimir_a4':
-                  if (pdfLinkA4 != null) {
-                    _ventasProvider.imprimirDocumentoPdf(
-                      pdfLinkA4,
-                      '${nombreDocumento}_A4',
-                      context,
-                    );
-                  }
-                  break;
-                case 'imprimir_ticket':
-                  if (pdfLinkTicket != null) {
-                    _ventasProvider.imprimirDocumentoPdf(
-                      pdfLinkTicket,
-                      '${nombreDocumento}_Ticket',
-                      context,
-                    );
-                  }
-                  break;
-                case 'abrir_a4':
-                  if (pdfLinkA4 != null) {
-                    _ventasProvider.abrirPdf(pdfLinkA4, context);
-                  }
-                  break;
-                case 'abrir_ticket':
-                  if (pdfLinkTicket != null) {
-                    _ventasProvider.abrirPdf(pdfLinkTicket, context);
-                  }
-                  break;
-              }
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              if (pdfLinkA4 != null)
-                const PopupMenuItem<String>(
-                  value: 'imprimir_a4',
-                  child: Row(
-                    children: [
-                      FaIcon(FontAwesomeIcons.print, size: 16),
-                      SizedBox(width: 12),
-                      Text('Imprimir formato A4'),
-                    ],
+        // Botón de impresión - Siempre visible pero deshabilitado si no está declarada
+        Tooltip(
+          message: !declarada
+              ? 'La venta debe estar declarada para generar el PDF'
+              : 'Opciones de impresión',
+          child: tienePdf
+              ? PopupMenuButton<String>(
+                  position: PopupMenuPosition.under,
+                  enabled: declarada, // Solo habilitado si está declarada
+                  onSelected: (String value) {
+                    switch (value) {
+                      case 'imprimir_a4':
+                        if (pdfLinkA4 != null) {
+                          _ventasProvider.imprimirDocumentoPdf(
+                            pdfLinkA4,
+                            '${nombreDocumento}_A4',
+                            context,
+                          );
+                        }
+                        break;
+                      case 'imprimir_ticket':
+                        if (pdfLinkTicket != null) {
+                          _ventasProvider.imprimirDocumentoPdf(
+                            pdfLinkTicket,
+                            '${nombreDocumento}_Ticket',
+                            context,
+                          );
+                        }
+                        break;
+                      case 'abrir_a4':
+                        if (pdfLinkA4 != null) {
+                          _ventasProvider.abrirPdf(pdfLinkA4, context);
+                        }
+                        break;
+                      case 'abrir_ticket':
+                        if (pdfLinkTicket != null) {
+                          _ventasProvider.abrirPdf(pdfLinkTicket, context);
+                        }
+                        break;
+                    }
+                  },
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
+                    if (pdfLinkA4 != null)
+                      const PopupMenuItem<String>(
+                        value: 'imprimir_a4',
+                        child: Row(
+                          children: [
+                            FaIcon(FontAwesomeIcons.print, size: 16),
+                            SizedBox(width: 12),
+                            Text('Imprimir formato A4'),
+                          ],
+                        ),
+                      ),
+                    if (tienePdfTicket)
+                      const PopupMenuItem<String>(
+                        value: 'imprimir_ticket',
+                        child: Row(
+                          children: [
+                            FaIcon(FontAwesomeIcons.receipt, size: 16),
+                            SizedBox(width: 12),
+                            Text('Imprimir formato Ticket'),
+                          ],
+                        ),
+                      ),
+                    const PopupMenuDivider(),
+                    if (pdfLinkA4 != null)
+                      const PopupMenuItem<String>(
+                        value: 'abrir_a4',
+                        child: Row(
+                          children: [
+                            FaIcon(FontAwesomeIcons.filePdf, size: 16),
+                            SizedBox(width: 12),
+                            Text('Abrir PDF A4'),
+                          ],
+                        ),
+                      ),
+                    if (tienePdfTicket)
+                      const PopupMenuItem<String>(
+                        value: 'abrir_ticket',
+                        child: Row(
+                          children: [
+                            FaIcon(FontAwesomeIcons.fileLines, size: 16),
+                            SizedBox(width: 12),
+                            Text('Abrir PDF Ticket'),
+                          ],
+                        ),
+                      ),
+                  ],
+                  child: ElevatedButton.icon(
+                    icon: FaIcon(
+                      FontAwesomeIcons.print,
+                      size: 16,
+                      color: declarada
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.5),
+                    ),
+                    label: Text(
+                      'Imprimir',
+                      style: TextStyle(
+                        color: declarada
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: declarada
+                          ? const Color(0xFF2D2D2D)
+                          : const Color(0xFF2D2D2D).withValues(alpha: 0.5),
+                      foregroundColor: declarada
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.5),
+                      elevation: declarada ? 2 : 0,
+                    ),
+                    onPressed:
+                        null, // El botón no tiene acción directa, usa el menú
                   ),
+                )
+              : ElevatedButton.icon(
+                  icon: FaIcon(
+                    FontAwesomeIcons.print,
+                    size: 16,
+                    color: declarada
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.5),
+                  ),
+                  label: Text(
+                    'Imprimir',
+                    style: TextStyle(
+                      color: declarada
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: declarada
+                        ? const Color(0xFF2D2D2D)
+                        : const Color(0xFF2D2D2D).withValues(alpha: 0.5),
+                    foregroundColor: declarada
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.5),
+                    elevation: declarada ? 2 : 0,
+                  ),
+                  onPressed: declarada
+                      ? () {
+                          // Mostrar mensaje informativo si no hay PDF pero está declarada
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content:
+                                  Text('PDF no disponible para esta venta'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                        }
+                      : () {
+                          // Mostrar mensaje si no está declarada
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'La venta debe ser declarada primero para generar el PDF'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                        },
                 ),
-              if (tienePdfTicket)
-                const PopupMenuItem<String>(
-                  value: 'imprimir_ticket',
-                  child: Row(
-                    children: [
-                      FaIcon(FontAwesomeIcons.receipt, size: 16),
-                      SizedBox(width: 12),
-                      Text('Imprimir formato Ticket'),
-                    ],
-                  ),
-                ),
-              const PopupMenuDivider(),
-              if (pdfLinkA4 != null)
-                const PopupMenuItem<String>(
-                  value: 'abrir_a4',
-                  child: Row(
-                    children: [
-                      FaIcon(FontAwesomeIcons.filePdf, size: 16),
-                      SizedBox(width: 12),
-                      Text('Abrir PDF A4'),
-                    ],
-                  ),
-                ),
-              if (tienePdfTicket)
-                const PopupMenuItem<String>(
-                  value: 'abrir_ticket',
-                  child: Row(
-                    children: [
-                      FaIcon(FontAwesomeIcons.fileLines, size: 16),
-                      SizedBox(width: 12),
-                      Text('Abrir PDF Ticket'),
-                    ],
-                  ),
-                ),
-            ],
-            child: ElevatedButton.icon(
-              icon: const FaIcon(
-                FontAwesomeIcons.print,
-                size: 16,
-              ),
-              label: const Text('Imprimir'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2D2D2D),
-                foregroundColor: Colors.white,
-              ),
-              onPressed: null, // El botón no tiene acción directa, usa el menú
-            ),
-          )
-        else
-          // Botón normal deshabilitado si no hay PDF disponible
-          Tooltip(
-            message: 'La venta debe estar declarada para generar PDF',
-            child: ElevatedButton.icon(
-              icon: const FaIcon(
-                FontAwesomeIcons.print,
-                size: 16,
-              ),
-              label: const Text('Imprimir'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2D2D2D),
-                foregroundColor: Colors.white,
-                disabledBackgroundColor:
-                    const Color(0xFF2D2D2D).withOpacity(0.5),
-                disabledForegroundColor: Colors.white.withOpacity(0.5),
-              ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                        'La venta debe ser declarada primero para generar el PDF'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              },
-            ),
-          ),
+        ),
         const SizedBox(width: 16),
         ElevatedButton(
           child: const Text('Cerrar'),

@@ -229,7 +229,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const FaIcon(
@@ -292,7 +292,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
 
   Widget _buildStockBajoCard(DashboardComputerProvider provider) {
     final List<ProductoStockBajo> productos = provider.productosStockBajo
-        .map((item) => ProductoStockBajo.fromJson(item))
+        .map(ProductoStockBajo.fromJson)
         .toList();
 
     return Card(
@@ -313,7 +313,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withOpacity(0.1),
+                        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const FaIcon(
@@ -416,7 +416,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2196F3).withOpacity(0.1),
+                              color: const Color(0xFF2196F3).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -436,7 +436,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withOpacity(0.1),
+                        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(

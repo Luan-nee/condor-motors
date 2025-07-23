@@ -239,7 +239,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
           Text(
             texto,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 14,
             ),
           ),
@@ -271,7 +271,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     );
   }
 
-  void _pickImage() async {
+  Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
@@ -293,8 +293,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
         _fotoFile = file;
         _previewImage = FileImage(_fotoFile!);
       });
-      final provider = Provider.of<EmpleadoProvider>(context, listen: false);
-      provider.setFotoFile(_fotoFile);
+      if (mounted) {}
     }
   }
 
@@ -303,8 +302,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       _fotoFile = null;
       _previewImage = null;
     });
-    final provider = Provider.of<EmpleadoProvider>(context, listen: false);
-    provider.clearFotoFile();
   }
 
   @override
@@ -628,7 +625,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                   Text(
                                     'Esta es una sucursal central',
                                     style: TextStyle(
-                                      color: Colors.white.withOpacity(0.7),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.7),
                                       fontSize: 12,
                                     ),
                                   ),
@@ -661,8 +659,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: _isEmpleadoActivo
-                          ? const Color(0xFF4CAF50).withOpacity(0.5)
-                          : const Color(0xFFE31E24).withOpacity(0.5),
+                          ? const Color(0xFF4CAF50).withValues(alpha: 0.5)
+                          : const Color(0xFFE31E24).withValues(alpha: 0.5),
                     ),
                   ),
                   child: Row(
@@ -709,7 +707,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                   ? 'El colaborador está trabajando actualmente en la empresa'
                                   : 'El colaborador no está trabajando actualmente en la empresa',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                                 fontSize: 14,
                               ),
                             ),
@@ -725,9 +723,9 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                         activeColor: const Color(0xFF4CAF50),
                         inactiveThumbColor: const Color(0xFFE31E24),
                         activeTrackColor:
-                            const Color(0xFF4CAF50).withOpacity(0.3),
+                            const Color(0xFF4CAF50).withValues(alpha: 0.3),
                         inactiveTrackColor:
-                            const Color(0xFFE31E24).withOpacity(0.3),
+                            const Color(0xFFE31E24).withValues(alpha: 0.3),
                       ),
                     ],
                   ),
@@ -845,9 +843,9 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.2),
+        color: Colors.red.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red.withOpacity(0.5)),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: <Widget>[
@@ -867,7 +865,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     );
   }
 
-  void _guardar() async {
+  Future<void> _guardar() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -893,16 +891,18 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
         'celular':
             _celularController.text.isNotEmpty ? _celularController.text : null,
         'activo': _isEmpleadoActivo,
-      };
+      }
 
-      empleadoData.removeWhere((String key, Object? value) =>
+      ..removeWhere((String key, Object? value) =>
           value == null || (value is String && value.isEmpty));
 
       await widget.onSave(empleadoData);
       // Limpiar la caché de empleados y recargar datos
-      final empleadoProvider =
-          Provider.of<EmpleadoProvider>(context, listen: false);
-      await empleadoProvider.recargarDatos();
+      if (mounted) {
+        final empleadoProvider =
+            Provider.of<EmpleadoProvider>(context, listen: false);
+        await empleadoProvider.recargarDatos();
+      }
       _clearImage();
     } catch (e) {
       if (mounted) {
@@ -936,7 +936,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
               hintText: 'HH',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
               contentPadding:
                   const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
               border: OutlineInputBorder(
@@ -999,7 +999,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
               hintText: 'MM',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
               contentPadding:
                   const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
               border: OutlineInputBorder(

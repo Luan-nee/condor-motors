@@ -36,12 +36,10 @@ class EstadisticasApi {
     try {
       final String cacheKey = '${_prefixUltimasVentas}global';
 
-      // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
         _cache.invalidate(cacheKey);
       }
 
-      // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
         final Map<String, dynamic>? cachedData =
             _cache.get<Map<String, dynamic>>(cacheKey);
@@ -56,7 +54,6 @@ class EstadisticasApi {
         method: 'GET',
       );
 
-      // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, response);
         logCache('Últimas ventas guardadas en caché');
@@ -84,12 +81,10 @@ class EstadisticasApi {
     try {
       final String cacheKey = '${_prefixEstadisticasProductos}global';
 
-      // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
         _cache.invalidate(cacheKey);
       }
 
-      // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
         final Map<String, dynamic>? cachedData =
             _cache.get<Map<String, dynamic>>(cacheKey);
@@ -106,32 +101,34 @@ class EstadisticasApi {
 
       // Validar y normalizar la respuesta
       if (response['status'] == 'success' && response['data'] != null) {
-        final data = response['data'];
+        final Object? dataObj = response['data'];
+        if (dataObj is Map<String, dynamic>) {
+          final Map<String, dynamic> data = dataObj;
 
-        // Si sucursales no es una lista, convertirlo a lista vacía
-        if (data['sucursales'] != null && data['sucursales'] is! List) {
-          data['sucursales'] = <dynamic>[];
-        }
-
-        // Normalizar valores numéricos
-        if (data['stockBajo'] != null && data['stockBajo'] is String) {
-          try {
-            data['stockBajo'] = int.parse(data['stockBajo']);
-          } catch (e) {
-            data['stockBajo'] = 0;
+          // Si sucursales no es una lista, convertirlo a lista vacía
+          if (data.containsKey('sucursales') && data['sucursales'] != null && data['sucursales'] is! List) {
+            data['sucursales'] = <dynamic>[];
           }
-        }
 
-        if (data['liquidacion'] != null && data['liquidacion'] is String) {
-          try {
-            data['liquidacion'] = int.parse(data['liquidacion']);
-          } catch (e) {
-            data['liquidacion'] = 0;
+          // Normalizar valores numéricos
+          if (data.containsKey('stockBajo') && data['stockBajo'] is String) {
+            try {
+              data['stockBajo'] = int.parse(data['stockBajo'] as String);
+            } catch (e) {
+              data['stockBajo'] = 0;
+            }
+          }
+
+          if (data.containsKey('liquidacion') && data['liquidacion'] is String) {
+            try {
+              data['liquidacion'] = int.parse(data['liquidacion'] as String);
+            } catch (e) {
+              data['liquidacion'] = 0;
+            }
           }
         }
       }
 
-      // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, response);
         logCache('Estadísticas de productos guardadas en caché');
@@ -143,7 +140,7 @@ class EstadisticasApi {
       return <String, dynamic>{
         'status': 'error',
         'message': 'Error al obtener estadísticas de productos',
-        'data': EstadisticasProductos(
+        'data': const EstadisticasProductos(
           stockBajo: 0,
           liquidacion: 0,
           sucursales: [],
@@ -166,12 +163,10 @@ class EstadisticasApi {
       final String cacheKey =
           '${_prefixEstadisticasProductos}stock_bajo_$sucursalId';
 
-      // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
         _cache.invalidate(cacheKey);
       }
 
-      // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
         final Map<String, dynamic>? cachedData =
             _cache.get<Map<String, dynamic>>(cacheKey);
@@ -182,55 +177,53 @@ class EstadisticasApi {
         }
       }
 
-      // Para obtener los detalles de productos con stock bajo usaremos las estadísticas
-      // Como no tenemos un endpoint específico para esto, usaremos los datos de sucursal
-      // La estructura exacta dependerá de cómo esté implementada la API
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '$_endpoint/productos',
         method: 'GET',
       );
 
-      // Si tenemos datos específicos de la sucursal, retornamos eso
       if (response['status'] == 'success' && response['data'] != null) {
-        final data = response['data'];
-        final List<dynamic> sucursales = data['sucursales'] ?? [];
+        final Object? dataObj = response['data'];
+        if (dataObj is Map<String, dynamic>) {
+          final Map<String, dynamic> data = dataObj;
+          final List<dynamic> sucursales = data['sucursales'] is List ? data['sucursales'] as List<dynamic> : <dynamic>[];
 
-        // Buscamos la sucursal específica en los datos
-        for (final sucursal in sucursales) {
-          if (sucursal['id'].toString() == sucursalId) {
-            // Generamos datos resumidos para esta sucursal
-            Map<String, dynamic> sucursalStats = {
-              'status': 'success',
-              'data': [
-                // Generamos un producto representativo para cada sucursal
-                {
-                  'id': 'placeholder-${sucursal['id']}',
-                  'nombre': 'Productos con stock bajo en ${sucursal['nombre']}',
-                  'stock': 1,
-                  'stockMinimo': 10,
-                  'sucursalId': sucursal['id'],
-                  'sucursalNombre': sucursal['nombre'],
-                  'categoria': 'Varias categorías',
-                  'marca': 'Varias marcas',
-                  'stockBajo': sucursal['stockBajo'],
-                  'liquidacion': sucursal['liquidacion'],
+          for (final Object? sucursalObj in sucursales) {
+            if (sucursalObj is Map<String, dynamic>) {
+              final Map<String, dynamic> sucursal = sucursalObj;
+              final String? idStr = sucursal['id']?.toString();
+              if (idStr == sucursalId) {
+                Map<String, dynamic> sucursalStats = {
+                  'status': 'success',
+                  'data': [
+                    {
+                      'id': 'placeholder-${sucursal['id']}',
+                      'nombre': 'Productos con stock bajo en ${sucursal['nombre']}',
+                      'stock': 1,
+                      'stockMinimo': 10,
+                      'sucursalId': sucursal['id'],
+                      'sucursalNombre': sucursal['nombre'],
+                      'categoria': 'Varias categorías',
+                      'marca': 'Varias marcas',
+                      'stockBajo': sucursal['stockBajo'],
+                      'liquidacion': sucursal['liquidacion'],
+                    }
+                  ]
+                };
+
+                if (useCache) {
+                  _cache.set(cacheKey, sucursalStats);
+                  logCache(
+                      'Datos de stock bajo para sucursal $sucursalId guardados en caché');
                 }
-              ]
-            };
 
-            // Guardar en caché
-            if (useCache) {
-              _cache.set(cacheKey, sucursalStats);
-              logCache(
-                  'Datos de stock bajo para sucursal $sucursalId guardados en caché');
+                return sucursalStats;
+              }
             }
-
-            return sucursalStats;
           }
         }
       }
 
-      // Si no encontramos datos específicos
       return <String, dynamic>{
         'status': 'error',
         'message':
@@ -259,12 +252,10 @@ class EstadisticasApi {
     try {
       final String cacheKey = '${_prefixEstadisticasVentas}global';
 
-      // Si se requiere forzar la recarga, invalidar la caché primero
       if (forceRefresh) {
         _cache.invalidate(cacheKey);
       }
 
-      // Intentar obtener desde caché si corresponde
       if (useCache && !forceRefresh) {
         final Map<String, dynamic>? cachedData =
             _cache.get<Map<String, dynamic>>(cacheKey);
@@ -279,63 +270,61 @@ class EstadisticasApi {
         method: 'GET',
       );
 
-      // Validar y normalizar la respuesta
       if (response['status'] == 'success' && response['data'] != null) {
-        final data = response['data'];
+        final Object? dataObj = response['data'];
+        if (dataObj is Map<String, dynamic>) {
+          final Map<String, dynamic> data = dataObj;
 
-        // Si sucursales no es una lista, convertirlo a lista vacía
-        if (data['sucursales'] != null && data['sucursales'] is! List) {
-          data['sucursales'] = <dynamic>[];
-        }
+          if (data.containsKey('sucursales') && data['sucursales'] != null && data['sucursales'] is! List) {
+            data['sucursales'] = <dynamic>[];
+          }
 
-        // Normalizar el mapa de ventas
-        if (data['ventas'] != null) {
-          if (data['ventas'] is! Map) {
+          // Normalizar el mapa de ventas
+          if (data.containsKey('ventas') && data['ventas'] != null) {
+            if (data['ventas'] is! Map) {
+              data['ventas'] = {'hoy': 0, 'esteMes': 0};
+            } else {
+              final Map<String, dynamic> ventasMap =
+                  Map<String, dynamic>.from(data['ventas'] as Map);
+              ventasMap.forEach((key, value) {
+                if (value is String) {
+                  try {
+                    ventasMap[key] = num.parse(value);
+                  } catch (e) {
+                    ventasMap[key] = 0;
+                  }
+                }
+              });
+              data['ventas'] = ventasMap;
+            }
+          } else {
             data['ventas'] = {'hoy': 0, 'esteMes': 0};
-          } else {
-            final Map<String, dynamic> ventasMap =
-                Map<String, dynamic>.from(data['ventas']);
-            // Normalizar valores de ventas
-            ventasMap.forEach((key, value) {
-              if (value is String) {
-                try {
-                  ventasMap[key] = num.parse(value);
-                } catch (e) {
-                  ventasMap[key] = 0;
-                }
-              }
-            });
-            data['ventas'] = ventasMap;
           }
-        } else {
-          data['ventas'] = {'hoy': 0, 'esteMes': 0};
-        }
 
-        // Normalizar el mapa de totalVentas
-        if (data['totalVentas'] != null) {
-          if (data['totalVentas'] is! Map) {
-            data['totalVentas'] = {'hoy': 0, 'esteMes': 0};
-          } else {
-            final Map<String, dynamic> totalVentasMap =
-                Map<String, dynamic>.from(data['totalVentas']);
-            // Normalizar valores de totalVentas
-            totalVentasMap.forEach((key, value) {
-              if (value is String) {
-                try {
-                  totalVentasMap[key] = num.parse(value);
-                } catch (e) {
-                  totalVentasMap[key] = 0;
+          // Normalizar el mapa de totalVentas
+          if (data.containsKey('totalVentas') && data['totalVentas'] != null) {
+            if (data['totalVentas'] is! Map) {
+              data['totalVentas'] = {'hoy': 0, 'esteMes': 0};
+            } else {
+              final Map<String, dynamic> totalVentasMap =
+                  Map<String, dynamic>.from(data['totalVentas'] as Map);
+              totalVentasMap.forEach((key, value) {
+                if (value is String) {
+                  try {
+                    totalVentasMap[key] = num.parse(value);
+                  } catch (e) {
+                    totalVentasMap[key] = 0;
+                  }
                 }
-              }
-            });
-            data['totalVentas'] = totalVentasMap;
+              });
+              data['totalVentas'] = totalVentasMap;
+            }
+          } else {
+            data['totalVentas'] = {'hoy': 0, 'esteMes': 0};
           }
-        } else {
-          data['totalVentas'] = {'hoy': 0, 'esteMes': 0};
         }
       }
 
-      // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, response);
         logCache('Estadísticas de ventas guardadas en caché');
@@ -347,7 +336,7 @@ class EstadisticasApi {
       return <String, dynamic>{
         'status': 'error',
         'message': 'Error al obtener estadísticas de ventas',
-        'data': EstadisticasVentas(
+        'data': const EstadisticasVentas(
           ventas: {'hoy': 0, 'esteMes': 0},
           totalVentas: {'hoy': 0, 'esteMes': 0},
           sucursales: [],
@@ -377,10 +366,6 @@ class EstadisticasApi {
         forceRefresh: forceRefresh,
       );
 
-      // Los datos ya han sido validados y normalizados en los métodos anteriores
-      // No es necesario repetir la validación aquí
-
-      // Combinar las estadísticas
       return <String, dynamic>{
         'status': 'success',
         'data': <String, dynamic>{
@@ -393,7 +378,7 @@ class EstadisticasApi {
       return <String, dynamic>{
         'status': 'error',
         'message': 'Error al obtener resumen de estadísticas',
-        'data': ResumenEstadisticas(
+        'data': const ResumenEstadisticas(
           productos: EstadisticasProductos(
               stockBajo: 0, liquidacion: 0, sucursales: []),
           ventas: EstadisticasVentas(

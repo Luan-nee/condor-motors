@@ -1,16 +1,21 @@
+import 'package:equatable/equatable.dart';
+
 /// Modelo para las estadísticas de sucursal relacionadas con productos
-class SucursalEstadisticaProducto {
+class SucursalEstadisticaProducto extends Equatable {
   final int id;
   final String nombre;
   final int stockBajo;
   final int liquidacion;
 
-  SucursalEstadisticaProducto({
+  const SucursalEstadisticaProducto({
     required this.id,
     required this.nombre,
     required this.stockBajo,
     required this.liquidacion,
   });
+
+  @override
+  List<Object?> get props => [id, nombre, stockBajo, liquidacion];
 
   factory SucursalEstadisticaProducto.fromJson(Map<String, dynamic> json) {
     return SucursalEstadisticaProducto(
@@ -36,16 +41,19 @@ class SucursalEstadisticaProducto {
 }
 
 /// Modelo para las estadísticas de sucursal relacionadas con ventas
-class SucursalEstadisticaVenta {
+class SucursalEstadisticaVenta extends Equatable {
   final String nombre;
   final int ventas;
   final double totalVentas;
 
-  SucursalEstadisticaVenta({
+  const SucursalEstadisticaVenta({
     required this.nombre,
     required this.ventas,
     required this.totalVentas,
   });
+
+  @override
+  List<Object?> get props => [nombre, ventas, totalVentas];
 
   factory SucursalEstadisticaVenta.fromJson(Map<String, dynamic> json) {
     return SucursalEstadisticaVenta(
@@ -69,16 +77,19 @@ class SucursalEstadisticaVenta {
 }
 
 /// Modelo para las estadísticas de productos
-class EstadisticasProductos {
+class EstadisticasProductos extends Equatable {
   final int stockBajo;
   final int liquidacion;
   final List<SucursalEstadisticaProducto> sucursales;
 
-  EstadisticasProductos({
+  const EstadisticasProductos({
     required this.stockBajo,
     required this.liquidacion,
     required this.sucursales,
   });
+
+  @override
+  List<Object?> get props => [stockBajo, liquidacion, sucursales];
 
   factory EstadisticasProductos.fromJson(Map<String, dynamic> json) {
     List<SucursalEstadisticaProducto> sucursalesList = [];
@@ -111,16 +122,19 @@ class EstadisticasProductos {
 }
 
 /// Modelo para las estadísticas de ventas
-class EstadisticasVentas {
+class EstadisticasVentas extends Equatable {
   final Map<String, dynamic> ventas;
   final Map<String, dynamic> totalVentas;
   final List<SucursalEstadisticaVenta> sucursales;
 
-  EstadisticasVentas({
+  const EstadisticasVentas({
     required this.ventas,
     required this.totalVentas,
     required this.sucursales,
   });
+
+  @override
+  List<Object?> get props => [ventas, totalVentas, sucursales];
 
   /// Obtiene un valor numérico seguro de un mapa de ventas, con manejo de tipos
   static num _safeGetNum(Map<String, dynamic> map, String key) {
@@ -218,14 +232,17 @@ class EstadisticasVentas {
 }
 
 /// Modelo para el resumen de estadísticas
-class ResumenEstadisticas {
+class ResumenEstadisticas extends Equatable {
   final EstadisticasProductos productos;
   final EstadisticasVentas ventas;
 
-  ResumenEstadisticas({
+  const ResumenEstadisticas({
     required this.productos,
     required this.ventas,
   });
+
+  @override
+  List<Object?> get props => [productos, ventas];
 
   factory ResumenEstadisticas.fromJson(Map<String, dynamic> json) {
     return ResumenEstadisticas(
@@ -243,16 +260,19 @@ class ResumenEstadisticas {
 }
 
 /// Modelo para representar una sucursal en el contexto de una venta
-class SucursalVenta {
+class SucursalVenta extends Equatable {
   final int id;
   final bool sucursalCentral;
   final String nombre;
 
-  SucursalVenta({
+  const SucursalVenta({
     required this.id,
     required this.sucursalCentral,
     required this.nombre,
   });
+
+  @override
+  List<Object?> get props => [id, sucursalCentral, nombre];
 
   factory SucursalVenta.fromJson(Map<String, dynamic> json) {
     return SucursalVenta(

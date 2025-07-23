@@ -137,11 +137,11 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
               child: Material(
                 color: Colors.transparent,
                 child: Container(
-                  color: Colors.red.withOpacity(0.8),
+                  color: Colors.red.withValues(alpha: 0.8),
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   child: Row(
                     children: <Widget>[
-                      Icon(
+                      const Icon(
                         Icons.error_outline,
                         color: Colors.white,
                         size: 24,

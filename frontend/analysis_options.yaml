@@ -4,37 +4,27 @@ analyzer:
   exclude:
     - build/**
     - lib/generated_plugin_registrant.dart
-    - unused_import: warning
-    - unused_local_variable: warning
-    - dead_code: warning
-    - prefer_null_aware_method_calls: warning
-    - prefer_null_aware_operators: warning
-    - unnecessary_null_aware_assignments: warning
-    - unnecessary_nullable_for_final_variable_declarations: warning
-    - use_super_parameters: warning
-    - dead_code: warning
-    - avoid_duplicate_case_values: warning
-    - avoid_unused_constructor_parameters: warning
-    - unnecessary_this: warning
-    - unnecessary_lambdas: warning
-    - prefer_const_constructors_in_immutables: warning
-    - prefer_const_literals_to_create_immutables: warning
-    - prefer_const_constructors: warning
-    - prefer_const_literals_to_create_immutables: warning
-    - prefer_const_constructors: warning
-    
+  errors:
+    unused_import: warning
+    unused_local_variable: warning
+    dead_code: warning
+    unintended_html_in_doc_comment: ignore
 
 linter:
   rules:
     - always_declare_return_types
     - always_put_control_body_on_new_line
+    - prefer_contains
     - always_use_package_imports
+    - use_named_constants
     - annotate_overrides
     - avoid_annotating_with_dynamic
     - avoid_double_and_int_checks
     - avoid_empty_else
     - avoid_function_literals_in_foreach_calls
     - avoid_init_to_null
+    - use_string_buffers
+    - use_late_for_private_fields_and_variables
     - avoid_null_checks_in_equality_operators
     - avoid_positional_boolean_parameters
     - avoid_print
@@ -44,6 +34,7 @@ linter:
     - avoid_setters_without_getters
     - avoid_types_as_parameter_names
     - avoid_unnecessary_containers
+    - avoid_unused_constructor_parameters
     - camel_case_types
     - cancel_subscriptions
     - cascade_invocations
@@ -65,3 +56,22 @@ linter:
     - prefer_conditional_assignment
     - prefer_const_constructors_in_immutables
     - prefer_const_literals_to_create_immutables
+    - prefer_const_constructors
+    - prefer_null_aware_method_calls
+    - prefer_null_aware_operators
+    - unnecessary_null_aware_assignments
+    - unnecessary_nullable_for_final_variable_declarations
+    - unnecessary_this
+    - unnecessary_lambdas
+    - use_super_parameters
+    - use_rethrow_when_possible
+    - use_setters_to_change_properties
+    - prefer_if_elements_to_conditional_expressions
+    - prefer_final_fields
+    - prefer_is_empty
+    - sized_box_for_whitespace
+    - avoid_bool_literals_in_conditional_expressions
+    - avoid_dynamic_calls
+    - avoid_void_async
+    - prefer_for_elements_to_map_fromIterable
+    - no_runtimeType_toString

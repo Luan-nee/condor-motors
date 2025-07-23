@@ -55,7 +55,7 @@ abstract class AppTheme {
         ),
 
         // Configuración de diálogos
-        dialogTheme: DialogTheme(
+        dialogTheme: DialogThemeData(
           backgroundColor: cardColor,
           elevation: 5,
           shape: RoundedRectangleBorder(
@@ -131,7 +131,7 @@ abstract class AppTheme {
         ),
 
         // Configuración de tarjetas
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: cardColor,
           elevation: 2,
           shape: RoundedRectangleBorder(
@@ -151,7 +151,7 @@ abstract class AppTheme {
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(smallRadius),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(smallRadius),
@@ -162,10 +162,10 @@ abstract class AppTheme {
             borderSide: const BorderSide(color: Colors.red),
           ),
           labelStyle: _baseTextStyle.copyWith(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
           ),
           hintStyle: _baseTextStyle.copyWith(
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
           ),
         ),
 
@@ -180,7 +180,7 @@ abstract class AppTheme {
           ),
           contentTextStyle: _baseTextStyle.copyWith(
             fontSize: 14,
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
           ),
           actionTextColor: primaryColor,
           insetPadding: const EdgeInsets.symmetric(
@@ -227,8 +227,8 @@ abstract class AppTheme {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: isError
-                    ? Colors.red.withOpacity(0.1)
-                    : primaryColor.withOpacity(0.1),
+                    ? Colors.red.withValues(alpha: 0.1)
+                    : primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(smallRadius),
               ),
               child: Icon(
@@ -243,7 +243,7 @@ abstract class AppTheme {
                 message,
                 style: _baseTextStyle.copyWith(
                   fontSize: 14,
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                 ),
               ),
             ),
@@ -301,7 +301,7 @@ abstract class AppTheme {
   /// Retorna un conjunto de sombras para usar en la aplicación
   static List<BoxShadow> get commonShadows => <BoxShadow>[
         BoxShadow(
-          color: Colors.black.withOpacity(0.2),
+          color: Colors.black.withValues(alpha: 0.2),
           spreadRadius: 1,
           blurRadius: 5,
           offset: const Offset(0, 2),

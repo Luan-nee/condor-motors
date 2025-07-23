@@ -273,17 +273,17 @@ class _SucursalFormState extends State<SucursalForm>
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: Colors.white.withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: Colors.white.withValues(alpha: 0.1),
                                   ),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
-                                      children: const [
+                                    const Row(
+                                      children: [
                                         FaIcon(
                                           FontAwesomeIcons.buildingFlag,
                                           size: 16,
@@ -343,10 +343,10 @@ class _SucursalFormState extends State<SucursalForm>
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: Colors.white.withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: Colors.white.withValues(alpha: 0.1),
                                   ),
                                 ),
                                 child: Column(
@@ -433,8 +433,8 @@ class _SucursalFormState extends State<SucursalForm>
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          children: const [
+                                        const Row(
+                                          children: [
                                             FaIcon(
                                               FontAwesomeIcons.fileInvoice,
                                               size: 14,
@@ -477,8 +477,8 @@ class _SucursalFormState extends State<SucursalForm>
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          children: const [
+                                        const Row(
+                                          children: [
                                             FaIcon(
                                               FontAwesomeIcons.receipt,
                                               size: 14,
@@ -508,7 +508,7 @@ class _SucursalFormState extends State<SucursalForm>
                                             hintText: 'Ej: B001',
                                             filled: _seriesVinculadas,
                                             fillColor: _seriesVinculadas
-                                                ? Colors.blue.withOpacity(0.1)
+                                                ? Colors.blue.withValues(alpha: 0.1)
                                                 : null,
                                           ),
                                           validator: (value) =>
@@ -572,10 +572,10 @@ class _SucursalFormState extends State<SucursalForm>
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: Colors.white.withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: Colors.white.withValues(alpha: 0.1),
                                   ),
                                 ),
                                 child: Column(
@@ -596,23 +596,21 @@ class _SucursalFormState extends State<SucursalForm>
                                             size: 16),
                                       ),
                                       keyboardType: TextInputType.number,
-                                      validator: (value) =>
-                                          _validateCodigo(value),
-                                      onChanged: (value) =>
-                                          _handleCodigoChange(value),
+                                      validator: _validateCodigo,
+                                      onChanged: _handleCodigoChange,
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
                                       'El código de establecimiento es único para cada sucursal (opcional)',
                                       style: TextStyle(
-                                        color: Colors.white.withOpacity(0.7),
+                                        color: Colors.white.withValues(alpha: 0.7),
                                         fontSize: 12,
                                       ),
                                     ),
                                     Text(
                                       'Ingresar solo 4 dígitos numéricos (0-9)',
                                       style: TextStyle(
-                                        color: Colors.white.withOpacity(0.6),
+                                        color: Colors.white.withValues(alpha: 0.6),
                                         fontSize: 11,
                                       ),
                                     ),

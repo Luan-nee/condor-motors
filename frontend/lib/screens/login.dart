@@ -60,6 +60,7 @@ class _LoginScreenState extends State<LoginScreen>
   bool _hasNavigated = false;
 
   Future<bool>? _autoLoginFuture;
+  DateTime? _loginTransitionStart;
 
   @override
   void initState() {
@@ -355,7 +356,7 @@ class _LoginScreenState extends State<LoginScreen>
   Future<bool> _getAutoLoginFuture() async {
     final prefs = await SharedPreferences.getInstance();
     final stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
-    if (stayLoggedIn) {
+    if (stayLoggedIn && mounted) {
       return Provider.of<AuthProvider>(context, listen: false).autoLogin();
     }
     return false; // No loading, muestra login directo
@@ -404,7 +405,7 @@ class _LoginScreenState extends State<LoginScreen>
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                     ),
                     child: Image.asset(
                       'assets/images/condor-motors-logo.webp',
@@ -420,7 +421,7 @@ class _LoginScreenState extends State<LoginScreen>
                   Text(
                     'Iniciando sesión automáticamente...',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 16,
                     ),
                   ),
@@ -505,14 +506,14 @@ class _LoginScreenState extends State<LoginScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A).withOpacity(0.85),
+                    color: const Color(0xFF1A1A1A).withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                     ),
                     boxShadow: <BoxShadow>[
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),
@@ -532,7 +533,7 @@ class _LoginScreenState extends State<LoginScreen>
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.1),
+                              color: Colors.white.withValues(alpha: 0.1),
                             ),
                             child: Image.asset(
                               'assets/images/condor-motors-logo.webp',
@@ -658,7 +659,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 Text(
                                   'Bloq Mayús está activado',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
+                                    color: Colors.white.withValues(alpha: 0.7),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -743,7 +744,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   child: Icon(
                                     Icons.info_outline,
                                     size: 16,
-                                    color: Colors.white.withOpacity(0.5),
+                                    color: Colors.white.withValues(alpha: 0.5),
                                   ),
                                 ),
                               ],
@@ -757,10 +758,10 @@ class _LoginScreenState extends State<LoginScreen>
                             margin: const EdgeInsets.only(top: 16.0),
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
+                              color: Colors.red.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                  color: Colors.red.withOpacity(0.3)),
+                                  color: Colors.red.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               children: [
@@ -802,8 +803,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 elevation: 2,
                                 padding: EdgeInsets.zero,
                               ),
-                              onPressed:
-                                  _isLoading ? null : () => _handleLogin(),
+                              onPressed: _isLoading ? null : _handleLogin,
                               child: LayoutBuilder(
                                 builder: (context, constraints) {
                                   if (constraints.maxWidth < 140) {
@@ -822,11 +822,11 @@ class _LoginScreenState extends State<LoginScreen>
                                     );
                                   } else {
                                     // Mostrar el contenido normal si hay espacio suficiente
-                                    return Row(
+                                    return const Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       mainAxisSize: MainAxisSize.min,
-                                      children: const [
+                                      children: [
                                         Icon(Icons.login, size: 20),
                                         SizedBox(width: 8),
                                         Text(
@@ -857,12 +857,16 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleLogin() async {
+    debugPrint('[LoginScreen] Botón de login presionado');
+    _loginTransitionStart = DateTime.now();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.isAutoLoggingIn) {
+      debugPrint('[LoginScreen] Ignorado: autoLogin en progreso');
       // Bloquear login manual mientras auto-login está en progreso
       return;
     }
     if (!_formKey.currentState!.validate()) {
+      debugPrint('[LoginScreen] Formulario inválido');
       return;
     }
     setState(() {
@@ -870,27 +874,29 @@ class _LoginScreenState extends State<LoginScreen>
     });
     try {
       Provider.of<LoginProvider>(context, listen: false);
+      debugPrint('[LoginScreen] Llamando a authProvider.login...');
       final bool loginSuccess = await authProvider.login(
         _usernameController.text,
         _passwordController.text,
         saveAutoLogin: _stayLoggedIn,
       );
+      debugPrint('[LoginScreen] Resultado login: $loginSuccess');
       if (!mounted) {
+        debugPrint('[LoginScreen] Widget desmontado tras login');
         return;
       }
       setState(() => _isLoading = false);
       if (loginSuccess && !authProvider.isAutoLoggingIn) {
+        debugPrint('[LoginScreen] Login exitoso, procesando navegación');
         // Guardar credenciales solo si el login fue exitoso y recordar credenciales está activado
         if (_rememberMe) {
           final storage = const FlutterSecureStorage();
           await storage.write(key: 'username', value: _usernameController.text);
           await storage.write(key: 'password', value: _passwordController.text);
-          await storage.write(key: 'remember_me', value: 'true');
         } else {
           final storage = const FlutterSecureStorage();
           await storage.delete(key: 'username');
           await storage.delete(key: 'password');
-          await storage.delete(key: 'remember_me');
         }
         final user = authProvider.user;
         if (user != null) {
@@ -898,7 +904,15 @@ class _LoginScreenState extends State<LoginScreen>
           final String initialRoute = result['route']!;
           final String rolNormalizado = result['rol']!;
           debugPrint(
-              'Login exitoso, navegando a ruta: $initialRoute para rol: $rolNormalizado');
+              '[LoginScreen] Navegando a ruta: $initialRoute para rol: $rolNormalizado');
+          final transitionEnd = DateTime.now();
+          if (_loginTransitionStart != null) {
+            final diff =
+                transitionEnd.difference(_loginTransitionStart!).inMilliseconds;
+            debugPrint(
+                '[LoginScreen] Tiempo de transición login->admin: ${diff}ms');
+            _loginTransitionStart = null;
+          }
           await Navigator.pushReplacementNamed(
             context,
             initialRoute,
@@ -906,12 +920,16 @@ class _LoginScreenState extends State<LoginScreen>
           );
         }
       } else if (!loginSuccess) {
+        debugPrint('[LoginScreen] Login fallido');
         // No guardar credenciales si el login falla
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al iniciar sesión')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error al iniciar sesión')),
+          );
+        }
       }
     } catch (e) {
+      debugPrint('[LoginScreen] Excepción en login: $e');
       if (!mounted) {
         return;
       }
@@ -925,22 +943,24 @@ class _LoginScreenState extends State<LoginScreen>
         }
       });
       // No guardar credenciales si hay error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_errorMessage),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_errorMessage),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            action: SnackBarAction(
+              label: 'Reintentar',
+              textColor: Colors.white,
+              onPressed: _handleLogin,
+            ),
           ),
-          action: SnackBarAction(
-            label: 'Reintentar',
-            textColor: Colors.white,
-            onPressed: _handleLogin,
-          ),
-        ),
-      );
+        );
+      }
     }
   }
 }

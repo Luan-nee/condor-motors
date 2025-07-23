@@ -139,7 +139,7 @@ class ApiClient {
   late Dio _dio;
   final Map<String, dynamic> _cache = {};
 
-  static const _defaultHeaders = {
+  static final _defaultHeaders = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   };

@@ -51,6 +51,7 @@ class EmpleadoDetallesViewer extends StatefulWidget {
 class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
   String? _usuarioEmpleado;
   bool _cuentaNoEncontrada = false;
+  bool _isHoveringPhoto = false;
 
   @override
   void initState() {
@@ -58,6 +59,110 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarInformacionCuenta();
     });
+  }
+
+  // Método para mostrar la foto en zoom
+  void _mostrarFotoEnZoom(BuildContext context) {
+    if (widget.empleado.fotoUrl == null || widget.empleado.fotoUrl!.isEmpty) {
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          children: <Widget>[
+            // Fondo oscuro con tap para cerrar
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.8),
+                width: double.infinity,
+                height: double.infinity,
+              ),
+            ),
+            // Imagen centrada
+            Center(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.8,
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    widget.empleado.fotoUrl!,
+                    fit: BoxFit.contain,
+                    errorBuilder: (BuildContext context, Object error,
+                            StackTrace? stackTrace) =>
+                        Container(
+                      width: 300,
+                      height: 300,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2D2D2D),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            FaIcon(
+                              FontAwesomeIcons.image,
+                              color: Colors.white54,
+                              size: 64,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Error al cargar imagen',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Botón cerrar
+            Positioned(
+              top: 40,
+              right: 40,
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _cargarInformacionCuenta() async {
@@ -139,37 +244,77 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
           Row(
             children: <Widget>[
               // Foto o avatar
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2D2D2D),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: (widget.empleado.fotoUrl != null &&
-                          widget.empleado.fotoUrl!.isNotEmpty)
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            widget.empleado.fotoUrl!,
-                            width: 64,
-                            height: 64,
-                            fit: BoxFit.cover,
-                            errorBuilder: (BuildContext context, Object error,
-                                    StackTrace? stackTrace) =>
-                                const FaIcon(
+              MouseRegion(
+                onEnter: (event) => setState(() => _isHoveringPhoto = true),
+                onExit: (event) => setState(() => _isHoveringPhoto = false),
+                child: GestureDetector(
+                  onTap: widget.empleado.fotoUrl != null &&
+                          widget.empleado.fotoUrl!.isNotEmpty
+                      ? () => _mostrarFotoEnZoom(context)
+                      : null,
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2D2D2D),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: (widget.empleado.fotoUrl != null &&
+                              widget.empleado.fotoUrl!.isNotEmpty)
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Stack(
+                                children: [
+                                  Image.network(
+                                    widget.empleado.fotoUrl!,
+                                    width: 64,
+                                    height: 64,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (BuildContext context,
+                                            Object error,
+                                            StackTrace? stackTrace) =>
+                                        const FaIcon(
+                                      FontAwesomeIcons.user,
+                                      color: Color(0xFFE31E24),
+                                      size: 28,
+                                    ),
+                                  ),
+                                  // Indicador de zoom (solo visible al pasar el mouse)
+                                  if (_isHoveringPhoto)
+                                    Positioned(
+                                      top: 4,
+                                      right: 4,
+                                      child: AnimatedOpacity(
+                                        opacity: _isHoveringPhoto ? 1.0 : 0.0,
+                                        duration:
+                                            const Duration(milliseconds: 200),
+                                        child: Container(
+                                          width: 20,
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                            color: Colors.black
+                                                .withValues(alpha: 0.7),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.zoom_in,
+                                            color: Colors.white,
+                                            size: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            )
+                          : const FaIcon(
                               FontAwesomeIcons.user,
                               color: Color(0xFFE31E24),
                               size: 28,
                             ),
-                          ),
-                        )
-                      : const FaIcon(
-                          FontAwesomeIcons.user,
-                          color: Color(0xFFE31E24),
-                          size: 28,
-                        ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 20),
@@ -196,7 +341,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                         color: const Color(0xFF2D2D2D),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: const Color(0xFFE31E24).withOpacity(0.3),
+                          color: const Color(0xFFE31E24).withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -231,7 +376,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                           Text(
                             '@$_usuarioEmpleado',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 14,
                             ),
                           ),
@@ -313,7 +458,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
               border: Border.all(
                 color: esCentral
                     ? const Color.fromARGB(255, 95, 208, 243)
-                    : Colors.white.withOpacity(0.1),
+                    : Colors.white.withValues(alpha: 0.1),
               ),
             ),
             child: Row(
@@ -358,7 +503,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                           child: Text(
                             'Sucursal Central',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 14,
                             ),
                           ),
@@ -368,7 +513,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                         child: Text(
                           'Fecha Contratación: ${EmpleadosUtils.formatearFecha(widget.empleado.fechaContratacion)}',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 14,
                           ),
                         ),
@@ -383,9 +528,9 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
           const SizedBox(height: 24),
 
           // Información laboral y Gestión de cuenta
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const <Widget>[
+            children: <Widget>[
               Text(
                 'INFORMACIÓN LABORAL',
                 style: TextStyle(
@@ -575,8 +720,7 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
 
       // Mostrar diálogo de carga
       await EmpleadosUtils.mostrarDialogoCarga(context,
-          mensaje: 'Cargando información de cuenta...',
-          barrierDismissible: true);
+          mensaje: 'Cargando información de cuenta...');
 
       // Verificar si el contexto sigue montado después del diálogo de carga
       if (!context.mounted) {

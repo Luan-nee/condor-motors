@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 /// Provider para manejar la lógica de paginación
 class PaginacionProvider extends ChangeNotifier {
   /// Estado actual de la paginación
-  Paginacion _paginacion = Paginacion(
+  Paginacion _paginacion = const Paginacion(
     totalItems: 0,
     totalPages: 1,
     currentPage: 1,
@@ -491,7 +491,7 @@ class PaginacionProvider extends ChangeNotifier {
     final metadataOriginal = _metadata;
 
     // Restaurar a valores por defecto
-    _paginacion = Paginacion(
+    _paginacion = const Paginacion(
       totalItems: 0,
       totalPages: 1,
       currentPage: 1,

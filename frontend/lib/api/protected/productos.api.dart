@@ -106,7 +106,7 @@ class ProductosApi {
       final PaginatedResponse<Producto> result =
           PaginacionUtils.parsePaginatedResponse(
         response,
-        (item) => Producto.fromJson(item),
+        Producto.fromJson,
       );
 
       // Guardar en caché si useCache es true

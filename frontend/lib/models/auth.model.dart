@@ -1,6 +1,12 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
-class AuthUser {
+// FIX: Para modelos complejos, considera usar el paquete `freezed`.
+// `freezed` genera automáticamente `copyWith`, `fromJson`, `toJson`, `toString`
+// y la igualdad de objetos, lo que reduce drásticamente el código repetitivo
+// y previene errores comunes al añadir nuevos campos.
+
+class AuthUser extends Equatable {
   final String id;
   final String usuario;
   final String rolCuentaEmpleadoId;
@@ -12,7 +18,7 @@ class AuthUser {
   final String sucursal;
   final int sucursalId;
 
-  AuthUser({
+  const AuthUser({
     required this.id,
     required this.usuario,
     required this.rolCuentaEmpleadoId,
@@ -119,12 +125,21 @@ class AuthUser {
   }
 
   @override
-  String toString() {
-    return 'AuthUser{id: $id, usuario: $usuario, rol: $rolCuentaEmpleadoCodigo, empleado: ${empleado['nombres']} ${empleado['apellidos']}, sucursal: $sucursal, sucursalId: $sucursalId}';
-  }
+  List<Object?> get props => [
+        id,
+        usuario,
+        rolCuentaEmpleadoId,
+        rolCuentaEmpleadoCodigo,
+        empleadoId,
+        empleado,
+        fechaCreacion,
+        fechaActualizacion,
+        sucursal,
+        sucursalId
+      ];
 }
 
-class AuthState {
+class AuthState extends Equatable {
   final bool isAuthenticated;
   final bool isLoading;
   final String? error;
@@ -132,7 +147,7 @@ class AuthState {
   final String? token;
   final DateTime? tokenExpiry;
 
-  AuthState({
+  const AuthState({
     this.isAuthenticated = false,
     this.isLoading = false,
     this.error,
@@ -162,12 +177,12 @@ class AuthState {
 
   // Estado inicial
   factory AuthState.initial() {
-    return AuthState();
+    return const AuthState();
   }
 
   // Estado de carga
   factory AuthState.loading() {
-    return AuthState(
+    return const AuthState(
       isLoading: true,
     );
   }
@@ -189,4 +204,8 @@ class AuthState {
       error: message,
     );
   }
+
+  @override
+  List<Object?> get props =>
+      [isAuthenticated, isLoading, error, user, token, tokenExpiry];
 }

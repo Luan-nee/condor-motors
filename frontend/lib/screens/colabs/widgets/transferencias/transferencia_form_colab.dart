@@ -232,7 +232,7 @@ class _TransferenciaFormColabState extends State<TransferenciaFormColab> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withOpacity(0.1),
+                        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const FaIcon(
@@ -270,7 +270,7 @@ class _TransferenciaFormColabState extends State<TransferenciaFormColab> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withOpacity(0.1),
+                        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -298,7 +298,7 @@ class _TransferenciaFormColabState extends State<TransferenciaFormColab> {
     );
   }
 
-  void _selectProductos() async {
+  Future<void> _selectProductos() async {
     setState(() => _isLoading = true);
     try {
       final result = await showDialog<List<DetalleProducto>>(

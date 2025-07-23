@@ -85,7 +85,7 @@ class _TransferenciaCompararAdminState
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE31E24).withOpacity(0.2),
+                  color: const Color(0xFFE31E24).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const FaIcon(
@@ -258,7 +258,7 @@ class _TransferenciaCompararAdminState
                     Text(
                       'Cantidad solicitada: ${producto.cantidadSolicitada}',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 12,
                       ),
                     ),
@@ -271,13 +271,13 @@ class _TransferenciaCompararAdminState
                 decoration: BoxDecoration(
                   color:
                       (stockSuficiente ? Colors.green : const Color(0xFFE31E24))
-                          .withOpacity(0.1),
+                          .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: (stockSuficiente
                             ? Colors.green
                             : const Color(0xFFE31E24))
-                        .withOpacity(0.3),
+                        .withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -347,7 +347,7 @@ class _TransferenciaCompararAdminState
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -356,7 +356,7 @@ class _TransferenciaCompararAdminState
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
             ),
           ),
@@ -388,7 +388,7 @@ class _TransferenciaCompararAdminState
               Container(
                 width: 1,
                 height: 30,
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
               ),
               Expanded(
                 child: Column(

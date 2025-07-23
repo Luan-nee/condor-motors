@@ -207,7 +207,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                               'gestión de personal',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                               ),
                             ),
                           ],
@@ -276,7 +276,7 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                           ),
                           onPressed: isLoading
                               ? null
-                              : () => _mostrarFormularioEmpleado(),
+                              : _mostrarFormularioEmpleado,
                         ),
                       ],
                     )
@@ -290,9 +290,9 @@ class _ColaboradoresAdminScreenState extends State<ColaboradoresAdminScreen> {
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: <Widget>[

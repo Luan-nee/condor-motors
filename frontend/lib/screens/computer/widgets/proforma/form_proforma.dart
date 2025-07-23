@@ -311,7 +311,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const FaIcon(
@@ -483,7 +483,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                         horizontal: 16, vertical: 12),
                     // Mostrar visual de deshabilitado cuando está procesando
                     disabledBackgroundColor:
-                        const Color(0xFF4CAF50).withOpacity(0.5),
+                        const Color(0xFF4CAF50).withValues(alpha: 0.5),
                   ),
                   icon: _procesando
                       ? const SizedBox(

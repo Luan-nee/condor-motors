@@ -61,9 +61,9 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
                 children: [
                   const Icon(Icons.receipt_long, color: Colors.red, size: 22),
                   const SizedBox(width: 12),
-                  Text(
+                  const Text(
                     'DETALLE PEDIDO EXCLUSIVO',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white),
@@ -127,8 +127,8 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: const [
+            const Row(
+              children: [
                 Icon(Icons.info, color: Colors.red, size: 18),
                 SizedBox(width: 8),
                 Text('Información General',
@@ -173,8 +173,8 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: const [
+            const Row(
+              children: [
                 Icon(Icons.person, color: Colors.red, size: 18),
                 SizedBox(width: 8),
                 Text('Datos del Cliente',
@@ -218,8 +218,8 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: const [
+            const Row(
+              children: [
                 Icon(Icons.list, color: Colors.red, size: 18),
                 SizedBox(width: 8),
                 Text('Detalles de la Reserva',

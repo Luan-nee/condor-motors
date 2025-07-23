@@ -323,7 +323,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: _getEstadoColor(producto['estado'])
-                            .withOpacity(0.1),
+                            .withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: FaIcon(
@@ -362,7 +362,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                           ),
                           decoration: BoxDecoration(
                             color:
-                                Theme.of(context).primaryColor.withOpacity(0.1),
+                                Theme.of(context).primaryColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(

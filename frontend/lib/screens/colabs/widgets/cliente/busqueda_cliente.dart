@@ -32,9 +32,9 @@ class BusquedaClienteWidget extends StatefulWidget {
           'onClienteSeleccionado', onClienteSeleccionado))
       ..add(
           ObjectFlagProperty<Function()>.has('onNuevoCliente', onNuevoCliente))
-      ..add(DiagnosticsProperty<bool>('isLoading', isLoading));
-    properties.add(ObjectFlagProperty<VoidCallback?>.has(
-        'onRefrescarClientes', onRefrescarClientes));
+      ..add(DiagnosticsProperty<bool>('isLoading', isLoading))
+      ..add(ObjectFlagProperty<VoidCallback?>.has(
+          'onRefrescarClientes', onRefrescarClientes));
   }
 }
 
@@ -140,7 +140,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
               Container(
                 decoration: BoxDecoration(
                   color: _isTipoDocumentoExpanded
-                      ? Colors.blue.withOpacity(0.2)
+                      ? Colors.blue.withValues(alpha: 0.2)
                       : darkBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -185,7 +185,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
               Container(
                 decoration: BoxDecoration(
                   color: _isSearchExpanded
-                      ? Colors.orange.withOpacity(0.2)
+                      ? Colors.orange.withValues(alpha: 0.2)
                       : darkBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -223,7 +223,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
               // Botón de nuevo cliente
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.2),
+                  color: Colors.green.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: IconButton(
@@ -241,7 +241,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
               if (hayFiltrosActivos)
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.2),
+                    color: Colors.red.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: IconButton(
@@ -271,7 +271,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -279,7 +279,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
           // Barra con título
           Container(
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.2),
+              color: Colors.blue.withValues(alpha: 0.2),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(7),
                 topRight: Radius.circular(7),
@@ -338,7 +338,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
                     color: isSelected ? Colors.white : color,
                   ),
                   backgroundColor: darkBackground,
-                  selectedColor: color.withOpacity(0.8),
+                  selectedColor: color.withValues(alpha: 0.8),
                   checkmarkColor: Colors.white,
                   onSelected: (bool selected) {
                     setState(() {
@@ -362,7 +362,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -370,7 +370,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
           // Barra con título
           Container(
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.2),
+              color: Colors.orange.withValues(alpha: 0.2),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(7),
                 topRight: Radius.circular(7),
@@ -495,7 +495,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -556,7 +556,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
             Text(
               'Intenta con otra búsqueda o crea un nuevo cliente',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
@@ -594,7 +594,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
             side: BorderSide(
-              color: colorTipoDoc.withOpacity(0.3),
+              color: colorTipoDoc.withValues(alpha: 0.3),
             ),
           ),
           child: InkWell(
@@ -613,10 +613,10 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: colorTipoDoc.withOpacity(0.2),
+                          color: colorTipoDoc.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: colorTipoDoc.withOpacity(0.5),
+                            color: colorTipoDoc.withValues(alpha: 0.5),
                             width: 2,
                           ),
                         ),
@@ -659,7 +659,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
                             Text(
                               '${BusquedaClienteUtils.getNombreTipoDocumento(tipoDoc)}: ${cliente.numeroDocumento}',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                                 fontSize: 12,
                               ),
                             ),
@@ -671,7 +671,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
                   // Flecha de selección
                   Icon(
                     Icons.chevron_right,
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                   ),
                 ],
               ),
@@ -710,10 +710,10 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: colorTipoDoc.withOpacity(0.2),
+                        color: colorTipoDoc.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: colorTipoDoc.withOpacity(0.5),
+                          color: colorTipoDoc.withValues(alpha: 0.5),
                           width: 2,
                         ),
                       ),
@@ -746,7 +746,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
                         Text(
                           'ID: ${cliente.id}',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
                         ),
@@ -864,7 +864,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: color.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -881,7 +881,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
               Text(
                 titulo,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: small ? 12 : 14,
                 ),
               ),

@@ -33,6 +33,10 @@ class TransferenciasProvider extends ChangeNotifier {
   String _orden = 'desc';
 
   TransferenciasProvider() {
+    // Configurar valores por defecto para mostrar transferencias más recientes primero
+    paginacionProvider..cambiarOrdenarPor('fechaCreacion')
+    ..cambiarOrden('desc');
+
     // Cargar sucursales al inicializar
     cargarSucursales();
   }
@@ -107,8 +111,11 @@ class TransferenciasProvider extends ChangeNotifier {
   Future<void> cargarTransferencias({
     String? sucursalId,
     bool forceRefresh = false,
+    bool showLoading = true,
   }) async {
-    _setLoading(true);
+    if (showLoading) {
+      _setLoading(true);
+    }
 
     try {
       String? estadoFiltro;
@@ -140,7 +147,9 @@ class TransferenciasProvider extends ChangeNotifier {
     } catch (e) {
       _setError('Error al cargar transferencias: $e');
     } finally {
-      _setLoading(false);
+      if (showLoading) {
+        _setLoading(false);
+      }
     }
   }
 
@@ -279,25 +288,25 @@ class TransferenciasProvider extends ChangeNotifier {
   /// Cambia la página actual y recarga los datos
   Future<void> cambiarPagina(int nuevaPagina) async {
     paginacionProvider.cambiarPagina(nuevaPagina);
-    await cargarTransferencias();
+    await cargarTransferencias(showLoading: false);
   }
 
   /// Cambia el tamaño de página y recarga los datos
   Future<void> cambiarTamanoPagina(int nuevoTamano) async {
     paginacionProvider.cambiarItemsPorPagina(nuevoTamano);
-    await cargarTransferencias();
+    await cargarTransferencias(showLoading: false);
   }
 
   /// Cambia el orden de los resultados y recarga los datos
   Future<void> cambiarOrden(String nuevoOrden) async {
     paginacionProvider.cambiarOrden(nuevoOrden);
-    await cargarTransferencias();
+    await cargarTransferencias(showLoading: false);
   }
 
   /// Cambia el campo de ordenación y recarga los datos
   Future<void> cambiarOrdenarPor(String? nuevoOrdenarPor) async {
     paginacionProvider.cambiarOrdenarPor(nuevoOrdenarPor);
-    await cargarTransferencias();
+    await cargarTransferencias(showLoading: false);
   }
 
   /// Completa el envío de una transferencia después de la comparación

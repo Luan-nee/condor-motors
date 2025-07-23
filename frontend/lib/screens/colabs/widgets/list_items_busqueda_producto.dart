@@ -101,7 +101,9 @@ class ListItemBusquedaProducto extends StatelessWidget {
                 border: tienePromocion
                     ? Border.all(
                         color: BusquedaProductoUtils.getPromocionColor(
-                            tienePromocionGratis, tieneDescuentoPorcentual),
+                          tienePromocionGratis: tienePromocionGratis,
+                          tieneDescuentoPorcentual: tieneDescuentoPorcentual,
+                        ),
                         width: 2,
                       )
                     : null,
@@ -121,7 +123,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                           if (progress == null) {
                             return child;
                           }
-                          return Center(
+                          return const Center(
                             child: CircularProgressIndicator(strokeWidth: 2),
                           );
                         },
@@ -147,7 +149,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: <BoxShadow>[
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 2,
                   offset: const Offset(0, 1),
                 ),
@@ -222,7 +224,9 @@ class ListItemBusquedaProducto extends StatelessWidget {
     final bool tieneStock = producto.stock > 0;
     final bool tienePromocion = producto.tienePromocion;
     final Color colorPromocion = BusquedaProductoUtils.getPromocionColor(
-        tienePromocionGratis, tieneDescuentoPorcentual);
+      tienePromocionGratis: tienePromocionGratis,
+      tieneDescuentoPorcentual: tieneDescuentoPorcentual,
+    );
 
     showDialog(
       context: context,
@@ -307,7 +311,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                         Text(
                           'Código: ${producto.sku}',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
                         ),
@@ -441,7 +445,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: color.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -458,7 +462,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
               Text(
                 titulo,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: small ? 12 : 14,
                 ),
               ),
@@ -555,7 +559,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.2),
+                  color: Colors.amber.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -605,9 +609,9 @@ class ListItemBusquedaProducto extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         label,
@@ -654,12 +658,12 @@ class ListItemBusquedaProducto extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 spreadRadius: 1,
                 blurRadius: 2,
               ),
             ],
-            border: Border.all(color: Colors.white.withOpacity(0.5)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
           ),
         ),
         const SizedBox(width: 6),

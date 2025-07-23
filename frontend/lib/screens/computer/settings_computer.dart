@@ -76,7 +76,7 @@ class _SettingsComputerScreenState extends State<SettingsComputerScreen> {
         color: const Color(0xFF2D2D2D),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -124,8 +124,8 @@ class _SettingsComputerScreenState extends State<SettingsComputerScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: const [
+            const Row(
+              children: [
                 FaIcon(
                   FontAwesomeIcons.print,
                   color: Color(0xFFE31E24),
@@ -222,7 +222,7 @@ class _SettingsComputerScreenState extends State<SettingsComputerScreen> {
                 ),
                 trailing: IconButton(
                   icon: const Icon(Icons.refresh, color: Colors.white70),
-                  onPressed: () => printProvider.cargarImpresoras(),
+                  onPressed: printProvider.cargarImpresoras,
                   tooltip: 'Actualizar lista de impresoras',
                 ),
                 onTap: () async {
@@ -322,7 +322,7 @@ class _SettingsComputerScreenState extends State<SettingsComputerScreen> {
                 style: TextStyle(color: Colors.white70, fontSize: 12),
               ),
               collapsedIconColor: Colors.white70,
-              iconColor: Color(0xFFE31E24),
+              iconColor: const Color(0xFFE31E24),
               children: [
                 _buildAdvancedPrintConfig(),
               ],
@@ -402,7 +402,7 @@ class _SettingsComputerScreenState extends State<SettingsComputerScreen> {
           onChanged: (v) => setState(() {
             printProvider.guardarConfiguracion(rotacionAutomatica: v);
           }),
-          activeColor: Color(0xFFE31E24),
+          activeColor: const Color(0xFFE31E24),
         ),
         SwitchListTile(
           title: const Text('Ajuste automático',
@@ -411,7 +411,7 @@ class _SettingsComputerScreenState extends State<SettingsComputerScreen> {
           onChanged: (v) => setState(() {
             printProvider.guardarConfiguracion(ajusteAutomatico: v);
           }),
-          activeColor: Color(0xFFE31E24),
+          activeColor: const Color(0xFFE31E24),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),

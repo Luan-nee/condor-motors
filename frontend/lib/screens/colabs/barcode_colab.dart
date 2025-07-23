@@ -211,7 +211,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.2),
+                      color: Colors.amber.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
@@ -239,10 +239,10 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.1),
+                  color: Colors.amber.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Colors.amber.withOpacity(0.3),
+                    color: Colors.amber.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(
@@ -311,9 +311,9 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                       Navigator.pop(context);
                       _processMultipleCodes(uniqueCodes.toList());
                     },
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
+                      children: [
                         Icon(Icons.check_circle_outline, size: 18),
                         SizedBox(width: 8),
                         Text('Procesar Todos'),
@@ -438,13 +438,13 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                           height: 40,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
-                              Icon(Icons.image, color: Colors.grey, size: 24),
+                              const Icon(Icons.image, color: Colors.grey, size: 24),
                         )
                       : Container(
                           width: 40,
                           height: 40,
                           color: Colors.grey[200],
-                          child: Icon(Icons.image_not_supported,
+                          child: const Icon(Icons.image_not_supported,
                               color: Colors.grey, size: 24),
                         ),
                 ),
@@ -502,9 +502,9 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
               }
               Navigator.pop(context); // Cerrar pantalla de escaneo
             },
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 Icon(Icons.add_shopping_cart, size: 18),
                 SizedBox(width: 8),
                 Text('Agregar Todos'),
@@ -604,7 +604,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: colorPromocion.withOpacity(0.2),
+                                color: colorPromocion.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
@@ -697,13 +697,13 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                           height: 60,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
-                              Icon(Icons.image, color: Colors.grey, size: 40),
+                              const Icon(Icons.image, color: Colors.grey, size: 40),
                         )
                       : Container(
                           width: 60,
                           height: 60,
                           color: Colors.grey[200],
-                          child: Icon(Icons.image_not_supported,
+                          child: const Icon(Icons.image_not_supported,
                               color: Colors.grey, size: 40),
                         ),
                 ),
@@ -782,13 +782,13 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: tieneStock
-                        ? Colors.green.withOpacity(0.2)
-                        : Colors.red.withOpacity(0.2),
+                        ? Colors.green.withValues(alpha: 0.2)
+                        : Colors.red.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: tieneStock
-                          ? Colors.green.withOpacity(0.5)
-                          : Colors.red.withOpacity(0.5),
+                          ? Colors.green.withValues(alpha: 0.5)
+                          : Colors.red.withValues(alpha: 0.5),
                     ),
                   ),
                   child: Text(
@@ -895,11 +895,11 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                     Navigator.pop(context); // Cerrar pantalla de escaneo
                   }
                 : null,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Icon(Icons.add_shopping_cart, size: 18),
                   SizedBox(width: 8),
                   Text('Agregar al Carrito'),
@@ -917,10 +917,10 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -1056,8 +1056,8 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                       key: ValueKey<bool>(_quickAdd),
                       size: 40,
                       color: _quickAdd
-                          ? Colors.amber.withOpacity(0.8)
-                          : Theme.of(context).primaryColor.withOpacity(0.8),
+                          ? Colors.amber.withValues(alpha: 0.8)
+                          : Theme.of(context).primaryColor.withValues(alpha: 0.8),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1093,7 +1093,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                             child: Text(
                               'Modo rápido activado',
                               style: TextStyle(
-                                color: Colors.amber.withOpacity(0.8),
+                                color: Colors.amber.withValues(alpha: 0.8),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),

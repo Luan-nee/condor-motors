@@ -148,9 +148,9 @@ class _InventarioResumenState extends State<InventarioResumen> {
     return Container(
       padding: const EdgeInsets.all(7),
       decoration: BoxDecoration(
-        color: highlight ? color.withOpacity(0.15) : const Color(0xFF333333),
+        color: highlight ? color.withValues(alpha: 0.15) : const Color(0xFF333333),
         borderRadius: BorderRadius.circular(8),
-        border: highlight ? Border.all(color: color.withOpacity(0.3)) : null,
+        border: highlight ? Border.all(color: color.withValues(alpha: 0.3)) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,7 +167,7 @@ class _InventarioResumenState extends State<InventarioResumen> {
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -188,7 +188,7 @@ class _InventarioResumenState extends State<InventarioResumen> {
           Text(
             subtitle,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
               fontSize: 12,
             ),
           ),

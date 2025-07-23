@@ -135,19 +135,23 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
       // Si no hubo error, recargamos explícitamente la caché
       await _sucursalProvider.limpiarCacheYRecargar();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sucursal guardada exitosamente'),
-          backgroundColor: Color(0xFF4CAF50),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sucursal guardada exitosamente'),
+            backgroundColor: Color(0xFF4CAF50),
+          ),
+        );
+      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error),
-          backgroundColor: const Color(0xFFE31E24),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: const Color(0xFFE31E24),
+          ),
+        );
+      }
     }
   }
 
@@ -189,20 +193,24 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
         // Si no hubo error, recargamos explícitamente la caché
         await _sucursalProvider.limpiarCacheYRecargar();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text('Sucursal "${sucursal.nombre}" eliminada correctamente'),
-            backgroundColor: const Color(0xFF4CAF50),
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content:
+                  Text('Sucursal "${sucursal.nombre}" eliminada correctamente'),
+              backgroundColor: const Color(0xFF4CAF50),
+            ),
+          );
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            backgroundColor: const Color(0xFFE31E24),
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error),
+              backgroundColor: const Color(0xFFE31E24),
+            ),
+          );
+        }
       }
     }
   }
@@ -332,7 +340,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                   vertical: 16,
                 ),
               ),
-              onPressed: () => _mostrarFormularioSucursal(),
+              onPressed: _mostrarFormularioSucursal,
             ),
             const SizedBox(width: 12)
           ],
@@ -346,7 +354,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                 color: const Color(0xFF222222),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -407,11 +415,11 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
+                      fillColor: Colors.white.withValues(alpha: 0.05),
                       hintStyle:
-                          TextStyle(color: Colors.white.withOpacity(0.5)),
+                          TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                       labelStyle:
-                          TextStyle(color: Colors.white.withOpacity(0.7)),
+                          TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                     ),
                     style: const TextStyle(color: Colors.white),
                     onChanged: provider.actualizarBusqueda,
@@ -423,7 +431,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
@@ -612,7 +620,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                                 backgroundColor: const Color(0xFFE31E24),
                                 foregroundColor: Colors.white,
                               ),
-                              onPressed: () => _mostrarFormularioSucursal(),
+                              onPressed: _mostrarFormularioSucursal,
                               icon: const Icon(Icons.add),
                               label: const Text('Agregar sucursal'),
                             ),
@@ -637,7 +645,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                         duration: const Duration(milliseconds: 200),
                         child: FloatingActionButton.small(
                           heroTag: 'scrollToTop',
-                          backgroundColor: Colors.black.withOpacity(0.6),
+                          backgroundColor: Colors.black.withValues(alpha: 0.6),
                           onPressed: _scrollToTop,
                           child: const Icon(Icons.keyboard_arrow_up, size: 20),
                         ),
@@ -646,13 +654,13 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
 
                   // Indicador de carga cuando está actualizando pero ya tiene datos
                   if (provider.isLoading && provider.sucursales.isNotEmpty)
-                    Positioned(
+                    const Positioned(
                       top: 0,
                       left: 0,
                       right: 0,
                       child: SizedBox(
                         height: 3,
-                        child: const LinearProgressIndicator(
+                        child: LinearProgressIndicator(
                           backgroundColor: Colors.transparent,
                           valueColor:
                               AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
@@ -667,7 +675,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
         floatingActionButton: FloatingActionButton(
           backgroundColor: const Color(0xFFE31E24),
           foregroundColor: Colors.white,
-          onPressed: () => _mostrarFormularioSucursal(),
+          onPressed: _mostrarFormularioSucursal,
           tooltip: 'Agregar sucursal',
           child: const Icon(Icons.add),
         ),
@@ -775,7 +783,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ),
@@ -786,7 +794,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ),
@@ -797,7 +805,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ),
@@ -808,7 +816,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ),
@@ -1125,7 +1133,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                             ),
                           ),
                         ),
@@ -1136,7 +1144,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                             ),
                           ),
                         ),
@@ -1147,7 +1155,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                             ),
                           ),
                         ),
@@ -1158,7 +1166,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                             ),
                           ),
                         ),
@@ -1306,7 +1314,7 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
                 margin: const EdgeInsets.only(top: 8, bottom: 8),
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(

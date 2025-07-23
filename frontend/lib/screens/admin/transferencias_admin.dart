@@ -150,7 +150,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                             'transferencias de inventario',
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -210,220 +210,157 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Encabezado de la tabla
-              Container(
-                color: const Color(0xFF2D2D2D),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                child: Row(
-                  children: const <Widget>[
-                    // Fechas (25%)
-                    Expanded(
-                      flex: 25,
-                      child: Row(
-                        children: [
-                          FaIcon(
-                            FontAwesomeIcons.calendar,
-                            color: Color(0xFFE31E24),
-                            size: 14,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Fechas',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+              // Tabla de movimientos con paginación
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Encabezado de la tabla dentro del mismo Container
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF2D2D2D),
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(12)),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 20),
+                        child: const Row(
+                          children: <Widget>[
+                            // Fechas (25%)
+                            Expanded(
+                              flex: 25,
+                              child: Row(
+                                children: [
+                                  FaIcon(
+                                    FontAwesomeIcons.calendar,
+                                    color: Color(0xFFE31E24),
+                                    size: 14,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Fechas',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Sucursales (30%)
-                    Expanded(
-                      flex: 30,
-                      child: Text(
-                        'Sucursales',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                            // Sucursales (30%)
+                            Expanded(
+                              flex: 30,
+                              child: Text(
+                                'Sucursales',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            // Estado y Progreso (40%)
+                            Expanded(
+                              flex: 40,
+                              child: Center(
+                                child: Text(
+                                  'Estado y Progreso',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Acciones (5%)
+                            SizedBox(
+                              width: 32,
+                              child: Center(
+                                child: Text(
+                                  'Acciones',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    // Estado y Progreso (40%)
-                    Expanded(
-                      flex: 40,
-                      child: Center(
-                        child: Text(
-                          'Estado y Progreso',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              ...transferenciasProvider.transferencias
+                                  .map(_buildTransferenciaRow),
+                            ],
                           ),
                         ),
                       ),
-                    ),
-                    // Acciones (5%)
-                    SizedBox(
-                      width: 32,
-                      child: Center(
-                        child: Text(
-                          'Acciones',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Paginador
+              Container(
+                margin: const EdgeInsets.only(top: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Paginador(
+                      paginacionProvider:
+                          transferenciasProvider.paginacionProvider,
+                      backgroundColor: const Color(0xFF1A1A1A),
+                      textColor: Colors.white,
+                      accentColor: const Color(0xFFE31E24),
+                      radius: 8,
+                      mostrarOrdenacion: true,
+                      camposParaOrdenar: const [
+                        {'value': 'salidaOrigen', 'label': 'Fecha de Salida'},
+                        {
+                          'value': 'llegadaDestino',
+                          'label': 'Fecha de Llegada'
+                        },
+                        {
+                          'value': 'fechaCreacion',
+                          'label': 'Fecha de Creación'
+                        },
+                        {
+                          'value': 'fechaActualizacion',
+                          'label': 'Fecha de Actualización'
+                        },
+                        {'value': 'estado', 'label': 'Estado'},
+                      ],
+                      onPageChange: () async {
+                        await transferenciasProvider.cargarTransferencias();
+                      },
+                      onPageChanged: (page) async {
+                        await transferenciasProvider.cambiarPagina(page);
+                      },
+                      onPageSizeChanged: (pageSize) async {
+                        await transferenciasProvider
+                            .cambiarTamanoPagina(pageSize);
+                      },
+                      onSortByChanged: (sortBy) async {
+                        await transferenciasProvider.cambiarOrdenarPor(sortBy);
+                      },
+                      onOrderChanged: (order) async {
+                        await transferenciasProvider.cambiarOrden(order);
+                      },
                     ),
                   ],
                 ),
               ),
-
-              // Indicador de carga o error
-              if (transferenciasProvider.isLoading)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: CircularProgressIndicator(
-                      color: Color(0xFFE31E24),
-                    ),
-                  ),
-                )
-              else if (transferenciasProvider.errorMessage != null)
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      const Icon(Icons.error_outline,
-                          color: Colors.red, size: 48),
-                      const SizedBox(height: 16),
-                      Text(
-                        transferenciasProvider.errorMessage!,
-                        style: const TextStyle(color: Colors.white),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => _cargarMovimientos(forceRefresh: true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE31E24),
-                        ),
-                        child: const Text('Reintentar'),
-                      ),
-                    ],
-                  ),
-                )
-              else if (transferenciasProvider.transferencias.isEmpty)
-                Expanded(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        const FaIcon(
-                          FontAwesomeIcons.boxOpen,
-                          color: Colors.white38,
-                          size: 48,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'No hay transferencias disponibles',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () =>
-                              _cargarMovimientos(forceRefresh: true),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE31E24),
-                          ),
-                          child: const Text('Refrescar'),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                // Tabla de movimientos con paginación
-                Expanded(
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1A1A1A),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.1),
-                            ),
-                          ),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
-                                ...transferenciasProvider.transferencias.map(
-                                    (TransferenciaInventario transferencia) =>
-                                        _buildTransferenciaRow(transferencia)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Paginador
-                      Container(
-                        margin: const EdgeInsets.only(top: 16),
-                        child: Paginador(
-                          paginacionProvider:
-                              transferenciasProvider.paginacionProvider,
-                          backgroundColor: const Color(0xFF1A1A1A),
-                          textColor: Colors.white,
-                          accentColor: const Color(0xFFE31E24),
-                          radius: 8,
-                          mostrarOrdenacion: true,
-                          camposParaOrdenar: const [
-                            {
-                              'value': 'salidaOrigen',
-                              'label': 'Fecha de Salida'
-                            },
-                            {
-                              'value': 'llegadaDestino',
-                              'label': 'Fecha de Llegada'
-                            },
-                            {
-                              'value': 'fechaCreacion',
-                              'label': 'Fecha de Creación'
-                            },
-                            {
-                              'value': 'fechaActualizacion',
-                              'label': 'Fecha de Actualización'
-                            },
-                            {'value': 'estado', 'label': 'Estado'},
-                          ],
-                          onPageChange: () async {
-                            await transferenciasProvider.cargarTransferencias();
-                          },
-                          onPageChanged: (page) async {
-                            await transferenciasProvider.cambiarPagina(page);
-                          },
-                          onPageSizeChanged: (pageSize) async {
-                            await transferenciasProvider
-                                .cambiarTamanoPagina(pageSize);
-                          },
-                          onSortByChanged: (sortBy) async {
-                            await transferenciasProvider
-                                .cambiarOrdenarPor(sortBy);
-                          },
-                          onOrderChanged: (order) async {
-                            await transferenciasProvider.cambiarOrden(order);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
             ],
           ),
         ),
@@ -432,7 +369,8 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
   }
 
   // Función para mostrar el detalle de un movimiento
-  void _mostrarDetalleMovimiento(TransferenciaInventario transferencia) async {
+  Future<void> _mostrarDetalleMovimiento(
+      TransferenciaInventario transferencia) async {
     if (!mounted) {
       return;
     }
@@ -468,7 +406,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
           ),
         ),
       ),
@@ -557,7 +495,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                         style: TextStyle(
                           color: transferencia.nombreSucursalOrigen != null
                               ? Colors.white
-                              : Colors.white.withOpacity(0.5),
+                              : Colors.white.withValues(alpha: 0.5),
                           fontSize: 13,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -667,7 +605,8 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                           height: containerSize,
                           decoration: BoxDecoration(
                             color: step['isCompleted'] as bool
-                                ? (step['color'] as Color).withOpacity(0.1)
+                                ? (step['color'] as Color)
+                                    .withValues(alpha: 0.1)
                                 : const Color(0xFF1A1A1A),
                             shape: BoxShape.circle,
                             border: Border.all(

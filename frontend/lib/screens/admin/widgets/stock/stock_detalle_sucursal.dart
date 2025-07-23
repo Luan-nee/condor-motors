@@ -243,7 +243,7 @@ class _StockDetalleSucursalDialogState
 
             const SizedBox(height: 8),
 
-            Divider(color: Colors.white.withOpacity(0.2)),
+            Divider(color: Colors.white.withValues(alpha: 0.2)),
 
             const SizedBox(height: 16),
 
@@ -373,15 +373,15 @@ class _StockDetalleSucursalDialogState
                         borderRadius: BorderRadius.circular(8),
                         side: BorderSide(
                           color: disponible
-                              ? statusColor.withOpacity(0.5)
-                              : Colors.white.withOpacity(0.1),
+                              ? statusColor.withValues(alpha: 0.5)
+                              : Colors.white.withValues(alpha: 0.1),
                         ),
                       ),
                       child: InkWell(
                         onTap: () => _verStockDetalle(sucursal),
                         borderRadius: BorderRadius.circular(8),
-                        hoverColor: Colors.white.withOpacity(0.05),
-                        splashColor: Colors.white.withOpacity(0.1),
+                        hoverColor: Colors.white.withValues(alpha: 0.05),
+                        splashColor: Colors.white.withValues(alpha: 0.1),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
@@ -421,8 +421,8 @@ class _StockDetalleSucursalDialogState
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color:
-                                                  Colors.amber.withOpacity(0.2),
+                                              color: Colors.amber
+                                                  .withValues(alpha: 0.2),
                                               borderRadius:
                                                   BorderRadius.circular(4),
                                             ),
@@ -443,7 +443,8 @@ class _StockDetalleSucursalDialogState
                                       sucursal.direccion ??
                                           'Sin dirección registrada',
                                       style: TextStyle(
-                                        color: Colors.white.withOpacity(0.7),
+                                        color:
+                                            Colors.white.withValues(alpha: 0.7),
                                         fontSize: 14,
                                         fontStyle: sucursal.direccion != null
                                             ? FontStyle.normal
@@ -466,7 +467,8 @@ class _StockDetalleSucursalDialogState
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
-                                        color: statusColor.withOpacity(0.2),
+                                        color:
+                                            statusColor.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Row(
@@ -505,16 +507,14 @@ class _StockDetalleSucursalDialogState
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    disponible
-                                        ? Text(
+                                    if (disponible) Text(
                                             stockEnSucursal.toString(),
                                             style: TextStyle(
                                               color: statusColor,
                                               fontWeight: FontWeight.bold,
                                               fontSize: 18,
                                             ),
-                                          )
-                                        : const Text(
+                                          ) else const Text(
                                             '—',
                                             style: TextStyle(
                                               color: Colors.grey,
@@ -555,7 +555,7 @@ class _StockDetalleSucursalDialogState
         Text(
           texto,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 11,
           ),
         ),
@@ -570,7 +570,7 @@ class _StockDetalleSucursalDialogState
         color: const Color(0xFF2D2D2D),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -599,13 +599,14 @@ class _StockDetalleSucursalDialogState
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.2),
+                    color: Colors.orange.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    border:
+                        Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const <Widget>[
+                    children: <Widget>[
                       FaIcon(
                         FontAwesomeIcons.fire,
                         size: 12,
@@ -697,7 +698,7 @@ class _StockDetalleSucursalDialogState
             Text(
               widget.producto.descripcion!,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 14,
               ),
             ),
@@ -719,7 +720,7 @@ class _StockDetalleSucursalDialogState
             child: Text(
               label,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
               ),

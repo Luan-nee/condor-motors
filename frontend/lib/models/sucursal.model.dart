@@ -1,4 +1,6 @@
-class Sucursal {
+import 'package:equatable/equatable.dart';
+
+class Sucursal extends Equatable {
   final String id;
   final String nombre;
   final String? direccion;
@@ -14,7 +16,7 @@ class Sucursal {
   final bool activo;
   final int totalEmpleados;
 
-  Sucursal({
+  const Sucursal({
     required this.id,
     required this.nombre,
     this.direccion,
@@ -29,107 +31,52 @@ class Sucursal {
     required this.fechaActualizacion,
     this.activo = true,
     this.totalEmpleados = 0,
-  }) {
-    // Validar formato de serie de factura
-    if (serieFactura != null) {
-      if (serieFactura!.length != 4 || !serieFactura!.startsWith('F')) {
-        throw FormatException(
-          'Serie de factura debe tener 4 caracteres y empezar con F',
-          serieFactura,
-        );
-      }
-    }
+  });
 
-    // Validar número inicial de factura
-    if (numeroFacturaInicial != null && numeroFacturaInicial! <= 0) {
-      throw FormatException(
-        'Número inicial de factura debe ser positivo',
-        numeroFacturaInicial.toString(),
-      );
-    }
-
-    // Validar formato de serie de boleta
-    if (serieBoleta != null) {
-      if (serieBoleta!.length != 4 || !serieBoleta!.startsWith('B')) {
-        throw FormatException(
-          'Serie de boleta debe tener 4 caracteres y empezar con B',
-          serieBoleta,
-        );
-      }
-    }
-
-    // Validar número inicial de boleta
-    if (numeroBoletaInicial != null && numeroBoletaInicial! <= 0) {
-      throw FormatException(
-        'Número inicial de boleta debe ser positivo',
-        numeroBoletaInicial.toString(),
-      );
-    }
-
-    // Validar código de establecimiento
-    if (codigoEstablecimiento != null && codigoEstablecimiento!.length != 4) {
-      throw FormatException(
-        'Código de establecimiento debe tener 4 caracteres',
+  @override
+  List<Object?> get props => [
+        id,
+        nombre,
+        direccion,
+        sucursalCentral,
+        serieFactura,
+        numeroFacturaInicial,
+        serieBoleta,
+        numeroBoletaInicial,
         codigoEstablecimiento,
-      );
-    }
-  }
+        tieneNotificaciones,
+        fechaCreacion,
+        fechaActualizacion,
+        activo,
+        totalEmpleados,
+      ];
 
   /// Crea una instancia de Sucursal a partir de un mapa JSON
   factory Sucursal.fromJson(Map<String, dynamic> json) {
     // Validar y convertir serie de factura
     final String? serieFactura = json['serieFactura']?.toString();
-    if (serieFactura != null) {
-      if (serieFactura.length != 4 || !serieFactura.startsWith('F')) {
-        throw FormatException(
-          'Serie de factura debe tener 4 caracteres y empezar con F',
-          serieFactura,
-        );
-      }
-    }
+    validarSerieFactura(serieFactura);
 
     // Validar y convertir número inicial de factura
     final int? numeroFacturaInicial = json['numeroFacturaInicial'] != null
         ? int.parse(json['numeroFacturaInicial'].toString())
         : null;
-    if (numeroFacturaInicial != null && numeroFacturaInicial <= 0) {
-      throw FormatException(
-        'Número inicial de factura debe ser positivo',
-        numeroFacturaInicial.toString(),
-      );
-    }
+    validarNumeroInicial(numeroFacturaInicial, 'factura');
 
     // Validar y convertir serie de boleta
     final String? serieBoleta = json['serieBoleta']?.toString();
-    if (serieBoleta != null) {
-      if (serieBoleta.length != 4 || !serieBoleta.startsWith('B')) {
-        throw FormatException(
-          'Serie de boleta debe tener 4 caracteres y empezar con B',
-          serieBoleta,
-        );
-      }
-    }
+    validarSerieBoleta(serieBoleta);
 
     // Validar y convertir número inicial de boleta
     final int? numeroBoletaInicial = json['numeroBoletaInicial'] != null
         ? int.parse(json['numeroBoletaInicial'].toString())
         : null;
-    if (numeroBoletaInicial != null && numeroBoletaInicial <= 0) {
-      throw FormatException(
-        'Número inicial de boleta debe ser positivo',
-        numeroBoletaInicial.toString(),
-      );
-    }
+    validarNumeroInicial(numeroBoletaInicial, 'boleta');
 
     // Validar y convertir código de establecimiento
     final String? codigoEstablecimiento =
         json['codigoEstablecimiento']?.toString();
-    if (codigoEstablecimiento != null && codigoEstablecimiento.length != 4) {
-      throw FormatException(
-        'Código de establecimiento debe tener 4 caracteres',
-        codigoEstablecimiento,
-      );
-    }
+    validarCodigoEstablecimiento(codigoEstablecimiento);
 
     return Sucursal(
       id: json['id']?.toString() ?? '',
@@ -218,34 +165,46 @@ class Sucursal {
   }
 
   /// Valida si una serie de factura es válida
-  static bool isValidSerieFactura(String? serie) {
-    if (serie == null) {
-      return true;
+  static void validarSerieFactura(String? serie) {
+    if (serie != null) {
+      if (serie.length != 4 || !serie.startsWith('F')) {
+        throw FormatException(
+          'Serie de factura debe tener 4 caracteres y empezar con F',
+          serie,
+        );
+      }
     }
-    return serie.length == 4 && serie.startsWith('F');
   }
 
   /// Valida si una serie de boleta es válida
-  static bool isValidSerieBoleta(String? serie) {
-    if (serie == null) {
-      return true;
+  static void validarSerieBoleta(String? serie) {
+    if (serie != null) {
+      if (serie.length != 4 || !serie.startsWith('B')) {
+        throw FormatException(
+          'Serie de boleta debe tener 4 caracteres y empezar con B',
+          serie,
+        );
+      }
     }
-    return serie.length == 4 && serie.startsWith('B');
   }
 
   /// Valida si un código de establecimiento es válido
-  static bool isValidCodigoEstablecimiento(String? codigo) {
-    if (codigo == null) {
-      return true;
+  static void validarCodigoEstablecimiento(String? codigo) {
+    if (codigo != null && codigo.length != 4) {
+      throw FormatException(
+        'Código de establecimiento debe tener 4 caracteres',
+        codigo,
+      );
     }
-    return codigo.length == 4;
   }
 
   /// Valida si un número inicial es válido
-  static bool isValidNumeroInicial(int? numero) {
-    if (numero == null) {
-      return true;
+  static void validarNumeroInicial(int? numero, String tipo) {
+    if (numero != null && numero <= 0) {
+      throw FormatException(
+        'Número inicial de $tipo debe ser positivo',
+        numero.toString(),
+      );
     }
-    return numero > 0;
   }
 }

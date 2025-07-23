@@ -82,7 +82,7 @@ class EstadisticaRepository implements BaseRepository {
       }
 
       // Respuesta por defecto si no hay datos
-      return ResumenEstadisticas(
+      return const ResumenEstadisticas(
         productos: EstadisticasProductos(
           stockBajo: 0,
           liquidacion: 0,
@@ -98,7 +98,7 @@ class EstadisticaRepository implements BaseRepository {
       debugPrint(
           'Error en EstadisticaRepository.getResumenEstadisticasTyped: $e');
       // Respuesta por defecto en caso de error
-      return ResumenEstadisticas(
+      return const ResumenEstadisticas(
         productos: EstadisticasProductos(
           stockBajo: 0,
           liquidacion: 0,
@@ -199,7 +199,7 @@ class EstadisticaRepository implements BaseRepository {
       }
 
       // Respuesta por defecto si no hay datos
-      return EstadisticasProductos(
+      return const EstadisticasProductos(
         stockBajo: 0,
         liquidacion: 0,
         sucursales: [],
@@ -208,7 +208,7 @@ class EstadisticaRepository implements BaseRepository {
       debugPrint(
           'Error en EstadisticaRepository.getEstadisticasProductosTyped: $e');
       // Respuesta por defecto en caso de error
-      return EstadisticasProductos(
+      return const EstadisticasProductos(
         stockBajo: 0,
         liquidacion: 0,
         sucursales: [],
@@ -235,7 +235,7 @@ class EstadisticaRepository implements BaseRepository {
       }
 
       // Respuesta por defecto si no hay datos
-      return EstadisticasVentas(
+      return const EstadisticasVentas(
         ventas: {'hoy': 0, 'esteMes': 0},
         totalVentas: {'hoy': 0, 'esteMes': 0},
         sucursales: [],
@@ -244,7 +244,7 @@ class EstadisticaRepository implements BaseRepository {
       debugPrint(
           'Error en EstadisticaRepository.getEstadisticasVentasTyped: $e');
       // Respuesta por defecto en caso de error
-      return EstadisticasVentas(
+      return const EstadisticasVentas(
         ventas: {'hoy': 0, 'esteMes': 0},
         totalVentas: {'hoy': 0, 'esteMes': 0},
         sucursales: [],

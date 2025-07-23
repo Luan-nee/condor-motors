@@ -33,11 +33,8 @@ class VentasComputerProvider extends ChangeNotifier {
   bool _isVentasLoading = false;
   String _ventasErrorMessage = '';
 
-  // Estado para búsqueda y filtros
+  // Estado para búsqueda
   String _searchQuery = '';
-  DateTime? _fechaInicio;
-  DateTime? _fechaFin;
-  String? _estadoFiltro;
 
   // Estado para detalles de venta
   Venta? _ventaSeleccionada;
@@ -45,7 +42,7 @@ class VentasComputerProvider extends ChangeNotifier {
   String _ventaDetalleErrorMessage = '';
 
   // Estado para paginación
-  Paginacion _paginacion = Paginacion(
+  Paginacion _paginacion = const Paginacion(
     totalItems: 0,
     totalPages: 1,
     currentPage: 1,
@@ -53,8 +50,9 @@ class VentasComputerProvider extends ChangeNotifier {
     hasPrev: false,
   );
   int _itemsPerPage = 10;
-  String _orden = 'desc';
-  String? _ordenarPor = 'fechaCreacion'; // Ordenar por fecha por defecto
+  String _orden = 'desc'; // Descendente para mostrar más recientes primero
+  String? _ordenarPor =
+      'fechaCreacion'; // Ordenar por fecha de creación por defecto
 
   // Referencia global al messenger
   GlobalKey<ScaffoldMessengerState>? messengerKey;
@@ -314,11 +312,8 @@ class VentasComputerProvider extends ChangeNotifier {
   bool get isVentasLoading => _isVentasLoading;
   String get ventasErrorMessage => _ventasErrorMessage;
 
-  // Getters para búsqueda y filtros
+  // Getters para búsqueda
   String get searchQuery => _searchQuery;
-  DateTime? get fechaInicio => _fechaInicio;
-  DateTime? get fechaFin => _fechaFin;
-  String? get estadoFiltro => _estadoFiltro;
 
   // Getters para detalles de venta
   Venta? get ventaSeleccionada => _ventaSeleccionada;
@@ -373,28 +368,6 @@ class VentasComputerProvider extends ChangeNotifier {
   /// Actualiza el término de búsqueda y recarga las ventas
   void actualizarBusqueda(String query) {
     _searchQuery = query;
-    cargarVentas();
-  }
-
-  /// Actualiza los filtros de fecha y recarga las ventas
-  void actualizarFiltrosFecha(DateTime? inicio, DateTime? fin) {
-    _fechaInicio = inicio;
-    _fechaFin = fin;
-    cargarVentas();
-  }
-
-  /// Actualiza el filtro de estado y recarga las ventas
-  void actualizarFiltroEstado(String? estado) {
-    _estadoFiltro = estado;
-    cargarVentas();
-  }
-
-  /// Limpia todos los filtros aplicados
-  void limpiarFiltros() {
-    _searchQuery = '';
-    _fechaInicio = null;
-    _fechaFin = null;
-    _estadoFiltro = null;
     cargarVentas();
   }
 
@@ -552,9 +525,8 @@ class VentasComputerProvider extends ChangeNotifier {
         page: _paginacion.currentPage,
         pageSize: _itemsPerPage,
         search: _searchQuery.isEmpty ? null : _searchQuery,
-        fechaInicio: _fechaInicio,
-        fechaFin: _fechaFin,
-        estado: _estadoFiltro,
+        sortBy: _ordenarPor,
+        order: _orden,
         forceRefresh: true,
       );
 

@@ -139,7 +139,7 @@ class TransferenciaCompararColab extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFFE31E24).withOpacity(0.1),
+            color: const Color(0xFFE31E24).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: FaIcon(
@@ -182,11 +182,11 @@ class TransferenciaCompararColab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFE31E24).withOpacity(0.1),
+              color: const Color(0xFFE31E24).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Row(
-              children: const [
+            child: const Row(
+              children: [
                 FaIcon(
                   FontAwesomeIcons.triangleExclamation,
                   color: Color(0xFFE31E24),
@@ -210,7 +210,7 @@ class TransferenciaCompararColab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
+              color: Colors.orange.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -264,7 +264,7 @@ class TransferenciaCompararColab extends StatelessWidget {
         const SizedBox(height: 16),
         // Lista de productos
         ...comparacion.productos
-            .map((producto) => _buildProductoItem(producto)),
+            .map(_buildProductoItem),
       ],
     );
   }

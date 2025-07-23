@@ -48,10 +48,9 @@ class VentasApi {
     int page = 1,
     int pageSize = 10,
     String? search,
-    DateTime? fechaInicio,
-    DateTime? fechaFin,
+    String? sortBy,
+    String? order,
     sucursalId,
-    String? estado,
     bool useCache = true,
     bool forceRefresh = false,
   }) async {
@@ -63,9 +62,8 @@ class VentasApi {
         search: search,
         extraParams: <String, String>{
           if (sucursalId != null) 'sucursalId': sucursalId.toString(),
-          if (fechaInicio != null) 'fechaInicio': fechaInicio.toIso8601String(),
-          if (fechaFin != null) 'fechaFin': fechaFin.toIso8601String(),
-          if (estado != null) 'estado': estado,
+          if (sortBy != null) 'sort_by': sortBy,
+          if (order != null) 'order': order,
         },
       );
       final String cacheKey =

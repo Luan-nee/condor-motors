@@ -195,35 +195,39 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
 
             // Abrir el archivo con la aplicación predeterminada
             // Para Windows se usa Process.run
-            if (io.Platform.isWindows) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Reporte guardado en: $filePath'),
-                  backgroundColor: Colors.green,
-                  action: SnackBarAction(
-                    label: 'Abrir',
-                    textColor: Colors.white,
-                    onPressed: () async {
-                      await io.Process.run('explorer.exe', [filePath]);
-                    },
+            if (mounted) {
+              if (io.Platform.isWindows) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Reporte guardado en: $filePath'),
+                    backgroundColor: Colors.green,
+                    action: SnackBarAction(
+                      label: 'Abrir',
+                      textColor: Colors.white,
+                      onPressed: () async {
+                        await io.Process.run('explorer.exe', [filePath]);
+                      },
+                    ),
                   ),
-                ),
-              );
-            } else {
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Reporte guardado en: $filePath'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            }
+          } catch (e) {
+            if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Reporte guardado en: $filePath'),
-                  backgroundColor: Colors.green,
+                  content: Text('Error al guardar archivo: $e'),
+                  backgroundColor: Colors.red,
                 ),
               );
             }
-          } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error al guardar archivo: $e'),
-                backgroundColor: Colors.red,
-              ),
-            );
           }
         }
       } else if (productoProvider.errorMessage != null) {
@@ -269,7 +273,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                               child: Text(
                                 'Seleccione una sucursal para ver los productos',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: Colors.white.withValues(alpha: 0.7),
                                 ),
                               ),
                             )
@@ -314,19 +318,24 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                                     .invalidateCacheSucursal(
                                                         sucursalId);
                                               }
-                                              if (!mounted) return;
+                                              if (!mounted) {
+                                                return;
+                                              }
                                               setState(() {
                                                 _productosKey.value =
                                                     'productos_${productoProvider.sucursalSeleccionada?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
                                               });
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                      'Producto habilitado exitosamente'),
-                                                  backgroundColor: Colors.green,
-                                                ),
-                                              );
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                        'Producto habilitado exitosamente'),
+                                                    backgroundColor:
+                                                        Colors.green,
+                                                  ),
+                                                );
+                                              }
                                             },
                                           );
                                         },
@@ -365,12 +374,12 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                   color: const Color(0xFF1A1A1A),
                   border: Border(
                     left: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                     ),
                   ),
                   boxShadow: <BoxShadow>[
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withValues(alpha: 0.2),
                       blurRadius: 8,
                       offset: const Offset(-2, 0),
                     ),
@@ -402,7 +411,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
         color: const Color(0xFF1A1A1A),
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
           ),
         ),
       ),
@@ -439,7 +448,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                       productoProvider.sucursalSeleccionada!.nombre,
                       style: TextStyle(
                         fontSize: 20,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -570,17 +579,18 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                 enabled: productoProvider.sucursalSeleccionada != null,
                 decoration: InputDecoration(
                   labelText: 'Buscar productos',
-                  labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                  labelStyle:
+                      TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                   prefixIcon: const Icon(Icons.search, color: Colors.white54),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide:
-                        BorderSide(color: Colors.white.withOpacity(0.3)),
+                        BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide:
-                        BorderSide(color: Colors.white.withOpacity(0.3)),
+                        BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -600,7 +610,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                 color: const Color(0xFF2D2D2D),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withValues(alpha: 0.3),
                 ),
               ),
               child: productoProvider.isLoadingCategorias

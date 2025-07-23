@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 
@@ -19,8 +20,6 @@ enum EstadoVenta {
         return 'ANULADA';
       case EstadoVenta.declarada:
         return 'DECLARADA';
-      default:
-        return 'PENDIENTE';
     }
   }
 
@@ -45,7 +44,7 @@ enum EstadoVenta {
 }
 
 /// Clase que representa un detalle de venta
-class DetalleVenta {
+class DetalleVenta extends Equatable {
   final int? id;
   final String sku;
   final String nombre;
@@ -61,7 +60,7 @@ class DetalleVenta {
   final String tipoUnidad;
   final bool aplicarOferta;
 
-  DetalleVenta({
+  const DetalleVenta({
     this.id,
     required this.sku,
     required this.nombre,
@@ -77,6 +76,24 @@ class DetalleVenta {
     this.tipoUnidad = 'NIU',
     this.aplicarOferta = false,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        sku,
+        nombre,
+        cantidad,
+        precioSinIgv,
+        precioConIgv,
+        tipoTaxId,
+        totalBaseTax,
+        totalTax,
+        total,
+        productoId,
+        ventaId,
+        tipoUnidad,
+        aplicarOferta,
+      ];
 
   /// Crea un detalle de venta desde un JSON
   factory DetalleVenta.fromJson(Map<String, dynamic> json) {
@@ -215,7 +232,7 @@ class DetalleVenta {
 }
 
 /// Clase que representa los totales de una venta
-class TotalesVenta {
+class TotalesVenta extends Equatable {
   final int ventaId;
   final double totalGravadas;
   final double totalExoneradas;
@@ -223,7 +240,7 @@ class TotalesVenta {
   final double totalTax;
   final double totalVenta;
 
-  TotalesVenta({
+  const TotalesVenta({
     required this.ventaId,
     required this.totalGravadas,
     required this.totalExoneradas,
@@ -231,6 +248,16 @@ class TotalesVenta {
     required this.totalTax,
     required this.totalVenta,
   });
+
+  @override
+  List<Object?> get props => [
+        ventaId,
+        totalGravadas,
+        totalExoneradas,
+        totalGratuitas,
+        totalTax,
+        totalVenta,
+      ];
 
   /// Crea los totales desde un JSON
   factory TotalesVenta.fromJson(Map<String, dynamic> json) {
@@ -401,8 +428,8 @@ class SucursalBasica {
 }
 
 /// Representa una venta completa
-class Venta {
-  final int? id;
+class Venta extends Equatable {
+  final int id;
   final String? observaciones;
   final String? motivoAnulado;
   final String tipoOperacion;
@@ -432,9 +459,12 @@ class Venta {
   final EstadoVenta estado;
   final String? tipoDocumento;
   final DocumentoFacturacion? documentoFacturacion;
+  final String? nombreCliente;
+  final String? nombreEmpleado;
+  final String? nombreSucursal;
 
-  Venta({
-    this.id,
+  const Venta({
+    required this.id,
     this.observaciones,
     this.motivoAnulado,
     this.tipoOperacion = '0101',
@@ -464,7 +494,32 @@ class Venta {
     this.estado = EstadoVenta.pendiente,
     this.tipoDocumento,
     this.documentoFacturacion,
+    this.nombreCliente,
+    this.nombreEmpleado,
+    this.nombreSucursal,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        clienteId,
+        empleadoId,
+        sucursalId,
+        tipoDocumentoId,
+        serieDocumento,
+        numeroDocumento,
+        fechaEmision,
+        fechaCreacion,
+        fechaActualizacion,
+        detalles,
+        totales,
+        clienteDetalle,
+        empleadoDetalle,
+        sucursalDetalle,
+        nombreCliente,
+        nombreEmpleado,
+        nombreSucursal,
+      ];
 
   /// Crea una venta desde un JSON
   factory Venta.fromJson(Map<String, dynamic> json) {
@@ -571,7 +626,7 @@ class Venta {
     }
 
     return Venta(
-      id: id,
+      id: id ?? 0,
       observaciones: json['observaciones'],
       motivoAnulado: json['motivoAnulado'],
       tipoOperacion: json['tipoOperacion'] ?? '0101',
@@ -613,6 +668,9 @@ class Venta {
       estado: estado,
       tipoDocumento: json['tipoDocumento'],
       documentoFacturacion: documentoFacturacion,
+      nombreCliente: json['nombreCliente'],
+      nombreEmpleado: json['nombreEmpleado'],
+      nombreSucursal: json['nombreSucursal'],
     );
   }
 
@@ -621,7 +679,7 @@ class Venta {
     final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
 
     return {
-      if (id != null) 'id': id,
+      'id': id,
       if (observaciones != null) 'observaciones': observaciones,
       'tipoOperacion': tipoOperacion,
       'porcentajeVenta': porcentajeVenta,
@@ -662,7 +720,7 @@ class Venta {
 
   /// Nombre formateado para la UI
   String getNombreFormateado() {
-    return 'Venta #${id ?? ''}';
+    return 'Venta #$id';
   }
 
   /// Fecha formateada para la UI
@@ -727,6 +785,11 @@ class Venta {
     }
 
     return ventaData;
+  }
+
+  /// Obtiene la cantidad total de productos en la venta
+  int get cantidadTotalProductos {
+    return detalles.fold(0, (sum, item) => sum + item.cantidad);
   }
 }
 

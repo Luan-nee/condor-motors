@@ -59,7 +59,7 @@ class BusquedaProductoUtils {
   /// Convierte de Map<String, dynamic> a Producto para usar ProductosUtils
   static List<Producto> convertirAProductos(
       List<Map<String, dynamic>> productos) {
-    return productos.map((p) => mapToProductoFlexible(p)).toList();
+    return productos.map(mapToProductoFlexible).toList();
   }
 
   /// Convierte de Producto a Map<String, dynamic> para la UI
@@ -242,24 +242,24 @@ class BusquedaProductoUtils {
     // 3. Aplicar filtrado por tipo de descuento sobre la lista de Producto ya filtrada
     final List<Producto> resultadosFinales = filtrarPorTipoDescuento(
         filtradoTextoCategoria, tipoDescuento,
-        debugMode: debugMode);
+        debugMode: debugMode)
 
-    // 4. Ordenar: primero los que tienen promociones, luego por nombre
-    resultadosFinales.sort((Producto a, Producto b) {
-      // Primero ordenar por si tiene alguna promoción (usar el getter del modelo)
-      final bool aPromo = a.tienePromocion;
-      final bool bPromo = b.tienePromocion;
+      // 4. Ordenar: primero los que tienen promociones, luego por nombre
+      ..sort((Producto a, Producto b) {
+        // Primero ordenar por si tiene alguna promoción (usar el getter del modelo)
+        final bool aPromo = a.tienePromocion;
+        final bool bPromo = b.tienePromocion;
 
-      if (aPromo && !bPromo) {
-        return -1;
-      }
-      if (!aPromo && bPromo) {
-        return 1;
-      }
+        if (aPromo && !bPromo) {
+          return -1;
+        }
+        if (!aPromo && bPromo) {
+          return 1;
+        }
 
-      // Si ambos tienen o no tienen promoción, ordenar por nombre
-      return a.nombre.compareTo(b.nombre);
-    });
+        // Si ambos tienen o no tienen promoción, ordenar por nombre
+        return a.nombre.compareTo(b.nombre);
+      });
 
     if (debugMode) {
       debugPrint(
@@ -315,8 +315,10 @@ class BusquedaProductoUtils {
     return <String>['Todos', 'Repuestos', 'Accesorios', 'Lubricantes'];
   }
 
-  static Color getPromocionColor(
-      bool tienePromocionGratis, bool tieneDescuentoPorcentual) {
+  static Color getPromocionColor({
+    required bool tienePromocionGratis,
+    required bool tieneDescuentoPorcentual,
+  }) {
     if (tienePromocionGratis) {
       return Colors.green;
     } else if (tieneDescuentoPorcentual) {

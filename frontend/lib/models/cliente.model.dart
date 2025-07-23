@@ -1,7 +1,8 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 /// Modelo para representar un cliente en el sistema
-class Cliente {
+class Cliente extends Equatable {
   final int id;
   final int tipoDocumentoId;
   final String nombre; // Nombre del tipo de documento
@@ -13,18 +14,30 @@ class Cliente {
   final DateTime fechaCreacion;
   final DateTime fechaActualizacion;
 
-  Cliente({
+  const Cliente({
     required this.id,
     required this.tipoDocumentoId,
     required this.nombre,
     required this.numeroDocumento,
     required this.denominacion,
-    this.direccion,
+    required this.fechaCreacion, required this.fechaActualizacion, this.direccion,
     this.correo,
     this.telefono,
-    required this.fechaCreacion,
-    required this.fechaActualizacion,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        tipoDocumentoId,
+        nombre,
+        numeroDocumento,
+        denominacion,
+        direccion,
+        correo,
+        telefono,
+        fechaCreacion,
+        fechaActualizacion,
+      ];
 
   /// Crea una instancia de Cliente desde un mapa JSON
   factory Cliente.fromJson(Map<String, dynamic> json) {
@@ -126,10 +139,5 @@ class Cliente {
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
       fechaActualizacion: fechaActualizacion ?? this.fechaActualizacion,
     );
-  }
-
-  @override
-  String toString() {
-    return 'Cliente(id: $id, denominacion: $denominacion, documento: $numeroDocumento, tipo: $nombre)';
   }
 }

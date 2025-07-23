@@ -280,7 +280,7 @@ class _TransferenciasColabScreenState extends State<TransferenciasColabScreen>
                     : provider.errorMessage != null
                         ? Center(child: Text('Error: ${provider.errorMessage}'))
                         : transferencias.isEmpty
-                            ? Center(
+                            ? const Center(
                                 child:
                                     Text('No hay transferencias disponibles'))
                             : ListView.builder(
@@ -344,7 +344,7 @@ class _TransferenciasColabScreenState extends State<TransferenciasColabScreen>
                   decoration: BoxDecoration(
                     color:
                         TransferenciasUtils.getEstadoColor(transferencia.estado)
-                            .withOpacity(0.1),
+                            .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: FaIcon(
@@ -378,7 +378,7 @@ class _TransferenciasColabScreenState extends State<TransferenciasColabScreen>
                             decoration: BoxDecoration(
                               color: TransferenciasUtils.getEstadoColor(
                                       transferencia.estado)
-                                  .withOpacity(0.1),
+                                  .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -541,7 +541,7 @@ class _TransferenciasColabScreenState extends State<TransferenciasColabScreen>
                             height: containerSize,
                             decoration: BoxDecoration(
                               color: step['isCompleted'] as bool
-                                  ? (step['color'] as Color).withOpacity(0.1)
+                                  ? (step['color'] as Color).withValues(alpha: 0.1)
                                   : const Color(0xFF1A1A1A),
                               shape: BoxShape.circle,
                               border: Border.all(
@@ -612,7 +612,7 @@ class _TransferenciasColabScreenState extends State<TransferenciasColabScreen>
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: (step['color'] as Color).withOpacity(0.1),
+                            color: (step['color'] as Color).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(

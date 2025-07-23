@@ -81,7 +81,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
     } else {
       _fechaCreacion = DateTime.now();
       _detallesReserva = [
-        DetalleReserva(
+        const DetalleReserva(
           total: 0,
           cantidad: 1,
           precioVenta: 0,
@@ -219,7 +219,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
   void _agregarDetalle() {
     setState(() {
       _detallesReserva.add(
-        DetalleReserva(
+        const DetalleReserva(
           total: 0,
           cantidad: 1,
           precioVenta: 0,
@@ -242,7 +242,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
     });
   }
 
-  void _abrirDialogoAgregarCliente() async {
+  Future<void> _abrirDialogoAgregarCliente() async {
     final nuevoCliente = await showDialog<Cliente>(
       context: context,
       builder: (context) => Dialog(
@@ -273,7 +273,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
       backgroundColor: const Color(0xFF1A1A1A),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 900, maxHeight: 800),
-        padding: const EdgeInsets.all(0),
+        padding: EdgeInsets.zero,
         child: DefaultTabController(
           length: 2,
           child: Column(
@@ -334,16 +334,14 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
                     child: TabBarView(
                       children: [
                         // Pestaña 1: Datos Generales
-                        isWide
-                            ? Row(
+                        if (isWide) Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(child: _buildInfoBasica(context)),
                                   const SizedBox(width: 24),
                                   Expanded(child: _buildFechasMonto(context)),
                                 ],
-                              )
-                            : Column(
+                              ) else Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   _buildInfoBasica(context),
@@ -401,8 +399,8 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: const [
+            const Row(
+              children: [
                 FaIcon(FontAwesomeIcons.circleInfo,
                     color: Colors.red, size: 18),
                 SizedBox(width: 8),
@@ -478,9 +476,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
               ],
             ),
             const SizedBox(height: 16),
-            _cargandoSucursales
-                ? const Center(child: CircularProgressIndicator())
-                : DropdownButtonFormField<String>(
+            if (_cargandoSucursales) const Center(child: CircularProgressIndicator()) else DropdownButtonFormField<String>(
                     value: _sucursalIdController.text.isNotEmpty
                         ? _sucursalIdController.text
                         : null,
@@ -518,8 +514,8 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: const [
+            const Row(
+              children: [
                 FaIcon(FontAwesomeIcons.calendarDays,
                     color: Colors.red, size: 18),
                 SizedBox(width: 8),
@@ -549,7 +545,8 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
                           onPrimary: Colors.white,
                           surface: Color(0xFF232323),
                         ),
-                        dialogBackgroundColor: const Color(0xFF1A1A1A),
+                        dialogTheme: const DialogThemeData(
+                            backgroundColor: Color(0xFF1A1A1A)),
                       ),
                       child: child!,
                     );
@@ -603,8 +600,8 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: const [
+            const Row(
+              children: [
                 FaIcon(FontAwesomeIcons.list, color: Colors.red, size: 18),
                 SizedBox(width: 8),
                 Text('Detalles de la Reserva',
