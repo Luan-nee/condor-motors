@@ -41,7 +41,13 @@ class AuthProvider extends ChangeNotifier {
     _isInitializing = true;
     notifyListeners();
     try {
-      final userData = await _authRepository.getUserData();
+      // Inicializaciones en paralelo (fácil de extender)
+      final results = await Future.wait([
+        _authRepository.getUserData(),
+        // Aquí puedes agregar más inicializaciones en paralelo si lo necesitas
+        // Por ejemplo: _loadPreferences(), _authRepository.verificarToken(), etc.
+      ]);
+      final userData = results[0];
       if (userData != null) {
         _state = AuthState.authenticated(
           AuthUser.fromJson(userData),

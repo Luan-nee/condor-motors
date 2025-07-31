@@ -316,146 +316,152 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
               itemCount: productosFiltrados.length,
               itemBuilder: (BuildContext context, int index) {
                 final Map<String, dynamic> producto = productosFiltrados[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: ExpansionTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _getEstadoColor(producto['estado'])
-                            .withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: FaIcon(
-                        producto['estado'] == 'AGOTADO'
-                            ? FontAwesomeIcons.xmark
-                            : producto['estado'] == 'BAJO_STOCK'
-                                ? FontAwesomeIcons.exclamation
-                                : FontAwesomeIcons.check,
-                        color: _getEstadoColor(producto['estado']),
-                        size: 24,
-                      ),
-                    ),
-                    title: Row(
-                      children: <Widget>[
-                        Text(
-                          producto['codigo'],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
+                return RepaintBoundary(
+                  key: ValueKey('inventario_${producto['id']}'),
+                  child: Card(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: ExpansionTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _getEstadoColor(producto['estado'])
+                              .withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            producto['nombre'],
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        child: FaIcon(
+                          producto['estado'] == 'AGOTADO'
+                              ? FontAwesomeIcons.xmark
+                              : producto['estado'] == 'BAJO_STOCK'
+                                  ? FontAwesomeIcons.exclamation
+                                  : FontAwesomeIcons.check,
+                          color: _getEstadoColor(producto['estado']),
+                          size: 24,
                         ),
-                      ],
-                    ),
-                    subtitle: Row(
-                      children: <Widget>[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
+                      ),
+                      title: Row(
+                        children: <Widget>[
+                          Text(
+                            producto['codigo'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                          decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              producto['nombre'],
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          child: Text(
-                            producto['ubicacion'],
+                        ],
+                      ),
+                      subtitle: Row(
+                        children: <Widget>[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .primaryColor
+                                  .withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              producto['ubicacion'],
+                              style: TextStyle(
+                                color: Theme.of(context).primaryColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Último conteo: ${producto['ultimoConteo']}',
                             style: TextStyle(
-                              color: Theme.of(context).primaryColor,
+                              color: Colors.grey[600],
                               fontSize: 12,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Último conteo: ${producto['ultimoConteo']}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: <Widget>[
-                        Text(
-                          'Stock: ${producto['stock']}',
-                          style: TextStyle(
-                            color: _getEstadoColor(producto['estado']),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Mín: ${producto['stockMinimo']}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    children: <Widget>[
-                      // Detalles del producto
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            const Text(
-                              'Detalles del Producto',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(producto['descripcion']),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: <Widget>[
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Text(
-                                      'Categoría: ${producto['categoria']}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Marca: ${producto['marca']}',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                ElevatedButton.icon(
-                                  onPressed: () {
-                                    _realizarConteoInventario(producto);
-                                  },
-                                  icon: const FaIcon(
-                                    FontAwesomeIcons.listCheck,
-                                    size: 16,
-                                  ),
-                                  label: const Text('Realizar Conteo'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                        ],
                       ),
-                    ],
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: <Widget>[
+                          Text(
+                            'Stock: ${producto['stock']}',
+                            style: TextStyle(
+                              color: _getEstadoColor(producto['estado']),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Mín: ${producto['stockMinimo']}',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      children: <Widget>[
+                        // Detalles del producto
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              const Text(
+                                'Detalles del Producto',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(producto['descripcion']),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: <Widget>[
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Text(
+                                        'Categoría: ${producto['categoria']}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Marca: ${producto['marca']}',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      _realizarConteoInventario(producto);
+                                    },
+                                    icon: const FaIcon(
+                                      FontAwesomeIcons.listCheck,
+                                      size: 16,
+                                    ),
+                                    label: const Text('Realizar Conteo'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },

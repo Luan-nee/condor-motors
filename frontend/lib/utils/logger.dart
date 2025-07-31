@@ -170,8 +170,7 @@ class Logger {
   /// Muestra un mensaje sin formato adicional
   static void _rawLog(String message) {
     if (kDebugMode) {
-      // ignore: avoid_print
-      print(message);
+      debugPrint(message);
     }
   }
 }
@@ -198,11 +197,10 @@ void logWarning(String message) {
 void logError(String message, [error, StackTrace? stackTrace]) {
   Logger.error(message);
   if (error != null && kDebugMode) {
-    // ignore: avoid_print
-    print(ConsoleColor.colorize('  └─ $error', ConsoleColor.brightRed));
+    debugPrint(ConsoleColor.colorize('  └─ $error', ConsoleColor.brightRed));
     if (stackTrace != null) {
-      // ignore: avoid_print
-      print(ConsoleColor.colorize('  └─ $stackTrace', ConsoleColor.brightRed));
+      debugPrint(
+          ConsoleColor.colorize('  └─ $stackTrace', ConsoleColor.brightRed));
     }
   }
 }
@@ -235,8 +233,7 @@ void logHttp(String method, String endpoint, [int? statusCode]) {
 /// Registra mensajes personalizados con un prefijo específico
 void logCustom(String prefix, String message) {
   if (kDebugMode) {
-    // ignore: avoid_print
-    print('$prefix $message');
+    debugPrint('$prefix $message');
   }
 }
 
@@ -244,7 +241,6 @@ void logCustom(String prefix, String message) {
 void logJson(String label, jsonData) {
   if (kDebugMode) {
     try {
-      // Convertir a string si es un mapa o lista
       String jsonString;
       if (jsonData is String) {
         jsonString = jsonData;
@@ -254,23 +250,16 @@ void logJson(String label, jsonData) {
       } else {
         jsonString = jsonData.toString();
       }
-
-      // Si el JSON es demasiado largo, limitarlo
       if (jsonString.length > 2000) {
         jsonString = '${jsonString.substring(0, 1997)}...';
       }
-
-      // Colorear el label y mostrar el JSON
       final coloredLabel =
           ConsoleColor.colorize(label, ConsoleColor.brightCyan);
-      // ignore: avoid_print
-      print('$coloredLabel:');
-      // ignore: avoid_print
-      print(jsonString);
+      debugPrint('$coloredLabel:');
+      debugPrint(jsonString);
     } catch (e) {
       Logger.error('Error al formatear JSON: $e');
-      // ignore: avoid_print
-      print('$label: [No se pudo formatear - ${jsonData.runtimeType}]');
+      debugPrint('$label: [No se pudo formatear - ${jsonData.runtimeType}]');
     }
   }
 }

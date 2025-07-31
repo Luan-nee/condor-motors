@@ -42,13 +42,7 @@ class VentasComputerProvider extends ChangeNotifier {
   String _ventaDetalleErrorMessage = '';
 
   // Estado para paginación
-  Paginacion _paginacion = const Paginacion(
-    totalItems: 0,
-    totalPages: 1,
-    currentPage: 1,
-    hasNext: false,
-    hasPrev: false,
-  );
+  Paginacion _paginacion = Paginacion.emptyPagination;
   int _itemsPerPage = 10;
   String _orden = 'desc'; // Descendente para mostrar más recientes primero
   String? _ordenarPor =
@@ -225,7 +219,7 @@ class VentasComputerProvider extends ChangeNotifier {
     try {
       // Necesitamos la sucursal ID actual
       if (_sucursalSeleccionada == null) {
-        final errorMsg = 'No hay una sucursal seleccionada';
+        const errorMsg = 'No hay una sucursal seleccionada';
         if (onError != null) {
           onError(errorMsg);
         } else {

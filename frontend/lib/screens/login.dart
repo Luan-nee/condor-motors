@@ -373,7 +373,7 @@ class _LoginScreenState extends State<LoginScreen>
 
     if (rememberMe) {
       // Leer usuario y clave de SecureStorage
-      final storage = const FlutterSecureStorage();
+      const storage = FlutterSecureStorage();
       final username = await storage.read(key: 'username');
       final password = await storage.read(key: 'password');
       if (username != null) {
@@ -890,11 +890,11 @@ class _LoginScreenState extends State<LoginScreen>
         debugPrint('[LoginScreen] Login exitoso, procesando navegación');
         // Guardar credenciales solo si el login fue exitoso y recordar credenciales está activado
         if (_rememberMe) {
-          final storage = const FlutterSecureStorage();
+          const storage = FlutterSecureStorage();
           await storage.write(key: 'username', value: _usernameController.text);
           await storage.write(key: 'password', value: _passwordController.text);
         } else {
-          final storage = const FlutterSecureStorage();
+          const storage = FlutterSecureStorage();
           await storage.delete(key: 'username');
           await storage.delete(key: 'password');
         }

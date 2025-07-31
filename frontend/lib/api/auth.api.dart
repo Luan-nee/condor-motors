@@ -33,8 +33,6 @@ class TokenService {
   String? _accessToken;
   DateTime? _expiryTime;
 
-  // Control de recursividad para evitar ciclos infinitos
-
   // Constructor privado
   TokenService._internal() {
     _dio = Dio(BaseOptions(

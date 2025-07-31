@@ -187,7 +187,8 @@ class ProformaConversionManager {
           return false;
         }
 
-        final proformaData = proformaResponse['data'];
+        final Map<String, dynamic> proformaData =
+            Map<String, dynamic>.from(proformaResponse['data'] as Map);
         final List<dynamic> detalles = proformaData['detalles'] ?? [];
 
         Logger.debug('Detalles de proforma: ${detalles.length} productos');
@@ -220,20 +221,28 @@ class ProformaConversionManager {
         final List<Map<String, dynamic>> detallesTransformados = [];
         for (final dynamic detalle in detalles) {
           try {
+            if (detalle == null) {
+              Logger.debug('Detalle inválido encontrado, omitiendo: $detalle');
+              continue;
+            }
+            // Convertir a Map para evitar dynamic calls
+            final Map<String, dynamic> detalleMap =
+                Map<String, dynamic>.from(detalle as Map);
+
             // Validar que el detalle tenga la estructura mínima esperada
-            if (detalle == null || !detalle.containsKey('productoId')) {
+            if (!detalleMap.containsKey('productoId')) {
               Logger.debug('Detalle inválido encontrado, omitiendo: $detalle');
               continue;
             }
 
-            // Crear detalle en formato esperado por el API de ventas
             detallesTransformados.add({
-              'productoId': detalle['productoId'],
-              'cantidad':
-                  detalle['cantidadPagada'] ?? detalle['cantidadTotal'] ?? 1,
+              'productoId': detalleMap['productoId'],
+              'cantidad': detalleMap['cantidadPagada'] ??
+                  detalleMap['cantidadTotal'] ??
+                  1,
               'tipoTaxId': tipoTaxId, // Usar el ID obtenido del servidor
-              'aplicarOferta':
-                  detalle['descuento'] != null && detalle['descuento'] > 0
+              'aplicarOferta': detalleMap['descuento'] != null &&
+                  detalleMap['descuento'] > 0
             });
 
             Logger.debug('Detalle transformado: ${detallesTransformados.last}');
@@ -300,8 +309,9 @@ class ProformaConversionManager {
         // Si no tenemos clienteId directo, intentar extraerlo del objeto cliente
         else if (clienteInfo != null &&
             clienteInfo is Map &&
-            clienteInfo.containsKey('id')) {
-          clienteIdNumerico = int.tryParse(clienteInfo['id'].toString());
+            (clienteInfo).containsKey('id')) {
+          clienteIdNumerico =
+              int.tryParse((clienteInfo)['id'].toString());
         }
 
         // Solo sobrescribir clienteId si tenemos un valor numérico válido
@@ -340,7 +350,9 @@ class ProformaConversionManager {
 
           // Verificar que sucursalId coincida con el de la operación
           final String userSucursalId =
-              userData['sucursalId']?.toString() ?? '';
+              userData.containsKey('sucursalId')
+                  ? userData['sucursalId']?.toString() ?? ''
+                  : '';
           if (userSucursalId.isNotEmpty && userSucursalId != sucursalId) {
             Logger.warn(
                 'ADVERTENCIA: El sucursalId del usuario ($userSucursalId) es diferente al de la operación ($sucursalId)');
@@ -367,7 +379,10 @@ class ProformaConversionManager {
 
             if (empleadosSucursal.empleados.isNotEmpty) {
               // Preferir empleado asociado al usuario si existe
-              String? userId = userData['id']?.toString();
+              String? userId;
+              if (userData.containsKey('id')) {
+                userId = userData['id']?.toString();
+              }
               if (userId != null) {
                 // Buscar empleado que coincida con el ID de usuario
                 final empleadoUsuario = empleadosSucursal.empleados.firstWhere(
@@ -576,8 +591,12 @@ class ProformaConversionManager {
               return false;
             }
 
-            final String numeroDoc =
-                ventaResponse['data']?['numeroDocumento'] ?? '';
+            String numeroDoc = '';
+            if (ventaResponse['data'] is Map &&
+                (ventaResponse['data'] as Map).containsKey('numeroDocumento')) {
+              numeroDoc =
+                  (ventaResponse['data'] as Map)['numeroDocumento'] ?? '';
+            }
             Logger.debug(
                 'ÉXITO: Venta creada correctamente con documento: $numeroDoc');
             Logger.debug('Datos de venta creada: ${ventaResponse['data']}');
@@ -852,8 +871,9 @@ class ProformaConversionManager {
 
       if (ventaResponse.containsKey('data') &&
           ventaResponse['data'] is Map<String, dynamic> &&
-          ventaResponse['data'].containsKey('id')) {
-        ventaId = int.tryParse(ventaResponse['data']['id'].toString());
+          (ventaResponse['data'] as Map<String, dynamic>).containsKey('id')) {
+        ventaId =
+            int.tryParse((ventaResponse['data'] as Map<String, dynamic>)['id'].toString());
       }
 
       if (ventaId == null) {

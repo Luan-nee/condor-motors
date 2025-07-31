@@ -36,13 +36,7 @@ class ProductoProvider extends ChangeNotifier {
   Map<String, dynamic>? _stockFilter;
 
   // Objeto de paginación para acceso directo
-  Paginacion _paginacion = const Paginacion(
-    totalItems: 0,
-    totalPages: 1,
-    currentPage: 1,
-    hasNext: false,
-    hasPrev: false,
-  );
+  Paginacion _paginacion = Paginacion.emptyPagination;
 
   // Estados
   bool _isLoadingSucursales = false;

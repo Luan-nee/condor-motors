@@ -163,7 +163,7 @@ class PaginacionUtils {
   /// [params] Mapa de parámetros de consulta
   static void logPaginacion(String recurso, Map<String, dynamic> params) {
     final StringBuffer sb = StringBuffer()
-    ..write('Parámetros de paginación para $recurso: { ');
+      ..write('Parámetros de paginación para $recurso: { ');
 
     int i = 0;
     params.forEach((key, value) {

@@ -703,8 +703,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
           hintText: 'Buscar por código, nombre o marca...',
           prefixIcon: Icon(Icons.search),
           border: InputBorder.none,
-          contentPadding:
-              EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
         onChanged: (String value) {
           setState(() {
@@ -929,290 +928,298 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                     );
                     final String stockFaltante =
                         _getStockFaltanteText(producto);
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: ExpansionTile(
-                        title: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: <Widget>[
-                                _buildProductoImagen(producto, size: 48),
-                                const SizedBox(width: 12),
-                                Text(
-                                  producto.sku,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    producto.nombre,
-                                    style: producto.liquidacion
-                                        ? const TextStyle(
-                                            color: Colors.amber,
-                                            fontWeight: FontWeight.bold)
-                                        : null,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            // Barra de progreso central
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  LinearProgressIndicator(
-                                    value: _getStockProgress(producto),
-                                    backgroundColor: Colors.grey[300],
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        _getStockProgressColor(producto)),
-                                    minHeight: 12,
-                                  ),
-                                  const SizedBox(height: 2),
+                    return RepaintBoundary(
+                      key: ValueKey('producto_colab_${producto.id}'),
+                      child: Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: ExpansionTile(
+                          title: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: <Widget>[
+                                  _buildProductoImagen(producto, size: 48),
+                                  const SizedBox(width: 12),
                                   Text(
-                                    'Stock: ${producto.stock} / ${producto.stockMinimo ?? "-"}',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: _getStockProgressColor(producto),
-                                      fontWeight: FontWeight.w500,
+                                    producto.sku,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      producto.nombre,
+                                      style: producto.liquidacion
+                                          ? const TextStyle(
+                                              color: Colors.amber,
+                                              fontWeight: FontWeight.bold)
+                                          : null,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Row(
-                              children: <Widget>[
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .primaryColor
-                                        .withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    producto.categoria,
-                                    style: TextStyle(
-                                      color: Theme.of(context).primaryColor,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: Text(
-                                    producto.marca,
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 12,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (stockFaltante.isNotEmpty)
+                              const SizedBox(height: 4),
+                              // Barra de progreso central
                               Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  stockFaltante,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    LinearProgressIndicator(
+                                      value: _getStockProgress(producto),
+                                      backgroundColor: Colors.grey[300],
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          _getStockProgressColor(producto)),
+                                      minHeight: 12,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Stock: ${producto.stock} / ${producto.stockMinimo ?? "-"}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: _getStockProgressColor(producto),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Row(
+                                children: <Widget>[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .primaryColor
+                                          .withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      producto.categoria,
+                                      style: TextStyle(
+                                        color: Theme.of(context).primaryColor,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      producto.marca,
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 12,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (stockFaltante.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    stockFaltante,
+                                    style: const TextStyle(
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: <Widget>[
+                              if (producto.liquidacion &&
+                                  producto.precioOferta != null)
+                                Text(
+                                  'S/ ${producto.precioVenta.toStringAsFixed(2)}',
                                   style: const TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.bold,
+                                    decoration: TextDecoration.lineThrough,
+                                    color: Colors.grey,
                                     fontSize: 12,
                                   ),
                                 ),
-                              ),
-                          ],
-                        ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: <Widget>[
-                            if (producto.liquidacion &&
-                                producto.precioOferta != null)
                               Text(
-                                'S/ ${producto.precioVenta.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  decoration: TextDecoration.lineThrough,
-                                  color: Colors.grey,
+                                'S/ ${(producto.liquidacion && producto.precioOferta != null ? producto.precioOferta! : producto.precioVenta).toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: producto.liquidacion
+                                      ? Colors.amber
+                                      : null,
+                                ),
+                              ),
+                              Text(
+                                'Stock: ${producto.stock}',
+                                style: TextStyle(
+                                  color: _getEstadoColor(estado),
                                   fontSize: 12,
                                 ),
                               ),
-                            Text(
-                              'S/ ${(producto.liquidacion && producto.precioOferta != null ? producto.precioOferta! : producto.precioVenta).toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color:
-                                    producto.liquidacion ? Colors.amber : null,
-                              ),
-                            ),
-                            Text(
-                              'Stock: ${producto.stock}',
-                              style: TextStyle(
-                                color: _getEstadoColor(estado),
-                                fontSize: 12,
+                            ],
+                          ),
+                          children: <Widget>[
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    const Text(
+                                      'Detalles del Producto',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(producto.descripcion ??
+                                        'Sin descripción'),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: <Widget>[
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: <Widget>[
+                                            if (producto.liquidacion &&
+                                                producto.precioOferta !=
+                                                    null) ...<Widget>[
+                                              Text(
+                                                'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
+                                                style: const TextStyle(
+                                                  decoration: TextDecoration
+                                                      .lineThrough,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                              Text(
+                                                'Precio Liquidación: S/ ${producto.precioOferta!.toStringAsFixed(2)}',
+                                                style: const TextStyle(
+                                                  color: Colors.amber,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ] else
+                                              Text(
+                                                'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            Text(
+                                              'Precio Compra: S/ ${producto.precioCompra.toStringAsFixed(2)}',
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: <Widget>[
+                                            Text(
+                                              'Stock Actual: ${producto.stock}',
+                                              style: TextStyle(
+                                                color: _getEstadoColor(estado),
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Stock Mínimo: ${producto.stockMinimo ?? 0}',
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                              ),
+                                            ),
+                                            Text(
+                                              'Estado: ${_getEstadoText(estado)}',
+                                              style: TextStyle(
+                                                color: _getEstadoColor(estado),
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            if (stockFaltante.isNotEmpty)
+                                              Text(
+                                                stockFaltante,
+                                                style: const TextStyle(
+                                                  color: Colors.red,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    if (producto.cantidadGratisDescuento !=
+                                            null ||
+                                        producto.porcentajeDescuento != null)
+                                      Container(
+                                        margin: const EdgeInsets.only(top: 16),
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue
+                                              .withValues(alpha: 0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Colors.blue
+                                                .withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: <Widget>[
+                                            const Text(
+                                              'Promociones Activas:',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            if (producto
+                                                    .cantidadGratisDescuento !=
+                                                null)
+                                              Text(
+                                                '• Lleva ${producto.cantidadMinimaDescuento}, paga ${producto.cantidadMinimaDescuento! - producto.cantidadGratisDescuento!}',
+                                                style: const TextStyle(
+                                                    color: Colors.blue),
+                                              ),
+                                            if (producto.porcentajeDescuento !=
+                                                null)
+                                              Text(
+                                                '• ${producto.porcentajeDescuento}% de descuento por ${producto.cantidadMinimaDescuento}+ unidades',
+                                                style: const TextStyle(
+                                                    color: Colors.blue),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        children: <Widget>[
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            child: SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  const Text(
-                                    'Detalles del Producto',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(producto.descripcion ??
-                                      'Sin descripción'),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: <Widget>[
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          if (producto.liquidacion &&
-                                              producto.precioOferta !=
-                                                  null) ...<Widget>[
-                                            Text(
-                                              'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
-                                              style: const TextStyle(
-                                                decoration:
-                                                    TextDecoration.lineThrough,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                            Text(
-                                              'Precio Liquidación: S/ ${producto.precioOferta!.toStringAsFixed(2)}',
-                                              style: const TextStyle(
-                                                color: Colors.amber,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ] else
-                                            Text(
-                                              'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          Text(
-                                            'Precio Compra: S/ ${producto.precioCompra.toStringAsFixed(2)}',
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: <Widget>[
-                                          Text(
-                                            'Stock Actual: ${producto.stock}',
-                                            style: TextStyle(
-                                              color: _getEstadoColor(estado),
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          Text(
-                                            'Stock Mínimo: ${producto.stockMinimo ?? 0}',
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                          Text(
-                                            'Estado: ${_getEstadoText(estado)}',
-                                            style: TextStyle(
-                                              color: _getEstadoColor(estado),
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          if (stockFaltante.isNotEmpty)
-                                            Text(
-                                              stockFaltante,
-                                              style: const TextStyle(
-                                                color: Colors.red,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  if (producto.cantidadGratisDescuento !=
-                                          null ||
-                                      producto.porcentajeDescuento != null)
-                                    Container(
-                                      margin: const EdgeInsets.only(top: 16),
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: Colors.blue.withValues(alpha: 0.3),
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          const Text(
-                                            'Promociones Activas:',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.blue,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          if (producto
-                                                  .cantidadGratisDescuento !=
-                                              null)
-                                            Text(
-                                              '• Lleva ${producto.cantidadMinimaDescuento}, paga ${producto.cantidadMinimaDescuento! - producto.cantidadGratisDescuento!}',
-                                              style: const TextStyle(
-                                                  color: Colors.blue),
-                                            ),
-                                          if (producto.porcentajeDescuento !=
-                                              null)
-                                            Text(
-                                              '• ${producto.porcentajeDescuento}% de descuento por ${producto.cantidadMinimaDescuento}+ unidades',
-                                              style: const TextStyle(
-                                                  color: Colors.blue),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     );
                   },

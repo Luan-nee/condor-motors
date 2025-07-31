@@ -16,8 +16,8 @@ class TransferenciaNotificacion {
     }
     const AndroidInitializationSettings androidInit =
         AndroidInitializationSettings('ic_stat_notify');
-    final DarwinInitializationSettings iosInit = const DarwinInitializationSettings();
-    final InitializationSettings initSettings = InitializationSettings(
+    const DarwinInitializationSettings iosInit = DarwinInitializationSettings();
+    const InitializationSettings initSettings = InitializationSettings(
       android: androidInit,
       iOS: iosInit,
     );

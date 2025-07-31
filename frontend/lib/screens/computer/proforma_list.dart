@@ -377,7 +377,10 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                         itemCount: _filteredProformas.length,
                         itemBuilder: (context, index) {
                           final Proforma proforma = _filteredProformas[index];
-                          return _buildProformaItem(proforma);
+                          return RepaintBoundary(
+                            key: ValueKey('proforma_${proforma.id}'),
+                            child: _buildProformaItem(proforma),
+                          );
                         },
                       ),
                     ),

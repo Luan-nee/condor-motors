@@ -607,14 +607,19 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Paginador(
-                      paginacion: paginacion,
-                      backgroundColor: const Color(0xFF2D2D2D),
-                      textColor: Colors.white,
-                      accentColor: const Color(0xFFE31E24),
-                      radius: 8.0,
-                      onPageChanged: _ventasProvider.cambiarPagina,
-                      onPageSizeChanged: _ventasProvider.cambiarItemsPorPagina,
+                    RepaintBoundary(
+                      key: ValueKey(
+                          'ventas_paginador_${paginacion.currentPage}'),
+                      child: Paginador(
+                        paginacion: paginacion,
+                        backgroundColor: const Color(0xFF2D2D2D),
+                        textColor: Colors.white,
+                        accentColor: const Color(0xFFE31E24),
+                        radius: 8.0,
+                        onPageChanged: _ventasProvider.cambiarPagina,
+                        onPageSizeChanged:
+                            _ventasProvider.cambiarItemsPorPagina,
+                      ),
                     ),
                   ],
                 ),

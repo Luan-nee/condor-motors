@@ -2,6 +2,7 @@ import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/utils/productos_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -58,6 +59,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
   List<ProductoEnSucursal> _sucursalesCompartidas = <ProductoEnSucursal>[];
   ColorApp? _colorProducto;
   String _error = '';
+  bool _isHoveringPhoto = false;
 
   // Controlador para pestañas
   late TabController _atributosTabController;
@@ -138,6 +140,115 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     }
   }
 
+  // Método para mostrar la foto en zoom
+  void _mostrarFotoEnZoom(BuildContext context) {
+    final String? fotoUrl =
+        ProductoRepository.getProductoImageUrl(widget.producto);
+    debugPrint(
+        'ProductoDetalleDialog: _mostrarFotoEnZoom llamado con URL: $fotoUrl');
+    if (fotoUrl == null || fotoUrl.isEmpty) {
+      debugPrint('ProductoDetalleDialog: URL vacía, no se puede mostrar zoom');
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          children: <Widget>[
+            // Fondo oscuro con tap para cerrar
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.8),
+                width: double.infinity,
+                height: double.infinity,
+              ),
+            ),
+            // Imagen centrada
+            Center(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.8,
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    fotoUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (BuildContext context, Object error,
+                            StackTrace? stackTrace) =>
+                        Container(
+                      width: 300,
+                      height: 300,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2D2D2D),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            FaIcon(
+                              FontAwesomeIcons.box,
+                              color: Colors.white54,
+                              size: 64,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Error al cargar imagen',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Botón cerrar
+            Positioned(
+              top: 40,
+              right: 40,
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Obtener el ancho de la pantalla para responsive
@@ -145,33 +256,39 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     // Determinar si es pantalla pequeña (< 800px)
     final bool isPantallaReducida = screenWidth < 800;
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: 1000,
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            // Encabezado común
-            _buildHeader(context),
-            const SizedBox(height: 16),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 1000,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF2D2D2D),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                // Encabezado común
+                _buildHeader(context),
+                const SizedBox(height: 16),
 
-            // Información básica del producto (destacada arriba)
-            _buildProductoBasicInfo(isPantallaReducida),
-            const SizedBox(height: 16),
+                // Información básica del producto (destacada arriba)
+                _buildProductoBasicInfo(isPantallaReducida),
+                const SizedBox(height: 16),
 
-            // Contenido principal (ocupa todo el ancho)
-            Expanded(
-              child: _buildTabBars(isPantallaReducida),
+                // Contenido principal (ocupa todo el ancho)
+                Expanded(
+                  child: _buildTabBars(isPantallaReducida),
+                ),
+              ],
             ),
-
-            const SizedBox(height: 16),
-            _buildFooter(context),
-          ],
+          ),
         ),
       ),
     );
@@ -220,27 +337,78 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                 color: const Color(0xFF1A1A1A),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: widget.producto.pathFoto != null &&
-                      widget.producto.pathFoto!.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        widget.producto.pathFoto!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(FontAwesomeIcons.box,
-                                size: 32, color: Colors.white24),
-                      ),
-                    )
-                  : Center(
-                      child: FaIcon(
-                        FontAwesomeIcons.box,
-                        size: 32,
-                        color: widget.producto.tieneStockBajo()
-                            ? const Color(0xFFE31E24).withValues(alpha: 0.7)
-                            : Colors.white.withValues(alpha: 0.7),
-                      ),
+              child: (() {
+                // Usar la misma lógica que productos_form.dart
+                final String? fotoUrl =
+                    ProductoRepository.getProductoImageUrl(widget.producto);
+                debugPrint(
+                    'ProductoDetalleDialog: Foto URL del producto: $fotoUrl');
+                if (fotoUrl != null && fotoUrl.isNotEmpty) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Stack(
+                      children: [
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              debugPrint(
+                                  'ProductoDetalleDialog: Tap en imagen detectado');
+                              _mostrarFotoEnZoom(context);
+                            },
+                            child: MouseRegion(
+                              onEnter: (event) =>
+                                  setState(() => _isHoveringPhoto = true),
+                              onExit: (event) =>
+                                  setState(() => _isHoveringPhoto = false),
+                              child: Image.network(
+                                fotoUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(FontAwesomeIcons.box,
+                                        size: 32, color: Colors.white24),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Indicador de zoom (solo visible al pasar el mouse)
+                        if (_isHoveringPhoto)
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: AnimatedOpacity(
+                              opacity: _isHoveringPhoto ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 200),
+                              child: Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.zoom_in,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
+                  );
+                } else {
+                  return Center(
+                    child: FaIcon(
+                      FontAwesomeIcons.box,
+                      size: 32,
+                      color: widget.producto.tieneStockBajo()
+                          ? const Color(0xFFE31E24).withValues(alpha: 0.7)
+                          : Colors.white.withValues(alpha: 0.7),
+                    ),
+                  );
+                }
+              })(),
             ),
             const SizedBox(width: 16),
             // Información principal
@@ -566,7 +734,10 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   const SizedBox(height: 16),
 
                   // Información adicional que estaba en la tercera pestaña
-                  if (isPantallaReducida) _buildInfoAdicionalWrap() else _buildInfoAdicionalRow(),
+                  if (isPantallaReducida)
+                    _buildInfoAdicionalWrap()
+                  else
+                    _buildInfoAdicionalRow(),
                 ],
               ),
             ),
@@ -635,21 +806,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     );
   }
 
-  Widget _buildFooter(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: <Widget>[
-        TextButton(
-          child: const Text(
-            'Cerrar',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ],
-    );
-  }
-
   // Pestaña de Precios - Quitar la edición de liquidación
   Widget _buildPreciosTab(bool isPantallaReducida) {
     return SingleChildScrollView(
@@ -677,7 +833,10 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if (isPantallaReducida) _buildPreciosWrap() else _buildPreciosRow(),
+                  if (isPantallaReducida)
+                    _buildPreciosWrap()
+                  else
+                    _buildPreciosRow(),
                 ],
               ),
             ),
@@ -1196,7 +1355,10 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   ),
                   const SizedBox(height: 16),
                   // Cambiamos a formato similar a precios (en 4 columnas o wrap)
-                  if (isPantallaReducida) _buildStockWrap() else _buildStockRow(),
+                  if (isPantallaReducida)
+                    _buildStockWrap()
+                  else
+                    _buildStockRow(),
                 ],
               ),
             ),

@@ -71,10 +71,13 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   @override
   Widget build(BuildContext context) {
     debugPrint('[DashboardAdminScreen] build ejecutado');
-    return Consumer<DashboardProvider>(
-      builder: (context, dashboardProvider, child) {
+    return Selector<DashboardProvider, bool>(
+      selector: (context, provider) => provider.isLoading,
+      builder: (context, isLoading, child) {
         debugPrint(
-            '[DashboardAdminScreen] Consumer ejecutado, isLoading:  dashboardProvider.isLoading');
+            '[DashboardAdminScreen] Selector ejecutado, isLoading: $isLoading');
+        final dashboardProvider =
+            Provider.of<DashboardProvider>(context, listen: false);
         return Scaffold(
           appBar: AppBar(
             title: const Text(
@@ -91,7 +94,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
               const SizedBox(width: 8),
             ],
           ),
-          body: dashboardProvider.isLoading
+          body: isLoading
               ? const Center(
                   child: CircularProgressIndicator(
                     color: Color(0xFFE31E24),

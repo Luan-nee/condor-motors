@@ -6,13 +6,7 @@ import 'package:flutter/foundation.dart';
 /// Provider para manejar la lógica de paginación
 class PaginacionProvider extends ChangeNotifier {
   /// Estado actual de la paginación
-  Paginacion _paginacion = const Paginacion(
-    totalItems: 0,
-    totalPages: 1,
-    currentPage: 1,
-    hasNext: false,
-    hasPrev: false,
-  );
+  Paginacion _paginacion = Paginacion.emptyPagination;
 
   /// Límite de elementos por página (default del servidor: 50)
   int _itemsPerPage = 10;
@@ -491,13 +485,7 @@ class PaginacionProvider extends ChangeNotifier {
     final metadataOriginal = _metadata;
 
     // Restaurar a valores por defecto
-    _paginacion = const Paginacion(
-      totalItems: 0,
-      totalPages: 1,
-      currentPage: 1,
-      hasNext: false,
-      hasPrev: false,
-    );
+    _paginacion = Paginacion.emptyPagination;
     _itemsPerPage = 50; // Valor por defecto del servidor
     _orden = 'desc';
     _ordenarPor = null;

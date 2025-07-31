@@ -53,17 +53,11 @@ class Paginacion extends Equatable {
           response['pagination'] as Map<String, dynamic>);
     }
 
-    return const Paginacion(
-      totalItems: 0,
-      totalPages: 1,
-      currentPage: 1,
-      hasNext: false,
-      hasPrev: false,
-    );
+    return Paginacion.emptyPagination;
   }
 
   /// Crea una Paginación vacía para inicialización
-  static final Paginacion emptyPagination = const Paginacion(
+  static const Paginacion emptyPagination = Paginacion(
     totalItems: 0,
     totalPages: 1,
     currentPage: 1,
@@ -243,8 +237,8 @@ class PaginatedResponse<T> extends Equatable {
   }
 
   /// Crea una respuesta paginada vacía
-  static final PaginatedResponse<dynamic> emptyResponse = PaginatedResponse(
-    items: const [],
+  static const PaginatedResponse<dynamic> emptyResponse = PaginatedResponse(
+    items: [],
     paginacion: Paginacion.emptyPagination,
   );
 

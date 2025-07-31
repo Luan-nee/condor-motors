@@ -71,7 +71,11 @@ linter:
     - prefer_is_empty
     - sized_box_for_whitespace
     - avoid_bool_literals_in_conditional_expressions
-    - avoid_dynamic_calls
     - avoid_void_async
     - prefer_for_elements_to_map_fromIterable
     - no_runtimeType_toString
+    - prefer_const_declarations
+    - non_constant_identifier_names
+    - unnecessary_new
+    - void_checks
+    - hash_and_equals

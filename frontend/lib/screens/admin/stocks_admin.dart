@@ -390,8 +390,7 @@ class _InventarioAdminScreenState extends State<InventarioAdminScreen> {
                                               height: 46,
                                               decoration: const BoxDecoration(
                                                 color: Color(0xFF2D2D2D),
-                                                borderRadius:
-                                                    BorderRadius.only(
+                                                borderRadius: BorderRadius.only(
                                                   topRight: Radius.circular(6),
                                                   bottomRight:
                                                       Radius.circular(6),

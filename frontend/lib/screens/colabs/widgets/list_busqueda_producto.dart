@@ -79,14 +79,17 @@ class ListBusquedaProducto extends StatelessWidget {
               '�� Producto #$index - Categoría: "$categoriaProducto" (Filtro: "$filtroCategoria")');
         }
 
-        return ListItemBusquedaProducto(
-          producto: producto,
-          onProductoSeleccionado: onProductoSeleccionado,
-          colores: colores,
-          darkBackground: darkBackground,
-          darkSurface: darkSurface,
-          filtroCategoria: filtroCategoria,
-          isMobile: isMobile,
+        return RepaintBoundary(
+          key: ValueKey('producto_${producto.id}'),
+          child: ListItemBusquedaProducto(
+            producto: producto,
+            onProductoSeleccionado: onProductoSeleccionado,
+            colores: colores,
+            darkBackground: darkBackground,
+            darkSurface: darkSurface,
+            filtroCategoria: filtroCategoria,
+            isMobile: isMobile,
+          ),
         );
       },
     );

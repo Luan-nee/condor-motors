@@ -34,7 +34,7 @@ class EstadisticasApi {
     bool forceRefresh = false,
   }) async {
     try {
-      final String cacheKey = '${_prefixUltimasVentas}global';
+      const String cacheKey = '${_prefixUltimasVentas}global';
 
       if (forceRefresh) {
         _cache.invalidate(cacheKey);
@@ -79,7 +79,7 @@ class EstadisticasApi {
     bool forceRefresh = false,
   }) async {
     try {
-      final String cacheKey = '${_prefixEstadisticasProductos}global';
+      const String cacheKey = '${_prefixEstadisticasProductos}global';
 
       if (forceRefresh) {
         _cache.invalidate(cacheKey);
@@ -106,7 +106,9 @@ class EstadisticasApi {
           final Map<String, dynamic> data = dataObj;
 
           // Si sucursales no es una lista, convertirlo a lista vacía
-          if (data.containsKey('sucursales') && data['sucursales'] != null && data['sucursales'] is! List) {
+          if (data.containsKey('sucursales') &&
+              data['sucursales'] != null &&
+              data['sucursales'] is! List) {
             data['sucursales'] = <dynamic>[];
           }
 
@@ -119,7 +121,8 @@ class EstadisticasApi {
             }
           }
 
-          if (data.containsKey('liquidacion') && data['liquidacion'] is String) {
+          if (data.containsKey('liquidacion') &&
+              data['liquidacion'] is String) {
             try {
               data['liquidacion'] = int.parse(data['liquidacion'] as String);
             } catch (e) {
@@ -186,7 +189,9 @@ class EstadisticasApi {
         final Object? dataObj = response['data'];
         if (dataObj is Map<String, dynamic>) {
           final Map<String, dynamic> data = dataObj;
-          final List<dynamic> sucursales = data['sucursales'] is List ? data['sucursales'] as List<dynamic> : <dynamic>[];
+          final List<dynamic> sucursales = data['sucursales'] is List
+              ? data['sucursales'] as List<dynamic>
+              : <dynamic>[];
 
           for (final Object? sucursalObj in sucursales) {
             if (sucursalObj is Map<String, dynamic>) {
@@ -198,7 +203,8 @@ class EstadisticasApi {
                   'data': [
                     {
                       'id': 'placeholder-${sucursal['id']}',
-                      'nombre': 'Productos con stock bajo en ${sucursal['nombre']}',
+                      'nombre':
+                          'Productos con stock bajo en ${sucursal['nombre']}',
                       'stock': 1,
                       'stockMinimo': 10,
                       'sucursalId': sucursal['id'],
@@ -250,7 +256,7 @@ class EstadisticasApi {
     bool forceRefresh = false,
   }) async {
     try {
-      final String cacheKey = '${_prefixEstadisticasVentas}global';
+      const String cacheKey = '${_prefixEstadisticasVentas}global';
 
       if (forceRefresh) {
         _cache.invalidate(cacheKey);
@@ -275,7 +281,9 @@ class EstadisticasApi {
         if (dataObj is Map<String, dynamic>) {
           final Map<String, dynamic> data = dataObj;
 
-          if (data.containsKey('sucursales') && data['sucursales'] != null && data['sucursales'] is! List) {
+          if (data.containsKey('sucursales') &&
+              data['sucursales'] != null &&
+              data['sucursales'] is! List) {
             data['sucursales'] = <dynamic>[];
           }
 

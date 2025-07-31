@@ -356,7 +356,8 @@ class _TransferenciaFormListColabState
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: isExpanded ? color.withValues(alpha: 0.2) : const Color(0xFF1A1A1A),
+        color:
+            isExpanded ? color.withValues(alpha: 0.2) : const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(8),
       ),
       child: IconButton(
@@ -917,97 +918,101 @@ class _TransferenciaFormListColabState
     final stockMinimo = producto.stockMinimo ?? 0;
     final int stockDiferencia = stockMinimo - producto.stock;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
-        border: isBajoStock
-            ? Border.all(
-                color: const Color(0xFFE31E24).withValues(alpha: 0.5),
-              )
-            : null,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+    return RepaintBoundary(
+      key: ValueKey('transfer_${producto.id}_$isBajoStock'),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2D2D2D),
+          borderRadius: BorderRadius.circular(8),
+          border: isBajoStock
+              ? Border.all(
+                  color: const Color(0xFFE31E24).withValues(alpha: 0.5),
+                )
+              : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE31E24).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const FaIcon(
+                    FontAwesomeIcons.box,
+                    color: Color(0xFFE31E24),
+                    size: 16,
+                  ),
                 ),
-                child: const FaIcon(
-                  FontAwesomeIcons.box,
-                  color: Color(0xFFE31E24),
-                  size: 16,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      producto.nombre,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: [
-                        Text(
-                          'Stock: ${producto.stock}/$stockMinimo',
-                          style: TextStyle(
-                            color: isBajoStock
-                                ? const Color(0xFFE31E24)
-                                : Colors.grey[400],
-                            fontSize: 12,
-                          ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        producto.nombre,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),
-                        if (isBajoStock)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          Text(
+                            'Stock: ${producto.stock}/$stockMinimo',
+                            style: TextStyle(
+                              color: isBajoStock
+                                  ? const Color(0xFFE31E24)
+                                  : Colors.grey[400],
+                              fontSize: 12,
                             ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'Faltan: $stockDiferencia',
-                              style: const TextStyle(
-                                color: Color(0xFFE31E24),
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+                          ),
+                          if (isBajoStock)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE31E24)
+                                    .withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'Faltan: $stockDiferencia',
+                                style: const TextStyle(
+                                  color: Color(0xFFE31E24),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              _buildQuantityControls(producto),
-            ],
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _buildQuantityControls(producto),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

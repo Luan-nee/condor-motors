@@ -20,7 +20,9 @@ class Cliente extends Equatable {
     required this.nombre,
     required this.numeroDocumento,
     required this.denominacion,
-    required this.fechaCreacion, required this.fechaActualizacion, this.direccion,
+    required this.fechaCreacion,
+    required this.fechaActualizacion,
+    this.direccion,
     this.correo,
     this.telefono,
   });

@@ -824,16 +824,19 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
 
-    return Paginador(
-      paginacion: paginacion,
-      onPageChanged: (int page) =>
-          _irAPagina(page - 1), // Convertir de 1-indexed a 0-indexed
-      backgroundColor: darkSurface,
-      textColor: Colors.white,
-      accentColor: Colors.blue,
-      radius: 8.0,
-      maxVisiblePages: isMobile ? 3 : 5,
-      forceCompactMode: isMobile, // Forzar modo compacto en móviles
+    return RepaintBoundary(
+      key: ValueKey('paginador_${_paginaActual}_$_totalPaginas'),
+      child: Paginador(
+        paginacion: paginacion,
+        onPageChanged: (int page) =>
+            _irAPagina(page - 1), // Convertir de 1-indexed a 0-indexed
+        backgroundColor: darkSurface,
+        textColor: Colors.white,
+        accentColor: Colors.blue,
+        radius: 8.0,
+        maxVisiblePages: isMobile ? 3 : 5,
+        forceCompactMode: isMobile, // Forzar modo compacto en móviles
+      ),
     );
   }
 

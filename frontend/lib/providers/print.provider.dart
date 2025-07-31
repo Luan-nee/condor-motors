@@ -557,12 +557,12 @@ class PrintProvider extends ChangeNotifier {
       }
 
       // Mostrar mensaje de preparación
-      final mensaje = 'Preparando documento para impresión...';
+      const mensaje = 'Preparando documento para impresión...';
       if (context != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text(mensaje),
-            duration: const Duration(seconds: 1),
+            duration: Duration(seconds: 1),
           ),
         );
       } else {

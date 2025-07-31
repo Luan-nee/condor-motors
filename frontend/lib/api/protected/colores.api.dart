@@ -21,7 +21,8 @@ class ColoresApi {
 
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final List<ColorApp>? cachedData = _cache.get<List<ColorApp>>(cacheKey);
+        final List<ColorApp>? cachedData =
+            _cache.get<List<ColorApp>>(cacheKey);
         if (cachedData != null) {
           debugPrint('✅ Colores obtenidos desde caché');
           return cachedData;
